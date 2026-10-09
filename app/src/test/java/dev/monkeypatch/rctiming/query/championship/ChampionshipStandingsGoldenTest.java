@@ -2,6 +2,8 @@ package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.championship.Championship;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClass;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClassRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLink;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLinkRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipPointsScaleEntry;
@@ -66,6 +68,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     @Autowired ChampionshipStandingsQuery query;
     @Autowired ChampionshipRepository championshipRepository;
+    @Autowired ChampionshipClassRepository championshipClassRepository;
     @Autowired ChampionshipEventLinkRepository eventLinkRepository;
     @Autowired ChampionshipPointsScaleRepository pointsScaleRepository;
     @Autowired UserRepository userRepository;
@@ -84,6 +87,35 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     @Test
     void standingsMatchGoldenOutput() throws IOException {
+        Fixture f = buildChampionship(ScoringSource.BOTH);
+
+        assertThat(render(query.computeStandings(f.champId()), f.classNames()))
+                .isEqualTo(readGolden("championship-standings.txt"));
+    }
+
+    /**
+     * The same rounds scored from the finals only, with a class override that sets only best X.
+     * The TQ bonus still comes from the qualifiers. Stock keeps its best round from three (Y falls
+     * back to the championship's), and Dan's two equal wins drop the later one.
+     */
+    @Test
+    void finalsOnlyWithAClassOverrideMatchGoldenOutput() throws IOException {
+        Fixture f = buildChampionship(ScoringSource.FINALS);
+        ChampionshipClass stockRule = new ChampionshipClass();
+        stockRule.setChampionshipId(f.champId());
+        stockRule.setRacingClassId(f.stockClass());
+        stockRule.setBestXFromYX(1);
+        stockRule.setCreatedAt(Instant.now());
+        championshipClassRepository.save(stockRule);
+
+        assertThat(render(query.computeStandings(f.champId()), f.classNames()))
+                .isEqualTo(readGolden("championship-standings-finals.txt"));
+    }
+
+    /** The championship built by {@link #buildChampionship} and its two racing classes. */
+    private record Fixture(Long champId, Long stockClass, Map<Long, String> classNames) {}
+
+    private Fixture buildChampionship(ScoringSource scoringSource) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Long modClass = makeRacingClass("Golden Mod " + suffix);
         Long stockClass = makeRacingClass("Golden Stock " + suffix);
@@ -94,7 +126,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
         champ.setAfinalWinnerBonusPoints(3);
         champ.setBestXFromYX(2);
         champ.setBestXFromYY(3);
-        champ.setScoringSource(ScoringSource.BOTH);
+        champ.setScoringSource(scoringSource);
         champ.setCreatedAt(Instant.now());
         champ.setUpdatedAt(Instant.now());
         Long champId = championshipRepository.save(champ).getId();
@@ -140,10 +172,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
             }
         }
 
-        Map<Long, String> classNames = Map.of(modClass, "Mod", stockClass, "Stock");
-        String actual = render(query.computeStandings(champId), classNames);
-
-        assertThat(actual).isEqualTo(readGolden());
+        return new Fixture(champId, stockClass, Map.of(modClass, "Mod", stockClass, "Stock"));
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────────
@@ -165,8 +194,8 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
         return row.displayName();
     }
 
-    private String readGolden() throws IOException {
-        try (InputStream in = getClass().getResourceAsStream("/golden/championship-standings.txt")) {
+    private String readGolden(String fileName) throws IOException {
+        try (InputStream in = getClass().getResourceAsStream("/golden/" + fileName)) {
             assertThat(in).as("golden file").isNotNull();
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
