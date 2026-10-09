@@ -428,10 +428,13 @@ export default function CockpitPage() {
                 variant="outline"
                 className="w-full text-xs"
                 onClick={() =>
-                  mutations.skipTo.mutate({
-                    sourceRaceId: activeRace.raceId,
-                    targetRaceId: selectedRace.raceId,
-                  })
+                  mutations.skipTo.mutate(
+                    {
+                      sourceRaceId: activeRace.raceId,
+                      targetRaceId: selectedRace.raceId,
+                    },
+                    { onError: commandFailed('Jump to race') },
+                  )
                 }
                 disabled={mutations.skipTo.isPending}
               >
