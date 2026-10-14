@@ -83,7 +83,6 @@ export default function ClubProfileStep({ onNext }: Props) {
         latitude: saved?.latitude ?? null,
         longitude: saved?.longitude ?? null,
         timezone: values.timezone,
-        logoType: saved?.logoType ?? null,
       });
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.club.profile() });
       queryClient.invalidateQueries({ queryKey: setupQueryKeys.status() });

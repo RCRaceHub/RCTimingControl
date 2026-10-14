@@ -20,7 +20,6 @@ const schema = z.object({
   latitude: z.coerce.number().nullable(),
   longitude: z.coerce.number().nullable(),
   timezone: z.string().min(1, 'Timezone is required'),
-  logoType: z.string().nullable().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -34,7 +33,6 @@ function toRequest(values: FormValues): UpdateClubProfileRequest {
     latitude: values.latitude,
     longitude: values.longitude,
     timezone: values.timezone,
-    logoType: values.logoType || null,
   };
 }
 
@@ -60,7 +58,6 @@ export default function ClubProfilePage() {
           latitude: data.latitude ?? null,
           longitude: data.longitude ?? null,
           timezone: data.timezone ?? '',
-          logoType: data.logoType ?? '',
         }
       : undefined,
   });

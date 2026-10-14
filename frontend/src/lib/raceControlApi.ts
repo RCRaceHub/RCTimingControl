@@ -241,7 +241,6 @@ export type EventScheduleDto = {
   id: number;
   name: string;
   eventDate: string;
-  entryAvailability: 'ENTRY_OPEN' | 'ENTRY_NOT_YET_OPEN' | 'ENTRY_CLOSED';
   finishedRaceIds: number[];
   championshipId: number | null;
 };
