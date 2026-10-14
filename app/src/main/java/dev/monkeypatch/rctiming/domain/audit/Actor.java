@@ -16,9 +16,9 @@ public record Actor(Long userId, String label, Source source) {
         return new Actor(userId, null, Source.UI);
     }
 
-    /** Someone who is not signed in, for example a failed sign-in: only the email they tried is known. */
-    public static Actor anonymous(String emailTried) {
-        return new Actor(null, "anonymous:" + (emailTried == null ? "" : emailTried.strip()), Source.UI);
+    /** Someone who is not signed in, for example a failed sign-in. The label says what is known, never an email. */
+    public static Actor anonymous(String label) {
+        return new Actor(null, "anonymous:" + (label == null ? "" : label.strip()), Source.UI);
     }
 
     /** A command line tool run on the laptop, by the operating system user named. */

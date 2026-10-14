@@ -183,8 +183,14 @@ public class AuthService {
         });
     }
 
+    /**
+     * Records a refused sign-in without the email that was typed, which may belong to someone who is not an official
+     * (#264). An attempt against a real account is tied to it by the official id. An unknown email leaves no trace of
+     * what was typed, not even a hash, which a list of the club's addresses could be tried against.
+     */
     private Outcome refuseLogin(String emailTried, Long officialId, Refusal refusal) {
-        audit.entry(Actor.anonymous(emailTried), "LOGIN_FAILED")
+        String who = officialId != null ? "known account" : "unknown email";
+        audit.entry(Actor.anonymous(who), "LOGIN_FAILED")
                 .entity("official", officialId)
                 .summary("Sign-in refused: " + refusal.reason)
                 .recordStandalone();

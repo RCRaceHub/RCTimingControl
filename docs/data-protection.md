@@ -13,7 +13,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 | Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. The CSV `Junior` column is read by the parser but not stored. |
 | Transponder numbers | Competitors, per event | `entries`, practice laps | A number can identify a person across events. |
 | Laps, positions, results, penalties, incident reports, marshal adjustments | Competitors | race and result tables | Incident reports and penalties describe behaviour. |
-| Who did what and when | Officials; anyone who tried to sign in | `audit_log` and the entry, official and competitor audit tables | Append-only. A failed sign-in stores **the email that was typed**, which may belong to someone who is not an official (`LOGIN_FAILED`). |
+| Who did what and when | Officials; anyone who tried to sign in | `audit_log` and the entry, official and competitor audit tables | Append-only. A failed sign-in no longer stores the email that was typed: an attempt on a real account is tied to the official by id, and an unknown email leaves no trace of what was typed (#264). Backups taken before that change still hold the old addresses until they age out. |
 | Copies of the database | All of the above | Backup folder | The newest 14 are kept by default (`keep`); a person deleted later still exists in older backups. |
 | Names sent out | Competitors | Results Export v1 to RaceHub; Live Feed v1 to a relay (display names only, per-event switch) | Received by other organisations. |
 | Names shown on screens | Competitors | Boards, overlay, results and championship pages | Anonymous access on the venue network, and to remote viewers when the live feed is on. |
@@ -22,7 +22,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 ## Gaps found so far
 
 1. `refresh_tokens` rows are never purged.
-2. Failed sign-in emails are kept for as long as the audit log is, with no limit.
+2. ~~Failed sign-in emails are kept for as long as the audit log is, with no limit.~~ Fixed in #264.
 3. The audit log has no retention limit.
 4. No way to anonymise or export one competitor.
 5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.

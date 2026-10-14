@@ -110,11 +110,11 @@ class AuditLogIT extends AbstractIntegrationTest {
     void aStandaloneRowIsWrittenOnItsOwn() {
         String type = uniqueType();
 
-        audit.entry(Actor.anonymous("someone@example.com"), "LOGIN_FAILED").entity(type, null)
+        audit.entry(Actor.anonymous("unknown email"), "LOGIN_FAILED").entity(type, null)
                 .summary("Sign-in refused: wrong email or password").recordStandalone();
 
         AuditEntryDto row = find(type).entries().get(0);
-        assertThat(row.actor()).isEqualTo("anonymous:someone@example.com");
+        assertThat(row.actor()).isEqualTo("anonymous:unknown email");
         assertThat(row.actorUserId()).isNull();
         assertThat(row.entityId()).isNull();
     }
