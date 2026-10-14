@@ -38,6 +38,21 @@ export interface CreateSessionRequest {
   pauseSeconds?: number;
 }
 
+/** Name a transponder in a session: an existing competitor, or a new walk-in made from a name. */
+export interface LinkTransponderRequest {
+  transponderNumber: string;
+  competitorId?: number;
+  newName?: string;
+  /** Say a new name is a different person from the existing competitors it matches. */
+  confirmNewCompetitor?: boolean;
+}
+
+export interface PracticeDriverDto {
+  transponderNumber: string;
+  competitorId: number;
+  displayName: string | null;
+}
+
 // ── API client ─────────────────────────────────────────────────────────────
 
 /** Create a new practice session. */
@@ -67,3 +82,7 @@ export const getSnapshot = (id: number) =>
 /** Get the final results for a stopped session. */
 export const getResults = (id: number) =>
   api.get<PracticeTimingRowDto[]>(`/api/v1/practice-sessions/${id}/results`).then(r => r.data);
+
+/** Name a transponder in a session. A name matching someone already there answers 409 with the matches. */
+export const linkTransponder = (id: number, req: LinkTransponderRequest) =>
+  api.post<PracticeDriverDto>(`/api/v1/practice-sessions/${id}/link-transponder`, req).then(r => r.data);
