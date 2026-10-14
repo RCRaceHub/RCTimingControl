@@ -5,6 +5,9 @@ import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -42,6 +45,12 @@ public class LapTimingService {
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
 
     private final Map<Long, LiveRaceState> states = new ConcurrentHashMap<>();
+    /**
+     * Races whose state was released and that have not started again. A passing whose race lookup ran before the
+     * finish or restart committed can reach {@link #onLapPassing} after the release; without this it would
+     * recreate the state and the next start would carry one stale lap.
+     */
+    private final Set<Long> released = ConcurrentHashMap.newKeySet();
     private final LiveTimingHub liveTimingHub;
     private final RaceEntryRepository raceEntryRepository;
     private final EntryRepository entryRepository;
@@ -95,6 +104,10 @@ public class LapTimingService {
         if (raceId == LapPassingEvent.NO_RACE) {
             return;
         }
+        if (released.contains(raceId)) {
+            log.debug("Dropped a passing for race {}, which has been released", raceId);
+            return;
+        }
         String transponderNumber = event.transponderNumber();
 
         LiveRaceState state = stateFor(raceId);
@@ -141,7 +154,16 @@ public class LapTimingService {
      * Idempotent — no-op if no state is present.
      */
     public void releaseState(long raceId) {
+        released.add(raceId);
         states.remove(raceId);
+    }
+
+    /** A race going to RUNNING takes passings again; the commit makes it the one the decoder lookup finds. */
+    @EventListener
+    public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.RUNNING) {
+            AfterCommit.run(() -> released.remove(event.getRaceId()));
+        }
     }
 
     /**
