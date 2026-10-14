@@ -41,6 +41,7 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         p.setDecoderHost(r.getDecoderHost());
         p.setDecoderPort(r.getDecoderPort());
         p.setDecoderProtocol(r.getDecoderProtocol());
+        p.setPrivacyNotice(r.getPrivacyNotice());
         p.setCreatedAt(r.getCreatedAt());
         p.setUpdatedAt(r.getUpdatedAt());
         return p;
@@ -61,6 +62,7 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         r.setDecoderHost(p.getDecoderHost());
         r.setDecoderPort(p.getDecoderPort());
         r.setDecoderProtocol(p.getDecoderProtocol());
+        r.setPrivacyNotice(p.getPrivacyNotice());
         r.setCreatedAt(p.getCreatedAt());
         r.setUpdatedAt(p.getUpdatedAt());
     }

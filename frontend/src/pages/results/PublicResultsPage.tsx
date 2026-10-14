@@ -1,3 +1,4 @@
+import PrivacyLink from '@/components/layout/PrivacyLink';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicResultSnapshot } from '@/hooks/race-control/usePublicResultSnapshot';
@@ -151,6 +152,7 @@ export default function PublicResultsPage() {
           Print Results
         </button>
       </div>
+      <PrivacyLink />
     </div>
   );
 }

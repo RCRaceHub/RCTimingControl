@@ -44,6 +44,14 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 **Re-imports can undo it.** The entries keep their RaceHub entry ids, so importing a newer version of the same booking attaches the entry to a new competitor with the real name. Remove or amend the booking in RaceHub first. Finished races held in memory, boards or announcer clips refresh on their own; anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
 
+## Privacy notice (#267)
+
+The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, the sign-in page and the check-in desk (where an official can point a driver at it; it opens in a new tab so the desk keeps its place). The boards and the OBS overlay carry no link, since they are screens and not pages people read.
+
+Until the club writes its own, the page shows a standard notice with the club's name, email and phone filled in from the club profile. It says what RCTC holds, why, who sees it (including the junior display setting), how long results are kept, and how to ask for a copy or removal. An admin edits it under Club, "Privacy notice"; saving a blank text goes back to the standard one. Changes are audited as `PRIVACY_NOTICE_CHANGED` with whether it is the club's own text and its length, not the text. The standard text is a starting point, not legal advice: the club should read it and change what does not fit.
+
+RaceHub holds the booking, contact and payment details and has its own notice; this one covers only what the timing program holds.
+
 ## Proposed child tickets
 
 1. Retention job: purge expired and revoked refresh tokens; drop failed-sign-in rows after a set period (suggest 90 days) and keep other audit rows for a longer, admin-visible period.

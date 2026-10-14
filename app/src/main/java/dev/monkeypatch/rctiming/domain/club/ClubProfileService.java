@@ -117,6 +117,34 @@ public class ClubProfileService {
         return saved;
     }
 
+    /** The privacy notice people see: {@code text} is the club's own, or the default if it has not written one. */
+    public record PrivacyNotice(String clubName, String email, String phone, String text, boolean customised) {}
+
+    /** The privacy notice with the club's name and contact details, for the public page and the editor. */
+    @Transactional(readOnly = true)
+    public PrivacyNotice privacyNotice() {
+        ClubProfile p = clubProfileRepository.findCurrent().orElseGet(ClubProfile::new);
+        String own = p.getPrivacyNotice();
+        boolean customised = own != null && !own.isBlank();
+        String text = customised ? own : PrivacyNoticeDefaults.text(p.getName(), p.getEmail(), p.getPhone());
+        return new PrivacyNotice(p.getName() == null ? "" : p.getName(), p.getEmail(), p.getPhone(), text, customised);
+    }
+
+    /** Saves the club's own notice; a blank {@code text} goes back to the default. */
+    public PrivacyNotice changePrivacyNotice(Actor actor, String text) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        boolean wasCustom = profile.getPrivacyNotice() != null;
+        String cleaned = text == null || text.isBlank() ? null : text.strip();
+        profile.setPrivacyNotice(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        audit.entry(actor, "PRIVACY_NOTICE_CHANGED").entity("club_profile", saved.getId())
+                .summary(cleaned == null ? "Went back to the default privacy notice" : "Changed the privacy notice")
+                .before(Map.of("customised", wasCustom))
+                .after(Map.of("customised", cleaned != null, "length", cleaned == null ? 0 : cleaned.length()))
+                .record();
+        return privacyNotice();
+    }
+
     @Transactional(readOnly = true)
     public List<GoverningBodyAffiliation> listAffiliations() {
         return affiliationRepository.findAll();

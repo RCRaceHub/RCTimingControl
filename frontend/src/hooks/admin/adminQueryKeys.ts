@@ -20,6 +20,7 @@ export const adminQueryKeys = {
   },
   club: {
     profile: () => ['admin', 'club', 'profile'] as const,
+    privacyNotice: () => ['admin', 'club', 'privacy-notice'] as const,
   },
   tracks: {
     all: () => ['admin', 'tracks'] as const,

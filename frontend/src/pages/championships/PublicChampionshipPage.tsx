@@ -1,3 +1,4 @@
+import PrivacyLink from '@/components/layout/PrivacyLink';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getPublicChampionshipStandings } from '@/lib/raceControlApi';
@@ -64,6 +65,7 @@ export default function PublicChampionshipPage() {
           ))}
         </tbody>
       </table>
+      <PrivacyLink />
     </div>
   );
 }

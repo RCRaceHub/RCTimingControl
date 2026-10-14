@@ -25,3 +25,22 @@ export function useUploadClubLogo() {
     onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.club.profile() }),
   });
 }
+
+export function usePrivacyNotice() {
+  return useQuery({
+    queryKey: adminQueryKeys.club.privacyNotice(),
+    queryFn: adminApi.club.getPrivacyNotice,
+  });
+}
+
+/** Saves the club's own notice; a blank text goes back to the default. The public page caches it, so that is refreshed too. */
+export function useSetPrivacyNotice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (text: string) => adminApi.club.setPrivacyNotice(text),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminQueryKeys.club.privacyNotice() });
+      void qc.invalidateQueries({ queryKey: ['public', 'privacy-notice'] });
+    },
+  });
+}

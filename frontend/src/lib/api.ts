@@ -45,6 +45,19 @@ export interface AboutDto {
   addresses: string[];
 }
 
+export interface PrivacyNoticeDto {
+  clubName: string;
+  email: string | null;
+  phone: string | null;
+  /** Plain text; line breaks matter */
+  text: string;
+}
+
+export async function getPrivacyNotice(): Promise<PrivacyNoticeDto> {
+  const { data } = await api.get<PrivacyNoticeDto>('/api/v1/privacy-notice');
+  return data;
+}
+
 export async function getAboutInfo(): Promise<AboutDto> {
   const { data } = await api.get<AboutDto>('/api/v1/about');
   return data;

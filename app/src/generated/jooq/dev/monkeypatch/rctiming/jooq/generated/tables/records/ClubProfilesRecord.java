@@ -244,6 +244,20 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (String) get(15);
     }
 
+    /**
+     * Setter for <code>club_profiles.privacy_notice</code>.
+     */
+    public void setPrivacyNotice(String value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.privacy_notice</code>.
+     */
+    public String getPrivacyNotice() {
+        return (String) get(16);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -267,7 +281,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -286,6 +300,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setDecoderHost(decoderHost);
         setDecoderPort(decoderPort);
         setDecoderProtocol(decoderProtocol);
+        setPrivacyNotice(privacyNotice);
         resetChangedOnNotNull();
     }
 }

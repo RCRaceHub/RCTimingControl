@@ -4,6 +4,7 @@
  */
 export const publicQueryKeys = {
   about: () => ['public', 'about'] as const,
+  privacyNotice: () => ['public', 'privacy-notice'] as const,
   events: () => ['public', 'events'] as const,
   results: (raceId: number) => ['public', 'results', raceId] as const,
   championship: (id: number) => ['public', 'championships', id] as const,

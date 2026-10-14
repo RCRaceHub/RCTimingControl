@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getEventSchedule } from '@/lib/raceControlApi';
 import { Button } from '@/components/ui/button';
 import { formatEventDate } from '@/lib/dates';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 export default function EventSchedulePage() {
@@ -72,6 +73,7 @@ export default function EventSchedulePage() {
           </div>
         ))}
       </div>
+      <PrivacyLink />
     </div>
   );
 }

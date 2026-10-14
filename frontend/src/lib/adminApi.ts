@@ -561,6 +561,12 @@ export interface ResultsExportsDto {
 
 // ── API client ─────────────────────────────────────────────────────────────
 
+/** {@code customised}: whether {@code text} is the club's own, or the default */
+export interface PrivacyNoticeEditDto {
+  text: string;
+  customised: boolean;
+}
+
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
   importRaceHubEntries: (eventId: number, exportDocument: unknown, dryRun: boolean) =>
@@ -729,6 +735,11 @@ export const adminApi = {
       api.get<ClubProfileDto>('/api/v1/admin/club/profile').then(r => r.data),
     updateProfile: (body: UpdateClubProfileRequest) =>
       api.put<ClubProfileDto>('/api/v1/admin/club/profile', body).then(r => r.data),
+    getPrivacyNotice: () =>
+      api.get<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice').then(r => r.data),
+    /** A blank text goes back to the default notice */
+    setPrivacyNotice: (text: string) =>
+      api.put<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice', { text }).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);

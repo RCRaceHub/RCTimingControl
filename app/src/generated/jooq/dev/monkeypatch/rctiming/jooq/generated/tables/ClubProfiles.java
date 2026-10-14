@@ -136,6 +136,11 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, String> DECODER_PROTOCOL = createField(DSL.name("decoder_protocol"), SQLDataType.VARCHAR(10), this, "");
 
+    /**
+     * The column <code>club_profiles.privacy_notice</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> PRIVACY_NOTICE = createField(DSL.name("privacy_notice"), SQLDataType.CLOB, this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
