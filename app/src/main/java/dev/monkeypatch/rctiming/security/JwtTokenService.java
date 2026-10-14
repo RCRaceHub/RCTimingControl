@@ -18,15 +18,17 @@ import java.util.HexFormat;
 import java.util.List;
 
 /**
- * JWT token creation and validation using JJWT 0.12.x API.
- * Uses HMAC-SHA256 signing. All builder methods use the 0.12.x fluent API
- * (.subject(), .claim(), .expiration()) — NOT the deprecated 0.11 setters.
+ * Officials' tokens. The access token is a short-lived JWT signed with HMAC-SHA256 and carries the official's
+ * id, email, name and roles, so a request needs no database read to be authorised. The refresh token is not a
+ * JWT but an opaque random value stored in the database ({@code AuthService}), so it can be revoked. Only its
+ * SHA-256 hash is stored, so a copy of the database cannot be used to sign in.
+ *
+ * <p>The signing key comes from {@code app.jwt.secret} or, when that is unset, from a key file the app creates
+ * in its data folder on first start ({@link JwtSecretFile}).
  */
 @Service
 public class JwtTokenService {
 
-    // SecretKey is from Java SE (java.security / javax.crypto) — not a Jakarta EE namespace.
-    // There is no jakarta.crypto equivalent; this import is correct for Spring Boot 3.x.
     private final io.jsonwebtoken.security.MacAlgorithm signingAlg;
     private final javax.crypto.SecretKey signingKey;
     private final long accessTokenTtlMs;

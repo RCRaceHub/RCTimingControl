@@ -19,6 +19,23 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.util.UrlPathHelper;
 
+/**
+ * Who may call what over HTTP. Officials sign in; spectators and racers never do.
+ *
+ * <ul>
+ *   <li>CSRF protection is off because the API is stateless: it authenticates with a Bearer token that a
+ *       page must add itself, which a cross-site form cannot do. The one cookie, the refresh token, is
+ *       SameSite=Lax and sent only to {@code /api/v1/auth/refresh} (see {@code AuthController}).</li>
+ *   <li>{@code /ws/timing} is open because a browser cannot add a header to the WebSocket upgrade. Sign-in
+ *       happens on the STOMP CONNECT frame instead ({@link WebSocketJwtChannelInterceptor}).</li>
+ *   <li>{@code POST /api/v1/setup/bootstrap} is open so a fresh install can create its first admin. The only
+ *       guard is that no account exists yet ({@code SetupService.bootstrap}), so the first caller on the venue
+ *       network becomes admin.</li>
+ *   <li>Any {@code /api/v1} route not opened here needs an official role, whichever one. Controllers with no
+ *       {@code @PreAuthorize}, such as {@code AudioController}, {@code AudioClipController} and
+ *       {@code DecoderStatusController}, rely on that last rule.</li>
+ * </ul>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
