@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeLapsRecord
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,6 +28,15 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
         return findWhere(PRACTICE_LAPS.PRACTICE_SESSION_ID.eq(practiceSessionId)
                         .and(PRACTICE_LAPS.TRANSPONDER_NUMBER.eq(transponderNumber)),
                 PRACTICE_LAPS.LAP_NUMBER.asc(), PRACTICE_LAPS.ID.asc());
+    }
+
+    /** The highest run saved for the transponder in the session, 0 when it has no laps there. */
+    public int highestRunNumber(Long practiceSessionId, String transponderNumber) {
+        Integer highest = dsl.select(DSL.max(PRACTICE_LAPS.RUN_NUMBER)).from(PRACTICE_LAPS)
+                .where(PRACTICE_LAPS.PRACTICE_SESSION_ID.eq(practiceSessionId))
+                .and(PRACTICE_LAPS.TRANSPONDER_NUMBER.eq(transponderNumber))
+                .fetchOne(0, Integer.class);
+        return highest == null ? 0 : highest;
     }
 
     @Override

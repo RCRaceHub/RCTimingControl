@@ -53,10 +53,20 @@ public class LivePracticeState {
      * time), and for the first passing after a pause longer than the session's: that one starts the next run.
      */
     public Passing notePassing(String transponderNumber, long rtcTimeMicros) {
+        return notePassing(transponderNumber, rtcTimeMicros, () -> 0);
+    }
+
+    /**
+     * As {@link #notePassing(String, long)}. {@code highestSavedRun} is asked once per transponder, for its first
+     * passing in this state, so after a restart in the middle of a session the first passing starts the run after
+     * the last one saved: how long the transponder was quiet is not known, so it is not joined to that run.
+     */
+    public Passing notePassing(String transponderNumber, long rtcTimeMicros, IntSupplier highestSavedRun) {
         Long previous = lastRtcMicros.put(transponderNumber, rtcTimeMicros);
         if (previous == null) {
-            runNumbers.put(transponderNumber, 1);
-            return new Passing(null, 1);
+            int run = highestSavedRun.getAsInt() + 1;
+            runNumbers.put(transponderNumber, run);
+            return new Passing(null, run);
         }
         long deltaMicros = rtcTimeMicros - previous;
         if (deltaMicros > pauseMicros) {
@@ -99,6 +109,12 @@ public class LivePracticeState {
             state.addLap(lapTimeMs, runNumber);
             return state;
         });
+    }
+
+    /** The name the transponder already shows, or null when it has none yet. */
+    public String knownName(String transponderNumber) {
+        ParticipantState state = participants.get(transponderNumber);
+        return state == null ? null : state.racerName;
     }
 
     /**

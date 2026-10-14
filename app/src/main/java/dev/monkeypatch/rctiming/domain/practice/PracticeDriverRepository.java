@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,18 @@ public class PracticeDriverRepository extends JooqRepository<PracticeDriver, Pra
             Long practiceSessionId, String transponderNumber) {
         return findWhere(PRACTICE_DRIVERS.PRACTICE_SESSION_ID.eq(practiceSessionId)
                 .and(PRACTICE_DRIVERS.TRANSPONDER_NUMBER.eq(transponderNumber))).stream().findFirst();
+    }
+
+    /**
+     * Moves the transponders named as one competitor to another, as a merge does (#123). A transponder is named once
+     * per session, so no two rows can end up the same.
+     */
+    @Transactional
+    public void moveCompetitor(Long fromCompetitorId, Long toCompetitorId) {
+        dsl.update(PRACTICE_DRIVERS)
+                .set(PRACTICE_DRIVERS.COMPETITOR_ID, toCompetitorId)
+                .where(PRACTICE_DRIVERS.COMPETITOR_ID.eq(fromCompetitorId))
+                .execute();
     }
 
     @Override

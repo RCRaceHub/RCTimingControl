@@ -27,6 +27,9 @@ import java.util.Map;
 @Service
 public class PracticeDriverService {
 
+    private static final int MAX_TRANSPONDER_LENGTH = 50;
+    private static final int MAX_NAME_LENGTH = 100;
+
     private final PracticeSessionRepository sessionRepository;
     private final PracticeDriverRepository driverRepository;
     private final CompetitorRepository competitorRepository;
@@ -57,8 +60,9 @@ public class PracticeDriverService {
     public PracticeDriverDto link(Actor actor, Long sessionId, LinkRequest request) {
         PracticeSession session = sessionRepository.getOrThrow(sessionId);
         String transponder = request.transponderNumber() == null ? "" : request.transponderNumber().trim();
-        if (transponder.isEmpty()) {
-            throw new IllegalArgumentException("A transponder number is needed");
+        if (transponder.isEmpty() || transponder.length() > MAX_TRANSPONDER_LENGTH) {
+            throw new IllegalArgumentException(
+                    "A transponder number is needed, at most " + MAX_TRANSPONDER_LENGTH + " characters");
         }
         Competitor competitor = request.competitorId() != null
                 ? competitorRepository.getOrThrow(request.competitorId())
@@ -102,6 +106,9 @@ public class PracticeDriverService {
         String name = request.newName() == null ? "" : request.newName().trim();
         if (name.isEmpty()) {
             throw new IllegalArgumentException("Choose a competitor or give a name for a new one");
+        }
+        if (name.length() > MAX_NAME_LENGTH) {
+            throw new IllegalArgumentException("A name can be at most " + MAX_NAME_LENGTH + " characters");
         }
         List<Competitor> possible = competitorService.findPossibleDuplicates(name);
         if (!possible.isEmpty() && !Boolean.TRUE.equals(request.confirmNewCompetitor())) {

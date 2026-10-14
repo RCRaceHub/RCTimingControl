@@ -48,6 +48,17 @@ class PracticeRunsTest {
     }
 
     @Test
+    void afterARestartTheFirstPassingStartsTheRunAfterTheLastOneSaved() {
+        LivePracticeState state = new LivePracticeState(3, 120);
+
+        LivePracticeState.Passing first = state.notePassing("T1", 100 * SECOND, () -> 3);
+
+        assertThat(first.lapTimeMs()).isNull();
+        assertThat(first.runNumber()).isEqualTo(4);
+        assertThat(state.notePassing("T1", 130 * SECOND, () -> 3).runNumber()).isEqualTo(4);
+    }
+
+    @Test
     void theBestConsecutiveLapsAreNeverTakenAcrossARunBoundary() {
         LivePracticeState state = new LivePracticeState(2, 120);
         // Two runs of two laps each: 2 laps of 30s, then 2 laps of 40s. A window across the boundary would be 70s.

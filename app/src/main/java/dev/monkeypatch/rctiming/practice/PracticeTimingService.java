@@ -120,12 +120,16 @@ public class PracticeTimingService {
         String transponderNumber = event.transponderNumber();
         Instant crossingTime = Instant.now();
 
-        LivePracticeState.Passing passing = state.notePassing(transponderNumber, event.rtcTimeMicros());
+        LivePracticeState.Passing passing = state.notePassing(transponderNumber, event.rtcTimeMicros(),
+                () -> lapRepository.highestRunNumber(session.getId(), transponderNumber));
         Long lapTimeMs = passing.lapTimeMs();
 
         // Resolve transponder → competitor: named in this session first, then through the session's event entries
         // (L10, #18). A transponder neither names stays unknown.
-        String racerName = resolveCompetitorName(session, transponderNumber);
+        String racerName = state.knownName(transponderNumber);
+        if (racerName == null) {
+            racerName = resolveCompetitorName(session, transponderNumber);
+        }
 
         // Record in in-memory state
         state.recordLap(transponderNumber, null, racerName, lapTimeMs, passing.runNumber());
