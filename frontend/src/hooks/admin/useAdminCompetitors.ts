@@ -60,3 +60,29 @@ export function useMergeCompetitors() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.all }),
   });
 }
+
+/** Downloads everything held about a competitor and saves it through the browser (#263). */
+export function useExportCompetitorData() {
+  return useMutation({
+    mutationFn: (id: number) => adminApi.competitors.exportPersonalData(id),
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
+  });
+}
+
+/** Anonymises a competitor, then refreshes every admin list that showed their name (#263). */
+export function useAnonymiseCompetitor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => adminApi.competitors.anonymise(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.all }),
+  });
+}

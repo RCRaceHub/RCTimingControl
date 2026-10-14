@@ -24,9 +24,22 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 1. `refresh_tokens` rows are never purged.
 2. ~~Failed sign-in emails are kept for as long as the audit log is, with no limit.~~ Fixed in #264.
 3. The audit log has no retention limit.
-4. No way to anonymise or export one competitor.
+4. ~~No way to anonymise or export one competitor.~~ Fixed in #263; see below.
 5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.
 6. ~~Log file contents have not been checked for personal data.~~ Checked, and guarded by `LogContentTest` (#266).
+
+## Export and anonymise one competitor (#263)
+
+An admin can, from the Competitors screen, download everything held about one competitor as JSON, and anonymise them. They are two separate actions: a person may ask for a copy, for erasure, or both, and an anonymise cannot be undone, so download first if a copy was asked for. Both are admin only and both are audited: `COMPETITOR_EXPORTED` and `COMPETITOR_ANONYMISED`, with who did it and for which competitor id, and no name or other removed detail.
+
+**Anonymise removes** the display name (it becomes `Anonymised competitor #id`), BRCA number, RaceHub driver ID and link, home club and spoken name; the name inside every stored result snapshot and every queued or sent RaceHub export in RCTC's own database; and the details of the competitor's change history, their entries' history and the audit rows about them (the rows stay, reading "Details removed", so the log still shows something happened). Laps, results, positions and championship points stay, shown under the new name.
+
+**It does not remove:**
+- Free text an official typed: incident reports, penalty reasons, marshal notes. An admin should read these and edit them if they name the person.
+- A held RaceHub document waiting to be applied.
+- Copies already sent to RaceHub (their results export) or to the live feed relay, and older backups. Those are other organisations' copies, or older snapshots, and have to be dealt with there.
+
+Because the RaceHub ID is dropped, importing the same booking again makes a new competitor. Anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
 
 ## Proposed child tickets
 

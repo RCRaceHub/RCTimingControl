@@ -448,6 +448,17 @@ export interface CompetitorMergeResult {
   exclusionsMoved: number;
 }
 
+/** Counts of what anonymising a competitor changed (#263). */
+export interface CompetitorAnonymiseResult {
+  competitorId: number;
+  entries: number;
+  resultSnapshots: number;
+  exportPayloads: number;
+  competitorHistoryRows: number;
+  entryHistoryRows: number;
+  auditRows: number;
+}
+
 export interface ClubProfileDto {
   id: number;
   name: string;
@@ -791,6 +802,13 @@ export const adminApi = {
     /** Moves the duplicate's entries onto the competitor to keep and deletes the duplicate. */
     merge: (keepId: number, duplicateId: number) =>
       api.post<CompetitorMergeResult>('/api/v1/admin/competitors/merge', { keepId, duplicateId }).then(r => r.data),
+    /** Everything held about one competitor, as a JSON file to save. Admin only; audited (#263). */
+    exportPersonalData: (id: number) =>
+      api.get<Blob>(`/api/v1/admin/competitors/${id}/personal-data`, { responseType: 'blob' })
+        .then(r => ({ blob: r.data, filename: `competitor-${id}.json` })),
+    /** Removes the name and identifiers, keeping results and standings. Cannot be undone (#263). */
+    anonymise: (id: number) =>
+      api.post<CompetitorAnonymiseResult>(`/api/v1/admin/competitors/${id}/anonymise`).then(r => r.data),
     /** The text spoken in the club's Piper voice, as audio. Rejects with a 503 when Piper is down. */
     previewSpeech: (text: string) =>
       api.post<Blob>('/api/v1/admin/competitors/spoken-name/preview', { text }, { responseType: 'blob' })
