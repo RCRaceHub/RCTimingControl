@@ -7,6 +7,7 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PRACTICE_LAPS;
@@ -31,7 +32,7 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
     }
 
     /** The laps of the sessions, in the order they were crossed. */
-    public List<PracticeLap> findByPracticeSessionIds(java.util.Collection<Long> practiceSessionIds) {
+    public List<PracticeLap> findByPracticeSessionIds(Collection<Long> practiceSessionIds) {
         return practiceSessionIds.isEmpty() ? List.of()
                 : findWhere(PRACTICE_LAPS.PRACTICE_SESSION_ID.in(practiceSessionIds),
                         PRACTICE_LAPS.CROSSING_TIME.asc(), PRACTICE_LAPS.ID.asc());

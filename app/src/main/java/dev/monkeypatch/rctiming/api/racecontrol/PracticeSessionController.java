@@ -45,10 +45,10 @@ public class PracticeSessionController {
                                      PracticeTimingService timingService,
                                      PracticeDriverService driverService,
                                      PracticeDayService dayService) {
-        this.dayService = dayService;
         this.sessionService = sessionService;
         this.timingService = timingService;
         this.driverService = driverService;
+        this.dayService = dayService;
     }
 
     /** Create a new practice session in IDLE state. */
@@ -71,7 +71,7 @@ public class PracticeSessionController {
     public PracticeDayDto day(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Integer bestLapN) {
-        return dayService.day(date == null ? LocalDate.now() : date, bestLapN);
+        return dayService.day(date, bestLapN);
     }
 
     /** Get a practice session by ID. */

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -28,12 +28,15 @@ function today(): string {
 /** A driver's practice added up across every session of a day (#151). */
 export function PracticeDayPage() {
   const [date, setDate] = useState(today);
-  const [n, setN] = useState(DEFAULT_N);
+  const [nText, setNText] = useState(String(DEFAULT_N));
+  const parsed = Number(nText);
+  const n = Number.isInteger(parsed) && parsed >= 1 ? parsed : null;
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: raceControlQueryKeys.practice.day(date, n),
-    queryFn: () => getPracticeDay(date, n),
-    enabled: date !== '' && n >= 1,
+    queryKey: raceControlQueryKeys.practice.day(date, n ?? 0),
+    queryFn: () => getPracticeDay(date, n ?? undefined),
+    enabled: date !== '' && n !== null,
+    placeholderData: keepPreviousData,
   });
 
   return (
@@ -61,14 +64,20 @@ export function PracticeDayPage() {
           <Input
             type="number"
             min={1}
-            value={n}
-            onChange={(e) => setN(Number(e.target.value))}
+            step={1}
+            value={nText}
+            onChange={(e) => setNText(e.target.value)}
             className="w-20"
           />
         </label>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {n === null && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Enter a whole number of laps to average, 1 or more.
+          </p>
+        )}
         {isLoading && (
           <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

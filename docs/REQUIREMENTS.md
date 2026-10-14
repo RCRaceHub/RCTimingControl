@@ -150,7 +150,7 @@
 - [x] **PRACTICE-03**: Practice and a live race share the one decoder, so they never run together: a practice session can't be started while a race is running, and a race starting or resuming stops any running practice session (recorded in the audit log as the system)
 - [x] **PRACTICE-04**: Practice laps are grouped into runs: a transponder quiet for longer than the session's pause (default 3 minutes, set when the session is created) starts a new run, and the pause is never counted as a lap. Every lap is kept; the best-N average (N set per session, default 5) is taken within one run (#151)
 - [x] **PRACTICE-05**: An official can name a transponder in a practice session as an existing competitor, or as a new walk-in competitor made on the spot. The name is saved with the session, works with no event, and also names the transponder's earlier laps; the new competitor can be matched to an entry later (#151)
-- [x] **PRACTICE-06**: A day view adds each driver's practice up across every session that started on a date: sessions, runs, laps, best lap and the best-N average taken within one run. A driver is the competitor the transponder was named as, else the bare transponder (#151)
+- [x] **PRACTICE-06**: A day view adds each driver's practice up across every session that started on a date in the club's time zone: sessions, runs, laps, best lap and the best-N average taken within one run. A driver is the competitor the transponder was named as, else the bare transponder (#151)
 
 ### Championship & Scoring
 

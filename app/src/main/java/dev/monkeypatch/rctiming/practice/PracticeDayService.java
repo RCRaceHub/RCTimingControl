@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.domain.club.ClubProfile;
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
@@ -38,28 +40,37 @@ public class PracticeDayService {
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final PracticeSessionService sessionService;
+    private final ClubProfileService clubProfileService;
 
     public PracticeDayService(PracticeSessionRepository sessionRepository,
                               PracticeLapRepository lapRepository,
                               PracticeDriverRepository driverRepository,
                               EntryRepository entryRepository,
                               CompetitorRepository competitorRepository,
-                              PracticeSessionService sessionService) {
+                              PracticeSessionService sessionService,
+                              ClubProfileService clubProfileService) {
         this.sessionRepository = sessionRepository;
         this.lapRepository = lapRepository;
         this.driverRepository = driverRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.sessionService = sessionService;
+        this.clubProfileService = clubProfileService;
     }
 
-    /** The practice of the day (the club's local day), averaging {@code bestLapN} laps; 5 when not given. */
-    public PracticeDayDto day(LocalDate date, Integer bestLapN) {
+    /**
+     * The practice of the day in the club's time zone (today when no date is given), averaging {@code bestLapN} laps;
+     * 5 when not given. Practice laps recorded before racers lost their logins carry only a user id and show as
+     * unknown here.
+     */
+    public PracticeDayDto day(LocalDate requested, Integer bestLapN) {
+        ZoneId zone = clubProfileService.getProfile().map(ClubProfile::getTimezone).map(ZoneId::of)
+                .orElse(ZoneId.systemDefault());
+        LocalDate date = requested == null ? LocalDate.now(zone) : requested;
         int n = bestLapN == null ? 5 : bestLapN;
         if (n < 1) {
             throw new IllegalArgumentException("The number of laps to average must be at least 1");
         }
-        ZoneId zone = ZoneId.systemDefault();
         Instant from = date.atStartOfDay(zone).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(zone).toInstant();
         List<PracticeSession> sessions = sessionRepository.findStartedBetween(from, to);

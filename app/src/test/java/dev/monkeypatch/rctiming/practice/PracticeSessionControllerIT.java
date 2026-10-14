@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.api.auth.LoginRequest;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import dev.monkeypatch.rctiming.practice.dto.PracticeDayDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,9 +114,9 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
         restTemplate.exchange("/api/v1/practice-sessions/" + id + "/stop", HttpMethod.POST,
                 new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
 
-        ResponseEntity<dev.monkeypatch.rctiming.practice.dto.PracticeDayDto> response = restTemplate.exchange(
+        ResponseEntity<PracticeDayDto> response = restTemplate.exchange(
                 "/api/v1/practice-sessions/day", HttpMethod.GET, new HttpEntity<>(rdHeaders()),
-                dev.monkeypatch.rctiming.practice.dto.PracticeDayDto.class);
+                PracticeDayDto.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().bestLapN()).isEqualTo(5);
