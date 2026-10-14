@@ -3,6 +3,8 @@ spring:
     enabled: true
 
 rctiming:
+  retention:
+    run-on-startup: false
   database:
     migration-locations: db/migration, db/testdata
 

@@ -9,7 +9,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 | Data | Whose | Where | Notes |
 |------|-------|-------|-------|
 | Name, email, password hash, roles | Officials | `users`, `user_roles` | Officials are the only people with accounts. |
-| Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. **Nothing deletes expired or revoked rows today.** |
+| Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. A nightly clean-up deletes tokens once they have expired (#262), and also runs when the app starts. |
 | Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. The CSV `Junior` column is read by the parser but not stored. |
 | Transponder numbers | Competitors, per event | `entries`, practice laps | A number can identify a person across events. |
 | Laps, positions, results, penalties, incident reports, marshal adjustments | Competitors | race and result tables | Incident reports and penalties describe behaviour. |
@@ -21,9 +21,9 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 
 ## Gaps found so far
 
-1. `refresh_tokens` rows are never purged.
+1. ~~`refresh_tokens` rows are never purged.~~ Fixed in #262.
 2. ~~Failed sign-in emails are kept for as long as the audit log is, with no limit.~~ Fixed in #264.
-3. The audit log has no retention limit.
+3. ~~The audit log has no retention limit.~~ Fixed in #262: a nightly clean-up deletes refused sign-ins after 90 days and, unless set to 0, other audit rows after two years. The entry, official and competitor audit tables are not covered yet.
 4. ~~No way to anonymise or export one competitor.~~ Fixed in #263; see below.
 5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.
 6. ~~Log file contents have not been checked for personal data.~~ Checked, and guarded by `LogContentTest` (#266).

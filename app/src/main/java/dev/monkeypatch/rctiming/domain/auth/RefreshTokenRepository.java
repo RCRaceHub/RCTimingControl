@@ -7,6 +7,7 @@ import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,6 +67,15 @@ public class RefreshTokenRepository extends JooqRepository<RefreshToken, Refresh
                 .set(REFRESH_TOKENS.REVOKED, true)
                 .where(REFRESH_TOKENS.FAMILY_ID.eq(token.getFamilyId()).and(REFRESH_TOKENS.REVOKED.isFalse()))
                 .execute();
+    }
+
+    /**
+     * Deletes the tokens past their expiry (#262), revoked or not. A revoked token stays until it expires, so a replay
+     * of a rotated token is still tied to its official in the audit log. Returns how many went.
+     */
+    @Transactional
+    public int deleteExpired(Instant now) {
+        return dsl.deleteFrom(REFRESH_TOKENS).where(REFRESH_TOKENS.EXPIRES_AT.lt(now)).execute();
     }
 
     /** Revokes every refresh token the official still holds, signing them out of every browser. */
