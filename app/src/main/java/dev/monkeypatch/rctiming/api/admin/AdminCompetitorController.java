@@ -5,7 +5,9 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorAnonymiseService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorNameVisibilityService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
+import dev.monkeypatch.rctiming.domain.competitor.NameVisibility;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorChangeDto;
@@ -45,6 +47,7 @@ public class AdminCompetitorController {
     private final CompetitorQueryService competitorQueryService;
     private final CompetitorService competitorService;
     private final CompetitorMergeService mergeService;
+    private final CompetitorNameVisibilityService nameVisibilityService;
     private final CompetitorAnonymiseService anonymiseService;
     private final CompetitorDataExportService exportService;
     private final ClubProfileService clubProfileService;
@@ -53,6 +56,7 @@ public class AdminCompetitorController {
     public AdminCompetitorController(CompetitorQueryService competitorQueryService,
                                      CompetitorService competitorService,
                                      CompetitorMergeService mergeService,
+                                     CompetitorNameVisibilityService nameVisibilityService,
                                      CompetitorAnonymiseService anonymiseService,
                                      CompetitorDataExportService exportService,
                                      ClubProfileService clubProfileService,
@@ -60,6 +64,7 @@ public class AdminCompetitorController {
         this.competitorQueryService = competitorQueryService;
         this.competitorService = competitorService;
         this.mergeService = mergeService;
+        this.nameVisibilityService = nameVisibilityService;
         this.anonymiseService = anonymiseService;
         this.exportService = exportService;
         this.clubProfileService = clubProfileService;
@@ -148,7 +153,24 @@ public class AdminCompetitorController {
                                               @RequestBody SpokenNameRequest body) {
         Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id(auth));
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
-                c.getSpokenName(), c.speechName());
+                c.getSpokenName(), c.speechName(), c.getNameVisibility().name());
+    }
+
+    /** Body for choosing how a competitor's name is shown on public screens. */
+    public record NameVisibilityRequest(@NotNull NameVisibility nameVisibility) {}
+
+    /**
+     * Shows the competitor's full name, initials only, or no name on every public screen and in the live feed
+     * (#265). Race directors and admins; officials' own screens keep the full name.
+     */
+    @Audited("audit_log")
+    @PutMapping("/{id}/name-visibility")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    public CompetitorSummaryDto setNameVisibility(Authentication auth, @PathVariable Long id,
+                                                  @Valid @RequestBody NameVisibilityRequest body) {
+        Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id(auth));
+        return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
+                c.getSpokenName(), c.speechName(), c.getNameVisibility().name());
     }
 
     /**

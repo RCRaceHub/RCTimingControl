@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
@@ -37,6 +38,7 @@ import org.jooq.TableField;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -106,6 +108,11 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
      * The column <code>competitors.spoken_name</code>.
      */
     public final TableField<CompetitorsRecord, String> SPOKEN_NAME = createField(DSL.name("spoken_name"), SQLDataType.VARCHAR(255), this, "");
+
+    /**
+     * The column <code>competitors.name_visibility</code>.
+     */
+    public final TableField<CompetitorsRecord, String> NAME_VISIBILITY = createField(DSL.name("name_visibility"), SQLDataType.VARCHAR(10).nullable(false).defaultValue(DSL.field(DSL.raw("'SHOW'"), SQLDataType.VARCHAR)), this, "");
 
     private Competitors(Name alias, Table<CompetitorsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -238,6 +245,13 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
             _practiceDrivers = new PracticeDriversPath(this, null, Keys.PRACTICE_DRIVERS__PRACTICE_DRIVERS_COMPETITOR_FKEY.getInverseKey());
 
         return _practiceDrivers;
+    }
+
+    @Override
+    public List<Check<CompetitorsRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name("competitors_name_visibility_check"), "name_visibility in ('SHOW', 'INITIALS', 'HIDE')", true)
+        );
     }
 
     @Override

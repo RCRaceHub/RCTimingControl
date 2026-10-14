@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.pub;
 
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.championship.StandingsRowDto;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,12 +24,19 @@ public class PublicChampionshipController {
 
     private final ChampionshipStandingsQuery query;
 
-    public PublicChampionshipController(ChampionshipStandingsQuery query) {
+    private final PublicNames publicNames;
+
+    public PublicChampionshipController(ChampionshipStandingsQuery query, PublicNames publicNames) {
         this.query = query;
+        this.publicNames = publicNames;
     }
 
     @GetMapping("/{id}")
     public List<StandingsRowDto> getStandings(@PathVariable Long id) {
-        return query.computeStandings(id);
+        PublicNames.Snapshot names = publicNames.snapshot();
+        return query.computeStandings(id).stream()
+                .map(r -> new StandingsRowDto(r.driverId(), names.of(r.driverId(), r.displayName(), null),
+                        r.racingClassId(), r.totalPoints(), r.rounds()))
+                .toList();
     }
 }
