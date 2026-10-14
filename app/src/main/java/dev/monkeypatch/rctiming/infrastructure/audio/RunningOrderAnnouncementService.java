@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -93,11 +94,13 @@ public class RunningOrderAnnouncementService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        // After the commit, so a command that rolls back does not start or stop announcements for a race whose
+        // state did not change
         if (event.getNewStatus() == RaceStatus.RUNNING) {
-            onRaceStarted(event.getRaceId());
+            AfterCommit.run(() -> onRaceStarted(event.getRaceId()));
         } else if (event.getNewStatus() == RaceStatus.STOPPED
                 || event.getNewStatus() == RaceStatus.FINISHED) {
-            onRaceStopped(event.getRaceId());
+            AfterCommit.run(() -> onRaceStopped(event.getRaceId()));
         }
     }
 

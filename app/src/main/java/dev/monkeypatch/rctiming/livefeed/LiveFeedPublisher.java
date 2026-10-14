@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
@@ -146,8 +147,13 @@ public class LiveFeedPublisher implements SmartLifecycle {
             case RUNNING, STOPPED -> races.computeIfAbsent(raceId, id -> new Followed());
             // Keep the final running order: finishing stores the result and lets the live state go straight
             // after this event, before the feed's next pass
-            case FINISHED -> races.computeIfAbsent(raceId, id -> new Followed())
-                    .freeze(lapTimingService.peek(raceId).map(LiveRaceState::calculatePositions).orElse(List.of()));
+            case FINISHED -> {
+                // The order is read now, while the live state is still there, but only frozen once the finish
+                // commits: a finish that rolls back leaves the race running and the feed following it
+                List<LiveTimingRowDto> finalRows =
+                        lapTimingService.peek(raceId).map(LiveRaceState::calculatePositions).orElse(List.of());
+                AfterCommit.run(() -> races.computeIfAbsent(raceId, id -> new Followed()).freeze(finalRows));
+            }
             default -> { }
         }
     }
