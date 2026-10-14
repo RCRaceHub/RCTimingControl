@@ -70,7 +70,7 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().name()).isEqualTo("Morning Practice");
         assertThat(response.getBody().status().name()).isEqualTo("IDLE");
-        assertThat(response.getBody().bestLapN()).isEqualTo(3);
+        assertThat(response.getBody().bestLapN()).isEqualTo(5);
         assertThat(response.getBody().id()).isNotNull();
     }
 

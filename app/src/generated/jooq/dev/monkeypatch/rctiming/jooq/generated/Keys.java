@@ -26,6 +26,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
@@ -64,6 +65,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.MarshalAdjustments
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.MarshalPenaltiesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.OfficialAuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PenaltiesRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeDriversRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeLapsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeSessionsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceEntriesRecord;
@@ -123,6 +125,7 @@ public class Keys {
     public static final UniqueKey<MarshalPenaltiesRecord> MARSHAL_PENALTIES__PK_MARSHAL_PENALTIES = Internal.createUniqueKey(MarshalPenalties.MARSHAL_PENALTIES, DSL.name("pk_marshal_penalties"), new TableField[] { MarshalPenalties.MARSHAL_PENALTIES.ID }, true);
     public static final UniqueKey<OfficialAuditLogRecord> OFFICIAL_AUDIT_LOG__PK_OFFICIAL_AUDIT_LOG = Internal.createUniqueKey(OfficialAuditLog.OFFICIAL_AUDIT_LOG, DSL.name("pk_official_audit_log"), new TableField[] { OfficialAuditLog.OFFICIAL_AUDIT_LOG.ID }, true);
     public static final UniqueKey<PenaltiesRecord> PENALTIES__PK_PENALTIES = Internal.createUniqueKey(Penalties.PENALTIES, DSL.name("pk_penalties"), new TableField[] { Penalties.PENALTIES.ID }, true);
+    public static final UniqueKey<PracticeDriversRecord> PRACTICE_DRIVERS__PK_PRACTICE_DRIVERS = Internal.createUniqueKey(PracticeDrivers.PRACTICE_DRIVERS, DSL.name("pk_practice_drivers"), new TableField[] { PracticeDrivers.PRACTICE_DRIVERS.ID }, true);
     public static final UniqueKey<PracticeLapsRecord> PRACTICE_LAPS__PK_PRACTICE_LAPS = Internal.createUniqueKey(PracticeLaps.PRACTICE_LAPS, DSL.name("pk_practice_laps"), new TableField[] { PracticeLaps.PRACTICE_LAPS.ID }, true);
     public static final UniqueKey<PracticeSessionsRecord> PRACTICE_SESSIONS__PK_PRACTICE_SESSIONS = Internal.createUniqueKey(PracticeSessions.PRACTICE_SESSIONS, DSL.name("pk_practice_sessions"), new TableField[] { PracticeSessions.PRACTICE_SESSIONS.ID }, true);
     public static final UniqueKey<RaceEntriesRecord> RACE_ENTRIES__PK_RACE_ENTRIES = Internal.createUniqueKey(RaceEntries.RACE_ENTRIES, DSL.name("pk_race_entries"), new TableField[] { RaceEntries.RACE_ENTRIES.ID }, true);
@@ -184,6 +187,8 @@ public class Keys {
     public static final ForeignKey<OfficialAuditLogRecord, UsersRecord> OFFICIAL_AUDIT_LOG__OFFICIAL_AUDIT_LOG_OFFICIAL_USER_ID_FKEY = Internal.createForeignKey(OfficialAuditLog.OFFICIAL_AUDIT_LOG, DSL.name("official_audit_log_official_user_id_fkey"), new TableField[] { OfficialAuditLog.OFFICIAL_AUDIT_LOG.OFFICIAL_USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<PenaltiesRecord, EntriesRecord> PENALTIES__PENALTIES_ENTRY_ID_FKEY = Internal.createForeignKey(Penalties.PENALTIES, DSL.name("penalties_entry_id_fkey"), new TableField[] { Penalties.PENALTIES.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true);
     public static final ForeignKey<PenaltiesRecord, RacesRecord> PENALTIES__PENALTIES_RACE_ID_FKEY = Internal.createForeignKey(Penalties.PENALTIES, DSL.name("penalties_race_id_fkey"), new TableField[] { Penalties.PENALTIES.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true);
+    public static final ForeignKey<PracticeDriversRecord, CompetitorsRecord> PRACTICE_DRIVERS__PRACTICE_DRIVERS_COMPETITOR_FKEY = Internal.createForeignKey(PracticeDrivers.PRACTICE_DRIVERS, DSL.name("practice_drivers_competitor_fkey"), new TableField[] { PracticeDrivers.PRACTICE_DRIVERS.COMPETITOR_ID }, Keys.COMPETITORS__PK_COMPETITORS, new TableField[] { Competitors.COMPETITORS.ID }, true);
+    public static final ForeignKey<PracticeDriversRecord, PracticeSessionsRecord> PRACTICE_DRIVERS__PRACTICE_DRIVERS_SESSION_FKEY = Internal.createForeignKey(PracticeDrivers.PRACTICE_DRIVERS, DSL.name("practice_drivers_session_fkey"), new TableField[] { PracticeDrivers.PRACTICE_DRIVERS.PRACTICE_SESSION_ID }, Keys.PRACTICE_SESSIONS__PK_PRACTICE_SESSIONS, new TableField[] { PracticeSessions.PRACTICE_SESSIONS.ID }, true);
     public static final ForeignKey<PracticeLapsRecord, PracticeSessionsRecord> PRACTICE_LAPS__PRACTICE_LAPS_PRACTICE_SESSION_ID_FKEY = Internal.createForeignKey(PracticeLaps.PRACTICE_LAPS, DSL.name("practice_laps_practice_session_id_fkey"), new TableField[] { PracticeLaps.PRACTICE_LAPS.PRACTICE_SESSION_ID }, Keys.PRACTICE_SESSIONS__PK_PRACTICE_SESSIONS, new TableField[] { PracticeSessions.PRACTICE_SESSIONS.ID }, true);
     public static final ForeignKey<PracticeLapsRecord, UsersRecord> PRACTICE_LAPS__PRACTICE_LAPS_USER_ID_FKEY = Internal.createForeignKey(PracticeLaps.PRACTICE_LAPS, DSL.name("practice_laps_user_id_fkey"), new TableField[] { PracticeLaps.PRACTICE_LAPS.USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<PracticeSessionsRecord, UsersRecord> PRACTICE_SESSIONS__PRACTICE_SESSIONS_CREATED_BY_USER_ID_FKEY = Internal.createForeignKey(PracticeSessions.PRACTICE_SESSIONS, DSL.name("practice_sessions_created_by_user_id_fkey"), new TableField[] { PracticeSessions.PRACTICE_SESSIONS.CREATED_BY_USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true);

@@ -31,6 +31,7 @@ const idleSession = {
   eventName: null,
   status: 'IDLE' as const,
   bestLapN: 3,
+  pauseSeconds: 180,
   startedAt: null,
   stoppedAt: null,
 };
@@ -50,6 +51,7 @@ const timingRow = {
   bestLapMs: 35000,
   bestConsecutiveNMs: 108000,
   lastLapMs: 36000,
+  runs: 1,
   isUnknown: false,
 };
 

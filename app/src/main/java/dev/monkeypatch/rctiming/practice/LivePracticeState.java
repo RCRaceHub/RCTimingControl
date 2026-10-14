@@ -19,31 +19,62 @@ import java.util.function.IntSupplier;
  * time and the number of laps already saved, so a passing needs no query to work out its lap time or number.
  *
  * Sorted by: laps desc, then best lap asc (consistent with live race display).
- * Best-N consecutive laps uses O(n) sliding window algorithm.
+ * Best-N consecutive laps uses O(n) sliding window algorithm, and only within one run (#151): a run ends when a
+ * transponder is quiet for longer than the session's pause, and the pause is never counted as a lap.
  */
 public class LivePracticeState {
 
+    /** How long a transponder may be quiet before its next passing starts a new run, unless the session says. */
+    static final long DEFAULT_PAUSE_SECONDS = 180;
+
+    /** A passing's lap time, null when it only starts a run, and the run it belongs to. */
+    public record Passing(Long lapTimeMs, int runNumber) {}
+
     private final int bestLapN;
+    private final long pauseMicros;
+    private final Map<String, Integer> runNumbers = new ConcurrentHashMap<>();
     private final Map<String, ParticipantState> participants = new ConcurrentHashMap<>();
     private final Map<String, Long> lastRtcMicros = new ConcurrentHashMap<>();
     /** The highest lap number given to each transponder so far. */
     private final Map<String, Integer> savedLaps = new ConcurrentHashMap<>();
 
     public LivePracticeState(int bestLapN) {
+        this(bestLapN, DEFAULT_PAUSE_SECONDS);
+    }
+
+    public LivePracticeState(int bestLapN, long pauseSeconds) {
         this.bestLapN = bestLapN;
+        this.pauseMicros = pauseSeconds * 1_000_000L;
     }
 
     /**
-     * Notes a passing and returns the lap time since the transponder's previous one, in milliseconds.
-     * Null for its first passing, and for one that is not later than the last (a lap needs a positive time).
+     * Notes a passing and returns the lap time since the transponder's previous one, in milliseconds, and its run.
+     * The lap time is null for its first passing, for one that is not later than the last (a lap needs a positive
+     * time), and for the first passing after a pause longer than the session's: that one starts the next run.
      */
-    public Long lapTimeSincePrevious(String transponderNumber, long rtcTimeMicros) {
+    public Passing notePassing(String transponderNumber, long rtcTimeMicros) {
+        return notePassing(transponderNumber, rtcTimeMicros, () -> 0);
+    }
+
+    /**
+     * As {@link #notePassing(String, long)}. {@code highestSavedRun} is asked once per transponder, for its first
+     * passing in this state, so after a restart in the middle of a session the first passing starts the run after
+     * the last one saved: how long the transponder was quiet is not known, so it is not joined to that run.
+     */
+    public Passing notePassing(String transponderNumber, long rtcTimeMicros, IntSupplier highestSavedRun) {
         Long previous = lastRtcMicros.put(transponderNumber, rtcTimeMicros);
         if (previous == null) {
-            return null;
+            int run = highestSavedRun.getAsInt() + 1;
+            runNumbers.put(transponderNumber, run);
+            return new Passing(null, run);
         }
-        long deltaMs = (rtcTimeMicros - previous) / 1000L;
-        return deltaMs > 0 ? deltaMs : null;
+        long deltaMicros = rtcTimeMicros - previous;
+        if (deltaMicros > pauseMicros) {
+            return new Passing(null, runNumbers.merge(transponderNumber, 1, Integer::sum));
+        }
+        int run = runNumbers.getOrDefault(transponderNumber, 1);
+        long deltaMs = deltaMicros / 1000L;
+        return new Passing(deltaMs > 0 ? deltaMs : null, run);
     }
 
     /**
@@ -61,6 +92,11 @@ public class LivePracticeState {
      * If lapTimeMs is null (first crossing), the participant is noted with no lap.
      */
     public void recordLap(String transponderNumber, Long userId, String racerName, Long lapTimeMs) {
+        recordLap(transponderNumber, userId, racerName, lapTimeMs, 1);
+    }
+
+    /** As {@link #recordLap(String, Long, String, Long)}, for a lap in the given run. */
+    public void recordLap(String transponderNumber, Long userId, String racerName, Long lapTimeMs, int runNumber) {
         participants.compute(transponderNumber, (k, state) -> {
             if (state == null) {
                 state = new ParticipantState(transponderNumber, userId, racerName);
@@ -70,9 +106,15 @@ public class LivePracticeState {
                 state.userId = userId;
                 state.racerName = racerName;
             }
-            state.addLap(lapTimeMs);
+            state.addLap(lapTimeMs, runNumber);
             return state;
         });
+    }
+
+    /** The name the transponder already shows, or null when it has none yet. */
+    public String knownName(String transponderNumber) {
+        ParticipantState state = participants.get(transponderNumber);
+        return state == null ? null : state.racerName;
     }
 
     /**
@@ -117,6 +159,7 @@ public class LivePracticeState {
                     p.getBestLap(),
                     p.getBestConsecutiveN(bestLapN),
                     p.getLastLap(),
+                    p.runs,
                     p.racerName == null
             ));
         }
@@ -142,6 +185,10 @@ public class LivePracticeState {
         String racerName;
         /** Only lap times with non-null lapTimeMs (real completed laps). */
         final List<Long> lapTimes = new ArrayList<>();
+        /** The run of each lap in {@code lapTimes}, in step with it. */
+        final List<Integer> lapRuns = new ArrayList<>();
+        /** The highest run seen, which counts a run whose first passing has no lap yet. */
+        int runs = 1;
 
         ParticipantState(String transponderNumber, Long userId, String racerName) {
             this.transponderNumber = transponderNumber;
@@ -149,9 +196,11 @@ public class LivePracticeState {
             this.racerName = racerName;
         }
 
-        void addLap(Long lapTimeMs) {
+        void addLap(Long lapTimeMs, int runNumber) {
+            runs = Math.max(runs, runNumber);
             if (lapTimeMs != null && lapTimeMs > 0) {
                 lapTimes.add(lapTimeMs);
+                lapRuns.add(runNumber);
             }
         }
 
@@ -168,26 +217,47 @@ public class LivePracticeState {
         }
 
         /**
-         * Sliding window: find minimum sum of N consecutive lap times.
-         * O(n) algorithm: initialise first window, slide right.
-         * Returns null if fewer than N completed laps.
+         * Sliding window: find minimum sum of N consecutive lap times, within one run.
+         * O(n) algorithm per run: initialise first window, slide right.
+         * Returns null if no run has N completed laps.
          */
         Long getBestConsecutiveN(int n) {
-            if (lapTimes.size() < n) {
+            Long best = null;
+            int start = 0;
+            while (start < lapTimes.size()) {
+                int end = start;
+                while (end < lapTimes.size() && lapRuns.get(end).equals(lapRuns.get(start))) {
+                    end++;
+                }
+                best = smaller(best, bestWindow(start, end, n));
+                start = end;
+            }
+            return best;
+        }
+
+        private Long bestWindow(int from, int to, int n) {
+            if (to - from < n) {
                 return null;
             }
             long windowSum = 0;
-            for (int i = 0; i < n; i++) {
+            for (int i = from; i < from + n; i++) {
                 windowSum += lapTimes.get(i);
             }
             long best = windowSum;
-            for (int i = n; i < lapTimes.size(); i++) {
+            for (int i = from + n; i < to; i++) {
                 windowSum += lapTimes.get(i) - lapTimes.get(i - n);
                 if (windowSum < best) {
                     best = windowSum;
                 }
             }
             return best;
+        }
+
+        private static Long smaller(Long a, Long b) {
+            if (a == null) {
+                return b;
+            }
+            return b == null ? a : Long.valueOf(Math.min(a, b));
         }
     }
 }

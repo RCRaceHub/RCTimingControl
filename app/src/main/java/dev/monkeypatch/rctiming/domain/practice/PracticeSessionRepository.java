@@ -44,6 +44,7 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
         s.setEventId(r.getEventId());
         s.setStatus(r.getStatus() == null ? null : PracticeStatus.valueOf(r.getStatus()));
         s.setBestLapN(r.getBestLapN());
+        s.setPauseSeconds(r.getPauseSeconds());
         s.setCreatedByUserId(r.getCreatedByUserId());
         s.setStartedAt(r.getStartedAt());
         s.setStoppedAt(r.getStoppedAt());
@@ -58,6 +59,7 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
         r.setEventId(s.getEventId());
         r.setStatus(s.getStatus() == null ? null : s.getStatus().name());
         r.setBestLapN(s.getBestLapN());
+        r.setPauseSeconds(s.getPauseSeconds());
         r.setCreatedByUserId(s.getCreatedByUserId());
         r.setStartedAt(s.getStartedAt());
         r.setStoppedAt(s.getStoppedAt());

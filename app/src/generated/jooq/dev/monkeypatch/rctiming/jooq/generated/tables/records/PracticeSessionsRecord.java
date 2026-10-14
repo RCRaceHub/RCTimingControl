@@ -160,6 +160,20 @@ public class PracticeSessionsRecord extends UpdatableRecordImpl<PracticeSessions
         return (Instant) get(9);
     }
 
+    /**
+     * Setter for <code>practice_sessions.pause_seconds</code>.
+     */
+    public void setPauseSeconds(Integer value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>practice_sessions.pause_seconds</code>.
+     */
+    public Integer getPauseSeconds() {
+        return (Integer) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -183,7 +197,7 @@ public class PracticeSessionsRecord extends UpdatableRecordImpl<PracticeSessions
     /**
      * Create a detached, initialised PracticeSessionsRecord
      */
-    public PracticeSessionsRecord(Long id, String name, Long eventId, String status, Integer bestLapN, Long createdByUserId, Instant startedAt, Instant stoppedAt, Instant createdAt, Instant updatedAt) {
+    public PracticeSessionsRecord(Long id, String name, Long eventId, String status, Integer bestLapN, Long createdByUserId, Instant startedAt, Instant stoppedAt, Instant createdAt, Instant updatedAt, Integer pauseSeconds) {
         super(PracticeSessions.PRACTICE_SESSIONS);
 
         setId(id);
@@ -196,6 +210,7 @@ public class PracticeSessionsRecord extends UpdatableRecordImpl<PracticeSessions
         setStoppedAt(stoppedAt);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setPauseSeconds(pauseSeconds);
         resetChangedOnNotNull();
     }
 }

@@ -132,6 +132,20 @@ public class PracticeLapsRecord extends UpdatableRecordImpl<PracticeLapsRecord> 
         return (Instant) get(7);
     }
 
+    /**
+     * Setter for <code>practice_laps.run_number</code>.
+     */
+    public void setRunNumber(Integer value) {
+        set(8, value);
+    }
+
+    /**
+     * Getter for <code>practice_laps.run_number</code>.
+     */
+    public Integer getRunNumber() {
+        return (Integer) get(8);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -155,7 +169,7 @@ public class PracticeLapsRecord extends UpdatableRecordImpl<PracticeLapsRecord> 
     /**
      * Create a detached, initialised PracticeLapsRecord
      */
-    public PracticeLapsRecord(Long id, Long practiceSessionId, String transponderNumber, Long userId, Integer lapNumber, Long lapTimeMs, Instant crossingTime, Instant createdAt) {
+    public PracticeLapsRecord(Long id, Long practiceSessionId, String transponderNumber, Long userId, Integer lapNumber, Long lapTimeMs, Instant crossingTime, Instant createdAt, Integer runNumber) {
         super(PracticeLaps.PRACTICE_LAPS);
 
         setId(id);
@@ -166,6 +180,7 @@ public class PracticeLapsRecord extends UpdatableRecordImpl<PracticeLapsRecord> 
         setLapTimeMs(lapTimeMs);
         setCrossingTime(crossingTime);
         setCreatedAt(createdAt);
+        setRunNumber(runNumber);
         resetChangedOnNotNull();
     }
 }

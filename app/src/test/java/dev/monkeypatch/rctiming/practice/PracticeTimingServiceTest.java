@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriver;
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeLap;
 import dev.monkeypatch.rctiming.domain.practice.PracticeLapRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSession;
@@ -44,6 +46,8 @@ class PracticeTimingServiceTest {
     @Mock
     PracticeLapRepository lapRepository;
     @Mock
+    PracticeDriverRepository driverRepository;
+    @Mock
     EntryRepository entryRepository;
     @Mock
     CompetitorRepository competitorRepository;
@@ -58,7 +62,7 @@ class PracticeTimingServiceTest {
     @BeforeEach
     void setUp() {
         service = new PracticeTimingService(
-                sessionRepository, lapRepository,
+                sessionRepository, lapRepository, driverRepository,
                 entryRepository, competitorRepository, userRepository, timingHub);
 
         runningSession = new PracticeSession();
@@ -115,6 +119,43 @@ class PracticeTimingServiceTest {
         // Looked up once for the transponder, not once per passing
         verify(lapRepository, times(1))
                 .findByPracticeSessionIdAndTransponderNumberOrderByLapNumberAsc(anyLong(), anyString());
+    }
+
+    @Test
+    void aLongPauseStartsANewRunAndIsNotSavedAsALap() {
+        runningSession.setPauseSeconds(120);
+        when(sessionRepository.findRunningSession()).thenReturn(Optional.of(runningSession));
+        when(lapRepository.findByPracticeSessionIdAndTransponderNumberOrderByLapNumberAsc(anyLong(), anyString()))
+                .thenReturn(Collections.emptyList());
+
+        service.startSession(runningSession);
+        service.onLapPassing(new LapPassingEvent(0L, "T1", 1_000_000_000L));
+        service.onLapPassing(new LapPassingEvent(0L, "T1", 1_030_000_000L)); // 30s: a lap of run 1
+        service.onLapPassing(new LapPassingEvent(0L, "T1", 1_600_000_000L)); // 570s pause: starts run 2, no lap
+        service.onLapPassing(new LapPassingEvent(0L, "T1", 1_630_000_000L)); // 30s: a lap of run 2
+
+        ArgumentCaptor<PracticeLap> saved = ArgumentCaptor.forClass(PracticeLap.class);
+        verify(lapRepository, times(2)).save(saved.capture());
+        assertThat(saved.getAllValues()).extracting(PracticeLap::getRunNumber).containsExactly(1, 2);
+        assertThat(saved.getAllValues()).extracting(PracticeLap::getLapTimeMs).containsExactly(30_000L, 30_000L);
+    }
+
+    @Test
+    void aTransponderNamedInTheSessionShowsThatName() {
+        PracticeDriver named = new PracticeDriver();
+        named.setCompetitorId(300L);
+        Competitor grace = new Competitor();
+        grace.setDisplayName("Grace Hopper");
+        when(sessionRepository.findRunningSession()).thenReturn(Optional.of(runningSession));
+        when(driverRepository.findByPracticeSessionIdAndTransponderNumber(42L, "T5")).thenReturn(Optional.of(named));
+        when(competitorRepository.findById(300L)).thenReturn(Optional.of(grace));
+
+        service.startSession(runningSession);
+        service.onLapPassing(new LapPassingEvent(0L, "T5", 1_000_000_000L));
+
+        PracticeTimingRowDto row = service.getSnapshot(42L).get(0);
+        assertThat(row.racerName()).isEqualTo("Grace Hopper");
+        assertThat(row.isUnknown()).isFalse();
     }
 
     @Test

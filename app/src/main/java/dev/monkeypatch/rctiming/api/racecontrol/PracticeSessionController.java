@@ -1,9 +1,10 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.practice.PracticeDriverService;
 import dev.monkeypatch.rctiming.practice.PracticeSessionService;
 import dev.monkeypatch.rctiming.practice.PracticeTimingService;
+import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
@@ -33,14 +34,14 @@ public class PracticeSessionController {
 
     private final PracticeSessionService sessionService;
     private final PracticeTimingService timingService;
-    private final AuditService audit;
+    private final PracticeDriverService driverService;
 
     public PracticeSessionController(PracticeSessionService sessionService,
                                      PracticeTimingService timingService,
-                                     AuditService audit) {
+                                     PracticeDriverService driverService) {
         this.sessionService = sessionService;
         this.timingService = timingService;
-        this.audit = audit;
+        this.driverService = driverService;
     }
 
     /** Create a new practice session in IDLE state. */
@@ -101,24 +102,24 @@ public class PracticeSessionController {
         return timingService.getSnapshot(id);
     }
 
-    /** Link an unknown transponder to a user in an active session. */
+    /**
+     * Name a transponder in a session: an existing competitor, or a new walk-in made from a name. A name that matches
+     * someone already there answers 409 with the matches unless the request confirms it is a different person.
+     */
     @Audited("audit_log")
     @PostMapping("/{id}/link-transponder")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<Void> linkTransponder(
+    public PracticeDriverDto linkTransponder(
             Authentication auth,
             @PathVariable Long id,
-            @RequestBody LinkRequest request) {
-        timingService.linkTransponder(id, request.transponderNumber(), request.userId(), request.racerName());
-        // The link lives in memory only, so there is no change to commit with: the row is written on its own
-        audit.entry(CurrentOfficial.actor(auth), "PRACTICE_TRANSPONDER_LINKED").entity("practice_session", id)
-                .summary("Linked transponder " + request.transponderNumber() + " to "
-                        + (request.racerName() != null ? request.racerName() : "user " + request.userId())
-                        + " in practice session " + id)
-                .after(request).recordStandalone();
-        return ResponseEntity.ok().build();
+            @RequestBody PracticeDriverService.LinkRequest request) {
+        return driverService.link(CurrentOfficial.actor(auth), id, request);
     }
 
-    /** Request body for linking a transponder to a user. */
-    public record LinkRequest(String transponderNumber, Long userId, String racerName) {}
+    /** The transponders named in a session. */
+    @GetMapping("/{id}/drivers")
+    @PreAuthorize("isAuthenticated()")
+    public List<PracticeDriverDto> drivers(@PathVariable Long id) {
+        return driverService.list(id);
+    }
 }

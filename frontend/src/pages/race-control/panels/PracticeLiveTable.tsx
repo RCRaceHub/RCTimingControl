@@ -31,10 +31,11 @@ export function PracticeLiveTable({ rows, bestLapN }: PracticeLiveTableProps) {
           <TableHead className="w-12">Pos</TableHead>
           <TableHead className="flex-1">Racer</TableHead>
           <TableHead className="w-16">Laps</TableHead>
+          <TableHead className="w-16" title="A long pause between laps starts a new run">Runs</TableHead>
           <TableHead className="w-28">Best Lap</TableHead>
           <TableHead
             className="w-36"
-            title={`Best average over any ${bestLapN} consecutive laps`}
+            title={`Best average over ${bestLapN} consecutive laps in one run`}
           >
             Best {bestLapN} Laps
           </TableHead>
@@ -71,6 +72,7 @@ export function PracticeLiveTable({ rows, bestLapN }: PracticeLiveTableProps) {
               {row.racerName}
             </TableCell>
             <TableCell className="font-mono tabular-nums">{row.laps}</TableCell>
+            <TableCell className="font-mono tabular-nums">{row.runs}</TableCell>
             <TableCell className="font-mono tabular-nums">
               {fmtMs(row.bestLapMs)}
             </TableCell>

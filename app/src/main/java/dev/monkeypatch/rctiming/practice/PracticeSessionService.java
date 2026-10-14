@@ -64,7 +64,16 @@ public class PracticeSessionService {
         }
 
         if (request.bestLapN() != null) {
+            if (request.bestLapN() < 1) {
+                throw new IllegalArgumentException("The number of laps to average must be at least 1");
+            }
             session.setBestLapN(request.bestLapN());
+        }
+        if (request.pauseSeconds() != null) {
+            if (request.pauseSeconds() < 1) {
+                throw new IllegalArgumentException("The pause that starts a new run must be at least 1 second");
+            }
+            session.setPauseSeconds(request.pauseSeconds());
         }
 
         session.setCreatedByUserId(actor.userId());
@@ -141,6 +150,7 @@ public class PracticeSessionService {
         m.put("name", s.getName());
         m.put("eventId", s.getEventId());
         m.put("bestLapN", s.getBestLapN());
+        m.put("pauseSeconds", s.getPauseSeconds());
         return m;
     }
 
@@ -172,10 +182,15 @@ public class PracticeSessionService {
                         : null,
                 session.getStatus(),
                 session.getBestLapN(),
+                session.getPauseSeconds(),
                 session.getStartedAt(),
                 session.getStoppedAt()
         );
     }
 
-    public record CreateRequest(String name, Long eventId, Integer bestLapN) {}
+    /**
+     * @param bestLapN     how many consecutive laps the average is taken over (default 5)
+     * @param pauseSeconds how long a transponder may be quiet before its next lap starts a new run (default 180)
+     */
+    public record CreateRequest(String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
 }

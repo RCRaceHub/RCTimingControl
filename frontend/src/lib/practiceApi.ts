@@ -11,6 +11,8 @@ export interface PracticeSessionDto {
   eventName: string | null;
   status: PracticeStatus;
   bestLapN: number;
+  /** How long a transponder may be quiet before its next lap starts a new run */
+  pauseSeconds: number;
   startedAt: string | null;
   stoppedAt: string | null;
 }
@@ -24,6 +26,8 @@ export interface PracticeTimingRowDto {
   bestLapMs: number | null;
   bestConsecutiveNMs: number | null;
   lastLapMs: number | null;
+  /** How many runs the driver has had; a long pause between laps starts a new one */
+  runs: number;
   isUnknown: boolean;
 }
 
@@ -31,6 +35,7 @@ export interface CreateSessionRequest {
   name: string;
   eventId?: number;
   bestLapN?: number;
+  pauseSeconds?: number;
 }
 
 // ── API client ─────────────────────────────────────────────────────────────

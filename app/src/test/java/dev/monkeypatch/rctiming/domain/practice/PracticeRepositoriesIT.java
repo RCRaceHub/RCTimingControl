@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.domain.practice;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
+import dev.monkeypatch.rctiming.domain.competitor.Competitor;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.user.Role;
@@ -29,6 +31,8 @@ class PracticeRepositoriesIT extends AbstractIntegrationTest {
 
     @Autowired PracticeSessionRepository sessions;
     @Autowired PracticeLapRepository laps;
+    @Autowired PracticeDriverRepository drivers;
+    @Autowired CompetitorRepository competitors;
     @Autowired EventRepository events;
     @Autowired UserRepository users;
 
@@ -121,6 +125,60 @@ class PracticeRepositoriesIT extends AbstractIntegrationTest {
                 .extracting(PracticeLap::getId).containsExactly(first.getId(), other.getId(), saved.getId());
         assertThat(laps.findByPracticeSessionIdAndTransponderNumberOrderByLapNumberAsc(session.getId(), "T2"))
                 .extracting(PracticeLap::getLapNumber).containsExactly(1, 3);
+    }
+
+    @Test
+    void highestRunNumberIsZeroWithNoLapsAndThenTheHighestSaved() {
+        PracticeSession session = sessions.save(session());
+        cleanup.add(() -> sessions.deleteById(session.getId()));
+        assertThat(laps.highestRunNumber(session.getId(), "T1")).isZero();
+
+        PracticeLap first = lap(session.getId(), "T1", 1, T1);
+        first.setRunNumber(2);
+        first = laps.save(first);
+        Long firstId = first.getId();
+        cleanup.add(() -> laps.deleteById(firstId));
+
+        assertThat(laps.highestRunNumber(session.getId(), "T1")).isEqualTo(2);
+        assertThat(laps.highestRunNumber(session.getId(), "T2")).isZero();
+    }
+
+    @Test
+    void movingACompetitorMovesTheTranspondersTheyWereNamedAs() {
+        PracticeSession session = sessions.save(session());
+        cleanup.add(() -> sessions.deleteById(session.getId()));
+        Competitor duplicate = competitors.save(competitor("Practice Duplicate"));
+        cleanup.add(() -> competitors.deleteById(duplicate.getId()));
+        Competitor keep = competitors.save(competitor("Practice Keep"));
+        cleanup.add(() -> competitors.deleteById(keep.getId()));
+
+        PracticeDriver moved = drivers.save(driver(session.getId(), "T1", duplicate.getId()));
+        cleanup.add(() -> drivers.deleteById(moved.getId()));
+        PracticeDriver stays = drivers.save(driver(session.getId(), "T2", keep.getId()));
+        cleanup.add(() -> drivers.deleteById(stays.getId()));
+
+        drivers.moveCompetitor(duplicate.getId(), keep.getId());
+
+        assertThat(drivers.findByPracticeSessionId(session.getId()))
+                .extracting(PracticeDriver::getTransponderNumber, PracticeDriver::getCompetitorId)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("T1", keep.getId()),
+                        org.assertj.core.groups.Tuple.tuple("T2", keep.getId()));
+    }
+
+    private PracticeDriver driver(Long sessionId, String transponder, Long competitorId) {
+        PracticeDriver d = new PracticeDriver();
+        d.setPracticeSessionId(sessionId);
+        d.setTransponderNumber(transponder);
+        d.setCompetitorId(competitorId);
+        d.setCreatedAt(T1);
+        return d;
+    }
+
+    private static Competitor competitor(String name) {
+        Competitor c = new Competitor();
+        c.setDisplayName(name);
+        return c;
     }
 
     private PracticeLap lap(Long sessionId, String transponder, int lapNumber, Instant crossing) {
