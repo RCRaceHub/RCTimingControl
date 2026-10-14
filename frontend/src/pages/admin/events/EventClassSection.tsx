@@ -36,15 +36,11 @@ import {
 import { useFormatsList } from '@/hooks/admin/useAdminFormats';
 import type { EventClassDto } from '@/lib/adminApi';
 
-// ── Add class form ─────────────────────────────────────────────────────────
-
 const addClassSchema = z.object({
   racingClassId: z.coerce.number().int().positive('Racing class is required'),
   templateId: z.coerce.number().int().positive('Format template is required'),
 });
 type AddClassFormValues = z.infer<typeof addClassSchema>;
-
-// ── Config snapshot summary ────────────────────────────────────────────────
 
 function ConfigSummary({ config }: { config: EventClassDto['configSnapshot'] }) {
   if (!config) return <span className="text-muted-foreground text-xs">No config</span>;
@@ -56,8 +52,6 @@ function ConfigSummary({ config }: { config: EventClassDto['configSnapshot'] }) 
 
   return <span className="text-xs text-muted-foreground">{entries.join(' · ')}</span>;
 }
-
-// ── Override editor dialog ─────────────────────────────────────────────────
 
 function OverrideEditorDialog({
   eventId,
@@ -126,8 +120,6 @@ function OverrideEditorDialog({
   );
 }
 
-// ── Combine confirm dialog ─────────────────────────────────────────────────
-
 function CombineConfirmDialog({
   eventId,
   selectedIds,
@@ -173,8 +165,6 @@ function CombineConfirmDialog({
     </Dialog>
   );
 }
-
-// ── Add class dialog ───────────────────────────────────────────────────────
 
 function AddClassDialog({
   open,
@@ -271,8 +261,6 @@ function AddClassDialog({
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
-
 interface EventClassSectionProps {
   eventId: number;
   classes: EventClassDto[];
@@ -360,7 +348,6 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold">Classes</h3>
         <div className="flex items-center gap-2">
@@ -382,7 +369,6 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         </div>
       </div>
 
-      {/* Class cards */}
       <div className="space-y-3">
         {classes.map(cls => (
           <div

@@ -30,15 +30,11 @@ import { ImportedTransponderDifference } from '@/pages/race-control/check-in/Che
 import { useRoles } from '@/hooks/useRoles';
 import { formatDateTime } from '@/lib/dates';
 
-// ── Entry status colors ───────────────────────────────────────────────────
-
 const entryStatusColor: Record<AdminEntryDto['status'], string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
   CONFIRMED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   WITHDRAWN: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400',
 };
-
-// ── Withdraw confirm dialog ───────────────────────────────────────────────
 
 function WithdrawDialog({
   eventId,
@@ -120,8 +116,6 @@ function WithdrawDialog({
     </Dialog>
   );
 }
-
-// ── Entries table for a single class ─────────────────────────────────────
 
 function EntriesTable({
   eventId,
@@ -238,8 +232,6 @@ function EntriesTable({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────
-
 interface EntryListSectionProps {
   eventId: number;
   classes: EventClassDto[];
@@ -267,7 +259,6 @@ export default function EntryListSection({ eventId, classes }: EntryListSectionP
 
   return (
     <div className="space-y-4">
-      {/* Class selector */}
       {classes.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {classes.map((cls, idx) => (
@@ -283,7 +274,6 @@ export default function EntryListSection({ eventId, classes }: EntryListSectionP
         </div>
       )}
 
-      {/* Entries for selected class */}
       {selectedClass && (
         <>
           {canAddEntries && (
