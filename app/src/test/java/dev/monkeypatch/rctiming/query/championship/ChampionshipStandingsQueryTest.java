@@ -368,6 +368,75 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         assertThat(row.totalPoints()).isEqualTo(12);
     }
 
+    /** One result row, as the snapshot stores it. */
+    private static String resultRow(Long entryId, int position, int laps, long bestLapMs) {
+        return String.format(
+                "{\"position\":%d,\"entryId\":%d,\"driverName\":\"X\",\"carNumber\":\"%d\","
+                + "\"lapsCompleted\":%d,\"totalTimeMs\":60000,\"bestLapMs\":%d,\"gapToLeaderMs\":0}",
+                position, entryId, position, laps, bestLapMs);
+    }
+
+    @Test
+    void onlyTheTopQualifierOfTheClassGetsTheTqBonusWhenTwoDriversWinOneHeatEach() throws Exception {
+        // CHAMP-07: one TQ per class and round, not one per heat winner (#248)
+        Championship champ = makeChampionship(2, 0, null, null, ScoringSource.QUALIFYING);
+        User first = makeUser("Fast", "Driver");
+        User second = makeUser("Other", "Driver");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Two-winners-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Entry a = makeEntry(first.getId(), event.getId(), ecId);
+        Entry b = makeEntry(second.getId(), event.getId(), ecId);
+        Race heat1 = makeRace(qualRound.getId(), ecId, null, 1);
+        Race heat2 = makeRace(qualRound.getId(), ecId, null, 2);
+        for (Race heat : List.of(heat1, heat2)) {
+            makeRaceEntry(heat.getId(), a.getId());
+            makeRaceEntry(heat.getId(), b.getId());
+        }
+        // Both have 23 laps over the two heats; A has the quicker single lap
+        makeSnapshot(heat1.getId(),
+                "[" + resultRow(a.getId(), 1, 12, 5000) + "," + resultRow(b.getId(), 2, 11, 5400) + "]");
+        makeSnapshot(heat2.getId(),
+                "[" + resultRow(b.getId(), 1, 12, 5200) + "," + resultRow(a.getId(), 2, 11, 5600) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Both win a heat for 10; only A tops the class, so only A has the 2 point bonus
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsExactlyInAnyOrder(12, 10);
+    }
+
+    @Test
+    void scoringFromBothSumsTheQualifyingAndTheFinalPointsOfARound() throws Exception {
+        // CHAMP-06: both sources are summed per round, not the better of the two (#248)
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.BOTH);
+        User driver = makeUser("Both", "Driver");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Both-sources-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 2);
+        Entry entry = makeEntry(driver.getId(), event.getId(), ecId);
+        Race qual = makeRace(qualRound.getId(), ecId, null, 1);
+        Race fin = makeRace(finalRound.getId(), ecId, "A", 1);
+        makeRaceEntry(qual.getId(), entry.getId());
+        makeRaceEntry(fin.getId(), entry.getId());
+        makeSnapshot(qual.getId(), "[" + resultRow(entry.getId(), 2, 10, 6000) + "]");
+        makeSnapshot(fin.getId(), "[" + resultRow(entry.getId(), 1, 10, 6000) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        assertThat(standings).hasSize(1);
+        // 8 for second in qualifying and 10 for winning the final; the round's position is the better one
+        assertThat(standings.get(0).totalPoints()).isEqualTo(18);
+        assertThat(standings.get(0).rounds().get(0).position()).isEqualTo(1);
+        assertThat(standings.get(0).rounds().get(0).points()).isEqualTo(18);
+    }
+
     @Test
     void winningTwoQualifyingHeatsInOneClassAtOneEventPaysTheTqBonusOnce() throws Exception {
         // Two heats of the same class in one qualifying round, both won by the same driver (#133)

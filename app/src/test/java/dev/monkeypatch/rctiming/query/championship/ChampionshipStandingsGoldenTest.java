@@ -63,6 +63,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * standings unchanged. It was updated for #133, when the TQ and A-final bonuses became per class
  * per round (CHAMP-07, CHAMP-08): Alice earns a bonus in both classes, Dan earns the Stock A-final
  * bonus in two rounds, and Bob's excluded round earns no TQ bonus. The base points per round did not change.
+ * Scoring from both sources (CHAMP-06) sums the qualifying and final points of a round, and the TQ goes to one
+ * driver per class and round (CHAMP-07), so the main and heats outputs changed in #248. Each result's best lap is
+ * a little slower for each place, so the fastest qualifier is the one who finished first.
  */
 class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
@@ -381,9 +384,9 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
             Driver d = finishingOrder.get(i);
             rows.add(String.format(
                     "{\"position\":%d,\"entryId\":%d,\"driverName\":\"%s\",\"carNumber\":\"%d\","
-                    + "\"lapsCompleted\":10,\"totalTimeMs\":%d,\"bestLapMs\":6000,\"gapToLeaderMs\":%d}",
+                    + "\"lapsCompleted\":10,\"totalTimeMs\":%d,\"bestLapMs\":%d,\"gapToLeaderMs\":%d}",
                     i + 1, entries.get(d).getId(), d.user().getFirstName(), i + 1,
-                    60000 + i * 1000, i * 1000));
+                    60000 + i * 1000, 6000 + i * 100, i * 1000));
         }
 
         ResultSnapshot snap = new ResultSnapshot();
