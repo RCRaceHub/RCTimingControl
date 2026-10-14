@@ -117,8 +117,6 @@ public class RaceFormatService {
         return eventClass;
     }
 
-    // --- CRUD methods for format templates ---
-
     @Transactional(readOnly = true)
     public List<RaceFormatTemplate> findAll() {
         return templateRepository.findAll();

@@ -189,7 +189,7 @@ export async function recordMarshalAbsent(
   await api.post(`/api/v1/race-control/referee/race/${raceId}/marshal-absent`, req);
 }
 
-// ── Phase 5: Unknown Transponder Linking ─────────────────────────────────────
+// ── Unknown transponder linking ──────────────────────────────────────────────
 
 export type RaceEntryDto = {
   entryId: number;

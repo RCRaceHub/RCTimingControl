@@ -112,7 +112,6 @@ export default function ClubProfilePage() {
     <div className="max-w-xl space-y-8">
       <h1 className="text-2xl font-semibold">Club Profile</h1>
 
-      {/* Logo card */}
       <div className="rounded-lg border p-4 space-y-3">
         <h2 className="text-sm font-semibold">Club Logo</h2>
         {data?.logoUrl ? (
@@ -151,7 +150,6 @@ export default function ClubProfilePage() {
         </div>
       </div>
 
-      {/* Profile form */}
       <form onSubmit={handleSubmit(onSave)} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="club-name">Club Name</Label>

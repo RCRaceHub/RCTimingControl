@@ -100,7 +100,6 @@ public class ClubProfileService {
         profile.setWebsiteUrl(details.websiteUrl());
         profile.setLatitude(details.latitude());
         profile.setLongitude(details.longitude());
-        // Use the raw field setter to avoid double-validation
         profile.setTimezone(details.timezone());
         profile.setLogoType(details.logoType());
 

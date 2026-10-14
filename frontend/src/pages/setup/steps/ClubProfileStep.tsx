@@ -156,7 +156,7 @@ export default function ClubProfileStep({ onNext }: Props) {
           />
 
           <div className="flex justify-end gap-2 pt-4">
-            {/* No Back, no Skip on Step 1 (D-11) */}
+            {/* No Back or Skip: the club profile is the minimum the system needs */}
             <Button type="submit" disabled={form.formState.isSubmitting}>
               Save and Continue
             </Button>

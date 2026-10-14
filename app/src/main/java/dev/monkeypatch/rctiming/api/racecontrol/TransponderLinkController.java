@@ -20,12 +20,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Phase 5 / TIMING-08: REST endpoint for retroactive transponder linking during a live race.
- * Race director or admin can link an unknown transponder number to an existing entry,
- * retroactively crediting all passings since race start (D-12).
- *
- * <p>T-05-18: endpoint is protected by @PreAuthorize — accounts without the required role receive HTTP 403.
- * T-05-16: audit record persisted with actor userId, raceId, entryId, linkedAt.
+ * Retroactive transponder linking during a live race (TIMING-08, CTRL-06), and the race's entries, which the race
+ * director links to and the referee picks from. A race director or admin can link an unknown transponder number to an
+ * existing entry, crediting all passings since race start; {@link TransponderLinkService} writes the audit rows.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/race/{raceId}")

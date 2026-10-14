@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST endpoints for referee actions: incident reports, penalties, marshal absence recording (OFFICIAL-03, OFFICIAL-04, D-22).
- * All endpoints require REFEREE role. {@link RefereeService} does the work and writes the audit rows.
+ * REST endpoints for referee actions: incident reports, penalties and marshal absences (OFFICIAL-03, OFFICIAL-04).
+ * All endpoints require the REFEREE or ADMIN role. {@link RefereeService} does the work and writes the audit rows.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/referee")
@@ -53,7 +53,7 @@ public class RefereeController {
     }
 
     /**
-     * Record that an entry missed their marshal duty (D-22).
+     * Record that an entry missed their marshal duty.
      * Does NOT auto-create a penalty — use /apply-marshal-penalty for that.
      */
     @Audited("audit_log")
@@ -65,7 +65,7 @@ public class RefereeController {
     }
 
     /**
-     * Apply a marshal penalty for a recorded absence (D-22 — separate action from recording). The request can
+     * Apply a marshal penalty for a recorded absence, a separate action from recording it. The request can
      * name the absence (its id comes back from {@code marshal-absent}); otherwise the entry's most recent
      * absence in the event is used, if there is one.
      */

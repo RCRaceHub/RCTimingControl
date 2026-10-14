@@ -182,8 +182,6 @@ public class CsvImportService {
                 .after(after).record();
     }
 
-    // ── Planning ───────────────────────────────────────────────────────────────────
-
     /**
      * One planned entry per booked row. {@code update} rows go to {@code skipped}, a row booked twice
      * adds to {@code errors}, and each driver's competitor, if one exists, goes in {@code competitors}.
@@ -316,8 +314,6 @@ public class CsvImportService {
         state.check(errors, warnings);
     }
 
-    // ── Applying ───────────────────────────────────────────────────────────────────
-
     private Entry save(Long eventId, Planned p, Map<String, Competitor> competitors, Instant now) {
         Competitor competitor = competitors.get(p.competitorKey);
         if (competitor == null) {
@@ -353,8 +349,6 @@ public class CsvImportService {
         }
         return entryRepository.save(e);
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────────
 
     /** The entry's primary number. With only {@code PT No 2} given, that becomes the primary. */
     private static String primaryOf(RcTimingCsvParser.Row row) {

@@ -50,7 +50,6 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Grid Called — {data.raceLabel}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Marshal Duty */}
         <div>
           <h3 className="text-sm font-semibold mb-2">Marshal Duty</h3>
           {data.firstRaceOfEvent ? (
@@ -90,7 +89,6 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
           )}
         </div>
 
-        {/* Grid Call */}
         <div>
           <h3 className="text-sm font-semibold mb-2">Grid Call</h3>
           {notCheckedIn > 0 && (

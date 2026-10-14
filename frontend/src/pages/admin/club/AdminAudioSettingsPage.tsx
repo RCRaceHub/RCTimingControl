@@ -26,7 +26,6 @@ export default function AdminAudioSettingsPage() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
-  // ── Fetch audio settings ───────────────────────────────────────────────────
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: adminQueryKeys.audioSettings(),
     queryFn: () => getAdminAudioSettings(),
@@ -41,7 +40,6 @@ export default function AdminAudioSettingsPage() {
     onError: () => toast.error('Failed to save settings.'),
   });
 
-  // ── Fetch voices ───────────────────────────────────────────────────────────
   const { data: voices, isLoading: voicesLoading } = useQuery({
     queryKey: adminQueryKeys.voices(),
     queryFn: () => listVoices(),
@@ -68,7 +66,6 @@ export default function AdminAudioSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-xl font-semibold">Audio Settings</h1>
 
-      {/* Announcement toggles */}
       <Card>
         <CardHeader>
           <CardTitle>Announcement Types</CardTitle>
@@ -93,7 +90,6 @@ export default function AdminAudioSettingsPage() {
                 </div>
               ))}
 
-              {/* Default voice selector */}
               <div className="space-y-2 pt-2">
                 <Label htmlFor="default-voice">Default voice</Label>
                 {voicesLoading ? (

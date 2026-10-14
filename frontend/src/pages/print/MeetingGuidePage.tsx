@@ -12,7 +12,6 @@ export default function MeetingGuidePage() {
         <p className="text-sm text-muted-foreground mt-1">For race officials — RC Timing Club</p>
       </div>
 
-      {/* Section 1: Pre-Meeting Setup */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">1. Pre-Meeting Setup</h2>
         <p className="text-sm mb-3">
@@ -64,7 +63,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 2: Managing the Run Order */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">2. Managing the Run Order</h2>
         <p className="text-sm mb-3">
@@ -92,7 +90,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 3: Grid Call */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">3. Grid Call</h2>
         <p className="text-sm mb-3">
@@ -124,7 +121,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 4: Starting a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">4. Starting a Race</h2>
         <p className="text-sm mb-3">
@@ -152,7 +148,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 5: Running a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">5. Running a Race</h2>
         <p className="text-sm mb-3">
@@ -193,7 +188,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 6: Stopping and Finishing a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">6. Stopping and Finishing a Race</h2>
         <p className="text-sm mb-3">
@@ -239,7 +233,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 7: Handling Incidents */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">7. Handling Incidents</h2>
         <p className="text-sm mb-3">
@@ -277,7 +270,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 8: Publishing Results */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">8. Publishing Results</h2>
         <p className="text-sm mb-3">
@@ -308,7 +300,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 9: Moving to the Next Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">9. Moving to the Next Race</h2>
         <p className="text-sm mb-3">
@@ -340,7 +331,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 10: Boards */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">10. Spectator Boards and the Streaming Overlay</h2>
         <p className="text-sm mb-3">

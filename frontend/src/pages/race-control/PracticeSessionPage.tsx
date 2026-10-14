@@ -96,7 +96,6 @@ export function PracticeSessionPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Page header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
         <Link
           to="/admin/race-control"
@@ -162,7 +161,6 @@ export function PracticeSessionPage() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         {session.status === 'IDLE' && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">

@@ -11,7 +11,7 @@ public class PracticeLap implements CreatedAt {
 
     private String transponderNumber;
 
-    private Long userId;  // nullable until linked
+    private Long userId;  // the racer's login, only on laps recorded before L10; newer laps are named by entry
 
     private Integer lapNumber;
 

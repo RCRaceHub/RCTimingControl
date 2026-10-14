@@ -26,6 +26,12 @@ import java.util.Optional;
  * it is passed to {@link #save}. Writes run in a transaction, joining the caller's if there is
  * one, so they use the write connection. Reads outside a transaction use the read pool.
  *
+ * <p>There are no row locks. SQLite's write pool has one connection, so write transactions run one
+ * at a time: a read-then-write inside one cannot interleave with another. The {@code findByIdForUpdate}
+ * methods are plain {@link #findById} named for that use, and must be called inside the transaction
+ * that makes the change. This rests on the vendor allowing one write connection; a vendor with more
+ * would need real row locks here.
+ *
  * <p>{@link #save} stamps the creation time of a {@link CreatedAt} entity that has none, and the update time of
  * an {@link UpdatedAt} entity every time, so callers don't.
  *

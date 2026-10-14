@@ -62,8 +62,6 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { formatDate } from '@/lib/dates';
 import { optionalPositiveInt, refineBestXFromY } from './bestXFromY';
 
-// ── Driver picker ──────────────────────────────────────────────────────────
-
 const MAX_DRIVER_CHOICES = 8;
 
 function DriverPicker({
@@ -101,8 +99,6 @@ function DriverPicker({
     </div>
   );
 }
-
-// ── Add class dialog ───────────────────────────────────────────────────────
 
 const addClassSchema = z.object({
   racingClassId: z.coerce.number().int().positive('Racing class is required'),
@@ -195,8 +191,6 @@ function AddClassDialog({
   );
 }
 
-// ── Link event dialog ──────────────────────────────────────────────────────
-
 const linkEventSchema = z.object({
   eventId: z.coerce.number().int().positive('Event is required'),
   roundNumber: z.coerce.number().int().positive('Round number is required'),
@@ -274,8 +268,6 @@ function LinkEventDialog({
     </Dialog>
   );
 }
-
-// ── Create exclusion dialog ────────────────────────────────────────────────
 
 const exclusionSchema = z.object({
   driverId: z.number({ required_error: 'Driver is required' }).int().positive('Driver is required'),
@@ -368,8 +360,6 @@ function CreateExclusionDialog({
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
-
 /**
  * Greys out everything inside it unless the official is an admin. Only an admin changes a championship's
  * set-up; the Exclusions tab is outside this because a referee records a disqualification there (#132).
@@ -461,7 +451,6 @@ export default function ChampionshipDetailPage() {
           <TabsTrigger value="exclusions">Exclusions ({exclusions.length})</TabsTrigger>
         </TabsList>
 
-        {/* Config tab */}
         <TabsContent value="config" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
           <ChampionshipConfigForm
@@ -472,7 +461,6 @@ export default function ChampionshipDetailPage() {
         </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Classes tab */}
         <TabsContent value="classes" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
           <div className="flex items-center justify-between mb-4">
@@ -546,7 +534,6 @@ export default function ChampionshipDetailPage() {
         </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Events tab */}
         <TabsContent value="events" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
           <div className="flex items-center justify-between mb-4">
@@ -618,19 +605,16 @@ export default function ChampionshipDetailPage() {
         </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Points Scale tab */}
         <TabsContent value="points-scale" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
           <PointsScaleEditor championshipId={id} initialScale={data.pointsScale} />
         </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Standings tab */}
         <TabsContent value="standings" className="mt-4">
           <ChampionshipStandingsTable championshipId={id} />
         </TabsContent>
 
-        {/* Exclusions tab */}
         <TabsContent value="exclusions" className="mt-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base font-semibold">Exclusions</h2>

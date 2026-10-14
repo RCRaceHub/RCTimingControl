@@ -77,7 +77,7 @@ public class Event implements CreatedAt, UpdatedAt {
     public long getResultsExportRevision() { return resultsExportRevision; }
     void setResultsExportRevision(long resultsExportRevision) { this.resultsExportRevision = resultsExportRevision; }
 
-    /** Takes the next results export revision. Load the event with {@code findByIdForUpdate} first. */
+    /** Takes the next results export revision. Load the event inside the transaction that saves it. */
     public long nextResultsExportRevision() { return ++resultsExportRevision; }
 
     public String getResultsExportPending() { return resultsExportPending; }

@@ -2,7 +2,7 @@ package dev.monkeypatch.rctiming.decoderprotocol.timing;
 
 /**
  * A {@link ParsedPassing} whose {@code timeSinceStart} has been converted to an absolute
- * epoch-anchored UTC timestamp by {@link EpochAnchor} (D-07).
+ * epoch-anchored UTC timestamp by {@link EpochAnchor}.
  *
  * <p>This is the value the app publishes as a LapPassingEvent.
  */

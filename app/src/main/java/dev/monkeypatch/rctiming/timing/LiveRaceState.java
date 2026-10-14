@@ -11,16 +11,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Per-race in-memory position model (Pattern 4 from RESEARCH.md).
+ * Per-race in-memory position model. Live positions are never written to the database during a race.
  * NOT a Spring bean — one instance per raceId, held in LapTimingService.states ConcurrentHashMap.
  *
- * <p>All mutating methods are synchronized on {@code this} (intrinsic lock, Pitfall 3).
+ * <p>All mutating methods are synchronized on {@code this}: the timing thread changes the state while
+ * request threads read it and link transponders.
  * Position recalculation is O(n log n) over typically ≤40 entries — negligible latency.
  *
- * <p>Gap calculation note: gapToLeader = leaderLastPassingTimeMs - myLastPassingTimeMs.
- * This is a simplified same-logical-clock calculation that works well for races where all
- * entries are on the same lap. Multi-lap gap calculation (position by laps then time) is
- * deferred to Phase 7 results refinement.
+ * <p>Gaps are the difference between last passing times, and are given only between cars on the same lap.
  */
 public class LiveRaceState {
 
@@ -139,7 +137,7 @@ public class LiveRaceState {
     }
 
     /**
-     * Phase 5 / D-12: retroactively credit all lapHistory entries for an unknown transponder
+     * Retroactively credit all lapHistory entries for an unknown transponder
      * to the now-identified entry. Removes the transponder from the unknown set and recalculates
      * positions. Idempotent — if the transponder is already linked to the same entry, returns
      * current positions without replaying history (prevents lap doubling on re-submit).
@@ -168,7 +166,7 @@ public class LiveRaceState {
     }
 
     /**
-     * Phase 5: counts lapHistory entries for a given transponder number.
+     * Counts lapHistory entries for a given transponder number.
      * Used by TransponderLinkService to report lapsCredited before linking.
      */
     public synchronized int countPassingsForTransponder(String transponderNumber) {
@@ -221,8 +219,8 @@ public class LiveRaceState {
     }
 
     /**
-     * Returns a read-only snapshot of a single entry's position for use by ResultSnapshotService.
-     * Called when the race is FINISHED and no further lap events are processed.
+     * Returns a single entry's live position for ResultSnapshotService. It is the live object, not a copy:
+     * safe only because it is called once the race is FINISHED and no more passings change it.
      */
     public synchronized LiveRacePosition getPositionSnapshot(long entryId) {
         return positions.get(entryId);

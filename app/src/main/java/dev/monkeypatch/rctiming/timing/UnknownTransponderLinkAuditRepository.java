@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
 
 /**
- * Phase 5 / TIMING-08: repository for retroactive transponder link audit records.
+ * Repository for retroactive transponder link audit records.
  */
 @Repository
 public class UnknownTransponderLinkAuditRepository

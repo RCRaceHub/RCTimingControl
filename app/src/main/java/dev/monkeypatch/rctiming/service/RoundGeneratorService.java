@@ -82,7 +82,7 @@ public class RoundGeneratorService {
      * Sets gridPosition on RaceEntry rows for a specific race using the finishing order
      * from the previous round's same heat. Best finisher (index 0) gets gridPosition=1.
      *
-     * <p>Called by the race state machine (plan 05) when a round completes, to set up
+     * <p>Called by the race state machine when a round completes, to set up
      * start positions for the corresponding race in the next round.
      *
      * @param newRaceId              the race whose grid positions to update
@@ -104,10 +104,6 @@ public class RoundGeneratorService {
             }
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Private implementation
-    // -------------------------------------------------------------------------
 
     /**
      * Builds the complete generation plan (rounds, races, heat assignments) without any I/O.
@@ -150,10 +146,6 @@ public class RoundGeneratorService {
         return new GenerationPlan(request, eventClasses, heatsByClass);
     }
 
-    // -------------------------------------------------------------------------
-    // Inner plan class
-    // -------------------------------------------------------------------------
-
     private class GenerationPlan {
 
         private final RoundGenerationRequest request;
@@ -183,8 +175,6 @@ public class RoundGeneratorService {
             // Finals (empty grids — seeded by BumpUpSeedingService after qualifying)
             persistFinals(sequence);
         }
-
-        // --- Persist helpers ---
 
         private int persistRound(RoundType type, int roundNumber, int sequenceStart, boolean isFirstRound) {
             Round round = new Round();
@@ -217,7 +207,7 @@ public class RoundGeneratorService {
                         entry.setEntryId(entryIds.get(pos));
                         // Round 1: set gridPosition to seed order within heat (1-based).
                         // Subsequent rounds: gridPosition=null — will be assigned when the
-                        // previous round finishes via applyPreviousRoundFinishingOrder (plan 05).
+                        // previous round finishes via applyPreviousRoundFinishingOrder.
                         entry.setGridPosition(isFirstRound ? pos + 1 : null);
                         entry.setCarNumber(pos + 1);  // car_number = 1-N, same as heat slot order for qualifying heats
                         entry.setBumped(false);
@@ -229,16 +219,11 @@ public class RoundGeneratorService {
         }
 
         private void persistFinals(int sequenceStart) {
-            // Finals: one round per final "level" (A, B, C).
-            // Run order: lowest final first (C runs before B before A).
-            // We create rounds in A→B→C order here; the sequenceInEvent determines run order.
+            // One round per final. Finals run lowest first (C, then B, then A), the bump-ups from each going
+            // into the next. The rounds are made in reverse letter order so the lowest final gets the earliest
+            // sequenceInEvent; the round number still follows the letter (A is 1).
             for (EventClass ec : eventClasses) {
                 int finalsCount = resolveFinalsCount(ec);
-                // finals run lowest-first (C→B→A), so we persist C first with lower sequence
-                // Actually we store them A=1, B=2, C=3 in finalLetter, but run C first by
-                // assigning sequenceInEvent in reverse (C gets lower seq than B, B lower than A).
-                // Per HEAT-STRUCTURE-SPEC: C runs first, bumps go to B, then B runs, bumps to A.
-                // We create rounds in reverse letter order so sequenceInEvent matches run order.
                 for (int f = finalsCount - 1; f >= 0; f--) {
                     String finalLetter = String.valueOf((char) ('A' + f));
                     Round round = new Round();
@@ -264,8 +249,6 @@ public class RoundGeneratorService {
                 }
             }
         }
-
-        // --- Config helpers ---
 
         /** A class's finals count, from the request's override, then the class, then one final. */
         private int resolveFinalsCount(EventClass ec) {

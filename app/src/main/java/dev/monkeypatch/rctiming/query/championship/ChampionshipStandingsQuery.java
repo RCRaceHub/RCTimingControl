@@ -68,8 +68,6 @@ public class ChampionshipStandingsQuery {
         return rank(rows(tally, rules));
     }
 
-    // ── The championship's rules ───────────────────────────────────────────────────
-
     /** How the championship scores: everything but the results themselves. */
     private record Rules(String scoringSource, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
                          Map<Integer, Integer> pointsScale, int tqBonus, int aFinalBonus,
@@ -142,8 +140,6 @@ public class ChampionshipStandingsQuery {
                 championship.get(CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS),
                 exclusions);
     }
-
-    // ── The rounds and their results ───────────────────────────────────────────────
 
     /** An event linked to the championship. */
     private record ChampionshipRound(Long eventId, int roundNumber, String eventName) {}
@@ -248,8 +244,6 @@ public class ChampionshipStandingsQuery {
         return true; // BOTH
     }
 
-    // ── Scoring each round ─────────────────────────────────────────────────────────
-
     /** A driver in one racing class: one row of the standings. */
     private record DriverClass(Long driverId, Long racingClassId) {}
 
@@ -335,8 +329,6 @@ public class ChampionshipStandingsQuery {
             }
         }
     }
-
-    // ── Drops and ranking ──────────────────────────────────────────────────────────
 
     private static List<StandingsRowDto> rows(Tally tally, Rules rules) {
         List<StandingsRowDto> rows = new ArrayList<>();

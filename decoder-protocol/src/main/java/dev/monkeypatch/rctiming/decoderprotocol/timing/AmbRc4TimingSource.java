@@ -15,9 +15,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * RC-4 text protocol TCP client (TIMING-05, D-01).
+ * RC-4 text protocol TCP client (TIMING-05).
  *
- * <p><strong>TIMING-06 / FIRST_CONTACT:</strong> The RC-4 protocol has NO client handshake.
+ * <p>The RC-4 protocol has no client handshake.
  * The AMB decoder begins streaming STATUS and PASSING frames immediately upon TCP connection.
  * This class simply opens the TCP connection and starts receiving — no handshake frame is sent.
  * Port 5100 (firmware &lt; 4.5) confirmed from club hardware captures.
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  *
  * <p>Owns single instances of {@link Rc4TextParser}, {@link EpochAnchor}, and
  * {@link SeqGapDetector} that persist across reconnects so the epoch is not lost on
- * transient TCP drops (Pitfall 2).
+ * transient TCP drops.
  */
 public class AmbRc4TimingSource implements TimingSource {
 
@@ -88,10 +88,6 @@ public class AmbRc4TimingSource implements TimingSource {
         log.info("AmbRc4TimingSource stopped");
         onStatus.accept(ConnectionState.DISCONNECTED);
     }
-
-    // -----------------------------------------------------------------------
-    // Internal connection management
-    // -----------------------------------------------------------------------
 
     private void connect() {
         if (stopped) return;
