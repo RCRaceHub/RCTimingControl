@@ -280,7 +280,10 @@ public class ChampionshipStandingsQuery {
         }
 
         private static Integer min(Integer a, Integer b) {
-            return a == null ? b : b == null ? a : Math.min(a, b);
+            if (a == null) {
+                return b;
+            }
+            return b == null ? a : Integer.valueOf(Math.min(a, b));
         }
     }
 
