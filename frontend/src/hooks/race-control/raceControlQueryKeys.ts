@@ -18,5 +18,6 @@ export const raceControlQueryKeys = {
     session: (id: number) => ['race-control', 'practice', 'session', id] as const,
     snapshot: (id: number | null) => ['race-control', 'practice', 'snapshot', id] as const,
     results: (id: number) => ['race-control', 'practice', 'results', id] as const,
+    day: (date: string, n: number) => ['race-control', 'practice', 'day', date, n] as const,
   },
 };

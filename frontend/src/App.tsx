@@ -44,6 +44,9 @@ const PracticeSessionPage = lazy(() =>
 const PracticeLandingPage = lazy(() =>
   import('@/pages/race-control/PracticeLandingPage').then(m => ({ default: m.PracticeLandingPage })),
 );
+const PracticeDayPage = lazy(() =>
+  import('@/pages/race-control/PracticeDayPage').then(m => ({ default: m.PracticeDayPage })),
+);
 const PrintPracticeResultsPage = lazy(() => import('@/pages/race-control/PrintPracticeResultsPage'));
 const PublicResultsPage = lazy(() => import('@/pages/results/PublicResultsPage'));
 const PublicChampionshipPage = lazy(() => import('@/pages/championships/PublicChampionshipPage'));
@@ -115,6 +118,16 @@ const router = createBrowserRouter([
           { path: 'referee', element: <RefereePage /> },
           { path: 'results/:raceId', element: <PrintResultsPage /> },
         ],
+      },
+      {
+        path: '/race-control/practice/day',
+        element: (
+          <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <RaceControlErrorBoundary>
+              <PracticeDayPage />
+            </RaceControlErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: '/race-control/practice/:sessionId',
