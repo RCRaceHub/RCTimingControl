@@ -11,9 +11,10 @@ vi.mock('@/context/HelpContext', () => ({ useHelpContent: vi.fn() }));
 
 const mockRunOrder = vi.fn();
 vi.mock('@/hooks/race-control/useRunOrder', () => ({ useRunOrder: () => mockRunOrder() }));
+const mockMutate = vi.fn();
 vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
   useRaceStateMutations: () =>
-    new Proxy({}, { get: () => ({ mutate: vi.fn(), isPending: false }) }),
+    new Proxy({}, { get: () => ({ mutate: mockMutate, isPending: false }) }),
 }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
 const mockUseStomp = vi.fn<(topic: string | null) => { data: unknown; status: string }>(() => ({ data: null, status: 'connected' }));
@@ -120,6 +121,37 @@ describe('CockpitPage with a running race', () => {
     mockUser.mockReturnValue({ roles: ['REFEREE'] });
     renderCockpit();
     expect(screen.queryByRole('button', { name: 'Finish Race' })).not.toBeInTheDocument();
+  });
+});
+
+describe('CockpitPage jump to a race', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    mockRunOrder.mockReturnValue({
+      data: [
+        { raceId: 3, status: 'RUNNING', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 4, status: 'PENDING', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 2 },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+  });
+
+  it('shows the reason when the server refuses the jump', () => {
+    mockMutate.mockImplementationOnce((_vars, options?: { onError?: (err: unknown) => void }) =>
+      options?.onError?.({
+        isAxiosError: true,
+        response: { status: 409, data: { detail: 'Race 3 is still running' } },
+      }),
+    );
+    renderCockpit();
+
+    fireEvent.click(screen.getByText('Heat 2'));
+    fireEvent.click(screen.getByRole('button', { name: 'Jump to this race' }));
+
+    expect(mockMutate).toHaveBeenCalledWith({ sourceRaceId: 3, targetRaceId: 4 }, expect.anything());
+    expect(toast.error).toHaveBeenCalledWith('Jump to race failed: Race 3 is still running');
   });
 });
 
