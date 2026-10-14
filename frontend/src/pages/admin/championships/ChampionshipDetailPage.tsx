@@ -103,7 +103,6 @@ export default function ChampionshipDetailPage() {
           <TabsTrigger value="exclusions">Exclusions ({exclusions.length})</TabsTrigger>
         </TabsList>
 
-        {/* Config tab */}
         <TabsContent value="config" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
             <ChampionshipConfigForm
@@ -114,33 +113,28 @@ export default function ChampionshipDetailPage() {
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Classes tab */}
         <TabsContent value="classes" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
             <ChampionshipClassesTab championshipId={id} classes={data.classes} racingClasses={racingClasses} />
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Events tab */}
         <TabsContent value="events" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
             <ChampionshipEventsTab championshipId={id} links={data.events} events={events} />
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Points Scale tab */}
         <TabsContent value="points-scale" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
             <PointsScaleEditor championshipId={id} initialScale={data.pointsScale} />
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 
-        {/* Standings tab */}
         <TabsContent value="standings" className="mt-4">
           <ChampionshipStandingsTable championshipId={id} />
         </TabsContent>
 
-        {/* Exclusions tab */}
         <TabsContent value="exclusions" className="mt-4">
           <ChampionshipExclusionsTab
             championshipId={id}

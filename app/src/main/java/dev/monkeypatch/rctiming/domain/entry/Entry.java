@@ -7,7 +7,7 @@ public class Entry implements UpdatedAt {
 
     private Long id;
 
-    /** The racer's login, when the entry came from the racer portal. Null for competitor-only entries. */
+    /** The racer's login on entries made in the racer portal, before it was removed (#18). Null on newer entries. */
     private Long userId;
 
     /** The driver this entry is for. Required on every new entry (L4, #12). */
@@ -15,8 +15,8 @@ public class Entry implements UpdatedAt {
     private Long eventId;
     private Long eventClassId;
 
-    // Snapshot columns — captured at submit time (RACER-07)
-    // V13 names these transponder_number and transponder_label (no _snapshot suffix)
+    // The primary transponder as imported or typed in for a walk-in (RACER-07); a check-in swap replaces it.
+    // The columns are transponder_number and transponder_label, with no _snapshot suffix.
     private String transponderNumberSnapshot;
     private String transponderLabelSnapshot;
 

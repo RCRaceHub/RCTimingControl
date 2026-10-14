@@ -456,8 +456,6 @@ export interface UpdateClubProfileRequest {
   logoType: string | null;
 }
 
-// ── API client ─────────────────────────────────────────────────────────────
-
 export interface BackupFileDto {
   name: string;
   sizeBytes: number;
@@ -535,6 +533,8 @@ export interface ResultsExportsDto {
   /** Newest first */
   exports: ResultsExportRowDto[];
 }
+
+// ── API client ─────────────────────────────────────────────────────────────
 
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
@@ -741,7 +741,7 @@ export const adminApi = {
       api.delete(`/api/v1/admin/formats/${id}`),
   },
 
-  // Competitors (drivers, with or without a login — for driver search in exclusions)
+  // Competitors, also used for the driver search in championship exclusions
   competitors: {
     list: () =>
       api.get<CompetitorSummaryDto[]>('/api/v1/admin/competitors').then(r => r.data),

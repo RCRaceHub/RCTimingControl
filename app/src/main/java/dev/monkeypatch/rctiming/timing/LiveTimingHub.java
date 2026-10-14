@@ -15,12 +15,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * STOMP broadcast hub (Pattern 5 from RESEARCH.md).
- * Broadcasts on three topics per CLAUDE.md:
+ * STOMP broadcast hub. Broadcasts on these topics:
  * - /topic/race/{raceId}/timing — live position updates
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
+ * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
+ * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
 @Component
 public class LiveTimingHub {
@@ -61,7 +62,7 @@ public class LiveTimingHub {
     }
 
     /**
-     * Phase 4: broadcasts bump-up promotion alert when a lower final finishes.
+     * Broadcasts a bump-up promotion alert when a lower final finishes.
      * Race director UI subscribes to be notified before starting the next final.
      */
     public void broadcastBumpUpAlert(long finishedRaceId, List<Long> promotedEntryIds) {

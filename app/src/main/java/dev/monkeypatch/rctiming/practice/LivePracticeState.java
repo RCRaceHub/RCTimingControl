@@ -136,10 +136,6 @@ public class LivePracticeState {
         return unknown;
     }
 
-    // ---------------------------------------------------------------------------
-    // Internal participant state
-    // ---------------------------------------------------------------------------
-
     static class ParticipantState {
         String transponderNumber;
         Long userId;

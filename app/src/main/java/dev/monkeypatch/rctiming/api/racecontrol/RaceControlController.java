@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Race control REST API (CTRL-01, CTRL-03, CTRL-06, CTRL-08, CTRL-09, D-04).
- * All endpoints require RACE_DIRECTOR or ADMIN role.
+ * Race control REST API (CTRL-01, CTRL-03, CTRL-08, CTRL-09) and the run order. Endpoints require the
+ * RACE_DIRECTOR or ADMIN role; the run order also allows REFEREE.
  *
  * <p>Every change to a race's lifecycle (call grid, start, stop, finish, abandon, restart) is recorded in the audit
  * log with who did it, in the same transaction as the change (#139).
@@ -71,16 +71,12 @@ public class RaceControlController {
         this.resultSnapshotRepository = resultSnapshotRepository;
     }
 
-    // --- D-04: Run order ---
-
     /** The referee also reads the run order: it is how the Referee View picks a race (#107). */
     @GetMapping("/event/{eventId}/run-order")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
     }
-
-    // --- CTRL-01: Race lifecycle ---
 
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/call-grid")
@@ -117,8 +113,7 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
-    // --- Restart (reset to PENDING from any active state) ---
-
+    /** Resets the race to PENDING from any state. */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/restart")
     @Transactional
@@ -146,8 +141,6 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
-    // --- CTRL-08: Abandon ---
-
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/abandon")
     @Transactional
@@ -159,8 +152,6 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
-    // --- CTRL-03: Marshal adjustment ---
-
     @Audited("marshal_adjustments")
     @PostMapping("/race/{raceId}/marshal-adjustment")
     public ResponseEntity<Void> marshalAdjustment(@PathVariable long raceId,
@@ -168,8 +159,6 @@ public class RaceControlController {
         marshalService.adjust(raceId, req.entryId(), req.transponderNumber(), req.lapDelta(), CurrentOfficial.id());
         return ResponseEntity.ok().build();
     }
-
-    // --- CTRL-09: Skip-to ---
 
     /** Checks the target race is in the same event and answers with it; the client keeps the active-race pointer. */
     @PostMapping("/race/{raceId}/skip-to")
@@ -191,8 +180,6 @@ public class RaceControlController {
 
         return ResponseEntity.ok(Map.of("eventId", sourceEventId, "activeRaceId", req.targetRaceId()));
     }
-
-    // --- Helpers ---
 
     /** Writes the audit row for a state change, in the transaction of the change. */
     private void recordLifecycle(Race race, String action, String verb, RaceStatus before) {

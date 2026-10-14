@@ -8,9 +8,9 @@ import jakarta.validation.constraints.Size;
 
 public record CreateChampionshipRequest(
         @NotBlank @Size(max = 255) String name,
-        @Min(1) Integer bestXFromYX,          // nullable — championship-wide default (D-11)
+        @Min(1) Integer bestXFromYX,          // nullable — championship-wide default
         @Min(1) Integer bestXFromYY,
         @NotNull ScoringSource scoringSource, // CHAMP-06
-        @Min(0) int tqBonusPoints,            // CHAMP-07 (D-15)
-        @Min(0) int afinalWinnerBonusPoints   // CHAMP-08 (D-15)
+        @Min(0) int tqBonusPoints,            // CHAMP-07
+        @Min(0) int afinalWinnerBonusPoints   // CHAMP-08
 ) {}

@@ -37,8 +37,8 @@ public class TtsClipService {
      * Generate and store a countdown interval clip.
      *
      * @param raceId   database ID of the race
-     * @param seconds  seconds remaining to announce (e.g. 300, 120, 60, 30)
-     * @param text     full announcement text (e.g. "Race Finals, 5 minutes")
+     * @param seconds  seconds remaining to announce (e.g. 600, 300, 120, 60, 30)
+     * @param text     full announcement text (e.g. "5 minutes remaining.")
      * @param voiceId  Piper voice model name, or null to use default
      * @return storage public URL, or null if Piper was unavailable
      */
@@ -79,10 +79,6 @@ public class TtsClipService {
         return synthesizeAndUpload(key, text, effectiveVoice,
                 "race {} finished clip", raceId);
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private String resolve(String voiceId) {
         return (voiceId != null && !voiceId.isBlank()) ? voiceId : properties.defaultVoice();

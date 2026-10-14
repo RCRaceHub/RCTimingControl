@@ -8,15 +8,6 @@ const FLASH_DURATION_MS = 2500;
 /** Threshold above server-computed running average that classifies a lap as slow. */
 const SLOW_THRESHOLD_MS = 2000;
 
-/**
- * Detects new laps by watching lapsCompleted and classifies each lap time.
- * Returns a flash colour per entry that expires after FLASH_DURATION_MS.
- *
- *  race-best      — fastest lap of the race across all drivers (purple)
- *  personal-best  — new personal best for this driver, not race fastest (blue)
- *  improving      — faster than or equal to the driver's previous lap (green)
- *  slow           — more than SLOW_THRESHOLD_MS above running average (red)
- */
 interface LapHistory {
   lapsCompleted: Map<number, number>;
   lastLapMs: Map<number, number>;
@@ -73,6 +64,15 @@ function classifyNewLaps(rows: LiveTimingRowDto[], history: LapHistory) {
   return changed ? { history: { lapsCompleted, lastLapMs }, newFlashes } : null;
 }
 
+/**
+ * Detects new laps by watching lapsCompleted and classifies each lap time.
+ * Returns a flash colour per entry that expires after FLASH_DURATION_MS.
+ *
+ *  race-best      — fastest lap of the race across all drivers (purple)
+ *  personal-best  — new personal best for this driver, not race fastest (blue)
+ *  improving      — faster than or equal to the driver's previous lap (green)
+ *  slow           — more than SLOW_THRESHOLD_MS above running average (red)
+ */
 export function useLapFlash(rows: LiveTimingRowDto[]): Map<number, FlashColor> {
   const [history, setHistory] = useState<LapHistory>(() => ({
     lapsCompleted: new Map(),

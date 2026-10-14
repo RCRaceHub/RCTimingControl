@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST endpoint for the pre-race readiness data (CTRL-02, CTRL-07).
- * Role-gated to RACE_DIRECTOR and ADMIN — racer tokens receive 403.
+ * Role-gated to RACE_DIRECTOR and ADMIN; other officials receive 403.
  * EntityNotFoundException from the query surfaces as 404 via GlobalExceptionHandler.
  */
 @RestController

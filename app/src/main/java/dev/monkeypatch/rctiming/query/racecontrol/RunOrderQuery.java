@@ -12,7 +12,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
 /**
- * jOOQ read-side query for the run-order list (D-04).
+ * jOOQ read-side query for the run-order list.
  * Joins Round → Race → EventClass → RacingClass to produce an ordered run list
  * for the cockpit left panel.
  */

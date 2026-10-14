@@ -69,10 +69,6 @@ public class PracticeTimingService {
         this.timingHub = timingHub;
     }
 
-    // ---------------------------------------------------------------------------
-    // Session lifecycle
-    // ---------------------------------------------------------------------------
-
     /**
      * Begin tracking a newly started practice session.
      * Called from PracticeSessionService.start() after the session is persisted.
@@ -91,10 +87,6 @@ public class PracticeTimingService {
         activeStates.remove(sessionId);
         log.info("Practice session {} stopped timing", sessionId);
     }
-
-    // ---------------------------------------------------------------------------
-    // Lap event processing
-    // ---------------------------------------------------------------------------
 
     /**
      * Handle LapPassingEvent. Processes only when a practice session is RUNNING and no race is: a passing
@@ -165,10 +157,6 @@ public class PracticeTimingService {
         }
     }
 
-    // ---------------------------------------------------------------------------
-    // Queries
-    // ---------------------------------------------------------------------------
-
     /**
      * Get current timing snapshot.
      * Returns in-memory state if session is active, else rebuilds from DB (for stopped sessions).
@@ -193,10 +181,6 @@ public class PracticeTimingService {
             timingHub.broadcastTimingUpdate(sessionId, state.calculatePositions());
         }
     }
-
-    // ---------------------------------------------------------------------------
-    // Private helpers
-    // ---------------------------------------------------------------------------
 
     private List<PracticeTimingRowDto> buildSnapshotFromDb(Long sessionId) {
         PracticeSession session = sessionRepository.findById(sessionId).orElse(null);

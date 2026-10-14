@@ -163,14 +163,12 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
           onSubmit={form.handleSubmit(values => generate.mutateAsync(values).catch(() => undefined))}
           className="space-y-4 py-2"
         >
-          {/* Global settings */}
           <div className="grid grid-cols-3 gap-3">
             {numberField('practiceRounds', 'Practice rounds', 0, 10)}
             {numberField('qualifyingRounds', 'Qualifying rounds', 1, 10)}
             {numberField('maxCarsPerHeat', 'Max cars/heat', 1, 64)}
           </div>
 
-          {/* Per-class finals config */}
           {classRows.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Finals per class</p>

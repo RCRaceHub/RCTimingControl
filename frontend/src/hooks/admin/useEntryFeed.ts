@@ -38,8 +38,8 @@ export function useFetchEntryFeed(eventId: number) {
 }
 
 /**
- * Previews or imports the file the feed is holding. An import that applies refreshes the event, its entries
- * and the feed.
+ * Previews or imports the file the feed is holding. An import that applies invalidates the event's key, which
+ * by prefix also refreshes its entries and the feed.
  */
 export function useEntryFeedImport(eventId: number) {
   const qc = useQueryClient();

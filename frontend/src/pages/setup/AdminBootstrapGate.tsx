@@ -59,7 +59,7 @@ export default function AdminBootstrapGate() {
         password: values.password,
       });
 
-      // Store JWT via AuthProvider (same pattern as login) — T-08-13
+      // Sign the new admin in with the token the bootstrap returned
       const authUser: AuthUser = {
         id: response.userId,
         email: response.email,

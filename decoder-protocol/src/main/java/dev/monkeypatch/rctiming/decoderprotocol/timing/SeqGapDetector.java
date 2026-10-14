@@ -4,7 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Monitors RC-4 PASSING sequence numbers for gaps (TIMING-07).
+ * Monitors RC-4 sequence numbers for gaps. STATUS and PASSING records share one counter, so
+ * both are observed; watching PASSING alone would read every STATUS heartbeat as a gap.
  *
  * <p>The RC-4 text protocol has <strong>no RESEND mechanism</strong>. Gaps are informational
  * only and are logged at INFO level. Callers should not treat a gap as a fatal error.
@@ -19,9 +20,9 @@ public class SeqGapDetector {
     private Integer lastSeqNum;
 
     /**
-     * Observe a PASSING sequence number and detect gaps.
+     * Observe a sequence number and detect gaps.
      *
-     * @param seqNum the seq_num field from the latest PASSING record
+     * @param seqNum the seq_num field from the latest STATUS or PASSING record
      * @return number of missed records (0 if first call or contiguous; positive if gap; 0 if out-of-order)
      */
     public int observe(int seqNum) {

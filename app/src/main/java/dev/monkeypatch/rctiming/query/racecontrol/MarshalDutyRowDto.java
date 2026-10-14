@@ -2,7 +2,7 @@ package dev.monkeypatch.rctiming.query.racecontrol;
 
 /**
  * A row in the marshal duty list — one driver from the previous race, annotated with
- * the number of times they failed to marshal at any race in this event (D-21).
+ * the number of times they failed to marshal at any race in this event.
  *
  * @param entryId         the entry ID for this driver
  * @param driverName      the competitor's display name (L5)

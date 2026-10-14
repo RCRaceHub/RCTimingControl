@@ -47,8 +47,6 @@ import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatDateTime, formatEventDate } from '@/lib/dates';
 
-// ── Valid state transitions ────────────────────────────────────────────────
-
 const VALID_NEXT: Record<EventStatus, EventStatus[]> = {
   DRAFT: ['PUBLISHED'],
   PUBLISHED: ['OPEN', 'DRAFT'],
@@ -58,8 +56,7 @@ const VALID_NEXT: Record<EventStatus, EventStatus[]> = {
   COMPLETED: [],
 };
 
-// ── Button label keyed by TARGET status ───────────────────────────────────
-
+// Keyed by the status the event moves to
 const transitionLabel: Record<EventStatus, string> = {
   DRAFT: 'Re-open as Draft',
   PUBLISHED: 'Publish Event',
@@ -75,10 +72,9 @@ const isDestructiveTransition = (target: EventStatus): boolean =>
 const isSecondaryTransition = (target: EventStatus): boolean =>
   target === 'DRAFT';
 
-// ── Confirm dialog copy (keyed by target status) ──────────────────────────
-
 type ConfirmCopy = { title: string; body: string; confirmLabel: string; destructive: boolean };
 
+// Keyed by the status the event moves to
 const transitionConfirmCopy: Partial<Record<EventStatus, ConfirmCopy>> = {
   DRAFT: {
     title: 'Re-open as Draft?',
@@ -100,16 +96,12 @@ const transitionConfirmCopy: Partial<Record<EventStatus, ConfirmCopy>> = {
   },
 };
 
-// ── Edit event form ────────────────────────────────────────────────────────
-
 const editEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   eventDate: z.string().min(1, 'Date is required'),
   trackId: z.number().nullable(),
 });
 type EditEventFormValues = z.infer<typeof editEventSchema>;
-
-// ── Component ─────────────────────────────────────────────────────────────
 
 export default function EventDetailPage() {
   const { id: idParam } = useParams<{ id: string }>();

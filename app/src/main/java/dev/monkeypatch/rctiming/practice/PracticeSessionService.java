@@ -52,10 +52,6 @@ public class PracticeSessionService {
         this.raceRepository = raceRepository;
     }
 
-    // ---------------------------------------------------------------------------
-    // CRUD
-    // ---------------------------------------------------------------------------
-
     @Transactional
     public PracticeSessionDto create(Actor actor, CreateRequest request) {
         PracticeSession session = new PracticeSession();
@@ -92,10 +88,6 @@ public class PracticeSessionService {
                 .map(this::toDto)
                 .toList();
     }
-
-    // ---------------------------------------------------------------------------
-    // State machine
-    // ---------------------------------------------------------------------------
 
     @Transactional
     public PracticeSessionDto start(Actor actor, Long sessionId) {
@@ -170,10 +162,6 @@ public class PracticeSessionService {
         }
     }
 
-    // ---------------------------------------------------------------------------
-    // DTO mapping
-    // ---------------------------------------------------------------------------
-
     private PracticeSessionDto toDto(PracticeSession session) {
         return new PracticeSessionDto(
                 session.getId(),
@@ -188,10 +176,6 @@ public class PracticeSessionService {
                 session.getStoppedAt()
         );
     }
-
-    // ---------------------------------------------------------------------------
-    // Request record
-    // ---------------------------------------------------------------------------
 
     public record CreateRequest(String name, Long eventId, Integer bestLapN) {}
 }

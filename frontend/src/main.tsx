@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Apply dark class based on OS preference (Phase 1 — no manual toggle yet)
+// Follow the OS colour scheme; there is no manual toggle
 if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
   document.documentElement.classList.add('dark');
 }

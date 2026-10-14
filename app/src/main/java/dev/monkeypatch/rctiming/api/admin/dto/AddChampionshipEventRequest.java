@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotNull;
 
 public record AddChampionshipEventRequest(
         @NotNull Long eventId,
-        @NotNull @Min(1) Integer roundNumber   // CHAMP-10 (D-16)
+        @NotNull @Min(1) Integer roundNumber   // CHAMP-10
 ) {}

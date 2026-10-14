@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Links an unknown transponder to an entry during a live race (TIMING-08, D-12), crediting every passing it has
+ * Links an unknown transponder to an entry during a live race (TIMING-08), crediting every passing it has
  * made since the start.
  */
 @Service
