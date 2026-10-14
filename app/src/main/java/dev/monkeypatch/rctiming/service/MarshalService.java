@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -74,7 +75,7 @@ public class MarshalService {
         } else {
             MarshalAdjustmentDto dto = new MarshalAdjustmentDto(raceId, entryId, transponderNumber, lapDelta,
                     actingUserName, adjustment.getAdjustedAt().toEpochMilli());
-            lapTimingService.applyMarshalAdjustment(raceId, entryId, lapDelta, dto);
+            AfterCommit.run(() -> lapTimingService.applyMarshalAdjustment(raceId, entryId, lapDelta, dto));
         }
         return adjustment;
     }

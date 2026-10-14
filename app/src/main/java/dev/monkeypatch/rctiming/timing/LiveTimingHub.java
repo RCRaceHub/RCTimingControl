@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -8,8 +9,6 @@ import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceStateChangeDto;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
@@ -77,18 +76,9 @@ public class LiveTimingHub {
 
     /**
      * Sends when the current transaction commits, or now outside one. Callers are race-control commands in a
-     * write transaction; called from another transaction's after-commit callback the message would be lost.
+     * write transaction.
      */
     private void sendAfterCommit(String destination, Object payload) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            messagingTemplate.convertAndSend(destination, payload);
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                messagingTemplate.convertAndSend(destination, payload);
-            }
-        });
+        AfterCommit.run(() -> messagingTemplate.convertAndSend(destination, payload));
     }
 }

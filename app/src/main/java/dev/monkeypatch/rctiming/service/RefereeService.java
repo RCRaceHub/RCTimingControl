@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.PenaltyType;
 import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -127,7 +128,8 @@ public class RefereeService {
             eventPublisher.publishEvent(new FinishedRaceCorrected(raceId));
         }
         if (type == PenaltyType.LAP) {
-            lapTimingService.applyLapPenalty(raceId, entryId, value.intValueExact());
+            int laps = value.intValueExact();
+            AfterCommit.run(() -> lapTimingService.applyLapPenalty(raceId, entryId, laps));
         }
         return saved;
     }
