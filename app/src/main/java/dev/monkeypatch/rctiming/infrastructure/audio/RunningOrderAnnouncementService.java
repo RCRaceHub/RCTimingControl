@@ -88,10 +88,6 @@ public class RunningOrderAnnouncementService {
             List<String> positions
     ) {}
 
-    // -------------------------------------------------------------------------
-    // Race lifecycle tracking via events
-    // -------------------------------------------------------------------------
-
     /**
      * Listens for RUNNING transitions to start tracking; STOPPED/FINISHED to stop.
      */
@@ -107,7 +103,6 @@ public class RunningOrderAnnouncementService {
 
     /**
      * Register a race as started — begins tracking for interval announcements.
-     * Visible for testing.
      */
     public void onRaceStarted(Long raceId) {
         Instant now = Instant.now();
@@ -118,17 +113,12 @@ public class RunningOrderAnnouncementService {
 
     /**
      * Deregister a race — stops interval announcements.
-     * Visible for testing.
      */
     public void onRaceStopped(Long raceId) {
         raceStartTimes.remove(raceId);
         lastAnnouncementTimes.remove(raceId);
         log.info("Race {} stopped — running order announcements disabled", raceId);
     }
-
-    // -------------------------------------------------------------------------
-    // Scheduled announcement check
-    // -------------------------------------------------------------------------
 
     /**
      * Checks every 10 seconds whether any tracked race is due for a running-order announcement.
@@ -166,10 +156,6 @@ public class RunningOrderAnnouncementService {
             }
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private void broadcastRunningOrder(Long raceId, int depth) {
         Optional<LiveRaceState> stateOpt = lapTimingService.peek(raceId);

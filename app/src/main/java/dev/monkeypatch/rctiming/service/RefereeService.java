@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Referee actions (OFFICIAL-03, OFFICIAL-04, D-22): incident reports, lap and time penalties, and marshal absences
+ * Referee actions (OFFICIAL-03, OFFICIAL-04): incident reports, lap and time penalties, and marshal absences
  * and their penalties. Each is saved with an audit row, in the same transaction.
  */
 @Service
@@ -132,7 +132,7 @@ public class RefereeService {
         return saved;
     }
 
-    /** Records that an entry missed their marshal duty (D-22). It gives no penalty: that is a separate action. */
+    /** Records that an entry missed their marshal duty. It gives no penalty: that is a separate action. */
     public MarshalAbsence recordMarshalAbsence(long raceId, long entryId, long eventId, long userId) {
         MarshalAbsence absence = new MarshalAbsence();
         absence.setRaceId(raceId);
@@ -149,7 +149,7 @@ public class RefereeService {
     }
 
     /**
-     * Gives a marshal penalty for a recorded absence (D-22). The absence can be named (its id comes back from
+     * Gives a marshal penalty for a recorded absence. The absence can be named (its id comes back from
      * recording it); otherwise the entry's most recent absence in the event is used, if there is one.
      */
     public MarshalPenalty applyMarshalPenalty(long raceId, long entryId, long eventId, Long absenceId, String notes,

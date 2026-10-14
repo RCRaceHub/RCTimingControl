@@ -13,7 +13,8 @@ import java.util.List;
  * Replays a {@code .dump} file of RC-4 PASSING/STATUS records at configurable speed.
  *
  * <p>Timing is inferred from the {@code timeSinceStart} field deltas between successive
- * PASSING lines. STATUS lines are emitted immediately (they represent heartbeats). The
+ * PASSING lines. STATUS lines before the first PASSING are spaced like the decoder's 5 s heartbeat;
+ * after that they go out straight away, the PASSING lines setting the pace. The
  * {@code speed} factor compresses wall-clock delay: {@code speed=2.0} plays back at 2×.
  */
 public class PlaybackMode {
@@ -53,7 +54,7 @@ public class PlaybackMode {
                     } catch (NumberFormatException ignored) {}
                 }
             } else if (line.startsWith("#\t")) {
-                // STATUS lines: emit with 5 s inter-arrival (STATUS heartbeat); don't delay exactly
+                // Before the first PASSING, space STATUS lines like the 5 s heartbeat
                 if (prevTime < 0) Rc4Lines.pause((long)(5000 / speed));
             }
 

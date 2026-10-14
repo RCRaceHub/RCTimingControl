@@ -67,10 +67,6 @@ public class AudioPreGenerationService {
         this.clubProfileService = clubProfileService;
     }
 
-    // -------------------------------------------------------------------------
-    // Event listener
-    // -------------------------------------------------------------------------
-
     /**
      * React to race GRID transition and pre-generate all predictable clips.
      * Runs asynchronously so it does not block the race transition itself.
@@ -135,10 +131,6 @@ public class AudioPreGenerationService {
         log.info("Audio pre-generation complete for race {}: {} clips cached", raceId, clips.size());
     }
 
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
-
     /**
      * Returns pre-generated clip URL map for the given race. Empty map if not yet generated.
      * Called by {@code AudioClipController} (AUDIO-10).
@@ -153,10 +145,6 @@ public class AudioPreGenerationService {
     public void clearClips(Long raceId) {
         clipCache.remove(raceId);
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private static String formatCountdownLabel(int seconds) {
         if (seconds >= 60 && seconds % 60 == 0) {

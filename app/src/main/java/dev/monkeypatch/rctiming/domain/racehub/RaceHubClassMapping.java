@@ -4,7 +4,10 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
-/** Maps a RaceHub event class to an event class here, when the names do not match (L7). */
+/**
+ * Maps a class in an imported file to an event class here, when the names do not match (L7). The key is a
+ * RaceHub event class id, or {@code CSV:<class name>} for a class in an RC-Timing driver CSV.
+ */
 public class RaceHubClassMapping implements CreatedAt, UpdatedAt {
 
     private Long id;

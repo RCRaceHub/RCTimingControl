@@ -209,8 +209,6 @@ public class RaceHubImportService {
                 .after(after).record();
     }
 
-    // ── Class mappings ─────────────────────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public List<RaceHubClassMapping> listMappings(Long eventId) {
         eventRepository.requireExists(eventId);
@@ -249,8 +247,6 @@ public class RaceHubImportService {
                 .before(before).after(new TreeMap<>(mappings)).record();
         return saved;
     }
-
-    // ── Planning ───────────────────────────────────────────────────────────────────
 
     /** The file's {@code source}, RACEHUB when it has none. */
     static String sourceOf(RaceHubEntryExport export) {
@@ -399,8 +395,6 @@ public class RaceHubImportService {
         }
         state.check(errors, warnings);
     }
-
-    // ── Applying ───────────────────────────────────────────────────────────────────
 
     private Long applyRow(Long eventId, Planned p, Map<String, Competitor> competitors, String source) {
         ExportEntry row = p.row;

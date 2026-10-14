@@ -45,7 +45,7 @@ public class UserService {
      */
     @Transactional
     public User createAdmin(String email, String password, String firstName, String lastName) {
-        // T-08-01 server-side replay guard (defence-in-depth — SetupService is the first guard)
+        // A second guard behind SetupService's, so a replayed setup request cannot add another admin
         if (userRepository.count() > 0) {
             throw new StateConflictException("Bootstrap already complete - users exist");
         }

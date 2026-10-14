@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record AddChampionshipClassRequest(
         @NotNull Long racingClassId,
-        @Min(1) Integer bestXFromYX,          // nullable — inherits championship default (D-11)
+        @Min(1) Integer bestXFromYX,          // nullable — inherits championship default
         @Min(1) Integer bestXFromYY
 ) {}

@@ -137,7 +137,7 @@ public class LapTimingService {
     }
 
     /**
-     * Phase 5 / TIMING-08: links an unknown transponder to an entry for the given race.
+     * Links an unknown transponder to an entry for the given race.
      * Retroactively credits all passings from that transponder since race start and
      * broadcasts updated positions via STOMP.
      */
@@ -151,7 +151,7 @@ public class LapTimingService {
     }
 
     /**
-     * Phase 5: returns the count of lapHistory entries matching the given transponder number.
+     * Returns the count of lapHistory entries matching the given transponder number.
      * Used by TransponderLinkService to report lapsCredited before linking.
      */
     public int countPassingsForTransponder(long raceId, String transponderNumber) {

@@ -57,12 +57,10 @@ public class ChampionshipStandingsQuery {
     }
 
     public List<StandingsRowDto> computeStandings(Long championshipId) {
-        // Step 1: Existence check
         if (!dsl.fetchExists(CHAMPIONSHIPS, CHAMPIONSHIPS.ID.eq(championshipId))) {
             throw new EntityNotFoundException("Championship not found: " + championshipId);
         }
 
-        // Step 1b: Load championship header
         var champRecord = dsl
                 .select(CHAMPIONSHIPS.NAME, CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y,
                         CHAMPIONSHIPS.SCORING_SOURCE, CHAMPIONSHIPS.TQ_BONUS_POINTS,
@@ -81,7 +79,7 @@ public class ChampionshipStandingsQuery {
         int tqBonus = champRecord.get(CHAMPIONSHIPS.TQ_BONUS_POINTS);
         int afinalBonus = champRecord.get(CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS);
 
-        // Step 2: Load per-class best-X-from-Y overrides
+        // Load per-class best-X-from-Y overrides
         // Map: racingClassId -> [bestX, bestY] (null = use championship default)
         var classRows = dsl
                 .select(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID,
@@ -100,7 +98,7 @@ public class ChampionshipStandingsQuery {
             });
         }
 
-        // Step 3: Load ordered event links
+        // Load ordered event links
         var eventLinks = dsl
                 .select(CHAMPIONSHIP_EVENT_LINKS.ID,
                         CHAMPIONSHIP_EVENT_LINKS.EVENT_ID,
@@ -112,7 +110,7 @@ public class ChampionshipStandingsQuery {
                 .orderBy(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER.asc())
                 .fetch();
 
-        // Step 4: Load points scale
+        // Load points scale
         Map<Integer, Integer> pointsScale = new HashMap<>();
         dsl.select(CHAMPIONSHIP_POINTS_SCALE.POSITION, CHAMPIONSHIP_POINTS_SCALE.POINTS)
                 .from(CHAMPIONSHIP_POINTS_SCALE)
@@ -120,7 +118,7 @@ public class ChampionshipStandingsQuery {
                 .forEach(r -> pointsScale.put(r.get(CHAMPIONSHIP_POINTS_SCALE.POSITION),
                         r.get(CHAMPIONSHIP_POINTS_SCALE.POINTS)));
 
-        // Step 5: Load exclusions
+        // Load exclusions
         Set<String> exclusionKeys = new HashSet<>();
         dsl.select(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID, CHAMPIONSHIP_EXCLUSIONS.EVENT_ID)
                 .from(CHAMPIONSHIP_EXCLUSIONS)
@@ -128,7 +126,6 @@ public class ChampionshipStandingsQuery {
                 .forEach(r -> exclusionKeys.add(
                         r.get(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID) + ":" + r.get(CHAMPIONSHIP_EXCLUSIONS.EVENT_ID)));
 
-        // Per-driver data structures for steps 6-9:
         // driverKey = "driverId:racingClassId"
         // Store: Map<driverKey, List<RoundResultDto>> for building standings
         Map<String, List<RoundResultDto>> driverRounds = new LinkedHashMap<>();
@@ -144,7 +141,7 @@ public class ChampionshipStandingsQuery {
         Set<ClassRound> tqBonuses = new HashSet<>();      // position 1 in a QUALIFIER race
         Set<ClassRound> afinalBonuses = new HashSet<>();  // position 1 in an A final
 
-        // Step 6: Per event link — find finished races and build RoundResultDtos
+        // Per event link — find finished races and build RoundResultDtos
         for (var link : eventLinks) {
             Long eventId = link.get(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID);
             int roundNumber = link.get(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER);
@@ -180,7 +177,7 @@ public class ChampionshipStandingsQuery {
             // Per-race: track who scored what for TQ/A-final bonus
             // positionsJson entryId → driverId (competitor) mapping needed
 
-            // Step 6c/6d: For all race_entries for these races, collect each entered driver's competitor id
+            // For all race_entries for these races, collect each entered driver's competitor id
             Set<Long> enteredEntryIds = new HashSet<>();
             // Map entryId -> competitor id and entryId -> racingClassId (via entry -> event_class)
             Map<Long, Long> entryIdToDriverId = new HashMap<>();
@@ -228,7 +225,7 @@ public class ChampionshipStandingsQuery {
                         .forEach(r -> driverDisplayName.put(r.get(COMPETITORS.ID), r.get(COMPETITORS.DISPLAY_NAME)));
             }
 
-            // Step 6b/6c: Deserialize positions_json and collect per-driver best position per class
+            // Deserialize positions_json and collect per-driver best position per class
             for (var race : finishedRaces) {
                 var raceEventClassId = race.get(EVENT_CLASSES.RACING_CLASS_ID);
                 var positions = snapshotJson.positions(race.get(RACES.ID), race.get(RESULT_SNAPSHOTS.POSITIONS_JSON));
@@ -243,7 +240,7 @@ public class ChampionshipStandingsQuery {
                 }
             }
 
-            // CR-05: Bonus tracking uses ALL finished races at this event regardless of scoringSource.
+            // Bonus tracking uses ALL finished races at this event regardless of scoringSource.
             // When scoringSource=FINALS, finishedRaces contains no QUALIFIERs, so TQ bonus was never
             // awarded. Separate query ensures bonuses are always evaluated from the correct race type.
             var bonusRaces = dsl
@@ -288,7 +285,7 @@ public class ChampionshipStandingsQuery {
                 }
             }
 
-            // Step 7: Build RoundResultDto for each driver that appeared in positions OR race_entries
+            // Build RoundResultDto for each driver that appeared in positions OR race_entries
             // Collect all (driverId, racingClassId) pairs seen at this event
             // From positions (via classBestPosition)
             for (var classEntry : classBestPosition.entrySet()) {
@@ -310,7 +307,7 @@ public class ChampionshipStandingsQuery {
             }
 
             // DNS drivers: in race_entries but not in positions at this event for their class
-            // WR-03: deduplicate by (driverId, rcId, eventId) — a driver with multiple heats can
+            // Deduplicate by (driverId, rcId, eventId) — a driver with multiple heats can
             // appear in entryIdToDriverId multiple times, inflating their DNS round count.
             Set<String> dnsEmitted = new HashSet<>();
             for (var entryIdEntry : entryIdToDriverId.entrySet()) {
@@ -325,7 +322,7 @@ public class ChampionshipStandingsQuery {
                         .containsKey(driverId);
 
                 if (!appearedInPositions) {
-                    // ASSUMED: DNS counts toward Y rounds (club confirmation pending — see STATE.md)
+                    // A DNS is a round toward Y, scoring zero (CHAMP-02)
                     String dnsKey = driverId + ":" + rcId + ":" + eventId;
                     if (dnsEmitted.add(dnsKey)) {
                         String driverKey = driverId + ":" + rcId;
@@ -340,7 +337,7 @@ public class ChampionshipStandingsQuery {
             }
         }
 
-        // Step 8: Apply best-X-from-Y drop logic per driver-class group
+        // Apply best-X-from-Y drop logic per driver-class group
         // Collect all distinct (driverId, racingClassId) combinations and build standings
         Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
 
@@ -393,7 +390,7 @@ public class ChampionshipStandingsQuery {
                     .mapToInt(RoundResultDto::points)
                     .sum();
 
-            // Step 9: Apply TQ and A-final bonuses: one for each round this driver won in this class
+            // Apply TQ and A-final bonuses: one for each round this driver won in this class
             totalPoints += tqBonus * roundsWon(tqBonuses, driverId, rcId);
             totalPoints += afinalBonus * roundsWon(afinalBonuses, driverId, rcId);
 
@@ -405,7 +402,7 @@ public class ChampionshipStandingsQuery {
             byClass.computeIfAbsent(rcId, k -> new ArrayList<>()).add(row);
         }
 
-        // Step 10: Sort each class by totalPoints DESC, display name as tiebreak. Classes come out in
+        // Sort each class by totalPoints DESC, display name as tiebreak. Classes come out in
         // racing class order: the order the rows were first seen in follows hash-map iteration, which
         // changes with the ids and made the output order depend on how many classes existed before.
         List<StandingsRowDto> result = new ArrayList<>();

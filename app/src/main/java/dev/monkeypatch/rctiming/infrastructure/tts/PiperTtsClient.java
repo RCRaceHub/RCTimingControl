@@ -235,8 +235,7 @@ public class PiperTtsClient {
     }
 
     /**
-     * Assemble a WAV file from raw PCM data.
-     * Visible for testing.
+     * Assemble a WAV file from raw PCM data. Public so the test in the audio package can check the header.
      */
     public byte[] assembleWav(byte[] pcmData, int sampleRate, int sampleWidth, int channels) {
         int byteRate = sampleRate * channels * sampleWidth;

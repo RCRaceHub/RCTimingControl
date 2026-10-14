@@ -34,7 +34,7 @@ public class RaceEntriesQuery {
                 .fetch(r -> new RaceEntryDto(
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
-                        null // cars went with racer accounts (L10, #18)
+                        null // not read yet, though race_entries.car_number holds it (ENTRY-03)
                 ));
     }
 }

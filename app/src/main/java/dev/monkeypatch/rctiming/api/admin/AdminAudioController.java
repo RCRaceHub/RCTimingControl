@@ -31,8 +31,6 @@ public class AdminAudioController {
         this.clubProfileService = clubProfileService;
     }
 
-    // ========== Audio Settings (AUDIO-07) ==========
-
     /** DTO for club-wide audio toggle settings */
     public record AudioSettingsDto(
             boolean announceCountdown,

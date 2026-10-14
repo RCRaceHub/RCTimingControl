@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for PublicChampionshipController (Phase 7, Plan 04).
+ * Integration tests for PublicChampionshipController.
  * Tests: public GET /api/v1/championships/{id} returns standings without auth (CHAMP-05);
  *        unknown id returns 404 not 403.
  */
