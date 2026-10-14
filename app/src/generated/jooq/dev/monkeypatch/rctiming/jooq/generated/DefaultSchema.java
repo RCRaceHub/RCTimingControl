@@ -40,7 +40,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UserRoles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 
@@ -246,11 +245,6 @@ public class DefaultSchema extends SchemaImpl {
     public final UnknownTransponderLink UNKNOWN_TRANSPONDER_LINK = UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
 
     /**
-     * The table <code>unknown_transponder_links</code>.
-     */
-    public final UnknownTransponderLinks UNKNOWN_TRANSPONDER_LINKS = UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS;
-
-    /**
      * The table <code>user_roles</code>.
      */
     public final UserRoles USER_ROLES = UserRoles.USER_ROLES;
@@ -312,7 +306,6 @@ public class DefaultSchema extends SchemaImpl {
             TrackLapThresholds.TRACK_LAP_THRESHOLDS,
             Tracks.TRACKS,
             UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK,
-            UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS,
             UserRoles.USER_ROLES,
             Users.USERS
         );

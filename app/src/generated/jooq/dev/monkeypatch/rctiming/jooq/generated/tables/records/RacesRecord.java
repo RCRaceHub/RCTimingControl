@@ -119,129 +119,101 @@ public class RacesRecord extends UpdatableRecordImpl<RacesRecord> {
     }
 
     /**
-     * Setter for <code>races.format_id</code>.
-     */
-    public void setFormatId(Long value) {
-        set(7, value);
-    }
-
-    /**
-     * Getter for <code>races.format_id</code>.
-     */
-    public Long getFormatId() {
-        return (Long) get(7);
-    }
-
-    /**
-     * Setter for <code>races.format_overrides</code>.
-     */
-    public void setFormatOverrides(String value) {
-        set(8, value);
-    }
-
-    /**
-     * Getter for <code>races.format_overrides</code>.
-     */
-    public String getFormatOverrides() {
-        return (String) get(8);
-    }
-
-    /**
      * Setter for <code>races.status</code>.
      */
     public void setStatus(String value) {
-        set(9, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>races.status</code>.
      */
     public String getStatus() {
-        return (String) get(9);
+        return (String) get(7);
     }
 
     /**
      * Setter for <code>races.started_at</code>.
      */
     public void setStartedAt(Instant value) {
-        set(10, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>races.started_at</code>.
      */
     public Instant getStartedAt() {
-        return (Instant) get(10);
+        return (Instant) get(8);
     }
 
     /**
      * Setter for <code>races.finished_at</code>.
      */
     public void setFinishedAt(Instant value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>races.finished_at</code>.
      */
     public Instant getFinishedAt() {
-        return (Instant) get(11);
+        return (Instant) get(9);
     }
 
     /**
      * Setter for <code>races.created_at</code>.
      */
     public void setCreatedAt(Instant value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>races.created_at</code>.
      */
     public Instant getCreatedAt() {
-        return (Instant) get(12);
+        return (Instant) get(10);
     }
 
     /**
      * Setter for <code>races.updated_at</code>.
      */
     public void setUpdatedAt(Instant value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>races.updated_at</code>.
      */
     public Instant getUpdatedAt() {
-        return (Instant) get(13);
+        return (Instant) get(11);
     }
 
     /**
      * Setter for <code>races.abandoned_at</code>.
      */
     public void setAbandonedAt(Instant value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>races.abandoned_at</code>.
      */
     public Instant getAbandonedAt() {
-        return (Instant) get(14);
+        return (Instant) get(12);
     }
 
     /**
      * Setter for <code>races.bump_slots</code>.
      */
     public void setBumpSlots(Integer value) {
-        set(15, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>races.bump_slots</code>.
      */
     public Integer getBumpSlots() {
-        return (Integer) get(15);
+        return (Integer) get(13);
     }
 
     // -------------------------------------------------------------------------
@@ -267,7 +239,7 @@ public class RacesRecord extends UpdatableRecordImpl<RacesRecord> {
     /**
      * Create a detached, initialised RacesRecord
      */
-    public RacesRecord(Long id, Long roundId, Long eventClassId, Integer heatNumber, Integer sequenceInRound, String finalLetter, String startType, Long formatId, String formatOverrides, String status, Instant startedAt, Instant finishedAt, Instant createdAt, Instant updatedAt, Instant abandonedAt, Integer bumpSlots) {
+    public RacesRecord(Long id, Long roundId, Long eventClassId, Integer heatNumber, Integer sequenceInRound, String finalLetter, String startType, String status, Instant startedAt, Instant finishedAt, Instant createdAt, Instant updatedAt, Instant abandonedAt, Integer bumpSlots) {
         super(Races.RACES);
 
         setId(id);
@@ -277,8 +249,6 @@ public class RacesRecord extends UpdatableRecordImpl<RacesRecord> {
         setSequenceInRound(sequenceInRound);
         setFinalLetter(finalLetter);
         setStartType(startType);
-        setFormatId(formatId);
-        setFormatOverrides(formatOverrides);
         setStatus(status);
         setStartedAt(startedAt);
         setFinishedAt(finishedAt);

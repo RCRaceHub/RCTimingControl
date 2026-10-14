@@ -7,7 +7,6 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.Races.RacesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceFormatTemplatesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
@@ -175,18 +174,6 @@ public class RaceFormatTemplates extends TableImpl<RaceFormatTemplatesRecord> {
             _eventClasses = new EventClassesPath(this, null, Keys.EVENT_CLASSES__EVENT_CLASSES_TEMPLATE_ID_FKEY.getInverseKey());
 
         return _eventClasses;
-    }
-
-    private transient RacesPath _races;
-
-    /**
-     * Get the implicit to-many join path to the <code>races</code> table
-     */
-    public RacesPath races() {
-        if (_races == null)
-            _races = new RacesPath(this, null, Keys.RACES__RACES_FORMAT_ID_FKEY.getInverseKey());
-
-        return _races;
     }
 
     @Override

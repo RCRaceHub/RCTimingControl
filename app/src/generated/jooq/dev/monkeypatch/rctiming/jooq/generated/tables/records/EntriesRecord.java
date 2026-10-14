@@ -35,297 +35,269 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     }
 
     /**
-     * Setter for <code>entries.user_id</code>.
-     */
-    public void setUserId(Long value) {
-        set(1, value);
-    }
-
-    /**
-     * Getter for <code>entries.user_id</code>.
-     */
-    public Long getUserId() {
-        return (Long) get(1);
-    }
-
-    /**
      * Setter for <code>entries.event_id</code>.
      */
     public void setEventId(Long value) {
-        set(2, value);
+        set(1, value);
     }
 
     /**
      * Getter for <code>entries.event_id</code>.
      */
     public Long getEventId() {
-        return (Long) get(2);
+        return (Long) get(1);
     }
 
     /**
      * Setter for <code>entries.event_class_id</code>.
      */
     public void setEventClassId(Long value) {
-        set(3, value);
+        set(2, value);
     }
 
     /**
      * Getter for <code>entries.event_class_id</code>.
      */
     public Long getEventClassId() {
-        return (Long) get(3);
+        return (Long) get(2);
     }
 
     /**
      * Setter for <code>entries.transponder_number</code>.
      */
     public void setTransponderNumber(String value) {
-        set(4, value);
+        set(3, value);
     }
 
     /**
      * Getter for <code>entries.transponder_number</code>.
      */
     public String getTransponderNumber() {
-        return (String) get(4);
-    }
-
-    /**
-     * Setter for <code>entries.transponder_label</code>.
-     */
-    public void setTransponderLabel(String value) {
-        set(5, value);
-    }
-
-    /**
-     * Getter for <code>entries.transponder_label</code>.
-     */
-    public String getTransponderLabel() {
-        return (String) get(5);
+        return (String) get(3);
     }
 
     /**
      * Setter for <code>entries.status</code>.
      */
     public void setStatus(String value) {
-        set(6, value);
+        set(4, value);
     }
 
     /**
      * Getter for <code>entries.status</code>.
      */
     public String getStatus() {
-        return (String) get(6);
+        return (String) get(4);
     }
 
     /**
      * Setter for <code>entries.submitted_at</code>.
      */
     public void setSubmittedAt(Instant value) {
-        set(7, value);
+        set(5, value);
     }
 
     /**
      * Getter for <code>entries.submitted_at</code>.
      */
     public Instant getSubmittedAt() {
-        return (Instant) get(7);
+        return (Instant) get(5);
     }
 
     /**
      * Setter for <code>entries.updated_at</code>.
      */
     public void setUpdatedAt(Instant value) {
-        set(8, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>entries.updated_at</code>.
      */
     public Instant getUpdatedAt() {
-        return (Instant) get(8);
+        return (Instant) get(6);
     }
 
     /**
      * Setter for <code>entries.confirmed_at</code>.
      */
     public void setConfirmedAt(Instant value) {
-        set(9, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>entries.confirmed_at</code>.
      */
     public Instant getConfirmedAt() {
-        return (Instant) get(9);
+        return (Instant) get(7);
     }
 
     /**
      * Setter for <code>entries.withdrawn_at</code>.
      */
     public void setWithdrawnAt(Instant value) {
-        set(10, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>entries.withdrawn_at</code>.
      */
     public Instant getWithdrawnAt() {
-        return (Instant) get(10);
+        return (Instant) get(8);
     }
 
     /**
      * Setter for <code>entries.competitor_id</code>.
      */
     public void setCompetitorId(Long value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>entries.competitor_id</code>.
      */
     public Long getCompetitorId() {
-        return (Long) get(11);
+        return (Long) get(9);
     }
 
     /**
      * Setter for <code>entries.secondary_transponder_number</code>.
      */
     public void setSecondaryTransponderNumber(String value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>entries.secondary_transponder_number</code>.
      */
     public String getSecondaryTransponderNumber() {
-        return (String) get(12);
+        return (String) get(10);
     }
 
     /**
      * Setter for <code>entries.external_source</code>.
      */
     public void setExternalSource(String value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>entries.external_source</code>.
      */
     public String getExternalSource() {
-        return (String) get(13);
+        return (String) get(11);
     }
 
     /**
      * Setter for <code>entries.external_entry_id</code>.
      */
     public void setExternalEntryId(String value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>entries.external_entry_id</code>.
      */
     public String getExternalEntryId() {
-        return (String) get(14);
+        return (String) get(12);
     }
 
     /**
      * Setter for <code>entries.external_entry_version</code>.
      */
     public void setExternalEntryVersion(Long value) {
-        set(15, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>entries.external_entry_version</code>.
      */
     public Long getExternalEntryVersion() {
-        return (Long) get(15);
+        return (Long) get(13);
     }
 
     /**
      * Setter for <code>entries.racehub_arrival</code>.
      */
     public void setRacehubArrival(String value) {
-        set(16, value);
+        set(14, value);
     }
 
     /**
      * Getter for <code>entries.racehub_arrival</code>.
      */
     public String getRacehubArrival() {
-        return (String) get(16);
+        return (String) get(14);
     }
 
     /**
      * Setter for <code>entries.checked_in_at</code>.
      */
     public void setCheckedInAt(Instant value) {
-        set(17, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>entries.checked_in_at</code>.
      */
     public Instant getCheckedInAt() {
-        return (Instant) get(17);
+        return (Instant) get(15);
     }
 
     /**
      * Setter for <code>entries.checked_in_by_user_id</code>.
      */
     public void setCheckedInByUserId(Long value) {
-        set(18, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>entries.checked_in_by_user_id</code>.
      */
     public Long getCheckedInByUserId() {
-        return (Long) get(18);
+        return (Long) get(16);
     }
 
     /**
      * Setter for <code>entries.racehub_event_class_id</code>.
      */
     public void setRacehubEventClassId(String value) {
-        set(19, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>entries.racehub_event_class_id</code>.
      */
     public String getRacehubEventClassId() {
-        return (String) get(19);
+        return (String) get(17);
     }
 
     /**
      * Setter for <code>entries.imported_transponder_number</code>.
      */
     public void setImportedTransponderNumber(String value) {
-        set(20, value);
+        set(18, value);
     }
 
     /**
      * Getter for <code>entries.imported_transponder_number</code>.
      */
     public String getImportedTransponderNumber() {
-        return (String) get(20);
+        return (String) get(18);
     }
 
     /**
      * Setter for <code>entries.imported_secondary_transponder_number</code>.
      */
     public void setImportedSecondaryTransponderNumber(String value) {
-        set(21, value);
+        set(19, value);
     }
 
     /**
      * Getter for <code>entries.imported_secondary_transponder_number</code>.
      */
     public String getImportedSecondaryTransponderNumber() {
-        return (String) get(21);
+        return (String) get(19);
     }
 
     // -------------------------------------------------------------------------
@@ -351,15 +323,13 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     /**
      * Create a detached, initialised EntriesRecord
      */
-    public EntriesRecord(Long id, Long userId, Long eventId, Long eventClassId, String transponderNumber, String transponderLabel, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, Instant checkedInAt, Long checkedInByUserId, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber) {
+    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, Instant checkedInAt, Long checkedInByUserId, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber) {
         super(Entries.ENTRIES);
 
         setId(id);
-        setUserId(userId);
         setEventId(eventId);
         setEventClassId(eventClassId);
         setTransponderNumber(transponderNumber);
-        setTransponderLabel(transponderLabel);
         setStatus(status);
         setSubmittedAt(submittedAt);
         setUpdatedAt(updatedAt);
