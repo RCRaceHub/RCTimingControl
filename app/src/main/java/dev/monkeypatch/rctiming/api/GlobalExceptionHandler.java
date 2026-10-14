@@ -30,6 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Turns exceptions from controllers and services into {@link ProblemDetail} JSON. Most 409 bodies are plain
+ * text for the page to show. Two carry a {@code code} the page acts on: {@code POSSIBLE_DUPLICATE_COMPETITOR}
+ * (offer the matching competitors instead of creating a new one) and {@code COMPETITOR_MERGE_REFUSED} (say
+ * why two competitors cannot be merged).
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -136,6 +142,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(ex.getBody());
     }
 
+    /**
+     * A {@code @PreAuthorize} refusal. It is thrown inside Spring MVC, after the security filters have let the
+     * request through, so the filter chain's handler never sees it; without this it would be a 500.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
