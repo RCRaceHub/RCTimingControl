@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -116,7 +117,7 @@ public class RaceStateMachineService {
         race.setAbandonedAt(null);
         raceRepository.save(race);
 
-        lapTimingService.releaseState(race.getId());
+        AfterCommit.run(() -> lapTimingService.releaseState(race.getId()));
         resultSnapshotService.deleteByRaceId(race.getId());
         liveTimingHub.broadcastStateChange(race.getId(), RaceStatus.PENDING);
     }
