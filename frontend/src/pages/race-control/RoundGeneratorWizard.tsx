@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/lib/errors';
-import { adminApi, type EventClassDto, type BumpUpConfig } from '@/lib/adminApi';
+import { adminApi } from '@/lib/adminApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 import {
@@ -43,23 +43,12 @@ const schema = z.object({
     eventClassId: z.number(),
     label: z.string(),
     finalsCount: count(1, 3),
-    carsPerFinal: count(1, 64),
-    bumpCount: count(0, 10),
   })),
 });
 type FormInput = z.input<typeof schema>;
 type FormValues = z.output<typeof schema>;
 
 const GLOBAL_DEFAULTS = { practiceRounds: 2, qualifyingRounds: 3, maxCarsPerHeat: 10 };
-
-function defaultsFromConfig(cls: EventClassDto): { finalsCount: number; carsPerFinal: number; bumpCount: number } {
-  const cfg = cls.configSnapshot;
-  if (cfg.type === 'BUMP_UP') {
-    const bump = cfg as BumpUpConfig;
-    return { finalsCount: 2, carsPerFinal: bump.gridSize ?? 10, bumpCount: bump.bumpSpots ?? 2 };
-  }
-  return { finalsCount: 2, carsPerFinal: 10, bumpCount: 2 };
-}
 
 export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
   const queryClient = useQueryClient();
@@ -93,7 +82,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
       classes: eventClasses.map((cls) => ({
         eventClassId: cls.id,
         label: racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`,
-        ...defaultsFromConfig(cls),
+        finalsCount: 2,
       })),
     });
   }
@@ -113,8 +102,6 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
         classFinalsConfigs: values.classes.map((r) => ({
           eventClassId: r.eventClassId,
           finalsCount: r.finalsCount,
-          carsPerFinal: r.carsPerFinal,
-          bumpCount: r.bumpCount,
         })),
       }),
     onSuccess: () => {
@@ -177,8 +164,6 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
                   <legend className="px-1 text-sm font-medium">{row.label}</legend>
                   <div className="grid grid-cols-3 gap-2">
                     {numberField(`classes.${idx}.finalsCount`, 'Finals', 1, 3)}
-                    {numberField(`classes.${idx}.carsPerFinal`, 'Cars/final', 1, 64)}
-                    {numberField(`classes.${idx}.bumpCount`, 'Bump spots', 0, 10)}
                   </div>
                 </fieldset>
               ))}

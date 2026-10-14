@@ -153,7 +153,7 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         // The round generator puts the walk-in in a qualifying heat
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 8,
-                List.of(new RoundGenerationRequest.ClassFinalsConfig(classId, 1, 10, 0))));
+                List.of(new RoundGenerationRequest.ClassFinalsConfig(classId, 1))));
         long raceId = jdbc.queryForObject("""
                 select r.id from race_entries re
                 join races r on r.id = re.race_id join rounds ro on ro.id = r.round_id

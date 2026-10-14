@@ -82,8 +82,6 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
         ec.setRacingClassId(r.getRacingClassId());
         ec.setCombinedRaceGroup(r.getCombinedRaceGroup());
         ec.setFinalsCount(r.getFinalsCount());
-        ec.setCarsPerFinal(r.getCarsPerFinal());
-        ec.setBumpCount(r.getBumpCount());
         return ec;
     }
 
@@ -98,8 +96,6 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
         r.setRacingClassId(ec.getRacingClassId());
         r.setCombinedRaceGroup(ec.getCombinedRaceGroup());
         r.setFinalsCount(ec.getFinalsCount());
-        r.setCarsPerFinal(ec.getCarsPerFinal());
-        r.setBumpCount(ec.getBumpCount());
     }
 
     /** The creation time is set once, on insert. */

@@ -77,8 +77,8 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         addEntries(truckClass, 6);
 
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
-                new ClassFinalsConfig(buggyClass, 2, 10, 2),
-                new ClassFinalsConfig(truckClass, 1, 10, 0))));
+                new ClassFinalsConfig(buggyClass, 2),
+                new ClassFinalsConfig(truckClass, 1))));
 
         List<Race> buggyFinals = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.FINAL);
         assertThat(buggyFinals).extracting(Race::getFinalLetter).containsExactlyInAnyOrder("A", "B");
@@ -153,7 +153,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         addEntries(rollingClass, 6);
 
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 1, 1, 10, List.of(
-                new ClassFinalsConfig(rollingClass, 1, 10, 0))));
+                new ClassFinalsConfig(rollingClass, 1))));
 
         assertThat(raceRepository.findByEventClassIdAndRoundType(rollingClass, RoundType.PRACTICE))
                 .extracting(Race::getStartType).containsOnly(StartType.GRID);
@@ -168,7 +168,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         long buggyClass = addClass("Buggy");
         List<Long> buggies = addEntries(buggyClass, 20);
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
-                new ClassFinalsConfig(buggyClass, 2, 10, 2))));
+                new ClassFinalsConfig(buggyClass, 2))));
 
         // Nothing has finished, so there is nothing to seed from and the grids are left alone
         assertThatThrownBy(() -> runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 10, 2))
@@ -237,7 +237,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         long buggyClass = addClass("Buggy");
         List<Long> buggies = addEntries(buggyClass, 20);
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
-                new ClassFinalsConfig(buggyClass, 2, 10, 2))));
+                new ClassFinalsConfig(buggyClass, 2))));
         List<Race> heats = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER);
         List<Long> first = raceEntryRepository.findByRaceIdOrderByGridPosition(heats.get(0).getId()).stream()
                 .map(RaceEntry::getEntryId).toList();
@@ -276,7 +276,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         long buggyClass = addClass("Buggy");
         List<Long> buggies = addEntries(buggyClass, 20);
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
-                new ClassFinalsConfig(buggyClass, 2, 10, 2))));
+                new ClassFinalsConfig(buggyClass, 2))));
         for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
             finishWithResult(heat, buggies, 1);
         }

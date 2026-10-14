@@ -236,8 +236,6 @@ export interface TransitionEventRequest {
 export interface ClassFinalsConfigDto {
   eventClassId: number;
   finalsCount: number | null;
-  carsPerFinal: number | null;
-  bumpCount: number | null;
 }
 
 export interface GenerateRoundsRequest {

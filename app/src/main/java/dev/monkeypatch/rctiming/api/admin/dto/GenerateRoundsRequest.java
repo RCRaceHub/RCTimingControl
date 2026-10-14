@@ -15,21 +15,19 @@ public record GenerateRoundsRequest(
         @NotNull List<@NotNull @Valid ClassFinalsConfigDto> classFinalsConfigs
 ) {
     /**
-     * A class's finals layout; a null count keeps the class's own setting. Finals are lettered from A, so there
-     * are at most 26.
+     * How many finals a class has; null keeps the class's own setting. Finals are lettered from A, so there are at
+     * most 26. How many cars run in each, and how many bump up, are given when the finals are seeded.
      */
     public record ClassFinalsConfigDto(
             @NotNull Long eventClassId,
-            @Min(1) @Max(26) Integer finalsCount,
-            @Min(1) @Max(64) Integer carsPerFinal,
-            @Min(0) @Max(64) Integer bumpCount
+            @Min(1) @Max(26) Integer finalsCount
     ) {}
 
     public RoundGenerationRequest toServiceRequest(long eventId) {
         return new RoundGenerationRequest(eventId, practiceRoundsCount, qualifyingRoundsCount, maxCarsPerHeat,
                 classFinalsConfigs.stream()
                         .map(c -> new RoundGenerationRequest.ClassFinalsConfig(
-                                c.eventClassId(), c.finalsCount(), c.carsPerFinal(), c.bumpCount()))
+                                c.eventClassId(), c.finalsCount()))
                         .toList());
     }
 }
