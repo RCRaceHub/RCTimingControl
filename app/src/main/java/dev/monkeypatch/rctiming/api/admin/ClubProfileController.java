@@ -46,7 +46,7 @@ public class ClubProfileController {
     public ClubProfileDto getProfile() {
         return clubProfileService.getProfile()
                 .map(ClubProfileDto::from)
-                .orElseGet(() -> new ClubProfileDto(null, "", null, null, null, null, null, "UTC", null, null));
+                .orElseGet(() -> new ClubProfileDto(null, "", null, null, null, null, null, "UTC", null));
     }
 
     @Audited("audit_log")
@@ -55,8 +55,7 @@ public class ClubProfileController {
     public ClubProfileDto createOrUpdateProfile(Authentication auth, @RequestBody @Valid CreateClubProfileRequest request) {
         return ClubProfileDto.from(clubProfileService.createOrUpdateProfile(CurrentOfficial.actor(auth),
                 new ClubProfileService.ClubDetails(request.name(), request.email(), request.phone(),
-                        request.websiteUrl(), request.latitude(), request.longitude(), request.timezone(),
-                        request.logoType())));
+                        request.websiteUrl(), request.latitude(), request.longitude(), request.timezone())));
     }
 
     @GetMapping("/affiliations")

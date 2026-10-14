@@ -11,8 +11,6 @@ public class Event implements CreatedAt, UpdatedAt {
     private String name;
     private LocalDate eventDate;
     private EventStatus status = EventStatus.DRAFT;
-    private Instant entryOpensAt;
-    private Instant entryClosesAt;
     private Long trackId;
     private Instant createdAt;
     private Instant updatedAt;
@@ -49,12 +47,6 @@ public class Event implements CreatedAt, UpdatedAt {
 
     public EventStatus getStatus() { return status; }
     public void setStatus(EventStatus status) { this.status = status; }
-
-    public Instant getEntryOpensAt() { return entryOpensAt; }
-    public void setEntryOpensAt(Instant entryOpensAt) { this.entryOpensAt = entryOpensAt; }
-
-    public Instant getEntryClosesAt() { return entryClosesAt; }
-    public void setEntryClosesAt(Instant entryClosesAt) { this.entryClosesAt = entryClosesAt; }
 
     public Long getTrackId() { return trackId; }
     public void setTrackId(Long trackId) { this.trackId = trackId; }

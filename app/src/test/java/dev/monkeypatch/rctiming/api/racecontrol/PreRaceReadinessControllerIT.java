@@ -124,8 +124,7 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
 
         // 3 drivers with entries and race entries
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-first-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
             // L11: driver 1 has checked in; driver 2 is marked arrived in RaceHub only
             if (i == 1) {
                 entry.setCheckedInAt(now);
@@ -173,8 +172,7 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         Race race1 = saveRace(round.getId(), ec.getId(), 2, 2, now);
         Long absenceDriverEntryId = null;
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-r1-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
             saveRaceEntry(race1.getId(), entry.getId(), i);
             if (i == 1) {
                 absenceDriverEntryId = entry.getId();
@@ -190,8 +188,7 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         // Race 2 (seq=3, target) — different 3 drivers
         Race race2 = saveRace(round.getId(), ec.getId(), 3, 3, now);
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-r2-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
             saveRaceEntry(race2.getId(), entry.getId(), i);
         }
 
@@ -296,21 +293,8 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         return raceRepository.save(race);
     }
 
-    private User saveDriver(String emailPrefix, Instant now) {
-        User user = new User();
-        user.setEmail(emailPrefix + "@test.com");
-        user.setPasswordHash(passwordEncoder.encode("pass123"));
-        user.setFirstName("Driver");
-        user.setLastName("Test");
-        user.setRoles(Set.of());
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
-        return userRepository.save(user);
-    }
-
-    private Entry saveEntry(Long userId, Long eventId, Long eventClassId, Instant now) {
+    private Entry saveEntry(Long eventId, Long eventClassId, Instant now) {
         Entry entry = new Entry();
-        entry.setUserId(userId);
         entry.setEventId(eventId);
         entry.setEventClassId(eventClassId);
         entry.setStatus(EntryStatus.CONFIRMED);

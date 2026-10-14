@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.race;
 
-
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
@@ -21,10 +20,6 @@ public class Race implements CreatedAt, UpdatedAt {
     private String finalLetter;
 
     private StartType startType;
-
-    private Long formatId;
-
-    private String formatOverrides;
 
     private RaceStatus status = RaceStatus.PENDING;
 
@@ -65,12 +60,6 @@ public class Race implements CreatedAt, UpdatedAt {
 
     public StartType getStartType() { return startType; }
     public void setStartType(StartType startType) { this.startType = startType; }
-
-    public Long getFormatId() { return formatId; }
-    public void setFormatId(Long formatId) { this.formatId = formatId; }
-
-    public String getFormatOverrides() { return formatOverrides; }
-    public void setFormatOverrides(String formatOverrides) { this.formatOverrides = formatOverrides; }
 
     public RaceStatus getStatus() { return status; }
     public void setStatus(RaceStatus status) { this.status = status; }

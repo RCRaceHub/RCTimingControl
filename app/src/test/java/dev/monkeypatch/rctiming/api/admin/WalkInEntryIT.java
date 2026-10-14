@@ -93,7 +93,6 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         Entry entry = entryRepository.findById(entryId).orElseThrow();
         assertThat(entry.getStatus()).isEqualTo(EntryStatus.CONFIRMED);
-        assertThat(entry.getUserId()).isNull();
         assertThat(entry.getExternalSource()).isNull();
         assertThat(entry.getEventClassId()).isEqualTo(classId);
         assertThat(entry.getTransponderNumberSnapshot()).isEqualTo("61" + run);

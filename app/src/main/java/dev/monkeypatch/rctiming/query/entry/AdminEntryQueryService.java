@@ -22,7 +22,6 @@ public class AdminEntryQueryService {
     public List<AdminEntryDto> listEntriesForClass(Long eventId, Long eventClassId) {
         return dsl.select(
                         ENTRIES.ID,
-                        ENTRIES.USER_ID,
                         ENTRIES.COMPETITOR_ID,
                         COMPETITORS.DISPLAY_NAME,
                         ENTRIES.TRANSPONDER_NUMBER,
@@ -39,7 +38,6 @@ public class AdminEntryQueryService {
                 .orderBy(ENTRIES.SUBMITTED_AT.asc())
                 .fetch(r -> new AdminEntryDto(
                         r.get(ENTRIES.ID),
-                        r.get(ENTRIES.USER_ID),
                         r.get(ENTRIES.COMPETITOR_ID),
                         r.get(COMPETITORS.DISPLAY_NAME),
                         r.get(ENTRIES.TRANSPONDER_NUMBER),

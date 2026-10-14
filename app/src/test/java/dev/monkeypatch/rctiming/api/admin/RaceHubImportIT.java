@@ -89,7 +89,6 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(ada.getEventId()).isEqualTo(eventId);
         assertThat(ada.getEventClassId()).isEqualTo(buggyClassId);
         assertThat(ada.getStatus()).isEqualTo(EntryStatus.CONFIRMED);
-        assertThat(ada.getUserId()).isNull();
         assertThat(ada.getTransponderNumberSnapshot()).isEqualTo("71" + run);
         assertThat(ada.getSecondaryTransponderNumber()).isEqualTo("72" + run);
         assertThat(ada.getExternalEntryVersion()).isEqualTo(1L);

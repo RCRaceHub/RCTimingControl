@@ -215,7 +215,6 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
     private Entry makeEntry(Long userId, Long eventId, Long eventClassId) {
         Entry e = makeCompetitorEntry(competitorIdFor(userId), eventId, eventClassId);
-        e.setUserId(userId);
         return entryRepository.save(e);
     }
 

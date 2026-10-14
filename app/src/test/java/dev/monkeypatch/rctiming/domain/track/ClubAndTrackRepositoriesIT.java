@@ -52,8 +52,6 @@ class ClubAndTrackRepositoriesIT extends AbstractIntegrationTest {
         p.setLatitude(53.123456789);
         p.setLongitude(-2.987654321);
         p.setTimezone("Europe/London");
-        p.setLogo(new byte[] {1, 2, 3});
-        p.setLogoType("png");
         p.setLogoUrl("/logo.png");
         p.setAudioSettings(new ClubAudioSettings(false, false, false, false, false, 5, new int[] {90}));
         p.setDefaultVoiceId("voice-a");
@@ -71,8 +69,6 @@ class ClubAndTrackRepositoriesIT extends AbstractIntegrationTest {
             c.setLatitude(51.5);
             c.setLongitude(0.1);
             c.setTimezone("UTC");
-            c.setLogo(new byte[] {9});
-            c.setLogoType("svg");
             c.setLogoUrl("/other.svg");
             c.setAudioSettings(ClubAudioSettings.defaults());
             c.setDefaultVoiceId("voice-b");

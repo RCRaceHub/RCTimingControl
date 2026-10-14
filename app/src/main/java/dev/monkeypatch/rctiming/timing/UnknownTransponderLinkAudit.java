@@ -4,8 +4,7 @@ import java.time.Instant;
 
 /**
  * Record of a retroactive transponder link (TIMING-08): who linked which unknown transponder number to which
- * entry in which race. Maps to the {@code unknown_transponder_link} table. The older
- * {@code unknown_transponder_links} (plural) table has no code behind it.
+ * entry in which race. Maps to the {@code unknown_transponder_link} table.
  */
 public class UnknownTransponderLinkAudit {
 

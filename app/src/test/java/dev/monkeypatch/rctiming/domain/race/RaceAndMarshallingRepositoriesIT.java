@@ -102,8 +102,6 @@ class RaceAndMarshallingRepositoriesIT extends AbstractIntegrationTest {
         Race r = race(savedRound.getId(), 1);
         r.setFinalLetter("B");
         r.setStartType(StartType.GRID);
-        r.setFormatId(template.getId());
-        r.setFormatOverrides("{\"durationMinutes\":6}");
         r.setStatus(RaceStatus.RUNNING);
         r.setStartedAt(T1);
         Race savedRace = assertSavedAndReloaded(races, r, c -> {
@@ -111,8 +109,6 @@ class RaceAndMarshallingRepositoriesIT extends AbstractIntegrationTest {
             c.setSequenceInRound(4);
             c.setFinalLetter(null);
             c.setStartType(StartType.STAGGER);
-            c.setFormatId(null);
-            c.setFormatOverrides(null);
             c.setStatus(RaceStatus.FINISHED);
             c.setStartedAt(null);
             c.setFinishedAt(T2);

@@ -11,6 +11,5 @@ public record CreateClubProfileRequest(
         @Size(max = 500) String websiteUrl,
         Double latitude,
         Double longitude,
-        @NotBlank String timezone,
-        String logoType) {
+        @NotBlank String timezone) {
 }

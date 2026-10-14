@@ -76,7 +76,6 @@ class RoundGeneratorServiceTest {
         for (long i = 1; i <= 15; i++) {
             Entry entry = new Entry();
             entry.setId(i);
-            entry.setUserId(100L + i);
             entry.setEventId(eventId);
             entry.setEventClassId(eventClassId);
             entries.add(entry);

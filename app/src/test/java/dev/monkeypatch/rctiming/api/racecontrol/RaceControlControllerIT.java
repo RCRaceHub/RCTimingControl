@@ -400,15 +400,12 @@ public class RaceControlControllerIT extends AbstractIntegrationTest {
     }
 
     private Entry seedEntry(Race race) {
-        // Load any user to link the entry to (use the director user)
-        User user = userRepository.findAll().stream().findFirst().orElseThrow();
         Long eventClassId = race.getEventClassId();
 
         // Resolve eventId via round
         Round round = roundRepository.findById(race.getRoundId()).orElseThrow();
 
         Entry entry = new Entry();
-        entry.setUserId(user.getId());
         entry.setEventId(round.getEventId());
         entry.setEventClassId(eventClassId);
         entry.setTransponderNumberSnapshot("T-" + UUID.randomUUID().toString().substring(0, 8));

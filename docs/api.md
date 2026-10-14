@@ -83,8 +83,7 @@ Authorization: Bearer <token>
   "websiteUrl": "https://southsiderc.com",
   "latitude": 51.5,
   "longitude": -0.1,
-  "timezone": "Europe/London",
-  "logoType": "SVG"
+  "timezone": "Europe/London"
 }
 ```
 
@@ -104,8 +103,7 @@ Content-Type: application/json
   "websiteUrl": "https://southsiderc.com",
   "latitude": 51.5074,
   "longitude": -0.1278,
-  "timezone": "Europe/London",
-  "logoType": "SVG"
+  "timezone": "Europe/London"
 }
 ```
 
@@ -340,10 +338,9 @@ No authentication required.
 
 ```http
 GET /events
-GET /events/{id}
 ```
 
-Returns published events with their classes, entry availability, and entry window dates.
+Returns the published events (published, open, entries closed or in progress), soonest first: each one's `id`, `name`, `eventDate`, the ids of its finished races (`finishedRaceIds`) and the championship it counts towards (`championshipId`, or null). Entry windows belong to RaceHub, so the schedule does not show them.
 
 ---
 

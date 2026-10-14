@@ -7,18 +7,13 @@ public class Entry implements UpdatedAt {
 
     private Long id;
 
-    /** The racer's login, when the entry came from the racer portal. Null for competitor-only entries. */
-    private Long userId;
-
     /** The driver this entry is for. Required on every new entry (L4, #12). */
     private Long competitorId;
     private Long eventId;
     private Long eventClassId;
 
-    // Snapshot columns — captured at submit time (RACER-07)
-    // V13 names these transponder_number and transponder_label (no _snapshot suffix)
+    /** The entry's primary transponder. Maps to the transponder_number column. */
     private String transponderNumberSnapshot;
-    private String transponderLabelSnapshot;
 
     /** Optional second transponder for this entry (L6). Laps from either number count. */
     private String secondaryTransponderNumber;
@@ -57,9 +52,6 @@ public class Entry implements UpdatedAt {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
     public Long getCompetitorId() { return competitorId; }
     public void setCompetitorId(Long competitorId) { this.competitorId = competitorId; }
 
@@ -74,9 +66,6 @@ public class Entry implements UpdatedAt {
 
     public String getSecondaryTransponderNumber() { return secondaryTransponderNumber; }
     public void setSecondaryTransponderNumber(String secondaryTransponderNumber) { this.secondaryTransponderNumber = secondaryTransponderNumber; }
-
-    public String getTransponderLabelSnapshot() { return transponderLabelSnapshot; }
-    public void setTransponderLabelSnapshot(String transponderLabelSnapshot) { this.transponderLabelSnapshot = transponderLabelSnapshot; }
 
     public EntryStatus getStatus() { return status; }
     public void setStatus(EntryStatus status) { this.status = status; }

@@ -35,8 +35,6 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         p.setLatitude(r.getLatitude());
         p.setLongitude(r.getLongitude());
         p.setTimezone(r.getTimezone());
-        p.setLogo(r.getLogo());
-        p.setLogoType(r.getLogoType());
         p.setLogoUrl(r.getLogoUrl());
         p.setAudioSettings(AUDIO_SETTINGS.convertToEntityAttribute(r.getAudioSettings()));
         p.setDefaultVoiceId(r.getDefaultVoiceId());
@@ -57,8 +55,6 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         r.setLatitude(p.getLatitude());
         r.setLongitude(p.getLongitude());
         r.setTimezone(p.getTimezone());
-        r.setLogo(p.getLogo());
-        r.setLogoType(p.getLogoType());
         r.setLogoUrl(p.getLogoUrl());
         r.setAudioSettings(AUDIO_SETTINGS.convertToDatabaseColumn(p.getAudioSettings()));
         r.setDefaultVoiceId(p.getDefaultVoiceId());

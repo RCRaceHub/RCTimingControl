@@ -11,7 +11,6 @@ public record ClubProfileDto(
         Double latitude,
         Double longitude,
         String timezone,
-        String logoType,
         String logoUrl) {
 
     public static ClubProfileDto from(ClubProfile p) {
@@ -24,7 +23,6 @@ public record ClubProfileDto(
                 p.getLatitude(),
                 p.getLongitude(),
                 p.getTimezone(),
-                p.getLogoType(),
                 p.getLogoUrl());
     }
 }
