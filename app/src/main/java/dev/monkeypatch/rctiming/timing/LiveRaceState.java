@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -40,10 +41,19 @@ public class LiveRaceState {
      * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
      */
     Long overallBestLapMs = null;
+    /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has none. Set once, at state creation. */
+    final Map<Long, Long> minLapMs = new HashMap<>();
+    /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
+    Long lastLapCreditedAtMs = null;
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
         return runtimeLinks.get(transponderNumber);
+    }
+
+    /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */
+    public synchronized void putMinLaps(Map<Long, Long> minimums) {
+        minLapMs.putAll(minimums);
     }
 
     /** Stores a display name for an entry. Called by LapTimingService at state creation time. */
@@ -51,12 +61,18 @@ public class LiveRaceState {
         entryNames.put(entryId, displayName);
     }
 
+    /** As {@link #applyLapPassing(LapPassingEvent, Long, long)}, at the server's current time. */
+    public boolean applyLapPassing(LapPassingEvent event, Long entryId) {
+        return applyLapPassing(event, entryId, System.currentTimeMillis());
+    }
+
     /**
      * Apply a lap passing event. Returns true if this is the first sighting of an unknown transponder.
      * If entryId is null, the transponder is unknown — tracked in seenUnknownTransponders.
-     * All mutations are synchronized.
+     * All mutations are synchronized. {@code nowMs} is the server's clock when the passing arrived; it is kept when
+     * the passing counts a lap, for the last lap timeout.
      */
-    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId) {
+    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs) {
         lapHistory.add(event);
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
@@ -71,9 +87,16 @@ public class LiveRaceState {
             return p;
         });
 
-        creditLap(pos, passingTimeMs);
+        if (creditLap(pos, passingTimeMs)) {
+            lastLapCreditedAtMs = nowMs;
+        }
 
         return false;
+    }
+
+    /** Server time of the last passing that counted a lap, or empty if none has yet. */
+    public synchronized Optional<Long> lastLapCreditedAtMs() {
+        return Optional.ofNullable(lastLapCreditedAtMs);
     }
 
     /**
@@ -213,10 +236,19 @@ public class LiveRaceState {
     /**
      * Counts one more lap for a position and works out its lap time from the previous passing: last,
      * best and average lap, and the race's overall best. A gap of 0 or less (a repeat or out-of-order
-     * passing) still counts the lap but gives no lap time.
+     * passing) still counts the lap but gives no lap time, unless the entry has a minimum lap: then it is ignored.
+     *
+     * <p>A passing sooner after the car's last counted one than its minimum lap (TRACK-02) is ignored: a double
+     * read of the loop or a cut. It leaves the car's last passing alone, so the next real crossing is timed from
+     * the last lap that counted. A car's first passing has no lap to measure and is never ignored. Returns whether
+     * the passing counted.
      */
-    private void creditLap(LiveRacePosition pos, long passingTimeMs) {
+    private boolean creditLap(LiveRacePosition pos, long passingTimeMs) {
         long prevPassingTime = pos.getLastPassingTimeMs();
+        Long minimum = minLapMs.get(pos.getEntryId());
+        if (minimum != null && prevPassingTime > 0 && passingTimeMs - prevPassingTime < minimum) {
+            return false;
+        }
         pos.setLapsCompleted(pos.getLapsCompleted() + 1);
         pos.setLastPassingTimeMs(passingTimeMs);
         if (prevPassingTime > 0) {
@@ -234,6 +266,7 @@ public class LiveRaceState {
                 }
             }
         }
+        return true;
     }
 
     /**

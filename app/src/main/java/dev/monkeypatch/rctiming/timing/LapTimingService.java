@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,25 +46,30 @@ public class LapTimingService {
     private final RaceEntryRepository raceEntryRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
+    private final LapThresholdQuery lapThresholdQuery;
 
     public LapTimingService(LiveTimingHub liveTimingHub,
                             RaceEntryRepository raceEntryRepository,
                             EntryRepository entryRepository,
-                            CompetitorRepository competitorRepository) {
+                            CompetitorRepository competitorRepository,
+                            LapThresholdQuery lapThresholdQuery) {
         this.liveTimingHub = liveTimingHub;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
+        this.lapThresholdQuery = lapThresholdQuery;
     }
 
     /**
      * Returns existing LiveRaceState for this raceId, or creates a new one and pre-loads
-     * entry display names so calculatePositions() can include driver names.
+     * entry display names so calculatePositions() can include driver names, and each entry's
+     * minimum lap time. A change to the track's thresholds mid-race is not picked up.
      */
     public LiveRaceState stateFor(long raceId) {
         return states.computeIfAbsent(raceId, id -> {
             LiveRaceState state = new LiveRaceState();
             loadEntryNames(id, state);
+            state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             return state;
         });
     }

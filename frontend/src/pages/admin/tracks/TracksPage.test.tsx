@@ -56,4 +56,29 @@ describe('TracksPage create dialog', () => {
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     expect(mutateAsync.mock.calls[0][0]).toMatchObject({ trackLength: 85.5 });
   });
+
+  it('saves the lap limits that were typed', async () => {
+    openCreateDialog();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Club Track A' } });
+    fireEvent.change(screen.getByLabelText('Shortest lap (seconds)'), { target: { value: '4.5' } });
+    fireEvent.change(screen.getByLabelText('Longest wait after the clock runs out (seconds)'), { target: { value: '30' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(mutateAsync.mock.calls[0][0]).toMatchObject({
+      defaultLimits: { minLapSeconds: 4.5, maxLastLapSeconds: 30 },
+    });
+  });
+
+  it('asks for the shortest lap when only the longest wait is given', async () => {
+    openCreateDialog();
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Club Track A' } });
+    fireEvent.change(screen.getByLabelText('Longest wait after the clock runs out (seconds)'), { target: { value: '30' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Set the shortest lap as well')).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+  });
 });

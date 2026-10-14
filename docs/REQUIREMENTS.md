@@ -43,8 +43,8 @@
 ### Tracks
 
 - [x] **TRACK-01**: Admin can define and manage tracks (name, venue/location notes, optional track length); a club may have multiple tracks
-- [ ] **TRACK-02**: Each track has a configurable minimum lap time per racing class; passing events with crossings faster than this threshold are ignored (prevents loop double-counting and track-cutting); a track-wide default applies to all classes unless a class-specific override is set. **Not yet**: thresholds can be stored through `POST /admin/tracks/{id}/thresholds`, but nothing in timing applies them and the Tracks page has no fields for them.
-- [ ] **TRACK-03**: Each track has a configurable maximum last lap time per racing class; a race closes automatically if no crossing occurs within this window after the clock expires (prevents infinite wait for broken cars). Not yet applied: see TRACK-02.
+- [x] **TRACK-02**: Each track has a configurable minimum lap time per racing class; passing events with crossings faster than this threshold are ignored (prevents loop double-counting and track-cutting); a track-wide default applies to all classes unless a class-specific override is set. The Tracks page sets the track-wide default; a class-specific one is set through `POST /admin/tracks/{id}/thresholds`. Limits are read when a race's live timing starts.
+- [x] **TRACK-03**: Each track has a configurable maximum last lap time per racing class; a timed race finishes automatically if no lap counts within this window after the clock expires (prevents infinite wait for broken cars). A race with a fixed number of laps is left for the race director.
 - [x] **TRACK-04**: Admin can configure the decoder loops associated with a track; each loop has a decoder-assigned loop ID, a display name, and a type (`FINISH_LINE`, `CHICANE`, `OTHER`); one or more loops are designated as primary scoring loops; crossing events on non-primary loops are recorded but excluded from lap counting; the model accommodates multiple loops and multiple decoders per track (multi-decoder operation is deferred to post-v1)
 
 ### Racing Classes
