@@ -65,7 +65,8 @@ export default function CheckInDesk({ eventId }: { eventId: number }) {
     [eventId],
   );
 
-  // The two callbacks are the same today; they are kept apart only to name each scan source.
+  // The two callbacks are the same today; they stay apart so a regression in one scan source
+  // can't hide behind the other.
   const handleCameraDecode = useCallback(
     (code: string) => {
       void resolveCode(code);

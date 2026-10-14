@@ -22,7 +22,7 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 describe('AdminPanelLayout', () => {
-  it('renders Setup Wizard nav entry linking to /setup (SC-5)', () => {
+  it('renders Setup Wizard nav entry linking to /setup', () => {
     render(
       <MemoryRouter initialEntries={['/admin']}>
         <HelpProvider>

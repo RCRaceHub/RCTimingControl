@@ -15,9 +15,8 @@ export default function AdminGuidePage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">1. Club Configuration</h2>
         <p className="text-sm mb-3">
-          Club Profile holds the name, contact details, and logo displayed throughout
-          the system. This should be completed during initial setup before creating
-          events.
+          Club Profile holds the name, contact details and logo. The name and logo appear on
+          printable results. Complete it during initial setup, before creating events.
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm">
           <li>
@@ -59,9 +58,10 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Assign to an event:</span> On the event&apos;s
-            page, choose the track from the <span className="font-semibold">Track</span> list
-            and click <span className="font-semibold">Save Event Details</span>. Each event
-            runs on one track.
+            page, while the event is still a draft, choose the track from the
+            <span className="font-semibold"> Track</span> list and click
+            <span className="font-semibold"> Save Event Details</span>. Each event runs on one
+            track.
           </li>
         </ol>
       </section>
@@ -113,7 +113,7 @@ export default function AdminGuidePage() {
             <span className="font-semibold">Create an event:</span> Click
             <span className="font-semibold"> Create Event</span>. Enter the event name and
             date. The event is created in DRAFT status; choose its track on the event&apos;s
-            page.
+            page before it leaves draft.
           </li>
           <li>
             <span className="font-semibold">Add classes:</span> Open the event detail
@@ -175,8 +175,9 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">View entries:</span> Click the
-            <span className="font-semibold"> Entries</span> tab in the event detail and pick a
-            class to see its entries. The list shows each driver&apos;s name, transponder and status.
+            <span className="font-semibold"> Entries</span> tab in the event detail. When the
+            event has more than one class, pick a class to see its entries. The list shows each
+            driver&apos;s name, transponder and status.
           </li>
           <li>
             <span className="font-semibold">Import from RaceHub:</span> Click
@@ -275,12 +276,12 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Add classes (Classes tab):</span> Click
-            <span className="font-semibold">Add Class</span> to assign racing classes.
+            <span className="font-semibold"> Add Class</span> to assign racing classes.
             Each class can optionally override the global best-X-from-Y setting.
           </li>
           <li>
             <span className="font-semibold">Link events (Events tab):</span> Click
-            <span className="font-semibold">Link Event</span> to add an event as a round
+            <span className="font-semibold"> Link Event</span> to add an event as a round
             in the championship. Assign a round number to each linked event.
           </li>
           <li>
@@ -380,9 +381,9 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Access the wizard:</span> In the Admin
             sidebar under <span className="font-semibold">Operations</span>, click
-            <span className="font-semibold"> Setup Wizard</span>. Until setup is complete, RCTC
-            opens the wizard by itself, starting with a form that creates the first admin
-            account.
+            <span className="font-semibold"> Setup Wizard</span>. Until the club profile is saved,
+            RCTC opens the wizard by itself. On a fresh install it starts with a form that
+            creates the first admin account.
           </li>
           <li>
             <span className="font-semibold">Step 1 — Club Profile:</span> Enter the club
@@ -415,14 +416,15 @@ export default function AdminGuidePage() {
             <span className="font-semibold">Navigate the wizard:</span> Use
             <span className="font-semibold"> Save and Continue</span>,
             <span className="font-semibold"> Back</span> and, where a step offers it,
-            <span className="font-semibold"> Skip for now</span>. Completed steps show a green
-            tick in the left sidebar. Once setup is complete, you can click any step in the
-            sidebar to go back to it.
+            <span className="font-semibold"> Skip for now</span> (the last step finishes with
+            <span className="font-semibold"> Save and Finish</span>). Completed steps show a
+            green tick in the left sidebar. Once the club profile is saved, you can click any
+            step in the sidebar to go back to it.
           </li>
           <li>
             <span className="font-semibold">Skip the wizard:</span> If you prefer to
             configure sections individually, click <span className="font-semibold">Skip
-            wizard</span> once setup is complete and use the Admin sidebar pages instead. Every
+            wizard</span> once the club profile is saved and use the Admin sidebar pages instead. Every
             step has its own page in the Admin panel as well.
           </li>
         </ol>
