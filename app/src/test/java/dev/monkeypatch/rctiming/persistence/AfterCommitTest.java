@@ -4,7 +4,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,6 +18,7 @@ class AfterCommitTest {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.clearSynchronization();
         }
+        TransactionSynchronizationManager.setActualTransactionActive(false);
     }
 
     @Test
@@ -29,23 +29,42 @@ class AfterCommitTest {
     }
 
     @Test
-    void inATransaction_waitsForTheCommit() {
-        TransactionSynchronizationManager.initSynchronization();
+    void insideATransaction_runsOnCommitOnly() {
+        beginTransaction();
 
         AfterCommit.run(runs::incrementAndGet);
         assertThat(runs).hasValue(0);
 
-        TransactionSynchronizationUtils.triggerAfterCommit();
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
         assertThat(runs).hasValue(1);
     }
 
     @Test
-    void inATransactionThatRollsBack_neverRuns() {
-        TransactionSynchronizationManager.initSynchronization();
+    void onARollback_neverRuns() {
+        beginTransaction();
 
         AfterCommit.run(runs::incrementAndGet);
-        TransactionSynchronizationUtils.triggerAfterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(s -> s.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
 
         assertThat(runs).hasValue(0);
+    }
+
+    @Test
+    void workThatFailsAfterTheCommit_isLoggedAndTheNextWorkStillRuns() {
+        beginTransaction();
+
+        AfterCommit.run(() -> {
+            throw new IllegalStateException("broker down");
+        });
+        AfterCommit.run(runs::incrementAndGet);
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+
+        assertThat(runs).hasValue(1);
+    }
+
+    private static void beginTransaction() {
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
     }
 }

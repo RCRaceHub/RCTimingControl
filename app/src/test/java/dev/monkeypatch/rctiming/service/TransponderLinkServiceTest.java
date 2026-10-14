@@ -22,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 import java.util.List;
 
@@ -89,7 +88,7 @@ class TransponderLinkServiceTest {
             service().link(7L, "1234567", 11L, 3L);
             verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
 
-            TransactionSynchronizationUtils.triggerAfterCommit();
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
             verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
@@ -102,7 +101,8 @@ class TransponderLinkServiceTest {
         TransactionSynchronizationManager.initSynchronization();
         try {
             service().link(7L, "1234567", 11L, 3L);
-            TransactionSynchronizationUtils.triggerAfterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
         } finally {
             TransactionSynchronizationManager.clearSynchronization();
         }

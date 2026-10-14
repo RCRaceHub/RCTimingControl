@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -172,6 +175,20 @@ class RaceStateMachineServiceTest {
         verify(raceRepository).save(race);
         verify(resultSnapshotService).deleteByRaceId(7L);
         verify(lapTimingService).releaseState(7L);
+    }
+
+    @Test
+    void restart_inATransactionThatRollsBack_keepsTheLiveTiming() {
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.restart(race(RaceStatus.RUNNING));
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+
+        verify(lapTimingService, never()).releaseState(anyLong());
     }
 
     private static Race race(RaceStatus status) {
