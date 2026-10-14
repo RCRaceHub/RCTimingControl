@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
-import type { TrackDto } from '@/lib/adminApi';
+import type { DefaultLapLimits, TrackInput } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
 export function useTracksList() {
@@ -13,8 +13,11 @@ export function useTracksList() {
 export function useCreateTrack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Omit<TrackDto, 'id'>) =>
-      adminApi.tracks.create(body),
+    mutationFn: async ({ defaultLimits, ...body }: TrackInput & { defaultLimits: DefaultLapLimits }) => {
+      const track = await adminApi.tracks.create(body);
+      await adminApi.tracks.saveDefaultLimits(track.id, defaultLimits, undefined);
+      return track;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
   });
 }
@@ -22,8 +25,16 @@ export function useCreateTrack() {
 export function useUpdateTrack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: Omit<TrackDto, 'id'> }) =>
-      adminApi.tracks.update(id, body),
+    mutationFn: async ({ id, body, defaultLimits, existingLimitsId }: {
+      id: number;
+      body: TrackInput;
+      defaultLimits: DefaultLapLimits;
+      existingLimitsId: number | undefined;
+    }) => {
+      const track = await adminApi.tracks.update(id, body);
+      await adminApi.tracks.saveDefaultLimits(id, defaultLimits, existingLimitsId);
+      return track;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
   });
 }

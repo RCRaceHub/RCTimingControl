@@ -16,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryAuditLogRecord;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
+import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
@@ -163,7 +164,7 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         // Called directly so the passings are processed synchronously (the bean's listener is @Async)
         LapTimingService timing = new LapTimingService(mock(LiveTimingHub.class), raceEntryRepository,
-                entryRepository, competitorRepository);
+                entryRepository, competitorRepository, mock(LapThresholdQuery.class));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 1_000_000L));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 31_000_000L));
 

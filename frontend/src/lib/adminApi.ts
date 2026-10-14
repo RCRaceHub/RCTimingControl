@@ -276,11 +276,30 @@ export interface RaceFormatTemplateDto {
   config: RaceFormatConfig;
 }
 
+export interface TrackLapThresholdDto {
+  id: number;
+  /** Null for the track's default, which applies to every class without its own. */
+  racingClassId: number | null;
+  racingClassName: string | null;
+  minLapMs: number;
+  maxLastLapMs: number | null;
+}
+
 export interface TrackDto {
   id: number;
   name: string;
   venueNotes: string | null;
   trackLength: number | null;
+  lapThresholds?: TrackLapThresholdDto[];
+}
+
+/** What is sent to create or change a track; its lap limits are saved separately. */
+export type TrackInput = Pick<TrackDto, 'name' | 'venueNotes' | 'trackLength'>;
+
+/** The track-wide lap limits in seconds, or null for none. The longest wait needs a shortest lap as well. */
+export interface DefaultLapLimits {
+  minLapSeconds: number | null;
+  maxLastLapSeconds: number | null;
 }
 
 export type ScoringSource = 'QUALIFYING' | 'FINALS' | 'BOTH';
@@ -716,10 +735,27 @@ export const adminApi = {
       api.get<TrackDto[]>('/api/v1/admin/tracks').then(r => r.data),
     get: (id: number) =>
       api.get<TrackDto>(`/api/v1/admin/tracks/${id}`).then(r => r.data),
-    create: (body: Omit<TrackDto, 'id'>) =>
+    create: (body: TrackInput) =>
       api.post<TrackDto>('/api/v1/admin/tracks', body).then(r => r.data),
-    update: (id: number, body: Omit<TrackDto, 'id'>) =>
+    update: (id: number, body: TrackInput) =>
       api.put<TrackDto>(`/api/v1/admin/tracks/${id}`, body).then(r => r.data),
+    /**
+     * Sets the track's default lap limits (the ones for every class without its own), or takes them away when
+     * no shortest lap is given. {@code existingId} is the default's id if the track already has one.
+     */
+    saveDefaultLimits: async (trackId: number, limits: DefaultLapLimits, existingId: number | undefined) => {
+      if (limits.minLapSeconds === null) {
+        if (existingId !== undefined) {
+          await api.delete(`/api/v1/admin/tracks/thresholds/${existingId}`);
+        }
+        return;
+      }
+      await api.post(`/api/v1/admin/tracks/${trackId}/thresholds`, {
+        racingClassId: null,
+        minLapMs: Math.round(limits.minLapSeconds * 1000),
+        maxLastLapMs: limits.maxLastLapSeconds === null ? null : Math.round(limits.maxLastLapSeconds * 1000),
+      });
+    },
     delete: (id: number) =>
       api.delete(`/api/v1/admin/tracks/${id}`),
   },

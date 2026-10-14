@@ -27,6 +27,12 @@ import { useTracksList, useCreateTrack, useUpdateTrack, useDeleteTrack } from '@
 import type { TrackDto } from '@/lib/adminApi';
 import { useConfirm } from '@/components/ConfirmDialog';
 
+// A blank number box means "not set"; coercing the blank string would make it 0
+const optionalSeconds = (message: string) =>
+  z
+    .union([z.literal(''), z.null(), z.coerce.number().positive(message)])
+    .transform((v) => (v === '' || v === null ? null : v));
+
 const trackSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   venueNotes: z.string().nullable().or(z.literal('')),
@@ -34,9 +40,19 @@ const trackSchema = z.object({
   trackLength: z
     .union([z.literal(''), z.null(), z.coerce.number().positive('Track length must be more than 0')])
     .transform((v) => (v === '' || v === null ? null : v)),
+  minLapSeconds: optionalSeconds('The shortest lap must be more than 0'),
+  maxLastLapSeconds: optionalSeconds('The longest wait must be more than 0'),
+}).refine((v) => v.maxLastLapSeconds === null || v.minLapSeconds !== null, {
+  message: 'Set the shortest lap as well',
+  path: ['minLapSeconds'],
 });
 type TrackFormInput = z.input<typeof trackSchema>;
 type TrackFormValues = z.output<typeof trackSchema>;
+
+/** The track's limits for every class without its own, if it has any. */
+function defaultLimitsOf(track: TrackDto | undefined) {
+  return track?.lapThresholds?.find((t) => t.racingClassId === null);
+}
 
 function TrackFormDialog({
   open,
@@ -51,6 +67,7 @@ function TrackFormDialog({
   onSubmit: (values: TrackFormValues) => Promise<void>;
   title: string;
 }) {
+  const limits = defaultLimitsOf(initialValue);
   const {
     register,
     handleSubmit,
@@ -62,6 +79,8 @@ function TrackFormDialog({
       name: initialValue?.name ?? '',
       venueNotes: initialValue?.venueNotes ?? '',
       trackLength: initialValue?.trackLength ?? null,
+      minLapSeconds: limits ? limits.minLapMs / 1000 : null,
+      maxLastLapSeconds: limits?.maxLastLapMs ? limits.maxLastLapMs / 1000 : null,
     },
   });
 
@@ -86,6 +105,22 @@ function TrackFormDialog({
             {errors.trackLength && <p className="text-xs text-destructive">{errors.trackLength.message}</p>}
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="min-lap-seconds">Shortest lap (seconds)</Label>
+            <Input id="min-lap-seconds" type="number" step="0.1" {...register('minLapSeconds')} placeholder="Optional" />
+            <p className="text-xs text-muted-foreground">
+              A car crossing the line again sooner than this is ignored, as a double read of the loop.
+            </p>
+            {errors.minLapSeconds && <p className="text-xs text-destructive">{errors.minLapSeconds.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="max-last-lap-seconds">Longest wait after the clock runs out (seconds)</Label>
+            <Input id="max-last-lap-seconds" type="number" step="1" {...register('maxLastLapSeconds')} placeholder="Optional" />
+            <p className="text-xs text-muted-foreground">
+              A timed race finishes by itself when no lap has counted for this long after its clock ran out.
+            </p>
+            {errors.maxLastLapSeconds && <p className="text-xs text-destructive">{errors.maxLastLapSeconds.message}</p>}
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="venue-notes">Venue Notes</Label>
             <Input id="venue-notes" {...register('venueNotes')} placeholder="Optional" />
           </div>
@@ -98,6 +133,10 @@ function TrackFormDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function limitsOf(values: TrackFormValues) {
+  return { minLapSeconds: values.minLapSeconds, maxLastLapSeconds: values.maxLastLapSeconds };
 }
 
 export default function TracksPage() {
@@ -116,6 +155,7 @@ export default function TracksPage() {
         name: values.name,
         venueNotes: values.venueNotes || null,
         trackLength: values.trackLength,
+        defaultLimits: limitsOf(values),
       });
       toast.success('Track created');
       setCreateOpen(false);
@@ -134,6 +174,8 @@ export default function TracksPage() {
           venueNotes: values.venueNotes || null,
           trackLength: values.trackLength,
         },
+        defaultLimits: limitsOf(values),
+        existingLimitsId: defaultLimitsOf(editTarget)?.id,
       });
       toast.success('Track updated');
       setEditTarget(null);
