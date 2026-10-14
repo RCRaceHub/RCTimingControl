@@ -76,18 +76,17 @@ class RetentionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void deletesExpiredAndOldRevokedTokensButKeepsLiveAndRecentlyRevokedOnes() {
+    void deletesExpiredTokensButKeepsLiveAndRevokedOnesUntilTheyExpire() {
         token("expired", Duration.ofDays(-2), false, Duration.ofDays(9));
-        token("oldrevoked", Duration.ofDays(5), true, Duration.ofDays(3));
-        token("newrevoked", Duration.ofDays(5), true, Duration.ofHours(2));
+        token("expiredrevoked", Duration.ofDays(-1), true, Duration.ofDays(9));
+        token("revoked", Duration.ofDays(5), true, Duration.ofDays(3));
         token("live", Duration.ofDays(5), false, Duration.ofDays(3));
 
-        RetentionService.Result result = retention.purge();
+        retention.purge();
 
-        assertThat(result.tokens()).isGreaterThanOrEqualTo(2);
         assertThat(tokens("expired")).isZero();
-        assertThat(tokens("oldrevoked")).isZero();
-        assertThat(tokens("newrevoked")).isEqualTo(1);
+        assertThat(tokens("expiredrevoked")).isZero();
+        assertThat(tokens("revoked")).isEqualTo(1);
         assertThat(tokens("live")).isEqualTo(1);
     }
 
@@ -127,7 +126,7 @@ class RetentionServiceIT extends AbstractIntegrationTest {
                 "select actor_label, source, summary from audit_log where action = 'RETENTION_PURGE' and id > ?",
                 before);
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0)).containsEntry("source", "SYSTEM");
+        assertThat(rows.get(0)).containsEntry("source", "SYSTEM").containsEntry("actor_label", "system:retention");
         assertThat((String) rows.get(0).get("summary")).startsWith("Deleted ");
         jdbc.update("delete from audit_log where action = 'RETENTION_PURGE' and id > ?", before);
     }
@@ -137,6 +136,10 @@ class RetentionServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> new RetentionProperties(0, 730))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new RetentionProperties(90, -1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RetentionProperties(90, 30))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RetentionProperties(Integer.MAX_VALUE, 0))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(new RetentionProperties(90, 0).auditDays()).isZero();
     }

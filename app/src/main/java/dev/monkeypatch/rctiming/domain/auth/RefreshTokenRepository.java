@@ -70,15 +70,12 @@ public class RefreshTokenRepository extends JooqRepository<RefreshToken, Refresh
     }
 
     /**
-     * Deletes the tokens that can no longer be used (#262): every one past its expiry, and every revoked one created
-     * before {@code revokedCreatedBefore}, which keeps a recent sign-out around for a day. Returns how many went.
+     * Deletes the tokens past their expiry (#262), revoked or not. A revoked token stays until it expires, so a replay
+     * of a rotated token is still tied to its official in the audit log. Returns how many went.
      */
     @Transactional
-    public int deleteDead(Instant now, Instant revokedCreatedBefore) {
-        return dsl.deleteFrom(REFRESH_TOKENS)
-                .where(REFRESH_TOKENS.EXPIRES_AT.lt(now)
-                        .or(REFRESH_TOKENS.REVOKED.isTrue().and(REFRESH_TOKENS.CREATED_AT.lt(revokedCreatedBefore))))
-                .execute();
+    public int deleteExpired(Instant now) {
+        return dsl.deleteFrom(REFRESH_TOKENS).where(REFRESH_TOKENS.EXPIRES_AT.lt(now)).execute();
     }
 
     /** Revokes every refresh token the official still holds, signing them out of every browser. */

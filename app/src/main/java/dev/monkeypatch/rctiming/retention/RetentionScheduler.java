@@ -2,24 +2,41 @@ package dev.monkeypatch.rctiming.retention;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-/** Runs the retention clean-up (#262) once a night. */
+/**
+ * Runs the retention clean-up (#262) once a night, and once when the app starts, because a laptop at the track may be
+ * off at 03:00 and a missed run is not caught up.
+ */
 @Component
-@EnableConfigurationProperties(RetentionProperties.class)
 public class RetentionScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(RetentionScheduler.class);
 
     private final RetentionService retention;
+    private final boolean runOnStartup;
 
-    public RetentionScheduler(RetentionService retention) {
+    public RetentionScheduler(RetentionService retention,
+                              @Value("${rctiming.retention.run-on-startup:true}") boolean runOnStartup) {
         this.retention = retention;
+        this.runOnStartup = runOnStartup;
     }
 
-    /** 03:00 server time, an hour after the nightly backup, unless {@code rctiming.retention.cron} says otherwise. */
+    @EventListener(ApplicationReadyEvent.class)
+    public void onStartup() {
+        if (runOnStartup) {
+            nightly();
+        }
+    }
+
+    /**
+     * 03:00 server time, an hour after the nightly backup, unless {@code rctiming.retention.cron} says otherwise;
+     * {@code -} turns the nightly run off.
+     */
     @Scheduled(cron = "${rctiming.retention.cron:0 0 3 * * *}")
     public void nightly() {
         try {

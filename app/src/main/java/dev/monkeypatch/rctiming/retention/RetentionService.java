@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.audit.AuditLogRepository;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.auth.RefreshTokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,13 +22,11 @@ import java.util.List;
  * row of its own with the counts and no names, so the log shows that the clean-up happened.
  */
 @Service
+@EnableConfigurationProperties(RetentionProperties.class)
 public class RetentionService {
 
     /** The audit actions written by someone who is not signed in; they are the ones a stranger can add to. */
     static final List<String> REFUSED_ACTIONS = List.of("LOGIN_FAILED", "REFRESH_REFUSED");
-
-    /** A revoked token is kept this long, so a sign-out is still there to explain a refused refresh the same day. */
-    static final Duration REVOKED_TOKEN_GRACE = Duration.ofDays(1);
 
     /** What one run deleted. */
     public record Result(int tokens, int refusedSignIns, int auditRows) {
@@ -64,10 +63,11 @@ public class RetentionService {
     @Transactional
     public Result purge() {
         Instant now = clock.instant();
-        int tokens = refreshTokens.deleteDead(now, now.minus(REVOKED_TOKEN_GRACE));
-        int refused = auditLog.deleteOlderThan(REFUSED_ACTIONS, now.minus(Duration.ofDays(properties.failedSignInDays())));
+        int tokens = refreshTokens.deleteExpired(now);
+        int refused = auditLog.deleteActionsOlderThan(REFUSED_ACTIONS,
+                now.minus(Duration.ofDays(properties.failedSignInDays())));
         int old = properties.auditDays() == 0 ? 0
-                : auditLog.deleteOlderThan(now.minus(Duration.ofDays(properties.auditDays())));
+                : auditLog.deleteAllOlderThan(now.minus(Duration.ofDays(properties.auditDays())));
         Result result = new Result(tokens, refused, old);
         if (result.any()) {
             audit.entry(Actor.system("retention"), "RETENTION_PURGE")

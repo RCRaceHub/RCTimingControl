@@ -9,7 +9,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 | Data | Whose | Where | Notes |
 |------|-------|-------|-------|
 | Name, email, password hash, roles | Officials | `users`, `user_roles` | Officials are the only people with accounts. |
-| Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. A nightly clean-up deletes expired tokens, and revoked ones a day after they were issued (#262). |
+| Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. A nightly clean-up deletes tokens once they have expired (#262), and also runs when the app starts. |
 | Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. The CSV `Junior` column is read by the parser but not stored. |
 | Transponder numbers | Competitors, per event | `entries`, practice laps | A number can identify a person across events. |
 | Laps, positions, results, penalties, incident reports, marshal adjustments | Competitors | race and result tables | Incident reports and penalties describe behaviour. |

@@ -24,15 +24,15 @@ public class AuditLogRepository extends JooqRepository<AuditEntry, AuditLogRecor
 
     /** Deletes the rows of these actions written before {@code cutoff}; returns how many went. */
     @Transactional
-    public int deleteOlderThan(Collection<String> actions, Instant cutoff) {
+    public int deleteActionsOlderThan(Collection<String> actions, Instant cutoff) {
         return dsl.deleteFrom(AUDIT_LOG)
                 .where(AUDIT_LOG.ACTION.in(actions).and(AUDIT_LOG.OCCURRED_AT.lt(cutoff)))
                 .execute();
     }
 
-    /** Deletes every row written before {@code cutoff}; returns how many went. */
+    /** Deletes every row, of any action, written before {@code cutoff}; returns how many went. */
     @Transactional
-    public int deleteOlderThan(Instant cutoff) {
+    public int deleteAllOlderThan(Instant cutoff) {
         return dsl.deleteFrom(AUDIT_LOG).where(AUDIT_LOG.OCCURRED_AT.lt(cutoff)).execute();
     }
 

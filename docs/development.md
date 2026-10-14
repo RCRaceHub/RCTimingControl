@@ -114,7 +114,7 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_BACKUP_NIGHTLY_CRON` (`rctiming.backup.nightly-cron`) | `0 0 2 * * *` | When the nightly backup runs (server time); `-` turns it off |
 | `RCTIMING_RETENTION_FAILED_SIGN_IN_DAYS` (`rctiming.retention.failed-sign-in-days`) | `90` | How long refused sign-ins stay in the audit log |
 | `RCTIMING_RETENTION_AUDIT_DAYS` (`rctiming.retention.audit-days`) | `730` | How long other audit rows stay; `0` keeps them for ever |
-| `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time) |
+| `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
 
 To restore, stop the app, then run:
 
