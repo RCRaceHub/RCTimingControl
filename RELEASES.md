@@ -6,6 +6,12 @@ Each release on the [Releases page](https://github.com/oggthemiffed/RCTimingCont
 
 ## Upgrade notes
 
+### Unused database columns are dropped (#141)
+
+The upgrade removes stored data nothing has read since the local-only plan: a club logo kept inside the database (logos come from **Admin → Club Profile** uploads), and event entry opening and closing dates. The public schedule no longer shows an Entries Open / Entries Closed / Coming Soon badge, and `GET /api/v1/events` no longer returns `entryAvailability`.
+
+The demo club's data changed with it, so an existing demo database won't start. Recreate it with `docker compose -f docker-compose.demo.yml down -v`. Developers delete their local database with `make clean-db`.
+
 ### A Docker image and demo again (#99)
 
 `docker compose -f docker-compose.demo.yml up --build` runs the demo club and a simulated decoder on any system with Docker, built from a copy of the repository. `docker-compose.club.yml` runs the club's own server with announcer voices on a laptop or small server on the club network, as an alternative to the installers. See [docs/docker.md](docs/docker.md). Unlike the stacks removed in #24 there is no nginx and no frontend container, since the app serves the UI itself, and no published image yet.

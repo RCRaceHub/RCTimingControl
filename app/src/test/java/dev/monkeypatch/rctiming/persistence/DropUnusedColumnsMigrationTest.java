@@ -96,6 +96,8 @@ class DropUnusedColumnsMigrationTest {
                 .isEqualTo("/l.png");
         assertThat(jdbc.queryForObject("select seq from sqlite_sequence where name = 'entries'", Integer.class))
                 .isEqualTo(8);
+        assertThat(jdbc.queryForObject("select seq from sqlite_sequence where name = 'races'", Integer.class))
+                .isEqualTo(7);
 
         assertThat(columns("races", "format_id", "format_overrides")).isZero();
         assertThat(columns("entries", "user_id", "transponder_label")).isZero();
@@ -110,9 +112,9 @@ class DropUnusedColumnsMigrationTest {
         return jdbc.queryForObject(sql, Integer.class);
     }
 
-    private int columns(String table, String... names) {
+    private int columns(String table, String first, String second) {
         return jdbc.queryForObject("select count(*) from pragma_table_info(?) where name in (?, ?)", Integer.class,
-                table, names[0], names[1]);
+                table, first, second);
     }
 
     private void migrate(String target) {

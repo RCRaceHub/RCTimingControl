@@ -104,7 +104,7 @@ CREATE INDEX idx_entries_event_id ON entries (event_id);
 CREATE UNIQUE INDEX idx_entries_external ON entries (external_source, external_entry_id) WHERE external_entry_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_entries_no_duplicate ON entries (competitor_id, event_id, event_class_id) WHERE status <> 'WITHDRAWN';
 
--- These columns are in no index or foreign key, so SQLite can drop them in place
+-- These columns are in no index, foreign key, CHECK or trigger, so SQLite can drop them in place
 ALTER TABLE events DROP COLUMN entry_opens_at;
 ALTER TABLE events DROP COLUMN entry_closes_at;
 
