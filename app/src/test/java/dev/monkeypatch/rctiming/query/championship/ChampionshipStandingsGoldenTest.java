@@ -112,6 +112,73 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
                 .isEqualTo(readGolden("championship-standings-finals.txt"));
     }
 
+    /**
+     * One class scored from two qualifying rounds per event. A driver's best heat counts, and a
+     * driver who misses both heats has one DNS round, not two. Of two rounds worth no points, the
+     * fifth place is dropped before the DNS. Finn races only the last round, fewer than Y, so
+     * nothing is dropped. Bob and Cara tie on points, as do Dan and Finn, and stand by name.
+     */
+    @Test
+    void qualifyingHeatsMatchGoldenOutput() throws IOException {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Long modClass = makeRacingClass("Golden Heats " + suffix);
+
+        Championship champ = new Championship();
+        champ.setName("Golden Heats Champ " + suffix);
+        champ.setTqBonusPoints(2);
+        champ.setAfinalWinnerBonusPoints(3);
+        champ.setBestXFromYX(2);
+        champ.setBestXFromYY(3);
+        champ.setScoringSource(ScoringSource.QUALIFYING);
+        champ.setCreatedAt(Instant.now());
+        champ.setUpdatedAt(Instant.now());
+        Long champId = championshipRepository.save(champ).getId();
+        Map.of(1, 10, 2, 8, 3, 6, 4, 4).forEach((pos, pts) ->
+                pointsScaleRepository.save(new ChampionshipPointsScaleEntry(champId, pos, pts)));
+
+        Driver alice = makeDriver("Alice", "Smith");
+        Driver bob = makeDriver("Bob", "Jones");
+        Driver cara = makeDriver("Cara", "Lee");
+        Driver dan = makeDriver("Dan", "Moss");
+        Driver eve = makeDriver("Eve", "Hart");
+        Driver finn = makeDriver("Finn", "Reid");
+
+        // Per round: who entered, the first qualifier's order, the second's, and the A final's
+        List<List<List<Driver>>> rounds = List.of(
+                List.of(List.of(alice, bob, cara, dan, eve), List.of(alice, bob, cara, dan, eve),
+                        List.of(bob, alice, cara, dan), List.of(alice, bob, cara)),
+                List.of(List.of(alice, bob, cara, dan, eve), List.of(cara, dan, eve, alice, bob),
+                        List.of(cara, dan), List.of(dan, cara)),
+                List.of(List.of(alice, bob, cara, dan, eve, finn), List.of(finn, alice, bob, cara),
+                        List.of(finn, alice, bob, cara), List.of(finn)));
+
+        for (int rn = 1; rn <= rounds.size(); rn++) {
+            Event event = makeEvent("Golden Heats Round " + rn + " " + suffix);
+            linkEvent(champId, event.getId(), rn);
+            Long modEc = makeEventClass(event.getId(), modClass);
+            List<List<Driver>> round = rounds.get(rn - 1);
+
+            Map<Driver, Entry> entries = new LinkedHashMap<>();
+            for (Driver d : round.get(0)) {
+                entries.put(d, makeEntry(d, event.getId(), modEc));
+            }
+            Map<Driver, Entry> finalists = new LinkedHashMap<>();
+            for (Driver d : round.get(3)) {
+                finalists.put(d, entries.get(d));
+            }
+
+            Round q1 = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+            Round q2 = makeRound(event.getId(), RoundType.QUALIFIER, 2);
+            Round fin = makeRound(event.getId(), RoundType.FINAL, 3);
+            makeRaceWithResult(q1.getId(), modEc, null, entries, round.get(1));
+            makeRaceWithResult(q2.getId(), modEc, null, entries, round.get(2));
+            makeRaceWithResult(fin.getId(), modEc, "A", finalists, round.get(3));
+        }
+
+        assertThat(render(query.computeStandings(champId), Map.of(modClass, "Mod")))
+                .isEqualTo(readGolden("championship-standings-heats.txt"));
+    }
+
     /** The championship built by {@link #buildChampionship} and its two racing classes. */
     private record Fixture(Long champId, Long stockClass, Map<Long, String> classNames) {}
 
