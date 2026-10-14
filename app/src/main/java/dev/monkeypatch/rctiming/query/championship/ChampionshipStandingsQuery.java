@@ -187,7 +187,8 @@ public class ChampionshipStandingsQuery {
 
         Map<Long, FinishedRace> races = new HashMap<>();
         Map<Long, EventResults> results = new HashMap<>();
-        dsl.select(RACES.ID, RACES.FINAL_LETTER, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.EVENT_ID, EVENT_CLASSES.RACING_CLASS_ID,
+        dsl.select(RACES.ID, RACES.FINAL_LETTER, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.EVENT_ID,
+                        EVENT_CLASSES.RACING_CLASS_ID,
                         RESULT_SNAPSHOTS.POSITIONS_JSON)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
@@ -200,7 +201,8 @@ public class ChampionshipStandingsQuery {
                     String roundType = r.get(ROUNDS.TYPE);
                     FinishedRace race = new FinishedRace(r.get(ROUNDS.EVENT_ID), roundType, r.get(RACES.FINAL_LETTER),
                             r.get(EVENT_CLASSES.RACING_CLASS_ID), scores(scoringSource, roundType),
-                            r.get(RACES.ABANDONED_AT) != null, snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)));
+                            r.get(RACES.ABANDONED_AT) != null,
+                            snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)));
                     races.put(raceId, race);
                     results.computeIfAbsent(race.eventId(), k -> new EventResults(new ArrayList<>(),
                             new HashMap<>(), new HashMap<>(), new HashMap<>())).races().add(race);
