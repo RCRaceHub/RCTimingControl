@@ -1,13 +1,16 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.domain.audit.Audited;
+import dev.monkeypatch.rctiming.practice.PracticeDayService;
 import dev.monkeypatch.rctiming.practice.PracticeDriverService;
 import dev.monkeypatch.rctiming.practice.PracticeSessionService;
 import dev.monkeypatch.rctiming.practice.PracticeTimingService;
+import dev.monkeypatch.rctiming.practice.dto.PracticeDayDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -35,10 +39,13 @@ public class PracticeSessionController {
     private final PracticeSessionService sessionService;
     private final PracticeTimingService timingService;
     private final PracticeDriverService driverService;
+    private final PracticeDayService dayService;
 
     public PracticeSessionController(PracticeSessionService sessionService,
                                      PracticeTimingService timingService,
-                                     PracticeDriverService driverService) {
+                                     PracticeDriverService driverService,
+                                     PracticeDayService dayService) {
+        this.dayService = dayService;
         this.sessionService = sessionService;
         this.timingService = timingService;
         this.driverService = driverService;
@@ -53,6 +60,18 @@ public class PracticeSessionController {
             Authentication auth) {
         PracticeSessionDto session = sessionService.create(CurrentOfficial.actor(auth), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
+    }
+
+    /**
+     * The day's practice, each driver added up across every session that started on the date (today when omitted),
+     * averaging the best {@code bestLapN} laps of a run (5 when omitted).
+     */
+    @GetMapping("/day")
+    @PreAuthorize("isAuthenticated()")
+    public PracticeDayDto day(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) Integer bestLapN) {
+        return dayService.day(date == null ? LocalDate.now() : date, bestLapN);
     }
 
     /** Get a practice session by ID. */

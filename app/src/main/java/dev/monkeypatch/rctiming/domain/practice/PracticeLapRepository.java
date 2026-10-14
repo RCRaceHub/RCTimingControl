@@ -30,6 +30,13 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
                 PRACTICE_LAPS.LAP_NUMBER.asc(), PRACTICE_LAPS.ID.asc());
     }
 
+    /** The laps of the sessions, in the order they were crossed. */
+    public List<PracticeLap> findByPracticeSessionIds(java.util.Collection<Long> practiceSessionIds) {
+        return practiceSessionIds.isEmpty() ? List.of()
+                : findWhere(PRACTICE_LAPS.PRACTICE_SESSION_ID.in(practiceSessionIds),
+                        PRACTICE_LAPS.CROSSING_TIME.asc(), PRACTICE_LAPS.ID.asc());
+    }
+
     /** The highest run saved for the transponder in the session, 0 when it has no laps there. */
     public int highestRunNumber(Long practiceSessionId, String transponderNumber) {
         Integer highest = dsl.select(DSL.max(PRACTICE_LAPS.RUN_NUMBER)).from(PRACTICE_LAPS)

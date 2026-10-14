@@ -6,6 +6,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,12 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
 
     public List<PracticeSession> findRunningSessions() {
         return findWhere(PRACTICE_SESSIONS.STATUS.eq(PracticeStatus.RUNNING.name()));
+    }
+
+    /** The sessions that started at or after {@code from} and before {@code to}, oldest first. */
+    public List<PracticeSession> findStartedBetween(Instant from, Instant to) {
+        return findWhere(PRACTICE_SESSIONS.STARTED_AT.ge(from).and(PRACTICE_SESSIONS.STARTED_AT.lt(to)),
+                PRACTICE_SESSIONS.STARTED_AT.asc(), PRACTICE_SESSIONS.ID.asc());
     }
 
     public List<PracticeSession> findByEventId(Long eventId) {

@@ -172,7 +172,7 @@ public class PracticeSessionService {
         }
     }
 
-    private PracticeSessionDto toDto(PracticeSession session) {
+    public PracticeSessionDto toDto(PracticeSession session) {
         return new PracticeSessionDto(
                 session.getId(),
                 session.getName(),
