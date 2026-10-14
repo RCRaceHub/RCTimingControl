@@ -2,6 +2,8 @@ package dev.monkeypatch.rctiming.domain.competitor;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,10 +15,13 @@ public class CompetitorNameVisibilityService {
 
     private final CompetitorRepository competitors;
     private final AuditService audit;
+    private final ApplicationEventPublisher events;
 
-    public CompetitorNameVisibilityService(CompetitorRepository competitors, AuditService audit) {
+    public CompetitorNameVisibilityService(CompetitorRepository competitors, AuditService audit,
+                                           ApplicationEventPublisher events) {
         this.competitors = competitors;
         this.audit = audit;
+        this.events = events;
     }
 
     /**
@@ -36,6 +41,8 @@ public class CompetitorNameVisibilityService {
                 .summary("Set the public name of competitor #" + competitorId + " to " + visibility)
                 .before(before).after(visibility)
                 .record();
+        // A race already on the track keeps the names it loaded, so tell it
+        AfterCommit.run(() -> events.publishEvent(new NameVisibilityChangedEvent(competitorId)));
         return saved;
     }
 }

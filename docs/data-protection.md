@@ -10,7 +10,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 |------|-------|-------|-------|
 | Name, email, password hash, roles | Officials | `users`, `user_roles` | Officials are the only people with accounts. |
 | Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. A nightly clean-up deletes tokens once they have expired (#262), and also runs when the app starts. |
-| Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. The CSV `Junior` column is read by the parser but not stored. |
+| Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. Results saved before competitors existed have no competitor to look up, so they keep their stored name. Merging two competitors keeps the more restrictive setting. The CSV `Junior` column is read by the parser but not stored. |
 | Transponder numbers | Competitors, per event | `entries`, practice laps | A number can identify a person across events. |
 | Laps, positions, results, penalties, incident reports, marshal adjustments | Competitors | race and result tables | Incident reports and penalties describe behaviour. |
 | Who did what and when | Officials; anyone who tried to sign in | `audit_log` and the entry, official and competitor audit tables | Append-only. A failed sign-in no longer stores the email that was typed: an attempt on a real account is tied to the official by id, and an unknown email leaves no trace of what was typed (#264). Backups taken before that change still hold the old addresses until they age out. |
@@ -48,7 +48,7 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 An admin or race director can set any competitor to show as **Full name**, **Initials only** (`A. L.`) or **Hidden** (`Driver 12`, from the car number) on the Competitors screen. The choice is stored on the competitor, is audited (`COMPETITOR_NAME_VISIBILITY_CHANGED`, with the competitor id and the two settings, not the name), and a RaceHub or CSV import never changes it. It applies to the public results page, the boards and overlay, championship standings, live timing sent to browsers and the live feed. The stored results keep the real name, so setting it back to Full name changes the screens straight away.
 
-Officials' own screens (race control, check-in, the competitor lists) and the announcer still use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
+A change made during a race reaches the live timing at once. Race control's live timing panel shows the public name too, as it shares the stream the public screens use; the other official screens (check-in, the competitor lists, the grid) and the announcer use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
 
 ## Proposed child tickets
 

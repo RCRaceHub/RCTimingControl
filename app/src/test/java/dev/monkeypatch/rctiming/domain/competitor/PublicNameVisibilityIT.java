@@ -65,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PublicNameVisibilityIT extends AbstractIntegrationTest {
 
     @Autowired TestRestTemplate restTemplate;
+    @Autowired CompetitorMergeService mergeService;
     @Autowired CompetitorNameVisibilityService visibilityService;
     @Autowired LiveFeedRaceLookup raceLookup;
     @Autowired LapTimingService lapTimingService;
@@ -156,7 +157,24 @@ class PublicNameVisibilityIT extends AbstractIntegrationTest {
                 new LapPassingEvent(1L, "TX", 1_000_000L), juniorRace[2]);
         assertThat(lapTimingService.peek(juniorRace[1]).orElseThrow().calculatePositions())
                 .singleElement().extracting(LiveTimingRowDto::driverName).isEqualTo("A. L.");
+        // A change while the race is on reaches the names live timing holds
+        visibilityService.set(junior.getId(), NameVisibility.SHOW, adminId);
+        assertThat(lapTimingService.peek(juniorRace[1]).orElseThrow().calculatePositions())
+                .singleElement().extracting(LiveTimingRowDto::driverName).isEqualTo("Ada Lovelace (" + run + ")");
         lapTimingService.releaseState(juniorRace[1]);
+    }
+
+    @Test
+    void mergingKeepsTheMoreRestrictiveSetting() {
+        Competitor keep = competitor("Merge Keep (" + run + ")", null, null, null, null, null);
+        Competitor duplicate = competitor("Merge  Keep (" + run + ")", null, null, null, null, null);
+        visibilityService.set(duplicate.getId(), NameVisibility.HIDE, adminId);
+        visibilityService.set(keep.getId(), NameVisibility.INITIALS, adminId);
+
+        mergeService.merge(keep.getId(), duplicate.getId(), adminId);
+
+        assertThat(competitorRepository.findById(keep.getId()).orElseThrow().getNameVisibility())
+                .isEqualTo(NameVisibility.HIDE);
     }
 
     @Test

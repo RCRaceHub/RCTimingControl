@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,7 +52,7 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
             onChange={e => setVisibility.mutate({
               id: competitor.id,
               nameVisibility: e.target.value as NameVisibility,
-            })}
+            }, { onError: () => toast.error('Could not change how the name is shown. Try again.') })}
           >
             <option value="SHOW">Full name</option>
             <option value="INITIALS">Initials only</option>

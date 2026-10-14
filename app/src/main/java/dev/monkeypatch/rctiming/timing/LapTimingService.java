@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.NameVisibilityChangedEvent;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
@@ -81,6 +82,12 @@ public class LapTimingService {
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             return state;
         });
+    }
+
+    /** A competitor's public name changed (#265): races in progress take the new names from the next row. */
+    @EventListener
+    public void onNameVisibilityChanged(NameVisibilityChangedEvent event) {
+        states.forEach(this::loadEntryNames);
     }
 
     /**

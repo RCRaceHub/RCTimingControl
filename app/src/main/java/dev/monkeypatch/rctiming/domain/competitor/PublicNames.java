@@ -36,11 +36,6 @@ public class PublicNames {
         return new Snapshot(competitors.findNameVisibilityNotShow());
     }
 
-    /** The public name of one competitor; {@code competitorId} may be null for an entry with none. */
-    public String of(Long competitorId, String displayName, Object carNumber) {
-        return snapshot().of(competitorId, displayName, carNumber);
-    }
-
     /** Result rows with each name as the public may see it. */
     public List<ResultRow> rows(List<ResultRow> rows) {
         Snapshot snapshot = snapshot();
@@ -68,11 +63,11 @@ public class PublicNames {
             case INITIALS -> initials(displayName);
             case HIDE -> carNumber == null || carNumber.toString().isBlank()
                     ? HIDDEN : HIDDEN + " " + carNumber;
-            case SHOW -> displayName;
+            case SHOW -> displayName; // not reached: returned above
         };
     }
 
-    /** "Ada King-Lovelace" becomes "A. K."; words that start with a symbol, such as a bracketed nickname, are left out. */
+    /** "Ada King-Lovelace" becomes "A. K."; words starting with a symbol, such as a bracketed nickname, are left out. */
     static String initials(String displayName) {
         StringBuilder out = new StringBuilder();
         for (String word : displayName.trim().split("\\s+")) {
