@@ -100,10 +100,10 @@ export function useAnnouncements({
     }
   }, [fallbackSpeak]);
 
-  // setClipMap: populate the clip cache from outside (called by usePregeneratedClips)
   // Which race the clip cache belongs to once it has clips; a different race has none yet
   const [clipsRaceId, setClipsRaceId] = useState<number | null>(null);
   const clipsReady = raceId != null && clipsRaceId === raceId;
+  // setClipMap: populate the clip cache from outside (called by usePregeneratedClips)
   const setClipMap = useCallback((map: Record<string, string>) => {
     clipMapRef.current = map;
     setClipsRaceId(Object.keys(map).length > 0 ? raceId : null);
@@ -230,7 +230,7 @@ export function useAnnouncements({
         gain.connect(ctx.destination);
         osc.start();
         osc.stop(ctx.currentTime + 0.2);
-        // Allow GC of AudioContext after beep
+        // Close the context after the beep to release its audio resources
         osc.onended = () => ctx.close();
       } catch (e) {
         console.warn('Beep failed:', e);

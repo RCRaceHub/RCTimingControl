@@ -22,7 +22,10 @@ export function useReplaceRaceHubClassMappings(eventId: number) {
   });
 }
 
-/** Runs a dry-run preview or a real import. A real import refreshes the event and its entries. */
+/**
+ * Runs a dry-run preview or a real import. A real import invalidates the event's key, which by prefix also
+ * refreshes its entries and other queries under it.
+ */
 export function useRaceHubImport(eventId: number) {
   const qc = useQueryClient();
   return useMutation({
@@ -38,7 +41,8 @@ export function useRaceHubImport(eventId: number) {
 
 /**
  * Runs a dry-run preview of an RC-Timing CSV, or the real import with the picked updates and
- * withdrawals. A real import refreshes the event and its entries.
+ * withdrawals. A real import invalidates the event's key, which by prefix also refreshes its entries and other
+ * queries under it.
  */
 export function useCsvImport(eventId: number) {
   const qc = useQueryClient();

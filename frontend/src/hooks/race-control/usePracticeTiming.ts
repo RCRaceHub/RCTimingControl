@@ -27,7 +27,6 @@ export function usePracticeTiming(sessionId: number | null) {
   const rows = useMemo(
     () => stompRows ?? snapshot ?? [],
     // stompRows or snapshot reference changes only when data changes
-     
     [stompRows, snapshot],
   );
 

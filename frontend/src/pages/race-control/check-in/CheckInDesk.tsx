@@ -1,7 +1,6 @@
-// Check-in desk (L11): camera scan, keyboard-wedge scan and manual
-// search all lead to the same confirmation step. Camera and keyboard-wedge are deliberately two
-// separate entry points (see BarcodeScanner / KeyboardWedgeInput) even though both call
-// checkInResolve, so a regression in one can't hide behind the other.
+// Check-in desk (L11): camera scan, keyboard-wedge scan and manual search all lead to the same
+// confirmation step. The camera and the keyboard wedge are separate components (BarcodeScanner and
+// KeyboardWedgeInput) that both resolve the scanned code the same way.
 import { useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -66,7 +65,8 @@ export default function CheckInDesk({ eventId }: { eventId: number }) {
     [eventId],
   );
 
-  // Two separate callbacks, one per scan entry point, sharing resolveCode underneath.
+  // The two callbacks are the same today; they stay apart so a regression in one scan source
+  // can't hide behind the other.
   const handleCameraDecode = useCallback(
     (code: string) => {
       void resolveCode(code);

@@ -94,7 +94,6 @@ export function DecoderSettingsForm({ onSaved, onBack, onSkip, saveLabel = 'Save
     }
   }, [configQuery.data, form]);
 
-  // ── Test Connection ───────────────────────────────────────────────────────
   // Tests the values on the form, not the saved listener. The server opens its own connection.
   const [testResult, setTestResult] = useState<DecoderTestResult | null>(null);
 
@@ -114,7 +113,6 @@ export function DecoderSettingsForm({ onSaved, onBack, onSkip, saveLabel = 'Save
     testMutation.mutate(parsed.data);
   };
 
-  // ── Save ───────────────────────────────────────────────────────────────────
   async function onSave(values: FormValues) {
     try {
       await updateDecoderConfig(values);
@@ -180,7 +178,6 @@ export function DecoderSettingsForm({ onSaved, onBack, onSkip, saveLabel = 'Save
           )}
         />
 
-        {/* Test Connection */}
         <div className="space-y-2">
           <Button
             type="button"

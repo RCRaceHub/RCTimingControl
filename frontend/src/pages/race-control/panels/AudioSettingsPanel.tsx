@@ -62,7 +62,6 @@ export function AudioSettingsPanel() {
 
   return (
     <div className="border-b" data-testid="audio-settings-panel">
-      {/* Trigger row */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex h-10 w-full items-center gap-2 px-4 hover:bg-muted/50 select-none"
@@ -83,7 +82,6 @@ export function AudioSettingsPanel() {
         )}
       </button>
 
-      {/* Expanded panel */}
       {isOpen && (
         <div
           id="audio-settings-panel-content"
