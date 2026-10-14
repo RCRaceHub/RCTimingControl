@@ -10,8 +10,8 @@ import java.util.Set;
 /**
  * The states a race meeting moves through, and the one table that says which moves are allowed:
  * {@code DRAFT → PUBLISHED → OPEN → ENTRIES_CLOSED → IN_PROGRESS → COMPLETED}. Only a published meeting can go
- * back, to draft, while nobody has entered yet; from there on it is forward only, and a completed meeting is
- * never reopened, since its results have gone to RaceHub and its championships count them.
+ * back, to draft; from there on it is forward only, and a completed meeting is never reopened, since its
+ * results have gone to RaceHub and its championships count them.
  *
  * <p>It only moves the event in memory; the caller saves it.
  */
