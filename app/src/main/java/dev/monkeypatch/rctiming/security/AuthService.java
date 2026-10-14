@@ -16,7 +16,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -186,21 +185,16 @@ public class AuthService {
 
     /**
      * Records a refused sign-in without the email that was typed, which may belong to someone who is not an official
-     * (#264). An attempt against a real account is tied to it by the official id. An unknown email is kept only as a
-     * short hash, enough to see the same address tried again, not to read it back.
+     * (#264). An attempt against a real account is tied to it by the official id. An unknown email leaves no trace of
+     * what was typed, not even a hash, which a list of the club's addresses could be tried against.
      */
     private Outcome refuseLogin(String emailTried, Long officialId, Refusal refusal) {
-        String who = officialId != null ? "known account" : "unknown email " + shortHash(emailTried);
+        String who = officialId != null ? "known account" : "unknown email";
         audit.entry(Actor.anonymous(who), "LOGIN_FAILED")
                 .entity("official", officialId)
                 .summary("Sign-in refused: " + refusal.reason)
                 .recordStandalone();
         return new Outcome.Refused(refusal);
-    }
-
-    private static String shortHash(String email) {
-        String normalised = email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
-        return sha256Hex(normalised).substring(0, 8);
     }
 
     /** Records a refused refresh: someone presented a cookie that did not work. */

@@ -325,35 +325,19 @@ class AuthControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void anUnknownEmailIsRecordedWithoutAnOfficial() {
+    void anUnknownEmailIsRecordedWithoutAnOfficialAndWithoutTheEmail() {
         String email = "nobody-" + UUID.randomUUID() + "@example.com";
+        Long before = jdbc.queryForObject("select coalesce(max(id), 0) from audit_log", Long.class);
 
         restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "whatever123"), Void.class);
 
         var rows = jdbc.queryForList(
-                "select action, entity_id, actor_label, summary from audit_log "
-                        + "where action = 'LOGIN_FAILED' and actor_label like 'anonymous:unknown email %' "
-                        + "and actor_label not like ?",
-                "%" + email + "%");
-        assertThat(rows).isNotEmpty();
-        var row = rows.get(rows.size() - 1);
-        assertThat(row.get("entity_id")).isNull();
-        assertThat(row.toString()).doesNotContain(email);
-    }
-
-    @Test
-    void theSameUnknownEmailIsRecordedUnderTheSameLabelAndNeverAsTyped() {
-        String email = "Nobody-" + UUID.randomUUID() + "@Example.com";
-
-        String latest = "select actor_label from audit_log where action = 'LOGIN_FAILED' order by id desc limit 1";
-        restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "whatever123"), Void.class);
-        String first = jdbc.queryForObject(latest, String.class);
-        restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email.toLowerCase(), "whatever123"),
-                Void.class);
-        String second = jdbc.queryForObject(latest, String.class);
-
-        assertThat(first).startsWith("anonymous:unknown email ").isEqualTo(second);
-        assertThat(first).doesNotContain(email.toLowerCase());
+                "select action, entity_id, actor_label, summary from audit_log where id > ?", before);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0)).containsEntry("action", "LOGIN_FAILED")
+                .containsEntry("actor_label", "anonymous:unknown email");
+        assertThat(rows.get(0).get("entity_id")).isNull();
+        assertThat(rows.get(0).toString()).doesNotContain(email);
     }
 
     @Test
