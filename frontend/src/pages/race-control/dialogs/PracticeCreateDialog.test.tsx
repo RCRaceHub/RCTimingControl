@@ -22,6 +22,6 @@ describe('PracticeCreateDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Session' }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
-    expect(createSession).toHaveBeenCalledWith({ name: 'Morning practice', eventId: 7, bestLapN: 3 });
+    expect(createSession).toHaveBeenCalledWith({ name: 'Morning practice', eventId: 7, bestLapN: 5, pauseSeconds: 180 });
   });
 });

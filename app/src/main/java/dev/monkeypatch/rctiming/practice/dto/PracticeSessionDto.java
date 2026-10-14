@@ -15,6 +15,7 @@ public record PracticeSessionDto(
         String eventName,
         PracticeStatus status,
         Integer bestLapN,
+        Integer pauseSeconds,
         Instant startedAt,
         Instant stoppedAt
 ) {}

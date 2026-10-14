@@ -42,6 +42,7 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
         l.setTransponderNumber(r.getTransponderNumber());
         l.setUserId(r.getUserId());
         l.setLapNumber(r.getLapNumber());
+        l.setRunNumber(r.getRunNumber());
         l.setLapTimeMs(r.getLapTimeMs());
         l.setCrossingTime(r.getCrossingTime());
         l.setCreatedAt(r.getCreatedAt());
@@ -54,6 +55,7 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
         r.setTransponderNumber(l.getTransponderNumber());
         r.setUserId(l.getUserId());
         r.setLapNumber(l.getLapNumber());
+        r.setRunNumber(l.getRunNumber());
         r.setLapTimeMs(l.getLapTimeMs());
         r.setCrossingTime(l.getCrossingTime());
         r.setCreatedAt(l.getCreatedAt());

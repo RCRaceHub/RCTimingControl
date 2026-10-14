@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriver;
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeLap;
 import dev.monkeypatch.rctiming.domain.practice.PracticeLapRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSession;
@@ -47,6 +49,7 @@ public class PracticeTimingService {
 
     private final PracticeSessionRepository sessionRepository;
     private final PracticeLapRepository lapRepository;
+    private final PracticeDriverRepository driverRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final UserRepository userRepository;
@@ -57,12 +60,14 @@ public class PracticeTimingService {
 
     public PracticeTimingService(PracticeSessionRepository sessionRepository,
                                  PracticeLapRepository lapRepository,
+                                 PracticeDriverRepository driverRepository,
                                  EntryRepository entryRepository,
                                  CompetitorRepository competitorRepository,
                                  UserRepository userRepository,
                                  PracticeTimingHub timingHub) {
         this.sessionRepository = sessionRepository;
         this.lapRepository = lapRepository;
+        this.driverRepository = driverRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.userRepository = userRepository;
@@ -74,7 +79,7 @@ public class PracticeTimingService {
      * Called from PracticeSessionService.start() after the session is persisted.
      */
     public void startSession(PracticeSession session) {
-        LivePracticeState state = new LivePracticeState(session.getBestLapN());
+        LivePracticeState state = new LivePracticeState(session.getBestLapN(), session.getPauseSeconds());
         activeStates.put(session.getId(), state);
         log.info("Practice session {} ({}) started timing", session.getId(), session.getName());
     }
@@ -115,14 +120,15 @@ public class PracticeTimingService {
         String transponderNumber = event.transponderNumber();
         Instant crossingTime = Instant.now();
 
-        Long lapTimeMs = state.lapTimeSincePrevious(transponderNumber, event.rtcTimeMicros());
+        LivePracticeState.Passing passing = state.notePassing(transponderNumber, event.rtcTimeMicros());
+        Long lapTimeMs = passing.lapTimeMs();
 
-        // Resolve transponder → competitor through the session's event entries (L10, #18).
-        // A session with no event, or a transponder no entry uses, stays unknown.
+        // Resolve transponder → competitor: named in this session first, then through the session's event entries
+        // (L10, #18). A transponder neither names stays unknown.
         String racerName = resolveCompetitorName(session, transponderNumber);
 
         // Record in in-memory state
-        state.recordLap(transponderNumber, null, racerName, lapTimeMs);
+        state.recordLap(transponderNumber, null, racerName, lapTimeMs, passing.runNumber());
 
         // Persist lap record (only when we have a real lap time)
         if (lapTimeMs != null) {
@@ -141,6 +147,7 @@ public class PracticeTimingService {
             lap.setPracticeSessionId(session.getId());
             lap.setTransponderNumber(transponderNumber);
             lap.setLapNumber(lapNumber);
+            lap.setRunNumber(passing.runNumber());
             lap.setLapTimeMs(lapTimeMs);
             lap.setCrossingTime(crossingTime);
             lapRepository.save(lap);
@@ -171,13 +178,13 @@ public class PracticeTimingService {
     }
 
     /**
-     * Link an unknown transponder to a user in an active session.
-     * Retroactively updates all lap rows for that transponder (in-memory only).
+     * Shows a name against a transponder in a running session, after {@link PracticeDriverService} has saved it.
+     * Laps already counted take the name too; a stopped session reads it from the saved match.
      */
-    public void linkTransponder(Long sessionId, String transponderNumber, Long userId, String racerName) {
+    public void nameTransponder(Long sessionId, String transponderNumber, String racerName) {
         LivePracticeState state = activeStates.get(sessionId);
         if (state != null) {
-            state.linkTransponder(transponderNumber, userId, racerName);
+            state.linkTransponder(transponderNumber, null, racerName);
             timingHub.broadcastTimingUpdate(sessionId, state.calculatePositions());
         }
     }
@@ -188,7 +195,7 @@ public class PracticeTimingService {
             return Collections.emptyList();
         }
 
-        LivePracticeState state = new LivePracticeState(session.getBestLapN());
+        LivePracticeState state = new LivePracticeState(session.getBestLapN(), session.getPauseSeconds());
         List<PracticeLap> laps = lapRepository.findByPracticeSessionIdOrderByCrossingTimeAsc(sessionId);
 
         // Laps recorded before L10 carry a user; later ones are named through the event's entries
@@ -205,15 +212,27 @@ public class PracticeTimingService {
                     lap.getTransponderNumber(),
                     userId,
                     racerName,
-                    lap.getLapTimeMs()
+                    lap.getLapTimeMs(),
+                    lap.getRunNumber() == null ? 1 : lap.getRunNumber()
             );
         }
 
         return state.calculatePositions();
     }
 
-    /** The competitor whose active entry in the session's event uses this transponder, if any. */
+    /**
+     * The competitor this transponder was named as in the session, else the one whose active entry in the session's
+     * event uses it, if any.
+     */
     private String resolveCompetitorName(PracticeSession session, String transponderNumber) {
+        Optional<String> named = driverRepository
+                .findByPracticeSessionIdAndTransponderNumber(session.getId(), transponderNumber)
+                .map(PracticeDriver::getCompetitorId)
+                .flatMap(competitorRepository::findById)
+                .map(Competitor::getDisplayName);
+        if (named.isPresent()) {
+            return named.get();
+        }
         if (session.getEventId() == null) {
             return null;
         }

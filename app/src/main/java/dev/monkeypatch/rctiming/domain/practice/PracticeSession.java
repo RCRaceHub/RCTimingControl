@@ -15,7 +15,10 @@ public class PracticeSession implements CreatedAt, UpdatedAt {
 
     private PracticeStatus status = PracticeStatus.IDLE;
 
-    private Integer bestLapN = 3;
+    private Integer bestLapN = 5;
+
+    /** A transponder quiet for longer than this starts a new run; the pause is not a lap. */
+    private Integer pauseSeconds = 180;
 
     private Long createdByUserId;
 
@@ -42,6 +45,9 @@ public class PracticeSession implements CreatedAt, UpdatedAt {
 
     public Integer getBestLapN() { return bestLapN; }
     public void setBestLapN(Integer bestLapN) { this.bestLapN = bestLapN; }
+
+    public Integer getPauseSeconds() { return pauseSeconds; }
+    public void setPauseSeconds(Integer pauseSeconds) { this.pauseSeconds = pauseSeconds; }
 
     public Long getCreatedByUserId() { return createdByUserId; }
     public void setCreatedByUserId(Long createdByUserId) { this.createdByUserId = createdByUserId; }

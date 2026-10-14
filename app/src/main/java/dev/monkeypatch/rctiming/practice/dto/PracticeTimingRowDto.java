@@ -13,5 +13,6 @@ public record PracticeTimingRowDto(
         Long bestLapMs,
         Long bestConsecutiveNMs,
         Long lastLapMs,
+        int runs,
         boolean isUnknown
 ) {}
