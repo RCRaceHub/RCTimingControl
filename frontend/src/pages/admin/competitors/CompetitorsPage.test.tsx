@@ -9,7 +9,7 @@ vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     competitors: {
       list: vi.fn(), setSpokenName: vi.fn(), previewSpeech: vi.fn(),
-      possibleDuplicates: vi.fn(), mergePreview: vi.fn(), merge: vi.fn(), changes: vi.fn(),
+      possibleDuplicates: vi.fn(), mergePreview: vi.fn(), merge: vi.fn(), changes: vi.fn(), setNameVisibility: vi.fn(),
       exportPersonalData: vi.fn(), anonymise: vi.fn(),
     },
   },
@@ -39,8 +39,8 @@ describe('CompetitorsPage', () => {
 
   it('lists competitors and filters them by name, BRCA number or club', async () => {
     api.competitors.list.mockResolvedValue([
-      { id: 1, displayName: 'Ada Lovelace', brcaNumber: '12345', homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace' },
-      { id: 2, displayName: 'Grace Hopper', brcaNumber: null, homeClub: 'Compiler Club', spokenName: null, speechName: 'Grace Hopper' },
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: '12345', homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+      { id: 2, displayName: 'Grace Hopper', brcaNumber: null, homeClub: 'Compiler Club', spokenName: null, speechName: 'Grace Hopper', nameVisibility: 'SHOW' as const },
     ]);
     renderPage();
 
@@ -61,7 +61,7 @@ describe('CompetitorsPage', () => {
   });
 
   describe('say as', () => {
-    const siobhan = { id: 7, displayName: 'Siobhan Keane', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Siobhan Keane' };
+    const siobhan = { id: 7, displayName: 'Siobhan Keane', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Siobhan Keane', nameVisibility: 'SHOW' as const };
 
     const play = vi.fn().mockResolvedValue(undefined);
     beforeEach(() => {
@@ -73,7 +73,7 @@ describe('CompetitorsPage', () => {
     it('shows a spoken name, or that the name is said as written', async () => {
       api.competitors.list.mockResolvedValue([
         siobhan,
-        { id: 8, displayName: 'Sam Ito', brcaNumber: null, homeClub: null, spokenName: 'Sam Ee-toe', speechName: 'Sam Ee-toe' },
+        { id: 8, displayName: 'Sam Ito', brcaNumber: null, homeClub: null, spokenName: 'Sam Ee-toe', speechName: 'Sam Ee-toe', nameVisibility: 'SHOW' as const },
       ]);
       renderPage();
 
@@ -83,7 +83,7 @@ describe('CompetitorsPage', () => {
 
     it('shows how a tidied name will be spoken, and plays that when nothing is typed', async () => {
       api.competitors.list.mockResolvedValue([
-        { id: 9, displayName: 'ALEX ROWE (Wyvern)', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Alex Rowe' },
+        { id: 9, displayName: 'ALEX ROWE (Wyvern)', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Alex Rowe', nameVisibility: 'SHOW' as const },
       ]);
       api.competitors.previewSpeech.mockResolvedValue(new Blob(['RIFF']));
       renderPage();
@@ -178,7 +178,7 @@ describe('CompetitorsPage', () => {
 
   it('lets an admin anonymise a competitor after reading what goes', async () => {
     api.competitors.list.mockResolvedValue([
-      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace' },
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
     ]);
     api.competitors.anonymise.mockResolvedValue({
       competitorId: 1, entries: 0, resultSnapshots: 0, exportPayloads: 0,
@@ -196,12 +196,37 @@ describe('CompetitorsPage', () => {
   it('does not offer anonymise or download to an official who is not an admin', async () => {
     mockUser.mockReturnValue({ roles: ['REFEREE'] });
     api.competitors.list.mockResolvedValue([
-      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace' },
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
     ]);
     renderPage();
 
     await screen.findByText('Ada Lovelace');
     expect(screen.queryByRole('button', { name: /Anonymise/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Download the data/ })).not.toBeInTheDocument();
+  });
+
+  it('lets a race director choose how a name is shown publicly', async () => {
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    api.competitors.list.mockResolvedValue([
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+    ]);
+    api.competitors.setNameVisibility.mockResolvedValue(
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'INITIALS' as const });
+    renderPage();
+
+    fireEvent.change(await screen.findByLabelText('How Ada Lovelace is shown publicly'), { target: { value: 'INITIALS' } });
+
+    await waitFor(() => expect(api.competitors.setNameVisibility).toHaveBeenCalledWith(1, 'INITIALS'));
+  });
+
+  it('does not offer the public name choice to a referee', async () => {
+    mockUser.mockReturnValue({ roles: ['REFEREE'] });
+    api.competitors.list.mockResolvedValue([
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+    ]);
+    renderPage();
+
+    await screen.findByText('Ada Lovelace');
+    expect(screen.queryByLabelText('How Ada Lovelace is shown publicly')).not.toBeInTheDocument();
   });
 });

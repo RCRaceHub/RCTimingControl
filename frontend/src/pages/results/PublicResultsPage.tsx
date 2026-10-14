@@ -1,4 +1,3 @@
-import PrivacyLink from '@/components/layout/PrivacyLink';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicResultSnapshot } from '@/hooks/race-control/usePublicResultSnapshot';
@@ -6,6 +5,7 @@ import type { PositionAtLap } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 import { getApiErrorStatus } from '@/lib/errors';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 
 function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: PositionAtLap[] }) {
   const laps = lapHistory.filter(l => l.entryId === entryId);

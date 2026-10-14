@@ -43,6 +43,6 @@ final class PrivacyNoticeDefaults {
 
                 Your rights
                 You can ask for a copy of your data, to have it corrected, or to have your name removed from the club's records. %s.
-                """.formatted(club, club, reach);
+                """.formatted(club, Character.toUpperCase(club.charAt(0)) + club.substring(1), reach);
     }
 }

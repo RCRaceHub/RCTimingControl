@@ -35,7 +35,7 @@ public class CompetitorQueryService {
 
     public List<CompetitorSummaryDto> listAll() {
         return dsl.select(COMPETITORS.ID, COMPETITORS.DISPLAY_NAME, COMPETITORS.BRCA_NUMBER, COMPETITORS.HOME_CLUB,
-                        COMPETITORS.SPOKEN_NAME)
+                        COMPETITORS.SPOKEN_NAME, COMPETITORS.NAME_VISIBILITY)
                 .from(COMPETITORS)
                 .orderBy(COMPETITORS.DISPLAY_NAME.asc(), COMPETITORS.ID.asc())
                 .fetch(r -> new CompetitorSummaryDto(
@@ -44,7 +44,8 @@ public class CompetitorQueryService {
                         r.get(COMPETITORS.BRCA_NUMBER),
                         r.get(COMPETITORS.HOME_CLUB),
                         r.get(COMPETITORS.SPOKEN_NAME),
-                        SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME))));
+                        SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME)),
+                        r.get(COMPETITORS.NAME_VISIBILITY)));
     }
 
     /** A competitor's recorded changes, newest first, with the name of the official who made each. */

@@ -192,6 +192,7 @@
 - [x] **TRANSPONDER-01**: Each entry has a primary and an optional secondary transponder; a number already used in the event is accepted with a warning, not refused (#14)
 - [x] **CHECKIN-01**: A check-in desk marks competitors present, accepts barcode input and swaps transponders on the day with an audit entry (#19) **Changed**: a later re-import keeps a swapped number and flags the booking's different number without blocking (#50)
 - [x] **CHECKIN-02**: RCTC's check-in is the only record of who has arrived on the day; RaceHub's arrival mark is imported and shown read-only, and never checks anyone in (#92, O2)
+- [x] **COMPETITOR-05**: An admin or race director can set a competitor's public name to full, initials only or hidden (the car number stands in). It applies to the results page, boards and overlay, championship standings, live timing and the live feed, is audited, and is not changed by imports. Officials' screens and results sent to RaceHub keep the real name (#265)
 - [x] **BOARDS-01**: Spectator boards show the race on now and next, live timing and results on screens at the venue without signing in (#20)
 - [x] **LOCAL-01**: A full meeting runs with no internet connection at the venue (#21)
 - [x] **DB-01**: The app keeps its data in one SQLite file in a per-machine data folder (#26)
@@ -375,6 +376,7 @@
 | COMPETITOR-03 | #123 | Complete |
 | COMPETITOR-04 | #263 | Complete |
 | PRIVACY-01 | #267 | Complete |
+| COMPETITOR-05 | #265 | Complete |
 | TRANSPONDER-01 | #14 | Complete |
 | CHECKIN-01 | #19 | Complete |
 | CHECKIN-02 | #19, #92 | Complete |

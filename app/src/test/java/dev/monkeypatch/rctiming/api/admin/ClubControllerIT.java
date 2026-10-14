@@ -200,8 +200,6 @@ class ClubControllerIT extends AbstractIntegrationTest {
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
-    // --- helpers ---
-
     @Test
     void privacyNotice_defaultNamesTheClubAndHowToReachIt_andIsOpenToAnyone() {
         restTemplate.exchange("/api/v1/admin/club/profile", HttpMethod.PUT,
@@ -260,6 +258,8 @@ class ClubControllerIT extends AbstractIntegrationTest {
         assertThat(restTemplate.getForEntity("/api/v1/privacy-notice", Map.class).getBody().get("text"))
                 .isNotEqualTo("Not allowed");
     }
+
+    // --- helpers ---
 
     private HttpHeaders adminHeaders() {
         HttpHeaders headers = new HttpHeaders();

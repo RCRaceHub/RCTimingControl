@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -39,8 +40,9 @@ export default function PrivacyNoticeEditor() {
           {data.customised
             ? 'This is your own text.'
             : 'This is the standard text, with your club name and contact details filled in.'}{' '}
-          It is shown to everyone at <a href="/privacy" className="underline underline-offset-4">/privacy</a>, and
-          linked from the public pages, the sign-in page and the check-in desk.
+          It is shown to everyone at <Link to="/privacy" className="underline underline-offset-4">/privacy</Link>, and
+          linked from the public pages, the sign-in page and the check-in desk. If you edit the standard text and
+          save it, it becomes your own text and its club name and contact details stop following the club profile.
         </p>
       </div>
       <div className="space-y-1.5">

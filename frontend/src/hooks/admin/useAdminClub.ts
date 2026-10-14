@@ -38,8 +38,8 @@ export function useSetPrivacyNotice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (text: string) => adminApi.club.setPrivacyNotice(text),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: adminQueryKeys.club.privacyNotice() });
+    onSuccess: (saved) => {
+      qc.setQueryData(adminQueryKeys.club.privacyNotice(), saved);
       void qc.invalidateQueries({ queryKey: ['public', 'privacy-notice'] });
     },
   });

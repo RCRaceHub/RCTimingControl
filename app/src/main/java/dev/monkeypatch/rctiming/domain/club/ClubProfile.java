@@ -72,9 +72,9 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     public Integer getDecoderPort() { return decoderPort; }
     public void setDecoderPort(Integer decoderPort) { this.decoderPort = decoderPort; }
 
-    public String getPrivacyNotice() { return privacyNotice; }
-    public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }
-
     public String getDecoderProtocol() { return decoderProtocol; }
     public void setDecoderProtocol(String decoderProtocol) { this.decoderProtocol = decoderProtocol; }
+
+    public String getPrivacyNotice() { return privacyNotice; }
+    public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }
 }

@@ -153,6 +153,10 @@ public class CompetitorMergeService {
         if (isBlank(keep.getSpokenName())) {
             keep.setSpokenName(duplicate.getSpokenName());
         }
+        // A name hidden on either record stays hidden, whichever is kept (#265)
+        if (duplicate.getNameVisibility().ordinal() > keep.getNameVisibility().ordinal()) {
+            keep.setNameVisibility(duplicate.getNameVisibility());
+        }
         competitorRepository.save(keep);
         competitorRepository.deleteById(duplicateId);
 

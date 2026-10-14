@@ -10,7 +10,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 |------|-------|-------|-------|
 | Name, email, password hash, roles | Officials | `users`, `user_roles` | Officials are the only people with accounts. |
 | Sign-in sessions | Officials | `refresh_tokens` | Hashed token, expiry and revoked flag. A nightly clean-up deletes tokens once they have expired (#262), and also runs when the app starts. |
-| Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. The CSV `Junior` column is read by the parser but not stored. |
+| Display name, RaceHub driver ID, BRCA number, home club, spoken name | Competitors | `competitors`, `entries` | From RaceHub, the CSV, or typed as a walk-in. No contact, date of birth, guardian or payment data. Results saved before competitors existed have no competitor to look up, so they keep their stored name. Merging two competitors keeps the more restrictive setting. The CSV `Junior` column is read by the parser but not stored. |
 | Transponder numbers | Competitors, per event | `entries`, practice laps | A number can identify a person across events. |
 | Laps, positions, results, penalties, incident reports, marshal adjustments | Competitors | race and result tables | Incident reports and penalties describe behaviour. |
 | Who did what and when | Officials; anyone who tried to sign in | `audit_log` and the entry, official and competitor audit tables | Append-only. A failed sign-in no longer stores the email that was typed: an attempt on a real account is tied to the official by id, and an unknown email leaves no trace of what was typed (#264). Backups taken before that change still hold the old addresses until they age out. |
@@ -25,7 +25,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 2. ~~Failed sign-in emails are kept for as long as the audit log is, with no limit.~~ Fixed in #264.
 3. ~~The audit log has no retention limit.~~ Fixed in #262: a nightly clean-up deletes refused sign-ins after 90 days and, unless set to 0, other audit rows after two years. The entry, official and competitor audit tables are not covered yet.
 4. ~~No way to anonymise or export one competitor.~~ Fixed in #263; see below.
-5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.
+5. ~~No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.~~ Fixed in #265; see below.
 6. ~~Log file contents have not been checked for personal data.~~ Checked, and guarded by `LogContentTest` (#266).
 
 ## Export and anonymise one competitor (#263)
@@ -48,9 +48,15 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, the sign-in page and the check-in desk (where an official can point a driver at it; it opens in a new tab so the desk keeps its place). The boards and the OBS overlay carry no link, since they are screens and not pages people read.
 
-Until the club writes its own, the page shows a standard notice with the club's name, email and phone filled in from the club profile. It says what RCTC holds, why, who sees it (including the junior display setting), how long results are kept, and how to ask for a copy or removal. An admin edits it under Club, "Privacy notice"; saving a blank text goes back to the standard one. Changes are audited as `PRIVACY_NOTICE_CHANGED` with whether it is the club's own text and its length, not the text. The standard text is a starting point, not legal advice: the club should read it and change what does not fit.
+Until the club writes its own, the page shows a standard notice with the club's name, email and phone filled in from the club profile. It says what RCTC holds, why, who sees it (including the junior display setting), how long results are kept, and how to ask for a copy or removal. An admin edits it under Club, "Privacy notice"; saving a blank text goes back to the standard one. Saving the standard text after editing it makes it the club's own text, so its name and contact details stop following the club profile; use "Use the standard text" to go back. Changes are audited as `PRIVACY_NOTICE_CHANGED` with whether it is the club's own text and its length, not the text. The standard text is a starting point, not legal advice: the club should read it and change what does not fit.
 
 RaceHub holds the booking, contact and payment details and has its own notice; this one covers only what the timing program holds.
+
+## Junior display: initials or hidden (#265)
+
+An admin or race director can set any competitor to show as **Full name**, **Initials only** (`A. L.`) or **Hidden** (`Driver 12`, from the car number) on the Competitors screen. The choice is stored on the competitor, is audited (`COMPETITOR_NAME_VISIBILITY_CHANGED`, with the competitor id and the two settings, not the name), and a RaceHub or CSV import never changes it. It applies to the public results page, the boards and overlay, championship standings, live timing sent to browsers and the live feed. The stored results keep the real name, so setting it back to Full name changes the screens straight away.
+
+A change made during a race reaches the live timing at once. Race control's live timing panel shows the public name too, as it shares the stream the public screens use; the other official screens (check-in, the competitor lists, the grid) and the announcer use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
 
 ## Proposed child tickets
 

@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.api.boards;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
@@ -33,15 +34,18 @@ public class BoardController {
     private final ResultSnapshotQuery resultSnapshotQuery;
     private final LapTimingService lapTimingService;
     private final RaceClockService raceClockService;
+    private final PublicNames publicNames;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
-                           RaceClockService raceClockService) {
+                           RaceClockService raceClockService,
+                           PublicNames publicNames) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
         this.raceClockService = raceClockService;
+        this.publicNames = publicNames;
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
@@ -88,7 +92,7 @@ public class BoardController {
             return List.of();
         }
         try {
-            return resultSnapshotQuery.load(race.raceId()).positions();
+            return publicNames.rows(resultSnapshotQuery.load(race.raceId()).positions());
         } catch (EntityNotFoundException e) {
             // Finished but not yet snapshotted
             return List.of();

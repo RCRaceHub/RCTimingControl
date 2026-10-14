@@ -47,14 +47,14 @@ function duplicateError(matches: object[]) {
   });
 }
 
-const adaMatch = { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace' };
+const adaMatch = { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const };
 
 describe('AddWalkInEntryDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     api.competitors.list.mockResolvedValue([
-      { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace' },
-      { id: 8, displayName: 'Grace Hopper', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Grace Hopper' },
+      { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+      { id: 8, displayName: 'Grace Hopper', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Grace Hopper', nameVisibility: 'SHOW' as const },
     ]);
   });
 
