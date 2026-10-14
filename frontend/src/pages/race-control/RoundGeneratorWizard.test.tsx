@@ -61,7 +61,7 @@ describe('RoundGeneratorWizard', () => {
       practiceRoundsCount: 2,
       qualifyingRoundsCount: 4,
       maxCarsPerHeat: 10,
-      classFinalsConfigs: [{ eventClassId: 11, finalsCount: 3, carsPerFinal: 10, bumpCount: 2 }],
+      classFinalsConfigs: [{ eventClassId: 11, finalsCount: 3 }],
     }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(adminApi.generateRounds).toHaveBeenCalledTimes(1);

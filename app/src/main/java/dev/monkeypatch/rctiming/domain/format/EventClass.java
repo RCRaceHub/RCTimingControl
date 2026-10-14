@@ -18,8 +18,6 @@ public class EventClass implements CreatedAt, UpdatedAt {
     private Long racingClassId;
     private Long combinedRaceGroup;
     private Integer finalsCount;
-    private Integer carsPerFinal;
-    private Integer bumpCount;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -51,9 +49,4 @@ public class EventClass implements CreatedAt, UpdatedAt {
     public Integer getFinalsCount() { return finalsCount; }
     public void setFinalsCount(Integer finalsCount) { this.finalsCount = finalsCount; }
 
-    public Integer getCarsPerFinal() { return carsPerFinal; }
-    public void setCarsPerFinal(Integer carsPerFinal) { this.carsPerFinal = carsPerFinal; }
-
-    public Integer getBumpCount() { return bumpCount; }
-    public void setBumpCount(Integer bumpCount) { this.bumpCount = bumpCount; }
 }

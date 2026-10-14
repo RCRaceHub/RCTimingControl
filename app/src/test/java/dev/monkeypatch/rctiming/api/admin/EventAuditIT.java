@@ -147,8 +147,7 @@ class EventAuditIT extends AbstractIntegrationTest {
 
         ResponseEntity<String> generated = send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds",
                 Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1, "maxCarsPerHeat", 10,
-                        "classFinalsConfigs", List.of(Map.of("eventClassId", eventClassId, "finalsCount", 1,
-                                "carsPerFinal", 10, "bumpCount", 0))));
+                        "classFinalsConfigs", List.of(Map.of("eventClassId", eventClassId, "finalsCount", 1))));
         assertThat(generated.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
         ResponseEntity<String> seeded = send("POST", "/api/v1/admin/events/" + eventId + "/seed-finals",
                 Map.of("eventClassId", eventClassId, "finalsCount", 1, "carsPerFinal", 10, "bumpCount", 0));
@@ -197,8 +196,7 @@ class EventAuditIT extends AbstractIntegrationTest {
 
         ResponseEntity<String> refused = send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds",
                 Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1, "maxCarsPerHeat", 10,
-                        "classFinalsConfigs", List.of(Map.of("eventClassId", eventClassId, "finalsCount", 27,
-                                "carsPerFinal", 10, "bumpCount", 0))));
+                        "classFinalsConfigs", List.of(Map.of("eventClassId", eventClassId, "finalsCount", 27))));
 
         assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(rows(eventId)).extracting(r -> r.get("action"))

@@ -28,13 +28,9 @@ public record RoundGenerationRequest(
      *
      * @param eventClassId  the event class this config applies to
      * @param finalsCount   number of finals (1=A only, 2=A+B, 3=A+B+C); null = use EventClass column
-     * @param carsPerFinal  maximum cars per final; null = use EventClass column
-     * @param bumpCount     how many bump up from each lower final; null = use EventClass column
      */
     public record ClassFinalsConfig(
             Long eventClassId,
-            Integer finalsCount,
-            Integer carsPerFinal,
-            Integer bumpCount
+            Integer finalsCount
     ) {}
 }
