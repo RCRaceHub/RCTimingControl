@@ -10,6 +10,7 @@ import java.util.List;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Tracks.TRACKS;
 
+/** The meeting list the admin pages show, each with its track. */
 @Service
 @ReadTransaction
 public class AdminEventQueryService {

@@ -27,7 +27,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><strong>Threading.</strong> Decoder passings reach {@link #onLapPassing} synchronously on the
  * single timing thread ({@code timingExecutor}), so they are handled one at a time in decoder order and
  * broadcasts go out in that order. REST requests (marshal laps, lap penalties, transponder links) call in from
- * request threads, so every change to a {@link LiveRaceState} is made while holding that state's monitor.
+ * request threads; {@link LiveRaceState}'s own methods are synchronized, which is what keeps those changes
+ * apart from the timing thread's.
+ *
+ * <p>Each change is made under that lock, but the positions it broadcasts are worked out in a second,
+ * separate call. A passing landing between the two is in both snapshots, so a request thread's broadcast can
+ * carry a later picture than the timing thread's that follows it. Clients take the latest message as the
+ * truth, and the stored result comes from the state itself, not from a broadcast, so this is harmless.
  */
 @Service
 public class LapTimingService {
@@ -108,9 +114,7 @@ public class LapTimingService {
      */
     public void applyMarshalAdjustment(long raceId, long entryId, int lapDelta, MarshalAdjustmentDto dto) {
         LiveRaceState state = stateFor(raceId);
-        synchronized (state) {
-            state.applyLapDelta(entryId, lapDelta);
-        }
+        state.applyLapDelta(entryId, lapDelta);
         liveTimingHub.broadcastMarshalAdjustment(raceId, dto);
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
     }
@@ -121,9 +125,7 @@ public class LapTimingService {
      */
     public void applyLapPenalty(long raceId, long entryId, int laps) {
         peek(raceId).ifPresent(state -> {
-            synchronized (state) {
-                state.applyLapDelta(entryId, -laps);
-            }
+            state.applyLapDelta(entryId, -laps);
             liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
         });
     }
