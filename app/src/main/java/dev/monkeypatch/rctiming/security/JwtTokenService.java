@@ -19,9 +19,9 @@ import java.util.List;
 
 /**
  * Officials' tokens. The access token is a short-lived JWT signed with HMAC-SHA256 and carries the official's
- * id, name and roles, so a request needs no database read to be authorised. The refresh token is not a JWT: it
- * is an opaque random value, and the database keeps only its SHA-256 hash ({@code AuthService}), so it can be
- * revoked and a stolen database copy cannot be used to sign in.
+ * id, email, name and roles, so a request needs no database read to be authorised. The refresh token is not a
+ * JWT but an opaque random value stored in the database ({@code AuthService}), so it can be revoked. Only its
+ * SHA-256 hash is stored, so a copy of the database cannot be used to sign in.
  *
  * <p>The signing key comes from {@code app.jwt.secret} or, when that is unset, from a key file the app creates
  * in its data folder on first start ({@link JwtSecretFile}).

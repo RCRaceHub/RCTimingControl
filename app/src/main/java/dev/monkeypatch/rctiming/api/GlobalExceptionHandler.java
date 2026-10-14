@@ -31,10 +31,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Turns exceptions from controllers and services into {@link ProblemDetail} JSON. Most 409 bodies are plain
- * text for the page to show. Two carry a {@code code} the page acts on: {@code POSSIBLE_DUPLICATE_COMPETITOR}
- * (offer the matching competitors instead of creating a new one) and {@code COMPETITOR_MERGE_REFUSED} (say
- * why two competitors cannot be merged).
+ * Turns exceptions from controllers and services into {@link ProblemDetail} JSON. Most 409s carry only a
+ * {@code detail} message for the page to show. Two carry more: {@code POSSIBLE_DUPLICATE_COMPETITOR}, whose
+ * {@code code} the walk-in dialog checks before offering the matching competitors instead of a new one, and
+ * {@code COMPETITOR_MERGE_REFUSED}, whose {@code blockers} the merge dialog shows.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -143,8 +143,10 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * A {@code @PreAuthorize} refusal. It is thrown inside Spring MVC, after the security filters have let the
-     * request through, so the filter chain's handler never sees it; without this it would be a 500.
+     * A {@code @PreAuthorize} refusal, thrown inside Spring MVC after the security filters let the request in.
+     * Handled here so it gets a ProblemDetail body like every other error. It is also always a 403: left to the
+     * filter chain, an anonymous caller refused on an open route (some of the results and championship reads)
+     * would get a 401, as if signing in were the way through.
      */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)

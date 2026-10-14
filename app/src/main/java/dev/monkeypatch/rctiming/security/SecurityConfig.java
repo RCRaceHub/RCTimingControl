@@ -31,7 +31,7 @@ import org.springframework.web.util.UrlPathHelper;
  *   <li>{@code POST /api/v1/setup/bootstrap} is open so a fresh install can create its first admin. The only
  *       guard is that no account exists yet ({@code SetupService.bootstrap}), so the first caller on the venue
  *       network becomes admin.</li>
- *   <li>Any {@code /api/v1} route not listed here needs an official role, whichever one. Controllers with no
+ *   <li>Any {@code /api/v1} route not opened here needs an official role, whichever one. Controllers with no
  *       {@code @PreAuthorize}, such as {@code AudioController}, {@code AudioClipController} and
  *       {@code DecoderStatusController}, rely on that last rule.</li>
  * </ul>

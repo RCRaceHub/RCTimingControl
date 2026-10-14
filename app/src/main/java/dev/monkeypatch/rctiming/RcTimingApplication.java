@@ -15,9 +15,10 @@ import java.util.Arrays;
 
 /**
  * The app, and its command-line tools. {@code restore}, {@code reset-admin-password}, {@code relay} and
- * {@code simulate} run instead of the server, before any Spring context starts: a restore replaces the
+ * {@code simulate} run instead of the server, before its Spring context starts: a restore replaces the
  * database file, so nothing may have it open; resetting a password is for when no one can sign in, and works
- * on the database directly; the relay and the simulator are separate programs that only share the jar.
+ * on the database directly. Those two start a small context of their own that only reads the database settings.
+ * The relay and the simulator are separate programs that only share the jar.
  * {@code restore} and {@code reset-admin-password} exit with 0 when they succeed, 1 when they fail and 2 when
  * the arguments are wrong.
  */
