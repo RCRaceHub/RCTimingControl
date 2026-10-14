@@ -3,11 +3,13 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorAnonymiseService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorChangeDto;
+import dev.monkeypatch.rctiming.query.competitor.CompetitorDataExportService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDuplicateGroupDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorQueryService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorSummaryDto;
@@ -16,6 +18,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/competitors")
@@ -41,17 +45,23 @@ public class AdminCompetitorController {
     private final CompetitorQueryService competitorQueryService;
     private final CompetitorService competitorService;
     private final CompetitorMergeService mergeService;
+    private final CompetitorAnonymiseService anonymiseService;
+    private final CompetitorDataExportService exportService;
     private final ClubProfileService clubProfileService;
     private final PiperTtsClient piperClient;
 
     public AdminCompetitorController(CompetitorQueryService competitorQueryService,
                                      CompetitorService competitorService,
                                      CompetitorMergeService mergeService,
+                                     CompetitorAnonymiseService anonymiseService,
+                                     CompetitorDataExportService exportService,
                                      ClubProfileService clubProfileService,
                                      PiperTtsClient piperClient) {
         this.competitorQueryService = competitorQueryService;
         this.competitorService = competitorService;
         this.mergeService = mergeService;
+        this.anonymiseService = anonymiseService;
+        this.exportService = exportService;
         this.clubProfileService = clubProfileService;
         this.piperClient = piperClient;
     }
@@ -87,6 +97,31 @@ public class AdminCompetitorController {
     @PreAuthorize("hasRole('ADMIN')")
     public CompetitorMergeService.Result merge(Authentication auth, @Valid @RequestBody MergeRequest body) {
         return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id(auth));
+    }
+
+    /**
+     * Everything held about one competitor, as a JSON download, for a request to see a person's data (#263). Admin
+     * only; each export is recorded in the audit log.
+     */
+    @GetMapping("/{id}/personal-data")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> personalData(Authentication auth, @PathVariable Long id) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"competitor-" + id + ".json\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(exportService.export(id, CurrentOfficial.id(auth)));
+    }
+
+    /**
+     * Removes the competitor's name and identifiers everywhere RCTC keeps them, keeping results and standings (#263).
+     * Cannot be undone. 409 while the competitor is in a race that is on the grid, running or stopped.
+     */
+    @Audited("audit_log")
+    @PostMapping("/{id}/anonymise")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CompetitorAnonymiseService.Result anonymise(Authentication auth, @PathVariable Long id) {
+        return anonymiseService.anonymise(id, CurrentOfficial.id(auth));
     }
 
     /** Who changed how a competitor's name is said aloud, and when (admin only). */
