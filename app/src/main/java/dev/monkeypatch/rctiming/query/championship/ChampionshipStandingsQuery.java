@@ -357,7 +357,8 @@ public class ChampionshipStandingsQuery {
 
     /**
      * The rounds in round order, the worst Y minus X marked dropped once the driver has Y rounds. Worst means
-     * fewest points, then the lower position, so a finish worth nothing is dropped before a DNS.
+     * fewest points, then the worse (higher-numbered) position. A DNS has position 0, so a finish worth
+     * nothing is dropped before a DNS.
      */
     private static List<RoundResultDto> dropWorst(List<RoundResultDto> rounds, BestXFromY rule) {
         int count = rounds.size();

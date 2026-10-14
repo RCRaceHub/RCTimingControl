@@ -523,6 +523,50 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         assertThat(dnsDriverRow.totalPoints()).isEqualTo(8);
     }
 
+    /**
+     * A competitor with two entries in one class at one event, both on the grid, who starts neither has
+     * one DNS round, not two. Only one live entry per class is allowed, so the second was withdrawn after
+     * the grid was set.
+     */
+    @Test
+    void twoEntriesInOneClassThatDoNotStartGiveOneDnsRound() {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Two-Entry-DNS-Event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round round = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race race = makeRace(round.getId(), ecId, "A", 1);
+
+        Long competitorId = competitorService.createWalkIn("Twice Entered").getId();
+        Entry first = makeCompetitorEntry(competitorId, event.getId(), ecId);
+        first.setStatus(EntryStatus.WITHDRAWN);
+        first.setWithdrawnAt(Instant.now());
+        entryRepository.save(first);
+        Entry second = makeCompetitorEntry(competitorId, event.getId(), ecId);
+        makeRaceEntry(race.getId(), first.getId());
+        makeRaceEntry(race.getId(), second.getId());
+
+        User winner = makeUser("Race", "Winner");
+        Entry winnerEntry = makeEntry(winner.getId(), event.getId(), ecId);
+        makeRaceEntry(race.getId(), winnerEntry.getId());
+        makeSnapshot(race.getId(), String.format(
+                "[{\"position\":1,\"entryId\":%d,\"driverName\":\"Race\",\"carNumber\":\"1\","
+                + "\"lapsCompleted\":11,\"totalTimeMs\":65000,\"bestLapMs\":5900,\"gapToLeaderMs\":0}]",
+                winnerEntry.getId()));
+
+        StandingsRowDto row = query.computeStandings(champ.getId()).stream()
+                .filter(r -> r.driverId().equals(competitorId))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Twice-entered competitor not found in standings"));
+
+        assertThat(row.rounds()).hasSize(1);
+        assertThat(row.rounds().getFirst().position()).isZero();
+        assertThat(row.rounds().getFirst().points()).isZero();
+        assertThat(row.totalPoints()).isZero();
+    }
+
     @Test
     void competitorWithNoUserAppearsInStandings() {
         Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
