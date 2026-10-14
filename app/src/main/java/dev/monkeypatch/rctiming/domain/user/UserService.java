@@ -7,6 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Reads officials' accounts, and creates them for the setup wizard. Changing one (roles, password, enabling
+ * and disabling) goes through {@link OfficialService}, which also audit-logs it and ends the official's open
+ * sessions. There are no racer accounts: competitors never sign in (#18).
+ */
 @Service
 @Transactional
 public class UserService {

@@ -19,6 +19,12 @@ import java.util.Set;
  * Position recalculation is O(n log n) over typically ≤40 entries — negligible latency.
  *
  * <p>Gaps are the difference between last passing times, and are given only between cars on the same lap.
+ *
+ * <p><strong>Units.</strong> Every time here is in milliseconds, from the passing's
+ * {@code rtcTimeMicros / 1000}. {@code lastPassingTimeMs} is a wall-clock time, not a lap time, and
+ * {@code 0} means the car has not passed yet: {@link #creditLap} uses that to tell a first passing, which
+ * has no lap time, from a later one. So a car whose first passing landed exactly on the epoch would lose
+ * that one lap time, which cannot happen with a decoder clock.
  */
 public class LiveRaceState {
 
@@ -29,7 +35,10 @@ public class LiveRaceState {
     final Map<String, Long> runtimeLinks = new HashMap<>();
     /** Entry display names: entryId → "First Last", populated by LapTimingService on state creation. */
     final Map<Long, String> entryNames = new HashMap<>();
-    /** Fastest lap recorded across ALL entries this race session. */
+    /**
+     * Fastest lap recorded across ALL entries this race session. It is never cleared: a lap removed by a
+     * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
+     */
     Long overallBestLapMs = null;
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
@@ -69,6 +78,11 @@ public class LiveRaceState {
 
     /**
      * Apply a marshal lap delta (±1). Synchronized.
+     *
+     * <p>It moves {@code lapsCompleted}, the laps the car is credited with, and never
+     * {@code LiveRacePosition.lapCount}, which counts the laps that were actually timed and divides the
+     * average lap time. An entry with no passings yet gets a position so a +1 can be given before its first
+     * lap; a −1 never takes it below zero.
      */
     public synchronized void applyLapDelta(long entryId, int lapDelta) {
         LiveRacePosition pos = positions.computeIfAbsent(entryId, id -> {
@@ -145,6 +159,10 @@ public class LiveRaceState {
      * <p>Uses {@link #applyPositionUpdate} (not {@link #applyLapPassing}) to avoid
      * re-adding events to lapHistory during iteration, which would cause
      * ConcurrentModificationException and duplicate history entries.
+     *
+     * <p>It assumes the target entry has no passings of its own: the replayed laps are credited on top of
+     * whatever it already has, and lap times are worked out from the replay's own order, so linking a
+     * transponder to an entry that is already being timed on another number double-counts.
      *
      * @return recalculated position list; empty list if no matching lapHistory entries.
      */

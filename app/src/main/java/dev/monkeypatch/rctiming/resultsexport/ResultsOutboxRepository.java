@@ -14,6 +14,21 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESULTS_OUTBOX;
 
+/**
+ * The queue of results exports waiting for RaceHub (#27), and the rules the rest of the export relies on.
+ *
+ * <p><strong>Delivery is at least once.</strong> An export is marked sent only after RaceHub accepts it, so a
+ * crash, or a failure to record the success, sends it again. RaceHub tells the two apart by the
+ * {@code Idempotency-Key} and the revision in the body ({@link ResultsSender}).
+ *
+ * <p><strong>Statuses.</strong> {@code QUEUED} and {@code FAILED} are both waiting to go: a failure is a
+ * record of the last attempt and when to try next, never a giving up. Only {@code SENT} and
+ * {@code SUPERSEDED} are final, and neither {@link #recordFailure} nor {@link #makeDue} touches those, so an
+ * export already sent or replaced by a newer one is never sent afterwards.
+ *
+ * <p><strong>Order.</strong> Exports are read oldest id first, across every event, so one event's exports
+ * always go in the order they were queued.
+ */
 @Repository
 public class ResultsOutboxRepository extends JooqRepository<ResultsOutboxItem, ResultsOutboxRecord> {
 

@@ -14,6 +14,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * The club's own details: its name and contact details, where its decoder is, and how the announcer sounds.
+ *
+ * <p>There is only ever one profile, since RCTC runs for one club at one venue. Reads take whichever row
+ * exists, and {@link #getSingletonProfileId} creates a blank one when there is none, so settings can be saved
+ * against it before the setup wizard has been through.
+ */
 @Service
 @Transactional
 public class ClubProfileService {

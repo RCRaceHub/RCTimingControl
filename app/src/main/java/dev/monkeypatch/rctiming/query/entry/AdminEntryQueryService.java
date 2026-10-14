@@ -9,6 +9,7 @@ import java.util.List;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 
+/** The entry list one class of a meeting shows an official, competitor names and transponders included. */
 @Service
 @ReadTransaction
 public class AdminEntryQueryService {

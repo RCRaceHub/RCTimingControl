@@ -19,6 +19,10 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
+/**
+ * Reads competitors for the admin pages: the list, one competitor's history of changes, and the groups of
+ * competitors whose names are close enough that they may be the same person and worth merging (#123).
+ */
 @Service
 @ReadTransaction
 public class CompetitorQueryService {

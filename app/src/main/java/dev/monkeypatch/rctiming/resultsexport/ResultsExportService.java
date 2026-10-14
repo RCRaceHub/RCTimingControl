@@ -54,7 +54,10 @@ public class ResultsExportService {
     /**
      * Marks the event a race belongs to as needing an export, in the caller's transaction, so the request is
      * saved with the finish or correction that made it. {@link #queuePending} builds the export afterwards.
-     * A failure here never rolls back race control's change.
+     *
+     * <p>{@code noRollbackFor} is what keeps a failure here from rolling back race control's change. It joins
+     * the caller's transaction, so without it an exception thrown out of this method would mark that
+     * transaction rollback-only and the finish or correction would be lost over a missed export.
      */
     @Transactional(noRollbackFor = RuntimeException.class)
     public void requestForRace(long raceId, ExportReason reason) {

@@ -18,6 +18,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A club's championships: their settings, the classes and events that count toward them, the points scale and
+ * the exclusions (CHAMP-01 to CHAMP-09). It is the write side only; the standings themselves are worked out on
+ * demand from the stored results by {@code ChampionshipStandingsQuery}, never stored or added up as races
+ * finish.
+ */
 @Service
 @Transactional
 public class ChampionshipService {

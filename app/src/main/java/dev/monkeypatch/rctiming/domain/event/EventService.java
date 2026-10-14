@@ -10,6 +10,10 @@ import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Race meetings: creating and editing one, moving it through its states ({@link EventStateMachineService}) and
+ * turning its live feed on or off. Every change is audit-logged with the official who made it.
+ */
 @Service
 @Transactional
 public class EventService {

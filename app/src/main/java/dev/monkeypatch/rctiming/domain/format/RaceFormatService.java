@@ -13,6 +13,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Race format templates, and the format a class actually races to. A class keeps its own snapshot of the
+ * template it was given, so editing the template afterwards changes nothing already set up (FORMAT-06), and
+ * an optional override patch is merged over that snapshot at read time (FORMAT-07).
+ *
+ * <p>The merge is one level deep: an override replaces a top-level field of the config, so it cannot change
+ * part of a nested object. A key that is not a field of the config's type is not ignored either: the merge
+ * fails, and every read of that class's format throws until the override is corrected.
+ */
 @Service
 @Transactional
 public class RaceFormatService {

@@ -11,6 +11,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETI
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 
+/** The grid for one race: who is in it, in grid order, with their competitor names and transponders. */
 @Component
 @ReadTransaction
 public class RaceEntriesQuery {

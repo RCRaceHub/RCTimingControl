@@ -44,6 +44,17 @@ import java.util.concurrent.atomic.AtomicLong;
  * besides so viewers joining late catch up. The feed only ever reads timing state, and a slow or missing relay
  * only delays this thread, so it can never hold up timing or race control. A dropped connection is reopened
  * with a growing wait.
+ *
+ * <p><strong>The feed is lossy by design.</strong> Each message is the race's state as it stands, not a log of
+ * what happened, so a viewer that misses one loses nothing but a moment: the next message replaces it. The
+ * {@code sequence} number is the only ordering guarantee, and is for the viewer to drop a message that arrives
+ * out of order; it is not a count, and it starts from the clock, so it jumps on every restart.
+ *
+ * <p><strong>Threads.</strong> Everything but {@code state} is touched only on the {@code live-feed} thread
+ * this class starts. {@code state} is set from race control's threads when the switch is turned on or off, so
+ * it is volatile. {@link #start} and {@link #stop} are synchronized against each other but do not wait for the
+ * thread to finish: {@code shutdownNow} interrupts a tick in flight and closes the connection under it, so a
+ * stop immediately followed by a start can leave the old tick closing the new connection.
  */
 @Component
 @EnableConfigurationProperties(LiveFeedProperties.class)
