@@ -106,7 +106,7 @@ function TrackFormDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="min-lap-seconds">Shortest lap (seconds)</Label>
-            <Input id="min-lap-seconds" type="number" step="0.1" {...register('minLapSeconds')} placeholder="Optional" />
+            <Input id="min-lap-seconds" type="number" step="any" {...register('minLapSeconds')} placeholder="Optional" />
             <p className="text-xs text-muted-foreground">
               A car crossing the line again sooner than this is ignored, as a double read of the loop.
             </p>
@@ -114,7 +114,7 @@ function TrackFormDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="max-last-lap-seconds">Longest wait after the clock runs out (seconds)</Label>
-            <Input id="max-last-lap-seconds" type="number" step="1" {...register('maxLastLapSeconds')} placeholder="Optional" />
+            <Input id="max-last-lap-seconds" type="number" step="any" {...register('maxLastLapSeconds')} placeholder="Optional" />
             <p className="text-xs text-muted-foreground">
               A timed race finishes by itself when no lap has counted for this long after its clock ran out.
             </p>

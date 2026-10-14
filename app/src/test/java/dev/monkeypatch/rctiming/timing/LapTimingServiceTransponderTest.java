@@ -62,7 +62,8 @@ class LapTimingServiceTransponderTest {
 
     @BeforeEach
     void setUp() {
-        service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository, lapThresholdQuery);
+        service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository,
+                lapThresholdQuery);
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(anyLong()))
                 .thenAnswer(inv -> raceEntriesByRace.getOrDefault(inv.<Long>getArgument(0), List.of()));
         when(entryRepository.findById(anyLong()))

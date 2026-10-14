@@ -41,7 +41,7 @@ public class LiveRaceState {
      * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
      */
     Long overallBestLapMs = null;
-    /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has no minimum. Set once, at state creation. */
+    /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has none. Set once, at state creation. */
     final Map<Long, Long> minLapMs = new HashMap<>();
     /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
     Long lastLapCreditedAtMs = null;
@@ -236,7 +236,7 @@ public class LiveRaceState {
     /**
      * Counts one more lap for a position and works out its lap time from the previous passing: last,
      * best and average lap, and the race's overall best. A gap of 0 or less (a repeat or out-of-order
-     * passing) still counts the lap but gives no lap time.
+     * passing) still counts the lap but gives no lap time, unless the entry has a minimum lap: then it is ignored.
      *
      * <p>A passing sooner after the car's last counted one than its minimum lap (TRACK-02) is ignored: a double
      * read of the loop or a cut. It leaves the car's last passing alone, so the next real crossing is timed from

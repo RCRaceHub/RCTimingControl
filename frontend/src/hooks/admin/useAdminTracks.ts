@@ -18,7 +18,8 @@ export function useCreateTrack() {
       await adminApi.tracks.saveDefaultLimits(track.id, defaultLimits, undefined);
       return track;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
+    // Also on failure: the track may have been saved before its limits were
+    onSettled: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
   });
 }
 
@@ -35,7 +36,7 @@ export function useUpdateTrack() {
       await adminApi.tracks.saveDefaultLimits(id, defaultLimits, existingLimitsId);
       return track;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
+    onSettled: () => qc.invalidateQueries({ queryKey: adminQueryKeys.tracks.all() }),
   });
 }
 

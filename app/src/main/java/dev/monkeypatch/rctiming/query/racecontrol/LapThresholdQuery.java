@@ -18,6 +18,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 /**
  * The lap limits the meeting's track sets for a race (TRACK-02, TRACK-03): for each class, its own limits at that
  * track, else the track's default for every class. A track, class or limit that is not set means no limit.
+ * A class with limits of its own does not borrow the default's other limit.
  */
 @Component
 @ReadTransaction
@@ -57,7 +58,7 @@ public class LapThresholdQuery {
     public Optional<Long> maxLastLapMsForRace(long raceId) {
         TrackLapThresholds classRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("class_rule");
         TrackLapThresholds trackRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("track_rule");
-        return dsl.select(classRule.MAX_LAST_LAP_MS, trackRule.MAX_LAST_LAP_MS)
+        return dsl.select(classRule.ID, classRule.MAX_LAST_LAP_MS, trackRule.MAX_LAST_LAP_MS)
                 .from(RACES)
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
                 .join(EVENTS).on(EVENTS.ID.eq(EVENT_CLASSES.EVENT_ID))
@@ -66,8 +67,10 @@ public class LapThresholdQuery {
                 .leftJoin(trackRule).on(trackRule.TRACK_ID.eq(EVENTS.TRACK_ID)
                         .and(trackRule.RACING_CLASS_ID.isNull()))
                 .where(RACES.ID.eq(raceId))
-                .fetchOptional()
-                .map(row -> row.value1() != null ? row.value1() : row.value2())
+                // A class deleted from under its limits leaves them as a second track default, so take any one row
+                .fetch().stream().findFirst()
+                // The class's own limits are used as a whole: with no wait set, that class has none
+                .map(row -> row.value1() != null ? row.value2() : row.value3())
                 .map(Integer::longValue);
     }
 }
