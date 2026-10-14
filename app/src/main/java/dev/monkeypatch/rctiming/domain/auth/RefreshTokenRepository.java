@@ -7,6 +7,7 @@ import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +66,18 @@ public class RefreshTokenRepository extends JooqRepository<RefreshToken, Refresh
         return dsl.update(REFRESH_TOKENS)
                 .set(REFRESH_TOKENS.REVOKED, true)
                 .where(REFRESH_TOKENS.FAMILY_ID.eq(token.getFamilyId()).and(REFRESH_TOKENS.REVOKED.isFalse()))
+                .execute();
+    }
+
+    /**
+     * Deletes the tokens that can no longer be used (#262): every one past its expiry, and every revoked one created
+     * before {@code revokedCreatedBefore}, which keeps a recent sign-out around for a day. Returns how many went.
+     */
+    @Transactional
+    public int deleteDead(Instant now, Instant revokedCreatedBefore) {
+        return dsl.deleteFrom(REFRESH_TOKENS)
+                .where(REFRESH_TOKENS.EXPIRES_AT.lt(now)
+                        .or(REFRESH_TOKENS.REVOKED.isTrue().and(REFRESH_TOKENS.CREATED_AT.lt(revokedCreatedBefore))))
                 .execute();
     }
 

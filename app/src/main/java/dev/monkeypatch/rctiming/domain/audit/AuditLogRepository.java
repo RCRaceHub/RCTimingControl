@@ -4,15 +4,36 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.AuditLogRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Collection;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
 
-/** Writes audit rows. Reads go through {@code AuditQueryService}; the log is append-only, so nothing here updates or deletes. */
+/**
+ * Writes audit rows. Reads go through {@code AuditQueryService}. Rows are never updated; the only deletes are the
+ * retention job's, by age (#262).
+ */
 @Repository
 public class AuditLogRepository extends JooqRepository<AuditEntry, AuditLogRecord> {
 
     public AuditLogRepository(DSLContext dsl) {
         super(dsl, AUDIT_LOG, AUDIT_LOG.ID);
+    }
+
+    /** Deletes the rows of these actions written before {@code cutoff}; returns how many went. */
+    @Transactional
+    public int deleteOlderThan(Collection<String> actions, Instant cutoff) {
+        return dsl.deleteFrom(AUDIT_LOG)
+                .where(AUDIT_LOG.ACTION.in(actions).and(AUDIT_LOG.OCCURRED_AT.lt(cutoff)))
+                .execute();
+    }
+
+    /** Deletes every row written before {@code cutoff}; returns how many went. */
+    @Transactional
+    public int deleteOlderThan(Instant cutoff) {
+        return dsl.deleteFrom(AUDIT_LOG).where(AUDIT_LOG.OCCURRED_AT.lt(cutoff)).execute();
     }
 
     @Override
