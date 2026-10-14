@@ -220,8 +220,8 @@ public class RoundGeneratorService {
 
         private void persistFinals(int sequenceStart) {
             // One round per final. Finals run lowest first (C, then B, then A), the bump-ups from each going
-            // into the next. The round number follows the letter (A is 1), so the rounds are made in reverse
-            // letter order to give the lowest final the earliest sequenceInEvent.
+            // into the next. The rounds are made in reverse letter order so the lowest final gets the earliest
+            // sequenceInEvent; the round number still follows the letter (A is 1).
             for (EventClass ec : eventClasses) {
                 int finalsCount = resolveFinalsCount(ec);
                 for (int f = finalsCount - 1; f >= 0; f--) {

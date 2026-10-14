@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Retroactive transponder linking during a live race (TIMING-08, CTRL-06), with the race's entries and live
- * timing that the linking reads. A race director or admin can link an unknown transponder number to an
+ * Retroactive transponder linking during a live race (TIMING-08, CTRL-06), and the race's entries, which the race
+ * director links to and the referee picks from. A race director or admin can link an unknown transponder number to an
  * existing entry, crediting all passings since race start; {@link TransponderLinkService} writes the audit rows.
  */
 @RestController

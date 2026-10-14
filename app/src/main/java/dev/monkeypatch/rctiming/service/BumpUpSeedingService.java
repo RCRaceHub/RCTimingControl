@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
  * Seeds finals grids from qualifying standings and applies bump-up promotions
  * after a lower final finishes.
  *
- * <p>{@link EventRunOrderService} seeds the finals when the race director asks, once qualifying is done, and the
- * race state machine applies the bump-ups when each lower final finishes.
+ * <p>{@link EventRunOrderService} seeds the finals when the race director asks, after qualifying heats have
+ * finished, and the race state machine applies the bump-ups when each lower final finishes.
  */
 @Service
 @Transactional

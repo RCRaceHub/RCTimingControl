@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST endpoints for referee actions: incident reports, penalties, marshal absence recording (OFFICIAL-03, OFFICIAL-04).
+ * REST endpoints for referee actions: incident reports, penalties and marshal absences (OFFICIAL-03, OFFICIAL-04).
  * All endpoints require the REFEREE or ADMIN role. {@link RefereeService} does the work and writes the audit rows.
  */
 @RestController
