@@ -12,7 +12,10 @@ public class Entry implements UpdatedAt {
     private Long eventId;
     private Long eventClassId;
 
-    /** The entry's primary transponder. Maps to the transponder_number column. */
+    /**
+     * The entry's primary transponder, as imported or typed in for a walk-in; a check-in swap replaces it.
+     * Maps to the transponder_number column.
+     */
     private String transponderNumberSnapshot;
 
     /** Optional second transponder for this entry (L6). Laps from either number count. */

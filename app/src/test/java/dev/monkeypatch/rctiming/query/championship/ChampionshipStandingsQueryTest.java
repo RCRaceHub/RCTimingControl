@@ -50,7 +50,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for ChampionshipStandingsQuery (Phase 7, Plan 03).
+ * Integration tests for ChampionshipStandingsQuery.
  * Tests: best-X-from-Y marks correct rounds as dropped (CHAMP-05);
  *        TQ bonus and A-final winner bonus applied correctly (CHAMP-07/08);
  *        DNS driver (entered but absent from positions_json) scores 0 and round counts toward Y.

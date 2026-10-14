@@ -31,9 +31,9 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for PublicResultsController (Phase 7, Plan 04).
+ * Integration tests for PublicResultsController.
  * Tests: public GET /api/v1/results/{raceId} returns snapshot without auth (RESULT-01);
- *        unknown raceId returns 404 not 403 (RESULT-05 security check T-7-01).
+ *        unknown raceId returns 404 not 403.
  */
 class PublicResultsControllerTest extends AbstractIntegrationTest {
 

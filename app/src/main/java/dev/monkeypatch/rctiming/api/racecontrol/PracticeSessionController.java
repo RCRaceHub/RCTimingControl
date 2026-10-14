@@ -24,8 +24,8 @@ import java.util.List;
 /**
  * REST controller for practice sessions.
  *
- * Endpoints require ADMIN or RACE_DIRECTOR role (T-06-13: elevation-of-privilege mitigation).
- * GET /results is accessible to any authenticated user.
+ * Endpoints that change a session require the ADMIN or RACE_DIRECTOR role; the reads are open to any
+ * signed-in official.
  */
 @RestController
 @RequestMapping("/api/v1/practice-sessions")

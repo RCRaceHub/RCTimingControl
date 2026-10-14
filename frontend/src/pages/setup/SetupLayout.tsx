@@ -18,8 +18,6 @@ import StaffStep from './steps/StaffStep';
 import DecoderConfigStep from './steps/DecoderConfigStep';
 import SetupCompletePage from './SetupCompletePage';
 
-// ── Step sidebar item ──────────────────────────────────────────────────────
-
 type StepState = 'complete' | 'current' | 'incomplete';
 
 function StepItem({
@@ -64,8 +62,6 @@ function StepItem({
   );
 }
 
-// ── Sidebar content ────────────────────────────────────────────────────────
-
 const STEPS: { key: 'club' | 'track' | 'format' | 'staff' | 'decoder'; label: string }[] = [
   { key: 'club', label: 'Club Profile' },
   { key: 'track', label: 'Track' },
@@ -98,13 +94,11 @@ function SidebarContent({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Brand */}
       <div className="px-4 py-5">
         <span className="font-semibold text-base">RC Timing — Setup</span>
       </div>
       <Separator />
 
-      {/* Step navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1" onClick={onNavClick}>
         {STEPS.map(({ key, label }, index) => (
           <StepItem
@@ -135,8 +129,6 @@ function SidebarContent({
   );
 }
 
-// ── Layout ─────────────────────────────────────────────────────────────────
-
 export default function SetupLayout() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -148,7 +140,7 @@ export default function SetupLayout() {
   useHelpContent(SetupWizardHelp);
 
   // Only fetch progress once authenticated — /setup/progress requires auth and a 401 here
-  // would trigger the refresh interceptor loop before bootstrap completes (T-08-02 mitigation).
+  // would trigger the refresh interceptor loop before bootstrap completes.
   const { data: progress } = useSetupProgress({ enabled: !!user });
 
   // Move to the first incomplete step whenever progress loads or changes (adjusting state while rendering
@@ -162,7 +154,7 @@ export default function SetupLayout() {
       else if (!progress.format) setCurrentStep(3);
       else if (!progress.staff) setCurrentStep(4);
       else if (!progress.decoder) setCurrentStep(5);
-      else setCurrentStep(6); // all complete -> summary (Plan 06)
+      else setCurrentStep(6); // all complete: show the summary
     }
   }
 
@@ -270,7 +262,6 @@ export default function SetupLayout() {
         </SheetContent>
       </Sheet>
 
-      {/* Main content */}
       <main className="md:pl-60">
         <div className="px-6 pt-6 pb-10 min-h-screen">
           {stepContent}

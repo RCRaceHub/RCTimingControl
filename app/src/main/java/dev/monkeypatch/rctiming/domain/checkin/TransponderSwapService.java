@@ -45,8 +45,8 @@ public class TransponderSwapService {
     }
 
     /**
-     * Swaps for one event are serialized by locking the event row, so two officials cannot both
-     * give the same free number to different competitors.
+     * Swaps run one at a time, since write transactions share the single write connection, so two
+     * officials cannot both give the same free number to different competitors.
      *
      * @param newNumber the new number; blank removes a secondary transponder
      */

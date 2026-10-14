@@ -105,8 +105,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         this.sequence = new AtomicLong(clock.millis());
     }
 
-    // ── Status ─────────────────────────────────────────────────────────────────────
-
     public LiveFeedStatusDto status() {
         return new LiveFeedStatusDto(state.name(),
                 properties.relayUrl() == null ? null : properties.relayUrl().getHost(),
@@ -128,8 +126,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         }
     }
 
-    // ── Race lifecycle ─────────────────────────────────────────────────────────────
-
     /** Follows races from the grid to the finish; the race clock itself is kept by {@link RaceClockService}. */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
@@ -144,8 +140,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
             default -> { }
         }
     }
-
-    // ── The feed's thread ──────────────────────────────────────────────────────────
 
     /** One pass: work out what to send, connect if needed, and send it. Never throws. */
     void tick() {
@@ -313,8 +307,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         return cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
     }
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────────────
-
     @Override
     public synchronized void start() {
         if (executor != null) {
@@ -341,8 +333,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
     public synchronized boolean isRunning() {
         return executor != null;
     }
-
-    // ── State ──────────────────────────────────────────────────────────────────────
 
     /** A race the feed follows, with its running order kept from the finish. */
     private static final class Followed {

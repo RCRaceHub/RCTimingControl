@@ -29,10 +29,8 @@ import java.util.stream.Collectors;
  * Seeds finals grids from qualifying standings and applies bump-up promotions
  * after a lower final finishes.
  *
- * <p>Called by the race control layer (plan 05) after qualifying closes and after
- * each lower final completes.
- *
- * <p>Algorithm reference: HEAT-STRUCTURE-SPEC §"Bump-Up Finals Seeding Algorithm".
+ * <p>{@link EventRunOrderService} seeds the finals when the race director asks, after qualifying heats have
+ * finished, and the race state machine applies the bump-ups when each lower final finishes.
  */
 @Service
 @Transactional
@@ -108,9 +106,8 @@ public class BumpUpSeedingService {
         // worst-ranked end of standings; every other ("non-lowest") final draws from the
         // best-ranked end, processed from the top final downward so the fastest qualifiers
         // always land in the top final first, not in whichever final happens to be processed
-        // first. (A single bottom-up pointer shared across every final — the original
-        // implementation — silently drops the very top qualifiers once bump reservations
-        // shrink total regular capacity below the qualifying field size.)
+        // first. A single bottom-up pointer would drop the very top qualifiers once the bump
+        // slots shrink the regular places below the size of the qualifying field.
         List<List<Long>> slotEntriesByFinal = new ArrayList<>(finals.size());
         for (int fi = 0; fi < finals.size(); fi++) {
             slotEntriesByFinal.add(null);

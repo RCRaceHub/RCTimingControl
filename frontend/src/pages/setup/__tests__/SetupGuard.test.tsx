@@ -14,7 +14,7 @@ function makeClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-describe('SetupGuard (Wave 0 stub — enabled in Plan 04)', () => {
+describe('SetupGuard', () => {
   it('redirects to /setup when setupComplete is false and pathname is not /setup', async () => {
     vi.mocked(getSetupStatus).mockResolvedValue({ bootstrapped: false, setupComplete: false });
     const qc = makeClient();
@@ -35,7 +35,7 @@ describe('SetupGuard (Wave 0 stub — enabled in Plan 04)', () => {
     expect(screen.queryByText('protected')).toBeNull();
   });
 
-  it('does NOT redirect when pathname starts with /setup (Pitfall 1: infinite redirect)', async () => {
+  it('does NOT redirect when pathname starts with /setup (no redirect loop)', async () => {
     vi.mocked(getSetupStatus).mockResolvedValue({ bootstrapped: false, setupComplete: false });
     const qc = makeClient();
     render(

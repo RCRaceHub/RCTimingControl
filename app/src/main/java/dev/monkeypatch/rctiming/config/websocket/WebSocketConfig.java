@@ -11,9 +11,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 /**
- * STOMP WebSocket configuration (Pattern 2 from RESEARCH.md).
+ * STOMP WebSocket configuration.
  * Endpoint: /ws/timing — no SockJS (venue LAN in 2026 does not need fallback).
- * JWT validation is at STOMP CONNECT, not at HTTP upgrade (Pitfall 1).
+ * JWT validation is at STOMP CONNECT, not at HTTP upgrade: a browser cannot set headers on the upgrade.
  */
 @Configuration
 @EnableWebSocketMessageBroker

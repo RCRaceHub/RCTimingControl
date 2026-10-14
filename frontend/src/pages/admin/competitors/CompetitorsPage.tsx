@@ -72,7 +72,7 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, onMerge }: {
 
 /**
  * Every competitor the club has timed: imported from RaceHub or added as a walk-in (L10, #18).
- * Replaces the old racer list; competitors have no login.
+ * Competitors have no login.
  */
 export default function CompetitorsPage() {
   const [search, setSearch] = useState('');

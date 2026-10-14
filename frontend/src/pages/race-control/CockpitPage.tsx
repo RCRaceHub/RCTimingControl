@@ -76,7 +76,6 @@ export default function CockpitPage() {
   // Live timing rows (for AUDIO-04 beep detection)
   const { rows: liveRows } = useLiveTiming(selectedRaceId);
 
-  // Audio announcements hook (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
   const [volumePercent] = useAudioVolume();
 
   // Fetch audio settings — shared query key with AudioSettingsPanel so only one request fires
@@ -99,6 +98,7 @@ export default function CockpitPage() {
     enabled: selectedRaceId != null && selectedRace?.status === 'RUNNING',
   });
 
+  // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
   const { playBeep, setClipMap } = useAnnouncements({
     raceId: selectedRaceId,
     settings: audioSettings ?? null,
@@ -397,7 +397,6 @@ export default function CockpitPage() {
 
   return (
     <div className="flex h-full gap-0">
-      {/* Run order sidebar */}
       <aside className="w-56 shrink-0 border-r overflow-y-auto">
         <div className="px-4 py-3 border-b">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -440,20 +439,17 @@ export default function CockpitPage() {
             </div>
           )}
 
-        {/* Audio settings collapsible panel */}
         <AudioSettingsPanel />
       </aside>
 
       <Separator orientation="vertical" />
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-6">
         {renderMainPanel()}
       </main>
 
       <RoundGeneratorWizard open={generatorOpen} onOpenChange={setGeneratorOpen} eventId={eventId} />
 
-      {/* Unknown transponder link dialog */}
       <UnknownTransponderLinkDialog
         transponderNumber={linkTransponderNumber}
         raceId={selectedRace?.raceId ?? 0}

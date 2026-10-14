@@ -38,7 +38,6 @@ export default function RaceControlLayout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Top header */}
       <header className="flex items-center h-12 px-4 border-b bg-card shrink-0 gap-4">
         <Link
           to="/admin/race-control"

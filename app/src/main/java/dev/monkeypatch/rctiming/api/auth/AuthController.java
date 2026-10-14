@@ -108,8 +108,6 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    // --- helpers ---
-
     private ResponseEntity<AuthResponse> signedIn(Outcome.SignedIn signedIn, HttpServletResponse response) {
         setRefreshCookie(signedIn.refreshToken(), response);
         return ResponseEntity.ok(AuthResponse.of(signedIn.user(), signedIn.accessToken()));

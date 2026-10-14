@@ -18,9 +18,8 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
     }
 
     /**
-     * Loads an event to change something checked across the whole event (L11). Write transactions
-     * already run one at a time on the single write connection, so no row lock is needed; call this
-     * inside the transaction that makes the change.
+     * Loads an event to change something checked across the whole event (L11). Call it inside the
+     * transaction that makes the change; {@link JooqRepository} says why no row lock is needed.
      */
     public Optional<Event> findByIdForUpdate(Long id) {
         return findById(id);

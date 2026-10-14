@@ -33,8 +33,8 @@ public class CheckInService {
 
     /**
      * Checks an entry in. Idempotent: a repeat confirm keeps the first check-in time and
-     * reports {@code alreadyCheckedIn}. The entry row is locked, so two desks confirming at
-     * once cannot both record a first check-in.
+     * reports {@code alreadyCheckedIn}. Write transactions run one at a time on the single
+     * write connection, so two desks confirming at once cannot both record a first check-in.
      */
     @Transactional
     public CheckInResult confirm(long eventId, long entryId, long actingUserId) {

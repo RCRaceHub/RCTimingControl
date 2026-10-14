@@ -269,13 +269,13 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("client-side per D-08 + plan 05; no backend endpoint exists")
+    @Disabled("worked out in the browser; no backend endpoint exists")
     void proximityAlertLogic_computedFromLiveTimingStream() {
         // Covered by Vitest in frontend/src/pages/race-control/referee/alerts.test.ts
     }
 
     @Test
-    @Disabled("client-side per D-08 + plan 05; no backend endpoint exists")
+    @Disabled("worked out in the browser; no backend endpoint exists")
     void backmarkerDetection_flagsLappedCars() {
         // Covered by Vitest in frontend/src/pages/race-control/referee/alerts.test.ts
     }

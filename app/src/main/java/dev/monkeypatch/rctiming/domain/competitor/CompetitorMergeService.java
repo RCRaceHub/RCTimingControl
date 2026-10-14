@@ -166,8 +166,6 @@ public class CompetitorMergeService {
         return new Result(keepId, moving.size(), exclusions);
     }
 
-    // ------------------------------------------------------------------------------------------------
-
     private static void requireDistinct(Long keepId, Long duplicateId) {
         if (Objects.equals(keepId, duplicateId)) {
             throw new IllegalArgumentException("Choose two different competitors to merge");

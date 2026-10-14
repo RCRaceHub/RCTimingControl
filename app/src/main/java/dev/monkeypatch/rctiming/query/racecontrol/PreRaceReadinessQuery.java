@@ -46,7 +46,7 @@ public class PreRaceReadinessQuery {
      * @throws EntityNotFoundException if no race with this ID exists
      */
     public PreRaceReadinessDto load(long raceId) {
-        // Step 1: Fetch target race row with round and class info
+        // Fetch target race row with round and class info
         var targetRow = dsl
                 .select(
                         RACES.ID,
@@ -80,10 +80,10 @@ public class PreRaceReadinessQuery {
         String roundType = targetRow.get(ROUNDS.TYPE);
         String className = targetRow.get("className", String.class);
 
-        // Step 2: Build raceLabel from round type
+        // Build raceLabel from round type
         String raceLabel = RaceLabel.of(roundType, roundNumber, className, heatNumber, finalLetter);
 
-        // Step 3: Resolve the previous race in the event run order
+        // Resolve the previous race in the event run order
         // "Previous" = highest (sequence_in_event, sequence_in_round) tuple strictly less than target
         var previousRaceRow = dsl
                 .select(RACES.ID, ROUNDS.EVENT_ID)
@@ -103,7 +103,7 @@ public class PreRaceReadinessQuery {
         List<MarshalDutyRowDto> marshalDuty;
 
         if (previousRaceRow != null) {
-            // Step 4: Build marshalDuty from previous race's entries + absence counts
+            // Build marshalDuty from previous race's entries + absence counts
             long previousRaceId = previousRaceRow.get(RACES.ID);
 
             // Correlated subquery alias for absence count
@@ -126,14 +126,14 @@ public class PreRaceReadinessQuery {
                     .fetch(r -> new MarshalDutyRowDto(
                             r.get(RACE_ENTRIES.ENTRY_ID),
                             r.get("driverName", String.class),
-                            null, // car_number column does not exist in the entries table
+                            null, // not read yet, though race_entries.car_number holds it (ENTRY-03)
                             r.get("missedThisEvent", Long.class)
                     ));
         } else {
             marshalDuty = List.of();
         }
 
-        // Step 5: Build gridCall for the target race
+        // Build gridCall for the target race
         List<GridCallSlotDto> gridCall = dsl
                 .select(
                         RACE_ENTRIES.ID,
@@ -159,7 +159,7 @@ public class PreRaceReadinessQuery {
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
                         SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get("driverName", String.class)),
-                        null, // car_number not yet on Entry — tracked as gap, see REQUIREMENTS.md ENTRY-03
+                        null, // not read yet, though race_entries.car_number holds it (ENTRY-03)
                         r.get("className", String.class),
                         r.get(ENTRIES.CHECKED_IN_AT) != null,
                         r.get(ENTRIES.RACEHUB_ARRIVAL)

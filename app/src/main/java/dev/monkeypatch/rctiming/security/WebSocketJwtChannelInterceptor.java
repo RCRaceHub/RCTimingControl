@@ -18,8 +18,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Validates JWT on STOMP CONNECT frames (Pattern 3 from RESEARCH.md).
- * HTTP upgrade itself is permitAll (Pitfall 1 — JWT at CONNECT, not at HTTP level).
+ * Validates JWT on STOMP CONNECT frames. The HTTP upgrade itself is permitAll, since a browser
+ * cannot set an Authorization header on it.
  *
  * <p>A CONNECT with no token (or an empty bearer) is accepted as an anonymous
  * spectator session (L12 spectator boards). Anonymous sessions may only

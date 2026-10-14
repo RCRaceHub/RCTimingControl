@@ -65,7 +65,6 @@ public class RaceStateMachineService {
         this.bumpUpSeedingService = bumpUpSeedingService;
     }
 
-    // ── Commands ───────────────────────────────────────────────────────────────────
     // start, finish and abandon set the race's times before the transition saves it, so every
     // listener reads them.
 
