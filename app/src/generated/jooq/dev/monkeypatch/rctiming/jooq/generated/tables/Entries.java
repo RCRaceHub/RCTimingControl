@@ -18,7 +18,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties.MarshalPe
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RaceEntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UnknownTransponderLinkPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks.UnknownTransponderLinksPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users.UsersPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
@@ -79,11 +78,6 @@ public class Entries extends TableImpl<EntriesRecord> {
     public final TableField<EntriesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
 
     /**
-     * The column <code>entries.user_id</code>.
-     */
-    public final TableField<EntriesRecord, Long> USER_ID = createField(DSL.name("user_id"), SQLDataType.BIGINT, this, "");
-
-    /**
      * The column <code>entries.event_id</code>.
      */
     public final TableField<EntriesRecord, Long> EVENT_ID = createField(DSL.name("event_id"), SQLDataType.BIGINT.nullable(false), this, "");
@@ -97,11 +91,6 @@ public class Entries extends TableImpl<EntriesRecord> {
      * The column <code>entries.transponder_number</code>.
      */
     public final TableField<EntriesRecord, String> TRANSPONDER_NUMBER = createField(DSL.name("transponder_number"), SQLDataType.VARCHAR(20).nullable(false), this, "");
-
-    /**
-     * The column <code>entries.transponder_label</code>.
-     */
-    public final TableField<EntriesRecord, String> TRANSPONDER_LABEL = createField(DSL.name("transponder_label"), SQLDataType.VARCHAR(100), this, "");
 
     /**
      * The column <code>entries.status</code>.
@@ -252,7 +241,7 @@ public class Entries extends TableImpl<EntriesRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_ENTRIES_COMPETITOR_ID, Indexes.IDX_ENTRIES_EVENT_ID, Indexes.IDX_ENTRIES_EXTERNAL, Indexes.IDX_ENTRIES_NO_DUPLICATE, Indexes.IDX_ENTRIES_USER_ID);
+        return Arrays.asList(Indexes.IDX_ENTRIES_COMPETITOR_ID, Indexes.IDX_ENTRIES_EVENT_ID, Indexes.IDX_ENTRIES_EXTERNAL, Indexes.IDX_ENTRIES_NO_DUPLICATE);
     }
 
     @Override
@@ -267,20 +256,19 @@ public class Entries extends TableImpl<EntriesRecord> {
 
     @Override
     public List<ForeignKey<EntriesRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, Keys.ENTRIES__ENTRIES_COMPETITOR_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_CLASS_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_ID_FKEY, Keys.ENTRIES__ENTRIES_USER_ID_FKEY);
+        return Arrays.asList(Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, Keys.ENTRIES__ENTRIES_COMPETITOR_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_CLASS_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_ID_FKEY);
     }
 
-    private transient UsersPath _entriesCheckedInByUserIdFkey;
+    private transient UsersPath _users;
 
     /**
-     * Get the implicit join path to the <code>users</code> table, via the
-     * <code>entries_checked_in_by_user_id_fkey</code> key.
+     * Get the implicit join path to the <code>users</code> table.
      */
-    public UsersPath entriesCheckedInByUserIdFkey() {
-        if (_entriesCheckedInByUserIdFkey == null)
-            _entriesCheckedInByUserIdFkey = new UsersPath(this, Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, null);
+    public UsersPath users() {
+        if (_users == null)
+            _users = new UsersPath(this, Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, null);
 
-        return _entriesCheckedInByUserIdFkey;
+        return _users;
     }
 
     private transient CompetitorsPath _competitors;
@@ -317,19 +305,6 @@ public class Entries extends TableImpl<EntriesRecord> {
             _events = new EventsPath(this, Keys.ENTRIES__ENTRIES_EVENT_ID_FKEY, null);
 
         return _events;
-    }
-
-    private transient UsersPath _entriesUserIdFkey;
-
-    /**
-     * Get the implicit join path to the <code>users</code> table, via the
-     * <code>entries_user_id_fkey</code> key.
-     */
-    public UsersPath entriesUserIdFkey() {
-        if (_entriesUserIdFkey == null)
-            _entriesUserIdFkey = new UsersPath(this, Keys.ENTRIES__ENTRIES_USER_ID_FKEY, null);
-
-        return _entriesUserIdFkey;
     }
 
     private transient EntryAuditLogPath _entryAuditLog;
@@ -432,19 +407,6 @@ public class Entries extends TableImpl<EntriesRecord> {
             _unknownTransponderLink = new UnknownTransponderLinkPath(this, null, Keys.UNKNOWN_TRANSPONDER_LINK__UNKNOWN_TRANSPONDER_LINK_ENTRY_ID_FKEY.getInverseKey());
 
         return _unknownTransponderLink;
-    }
-
-    private transient UnknownTransponderLinksPath _unknownTransponderLinks;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>unknown_transponder_links</code> table
-     */
-    public UnknownTransponderLinksPath unknownTransponderLinks() {
-        if (_unknownTransponderLinks == null)
-            _unknownTransponderLinks = new UnknownTransponderLinksPath(this, null, Keys.UNKNOWN_TRANSPONDER_LINKS__UNKNOWN_TRANSPONDER_LINKS_LINKED_ENTRY_ID_FKEY.getInverseKey());
-
-        return _unknownTransponderLinks;
     }
 
     @Override

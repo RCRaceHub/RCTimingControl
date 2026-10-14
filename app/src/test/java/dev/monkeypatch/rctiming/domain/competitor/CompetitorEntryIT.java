@@ -55,7 +55,6 @@ class CompetitorEntryIT extends AbstractIntegrationTest {
 
         Entry reloaded = entryRepository.findById(entryId).orElseThrow();
         assertThat(reloaded.getCompetitorId()).isEqualTo(competitor.getId());
-        assertThat(reloaded.getUserId()).isNull();
     }
 
     @Test

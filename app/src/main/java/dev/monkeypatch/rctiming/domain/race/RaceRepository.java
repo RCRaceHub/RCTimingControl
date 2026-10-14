@@ -60,8 +60,6 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
         race.setSequenceInRound(r.getSequenceInRound());
         race.setFinalLetter(r.getFinalLetter());
         race.setStartType(r.getStartType() == null ? null : StartType.valueOf(r.getStartType()));
-        race.setFormatId(r.getFormatId());
-        race.setFormatOverrides(r.getFormatOverrides());
         race.setStatus(r.getStatus() == null ? null : RaceStatus.valueOf(r.getStatus()));
         race.setStartedAt(r.getStartedAt());
         race.setFinishedAt(r.getFinishedAt());
@@ -80,8 +78,6 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
         r.setSequenceInRound(race.getSequenceInRound());
         r.setFinalLetter(race.getFinalLetter());
         r.setStartType(race.getStartType() == null ? null : race.getStartType().name());
-        r.setFormatId(race.getFormatId());
-        r.setFormatOverrides(race.getFormatOverrides());
         r.setStatus(race.getStatus() == null ? null : race.getStatus().name());
         r.setStartedAt(race.getStartedAt());
         r.setFinishedAt(race.getFinishedAt());

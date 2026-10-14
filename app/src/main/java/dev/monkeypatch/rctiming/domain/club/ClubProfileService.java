@@ -20,7 +20,7 @@ public class ClubProfileService {
 
     /** The club's details as the setup wizard and the club page edit them. */
     public record ClubDetails(String name, String email, String phone, String websiteUrl, Double latitude,
-                              Double longitude, String timezone, String logoType) {}
+                              Double longitude, String timezone) {}
 
     private final ClubProfileRepository clubProfileRepository;
     private final GoverningBodyAffiliationRepository affiliationRepository;
@@ -101,7 +101,6 @@ public class ClubProfileService {
         profile.setLatitude(details.latitude());
         profile.setLongitude(details.longitude());
         profile.setTimezone(details.timezone());
-        profile.setLogoType(details.logoType());
 
         ClubProfile saved = clubProfileRepository.save(profile);
         audit.entry(actor, isNew ? "CLUB_PROFILE_CREATED" : "CLUB_PROFILE_UPDATED")
@@ -192,7 +191,6 @@ public class ClubProfileService {
         m.put("latitude", p.getLatitude());
         m.put("longitude", p.getLongitude());
         m.put("timezone", p.getTimezone());
-        m.put("logoType", p.getLogoType());
         return m;
     }
 

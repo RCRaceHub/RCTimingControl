@@ -106,129 +106,101 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     }
 
     /**
-     * Setter for <code>events.entry_opens_at</code>.
-     */
-    public void setEntryOpensAt(Instant value) {
-        set(6, value);
-    }
-
-    /**
-     * Getter for <code>events.entry_opens_at</code>.
-     */
-    public Instant getEntryOpensAt() {
-        return (Instant) get(6);
-    }
-
-    /**
-     * Setter for <code>events.entry_closes_at</code>.
-     */
-    public void setEntryClosesAt(Instant value) {
-        set(7, value);
-    }
-
-    /**
-     * Getter for <code>events.entry_closes_at</code>.
-     */
-    public Instant getEntryClosesAt() {
-        return (Instant) get(7);
-    }
-
-    /**
      * Setter for <code>events.track_id</code>.
      */
     public void setTrackId(Long value) {
-        set(8, value);
+        set(6, value);
     }
 
     /**
      * Getter for <code>events.track_id</code>.
      */
     public Long getTrackId() {
-        return (Long) get(8);
+        return (Long) get(6);
     }
 
     /**
      * Setter for <code>events.racehub_last_import_at</code>.
      */
     public void setRacehubLastImportAt(Instant value) {
-        set(9, value);
+        set(7, value);
     }
 
     /**
      * Getter for <code>events.racehub_last_import_at</code>.
      */
     public Instant getRacehubLastImportAt() {
-        return (Instant) get(9);
+        return (Instant) get(7);
     }
 
     /**
      * Setter for <code>events.racehub_last_revision</code>.
      */
     public void setRacehubLastRevision(Long value) {
-        set(10, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>events.racehub_last_revision</code>.
      */
     public Long getRacehubLastRevision() {
-        return (Long) get(10);
+        return (Long) get(8);
     }
 
     /**
      * Setter for <code>events.racehub_event_id</code>.
      */
     public void setRacehubEventId(String value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>events.racehub_event_id</code>.
      */
     public String getRacehubEventId() {
-        return (String) get(11);
+        return (String) get(9);
     }
 
     /**
      * Setter for <code>events.results_export_revision</code>.
      */
     public void setResultsExportRevision(Long value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>events.results_export_revision</code>.
      */
     public Long getResultsExportRevision() {
-        return (Long) get(12);
+        return (Long) get(10);
     }
 
     /**
      * Setter for <code>events.results_export_pending</code>.
      */
     public void setResultsExportPending(String value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>events.results_export_pending</code>.
      */
     public String getResultsExportPending() {
-        return (String) get(13);
+        return (String) get(11);
     }
 
     /**
      * Setter for <code>events.live_feed_enabled</code>.
      */
     public void setLiveFeedEnabled(Boolean value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>events.live_feed_enabled</code>.
      */
     public Boolean getLiveFeedEnabled() {
-        return (Boolean) get(14);
+        return (Boolean) get(12);
     }
 
     // -------------------------------------------------------------------------
@@ -254,7 +226,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Instant entryOpensAt, Instant entryClosesAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled) {
         super(Events.EVENTS);
 
         setId(id);
@@ -263,8 +235,6 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setStatus(status);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        setEntryOpensAt(entryOpensAt);
-        setEntryClosesAt(entryClosesAt);
         setTrackId(trackId);
         setRacehubLastImportAt(racehubLastImportAt);
         setRacehubLastRevision(racehubLastRevision);

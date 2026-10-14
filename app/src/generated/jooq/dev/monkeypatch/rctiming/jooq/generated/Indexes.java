@@ -27,7 +27,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks;
 
 import org.jooq.Index;
 import org.jooq.OrderField;
@@ -58,7 +57,6 @@ public class Indexes {
     public static final Index IDX_ENTRIES_EVENT_ID = Internal.createIndex(DSL.name("idx_entries_event_id"), Entries.ENTRIES, new OrderField[] { Entries.ENTRIES.EVENT_ID }, false);
     public static final Index IDX_ENTRIES_EXTERNAL = Internal.createIndex(DSL.name("idx_entries_external"), Entries.ENTRIES, new OrderField[] { Entries.ENTRIES.EXTERNAL_SOURCE, Entries.ENTRIES.EXTERNAL_ENTRY_ID }, true);
     public static final Index IDX_ENTRIES_NO_DUPLICATE = Internal.createIndex(DSL.name("idx_entries_no_duplicate"), Entries.ENTRIES, new OrderField[] { Entries.ENTRIES.COMPETITOR_ID, Entries.ENTRIES.EVENT_ID, Entries.ENTRIES.EVENT_CLASS_ID }, true);
-    public static final Index IDX_ENTRIES_USER_ID = Internal.createIndex(DSL.name("idx_entries_user_id"), Entries.ENTRIES, new OrderField[] { Entries.ENTRIES.USER_ID }, false);
     public static final Index IDX_ENTRY_AUDIT_LOG_ENTRY_ID = Internal.createIndex(DSL.name("idx_entry_audit_log_entry_id"), EntryAuditLog.ENTRY_AUDIT_LOG, new OrderField[] { EntryAuditLog.ENTRY_AUDIT_LOG.ENTRY_ID }, false);
     public static final Index IDX_EVENT_CLASSES_COMBINED_RACE_GROUP = Internal.createIndex(DSL.name("idx_event_classes_combined_race_group"), EventClasses.EVENT_CLASSES, new OrderField[] { EventClasses.EVENT_CLASSES.COMBINED_RACE_GROUP }, false);
     public static final Index IDX_EVENT_CLASSES_EVENT_ID = Internal.createIndex(DSL.name("idx_event_classes_event_id"), EventClasses.EVENT_CLASSES, new OrderField[] { EventClasses.EVENT_CLASSES.EVENT_ID }, false);
@@ -82,5 +80,4 @@ public class Indexes {
     public static final Index IDX_RESULTS_OUTBOX_DUE = Internal.createIndex(DSL.name("idx_results_outbox_due"), ResultsOutbox.RESULTS_OUTBOX, new OrderField[] { ResultsOutbox.RESULTS_OUTBOX.STATUS, ResultsOutbox.RESULTS_OUTBOX.NEXT_ATTEMPT_AT }, false);
     public static final Index IDX_ROUNDS_EVENT_ID = Internal.createIndex(DSL.name("idx_rounds_event_id"), Rounds.ROUNDS, new OrderField[] { Rounds.ROUNDS.EVENT_ID }, false);
     public static final Index IDX_UNKNOWN_TRANSPONDER_LINK_RACE = Internal.createIndex(DSL.name("idx_unknown_transponder_link_race"), UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK, new OrderField[] { UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK.RACE_ID }, false);
-    public static final Index IDX_UNKNOWN_TRANSPONDER_LINKS_RACE_ID = Internal.createIndex(DSL.name("idx_unknown_transponder_links_race_id"), UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS, new OrderField[] { UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS.RACE_ID }, false);
 }

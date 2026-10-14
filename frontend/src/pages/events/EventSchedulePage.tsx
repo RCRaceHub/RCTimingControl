@@ -1,23 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getEventSchedule } from '@/lib/raceControlApi';
-import type { EventScheduleDto } from '@/lib/raceControlApi';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatEventDate } from '@/lib/dates';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-
-function entryAvailabilityBadge(availability: EventScheduleDto['entryAvailability']) {
-  switch (availability) {
-    case 'ENTRY_OPEN':
-      return <Badge variant="default">Entries Open</Badge>;
-    case 'ENTRY_CLOSED':
-      return <Badge variant="secondary">Entries Closed</Badge>;
-    case 'ENTRY_NOT_YET_OPEN':
-    default:
-      return <Badge variant="outline">Coming Soon</Badge>;
-  }
-}
 
 export default function EventSchedulePage() {
   const { data: events, isLoading, isError } = useQuery({
@@ -60,17 +46,10 @@ export default function EventSchedulePage() {
       <div>
         {events.map(event => (
           <div key={event.id} className="border rounded-lg p-4 mb-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-base">{event.name}</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {formatEventDate(event.eventDate, 'long')}
-                </p>
-              </div>
-              <div className="flex-shrink-0">
-                {entryAvailabilityBadge(event.entryAvailability)}
-              </div>
-            </div>
+            <h2 className="font-semibold text-base">{event.name}</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {formatEventDate(event.eventDate, 'long')}
+            </p>
 
             {(event.finishedRaceIds.length > 0 || event.championshipId !== null) && (
               <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/50">

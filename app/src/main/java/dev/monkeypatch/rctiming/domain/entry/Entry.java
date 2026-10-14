@@ -7,18 +7,16 @@ public class Entry implements UpdatedAt {
 
     private Long id;
 
-    /** The racer's login on entries made in the racer portal, before it was removed (#18). Null on newer entries. */
-    private Long userId;
-
     /** The driver this entry is for. Required on every new entry (L4, #12). */
     private Long competitorId;
     private Long eventId;
     private Long eventClassId;
 
-    // The primary transponder as imported or typed in for a walk-in (RACER-07); a check-in swap replaces it.
-    // The columns are transponder_number and transponder_label, with no _snapshot suffix.
+    /**
+     * The entry's primary transponder, as imported or typed in for a walk-in; a check-in swap replaces it.
+     * Maps to the transponder_number column.
+     */
     private String transponderNumberSnapshot;
-    private String transponderLabelSnapshot;
 
     /** Optional second transponder for this entry (L6). Laps from either number count. */
     private String secondaryTransponderNumber;
@@ -57,9 +55,6 @@ public class Entry implements UpdatedAt {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-
     public Long getCompetitorId() { return competitorId; }
     public void setCompetitorId(Long competitorId) { this.competitorId = competitorId; }
 
@@ -74,9 +69,6 @@ public class Entry implements UpdatedAt {
 
     public String getSecondaryTransponderNumber() { return secondaryTransponderNumber; }
     public void setSecondaryTransponderNumber(String secondaryTransponderNumber) { this.secondaryTransponderNumber = secondaryTransponderNumber; }
-
-    public String getTransponderLabelSnapshot() { return transponderLabelSnapshot; }
-    public void setTransponderLabelSnapshot(String transponderLabelSnapshot) { this.transponderLabelSnapshot = transponderLabelSnapshot; }
 
     public EntryStatus getStatus() { return status; }
     public void setStatus(EntryStatus status) { this.status = status; }

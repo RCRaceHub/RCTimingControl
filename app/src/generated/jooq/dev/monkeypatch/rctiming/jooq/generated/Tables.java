@@ -40,7 +40,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UserRoles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 
@@ -230,11 +229,6 @@ public class Tables {
      * The table <code>unknown_transponder_link</code>.
      */
     public static final UnknownTransponderLink UNKNOWN_TRANSPONDER_LINK = UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
-
-    /**
-     * The table <code>unknown_transponder_links</code>.
-     */
-    public static final UnknownTransponderLinks UNKNOWN_TRANSPONDER_LINKS = UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS;
 
     /**
      * The table <code>user_roles</code>.

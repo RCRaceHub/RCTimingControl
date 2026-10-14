@@ -28,21 +28,6 @@ class EventScheduleControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void listEvents_includesEntryAvailability() {
-        ResponseEntity<List> resp = restTemplate.getForEntity("/api/v1/events", List.class);
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        List<Map<String, Object>> events = (List<Map<String, Object>>) resp.getBody();
-        assertThat(events).isNotNull();
-
-        // V100 seed has event 1001 with status OPEN — should have ENTRY_OPEN availability
-        boolean foundOpen = events.stream()
-                .anyMatch(e -> "ENTRY_OPEN".equals(e.get("entryAvailability")));
-        assertThat(foundOpen).as("Expected at least one event with ENTRY_OPEN availability").isTrue();
-    }
-
-    @Test
     void listEvents_doesNotIncludeDraftEvents() {
         // V100 seeds event 1002 as DRAFT — must NOT appear in public schedule
         ResponseEntity<List> resp = restTemplate.getForEntity("/api/v1/events", List.class);

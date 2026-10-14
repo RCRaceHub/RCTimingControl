@@ -29,7 +29,7 @@ function signInAs(roles: AuthUser['roles']) {
 }
 
 const adaEntry: AdminEntryDto = {
-  id: 1, userId: null, competitorId: 2, displayName: 'Ada Lovelace', transponderNumber: '9900',
+  id: 1, competitorId: 2, displayName: 'Ada Lovelace', transponderNumber: '9900',
   secondaryTransponderNumber: null, importedTransponderNumber: null, importedSecondaryTransponderNumber: null,
   status: 'CONFIRMED', submittedAt: '2026-10-06T09:00:00Z', withdrawnAt: null,
 };
@@ -65,7 +65,7 @@ describe('EntryListSection', () => {
   it('flags a booking number that differs from the one swapped on the day', () => {
     signInAs(['ADMIN']);
     entries = [{
-      id: 1, userId: null, competitorId: 2, displayName: 'Ada Lovelace', transponderNumber: '9900',
+      id: 1, competitorId: 2, displayName: 'Ada Lovelace', transponderNumber: '9900',
       secondaryTransponderNumber: null, importedTransponderNumber: '7500', importedSecondaryTransponderNumber: null,
       status: 'CONFIRMED', submittedAt: '2026-10-06T09:00:00Z', withdrawnAt: null,
     }];

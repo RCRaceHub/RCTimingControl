@@ -41,8 +41,6 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         e.setName(r.getName());
         e.setEventDate(r.getEventDate());
         e.setStatus(r.getStatus() == null ? null : EventStatus.valueOf(r.getStatus()));
-        e.setEntryOpensAt(r.getEntryOpensAt());
-        e.setEntryClosesAt(r.getEntryClosesAt());
         e.setTrackId(r.getTrackId());
         e.setCreatedAt(r.getCreatedAt());
         e.setUpdatedAt(r.getUpdatedAt());
@@ -60,8 +58,6 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         r.setName(e.getName());
         r.setEventDate(e.getEventDate());
         r.setStatus(e.getStatus() == null ? null : e.getStatus().name());
-        r.setEntryOpensAt(e.getEntryOpensAt());
-        r.setEntryClosesAt(e.getEntryClosesAt());
         r.setTrackId(e.getTrackId());
         r.setCreatedAt(e.getCreatedAt());
         r.setUpdatedAt(e.getUpdatedAt());

@@ -205,7 +205,6 @@ export interface EntryHistoryItem {
 
 export interface AdminEntryDto {
   id: number;
-  userId: number | null;
   competitorId: number | null;
   displayName: string | null;
   transponderNumber: string | null;
@@ -441,7 +440,6 @@ export interface ClubProfileDto {
   latitude: number | null;
   longitude: number | null;
   timezone: string;
-  logoType: string | null;
   logoUrl: string | null;
 }
 
@@ -453,7 +451,6 @@ export interface UpdateClubProfileRequest {
   latitude: number | null;
   longitude: number | null;
   timezone: string;
-  logoType: string | null;
 }
 
 export interface BackupFileDto {

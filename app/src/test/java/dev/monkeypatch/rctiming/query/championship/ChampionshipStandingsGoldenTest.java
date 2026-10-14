@@ -343,7 +343,6 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     private Entry makeEntry(Driver driver, Long eventId, Long eventClassId) {
         Entry e = new Entry();
-        e.setUserId(driver.user().getId());
         e.setCompetitorId(driver.competitor().getId());
         e.setEventId(eventId);
         e.setEventClassId(eventClassId);

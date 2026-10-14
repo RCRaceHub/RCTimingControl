@@ -49,13 +49,12 @@ insert into competitors (display_name) values
     ('Phil Evans');
 
 -- ── Entries (one per competitor, transponders 101–106) ──────────────────────
-insert into entries (competitor_id, event_id, event_class_id, transponder_number, transponder_label, status)
+insert into entries (competitor_id, event_id, event_class_id, transponder_number, status)
 select
     c.id,
     ec.event_id,
     ec.id,
     cast(100 + row_number() over (order by c.id) as text),
-    'AMB-' || (100 + row_number() over (order by c.id)),
     'CONFIRMED'
 from competitors c
 cross join event_classes ec
@@ -79,7 +78,7 @@ where e.name = 'Club Championship Round 1';
 
 -- ── Races: one heat per round (all 6 fit in a single heat of 8) ─────────────
 -- Q3 Heat 1 is the next race to run
-insert into races (round_id, event_class_id, heat_number, sequence_in_round, final_letter, start_type, format_id, status)
+insert into races (round_id, event_class_id, heat_number, sequence_in_round, final_letter, start_type, status)
 select
     r.id,
     ec.id,
@@ -87,7 +86,6 @@ select
     1,
     case when r.type = 'FINAL' then 'A' end,
     'STAGGER',
-    ec.template_id,
     case when r.sequence_in_event < 5 then 'FINISHED' else 'PENDING' end
 from rounds r
 join event_classes ec on ec.event_id = r.event_id

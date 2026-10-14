@@ -48,12 +48,10 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
     protected Entry toEntity(EntriesRecord r) {
         Entry e = new Entry();
         e.setId(r.getId());
-        e.setUserId(r.getUserId());
         e.setCompetitorId(r.getCompetitorId());
         e.setEventId(r.getEventId());
         e.setEventClassId(r.getEventClassId());
         e.setTransponderNumberSnapshot(r.getTransponderNumber());
-        e.setTransponderLabelSnapshot(r.getTransponderLabel());
         e.setSecondaryTransponderNumber(r.getSecondaryTransponderNumber());
         e.setImportedTransponderNumber(r.getImportedTransponderNumber());
         e.setImportedSecondaryTransponderNumber(r.getImportedSecondaryTransponderNumber());
@@ -74,12 +72,10 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
 
     @Override
     protected void toRecord(Entry e, EntriesRecord r) {
-        r.setUserId(e.getUserId());
         r.setCompetitorId(e.getCompetitorId());
         r.setEventId(e.getEventId());
         r.setEventClassId(e.getEventClassId());
         r.setTransponderNumber(e.getTransponderNumberSnapshot());
-        r.setTransponderLabel(e.getTransponderLabelSnapshot());
         r.setSecondaryTransponderNumber(e.getSecondaryTransponderNumber());
         r.setImportedTransponderNumber(e.getImportedTransponderNumber());
         r.setImportedSecondaryTransponderNumber(e.getImportedSecondaryTransponderNumber());

@@ -14,8 +14,6 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     private Double latitude;
     private Double longitude;
     private String timezone = "UTC";
-    private byte[] logo;
-    private String logoType;
     private String logoUrl;
     private ClubAudioSettings audioSettings = ClubAudioSettings.defaults();
     private String defaultVoiceId = "en_GB-alan-medium";
@@ -51,12 +49,6 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
         java.time.ZoneId.of(timezone); // validate on set
         this.timezone = timezone;
     }
-
-    public byte[] getLogo() { return logo; }
-    public void setLogo(byte[] logo) { this.logo = logo; }
-
-    public String getLogoType() { return logoType; }
-    public void setLogoType(String logoType) { this.logoType = logoType; }
 
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }

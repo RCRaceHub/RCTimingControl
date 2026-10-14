@@ -139,12 +139,10 @@ class CompetitorAndEntryRepositoriesIT extends AbstractIntegrationTest {
         cleanup.add(() -> users.deleteById(official.getId()));
 
         Entry e = new Entry();
-        e.setUserId(official.getId());
         e.setCompetitorId(competitor.getId());
         e.setEventId(event.getId());
         e.setEventClassId(eventClass.getId());
         e.setTransponderNumberSnapshot("1234567");
-        e.setTransponderLabelSnapshot("Buggy");
         e.setSecondaryTransponderNumber("7654321");
         e.setStatus(EntryStatus.CONFIRMED);
         e.setSubmittedAt(T1);
@@ -160,10 +158,8 @@ class CompetitorAndEntryRepositoriesIT extends AbstractIntegrationTest {
         e.setCheckedInByUserId(official.getId());
 
         Entry saved = assertSavedAndReloaded(entries, e, c -> {
-            c.setUserId(null);
             c.setEventClassId(null);
             c.setTransponderNumberSnapshot("2222222");
-            c.setTransponderLabelSnapshot(null);
             c.setSecondaryTransponderNumber(null);
             c.setStatus(EntryStatus.WITHDRAWN);
             c.setSubmittedAt(T2);

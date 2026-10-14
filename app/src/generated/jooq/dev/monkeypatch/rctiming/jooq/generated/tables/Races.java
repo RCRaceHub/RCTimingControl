@@ -13,11 +13,9 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences.MarshalAbs
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.MarshalAdjustmentsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RaceEntriesPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates.RaceFormatTemplatesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.ResultSnapshotsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.RoundsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UnknownTransponderLinkPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks.UnknownTransponderLinksPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
@@ -105,16 +103,6 @@ public class Races extends TableImpl<RacesRecord> {
      * The column <code>races.start_type</code>.
      */
     public final TableField<RacesRecord, String> START_TYPE = createField(DSL.name("start_type"), SQLDataType.VARCHAR(20).nullable(false), this, "");
-
-    /**
-     * The column <code>races.format_id</code>.
-     */
-    public final TableField<RacesRecord, Long> FORMAT_ID = createField(DSL.name("format_id"), SQLDataType.BIGINT, this, "");
-
-    /**
-     * The column <code>races.format_overrides</code>.
-     */
-    public final TableField<RacesRecord, String> FORMAT_OVERRIDES = createField(DSL.name("format_overrides"), SQLDataType.CLOB, this, "");
 
     /**
      * The column <code>races.status</code>.
@@ -235,7 +223,7 @@ public class Races extends TableImpl<RacesRecord> {
 
     @Override
     public List<ForeignKey<RacesRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.RACES__RACES_EVENT_CLASS_ID_FKEY, Keys.RACES__RACES_FORMAT_ID_FKEY, Keys.RACES__RACES_ROUND_ID_FKEY);
+        return Arrays.asList(Keys.RACES__RACES_EVENT_CLASS_ID_FKEY, Keys.RACES__RACES_ROUND_ID_FKEY);
     }
 
     private transient EventClassesPath _eventClasses;
@@ -248,19 +236,6 @@ public class Races extends TableImpl<RacesRecord> {
             _eventClasses = new EventClassesPath(this, Keys.RACES__RACES_EVENT_CLASS_ID_FKEY, null);
 
         return _eventClasses;
-    }
-
-    private transient RaceFormatTemplatesPath _raceFormatTemplates;
-
-    /**
-     * Get the implicit join path to the <code>race_format_templates</code>
-     * table.
-     */
-    public RaceFormatTemplatesPath raceFormatTemplates() {
-        if (_raceFormatTemplates == null)
-            _raceFormatTemplates = new RaceFormatTemplatesPath(this, Keys.RACES__RACES_FORMAT_ID_FKEY, null);
-
-        return _raceFormatTemplates;
     }
 
     private transient RoundsPath _rounds;
@@ -362,19 +337,6 @@ public class Races extends TableImpl<RacesRecord> {
             _unknownTransponderLink = new UnknownTransponderLinkPath(this, null, Keys.UNKNOWN_TRANSPONDER_LINK__UNKNOWN_TRANSPONDER_LINK_RACE_ID_FKEY.getInverseKey());
 
         return _unknownTransponderLink;
-    }
-
-    private transient UnknownTransponderLinksPath _unknownTransponderLinks;
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>unknown_transponder_links</code> table
-     */
-    public UnknownTransponderLinksPath unknownTransponderLinks() {
-        if (_unknownTransponderLinks == null)
-            _unknownTransponderLinks = new UnknownTransponderLinksPath(this, null, Keys.UNKNOWN_TRANSPONDER_LINKS__UNKNOWN_TRANSPONDER_LINKS_RACE_ID_FKEY.getInverseKey());
-
-        return _unknownTransponderLinks;
     }
 
     @Override

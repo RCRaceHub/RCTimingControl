@@ -41,10 +41,10 @@ beforeEach(() => {
 });
 
 describe('ClubProfileStep', () => {
-  it('starts from the saved club on re-entry and sends back the position and logo it has no field for', async () => {
+  it('starts from the saved club on re-entry and sends back the position it has no field for', async () => {
     vi.mocked(adminApi.club.getProfile).mockResolvedValue({
       id: 1, name: 'Riverside RC', email: 'club@example.com', phone: null, websiteUrl: null,
-      latitude: 51.5, longitude: -0.12, timezone: 'Europe/London', logoType: 'PNG', logoUrl: '/logo.png',
+      latitude: 51.5, longitude: -0.12, timezone: 'Europe/London', logoUrl: '/logo.png',
     });
     renderStep();
 
@@ -58,7 +58,6 @@ describe('ClubProfileStep', () => {
         email: 'club@example.com',
         latitude: 51.5,
         longitude: -0.12,
-        logoType: 'PNG',
       }),
     );
   });
