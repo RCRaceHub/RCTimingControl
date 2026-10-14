@@ -4,24 +4,27 @@ import { Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SpokenNameEditor from '@/components/SpokenNameEditor';
-import { useAdminCompetitorsList, usePossibleDuplicates } from '@/hooks/admin/useAdminCompetitors';
+import { useAdminCompetitorsList, usePossibleDuplicates, useSetNameVisibility } from '@/hooks/admin/useAdminCompetitors';
 import { useHelpContent } from '@/context/HelpContext';
 import { CompetitorsHelp } from '@/help/CompetitorsHelp';
-import type { CompetitorSummaryDto } from '@/lib/adminApi';
+import type { CompetitorSummaryDto, NameVisibility } from '@/lib/adminApi';
 import { formatCompetitorMeta, matchesCompetitor } from '@/lib/competitors';
 import MergeCompetitorDialog from './MergeCompetitorDialog';
 import { useRoles } from '@/hooks/useRoles';
 
 /** One competitor, with an editor for how their name is said aloud (#119). */
-function CompetitorRow({ competitor, canSetSpokenName, isAdmin, onMerge }: {
+function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility, onMerge }: {
   competitor: CompetitorSummaryDto;
   /** Any official may fix how a name is said. */
   canSetSpokenName: boolean;
   /** Only admins merge competitors, and see who changed a name. */
   isAdmin: boolean;
+  /** Admins and race directors choose how the name shows on public screens. */
+  canSetVisibility: boolean;
   onMerge: (competitor: CompetitorSummaryDto) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const setVisibility = useSetNameVisibility();
 
   const meta = formatCompetitorMeta(competitor);
 
@@ -31,6 +34,28 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, onMerge }: {
         <span className="font-medium">{competitor.displayName}</span>
         <span className="text-xs text-muted-foreground text-right">{meta}</span>
       </div>
+      {canSetVisibility && (
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <label htmlFor={`visibility-${competitor.id}`} className="text-muted-foreground">
+            Shown publicly as
+          </label>
+          <select
+            id={`visibility-${competitor.id}`}
+            className="rounded-md border bg-background px-2 py-1 text-sm"
+            value={competitor.nameVisibility}
+            disabled={setVisibility.isPending}
+            aria-label={`How ${competitor.displayName} is shown publicly`}
+            onChange={e => setVisibility.mutate({
+              id: competitor.id,
+              nameVisibility: e.target.value as NameVisibility,
+            })}
+          >
+            <option value="SHOW">Full name</option>
+            <option value="INITIALS">Initials only</option>
+            <option value="HIDE">Hidden</option>
+          </select>
+        </div>
+      )}
       {editing ? (
         <SpokenNameEditor
           competitorId={competitor.id}
@@ -77,7 +102,7 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, onMerge }: {
 export default function CompetitorsPage() {
   const [search, setSearch] = useState('');
   // Any official can fix how a name is said, often noticed on the day; only admins merge competitors
-  const { isAdmin, isOfficial } = useRoles();
+  const { isAdmin, canRunEvent, isOfficial } = useRoles();
   useHelpContent(CompetitorsHelp);
   const { data: competitors, isLoading, isError } = useAdminCompetitorsList();
   const { data: duplicateGroups = [] } = usePossibleDuplicates(isAdmin);
@@ -160,7 +185,7 @@ export default function CompetitorsPage() {
             <p className="text-sm text-muted-foreground">No competitors match “{search.trim()}”.</p>
           ) : (
             <ul className="divide-y rounded-lg border" aria-label="Competitors">
-              {shown.map(c => <CompetitorRow key={c.id} competitor={c} canSetSpokenName={isOfficial} isAdmin={isAdmin} onMerge={d => setMerging({ duplicate: d, suggested: [] })} />)}
+              {shown.map(c => <CompetitorRow key={c.id} competitor={c} canSetSpokenName={isOfficial} isAdmin={isAdmin} canSetVisibility={canRunEvent} onMerge={d => setMerging({ duplicate: d, suggested: [] })} />)}
             </ul>
           )}
         </>

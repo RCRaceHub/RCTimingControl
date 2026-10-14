@@ -9,5 +9,7 @@ public record CompetitorSummaryDto(
         /** The admin's override for how the name is said aloud, or null for none (#119). */
         String spokenName,
         /** What the announcer says: the spoken name when set, else the display name tidied for speech (#120). */
-        String speechName) {
+        String speechName,
+        /** How the name is shown on public screens: SHOW, INITIALS or HIDE (#265). */
+        String nameVisibility) {
 }

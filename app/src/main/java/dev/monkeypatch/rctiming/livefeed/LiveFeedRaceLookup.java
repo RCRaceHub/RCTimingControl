@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.livefeed;
 
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -89,11 +90,14 @@ public class LiveFeedRaceLookup {
         String className = eventClass == null || eventClass.getRacingClassId() == null ? null
                 : racingClassRepository.findById(eventClass.getRacingClassId()).map(c -> c.getName()).orElse(null);
         List<GridCar> grid = new ArrayList<>();
+        PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
+            // Display names only, and as the public may see them (#265)
             String name = entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)
-                    .map(competitor -> competitor.getDisplayName())
+                    .map(competitor -> names.of(competitor.getId(), competitor.getDisplayName(),
+                            raceEntry.getCarNumber()))
                     .orElse(null);
             grid.add(new GridCar(raceEntry.getEntryId(), name, raceEntry.getCarNumber()));
         }

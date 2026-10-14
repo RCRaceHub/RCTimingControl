@@ -22,9 +22,9 @@ vi.mock('@/lib/adminApi', () => ({
 
 const api = vi.mocked(adminApi, true);
 
-const alex: CompetitorSummaryDto = { id: 1, displayName: 'Alex Rowe', brcaNumber: '123', homeClub: 'Fenland RC', spokenName: null, speechName: 'Alex Rowe' };
-const alexDup: CompetitorSummaryDto = { id: 2, displayName: 'ALEX ROWE', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'ALEX ROWE' };
-const sam: CompetitorSummaryDto = { id: 3, displayName: 'Sam Ito', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Sam Ito' };
+const alex: CompetitorSummaryDto = { id: 1, displayName: 'Alex Rowe', brcaNumber: '123', homeClub: 'Fenland RC', spokenName: null, speechName: 'Alex Rowe', nameVisibility: 'SHOW' as const };
+const alexDup: CompetitorSummaryDto = { id: 2, displayName: 'ALEX ROWE', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'ALEX ROWE', nameVisibility: 'SHOW' as const };
+const sam: CompetitorSummaryDto = { id: 3, displayName: 'Sam Ito', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Sam Ito', nameVisibility: 'SHOW' as const };
 
 function side(c: CompetitorSummaryDto, entries: number) {
   return { id: c.id, displayName: c.displayName, brcaNumber: c.brcaNumber, homeClub: c.homeClub,

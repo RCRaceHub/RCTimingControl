@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
@@ -199,16 +200,18 @@ public class LapTimingService {
     }
 
     /**
-     * Pre-loads each entry's competitor display name into the given state so calculatePositions()
-     * can include driver names without hitting the DB on every lap.
+     * Pre-loads each entry's competitor name into the given state so calculatePositions()
+     * can include driver names without hitting the DB on every lap. It is the public name (#265): live timing
+     * goes to anonymous screens and the live feed.
      */
     private void loadEntryNames(long raceId, LiveRaceState state) {
+        PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)
-                    .ifPresent(competitor ->
-                            state.putEntryName(raceEntry.getEntryId(), competitor.getDisplayName()));
+                    .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
+                            names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
         }
     }
 

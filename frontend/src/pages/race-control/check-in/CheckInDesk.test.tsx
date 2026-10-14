@@ -48,7 +48,7 @@ const sampleEntry = {
   competitorName: 'Jane Doe',
   competitorId: 5,
   spokenName: null,
-  speechName: 'Jane Doe',
+  speechName: 'Jane Doe', nameVisibility: 'SHOW' as const,
   className: 'Touring Stock',
   transponderNumber: '1234567',
   secondaryTransponderNumber: null,
@@ -269,7 +269,7 @@ describe('CheckInDesk: how a name is said', () => {
     vi.mocked(checkInResolve).mockResolvedValue([sampleEntry]);
     vi.mocked(adminApi.competitors.setSpokenName).mockResolvedValue({
       id: 5, displayName: 'Jane Doe', brcaNumber: null, homeClub: null,
-      spokenName: 'Jayne Doh', speechName: 'Jayne Doh',
+      spokenName: 'Jayne Doh', speechName: 'Jayne Doh', nameVisibility: 'SHOW' as const,
     });
 
     renderDesk();

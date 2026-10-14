@@ -19,7 +19,7 @@ const sampleEntry = {
   competitorName: 'Jane Doe',
   competitorId: 5,
   spokenName: null,
-  speechName: 'Jane Doe',
+  speechName: 'Jane Doe', nameVisibility: 'SHOW' as const,
   className: 'Touring Stock',
   transponderNumber: '1234567',
   secondaryTransponderNumber: '2222',

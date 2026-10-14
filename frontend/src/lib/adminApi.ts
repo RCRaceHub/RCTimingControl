@@ -400,6 +400,8 @@ export interface CompetitorSummaryDto {
   spokenName: string | null;
   /** What the announcer says: the spoken name, else the display name tidied for speech (#120). */
   speechName: string;
+  /** How the name is shown on public screens and in the live feed (#265). */
+  nameVisibility: NameVisibility;
 }
 
 /** One recorded change to a competitor: when, who, and the spoken name before and after (null means none). */
@@ -416,6 +418,9 @@ export interface CompetitorDuplicateGroupDto {
   reason: string;
   competitors: CompetitorSummaryDto[];
 }
+
+/** SHOW the full name, INITIALS only, or HIDE it (#265). */
+export type NameVisibility = 'SHOW' | 'INITIALS' | 'HIDE';
 
 export interface CompetitorMergeSide {
   id: number;
@@ -783,6 +788,10 @@ export const adminApi = {
     /** Who changed how a competitor's name is said, newest first. Admin only. */
     changes: (id: number) =>
       api.get<CompetitorChangeDto[]>(`/api/v1/admin/competitors/${id}/changes`).then(r => r.data),
+    /** Sets how the name is shown on public screens and in the live feed (#265). */
+    setNameVisibility: (id: number, nameVisibility: NameVisibility) =>
+      api.put<CompetitorSummaryDto>(`/api/v1/admin/competitors/${id}/name-visibility`, { nameVisibility })
+        .then(r => r.data),
     possibleDuplicates: () =>
       api.get<CompetitorDuplicateGroupDto[]>('/api/v1/admin/competitors/possible-duplicates').then(r => r.data),
     mergePreview: (keepId: number, duplicateId: number) =>

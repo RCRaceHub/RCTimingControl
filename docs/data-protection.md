@@ -25,8 +25,14 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 2. ~~Failed sign-in emails are kept for as long as the audit log is, with no limit.~~ Fixed in #264.
 3. ~~The audit log has no retention limit.~~ Fixed in #262: a nightly clean-up deletes refused sign-ins after 90 days and, unless set to 0, other audit rows after two years. The entry, official and competitor audit tables are not covered yet.
 4. No way to anonymise or export one competitor.
-5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.
+5. ~~No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.~~ Fixed in #265; see below.
 6. ~~Log file contents have not been checked for personal data.~~ Checked, and guarded by `LogContentTest` (#266).
+
+## Junior display: initials or hidden (#265)
+
+An admin or race director can set any competitor to show as **Full name**, **Initials only** (`A. L.`) or **Hidden** (`Driver 12`, from the car number) on the Competitors screen. The choice is stored on the competitor, is audited (`COMPETITOR_NAME_VISIBILITY_CHANGED`, with the competitor id and the two settings, not the name), and a RaceHub or CSV import never changes it. It applies to the public results page, the boards and overlay, championship standings, live timing sent to browsers and the live feed. The stored results keep the real name, so setting it back to Full name changes the screens straight away.
+
+Officials' own screens (race control, check-in, the competitor lists) and the announcer still use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
 
 ## Proposed child tickets
 

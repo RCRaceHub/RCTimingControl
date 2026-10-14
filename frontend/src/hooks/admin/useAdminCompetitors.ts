@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '@/lib/adminApi';
+import { adminApi, type NameVisibility } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
 export function useAdminCompetitorsList() {
@@ -15,6 +15,16 @@ export function useSetSpokenName() {
   return useMutation({
     mutationFn: ({ id, spokenName }: { id: number; spokenName: string }) =>
       adminApi.competitors.setSpokenName(id, spokenName),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.competitors.all() }),
+  });
+}
+
+/** Sets how a competitor's name is shown on public screens, then refreshes the list (#265). */
+export function useSetNameVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nameVisibility }: { id: number; nameVisibility: NameVisibility }) =>
+      adminApi.competitors.setNameVisibility(id, nameVisibility),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.competitors.all() }),
   });
 }
