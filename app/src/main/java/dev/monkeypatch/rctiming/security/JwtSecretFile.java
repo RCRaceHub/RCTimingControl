@@ -26,6 +26,9 @@ import java.util.List;
  * {@code jwt-secret} in the data folder and later starts reuse it, so sign-ins survive restarts.
  * Anyone who can read the key can sign themselves an ADMIN token, so every start makes sure only
  * the file's owner can read it, and refuses to start if it can't.
+ *
+ * <p>Despite the name, the key-file logic is not specific to JWTs: {@link TokenCipher} reuses it under another file
+ * name for its own key.
  */
 final class JwtSecretFile {
 

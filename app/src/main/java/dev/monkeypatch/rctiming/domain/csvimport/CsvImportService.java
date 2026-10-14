@@ -87,6 +87,11 @@ public class CsvImportService {
         }
     }
 
+    /**
+     * Imports the file, or with {@code dryRun} only previews it. A real import creates the new rows and applies just the
+     * {@code selection}; entries that came from elsewhere, such as walk-ins, are never withdrawn. Nothing is saved when
+     * the result is blocked. {@code actor} is who is importing.
+     */
     @Transactional
     public CsvImportResult importCsv(Actor actor, Long eventId, String content, boolean dryRun, Selection selection) {
         Event event = eventRepository.getOrThrow(eventId);

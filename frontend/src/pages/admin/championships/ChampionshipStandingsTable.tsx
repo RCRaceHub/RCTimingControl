@@ -15,6 +15,10 @@ interface Props {
   championshipId: number;
 }
 
+/**
+ * One driver's result for a round: a dash when they have none, EXC when excluded, DNS for position 0 (on the grid but
+ * no result), otherwise the points, struck through when the round was dropped from the total (best X from Y).
+ */
 function RoundCell({ result }: { result: RoundResultDto | undefined }) {
   if (!result) return <TableCell className="text-center text-muted-foreground">—</TableCell>;
   if (result.excluded) {
