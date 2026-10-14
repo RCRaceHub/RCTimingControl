@@ -7,7 +7,6 @@ import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
-import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -111,6 +110,11 @@ public class LapTimingService {
         String transponderNumber = event.transponderNumber();
 
         LiveRaceState state = stateFor(raceId);
+        if (released.contains(raceId)) {
+            // Released between the check above and stateFor, which then made a new state: take it away again
+            states.remove(raceId);
+            return;
+        }
 
         // Check runtime links first — these take priority over transponderNumberSnapshot
         Long entryId = state.getRuntimeLink(transponderNumber);
@@ -150,7 +154,8 @@ public class LapTimingService {
     }
 
     /**
-     * Releases in-memory state for a finished race, freeing memory.
+     * Releases in-memory state for a finished race, freeing memory, and drops any passing for the race until it
+     * is running again.
      * Idempotent — no-op if no state is present.
      */
     public void releaseState(long raceId) {
@@ -158,11 +163,15 @@ public class LapTimingService {
         states.remove(raceId);
     }
 
-    /** A race going to RUNNING takes passings again; the commit makes it the one the decoder lookup finds. */
+    /**
+     * A race going to RUNNING takes passings again. Done at once, not after the commit: the decoder lookup finds the
+     * race as soon as the commit lands, which can be before an after-commit callback runs, and the passing would
+     * then be dropped. If the start rolls back the race is not running, so no lookup finds it.
+     */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         if (event.getNewStatus() == RaceStatus.RUNNING) {
-            AfterCommit.run(() -> released.remove(event.getRaceId()));
+            released.remove(event.getRaceId());
         }
     }
 
