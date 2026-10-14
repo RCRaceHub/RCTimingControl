@@ -15,6 +15,7 @@ import {
 import { useReplacePointsScale } from '@/hooks/admin/useAdminChampionships';
 import type { PointsScaleEntryDto } from '@/lib/adminApi';
 
+// Starting points for the editor. Choosing one only fills the draft; nothing is saved until Save.
 const ROAR_PRESET: PointsScaleEntryDto[] = [
   { position: 1, points: 20 }, { position: 2, points: 17 }, { position: 3, points: 15 },
   { position: 4, points: 13 }, { position: 5, points: 12 }, { position: 6, points: 11 },
@@ -34,6 +35,10 @@ interface Props {
   initialScale: PointsScaleEntryDto[];
 }
 
+/**
+ * Edits a championship's points per finishing position. Changes stay in a local draft until Save, which replaces
+ * the whole scale. A position with no row scores nothing.
+ */
 export function PointsScaleEditor({ championshipId, initialScale }: Props) {
   const [draft, setDraft] = useState<PointsScaleEntryDto[]>(initialScale);
   const [isDirty, setIsDirty] = useState(false);

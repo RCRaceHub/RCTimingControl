@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, clearAccessToken, refreshAccessToken } from './auth';
 
+/** The shared axios instance: sends the refresh cookie, adds the bearer token, and renews it once on a 401. */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
   withCredentials: true, // sends HttpOnly refresh cookie

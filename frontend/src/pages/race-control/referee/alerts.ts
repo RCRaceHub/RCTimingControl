@@ -1,4 +1,6 @@
+/** How much a car's gap to the car ahead must shrink between two updates to count as closing. */
 export const PROXIMITY_CLOSING_DELTA_MS = 500;
+/** A closing car is only flagged once it is within this gap of the car ahead. */
 export const PROXIMITY_ABSOLUTE_MAX_MS = 3000;
 
 export interface ProximityRow {
@@ -6,7 +8,11 @@ export interface ProximityRow {
   gapToAheadMs: number | null;
 }
 
-/** OFFICIAL-01: entryIds whose gapToAheadMs has shrunk by >= PROXIMITY_CLOSING_DELTA_MS since previous. */
+/**
+ * OFFICIAL-01: entryIds whose gapToAheadMs has shrunk by >= PROXIMITY_CLOSING_DELTA_MS since previous and is now
+ * within PROXIMITY_ABSOLUTE_MAX_MS. Pure: it compares two snapshots and holds no state. With no previous snapshot, or
+ * for an entry missing from it, or a null or zero gap on either side, nothing is flagged.
+ */
 export function computeProximityAlerts(
   current: ProximityRow[],
   previous: ProximityRow[] | null,
