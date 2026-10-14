@@ -27,8 +27,6 @@ import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
 import { matchesCompetitor } from '@/lib/competitors';
 import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPicker';
 
-// ── Driver picker ──────────────────────────────────────────────────────────
-
 const MAX_DRIVER_CHOICES = 8;
 
 function DriverPicker({
@@ -66,8 +64,6 @@ function DriverPicker({
     </div>
   );
 }
-
-// ── Create exclusion dialog ────────────────────────────────────────────────
 
 const exclusionSchema = z.object({
   driverId: z.number({ required_error: 'Driver is required' }).int().positive('Driver is required'),
