@@ -200,6 +200,65 @@ class ClubControllerIT extends AbstractIntegrationTest {
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    @Test
+    void privacyNotice_defaultNamesTheClubAndHowToReachIt_andIsOpenToAnyone() {
+        restTemplate.exchange("/api/v1/admin/club/profile", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Privacy Test Club", "email", "privacy@example.com",
+                        "timezone", "Europe/London"), adminHeaders()), ClubProfileDto.class);
+        restTemplate.exchange("/api/v1/admin/club/privacy-notice", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("text", ""), adminHeaders()), Map.class);
+
+        ResponseEntity<Map> response = restTemplate.getForEntity("/api/v1/privacy-notice", Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().get("clubName")).isEqualTo("Privacy Test Club");
+        assertThat((String) response.getBody().get("text"))
+                .contains("Privacy Test Club").contains("privacy@example.com");
+    }
+
+    @Test
+    void privacyNotice_adminCanWriteOwnTextAndGoBackToTheDefault() {
+        ResponseEntity<Map> saved = restTemplate.exchange("/api/v1/admin/club/privacy-notice", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("text", "Our own words."), adminHeaders()), Map.class);
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saved.getBody().get("customised")).isEqualTo(true);
+
+        ResponseEntity<Map> publicView = restTemplate.getForEntity("/api/v1/privacy-notice", Map.class);
+        assertThat(publicView.getBody().get("text")).isEqualTo("Our own words.");
+
+        ResponseEntity<Map> reset = restTemplate.exchange("/api/v1/admin/club/privacy-notice", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("text", "  "), adminHeaders()), Map.class);
+        assertThat(reset.getBody().get("customised")).isEqualTo(false);
+        assertThat((String) reset.getBody().get("text")).doesNotContain("Our own words.");
+    }
+
+    @Test
+    void privacyNotice_onlyAnAdminCanChangeIt() {
+        String email = "director-club-" + UUID.randomUUID() + "@test.com";
+        User user = new User();
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode("directorPass123"));
+        user.setFirstName("Race");
+        user.setLastName("Director");
+        user.setRoles(Set.of(Role.RACE_DIRECTOR));
+        Instant now = Instant.now();
+        user.setCreatedAt(now);
+        user.setUpdatedAt(now);
+        userRepository.save(user);
+        String token = restTemplate.postForEntity("/api/v1/auth/login",
+                new LoginRequest(email, "directorPass123"), AuthResponse.class).getBody().accessToken();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<Map> response = restTemplate.exchange("/api/v1/admin/club/privacy-notice", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("text", "Not allowed"), headers), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.getForEntity("/api/v1/privacy-notice", Map.class).getBody().get("text"))
+                .isNotEqualTo("Not allowed");
+    }
+
     // --- helpers ---
 
     private HttpHeaders adminHeaders() {

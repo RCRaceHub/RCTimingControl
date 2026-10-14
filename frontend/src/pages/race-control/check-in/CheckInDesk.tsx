@@ -163,6 +163,14 @@ export default function CheckInDesk({ eventId }: { eventId: number }) {
           onSelect={handleSearchSelect}
         />
       </section>
+
+      <p className="text-xs text-muted-foreground">
+        Drivers can read how the club uses their details in the{' '}
+        <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-4">
+          privacy notice
+        </a>
+        .
+      </p>
     </div>
   );
 }

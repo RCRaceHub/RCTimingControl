@@ -20,6 +20,7 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     private String decoderHost;
     private Integer decoderPort;
     private String decoderProtocol;
+    private String privacyNotice;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -73,4 +74,7 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getDecoderProtocol() { return decoderProtocol; }
     public void setDecoderProtocol(String decoderProtocol) { this.decoderProtocol = decoderProtocol; }
+
+    public String getPrivacyNotice() { return privacyNotice; }
+    public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }
 }

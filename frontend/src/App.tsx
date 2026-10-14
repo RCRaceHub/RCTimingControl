@@ -17,6 +17,7 @@ import OverlayBoard from '@/pages/boards/OverlayBoard';
 // Every page but sign-in and the error pages loads on demand, so a board or the overlay doesn't download
 // the admin panel and the print guides. The layouts wrap their outlets in Suspense to keep their chrome.
 const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
@@ -154,6 +155,7 @@ const router = createBrowserRouter([
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },
       { path: '/print/admin-guide', element: <AdminGuidePage /> },
       { path: '/about', element: <AboutPage /> },
+      { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },

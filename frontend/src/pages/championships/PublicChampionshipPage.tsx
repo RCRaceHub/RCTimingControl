@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getPublicChampionshipStandings } from '@/lib/raceControlApi';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 
 export default function PublicChampionshipPage() {
   const { id } = useParams<{ id: string }>();
@@ -64,6 +65,7 @@ export default function PublicChampionshipPage() {
           ))}
         </tbody>
       </table>
+      <PrivacyLink />
     </div>
   );
 }

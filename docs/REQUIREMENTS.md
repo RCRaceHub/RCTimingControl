@@ -188,6 +188,7 @@
 - [x] **COMPETITOR-02**: Results, live timing and championship standings group by competitor across meetings (#13)
 - [x] **COMPETITOR-03**: An admin can merge a duplicate competitor into the one to keep, after a preview of what moves (entries, events, championship exclusions) and any warnings. Entries and exclusions move in one transaction, each moved entry gets an audit record, and the duplicate is deleted. The kept competitor keeps its own name and fills a missing BRCA number, home club and spoken name from the duplicate. The RaceHub id stays on the kept competitor so the next import still finds it; two different RaceHub drivers, or two active entries in the same class of an event, refuse the merge. The Competitors screen lists possible duplicates (same name or BRCA number) (#123)
 - [x] **COMPETITOR-04**: An admin can download everything RCTC holds about one competitor as JSON, and separately anonymise them: name, BRCA number, RaceHub id, home club and spoken name are removed, including from stored results, queued RaceHub exports and history rows, while laps, results and championship points stay. Both are audited without the removed data; anonymising is refused while the competitor is in a live race (#263)
+- [x] **PRIVACY-01**: The club has a privacy notice at `/privacy`, open to anyone, that an admin can edit and that defaults to standard text with the club's name and contact details. It is linked from the public pages, the sign-in page and the check-in desk (#267)
 - [x] **TRANSPONDER-01**: Each entry has a primary and an optional secondary transponder; a number already used in the event is accepted with a warning, not refused (#14)
 - [x] **CHECKIN-01**: A check-in desk marks competitors present, accepts barcode input and swaps transponders on the day with an audit entry (#19) **Changed**: a later re-import keeps a swapped number and flags the booking's different number without blocking (#50)
 - [x] **CHECKIN-02**: RCTC's check-in is the only record of who has arrived on the day; RaceHub's arrival mark is imported and shown read-only, and never checks anyone in (#92, O2)
@@ -374,6 +375,7 @@
 | COMPETITOR-02 | #13 | Complete |
 | COMPETITOR-03 | #123 | Complete |
 | COMPETITOR-04 | #263 | Complete |
+| PRIVACY-01 | #267 | Complete |
 | COMPETITOR-05 | #265 | Complete |
 | TRANSPONDER-01 | #14 | Complete |
 | CHECKIN-01 | #19 | Complete |

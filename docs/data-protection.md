@@ -44,6 +44,14 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 **Re-imports can undo it.** The entries keep their RaceHub entry ids, so importing a newer version of the same booking attaches the entry to a new competitor with the real name. Remove or amend the booking in RaceHub first. Finished races held in memory, boards or announcer clips refresh on their own; anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
 
+## Privacy notice (#267)
+
+The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, the sign-in page and the check-in desk (where an official can point a driver at it; it opens in a new tab so the desk keeps its place). The boards and the OBS overlay carry no link, since they are screens and not pages people read.
+
+Until the club writes its own, the page shows a standard notice with the club's name, email and phone filled in from the club profile. It says what RCTC holds, why, who sees it (including the junior display setting), how long results are kept, and how to ask for a copy or removal. An admin edits it under Club, "Privacy notice"; saving a blank text goes back to the standard one. Saving the standard text after editing it makes it the club's own text, so its name and contact details stop following the club profile; use "Use the standard text" to go back. Changes are audited as `PRIVACY_NOTICE_CHANGED` with whether it is the club's own text and its length, not the text. The standard text is a starting point, not legal advice: the club should read it and change what does not fit.
+
+RaceHub holds the booking, contact and payment details and has its own notice; this one covers only what the timing program holds.
+
 ## Junior display: initials or hidden (#265)
 
 An admin or race director can set any competitor to show as **Full name**, **Initials only** (`A. L.`) or **Hidden** (`Driver 12`, from the car number) on the Competitors screen. The choice is stored on the competitor, is audited (`COMPETITOR_NAME_VISIBILITY_CHANGED`, with the competitor id and the two settings, not the name), and a RaceHub or CSV import never changes it. It applies to the public results page, the boards and overlay, championship standings, live timing sent to browsers and the live feed. The stored results keep the real name, so setting it back to Full name changes the screens straight away.

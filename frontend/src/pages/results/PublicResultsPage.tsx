@@ -5,6 +5,7 @@ import type { PositionAtLap } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 import { getApiErrorStatus } from '@/lib/errors';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 
 function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: PositionAtLap[] }) {
   const laps = lapHistory.filter(l => l.entryId === entryId);
@@ -151,6 +152,7 @@ export default function PublicResultsPage() {
           Print Results
         </button>
       </div>
+      <PrivacyLink />
     </div>
   );
 }
