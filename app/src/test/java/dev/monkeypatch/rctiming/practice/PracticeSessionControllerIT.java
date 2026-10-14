@@ -106,6 +106,32 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void day_listsTheSessionsStartedToday() {
+        Long id = createSession("Day View Session");
+        restTemplate.exchange("/api/v1/practice-sessions/" + id + "/start", HttpMethod.POST,
+                new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
+        restTemplate.exchange("/api/v1/practice-sessions/" + id + "/stop", HttpMethod.POST,
+                new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
+
+        ResponseEntity<dev.monkeypatch.rctiming.practice.dto.PracticeDayDto> response = restTemplate.exchange(
+                "/api/v1/practice-sessions/day", HttpMethod.GET, new HttpEntity<>(rdHeaders()),
+                dev.monkeypatch.rctiming.practice.dto.PracticeDayDto.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().bestLapN()).isEqualTo(5);
+        assertThat(response.getBody().sessions()).extracting(PracticeSessionDto::id).contains(id);
+    }
+
+    @Test
+    void day_withNoLapsToAverage_answers400() {
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/v1/practice-sessions/day?bestLapN=0", HttpMethod.GET, new HttpEntity<>(rdHeaders()),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void stopSession_runningSession_transitionsToStopped() {
         Long id = createSession("Stop Test Session");
         // Start first
