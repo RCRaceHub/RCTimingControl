@@ -4,16 +4,17 @@ import { Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SpokenNameEditor from '@/components/SpokenNameEditor';
-import { useAdminCompetitorsList, usePossibleDuplicates, useSetNameVisibility } from '@/hooks/admin/useAdminCompetitors';
+import { useAdminCompetitorsList, useExportCompetitorData, usePossibleDuplicates, useSetNameVisibility } from '@/hooks/admin/useAdminCompetitors';
 import { useHelpContent } from '@/context/HelpContext';
 import { CompetitorsHelp } from '@/help/CompetitorsHelp';
 import type { CompetitorSummaryDto, NameVisibility } from '@/lib/adminApi';
 import { formatCompetitorMeta, matchesCompetitor } from '@/lib/competitors';
+import AnonymiseCompetitorDialog from './AnonymiseCompetitorDialog';
 import MergeCompetitorDialog from './MergeCompetitorDialog';
 import { useRoles } from '@/hooks/useRoles';
 
 /** One competitor, with an editor for how their name is said aloud (#119). */
-function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility, onMerge }: {
+function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility, onMerge, onAnonymise }: {
   competitor: CompetitorSummaryDto;
   /** Any official may fix how a name is said. */
   canSetSpokenName: boolean;
@@ -22,9 +23,11 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
   /** Admins and race directors choose how the name shows on public screens. */
   canSetVisibility: boolean;
   onMerge: (competitor: CompetitorSummaryDto) => void;
+  onAnonymise: (competitor: CompetitorSummaryDto) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const setVisibility = useSetNameVisibility();
+  const exportData = useExportCompetitorData();
 
   const meta = formatCompetitorMeta(competitor);
 
@@ -88,6 +91,19 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
                 Merge…
               </Button>
             )}
+            {isAdmin && (
+              <Button type="button" variant="ghost" size="sm" disabled={exportData.isPending}
+                onClick={() => exportData.mutate(competitor.id)}
+                aria-label={`Download the data held about ${competitor.displayName}`}>
+                Download data
+              </Button>
+            )}
+            {isAdmin && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => onAnonymise(competitor)}
+                aria-label={`Anonymise ${competitor.displayName}`}>
+                Anonymise…
+              </Button>
+            )}
           </span>
         </div>
       )}
@@ -106,6 +122,7 @@ export default function CompetitorsPage() {
   useHelpContent(CompetitorsHelp);
   const { data: competitors, isLoading, isError } = useAdminCompetitorsList();
   const { data: duplicateGroups = [] } = usePossibleDuplicates(isAdmin);
+  const [anonymising, setAnonymising] = useState<CompetitorSummaryDto | null>(null);
   const [merging, setMerging] = useState<{ duplicate: CompetitorSummaryDto; suggested: CompetitorSummaryDto[] } | null>(null);
 
   const shown = (competitors ?? []).filter(c => matchesCompetitor(c, search));
@@ -185,11 +202,17 @@ export default function CompetitorsPage() {
             <p className="text-sm text-muted-foreground">No competitors match “{search.trim()}”.</p>
           ) : (
             <ul className="divide-y rounded-lg border" aria-label="Competitors">
-              {shown.map(c => <CompetitorRow key={c.id} competitor={c} canSetSpokenName={isOfficial} isAdmin={isAdmin} canSetVisibility={canRunEvent} onMerge={d => setMerging({ duplicate: d, suggested: [] })} />)}
+              {shown.map(c => <CompetitorRow key={c.id} competitor={c} canSetSpokenName={isOfficial} isAdmin={isAdmin} canSetVisibility={canRunEvent} onMerge={d => setMerging({ duplicate: d, suggested: [] })} onAnonymise={setAnonymising} />)}
             </ul>
           )}
         </>
       )}
+
+      <AnonymiseCompetitorDialog
+        key={anonymising?.id ?? 'none'}
+        competitor={anonymising}
+        onOpenChange={open => { if (!open) setAnonymising(null); }}
+      />
 
       <MergeCompetitorDialog
         // A fresh dialog for each duplicate, so nothing from the last merge carries over

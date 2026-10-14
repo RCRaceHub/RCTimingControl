@@ -10,6 +10,7 @@ vi.mock('@/lib/adminApi', () => ({
     competitors: {
       list: vi.fn(), setSpokenName: vi.fn(), previewSpeech: vi.fn(),
       possibleDuplicates: vi.fn(), mergePreview: vi.fn(), merge: vi.fn(), changes: vi.fn(), setNameVisibility: vi.fn(),
+      exportPersonalData: vi.fn(), anonymise: vi.fn(),
     },
   },
 }));
@@ -175,7 +176,36 @@ describe('CompetitorsPage', () => {
     });
   });
 
-  it('lets a race director choose how a name is shown publicly, and a referee not', async () => {
+  it('lets an admin anonymise a competitor after reading what goes', async () => {
+    api.competitors.list.mockResolvedValue([
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+    ]);
+    api.competitors.anonymise.mockResolvedValue({
+      competitorId: 1, entries: 0, resultSnapshots: 0, exportPayloads: 0,
+      competitorHistoryRows: 0, entryHistoryRows: 0, auditRows: 0,
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Anonymise Ada Lovelace' }));
+    expect(await screen.findByText(/This can't be undone/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Anonymise' }));
+
+    await waitFor(() => expect(api.competitors.anonymise).toHaveBeenCalledWith(1));
+  });
+
+  it('does not offer anonymise or download to an official who is not an admin', async () => {
+    mockUser.mockReturnValue({ roles: ['REFEREE'] });
+    api.competitors.list.mockResolvedValue([
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+    ]);
+    renderPage();
+
+    await screen.findByText('Ada Lovelace');
+    expect(screen.queryByRole('button', { name: /Anonymise/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Download the data/ })).not.toBeInTheDocument();
+  });
+
+  it('lets a race director choose how a name is shown publicly', async () => {
     mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
     api.competitors.list.mockResolvedValue([
       { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
