@@ -311,14 +311,16 @@ class AuthControllerIT extends AbstractIntegrationTest {
         restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "wrongPassword"), Void.class);
 
         var rows = jdbc.queryForList(
-                "select action, entity_type, entity_id, summary, actor_user_id, source from audit_log where actor_label = ?",
-                "anonymous:" + email);
+                "select action, entity_type, entity_id, summary, actor_user_id, actor_label, source from audit_log "
+                        + "where action = 'LOGIN_FAILED' and entity_id = ?",
+                String.valueOf(officialId));
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0)).containsEntry("action", "LOGIN_FAILED")
                 .containsEntry("entity_type", "official")
                 .containsEntry("entity_id", String.valueOf(officialId))
                 .containsEntry("source", "UI");
         assertThat(rows.get(0).get("actor_user_id")).isNull();
+        assertThat(rows.get(0)).containsEntry("actor_label", "anonymous:known account");
         assertThat((String) rows.get(0).get("summary")).doesNotContain("wrongPassword");
     }
 
@@ -328,10 +330,30 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
         restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "whatever123"), Void.class);
 
-        var rows = jdbc.queryForList("select action, entity_id from audit_log where actor_label = ?", "anonymous:" + email);
-        assertThat(rows).hasSize(1);
-        assertThat(rows.get(0)).containsEntry("action", "LOGIN_FAILED");
-        assertThat(rows.get(0).get("entity_id")).isNull();
+        var rows = jdbc.queryForList(
+                "select action, entity_id, actor_label, summary from audit_log "
+                        + "where action = 'LOGIN_FAILED' and actor_label like 'anonymous:unknown email %' "
+                        + "and actor_label not like ?",
+                "%" + email + "%");
+        assertThat(rows).isNotEmpty();
+        var row = rows.get(rows.size() - 1);
+        assertThat(row.get("entity_id")).isNull();
+        assertThat(row.toString()).doesNotContain(email);
+    }
+
+    @Test
+    void theSameUnknownEmailIsRecordedUnderTheSameLabelAndNeverAsTyped() {
+        String email = "Nobody-" + UUID.randomUUID() + "@Example.com";
+
+        String latest = "select actor_label from audit_log where action = 'LOGIN_FAILED' order by id desc limit 1";
+        restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "whatever123"), Void.class);
+        String first = jdbc.queryForObject(latest, String.class);
+        restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email.toLowerCase(), "whatever123"),
+                Void.class);
+        String second = jdbc.queryForObject(latest, String.class);
+
+        assertThat(first).startsWith("anonymous:unknown email ").isEqualTo(second);
+        assertThat(first).doesNotContain(email.toLowerCase());
     }
 
     @Test
@@ -340,8 +362,11 @@ class AuthControllerIT extends AbstractIntegrationTest {
 
         restTemplate.postForEntity(BASE_URL + "/login", new LoginRequest(email, "password123"), Void.class);
 
-        String summary = jdbc.queryForObject("select summary from audit_log where actor_label = ?", String.class,
-                "anonymous:" + email);
+        Long officialId = userRepository.findByEmail(email).orElseThrow().getId();
+
+        String summary = jdbc.queryForObject(
+                "select summary from audit_log where action = 'LOGIN_FAILED' and entity_id = ?", String.class,
+                String.valueOf(officialId));
         assertThat(summary).isEqualTo("Sign-in refused: not an official");
     }
 
