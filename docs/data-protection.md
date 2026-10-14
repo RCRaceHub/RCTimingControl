@@ -37,9 +37,12 @@ An admin can, from the Competitors screen, download everything held about one co
 **It does not remove:**
 - Free text an official typed: incident reports, penalty reasons, marshal notes. An admin should read these and edit them if they name the person.
 - A held RaceHub document waiting to be applied.
+- The export file includes officials' notes and names, which may mention other people; read it before handing it over.
 - Copies already sent to RaceHub (their results export) or to the live feed relay, and older backups. Those are other organisations' copies, or older snapshots, and have to be dealt with there.
 
-Because the RaceHub ID is dropped, importing the same booking again makes a new competitor. Anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
+Audit rows are found by the competitor and entry they are about, and by their old name appearing in the row's text, so penalty, incident, exclusion and practice rows that name them are blanked too. The RaceHub driver id is removed from queued and sent export payloads in RCTC's database as well.
+
+**Re-imports can undo it.** The entries keep their RaceHub entry ids, so importing a newer version of the same booking attaches the entry to a new competitor with the real name. Remove or amend the booking in RaceHub first. Finished races held in memory, boards or announcer clips refresh on their own; anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
 
 ## Proposed child tickets
 

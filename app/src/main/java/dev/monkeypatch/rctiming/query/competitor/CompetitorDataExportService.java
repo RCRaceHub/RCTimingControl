@@ -39,8 +39,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RES
  * (#263). Each export is recorded in the audit log, with who asked and for whom and none of the data.
  * <p>
  * It covers the competitor, their entries and the events they are in, their result rows, practice drivers and laps,
- * incident reports, penalties, marshal records, championship exclusions and the history rows kept about them. Free
- * text an official typed about someone else is not included.
+ * incident reports, penalties, marshal records, championship exclusions and the history rows kept about them. That
+ * includes officials' notes and names, so an admin should read it before handing it over.
  */
 @Service
 public class CompetitorDataExportService {
@@ -69,8 +69,9 @@ public class CompetitorDataExportService {
         Set<Long> entrySet = Set.copyOf(entryIds);
 
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("note", "Everything RCTC holds about this competitor. Times are UTC. Free text written about "
-                + "others, and copies already sent to RaceHub or kept in backups, are not included.");
+        out.put("note", "Everything RCTC holds about this competitor. Times are UTC. It includes notes "
+                + "officials wrote about incidents and penalties, which may mention others. Copies already sent to "
+                + "RaceHub or kept in backups are not included.");
         out.put("competitor", dsl.selectFrom(COMPETITORS).where(COMPETITORS.ID.eq(competitorId)).fetchOneMap());
         out.put("entries", dsl.selectFrom(ENTRIES).where(ENTRIES.COMPETITOR_ID.eq(competitorId)).fetchMaps());
         out.put("events", dsl.select(EVENTS.ID, EVENTS.NAME).from(EVENTS)
@@ -125,7 +126,8 @@ public class CompetitorDataExportService {
                     }
                 }
             } catch (JsonProcessingException e) {
-                throw new IllegalStateException("A stored result could not be read, so the export would be incomplete", e);
+                throw new IllegalStateException(
+                        "A stored result could not be read, so the export would be incomplete", e);
             }
         }
         return rows;
@@ -137,8 +139,10 @@ public class CompetitorDataExportService {
         for (Record driver : dsl.select(PRACTICE_DRIVERS.PRACTICE_SESSION_ID, PRACTICE_DRIVERS.TRANSPONDER_NUMBER)
                 .from(PRACTICE_DRIVERS).where(PRACTICE_DRIVERS.COMPETITOR_ID.eq(competitorId)).fetch()) {
             laps.addAll(dsl.selectFrom(PRACTICE_LAPS)
-                    .where(PRACTICE_LAPS.PRACTICE_SESSION_ID.eq(driver.get(PRACTICE_DRIVERS.PRACTICE_SESSION_ID))
-                            .and(PRACTICE_LAPS.TRANSPONDER_NUMBER.eq(driver.get(PRACTICE_DRIVERS.TRANSPONDER_NUMBER))))
+                    .where(PRACTICE_LAPS.PRACTICE_SESSION_ID
+                            .eq(driver.get(PRACTICE_DRIVERS.PRACTICE_SESSION_ID))
+                            .and(PRACTICE_LAPS.TRANSPONDER_NUMBER
+                                    .eq(driver.get(PRACTICE_DRIVERS.TRANSPONDER_NUMBER))))
                     .fetchMaps());
         }
         return laps;

@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
@@ -73,8 +74,10 @@ export function useExportCompetitorData() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      URL.revokeObjectURL(url);
+      // Some browsers start the save after the click returns
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
+    onError: () => toast.error('Could not download the data. Try again.'),
   });
 }
 
@@ -83,6 +86,6 @@ export function useAnonymiseCompetitor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => adminApi.competitors.anonymise(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.all }),
+    onSuccess: () => queryClient.invalidateQueries(),
   });
 }

@@ -42,8 +42,8 @@ import java.util.UUID;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESULTS_OUTBOX;
@@ -119,7 +119,7 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         assertThat(after.getSpokenName()).isNull();
         assertThat(result.entries()).isEqualTo(1);
         assertThat(result.resultSnapshots()).isEqualTo(1);
-        assertThat(result.exportPayloads()).isEqualTo(1);
+        assertThat(result.exportPayloads()).isEqualTo(2);
 
         // The result is still there, under the new name
         String positions = dsl.select(RESULT_SNAPSHOTS.POSITIONS_JSON).from(RESULT_SNAPSHOTS)
@@ -129,6 +129,11 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         String payload = dsl.select(RESULTS_OUTBOX.PAYLOAD).from(RESULTS_OUTBOX)
                 .where(RESULTS_OUTBOX.EVENT_ID.eq(f.eventId)).fetchOne(RESULTS_OUTBOX.PAYLOAD);
         assertThat(payload).doesNotContain(name).contains("Anonymised competitor");
+        var exports = dsl.select(RESULTS_OUTBOX.PAYLOAD).from(RESULTS_OUTBOX)
+                .where(RESULTS_OUTBOX.EVENT_ID.eq(laterEventId)).fetchOne(RESULTS_OUTBOX.PAYLOAD);
+        assertThat(exports).doesNotContain(name).doesNotContain("rh-" + run).contains("Other Person " + run);
+        assertThat(dsl.selectFrom(AUDIT_LOG).where(AUDIT_LOG.ACTION.eq("PENALTY_APPLIED_TEST")
+                .and(AUDIT_LOG.ENTITY_ID.eq("999999"))).fetchOne().getSummary()).doesNotContain(name);
         // Someone else's row in the same snapshot is untouched
         assertThat(positions).contains("Someone Else " + run);
 
@@ -178,6 +183,8 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         assertThat(rows.get(0).getActorUserId()).isEqualTo(adminId);
     }
 
+    private Long laterEventId;
+
     private record Fixture(Competitor competitor, Long eventId, Long entryId, Long raceId) {}
 
     private Fixture fixture(RaceStatus raceStatus) {
@@ -193,6 +200,7 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         Competitor competitor = competitorRepository.save(c);
         Long competitorId = competitor.getId();
         cleanup.add(() -> {
+            dsl.transaction(tx -> tx.dsl().deleteFrom(AUDIT_LOG).where(AUDIT_LOG.ENTITY_ID.eq("999999")).execute());
             dsl.transaction(tx -> tx.dsl().deleteFrom(COMPETITOR_AUDIT_LOG)
                     .where(COMPETITOR_AUDIT_LOG.COMPETITOR_ID.eq(competitorId)).execute());
             dsl.transaction(tx -> tx.dsl().deleteFrom(AUDIT_LOG)
@@ -209,6 +217,14 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         Event savedEvent = eventRepository.save(event);
         Long eventId = savedEvent.getId();
         cleanup.add(() -> eventRepository.deleteById(eventId));
+        Event later = new Event();
+        later.setName("Anon later meeting " + run);
+        later.setEventDate(LocalDate.of(2026, 2, 1));
+        later.setCreatedAt(Instant.now());
+        later.setUpdatedAt(Instant.now());
+        laterEventId = eventRepository.save(later).getId();
+        Long laterId = laterEventId;
+        cleanup.add(() -> eventRepository.deleteById(laterId));
         Long ecId = dsl.transactionResult(tx -> tx.dsl().insertInto(EVENT_CLASSES)
                 .set(EVENT_CLASSES.EVENT_ID, eventId)
                 .set(EVENT_CLASSES.RACING_CLASS_ID, racingClassId)
@@ -271,8 +287,21 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
                 .set(RESULTS_OUTBOX.PAYLOAD, payload)
                 .set(RESULTS_OUTBOX.NEXT_ATTEMPT_AT, Instant.now())
                 .set(RESULTS_OUTBOX.CREATED_AT, Instant.now()).execute());
+        // A later round's export carries the standings, with the RaceHub identity, for an event they never entered.
+        // Its "entryId" is RaceHub's, and happens to equal an RCTC entry id of this competitor's.
+        String standings = String.format("{\"championships\":[{\"standings\":[{\"rctcCompetitorId\":%d,"
+                + "\"driverProfileId\":\"rh-%s\",\"externalSource\":\"RACEHUB\",\"displayName\":\"%s\"}]}],"
+                + "\"results\":[{\"entryId\":\"%d\",\"displayName\":\"Other Person %s\"}]}",
+                competitorId, run, name, mine.getId(), run);
+        dsl.transaction(tx -> tx.dsl().insertInto(RESULTS_OUTBOX)
+                .set(RESULTS_OUTBOX.EVENT_ID, laterEventId)
+                .set(RESULTS_OUTBOX.REVISION, 2L)
+                .set(RESULTS_OUTBOX.REASON, "DAY_CLOSE")
+                .set(RESULTS_OUTBOX.PAYLOAD, standings)
+                .set(RESULTS_OUTBOX.NEXT_ATTEMPT_AT, Instant.now())
+                .set(RESULTS_OUTBOX.CREATED_AT, Instant.now()).execute());
         cleanup.add(() -> dsl.transaction(tx -> tx.dsl().deleteFrom(RESULTS_OUTBOX)
-                .where(RESULTS_OUTBOX.EVENT_ID.eq(eventId)).execute()));
+                .where(RESULTS_OUTBOX.EVENT_ID.in(eventId, laterEventId)).execute()));
 
         entryAuditLogRepository.save(EntryAuditLog.of(mine.getId(), adminId, "TRANSPONDER_SWAPPED",
                 "Swapped for " + name, "{\"displayName\":\"" + name + "\"}", "{\"displayName\":\"" + name + "\"}",
@@ -283,6 +312,14 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
                 .set(COMPETITOR_AUDIT_LOG.ACTION, "SPOKEN_NAME_CHANGED")
                 .set(COMPETITOR_AUDIT_LOG.BEFORE_VALUE, "Pat Anon-imous")
                 .set(COMPETITOR_AUDIT_LOG.CREATED_AT, Instant.now()).execute());
+        dsl.transaction(tx -> tx.dsl().insertInto(AUDIT_LOG)
+                .set(AUDIT_LOG.OCCURRED_AT, Instant.now())
+                .set(AUDIT_LOG.ACTOR_LABEL, "system:test")
+                .set(AUDIT_LOG.SOURCE, "SYSTEM")
+                .set(AUDIT_LOG.ACTION, "PENALTY_APPLIED_TEST")
+                .set(AUDIT_LOG.ENTITY_TYPE, "penalty")
+                .set(AUDIT_LOG.ENTITY_ID, "999999")
+                .set(AUDIT_LOG.SUMMARY, "Gave " + name + " a penalty").execute());
         dsl.transaction(tx -> tx.dsl().insertInto(AUDIT_LOG)
                 .set(AUDIT_LOG.OCCURRED_AT, Instant.now())
                 .set(AUDIT_LOG.ACTOR_LABEL, "system:test")

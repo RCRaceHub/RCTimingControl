@@ -108,6 +108,7 @@ public class AdminCompetitorController {
     public ResponseEntity<Map<String, Object>> personalData(Authentication auth, @PathVariable Long id) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"competitor-" + id + ".json\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(exportService.export(id, CurrentOfficial.id(auth)));
     }

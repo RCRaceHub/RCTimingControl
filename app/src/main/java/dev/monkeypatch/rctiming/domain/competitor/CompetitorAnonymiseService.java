@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
@@ -35,9 +36,11 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESUL
  * Those history rows stay, with their details replaced, so the log still shows that something happened.
  * <p>
  * What stays, because it is not the competitor's own data or is not ours to rewrite: free text officials typed
- * (incident reports, penalty reasons, marshal notes); a held RaceHub document waiting to be applied; and copies
- * already sent to RaceHub or to the live feed relay, and older database backups. See {@code docs/data-protection.md}.
- * The competitor's RaceHub id is dropped, so a later import of the same booking makes a new competitor.
+ * (incident reports, penalty reasons, marshal notes); a held RaceHub document waiting to be applied; copies
+ * already sent to RaceHub or to the live feed relay, and older database backups; and finished races still held in
+ * memory, boards or announcer clips until they refresh. See {@code docs/data-protection.md}.
+ * The competitor's RaceHub id is dropped from the export payloads too. A later import of the same booking is not
+ * blocked: a newer version of an imported entry attaches it to a new competitor with the real name.
  */
 @Service
 public class CompetitorAnonymiseService {
@@ -45,8 +48,14 @@ public class CompetitorAnonymiseService {
     public static final String AUDIT_ACTION = "COMPETITOR_ANONYMISED";
     static final String REMOVED = "Details removed (competitor anonymised)";
     private static final Set<String> NAME_FIELDS = Set.of("driverName", "displayName", "spokenName");
-    private static final Set<String> COMPETITOR_ID_FIELDS = Set.of("competitorId", "rctcCompetitorId");
-    private static final Set<String> ENTRY_ID_FIELDS = Set.of("entryId", "rctcEntryId");
+    /** Fields of a RaceHub export row that identify the person there. */
+    private static final Set<String> IDENTITY_FIELDS = Set.of("driverProfileId", "externalSource");
+    /** In a result snapshot the ids are RCTC's own. */
+    private static final Ids SNAPSHOT_IDS = new Ids("competitorId", "entryId");
+    /** In a RaceHub export {@code entryId} is RaceHub's, so only the {@code rctc} ids are trusted. */
+    private static final Ids EXPORT_IDS = new Ids("rctcCompetitorId", "rctcEntryId");
+
+    private record Ids(String competitor, String entry) {}
     private static final List<String> LIVE_STATUSES =
             List.of(RaceStatus.GRID.name(), RaceStatus.RUNNING.name(), RaceStatus.STOPPED.name());
 
@@ -78,6 +87,8 @@ public class CompetitorAnonymiseService {
                 .where(ENTRIES.COMPETITOR_ID.eq(competitorId)).fetch(ENTRIES.ID);
         refuseWhileRacing(entryIds);
         String name = anonymisedName(competitorId);
+        String oldName = competitor.getDisplayName();
+        String oldSpokenName = competitor.getSpokenName();
 
         competitor.setDisplayName(name);
         competitor.setBrcaNumber(null);
@@ -98,7 +109,7 @@ public class CompetitorAnonymiseService {
                 .set(ENTRY_AUDIT_LOG.BEFORE_SNAPSHOT, (String) null)
                 .set(ENTRY_AUDIT_LOG.AFTER_SNAPSHOT, (String) null)
                 .where(ENTRY_AUDIT_LOG.ENTRY_ID.in(entryIds)).execute();
-        int auditRows = scrubAuditLog(competitorId, entryIds);
+        int auditRows = scrubAuditLog(competitorId, entryIds, oldName, oldSpokenName);
 
         Result result = new Result(competitorId, entryIds.size(), snapshots, payloads, competitorHistory,
                 entryHistory, auditRows);
@@ -114,7 +125,8 @@ public class CompetitorAnonymiseService {
         if (entryIds.isEmpty()) {
             return;
         }
-        boolean racing = dsl.fetchExists(dsl.selectOne().from(RACE_ENTRIES).join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
+        boolean racing = dsl.fetchExists(dsl.selectOne().from(RACE_ENTRIES).join(RACES)
+                .on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
                 .where(RACE_ENTRIES.ENTRY_ID.in(entryIds).and(RACES.STATUS.in(LIVE_STATUSES))));
         if (racing) {
             throw new StateConflictException("This competitor is in a race that is on the grid, running or stopped. "
@@ -126,15 +138,18 @@ public class CompetitorAnonymiseService {
         if (entryIds.isEmpty()) {
             return 0;
         }
-        var rows = dsl.select(RESULT_SNAPSHOTS.ID, RESULT_SNAPSHOTS.POSITIONS_JSON, RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON)
+        var rows = dsl.select(RESULT_SNAPSHOTS.ID, RESULT_SNAPSHOTS.POSITIONS_JSON,
+                        RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON)
                 .from(RESULT_SNAPSHOTS)
                 .where(RESULT_SNAPSHOTS.RACE_ID.in(dsl.select(RACE_ENTRIES.RACE_ID).from(RACE_ENTRIES)
                         .where(RACE_ENTRIES.ENTRY_ID.in(entryIds))))
                 .fetch();
         int changed = 0;
         for (var row : rows) {
-            String positions = rewrite(row.get(RESULT_SNAPSHOTS.POSITIONS_JSON), competitorId, entryIds, name);
-            String timed = rewrite(row.get(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON), competitorId, entryIds, name);
+            String positions = rewrite(row.get(RESULT_SNAPSHOTS.POSITIONS_JSON), SNAPSHOT_IDS, competitorId,
+                    entryIds, name);
+            String timed = rewrite(row.get(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON), SNAPSHOT_IDS, competitorId,
+                    entryIds, name);
             if (positions != null || timed != null) {
                 dsl.update(RESULT_SNAPSHOTS)
                         .set(RESULT_SNAPSHOTS.POSITIONS_JSON,
@@ -148,17 +163,14 @@ public class CompetitorAnonymiseService {
         return changed;
     }
 
+    /**
+     * Every export is checked, not just those of the events they entered: a championship's standings are carried
+     * in the exports of later rounds too.
+     */
     private int rewriteOutbox(Long competitorId, Set<Long> entryIds, String name) {
-        if (entryIds.isEmpty()) {
-            return 0;
-        }
-        var rows = dsl.select(RESULTS_OUTBOX.ID, RESULTS_OUTBOX.PAYLOAD).from(RESULTS_OUTBOX)
-                .where(RESULTS_OUTBOX.EVENT_ID.in(dsl.select(ENTRIES.EVENT_ID).from(ENTRIES)
-                        .where(ENTRIES.COMPETITOR_ID.eq(competitorId))))
-                .fetch();
         int changed = 0;
-        for (var row : rows) {
-            String payload = rewrite(row.get(RESULTS_OUTBOX.PAYLOAD), competitorId, entryIds, name);
+        for (var row : dsl.select(RESULTS_OUTBOX.ID, RESULTS_OUTBOX.PAYLOAD).from(RESULTS_OUTBOX).fetch()) {
+            String payload = rewrite(row.get(RESULTS_OUTBOX.PAYLOAD), EXPORT_IDS, competitorId, entryIds, name);
             if (payload != null) {
                 dsl.update(RESULTS_OUTBOX).set(RESULTS_OUTBOX.PAYLOAD, payload)
                         .where(RESULTS_OUTBOX.ID.eq(row.get(RESULTS_OUTBOX.ID))).execute();
@@ -168,11 +180,20 @@ public class CompetitorAnonymiseService {
         return changed;
     }
 
-    private int scrubAuditLog(Long competitorId, List<Long> entryIds) {
+    /**
+     * Rows about the competitor or their entries, and any row whose text holds their old name: penalties, incident
+     * reports, exclusions and practice links are logged under other entities, with the name in the summary.
+     */
+    private int scrubAuditLog(Long competitorId, List<Long> entryIds, String oldName, String oldSpokenName) {
         Set<String> entryKeys = entryIds.stream().map(String::valueOf).collect(Collectors.toSet());
-        var aboutThem = AUDIT_LOG.ENTITY_TYPE.eq("competitor").and(AUDIT_LOG.ENTITY_ID.eq(String.valueOf(competitorId)));
+        var aboutThem = AUDIT_LOG.ENTITY_TYPE.eq("competitor")
+                .and(AUDIT_LOG.ENTITY_ID.eq(String.valueOf(competitorId)));
         if (!entryKeys.isEmpty()) {
             aboutThem = aboutThem.or(AUDIT_LOG.ENTITY_TYPE.eq("entry").and(AUDIT_LOG.ENTITY_ID.in(entryKeys)));
+        }
+        for (String text : Stream.of(oldName, oldSpokenName).filter(t -> t != null && !t.isBlank()).toList()) {
+            aboutThem = aboutThem.or(AUDIT_LOG.SUMMARY.contains(text)).or(AUDIT_LOG.BEFORE_JSON.contains(text))
+                    .or(AUDIT_LOG.AFTER_JSON.contains(text));
         }
         return dsl.update(AUDIT_LOG)
                 .set(AUDIT_LOG.SUMMARY, REMOVED)
@@ -182,53 +203,54 @@ public class CompetitorAnonymiseService {
     }
 
     /** The JSON with this competitor's names replaced, or null when it held none (or was empty). */
-    private String rewrite(String json, Long competitorId, Set<Long> entryIds, String name) {
+    private String rewrite(String json, Ids ids, Long competitorId, Set<Long> entryIds, String name) {
         if (json == null || json.isBlank()) {
             return null;
         }
         try {
             JsonNode tree = objectMapper.readTree(json);
-            return replaceNames(tree, competitorId, entryIds, name) ? objectMapper.writeValueAsString(tree) : null;
+            return replaceNames(tree, ids, competitorId, entryIds, name) ? objectMapper.writeValueAsString(tree) : null;
         } catch (JsonProcessingException e) {
             // A stored result that can't be read must not be skipped: it could still hold the name
             throw new IllegalStateException("A stored result could not be read, so nothing was anonymised", e);
         }
     }
 
-    private boolean replaceNames(JsonNode node, Long competitorId, Set<Long> entryIds, String name) {
+    private boolean replaceNames(JsonNode node, Ids ids, Long competitorId, Set<Long> entryIds, String name) {
         boolean changed = false;
         if (node.isObject()) {
             ObjectNode object = (ObjectNode) node;
-            if (isTheirs(object, competitorId, entryIds)) {
+            if (isTheirs(object, ids, competitorId, entryIds)) {
                 for (String field : NAME_FIELDS) {
                     if (object.hasNonNull(field) && !name.equals(object.get(field).asText())) {
                         object.put(field, name);
                         changed = true;
                     }
                 }
+                for (String field : IDENTITY_FIELDS) {
+                    if (object.hasNonNull(field)) {
+                        object.putNull(field);
+                        changed = true;
+                    }
+                }
             }
             for (JsonNode child : object) {
-                changed |= replaceNames(child, competitorId, entryIds, name);
+                changed |= replaceNames(child, ids, competitorId, entryIds, name);
             }
         } else if (node.isArray()) {
             for (JsonNode child : node) {
-                changed |= replaceNames(child, competitorId, entryIds, name);
+                changed |= replaceNames(child, ids, competitorId, entryIds, name);
             }
         }
         return changed;
     }
 
-    private static boolean isTheirs(ObjectNode object, Long competitorId, Set<Long> entryIds) {
-        for (String field : COMPETITOR_ID_FIELDS) {
-            if (object.hasNonNull(field) && object.get(field).asLong() == competitorId) {
-                return true;
-            }
+    private static boolean isTheirs(ObjectNode object, Ids ids, Long competitorId, Set<Long> entryIds) {
+        JsonNode competitor = object.get(ids.competitor());
+        if (competitor != null && competitor.isNumber() && competitor.asLong() == competitorId) {
+            return true;
         }
-        for (String field : ENTRY_ID_FIELDS) {
-            if (object.hasNonNull(field) && entryIds.contains(object.get(field).asLong())) {
-                return true;
-            }
-        }
-        return false;
+        JsonNode entry = object.get(ids.entry());
+        return entry != null && entry.isNumber() && entryIds.contains(entry.asLong());
     }
 }

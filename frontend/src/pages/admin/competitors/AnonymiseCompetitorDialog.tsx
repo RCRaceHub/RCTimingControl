@@ -29,6 +29,8 @@ export default function AnonymiseCompetitorDialog({ competitor, onOpenChange }: 
   const anonymise = useAnonymiseCompetitor();
 
   function close(open: boolean) {
+    // Not while the request is running, so the answer is not lost
+    if (!open && anonymise.isPending) return;
     if (!open) setError(null);
     onOpenChange(open);
   }
