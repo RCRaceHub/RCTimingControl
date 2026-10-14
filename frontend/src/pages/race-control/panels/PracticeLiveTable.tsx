@@ -7,15 +7,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { PracticeTimingRowDto } from '@/lib/practiceApi';
 import { fmtMs } from '@/lib/format';
 
 interface PracticeLiveTableProps {
   rows: PracticeTimingRowDto[];
   bestLapN: number;
+  /** Offers a button to name an unknown transponder; left out, rows can't be named */
+  onName?: (transponderNumber: string) => void;
 }
 
-export function PracticeLiveTable({ rows, bestLapN }: PracticeLiveTableProps) {
+export function PracticeLiveTable({ rows, bestLapN, onName }: PracticeLiveTableProps) {
   if (rows.length === 0) {
     return (
       <div className="text-sm text-muted-foreground text-center py-8">
@@ -40,7 +43,7 @@ export function PracticeLiveTable({ rows, bestLapN }: PracticeLiveTableProps) {
             Best {bestLapN} Laps
           </TableHead>
           <TableHead className="w-28">Last Lap</TableHead>
-          <TableHead className="w-24">Status</TableHead>
+          <TableHead className="w-40">Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -86,12 +89,24 @@ export function PracticeLiveTable({ rows, bestLapN }: PracticeLiveTableProps) {
             </TableCell>
             <TableCell>
               {row.isUnknown ? (
-                <Badge
-                  variant="outline"
-                  className="border-destructive text-destructive"
-                >
-                  Unknown
-                </Badge>
+                <>
+                  <Badge
+                    variant="outline"
+                    className="border-destructive text-destructive"
+                  >
+                    Unknown
+                  </Badge>
+                  {onName && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-2"
+                      onClick={() => onName(row.transponderNumber)}
+                    >
+                      Name
+                    </Button>
+                  )}
+                </>
               ) : (
                 <Badge variant="outline">Known</Badge>
               )}
