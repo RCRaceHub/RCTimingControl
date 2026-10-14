@@ -17,7 +17,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 | Copies of the database | All of the above | Backup folder | The newest 14 are kept by default (`keep`); a person deleted later still exists in older backups. |
 | Names sent out | Competitors | Results Export v1 to RaceHub; Live Feed v1 to a relay (display names only, per-event switch) | Received by other organisations. |
 | Names shown on screens | Competitors | Boards, overlay, results and championship pages | Anonymous access on the venue network, and to remote viewers when the live feed is on. |
-| Application log | Anyone | `logs/rctiming.log` in the data folder | Rolled by Spring Boot's defaults. Contents not yet audited for names and emails. |
+| Application log | Anyone | `logs/rctiming.log` in the data folder | Rolled by Spring Boot's defaults. Log calls carry ids, transponder numbers and session titles, never an email, a display name, a spoken name, a BRCA number, a password or a token; `LogContentTest` fails when a log call names one (#266). Request bodies are not logged. |
 
 ## Gaps found so far
 
@@ -26,7 +26,7 @@ Each club runs its own copy of RCTC with its own database, even where clubs shar
 3. The audit log has no retention limit.
 4. No way to anonymise or export one competitor.
 5. No "initials only" or "hide" option for juniors on boards, the overlay, public pages or the live feed.
-6. Log file contents have not been checked for personal data.
+6. ~~Log file contents have not been checked for personal data.~~ Checked, and guarded by `LogContentTest` (#266).
 
 ## Proposed child tickets
 
