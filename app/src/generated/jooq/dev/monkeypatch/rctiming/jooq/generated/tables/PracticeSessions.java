@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events.EventsPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers.PracticeDriversPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PracticeLapsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users.UsersPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeSessionsRecord;
@@ -112,6 +113,11 @@ public class PracticeSessions extends TableImpl<PracticeSessionsRecord> {
      * The column <code>practice_sessions.updated_at</code>.
      */
     public final TableField<PracticeSessionsRecord, Instant> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
+
+    /**
+     * The column <code>practice_sessions.pause_seconds</code>.
+     */
+    public final TableField<PracticeSessionsRecord, Integer> PAUSE_SECONDS = createField(DSL.name("pause_seconds"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("180"), SQLDataType.INTEGER)), this, "");
 
     private PracticeSessions(Name alias, Table<PracticeSessionsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -222,6 +228,19 @@ public class PracticeSessions extends TableImpl<PracticeSessionsRecord> {
             _events = new EventsPath(this, Keys.PRACTICE_SESSIONS__PRACTICE_SESSIONS_EVENT_ID_FKEY, null);
 
         return _events;
+    }
+
+    private transient PracticeDriversPath _practiceDrivers;
+
+    /**
+     * Get the implicit to-many join path to the <code>practice_drivers</code>
+     * table
+     */
+    public PracticeDriversPath practiceDrivers() {
+        if (_practiceDrivers == null)
+            _practiceDrivers = new PracticeDriversPath(this, null, Keys.PRACTICE_DRIVERS__PRACTICE_DRIVERS_SESSION_FKEY.getInverseKey());
+
+        return _practiceDrivers;
     }
 
     private transient PracticeLapsPath _practiceLaps;

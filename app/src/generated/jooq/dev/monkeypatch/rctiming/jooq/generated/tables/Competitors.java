@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.ChampionshipExclusionsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.CompetitorAuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers.PracticeDriversPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorsRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
@@ -224,6 +225,19 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
             _entries = new EntriesPath(this, null, Keys.ENTRIES__ENTRIES_COMPETITOR_ID_FKEY.getInverseKey());
 
         return _entries;
+    }
+
+    private transient PracticeDriversPath _practiceDrivers;
+
+    /**
+     * Get the implicit to-many join path to the <code>practice_drivers</code>
+     * table
+     */
+    public PracticeDriversPath practiceDrivers() {
+        if (_practiceDrivers == null)
+            _practiceDrivers = new PracticeDriversPath(this, null, Keys.PRACTICE_DRIVERS__PRACTICE_DRIVERS_COMPETITOR_FKEY.getInverseKey());
+
+        return _practiceDrivers;
     }
 
     @Override

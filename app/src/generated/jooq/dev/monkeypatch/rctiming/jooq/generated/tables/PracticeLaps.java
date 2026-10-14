@@ -102,6 +102,11 @@ public class PracticeLaps extends TableImpl<PracticeLapsRecord> {
      */
     public final TableField<PracticeLapsRecord, Instant> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
 
+    /**
+     * The column <code>practice_laps.run_number</code>.
+     */
+    public final TableField<PracticeLapsRecord, Integer> RUN_NUMBER = createField(DSL.name("run_number"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.INTEGER)), this, "");
+
     private PracticeLaps(Name alias, Table<PracticeLapsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -26,6 +26,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
@@ -159,6 +160,11 @@ public class Tables {
      * The table <code>penalties</code>.
      */
     public static final Penalties PENALTIES = Penalties.PENALTIES;
+
+    /**
+     * The table <code>practice_drivers</code>.
+     */
+    public static final PracticeDrivers PRACTICE_DRIVERS = PracticeDrivers.PRACTICE_DRIVERS;
 
     /**
      * The table <code>practice_laps</code>.
