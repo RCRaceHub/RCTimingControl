@@ -112,6 +112,7 @@
 - [x] **CTRL-08**: Race director can abandon a race in progress; results up to the abandonment point are saved and the meeting advances normally
 - [x] **CTRL-09**: Race director can skip to or re-run a specific race and round number
 - [x] **CTRL-10**: Every race lifecycle command (call the grid, start, stop, resume, finish, abandon, restart) is audit-logged with the official who gave it and the status before and after; a restart also records what it discards (the race's times, its stored result and the live timing) (#139)
+- [x] **CTRL-11**: The start order of a heat is the finishing order of the same heat in the round before it, except that the first qualifying round starts in car number order, whatever practice did. Calling the grid takes the heat's start type from its class's format as it is then, so a format change made after the rounds were generated applies, and the cockpit says how the race will start (and whether drivers are called one by one)
 
 ### Audit
 
@@ -334,6 +335,7 @@
 | CTRL-07 | Phase 4 | Complete |
 | CTRL-08 | Phase 4 | Complete |
 | CTRL-09 | Phase 4 | Complete |
+| CTRL-11 | Race control | Complete |
 | AUDIO-01 | Phase 6 | Complete |
 | AUDIO-02 | Phase 6 | Complete |
 | AUDIO-03 | Phase 6 | Complete |

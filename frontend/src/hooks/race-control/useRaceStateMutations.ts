@@ -28,13 +28,17 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
   const invalidateHistory = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.raceHistory(raceId) });
 
+  // Calling the grid fixes how the race starts, so the start type and call order are read afresh
+  const invalidateReadiness = () =>
+    queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.preRaceReadiness(raceId) });
+
   const invalidateSnapshot = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.resultSnapshot(raceId) });
 
   return {
     callGrid: useMutation({
       mutationFn: () => callGrid(raceId),
-      onSuccess: () => { invalidateRunOrder(); invalidateHistory(); },
+      onSuccess: () => { invalidateRunOrder(); invalidateHistory(); invalidateReadiness(); },
     }),
     start: useMutation({
       mutationFn: () => startRace(raceId),

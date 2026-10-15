@@ -1,12 +1,18 @@
 package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.domain.format.EventClass;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
+import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +45,9 @@ class RaceStateMachineServiceTest {
     private final LiveTimingHub liveTimingHub = mock(LiveTimingHub.class);
     private final LapTimingService lapTimingService = mock(LapTimingService.class);
     private final AutoFinalsSeedingService autoFinalsSeedingService = mock(AutoFinalsSeedingService.class);
+    private final RoundGeneratorService roundGeneratorService = mock(RoundGeneratorService.class);
+    private final RaceFormatService raceFormatService = mock(RaceFormatService.class);
+    private final EventClassRepository eventClassRepository = mock(EventClassRepository.class);
     private RaceStateMachineService service;
 
     /** The race as each status event's listeners would read it from the database. */
@@ -47,9 +56,10 @@ class RaceStateMachineServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RaceStateMachineService(liveTimingHub, mock(RoundGeneratorService.class), raceRepository,
+        service = new RaceStateMachineService(liveTimingHub, roundGeneratorService, raceRepository,
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
-                mock(BumpUpSeedingService.class), autoFinalsSeedingService);
+                mock(BumpUpSeedingService.class), autoFinalsSeedingService, raceFormatService,
+                eventClassRepository);
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);
@@ -89,6 +99,51 @@ class RaceStateMachineServiceTest {
         assertThat(published.getValue()).isInstanceOfSatisfying(RaceStatusChangedEvent.class,
                 e -> assertThat(e.getNewStatus()).isEqualTo(RaceStatus.GRID));
         verify(liveTimingHub).broadcastStateChange(7L, RaceStatus.GRID);
+    }
+
+    @Test
+    void callGrid_takesTheStartTypeFromTheFormatAsItIsNow() {
+        Round practiceRound = new Round();
+        practiceRound.setType(RoundType.PRACTICE);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(practiceRound));
+        EventClass eventClass = new EventClass();
+        when(eventClassRepository.findById(5L)).thenReturn(Optional.of(eventClass));
+        when(raceFormatService.startType(eventClass, RoundType.PRACTICE)).thenReturn(StartType.STAGGER);
+        Race race = race(RaceStatus.PENDING);
+        race.setEventClassId(5L);
+        race.setStartType(StartType.ROLLING);
+
+        service.callGrid(race);
+
+        assertThat(race.getStartType()).isEqualTo(StartType.STAGGER);
+        assertThat(lastSaved.getStartType()).isEqualTo(StartType.STAGGER);
+    }
+
+    @Test
+    void finishingPractice_doesNotSetTheQualifyingOrder() {
+        Race race = finishedHeat(RoundType.PRACTICE, RoundType.QUALIFIER);
+
+        service.finish(race);
+
+        verify(roundGeneratorService, never()).applyPreviousRoundFinishingOrder(anyLong(), any());
+    }
+
+    @Test
+    void finishingPractice_setsTheNextPracticeOrderFromTheFinishingOrder() {
+        Race race = finishedHeat(RoundType.PRACTICE, RoundType.PRACTICE);
+
+        service.finish(race);
+
+        verify(roundGeneratorService).applyPreviousRoundFinishingOrder(8L, List.of(42L));
+    }
+
+    @Test
+    void finishingAQualifier_setsTheNextQualifyingOrderFromTheFinishingOrder() {
+        Race race = finishedHeat(RoundType.QUALIFIER, RoundType.QUALIFIER);
+
+        service.finish(race);
+
+        verify(roundGeneratorService).applyPreviousRoundFinishingOrder(8L, List.of(42L));
     }
 
     @Test
@@ -268,6 +323,36 @@ class RaceStateMachineServiceTest {
         verify(lapTimingService, never()).releaseState(anyLong());
     }
 
+    /** A running heat 1 of the given round type, with a car in the finishing order and a heat 1 in the next round. */
+    private Race finishedHeat(RoundType type, RoundType nextType) {
+        Round round = new Round();
+        round.setId(3L);
+        round.setEventId(1L);
+        round.setSequenceInEvent(1);
+        round.setType(type);
+        Round next = new Round();
+        next.setId(4L);
+        next.setEventId(1L);
+        next.setSequenceInEvent(2);
+        next.setType(nextType);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(round));
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round, next));
+        Race nextHeat = new Race();
+        nextHeat.setId(8L);
+        nextHeat.setEventClassId(5L);
+        nextHeat.setHeatNumber(1);
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(4L)).thenReturn(List.of(nextHeat));
+        LiveTimingRowDto row = mock(LiveTimingRowDto.class);
+        when(row.entryId()).thenReturn(42L);
+        LiveRaceState state = mock(LiveRaceState.class);
+        when(state.calculatePositions()).thenReturn(List.of(row));
+        when(lapTimingService.peek(7L)).thenReturn(Optional.of(state));
+        Race race = race(RaceStatus.RUNNING);
+        race.setEventClassId(5L);
+        race.setHeatNumber(1);
+        return race;
+    }
+
     private static Race race(RaceStatus status) {
         Race race = new Race();
         race.setId(7L);
@@ -296,6 +381,7 @@ class RaceStateMachineServiceTest {
         copy.setStartedAt(race.getStartedAt());
         copy.setFinishedAt(race.getFinishedAt());
         copy.setAbandonedAt(race.getAbandonedAt());
+        copy.setStartType(race.getStartType());
         return copy;
     }
 }

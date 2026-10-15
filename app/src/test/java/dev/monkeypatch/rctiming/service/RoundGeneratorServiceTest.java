@@ -21,7 +21,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,6 +127,58 @@ class RoundGeneratorServiceTest {
         // Every driver is in exactly one heat
         assertThat(raceEntries).extracting(RaceEntry::getEntryId)
                 .containsExactlyInAnyOrderElementsOf(entries.stream().map(Entry::getId).toList());
+    }
+
+    @Test
+    void firstQualifyingRound_startsInCarNumberOrderAfterPractice_laterRoundsWaitForTheFinishingOrder() {
+        EventClass eventClass = new EventClass();
+        eventClass.setId(10L);
+        eventClass.setEventId(1L);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(eventClass));
+        List<Entry> entries = new ArrayList<>();
+        for (long i = 1; i <= 3; i++) {
+            Entry entry = new Entry();
+            entry.setId(i);
+            entry.setEventId(1L);
+            entry.setEventClassId(10L);
+            entries.add(entry);
+        }
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(entries);
+        AtomicLong ids = new AtomicLong();
+        Map<Long, Round> rounds = new HashMap<>();
+        when(roundRepository.save(any(Round.class))).thenAnswer(inv -> {
+            Round round = inv.getArgument(0);
+            round.setId(ids.incrementAndGet());
+            rounds.put(round.getId(), round);
+            return round;
+        });
+        Map<Long, Race> raceById = new HashMap<>();
+        when(raceRepository.save(any(Race.class))).thenAnswer(inv -> {
+            Race race = inv.getArgument(0);
+            race.setId(ids.incrementAndGet());
+            raceById.put(race.getId(), race);
+            return race;
+        });
+        List<RaceEntry> raceEntries = new ArrayList<>();
+        when(raceEntryRepository.save(any(RaceEntry.class))).thenAnswer(inv -> {
+            RaceEntry raceEntry = inv.getArgument(0);
+            raceEntries.add(raceEntry);
+            return raceEntry;
+        });
+
+        service.generate(new RoundGenerationRequest(1L, 2, 2, 8, List.of()));
+
+        // Grid positions by round type and number: the first of each kind is set, the rest wait
+        Map<String, List<Integer>> gridByRound = new TreeMap<>();
+        for (RaceEntry raceEntry : raceEntries) {
+            Round round = rounds.get(raceById.get(raceEntry.getRaceId()).getRoundId());
+            gridByRound.computeIfAbsent(round.getType() + " " + round.getRoundNumber(), k -> new ArrayList<>())
+                    .add(raceEntry.getGridPosition());
+        }
+        assertThat(gridByRound.get("PRACTICE 1")).containsExactly(1, 2, 3);
+        assertThat(gridByRound.get("PRACTICE 2")).containsOnlyNulls();
+        assertThat(gridByRound.get("QUALIFIER 1")).containsExactly(1, 2, 3);
+        assertThat(gridByRound.get("QUALIFIER 2")).containsOnlyNulls();
     }
 
     @Test

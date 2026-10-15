@@ -39,6 +39,21 @@ function raceTitle(item: RunOrderItemDto | undefined) {
   return `${roundName(item)} — ${item.className} — Heat ${item.heatNumber}`;
 }
 
+/** How the race will start, so the director can see whether the drivers will be called one by one. */
+function describeStart(startType: string, staggerIntervalSeconds: number | undefined) {
+  switch (startType) {
+    case 'STAGGER': {
+      const seconds = Math.max(staggerIntervalSeconds ?? 1, 1);
+      return `Staggered start: the start horn, then each driver is called by name every ${seconds} ` +
+        `${seconds === 1 ? 'second' : 'seconds'} in grid order.`;
+    }
+    case 'ROLLING':
+      return 'Rolling start: the clock starts when the first car crosses the line. Drivers are not called one by one.';
+    default:
+      return 'Grid start: every car goes together on the start horn. Drivers are not called one by one.';
+  }
+}
+
 /** A toast for a race command the server refused, with its reason (such as a race already running). */
 function commandFailed(command: string) {
   return (err: unknown) =>
@@ -385,6 +400,11 @@ export default function CockpitPage() {
       case 'GRID':
         return (
           <div className="flex flex-col gap-3">
+            {preRaceReadiness?.startType && (
+              <p className="text-sm text-muted-foreground" data-testid="start-type-note">
+                {describeStart(preRaceReadiness.startType, preRaceReadiness.staggerIntervalSeconds)}
+              </p>
+            )}
             <GridEditorPanel
               raceId={selectedRace.raceId}
               onStart={startCountdown.begin}
