@@ -16,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,6 +86,7 @@ public class AutoFinalsSeedingService {
      * (a heat re-run or corrected). Refused until every qualifying heat is finished, since a driver who is only
      * in an unfinished heat would be left out of every final, and once a final has started.
      */
+    @Transactional
     public void reseed(Actor actor, Long eventId, Long eventClassId) {
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         if (!eventClass.getEventId().equals(eventId)) {
