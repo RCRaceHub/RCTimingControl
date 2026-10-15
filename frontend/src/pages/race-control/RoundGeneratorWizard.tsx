@@ -39,6 +39,7 @@ const schema = z.object({
   practiceRounds: count(0, 10),
   qualifyingRounds: count(1, 10),
   maxCarsPerHeat: count(1, 64),
+  minCarsPerHeat: count(1, 64),
   classes: z.array(z.object({
     eventClassId: z.number(),
     label: z.string(),
@@ -48,7 +49,7 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>;
 type FormValues = z.output<typeof schema>;
 
-const GLOBAL_DEFAULTS = { practiceRounds: 2, qualifyingRounds: 3, maxCarsPerHeat: 10 };
+const GLOBAL_DEFAULTS = { practiceRounds: 2, qualifyingRounds: 3, maxCarsPerHeat: 10, minCarsPerHeat: 2 };
 
 export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
   const queryClient = useQueryClient();
@@ -99,6 +100,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
         practiceRoundsCount: values.practiceRounds,
         qualifyingRoundsCount: values.qualifyingRounds,
         maxCarsPerHeat: values.maxCarsPerHeat,
+        minCarsPerHeat: values.minCarsPerHeat,
         classFinalsConfigs: values.classes.map((r) => ({
           eventClassId: r.eventClassId,
           finalsCount: r.finalsCount,
@@ -150,11 +152,15 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
           onSubmit={form.handleSubmit(values => generate.mutateAsync(values).catch(() => undefined))}
           className="space-y-4 py-2"
         >
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {numberField('practiceRounds', 'Practice rounds', 0, 10)}
             {numberField('qualifyingRounds', 'Qualifying rounds', 1, 10)}
             {numberField('maxCarsPerHeat', 'Max cars/heat', 1, 64)}
+            {numberField('minCarsPerHeat', 'Min cars/heat', 1, 64)}
           </div>
+          <p className="text-xs text-muted-foreground">
+            A class with at least twice the minimum is split into two or more heats, so drivers can marshal each other.
+          </p>
 
           {classRows.length > 0 && (
             <div className="space-y-2">

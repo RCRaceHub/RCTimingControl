@@ -9,7 +9,8 @@ import java.util.List;
  *
  * @param raceId           the target race ID
  * @param raceLabel        human-readable label, e.g. "Qualifying 2 — Modified Touring — Heat 2"
- * @param firstRaceOfEvent true when this is the first race of the event and marshalDuty is intentionally empty
+ * @param firstRaceOfEvent true when no race comes before this one in the event; marshalDuty then holds the last
+ *                         race of its own round, if that is another race
  * @param gridCall         drivers due on track in grid position order (null positions last)
  * @param marshalDuty      drivers from the immediately preceding race in the event run order
  */

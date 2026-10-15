@@ -121,8 +121,7 @@ public class RoundGeneratorService {
             // Seed in entry order. Racer ability ratings went with racer accounts (L10, #18).
             entries.sort(Comparator.comparingLong(Entry::getId));
 
-            int heatCount = entries.isEmpty() ? 0
-                    : (int) Math.ceil((double) entries.size() / request.maxCarsPerHeat());
+            int heatCount = heatCount(entries.size(), request.maxCarsPerHeat(), request.minCarsPerHeat());
             if (heatCount == 0) {
                 heatsByClass.put(ec.getId(), List.of());
                 continue;
@@ -144,6 +143,19 @@ public class RoundGeneratorService {
         }
 
         return new GenerationPlan(request, eventClasses, heatsByClass);
+    }
+
+    /**
+     * Heats for a class: enough to keep each under the maximum, and at least two once the class has
+     * {@code minCarsPerHeat} cars for each, since the drivers of one heat marshal the next and a lone
+     * heat has no marshals. The snake draft then splits the class evenly.
+     */
+    static int heatCount(int cars, int maxCarsPerHeat, int minCarsPerHeat) {
+        if (cars == 0) {
+            return 0;
+        }
+        int forMax = (int) Math.ceil((double) cars / maxCarsPerHeat);
+        return cars >= 2 * minCarsPerHeat ? Math.max(forMax, 2) : forMax;
     }
 
     private class GenerationPlan {

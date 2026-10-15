@@ -45,6 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -150,6 +151,35 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         assertThat(gridCall).extracting(slot -> slot.get("checkedIn")).containsExactly(true, false, false);
         assertThat(gridCall).extracting(slot -> slot.get("racehubArrival")).containsExactly(null, "ARRIVED", null);
         assertThat(body.get("raceLabel").toString()).contains("Practice 1");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getPreRaceReadiness_firstRaceOfEventWithTwoHeats_isMarshalledByTheLastHeatOfItsRound() {
+        Instant now = Instant.now();
+        Event event = saveEvent("Two Heat Event " + UUID.randomUUID(), now);
+        RacingClass rc = saveRacingClass("Buggy " + UUID.randomUUID().toString().substring(0, 6), now);
+        EventClass ec = saveEventClass(event.getId(), rc.getId(), now);
+        Round round = saveRound(event.getId(), RoundType.QUALIFIER, 1, 1, now);
+        Race heat1 = saveRace(round.getId(), ec.getId(), 1, 1, now);
+        Race heat2 = saveRace(round.getId(), ec.getId(), 2, 2, now);
+        Set<Long> heat2Entries = new HashSet<>();
+        for (int i = 1; i <= 4; i++) {
+            saveRaceEntry(heat1.getId(), saveEntry(event.getId(), ec.getId(), now).getId(), i);
+            Long id = saveEntry(event.getId(), ec.getId(), now).getId();
+            saveRaceEntry(heat2.getId(), id, i);
+            heat2Entries.add(id);
+        }
+
+        ResponseEntity<Map> resp = restTemplate.exchange(
+                "/api/v1/race-control/race/" + heat1.getId() + "/pre-race-readiness",
+                HttpMethod.GET, new HttpEntity<>(directorHeaders()), Map.class);
+
+        Map<String, Object> body = resp.getBody();
+        assertThat(body).isNotNull();
+        List<Map<String, Object>> marshalDuty = (List<Map<String, Object>>) body.get("marshalDuty");
+        assertThat(marshalDuty).extracting(r -> ((Number) r.get("entryId")).longValue())
+                .containsExactlyInAnyOrderElementsOf(heat2Entries);
     }
 
     @Test

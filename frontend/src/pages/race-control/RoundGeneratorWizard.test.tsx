@@ -61,6 +61,7 @@ describe('RoundGeneratorWizard', () => {
       practiceRoundsCount: 2,
       qualifyingRoundsCount: 4,
       maxCarsPerHeat: 10,
+      minCarsPerHeat: 2,
       classFinalsConfigs: [{ eventClassId: 11, finalsCount: 3 }],
     }));
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
