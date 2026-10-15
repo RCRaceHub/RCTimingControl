@@ -9,12 +9,12 @@ import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutation
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useAudioAllowed } from '@/hooks/race-control/useAudioAllowed';
+import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
 import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { usePregeneratedClips } from '@/hooks/race-control/usePregeneratedClips';
 import { isImprovingLap, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
-import { getRaceClock } from '@/lib/boardsApi';
 import { getAudioSettings } from '@/lib/audioApi';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
@@ -106,15 +106,8 @@ export default function CockpitPage() {
     ? { label: nextReadiness.raceLabel, marshals: nextReadiness.marshalDuty.map((m) => m.driverName) }
     : null;
 
-  // The race clock shows the time left, and tells the countdown announcements when the race ends. It is read
-  // again when the race starts, stops or resumes (the status is part of the key), since a stoppage moves the end.
-  const { data: raceClock, dataUpdatedAt: raceClockReadAt } = useQuery({
-    queryKey: raceControlQueryKeys.raceClock(selectedRaceId, selectedRace?.status),
-    queryFn: () => getRaceClock(selectedRaceId!),
-    enabled: selectedRaceId != null && (selectedRace?.status === 'RUNNING' || selectedRace?.status === 'STOPPED'),
-    // Not kept: a clock read before an earlier stoppage would show the wrong time until the new one arrives
-    gcTime: 0,
-  });
+  // The race clock shows the time left, and tells the countdown announcements when the race ends
+  const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
   const { playBeep, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
