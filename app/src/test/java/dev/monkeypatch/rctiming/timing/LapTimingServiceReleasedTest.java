@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing;
 
+import org.springframework.context.ApplicationEventPublisher;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -16,6 +17,7 @@ import org.mockito.quality.Strictness;
 
 import java.util.List;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -38,7 +40,7 @@ class LapTimingServiceReleasedTest {
     @BeforeEach
     void setUp() {
         service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository,
-                lapThresholdQuery);
+                lapThresholdQuery, mock(RaceClockService.class), mock(ApplicationEventPublisher.class));
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(anyLong())).thenReturn(List.of());
     }
 

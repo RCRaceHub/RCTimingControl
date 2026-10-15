@@ -70,6 +70,11 @@ public class LastLapTimeout {
         if (found.isEmpty() || found.get().durationMs() == null || found.get().remainingMs() > 0) {
             return;
         }
+        if (lapTimingService.peek(race.getId()).map(LiveRaceState::allFlagged).orElse(false)) {
+            // The finish asked for when the last car took the flag may not have happened, say if the race was stopped
+            autoFinish.finish(race.getId(), "flag-finish", "Finished the race automatically: every car took the flag");
+            return;
+        }
         RaceClockDto clock = found.get();
         long overrunMs = clock.elapsedMs() - clock.durationMs();
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());

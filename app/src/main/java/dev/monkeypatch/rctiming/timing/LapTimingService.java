@@ -63,16 +63,8 @@ public class LapTimingService {
     private final ApplicationEventPublisher publisher;
     /** Timed races whose clock has run out. Never goes back for the same run, since a clock only counts up. */
     private final Set<Long> clockExpired = ConcurrentHashMap.newKeySet();
-
-    /** Without a race clock, no race ever reaches the flag: its finish is left to the director. */
-    public LapTimingService(LiveTimingHub liveTimingHub,
-                            RaceEntryRepository raceEntryRepository,
-                            EntryRepository entryRepository,
-                            CompetitorRepository competitorRepository,
-                            LapThresholdQuery lapThresholdQuery) {
-        this(liveTimingHub, raceEntryRepository, entryRepository, competitorRepository, lapThresholdQuery,
-                null, null);
-    }
+    /** Each running race's length in milliseconds, read once so a passing never queries for it; -1 for none. */
+    private final Map<Long, Long> raceLengths = new ConcurrentHashMap<>();
 
     @Autowired
     public LapTimingService(LiveTimingHub liveTimingHub,
@@ -160,22 +152,21 @@ public class LapTimingService {
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
 
-        if (publisher != null && state.takeFinishRequest()) {
+        if (state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
         }
     }
 
     /** Whether the race has a length and its clock has run out, so the next lap a car counts is its last. */
     private boolean clockExpired(long raceId) {
-        if (raceClockService == null) {
-            return false;
-        }
         if (clockExpired.contains(raceId)) {
             return true;
         }
-        boolean expired = raceClockService.clock(raceId)
-                .map(clock -> clock.durationMs() != null && clock.remainingMs() <= 0)
-                .orElse(false);
+        long length = raceLengths.computeIfAbsent(raceId, id -> raceClockService.durationMsOf(id).orElse(-1L));
+        if (length < 0) {
+            return false;
+        }
+        boolean expired = raceClockService.clockOf(raceId, RaceStatus.RUNNING, length).remainingMs() <= 0;
         if (expired) {
             clockExpired.add(raceId);
         }
@@ -212,6 +203,7 @@ public class LapTimingService {
     public void releaseState(long raceId) {
         released.add(raceId);
         clockExpired.remove(raceId);
+        raceLengths.remove(raceId);
         states.remove(raceId);
     }
 
@@ -224,6 +216,7 @@ public class LapTimingService {
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         if (event.getNewStatus() == RaceStatus.GRID) {
             clockExpired.remove(event.getRaceId());
+            raceLengths.remove(event.getRaceId());
         }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());

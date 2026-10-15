@@ -45,7 +45,7 @@ public class LiveRaceState {
     final Map<Long, Long> minLapMs = new HashMap<>();
     /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
     Long lastLapCreditedAtMs = null;
-    /** Entries that have taken the flag: their next passing after the clock ran out counted, and nothing after it does. */
+    /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
     /** Whether the finish has been asked for, so it is asked for once. */
     boolean finishRequested = false;
@@ -127,7 +127,8 @@ public class LiveRaceState {
         return true;
     }
 
-    private boolean allFlagged() {
+    /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */
+    public synchronized boolean allFlagged() {
         boolean any = false;
         for (LiveRacePosition pos : positions.values()) {
             if (pos.getLastPassingTimeMs() == 0) {
