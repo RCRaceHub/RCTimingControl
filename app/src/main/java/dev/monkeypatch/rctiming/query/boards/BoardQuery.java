@@ -85,6 +85,19 @@ public class BoardQuery {
                 List.of(RACES.FINISHED_AT.desc().nullsLast(), RACES.ID.desc()));
     }
 
+    /** The other finished heats in this race's round and class, whose laps count towards the round's fastest. */
+    public List<Long> finishedRaceIdsInRound(long raceId) {
+        var race = RACES.as("this_race");
+        return dsl.select(RACES.ID)
+                .from(RACES)
+                .join(race).on(race.ROUND_ID.eq(RACES.ROUND_ID).and(race.EVENT_CLASS_ID.eq(RACES.EVENT_CLASS_ID)))
+                .where(race.ID.eq(raceId))
+                .and(RACES.ID.ne(raceId))
+                .and(RACES.STATUS.eq("FINISHED"))
+                .orderBy(RACES.ID)
+                .fetch(RACES.ID);
+    }
+
     private static List<SortField<?>> runOrder() {
         return List.of(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
                 RACES.HEAT_NUMBER.asc(), RACES.ID.asc());

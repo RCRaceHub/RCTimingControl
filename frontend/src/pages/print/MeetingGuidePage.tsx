@@ -367,7 +367,10 @@ export default function MeetingGuidePage() {
             <span className="font-mono text-xs"> http://&lt;laptop&gt;:8080/boards/overlay</span>, about
             450 &times; 520 pixels. It shows the race on track over your video on a transparent
             background: the running order, laps, last lap and the race clock (time to go, or time so
-            far when the format sets no length). It shows nothing between races.
+            far when the format sets no length). Rows flash on each lap like the live timing screen
+            (purple race best, blue personal best, green faster, red slower), and a ticker underneath
+            rolls through the laps run in the heat, the heat's fastest lap and the round's fastest.
+            Between races it shows a small "No race on track" panel.
           </li>
           <li>
             <span className="font-semibold">Overlay options</span> go on the end of the address:
