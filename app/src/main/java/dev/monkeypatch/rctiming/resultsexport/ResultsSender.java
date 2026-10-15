@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -62,7 +63,7 @@ public class ResultsSender {
 
     @Scheduled(initialDelay = 15_000, fixedDelayString = "${rctiming.racehub.send-interval-ms:15000}")
     public void sendDue() {
-        if (!endpoint.sendingEnabled()) {
+        if (!endpoint.snapshot().sendingEnabled()) {
             return;
         }
         List<ResultsOutboxItem> due = outboxRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByIdAsc(
@@ -90,9 +91,14 @@ public class ResultsSender {
     /** Sends one export and records the outcome. Returns whether it was accepted. */
     boolean send(ResultsOutboxItem item) {
         String key = idempotencyKey(item);
+        URI url = endpoint.resultsUrl();
+        if (url == null) {
+            // The address was cleared since this pass began; the export waits like any other failure
+            return failed(item, "No RaceHub address is set");
+        }
         try {
             restClient.post()
-                    .uri(endpoint.resultsUrl())
+                    .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
                     .headers(h -> {
                         h.setBearerAuth(endpoint.token());

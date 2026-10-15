@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
+import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
@@ -59,11 +59,11 @@ public class ResultsExportController {
 
     @GetMapping("/results-exports")
     public ResultsExportsDto list() {
-        var resultsUrl = endpoint.resultsUrl();
-        return new ResultsExportsDto(endpoint.sendingEnabled(),
-                resultsUrl == null ? null : resultsUrl.toString(),
-                endpoint.savedUrl(),
-                endpoint.missingSettings(),
+        var settings = endpoint.snapshot();
+        return new ResultsExportsDto(settings.sendingEnabled(),
+                settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
+                settings.savedUrl(),
+                settings.missingSettings(),
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 

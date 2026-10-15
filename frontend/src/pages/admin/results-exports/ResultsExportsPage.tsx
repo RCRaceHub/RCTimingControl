@@ -49,8 +49,8 @@ function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: stri
     setAddress.mutate(address, {
       onSuccess: () => toast.success(address.trim() ? 'RaceHub address saved.' : 'RaceHub address cleared.'),
       onError: err => {
-        const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
-        toast.error(typeof detail === 'string' ? detail : 'Could not save the RaceHub address.');
+        const message = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
+        toast.error(typeof message === 'string' ? message : 'Could not save the RaceHub address.');
       },
     });
   }

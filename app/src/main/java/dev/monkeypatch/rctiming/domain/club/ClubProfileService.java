@@ -229,15 +229,22 @@ public class ClubProfileService {
     /** Sets the RaceHub address results are sent to; null or blank clears it, so the settings file's applies. */
     public void updateRaceHubResultsUrl(Actor actor, String url) {
         ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
-        String before = profile.getRacehubResultsUrl();
+        // The address may carry a query string with a secret, so the audit row names only where it points
+        String before = profile.getRacehubResultsUrl() == null ? null : hostOf(profile.getRacehubResultsUrl());
         String cleaned = url == null || url.isBlank() ? null : url.strip();
         profile.setRacehubResultsUrl(cleaned);
         ClubProfile saved = clubProfileRepository.save(profile);
+        String after = cleaned == null ? null : hostOf(cleaned);
         audit.entry(actor, "RACEHUB_RESULTS_URL_CHANGED").entity("club_profile", saved.getId())
-                .summary(cleaned == null ? "Cleared the RaceHub results address"
-                        : "Changed the RaceHub results address to " + cleaned)
-                .before(Collections.singletonMap("resultsUrl", before))
-                .after(Collections.singletonMap("resultsUrl", cleaned)).record();
+                .summary(after == null ? "Cleared the RaceHub results address"
+                        : "Changed the RaceHub results address to " + after)
+                .before(Collections.singletonMap("resultsHost", before))
+                .after(Collections.singletonMap("resultsHost", after)).record();
+    }
+
+    private static String hostOf(String url) {
+        java.net.URI uri = java.net.URI.create(url);
+        return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() >= 0 ? ":" + uri.getPort() : "");
     }
 
     private static Map<String, Object> profileValues(ClubProfile p) {

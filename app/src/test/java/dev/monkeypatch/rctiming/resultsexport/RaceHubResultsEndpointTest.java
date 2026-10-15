@@ -26,7 +26,7 @@ class RaceHubResultsEndpointTest {
         RaceHubResultsEndpoint endpoint = endpoint("https://file.example/results", "key");
 
         assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://panel.example/results"));
-        assertThat(endpoint.savedUrl()).isEqualTo("https://panel.example/results");
+        assertThat(endpoint.snapshot().savedUrl()).isEqualTo("https://panel.example/results");
     }
 
     @Test
@@ -35,19 +35,28 @@ class RaceHubResultsEndpointTest {
         RaceHubResultsEndpoint endpoint = endpoint("https://file.example/results", "key");
 
         assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://file.example/results"));
-        assertThat(endpoint.savedUrl()).isNull();
-        assertThat(endpoint.sendingEnabled()).isTrue();
+        assertThat(endpoint.snapshot().savedUrl()).isNull();
+        assertThat(endpoint.snapshot().sendingEnabled()).isTrue();
     }
 
     @Test
     void sendingNeedsAnAddressFromEitherPlaceAndTheKey() {
         when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
-        assertThat(endpoint(null, null).missingSettings())
+        assertThat(endpoint(null, null).snapshot().missingSettings())
                 .containsExactly("the RaceHub address", "rctiming.racehub.token");
 
         when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("https://panel.example/results"));
-        assertThat(endpoint(null, "key").sendingEnabled()).isTrue();
-        assertThat(endpoint(null, null).missingSettings()).containsExactly("rctiming.racehub.token");
+        assertThat(endpoint(null, "key").snapshot().sendingEnabled()).isTrue();
+        assertThat(endpoint(null, null).snapshot().missingSettings()).containsExactly("rctiming.racehub.token");
+    }
+
+    @Test
+    void aSavedAddressThatIsNoLongerValidFallsBackToTheSettingsFile() {
+        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("http://racehub.example/results"));
+        var snapshot = endpoint("https://file.example/results", "key").snapshot();
+
+        assertThat(snapshot.resultsUrl()).isEqualTo(URI.create("https://file.example/results"));
+        assertThat(snapshot.savedUrl()).isNull();
     }
 
     @Test
@@ -57,6 +66,8 @@ class RaceHubResultsEndpointTest {
         assertThat(RaceHubResultsEndpoint.parse("http://localhost:8099/results")).isNotNull();
         assertThatThrownBy(() -> RaceHubResultsEndpoint.parse("http://racehub.example/results"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("https");
+        assertThatThrownBy(() -> RaceHubResultsEndpoint.parse("https://user:secret@racehub.example/results"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageNotContaining("secret");
         assertThatThrownBy(() -> RaceHubResultsEndpoint.parse("not an address"))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> RaceHubResultsEndpoint.parse("racehub.example/results"))
