@@ -1,0 +1,5 @@
+# Shell scripts must stay LF even on Windows checkouts: a CRLF gradlew fails in Docker with "./gradlew: not found"
+* text=auto
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
