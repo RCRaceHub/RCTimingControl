@@ -135,6 +135,11 @@
 - ~~**AUDIO-15**: Admin can review any racer's phonetic spelling, override it, or clear the generated clip to force regeneration~~ **Removed** (#18): there are no racer phonetic spellings to review.
 - [x] **AUDIO-16**: A competitor has an optional **spoken name** ("say as"), set by an admin, race director or referee on the Competitors screen, with a play button to hear it in the club's voice before saving. When set, it is the speech text for every announcement of that name (grid call, running order and the browser fallback); otherwise the display name is spoken after the tidying in AUDIO-17. It belongs to the competitor, so it carries over to later meetings, and a RaceHub or CSV re-import never changes it. Each change is recorded with who made it and the old and new wording, and admins can see that history. Replaces AUDIO-12 (#119)
 - [x] **AUDIO-17**: A name with no spoken name is tidied before it is spoken, in one place used by every announcement: text in brackets (a nickname or club tag) is left out, emoji and stray symbols and punctuation are dropped, spacing is collapsed, and names in ALL CAPITALS (and capitalised words of three letters or more in a mixed-case name; initials such as "AJ" stay) are spoken in normal capitalisation. A spoken name is always used exactly as typed. It changes only what is spoken, never what is displayed or exported (#120)
+- [x] **AUDIO-18**: A start horn sounds when a race starts, and a finish horn before the "Race finished" line. Each has its own switch; the sounds are made in the browser. The stagger driver calls follow the start horn (#278, #281)
+- [x] **AUDIO-19**: An optional start lead-in (0 to 60 seconds, 0 for none) runs when the director presses Start from the grid: the lead-in is spoken, the last five seconds tick, then the race starts. It can be cancelled (#279)
+- [x] **AUDIO-20**: Race calls, with one switch: the race and its number of drivers when the grid is called, "Race started" for a grid or rolling start, and "Race stopped", "Race resumed" and "Race abandoned". Spoken by the browser voice (#280, #282)
+- [x] **AUDIO-21**: A call between races, with a switch: after a race finishes, the next race and the drivers who marshal it (#283)
+- [x] **AUDIO-22**: The countdown clips are made for the club's own countdown intervals, and a race on the grid or running whose clips were lost (an app restart) has them made again when race control asks for them (#285)
 
 ### Race Official Views
 
@@ -341,6 +346,11 @@
 | AUDIO-15 | Phase 6 | Removed (#18) |
 | AUDIO-16 | Local-only plan | Complete (#119) |
 | AUDIO-17 | Local-only plan | Complete (#120) |
+| AUDIO-18 | Audio improvements | Complete (#278, #281) |
+| AUDIO-19 | Audio improvements | Complete (#279) |
+| AUDIO-20 | Audio improvements | Complete (#280, #282) |
+| AUDIO-21 | Audio improvements | Complete (#283) |
+| AUDIO-22 | Audio improvements | Complete (#285) |
 | OFFICIAL-01 | Phase 4 | Complete |
 | OFFICIAL-02 | Phase 4 | Complete |
 | OFFICIAL-03 | Phase 4 | Complete |

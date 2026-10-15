@@ -90,6 +90,48 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void theAdminFormKeepsTheHornsAndLeadInItDoesNotCarry() {
+        call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", false, "startCountdownSeconds", 10));
+        Map<String, Object> form = Map.of(
+                "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "defaultVoiceId", "en_GB-alan-medium");
+
+        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ClubAudioSettings now = clubProfileRepository
+                .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
+        assertThat(now.startHorn()).isFalse();
+        assertThat(now.finishHorn()).isTrue();
+        assertThat(now.startCountdownSeconds()).isEqualTo(10);
+    }
+
+    @Test
+    void raceControlCanChangeTheHornsAndLeadIn() {
+        ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("finishHorn", false, "announceNextRace", false, "startCountdownSeconds", 5));
+
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saved.getBody().get("finishHorn").asBoolean()).isFalse();
+        assertThat(saved.getBody().get("announceNextRace").asBoolean()).isFalse();
+        assertThat(saved.getBody().get("startHorn").asBoolean()).isTrue();
+        assertThat(saved.getBody().get("startCountdownSeconds").asInt()).isEqualTo(5);
+    }
+
+    @Test
+    void countdownIntervalsThatWouldFloodTheSpeechEngineAreRefused() {
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("countdownIntervals", new int[]{0}))
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("countdownIntervals", new int[]{99999}))
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("countdownIntervals", new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}))
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("countdownIntervals", new int[]{300, 60}))
+                .getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void savingTheAdminFormWithNoVoiceChosen_keepsTheStoredVoice() {
         ClubProfile profile = clubProfileRepository.findById(clubProfileService.getSingletonProfileId()).orElseThrow();
         profile.setDefaultVoiceId("");

@@ -33,8 +33,10 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,6 +65,7 @@ class AudioPreGenerationServiceTest {
         clubProfile.setName("Test Club");
         clubProfile.setDefaultVoiceId("en_GB-alan-medium");
         clubProfile.setAudioSettings(ClubAudioSettings.defaults());
+        lenient().when(clubProfileService.audioSettings()).thenReturn(ClubAudioSettings.defaults());
     }
 
     @Test
@@ -249,5 +252,48 @@ class AudioPreGenerationServiceTest {
 
         verify(clipService, never()).generateCountdownClip(anyLong(), anyInt(), anyString(), anyString());
     }
-}
 
+    @Test
+    void onRaceGridTransition_makesCountdownClipsForTheClubsOwnIntervals() {
+        when(clubProfileService.audioSettings()).thenReturn(new ClubAudioSettings(
+                true, true, true, true, true, 3, new int[]{900, 45}));
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(race));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(1L)).thenReturn(Collections.emptyList());
+        when(clubProfileService.defaultVoiceId()).thenReturn(Optional.of(clubProfile.getDefaultVoiceId()));
+        when(clipService.generateCountdownClip(anyLong(), anyInt(), anyString(), anyString()))
+                .thenReturn("http://localhost:8080/storage/clip.wav");
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1L, RaceStatus.GRID));
+
+        assertThat(service.getClipMap(1L)).containsKeys("countdown-900", "countdown-45")
+                .doesNotContainKeys("countdown-600", "countdown-30");
+    }
+
+    @Test
+    void getClipMap_makesTheClipsAgainForARaceOnTheGridThatLostThem() throws InterruptedException {
+        race.setStatus(RaceStatus.GRID);
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(race));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(1L)).thenReturn(Collections.emptyList());
+        when(clubProfileService.defaultVoiceId()).thenReturn(Optional.of(clubProfile.getDefaultVoiceId()));
+        when(clipService.generateCountdownClip(anyLong(), anyInt(), anyString(), anyString()))
+                .thenReturn("http://localhost:8080/storage/clip.wav");
+
+        // The first ask finds nothing and starts the work; the clips are there a moment later
+        assertThat(service.getClipMap(1L)).isEmpty();
+        long giveUp = System.currentTimeMillis() + 5000;
+        while (service.getClipMap(1L).isEmpty() && System.currentTimeMillis() < giveUp) {
+            Thread.sleep(25);
+        }
+        assertThat(service.getClipMap(1L)).containsKey("countdown-600");
+    }
+
+    @Test
+    void getClipMap_leavesARaceThatIsNotOnTheGridAlone() {
+        race.setStatus(RaceStatus.PENDING);
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(race));
+
+        assertThat(service.getClipMap(1L)).isEmpty();
+
+        verifyNoInteractions(clipService);
+    }
+}

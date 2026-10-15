@@ -21,7 +21,7 @@ const mockUseStomp = vi.fn<(topic: string | null) => { data: unknown; status: st
 vi.mock('@/hooks/race-control/useStomp', () => ({ useStomp: (topic: string | null) => mockUseStomp(topic) }));
 vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: [] }) }));
 vi.mock('@/hooks/race-control/useAnnouncements', () => ({
-  useAnnouncements: () => ({ playBeep: vi.fn(), setClipMap: vi.fn() }),
+  useAnnouncements: () => ({ playBeep: vi.fn(), setClipMap: vi.fn(), markAbandoned: vi.fn(), clearAbandoned: vi.fn() }),
 }));
 vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({ usePreRaceReadiness: () => ({ data: undefined }) }));
 vi.mock('@/hooks/race-control/usePregeneratedClips', () => ({ usePregeneratedClips: () => undefined }));

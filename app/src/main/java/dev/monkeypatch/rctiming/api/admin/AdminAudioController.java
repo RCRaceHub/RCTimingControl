@@ -39,11 +39,18 @@ public class AdminAudioController {
             boolean announceFinish,
             boolean announceRunningOrder,
             @Min(1) @Max(20) int runningOrderDepth,
-            String defaultVoiceId
+            String defaultVoiceId,
+            Boolean startHorn,
+            Boolean finishHorn,
+            Boolean announceRaceCalls,
+            Boolean announceNextRace,
+            @Min(0) @Max(60) Integer startCountdownSeconds
     ) {
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), defaultVoiceId);
+                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), defaultVoiceId,
+                    s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
+                    s.startCountdownSeconds());
         }
     }
 
@@ -61,6 +68,7 @@ public class AdminAudioController {
     public ResponseEntity<AudioSettingsDto> saveAudioSettings(Authentication auth,
                                                               @RequestBody @Valid AudioSettingsDto dto) {
         clubProfileService.changeAudioSettings(CurrentOfficial.actor(auth), profile -> {
+            ClubAudioSettings kept = profile.getAudioSettings();
             profile.setAudioSettings(new ClubAudioSettings(
                     dto.announceCountdown(),
                     dto.announceStagger(),
@@ -68,7 +76,13 @@ public class AdminAudioController {
                     dto.announceFinish(),
                     dto.announceRunningOrder(),
                     dto.runningOrderDepth(),
-                    profile.getAudioSettings().countdownIntervals()  // not part of this form: keep them
+                    kept.countdownIntervals(),  // not part of this form: keep them
+                    // a field the form leaves out keeps its saved value
+                    dto.startHorn() != null ? dto.startHorn() : kept.startHorn(),
+                    dto.finishHorn() != null ? dto.finishHorn() : kept.finishHorn(),
+                    dto.announceRaceCalls() != null ? dto.announceRaceCalls() : kept.announceRaceCalls(),
+                    dto.announceNextRace() != null ? dto.announceNextRace() : kept.announceNextRace(),
+                    dto.startCountdownSeconds() != null ? dto.startCountdownSeconds() : kept.startCountdownSeconds()
             ));
             // No voice chosen on the page: keep the one stored (the column is NOT NULL)
             if (dto.defaultVoiceId() != null && !dto.defaultVoiceId().isBlank()) {
