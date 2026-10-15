@@ -1,6 +1,9 @@
 package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.domain.format.EventClass;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
@@ -53,6 +56,8 @@ public class RaceStateMachineService {
     private final ApplicationEventPublisher eventPublisher;
     private final BumpUpSeedingService bumpUpSeedingService;
     private final AutoFinalsSeedingService autoFinalsSeedingService;
+    private final RaceFormatService raceFormatService;
+    private final EventClassRepository eventClassRepository;
 
     public RaceStateMachineService(LiveTimingHub liveTimingHub,
                                    RoundGeneratorService roundGeneratorService,
@@ -62,7 +67,9 @@ public class RaceStateMachineService {
                                    ResultSnapshotService resultSnapshotService,
                                    ApplicationEventPublisher eventPublisher,
                                    BumpUpSeedingService bumpUpSeedingService,
-                                   AutoFinalsSeedingService autoFinalsSeedingService) {
+                                   AutoFinalsSeedingService autoFinalsSeedingService,
+                                   RaceFormatService raceFormatService,
+                                   EventClassRepository eventClassRepository) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -72,6 +79,8 @@ public class RaceStateMachineService {
         this.eventPublisher = eventPublisher;
         this.bumpUpSeedingService = bumpUpSeedingService;
         this.autoFinalsSeedingService = autoFinalsSeedingService;
+        this.raceFormatService = raceFormatService;
+        this.eventClassRepository = eventClassRepository;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every
@@ -80,7 +89,25 @@ public class RaceStateMachineService {
     public void callGrid(Race race) {
         requireAllowed(race, RaceStatus.GRID);
         requireQualifyingComplete(race);
+        refreshStartType(race);
         transition(race, RaceStatus.GRID);
+    }
+
+    /**
+     * The race starts the way its class's format says now, not the way it did when the rounds were generated, so a
+     * format change made since then applies once the grid is called.
+     */
+    private void refreshStartType(Race race) {
+        Round round = roundRepository.findById(race.getRoundId()).orElse(null);
+        if (round == null) {
+            return;
+        }
+        EventClass eventClass = race.getEventClassId() == null ? null
+                : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        if (eventClass == null) {
+            return;
+        }
+        race.setStartType(raceFormatService.startType(eventClass, round.getType()));
     }
 
     /** Starts the race, or resumes a stopped one: a resume keeps the first start time, so the clock carries on. */
@@ -248,6 +275,10 @@ public class RaceStateMachineService {
             }
         }
         if (nextRound == null) {
+            return;
+        }
+        // Practice does not set the qualifying order: qualifying starts in car number order
+        if (finishedRound.getType() == RoundType.PRACTICE && nextRound.getType() == RoundType.QUALIFIER) {
             return;
         }
 

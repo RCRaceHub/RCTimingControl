@@ -181,8 +181,8 @@ public class RoundGeneratorService {
             }
             // Qualifying rounds
             for (int r = 1; r <= request.qualifyingRoundsCount(); r++) {
-                boolean isFirstRound = (r == 1 && request.practiceRoundsCount() == 0);
-                sequence = persistRound(RoundType.QUALIFIER, r, sequence, isFirstRound);
+                // The first qualifying round starts in car number order, whatever practice did
+                sequence = persistRound(RoundType.QUALIFIER, r, sequence, r == 1);
             }
             // Finals (empty grids — seeded by BumpUpSeedingService after qualifying)
             persistFinals(sequence);
@@ -217,8 +217,8 @@ public class RoundGeneratorService {
                         RaceEntry entry = new RaceEntry();
                         entry.setRaceId(savedRace.getId());
                         entry.setEntryId(entryIds.get(pos));
-                        // Round 1: set gridPosition to seed order within heat (1-based).
-                        // Subsequent rounds: gridPosition=null — will be assigned when the
+                        // The first round of its kind: set gridPosition to seed (car number) order within heat
+                        // (1-based). Subsequent rounds: gridPosition=null — will be assigned when the
                         // previous round finishes via applyPreviousRoundFinishingOrder.
                         entry.setGridPosition(isFirstRound ? pos + 1 : null);
                         entry.setCarNumber(pos + 1);  // car_number = 1-N, same as heat slot order for qualifying heats
