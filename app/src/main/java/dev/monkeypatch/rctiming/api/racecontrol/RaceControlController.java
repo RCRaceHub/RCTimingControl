@@ -147,7 +147,8 @@ public class RaceControlController {
 
     /**
      * Finishes the race and marks it abandoned. Unlike a restart it keeps the laps so far: the race goes to
-     * FINISHED with a result snapshot, and is only allowed from a state that can finish (RUNNING or STOPPED).
+     * FINISHED with a result snapshot. It is allowed from any state but FINISHED, so a heat that will never run can be
+     * abandoned before it starts.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/abandon")

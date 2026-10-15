@@ -40,6 +40,10 @@ public class RaceStateMachineService {
         VALID_TRANSITIONS = Map.copyOf(m);
     }
 
+    /** The states an abandon is allowed from: any that is not already finished. */
+    private static final Set<RaceStatus> ABANDONABLE =
+            EnumSet.of(RaceStatus.PENDING, RaceStatus.GRID, RaceStatus.RUNNING, RaceStatus.STOPPED);
+
     private final LiveTimingHub liveTimingHub;
     private final RoundGeneratorService roundGeneratorService;
     private final RaceRepository raceRepository;
@@ -101,13 +105,20 @@ public class RaceStateMachineService {
         transition(race, RaceStatus.FINISHED);
     }
 
-    /** Finishes the race and marks it abandoned at the same moment. */
+    /**
+     * Finishes the race and marks it abandoned at the same moment. Unlike a finish, a race that has not started
+     * can be abandoned too, so a heat that will never run (no one in it, or no-shows) stops holding up its class's
+     * finals.
+     */
     public void abandon(Race race) {
-        requireAllowed(race, RaceStatus.FINISHED);
+        if (!ABANDONABLE.contains(race.getStatus())) {
+            throw new IllegalStateTransitionException(
+                "Cannot abandon race " + race.getId() + " in state " + race.getStatus());
+        }
         Instant now = Instant.now();
         race.setFinishedAt(now);
         race.setAbandonedAt(now);
-        transition(race, RaceStatus.FINISHED);
+        move(race, RaceStatus.FINISHED);
     }
 
     /**
@@ -137,6 +148,11 @@ public class RaceStateMachineService {
      */
     void transition(Race race, RaceStatus target) {
         requireAllowed(race, target);
+        move(race, target);
+    }
+
+    /** The move itself, once the caller has checked it is allowed. */
+    private void move(Race race, RaceStatus target) {
         race.setStatus(target);
 
         // Save before anything reacts, so the result snapshot and the listeners read the race's new

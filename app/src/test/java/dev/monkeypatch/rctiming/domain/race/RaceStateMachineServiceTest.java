@@ -195,6 +195,22 @@ class RaceStateMachineServiceTest {
     }
 
     @Test
+    void abandon_worksOnARaceThatNeverStarted() {
+        Race race = race(RaceStatus.PENDING);
+        service.abandon(race);
+
+        assertThat(race.getStatus()).isEqualTo(RaceStatus.FINISHED);
+        assertThat(race.getAbandonedAt()).isNotNull();
+        assertThat(race.getStartedAt()).isNull();
+    }
+
+    @Test
+    void abandon_refusesAFinishedRace() {
+        assertThatThrownBy(() -> service.abandon(race(RaceStatus.FINISHED)))
+            .isInstanceOf(IllegalStateTransitionException.class);
+    }
+
+    @Test
     void stop_movesARunningRaceToStoppedAndTellsListeners() {
         Race race = race(RaceStatus.RUNNING);
         service.stop(race);

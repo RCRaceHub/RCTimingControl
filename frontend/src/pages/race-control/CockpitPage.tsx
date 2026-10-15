@@ -336,6 +336,17 @@ export default function CockpitPage() {
             >
               {mutations.callGrid.isPending ? 'Calling grid…' : 'Call Grid'}
             </Button>
+            {canControlRace && (
+              <Button
+                variant="outline"
+                onClick={onAbandon}
+                disabled={mutations.abandon.isPending}
+                className="w-fit"
+                title="For a heat that will never run, such as one with no one in it"
+              >
+                Abandon heat
+              </Button>
+            )}
             {finalBlocked && (
               <p className="text-sm text-destructive">
                 {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
