@@ -278,8 +278,8 @@ class AudioPreGenerationServiceTest {
         when(clipService.generateCountdownClip(anyLong(), anyInt(), anyString(), anyString()))
                 .thenReturn("http://localhost:8080/storage/clip.wav");
 
-        // The first ask finds nothing and starts the work; the clips are there a moment later
-        assertThat(service.getClipMap(1L)).isEmpty();
+        // The first ask starts the work, which may finish before it returns; the clips are there a moment later
+        service.getClipMap(1L);
         long giveUp = System.currentTimeMillis() + 5000;
         while (service.getClipMap(1L).isEmpty() && System.currentTimeMillis() < giveUp) {
             Thread.sleep(25);
