@@ -1,6 +1,7 @@
 // Streaming overlay for an OBS browser source (#29): the race in progress on a transparent page, with its
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
-// timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page never looks like a broken overlay.
+// timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page
+// never looks like a broken overlay.
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -9,9 +10,9 @@ import { getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
-import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const THEMES = {
   dark: {
