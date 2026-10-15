@@ -20,11 +20,11 @@ function renderPanel(canSeed = true) {
   );
 }
 
-const table = (finalsStarted = false) => [
+const table = (finalsStarted = false, heatsFinished = 3) => [
   {
     eventClassId: 7,
     className: '13.5 Touring',
-    heatsFinished: 2,
+    heatsFinished,
     heatsTotal: 3,
     finalsStarted,
     rows: [
@@ -45,7 +45,7 @@ describe('QualifyingTablePanel', () => {
     renderPanel();
     await waitFor(() => expect(screen.getByText('Ann Racer')).toBeInTheDocument());
     expect(screen.getByText('Bob Racer')).toBeInTheDocument();
-    expect(screen.getByText(/2 of 3 qualifying heats finished/)).toBeInTheDocument();
+    expect(screen.getByText(/3 of 3 qualifying heats finished/)).toBeInTheDocument();
   });
 
   it('seeds the finals for the class from the table', async () => {
@@ -54,6 +54,13 @@ describe('QualifyingTablePanel', () => {
     await waitFor(() => screen.getByText('Ann Racer'));
     fireEvent.click(screen.getByRole('button', { name: 'Seed finals from this order' }));
     await waitFor(() => expect(mockSeed).toHaveBeenCalledWith(1, 7));
+  });
+
+  it('cannot seed while a qualifying heat is unfinished', async () => {
+    mockGet.mockResolvedValue(table(false, 2));
+    renderPanel();
+    await waitFor(() => screen.getByText('Ann Racer'));
+    expect(screen.getByRole('button', { name: 'Seed finals from this order' })).toBeDisabled();
   });
 
   it('cannot seed once a final has started', async () => {

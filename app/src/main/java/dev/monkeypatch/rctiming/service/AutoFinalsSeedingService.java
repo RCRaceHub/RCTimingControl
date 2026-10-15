@@ -59,12 +59,7 @@ public class AutoFinalsSeedingService {
 
     /** Call after a qualifying heat of the class has finished and been saved. */
     public void seedIfQualifyingComplete(Long eventClassId) {
-        List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
-        if (qualifiers.stream().anyMatch(q -> q.getStatus() != RaceStatus.FINISHED)) {
-            return;
-        }
-        // A class whose qualifying was all abandoned has no results to seed from
-        if (qualifiers.stream().allMatch(q -> q.getAbandonedAt() != null)) {
+        if (!qualifyingComplete(eventClassId)) {
             return;
         }
         List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
@@ -78,17 +73,26 @@ public class AutoFinalsSeedingService {
         seed(Actor.system("finals-seeding"), eventClassId, "when qualifying finished");
     }
 
+    /** Every qualifying heat is finished and at least one was not abandoned, so there are results to seed from. */
+    private boolean qualifyingComplete(Long eventClassId) {
+        List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
+        return qualifiers.stream().allMatch(q -> q.getStatus() == RaceStatus.FINISHED)
+                && qualifiers.stream().anyMatch(q -> q.getAbandonedAt() == null);
+    }
+
     /**
-     * Seeds the class's finals again from the qualifying results so far, on an official's say, after a result
-     * changed (a heat re-run or corrected). Refused once a final has started, or while no heat has a result.
+     * Seeds the class's finals again from the qualifying results, on an official's say, after a result changed
+     * (a heat re-run or corrected). Refused until every qualifying heat is finished, since a driver who is only
+     * in an unfinished heat would be left out of every final, and once a final has started.
      */
     public void reseed(Actor actor, Long eventId, Long eventClassId) {
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         if (!eventClass.getEventId().equals(eventId)) {
             throw new EntityNotFoundException("Event class " + eventClassId + " not found in event " + eventId);
         }
-        if (qualifyingStandingsService.standingsFor(eventClassId).isEmpty()) {
-            throw new StateConflictException("No qualifying heat for this class has finished with a result yet");
+        if (!qualifyingComplete(eventClassId)) {
+            throw new StateConflictException(
+                "Every qualifying heat for this class must be finished, and not all abandoned, before its finals are seeded");
         }
         seed(actor, eventClassId, "on request");
     }

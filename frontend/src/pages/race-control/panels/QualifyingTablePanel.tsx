@@ -24,7 +24,6 @@ export function QualifyingTablePanel({
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: raceControlQueryKeys.qualifying(eventId),
     queryFn: () => getQualifying(eventId),
-    refetchInterval: 15_000,
   });
   const table = data?.find((t) => t.eventClassId === eventClassId);
 
@@ -85,10 +84,13 @@ export function QualifyingTablePanel({
                 variant="outline"
                 className="w-fit"
                 onClick={() => seed.mutate()}
-                disabled={seed.isPending || table.finalsStarted || table.rows.length === 0}
+                disabled={seed.isPending || table.finalsStarted || table.heatsFinished < table.heatsTotal || table.rows.length === 0}
               >
                 {seed.isPending ? 'Seeding…' : 'Seed finals from this order'}
               </Button>
+              {!table.finalsStarted && table.heatsFinished < table.heatsTotal && (
+                <span className="text-sm text-muted-foreground">Finish or abandon every qualifying heat first.</span>
+              )}
               {table.finalsStarted && (
                 <span className="text-sm text-muted-foreground">A final has started, so the finals can't be seeded again.</span>
               )}

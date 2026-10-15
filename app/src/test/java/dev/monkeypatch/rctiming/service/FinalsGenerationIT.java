@@ -234,6 +234,24 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 .containsExactlyElementsOf(order.subList(10, 20));
     }
 
+    @Test
+    void reseedingIsRefusedUntilEveryQualifyingHeatIsFinished() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        List<Race> heats = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER);
+        Race first = heats.get(0);
+        int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                first.getRoundId());
+        finishWithResult(first, buggies, round);
+
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass))
+                .isInstanceOf(StateConflictException.class);
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId + 1_000_000,
+                buggyClass)).isInstanceOf(EntityNotFoundException.class);
+    }
+
     /** Marks the heat finished (as the race control does) and stores its result; each row is entry, laps, best lap. */
     private void finishWithResult(Race heat, List<Long> buggies, int round) {
         List<long[]> rows = new ArrayList<>();
