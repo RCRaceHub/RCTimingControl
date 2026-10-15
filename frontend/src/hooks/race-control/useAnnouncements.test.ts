@@ -4,7 +4,6 @@ import {
   useAnnouncements,
   gridClipKey,
   gridFallbackText,
-  CLIP_GRACE_MS,
   type GridEntry,
 } from './useAnnouncements';
 import type { AudioSettingsDto } from '@/lib/audioApi';
@@ -63,46 +62,93 @@ describe('grid call helpers', () => {
   });
 });
 
-describe('useAnnouncements grid call', () => {
-  function setup(raceState: string, entries: GridEntry[] = grid) {
+describe('useAnnouncements stagger start', () => {
+  type P = { raceState: string; startType?: string | null; interval?: number };
+  function setup(raceState: string, extra: Partial<P> = {}, entries: GridEntry[] = grid) {
     return renderHook(
-      (p: { raceState: string }) =>
-        useAnnouncements({ raceId: 5, settings, raceState: p.raceState, gridEntries: entries }),
-      { initialProps: { raceState } },
+      (p: P) =>
+        useAnnouncements({
+          raceId: 5,
+          settings,
+          raceState: p.raceState,
+          gridEntries: entries,
+          startType: p.startType,
+          staggerIntervalSeconds: p.interval,
+        }),
+      { initialProps: { raceState, startType: 'STAGGER', interval: 2, ...extra } as P },
     );
   }
+  const clips = { 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' };
 
-  it('plays each driver\'s clip in turn once the clips have arrived', () => {
+  it('says nothing at the grid call, only once the race starts', () => {
     const { result } = setup('GRID');
-    act(() => result.current.setClipMap({ 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' }));
+    act(() => result.current.setClipMap(clips));
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(audioPlay).not.toHaveBeenCalled();
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('calls each driver in turn at the set interval after the start', () => {
+    const { result, rerender } = setup('GRID');
+    act(() => result.current.setClipMap(clips));
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
 
     act(() => { vi.advanceTimersByTime(0); });
     expect(audioUrls).toEqual(['http://x/11.wav']);
-    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => { vi.advanceTimersByTime(1999); });
+    expect(audioUrls).toHaveLength(1);
+    act(() => { vi.advanceTimersByTime(1); });
     expect(audioUrls).toEqual(['http://x/11.wav', 'http://x/12.wav']);
     expect(speak).not.toHaveBeenCalled();
   });
 
-  it('waits for the clips instead of speaking at once', () => {
-    setup('GRID');
-    act(() => { vi.advanceTimersByTime(CLIP_GRACE_MS - 1); });
-    expect(speak).not.toHaveBeenCalled();
-    expect(audioPlay).not.toHaveBeenCalled();
-  });
-
-  it('uses the browser voice when the clips never arrive', () => {
-    setup('GRID');
-    act(() => { vi.advanceTimersByTime(CLIP_GRACE_MS); });
+  it('uses the browser voice when the clips never arrived', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
     act(() => { vi.advanceTimersByTime(2000); });
     expect(speak).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the scheduled calls when the grid refetches', () => {
-    const { result, rerender } = setup('GRID');
-    act(() => result.current.setClipMap({ 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' }));
-    rerender({ raceState: 'GRID' });
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
     act(() => { vi.advanceTimersByTime(2000); });
-    expect(audioUrls).toHaveLength(2);
+    expect(speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not call a grid start or a race that was already running', () => {
+    const grid1 = setup('GRID', { startType: 'GRID' });
+    grid1.rerender({ raceState: 'RUNNING', startType: 'GRID', interval: 2 });
+    setup('RUNNING');
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('calls the drivers when the start comes without the grid being seen', () => {
+    const { rerender } = setup('PENDING');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not call the drivers again when a stopped race resumes', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(2000); });
+    rerender({ raceState: 'STOPPED', startType: 'STAGGER', interval: 2 });
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops calling when the race is stopped', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(0); });
+    rerender({ raceState: 'STOPPED', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).toHaveBeenCalledTimes(1);
   });
 });
 

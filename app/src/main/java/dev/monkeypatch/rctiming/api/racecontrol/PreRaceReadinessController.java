@@ -1,5 +1,12 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.domain.format.EventClass;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.StartType;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessQuery;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,14 +25,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class PreRaceReadinessController {
 
     private final PreRaceReadinessQuery query;
+    private final RaceRepository raceRepository;
+    private final EventClassRepository eventClassRepository;
+    private final RoundRepository roundRepository;
+    private final RaceFormatService raceFormatService;
 
-    public PreRaceReadinessController(PreRaceReadinessQuery query) {
+    public PreRaceReadinessController(PreRaceReadinessQuery query, RaceRepository raceRepository,
+                                      EventClassRepository eventClassRepository, RoundRepository roundRepository,
+                                      RaceFormatService raceFormatService) {
         this.query = query;
+        this.raceRepository = raceRepository;
+        this.eventClassRepository = eventClassRepository;
+        this.roundRepository = roundRepository;
+        this.raceFormatService = raceFormatService;
     }
 
     @GetMapping("/{raceId}/pre-race-readiness")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
     public PreRaceReadinessDto get(@PathVariable long raceId) {
-        return query.load(raceId);
+        PreRaceReadinessDto readiness = query.load(raceId);
+        Race race = raceRepository.getOrThrow(raceId);
+        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        // A race made before it kept its start type takes the format's start, as the round generator would
+        StartType startType = race.getStartType() != null ? race.getStartType()
+                : raceFormatService.startType(eventClass, roundRepository.getOrThrow(race.getRoundId()).getType());
+        return readiness.withStart(startType.name(), raceFormatService.staggerIntervalSeconds(eventClass));
     }
 }

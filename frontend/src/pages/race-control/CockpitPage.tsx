@@ -84,9 +84,9 @@ export default function CockpitPage() {
     queryFn: () => getAudioSettings(),
   });
 
-  // Fetch grid entries for stagger sequencer when race is at GRID state
+  // Fetch grid entries for the stagger sequencer at GRID, and keep them once the race starts: the calls play then
   const { data: preRaceReadiness } = usePreRaceReadiness(
-    selectedRace?.status === 'GRID' ? selectedRaceId : null,
+    selectedRace?.status === 'GRID' || selectedRace?.status === 'RUNNING' ? selectedRaceId : null,
   );
   const gridEntries = preRaceReadiness?.gridCall;
 
@@ -106,6 +106,8 @@ export default function CockpitPage() {
     raceState: selectedRace?.status,
     raceEndsAt: raceEndsAt(raceClock, raceClockReadAt),
     gridEntries,
+    startType: preRaceReadiness?.startType,
+    staggerIntervalSeconds: preRaceReadiness?.staggerIntervalSeconds,
   });
 
   // Fetch and cache pre-generated clips when race enters GRID (AUDIO-10)
