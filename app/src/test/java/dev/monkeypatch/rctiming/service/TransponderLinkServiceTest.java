@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -235,6 +236,8 @@ class TransponderLinkServiceTest {
 
     private void entry11(String primary, String secondary) {
         when(labels.eventOf(7L)).thenReturn(5L);
+        // link() counts the unknown number's own passings too
+        lenient().when(lapTimingService.countPassingsForTransponder(7L, "1234567")).thenReturn(0);
         Entry entry = new Entry();
         entry.setId(11L);
         entry.setTransponderNumberSnapshot(primary);
