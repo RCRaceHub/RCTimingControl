@@ -201,6 +201,7 @@ public class PiperTtsClient {
 
                     List<String> effectiveLocales = properties.effectiveLocales();
                     List<VoiceInfo> voices = new ArrayList<>();
+                    List<VoiceInfo> otherLocales = new ArrayList<>();
                     JsonNode ttsArray = data.path("tts");
                     if (ttsArray.isArray()) {
                         for (JsonNode ttsProgram : ttsArray) {
@@ -208,10 +209,12 @@ public class PiperTtsClient {
                             if (voicesNode.isArray()) {
                                 for (JsonNode v : voicesNode) {
                                     String name = v.path("name").asText();
-                                    if (!name.isBlank() && matchesLocale(name, effectiveLocales)) {
-                                        boolean isDefault = name.equals(properties.defaultVoice());
-                                        voices.add(new VoiceInfo(name, formatVoiceLabel(name), isDefault));
+                                    if (name.isBlank()) {
+                                        continue;
                                     }
+                                    boolean isDefault = name.equals(properties.defaultVoice());
+                                    VoiceInfo voice = new VoiceInfo(name, formatVoiceLabel(name), isDefault);
+                                    (matchesLocale(name, effectiveLocales) ? voices : otherLocales).add(voice);
                                 }
                             }
                         }
@@ -219,7 +222,14 @@ public class PiperTtsClient {
                     if (!voices.isEmpty()) {
                         return voices;
                     }
-                    log.warn("No Piper voices matched locales {}; falling back to default voice", effectiveLocales);
+                    // The locale comes from the JVM when tts.locales is unset, so a machine set to en_US would
+                    // otherwise hide every en_GB voice and leave the picker with just the default
+                    if (!otherLocales.isEmpty()) {
+                        log.warn("No Piper voices matched locales {}; listing all {} voices",
+                                effectiveLocales, otherLocales.size());
+                        return otherLocales;
+                    }
+                    log.warn("Piper listed no voices; falling back to default voice");
                 }
             }
 

@@ -49,6 +49,13 @@ export default function AdminAudioSettingsPage() {
 
   const displaySettings = localSettings ?? settings;
 
+  // The saved voice stays in the list even when Piper no longer offers it, so the picker never looks empty
+  const savedVoiceId = displaySettings?.defaultVoiceId;
+  const voiceOptions =
+    voices && voices.length > 0 && savedVoiceId && !voices.some((v) => v.voiceId === savedVoiceId)
+      ? [{ voiceId: savedVoiceId, label: savedVoiceId, isDefault: false }, ...voices]
+      : (voices ?? []);
+
   const handleToggle = (key: keyof AudioSettingsDto) => {
     if (!displaySettings) return;
     setLocalSettings({ ...displaySettings, [key]: displaySettings[key] === false });
@@ -129,6 +136,10 @@ export default function AdminAudioSettingsPage() {
                 <Label htmlFor="default-voice">Default voice</Label>
                 {voicesLoading ? (
                   <p className="text-sm text-muted-foreground">Loading voices…</p>
+                ) : voiceOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No voices available. Announcer voices (Piper) are switched off or not reachable.
+                  </p>
                 ) : (
                   <Select
                     value={displaySettings.defaultVoiceId ?? ''}
@@ -138,7 +149,7 @@ export default function AdminAudioSettingsPage() {
                       <SelectValue placeholder="Select default voice" />
                     </SelectTrigger>
                     <SelectContent>
-                      {voices?.map((v) => (
+                      {voiceOptions.map((v) => (
                         <SelectItem key={v.voiceId} value={v.voiceId}>
                           {v.label}
                         </SelectItem>
