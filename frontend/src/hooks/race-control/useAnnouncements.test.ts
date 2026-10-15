@@ -319,6 +319,22 @@ describe('useAnnouncements countdown', () => {
     expect(speak.mock.calls[0][0].text).toBe('10 seconds remaining.');
   });
 
+  it('says the time is up when the clock reaches zero', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: countdownSettings,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 15_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(15_100); });
+
+    expect(speak).toHaveBeenCalledTimes(2);
+    expect(speak.mock.calls[1][0].text).toBe('Time. Cars finish as they cross the line.');
+  });
+
   it('stays silent when the race has no end to count down to', () => {
     renderHook(() =>
       useAnnouncements({ raceId: 5, settings: countdownSettings, raceState: 'RUNNING', raceEndsAt: null }),

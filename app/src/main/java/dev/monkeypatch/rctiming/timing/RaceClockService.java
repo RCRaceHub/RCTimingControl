@@ -1,12 +1,16 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -114,10 +118,31 @@ public class RaceClockService {
         return new RaceClockDto(raceId, status.name(), elapsed, durationMs, remaining, running);
     }
 
-    /** The length of the race from its format, or empty for an unknown race or one with no length. */
+    /**
+     * A race's length and, for a stagger start, the gap between cars.
+     *
+     * @param durationMs        each car's time on the track, or null for a race with no length
+     * @param staggerIntervalMs the time between one car's start and the next in grid order, 0 unless the race starts
+     *                          staggered
+     */
+    public record RacePlan(Long durationMs, long staggerIntervalMs) {
+        public static final RacePlan NONE = new RacePlan(null, 0);
+    }
+
+    /** The race's plan from its format, or empty for an unknown race. */
     @Transactional(readOnly = true)
-    public Optional<Long> durationMsOf(long raceId) {
-        return raceRepository.findById(raceId).map(this::durationMs);
+    public Optional<RacePlan> planOf(long raceId) {
+        return raceRepository.findById(raceId).map(race -> {
+            Optional<EventClass> eventClass = race.getEventClassId() == null ? Optional.empty()
+                    : eventClassRepository.findById(race.getEventClassId());
+            Optional<RoundType> roundType = roundRepository.findById(race.getRoundId()).map(Round::getType);
+            long intervalMs = 0;
+            if (eventClass.isPresent() && roundType.isPresent()
+                    && raceFormatService.startType(eventClass.get(), roundType.get()) == StartType.STAGGER) {
+                intervalMs = raceFormatService.staggerIntervalSeconds(eventClass.get()) * 1000L;
+            }
+            return new RacePlan(durationMs(race), intervalMs);
+        });
     }
 
     private Long durationMs(Race race) {

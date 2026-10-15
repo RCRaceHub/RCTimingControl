@@ -76,7 +76,9 @@ public class LastLapTimeout {
             return;
         }
         RaceClockDto clock = found.get();
-        long overrunMs = clock.elapsedMs() - clock.durationMs();
+        // The last car to start has the longest window; a stagger start ends later than the clock says
+        long lastStartMs = lapTimingService.peek(race.getId()).map(LiveRaceState::lastStartOffsetMs).orElse(0L);
+        long overrunMs = clock.elapsedMs() - clock.durationMs() - lastStartMs;
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());
         if (maxLastLapMs.isEmpty()) {
             return;
