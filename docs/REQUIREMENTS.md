@@ -140,6 +140,7 @@
 - [x] **AUDIO-20**: Race calls, with one switch: the race and its number of drivers when the grid is called, "Race started" for a grid or rolling start, and "Race stopped", "Race resumed" and "Race abandoned". Spoken by the browser voice (#280, #282)
 - [x] **AUDIO-21**: A call between races, with a switch: after a race finishes, the next race and the drivers who marshal it (#283)
 - [x] **AUDIO-22**: The countdown clips are made for the club's own countdown intervals, and a race on the grid or running whose clips were lost (an app restart) has them made again when race control asks for them (#285)
+- [x] **AUDIO-23**: The club can replace the start and finish horns with its own sound files (mp3, wav or ogg, up to 1 MB and 10 seconds) and go back to the built-in ones; race control's test buttons also try the lap beep and the Piper voice, and say if Piper cannot be reached (#278, #281, #286)
 
 ### Race Official Views
 
@@ -351,6 +352,7 @@
 | AUDIO-20 | Audio improvements | Complete (#280, #282) |
 | AUDIO-21 | Audio improvements | Complete (#283) |
 | AUDIO-22 | Audio improvements | Complete (#285) |
+| AUDIO-23 | Audio improvements | Complete (#278, #281, #286) |
 | OFFICIAL-01 | Phase 4 | Complete |
 | OFFICIAL-02 | Phase 4 | Complete |
 | OFFICIAL-03 | Phase 4 | Complete |

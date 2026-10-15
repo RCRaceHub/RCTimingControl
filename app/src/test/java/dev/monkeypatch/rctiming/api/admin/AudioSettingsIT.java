@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -185,7 +188,68 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         assertThat(now.runningOrderDepth()).isEqualTo(3);
     }
 
+    @Test
+    void aClubSoundReplacesTheStartHornAndRemovingItGoesBack() {
+        ResponseEntity<JsonNode> uploaded = uploadHorn("start", "audio/wav", new byte[]{1, 2, 3}, 1500);
+
+        assertThat(uploaded.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(uploaded.getBody().get("startMs").asInt()).isEqualTo(1500);
+        assertThat(uploaded.getBody().get("startUrl").asText()).contains("horns/start-").endsWith(".wav");
+        assertThat(uploaded.getBody().get("finishUrl").isNull()).isTrue();
+        // race control sees it with the rest of the settings, and changing a toggle keeps it
+        call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", true));
+        JsonNode shown = call(HttpMethod.GET, RACE_CONTROL_SETTINGS, null).getBody();
+        assertThat(shown.get("hornSounds").get("startMs").asInt()).isEqualTo(1500);
+
+        ResponseEntity<JsonNode> removed = call(HttpMethod.DELETE, "/api/v1/admin/audio/horns/start", null);
+
+        assertThat(removed.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(removed.getBody().get("startUrl").isNull()).isTrue();
+    }
+
+    @Test
+    void aHornSoundThatIsNotShortAudioIsRefused() {
+        assertThat(uploadHorn("finish", "text/html", new byte[]{1}, 1000).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(uploadHorn("finish", "audio/mpeg", new byte[]{1}, 60_000).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(uploadHorn("finish", "audio/mpeg", new byte[2 * 1024 * 1024], 1000).getStatusCode())
+                .isIn(HttpStatus.BAD_REQUEST, HttpStatus.PAYLOAD_TOO_LARGE);
+        assertThat(uploadHorn("siren", "audio/mpeg", new byte[]{1}, 1000).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void theAdminFormKeepsTheClubHornSounds() {
+        uploadHorn("finish", "audio/ogg", new byte[]{9}, 2000);
+        Map<String, Object> form = Map.of(
+                "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "defaultVoiceId", "en_GB-alan-medium");
+
+        call(HttpMethod.PUT, ADMIN_SETTINGS, form);
+
+        ClubAudioSettings now = clubProfileRepository
+                .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
+        assertThat(now.hornSounds().finishMs()).isEqualTo(2000);
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private ResponseEntity<JsonNode> uploadHorn(String horn, String contentType, byte[] bytes, int durationMs) {
+        HttpHeaders partHeaders = new HttpHeaders();
+        partHeaders.setContentType(MediaType.parseMediaType(contentType));
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new HttpEntity<>(new ByteArrayResource(bytes) {
+            @Override public String getFilename() { return "horn"; }
+        }, partHeaders));
+        body.add("durationMs", String.valueOf(durationMs));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        return restTemplate.exchange("/api/v1/admin/audio/horns/" + horn, HttpMethod.PUT,
+                new HttpEntity<>(body, headers), JsonNode.class);
+    }
 
     private ResponseEntity<JsonNode> call(HttpMethod method, String path, Object body) {
         HttpHeaders headers = new HttpHeaders();

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import type { AudioSettingsDto } from '@/lib/audioApi';
 import { speakWithBrowser } from '@/lib/speech';
-import { FINISH_HORN_MS, START_HORN_MS, playFinishHorn, playStartHorn } from '@/lib/sounds';
+import { playFinishHorn, playLapBeep, playStartHorn, startHornMs } from '@/lib/sounds';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
@@ -228,9 +228,9 @@ export function useAnnouncements({
       if (s?.announceFinish !== false) fallbackSpeak('Race abandoned.');
       return;
     }
-    const hornMs = s?.finishHorn !== false ? playFinishHorn(volumeRef.current) : 0;
+    const hornMs = s?.finishHorn !== false ? playFinishHorn(volumeRef.current, s?.hornSounds) : 0;
     if (!s?.announceFinish) return;
-    const t = setTimeout(() => playClip('finish', 'Race finished. Checkered flag.'), hornMs ? FINISH_HORN_MS : 0);
+    const t = setTimeout(() => playClip('finish', 'Race finished. Checkered flag.'), hornMs);
     return () => clearTimeout(t);
   }, [raceState, raceId, playClip, fallbackSpeak]);
 
@@ -306,11 +306,13 @@ export function useAnnouncements({
     let hornMs = 0;
     if (!hornFiredRef.current) {
       hornFiredRef.current = true;
-      if (settingsRef.current?.startHorn !== false) hornMs = playStartHorn(volumeRef.current);
+      if (settingsRef.current?.startHorn !== false) {
+        hornMs = playStartHorn(volumeRef.current, settingsRef.current?.hornSounds);
+      }
       if (startType && startType !== 'STAGGER' && settingsRef.current?.announceRaceCalls !== false) {
         const t = setTimeout(() => {
           if (raceStateRef.current === 'RUNNING') fallbackSpeak('Race started.');
-        }, hornMs ? START_HORN_MS : 0);
+        }, hornMs);
         staggerTimeoutsRef.current.push(t);
       }
     }
@@ -322,7 +324,7 @@ export function useAnnouncements({
     staggerFiredRef.current = true;
     const stepMs = Math.max(staggerIntervalSeconds, 1) * 1000;
     // The first driver is called once the horn has sounded
-    const startAfterMs = settingsRef.current?.startHorn !== false ? START_HORN_MS : 0;
+    const startAfterMs = settingsRef.current?.startHorn !== false ? startHornMs(settingsRef.current?.hornSounds) : 0;
 
     gridEntries.forEach((entry, index) => {
       const t = setTimeout(() => {
@@ -335,25 +337,11 @@ export function useAnnouncements({
     });
   }, [raceState, gridEntries, startType, staggerIntervalSeconds, clearStagger, playClip, fallbackSpeak]);
 
-  // Per-lap improvement beeps (AUDIO-04) via AudioContext
+  // Per-lap improvement beeps (AUDIO-04)
   const playBeep = useCallback(
     (improving: boolean) => {
       if (settingsRef.current && !settingsRef.current.announceLapBeep) return;
-      try {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        gain.gain.value = volumeRef.current;
-        osc.frequency.value = improving ? 880 : 440;
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
-        // Close the context after the beep to release its audio resources
-        osc.onended = () => ctx.close();
-      } catch (e) {
-        console.warn('Beep failed:', e);
-      }
+      playLapBeep(volumeRef.current, improving);
     },
     [],
   );

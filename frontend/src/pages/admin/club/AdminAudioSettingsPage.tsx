@@ -20,6 +20,7 @@ import {
   listVoices,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
+import { HornSoundsCard } from './HornSoundsCard';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 export default function AdminAudioSettingsPage() {
@@ -132,6 +133,7 @@ export default function AdminAudioSettingsPage() {
         </CardContent>
       </Card>
 
+      <HornSoundsCard sounds={settings?.hornSounds} />
     </div>
   );
 }

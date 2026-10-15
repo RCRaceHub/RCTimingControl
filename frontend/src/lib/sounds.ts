@@ -1,7 +1,16 @@
 /**
  * Horns and ticks for the race, made with the browser's audio context so there are no sound files to ship.
- * Each returns how long it plays, in milliseconds, so a spoken line can follow it.
+ * A club can replace either horn with its own sound file. Each horn returns how long it plays, in milliseconds,
+ * so a spoken line can follow it.
  */
+
+/** The club's own horn sound files, with how long each plays; a horn with none uses the built-in one. */
+export interface HornSounds {
+  startUrl?: string | null;
+  startMs?: number | null;
+  finishUrl?: string | null;
+  finishMs?: number | null;
+}
 
 /** How long the start horn sounds. */
 export const START_HORN_MS = 1200;
@@ -80,16 +89,55 @@ function play(blasts: Blast[], volume: number, wave: OscillatorType) {
   }
 }
 
-/** One long blast, as a race starts. */
-export function playStartHorn(volume: number): number {
-  play(START_BLASTS, volume, 'sawtooth');
-  return START_HORN_MS;
+/** How long the start horn plays: the club's sound if it has one. */
+export function startHornMs(sounds?: HornSounds | null): number {
+  return sounds?.startUrl && sounds.startMs ? sounds.startMs : START_HORN_MS;
 }
 
-/** Two short blasts and a long one, as a race finishes. */
-export function playFinishHorn(volume: number): number {
-  play(FINISH_BLASTS, volume, 'sawtooth');
-  return FINISH_HORN_MS;
+/** How long the finish horn plays: the club's sound if it has one. */
+export function finishHornMs(sounds?: HornSounds | null): number {
+  return sounds?.finishUrl && sounds.finishMs ? sounds.finishMs : FINISH_HORN_MS;
+}
+
+/** Plays the club's sound file; if the browser can't, sounds the built-in horn instead. */
+function playFile(url: string, volume: number, builtIn: () => void) {
+  // A file that will not play can fail twice (the error event and the rejected play): sound the horn once
+  let fellBack = false;
+  const fallBack = (e?: unknown) => {
+    if (fellBack) return;
+    fellBack = true;
+    console.warn('Horn sound failed:', e);
+    builtIn();
+  };
+  try {
+    const audio = new Audio(url);
+    audio.volume = Math.min(1, Math.max(0, volume));
+    audio.onerror = () => fallBack();
+    audio.play().catch(fallBack);
+  } catch (e) {
+    fallBack(e);
+  }
+}
+
+/** One long blast, as a race starts; the club's own sound if it has uploaded one. */
+export function playStartHorn(volume: number, sounds?: HornSounds | null): number {
+  const builtIn = () => play(START_BLASTS, volume, 'sawtooth');
+  if (sounds?.startUrl && sounds.startMs) playFile(sounds.startUrl, volume, builtIn);
+  else builtIn();
+  return startHornMs(sounds);
+}
+
+/** Two short blasts and a long one, as a race finishes; the club's own sound if it has uploaded one. */
+export function playFinishHorn(volume: number, sounds?: HornSounds | null): number {
+  const builtIn = () => play(FINISH_BLASTS, volume, 'sawtooth');
+  if (sounds?.finishUrl && sounds.finishMs) playFile(sounds.finishUrl, volume, builtIn);
+  else builtIn();
+  return finishHornMs(sounds);
+}
+
+/** The beep for a lap: higher when the driver improved. */
+export function playLapBeep(volume: number, improving: boolean) {
+  play([{ at: 0, length: 0.2, hz: improving ? 880 : 440 }], volume, 'sine');
 }
 
 /** A short tick for the start countdown; the last one is higher. */

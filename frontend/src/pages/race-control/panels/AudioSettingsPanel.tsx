@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ChevronDown, ChevronUp, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -7,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playStartHorn, playTick } from '@/lib/sounds';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick } from '@/lib/sounds';
 import {
   ANNOUNCEMENT_TOGGLES,
   getAudioSettings,
+  getPiperTestClip,
   patchAudioSettings,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
@@ -36,6 +38,26 @@ export function AudioSettingsPanel() {
     'Testing audio. Race control online. First place, Car 12. Second place, Car 7.',
     volume / 100,
   );
+
+  // Test Piper: play a clip from the club's Piper voice, or say it can't be reached
+  const [piperTesting, setPiperTesting] = useState(false);
+  const testPiper = async () => {
+    setPiperTesting(true);
+    let url: string | null = null;
+    try {
+      url = URL.createObjectURL(await getPiperTestClip());
+      const audio = new Audio(url);
+      audio.volume = volume / 100;
+      const clip = url;
+      audio.onended = () => URL.revokeObjectURL(clip);
+      await audio.play();
+    } catch {
+      if (url) URL.revokeObjectURL(url);
+      toast.error('Piper could not be reached or its clip would not play, so spoken calls will use the browser voice.');
+    } finally {
+      setPiperTesting(false);
+    }
+  };
 
   const toggleSetting = (key: keyof AudioSettingsDto) => {
     if (!settings) return;
@@ -182,14 +204,20 @@ export function AudioSettingsPanel() {
                 >
                   ▶ Test Audio
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playStartHorn(volume / 100)}>
+                <Button variant="outline" size="sm" onClick={() => playStartHorn(volume / 100, settings.hornSounds)}>
                   ▶ Start horn
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100)}>
+                <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100, settings.hornSounds)}>
                   ▶ Finish horn
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => playTick(volume / 100)}>
                   ▶ Tick
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, true)}>
+                  ▶ Lap beep
+                </Button>
+                <Button variant="outline" size="sm" onClick={testPiper} disabled={piperTesting}>
+                  {piperTesting ? 'Asking Piper…' : '▶ Piper voice'}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">

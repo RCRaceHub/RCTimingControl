@@ -11,6 +11,10 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
+import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -35,9 +39,11 @@ import java.util.Arrays;
 public class AudioSettingsController {
 
     private final ClubProfileService clubProfileService;
+    private final PiperTtsClient piperClient;
 
-    public AudioSettingsController(ClubProfileService clubProfileService) {
+    public AudioSettingsController(ClubProfileService clubProfileService, PiperTtsClient piperClient) {
         this.clubProfileService = clubProfileService;
+        this.piperClient = piperClient;
     }
 
     /** The settings as they are now. */
@@ -53,13 +59,14 @@ public class AudioSettingsController {
             boolean finishHorn,
             boolean announceRaceCalls,
             boolean announceNextRace,
-            int startCountdownSeconds
+            int startCountdownSeconds,
+            ClubAudioSettings.HornSounds hornSounds
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds());
+                    s.startCountdownSeconds(), s.hornSounds());
         }
     }
 
@@ -121,9 +128,26 @@ public class AudioSettingsController {
                             patch.announceRaceCalls() != null ? patch.announceRaceCalls() : s.announceRaceCalls(),
                             patch.announceNextRace() != null ? patch.announceNextRace() : s.announceNextRace(),
                             patch.startCountdownSeconds() != null
-                                    ? patch.startCountdownSeconds() : s.startCountdownSeconds()
+                                    ? patch.startCountdownSeconds() : s.startCountdownSeconds(),
+                            s.hornSounds()  // changed only by uploading or removing a sound
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));
+    }
+
+    /**
+     * A short spoken sample from the club's Piper voice, for the test button (#286): the audio if Piper answered,
+     * 503 if it is switched off or cannot be reached, so the official learns whether the race calls will be
+     * spoken by Piper or fall back to the browser voice.
+     */
+    @GetMapping(value = "/piper-test", produces = "audio/wav")
+    public ResponseEntity<byte[]> piperTest() {
+        try {
+            byte[] wav = piperClient.synthesize("Testing the Piper voice. Race control online.",
+                    clubProfileService.defaultVoiceId().orElse(null));
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).body(wav);
+        } catch (TtsUnavailableException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
     }
 }
