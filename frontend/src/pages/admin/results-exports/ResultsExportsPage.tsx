@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { CloudUpload, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,6 @@ function detail(row: ResultsExportRowDto) {
 function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: string | null }) {
   const setAddress = useSetResultsAddress();
   const [value, setValue] = useState(savedUrl ?? '');
-  useEffect(() => setValue(savedUrl ?? ''), [savedUrl]);
 
   function save(address: string) {
     setAddress.mutate(address, {
@@ -119,7 +118,7 @@ export default function ResultsExportsPage() {
         </p>
       </div>
 
-      {data && <AddressForm savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
+      {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
 
       {data?.sendingEnabled && (
         <p className="text-sm">
