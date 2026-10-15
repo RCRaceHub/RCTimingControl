@@ -172,8 +172,9 @@ public class PiperTtsClient {
 
     /**
      * List available voices by sending a describe event to Piper.
-     * Falls back to a single-entry list using the configured default voice if Piper
-     * is unreachable or returns no voices (e.g. still downloading the model).
+     * Lists the voices matching the configured locales, or every voice if none match. Falls back to a
+     * single-entry list using the configured default voice if Piper is unreachable or returns no voices
+     * (e.g. still downloading the model).
      */
     public List<VoiceInfo> listVoices() {
         if (!properties.enabled()) {

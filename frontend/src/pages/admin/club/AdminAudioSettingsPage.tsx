@@ -138,7 +138,7 @@ export default function AdminAudioSettingsPage() {
                   <p className="text-sm text-muted-foreground">Loading voices…</p>
                 ) : voiceOptions.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No voices available. Announcer voices (Piper) are switched off or not reachable.
+                    No voices available. Announcer voices (Piper) are switched off.
                   </p>
                 ) : (
                   <Select
