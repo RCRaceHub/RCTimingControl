@@ -167,6 +167,26 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void roundFastestLap_isTheBestLapOfTheOtherFinishedHeatsInTheRound() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
+        Race heat2 = fx.race(q1, 2, RaceStatus.RUNNING);
+        saveSnapshot(heat1, """
+                [{"position":1,"entryId":11,"competitorId":null,"driverName":"Jane Doe","carNumber":"7",
+                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null},
+                 {"position":2,"entryId":12,"competitorId":null,"driverName":"Sam Second","carNumber":null,
+                  "lapsCompleted":11,"totalTimeMs":301000,"bestLapMs":18500,"gapToLeaderMs":1000}]
+                """);
+
+        Map body = get("/api/v1/boards/races/" + heat2.getId() + "/round-fastest-lap");
+        assertThat(((Number) body.get("lapMs")).longValue()).isEqualTo(18500);
+        assertThat(body.get("driverName")).isEqualTo("Sam Second");
+
+        Map none = get("/api/v1/boards/races/" + heat1.getId() + "/round-fastest-lap");
+        assertThat(none.get("lapMs")).isNull();
+    }
+
+    @Test
     void resultsBoard_showsTheLastFinishedRacesSnapshot() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);

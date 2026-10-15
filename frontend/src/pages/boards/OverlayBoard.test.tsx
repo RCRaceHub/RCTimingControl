@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
@@ -20,9 +20,10 @@ vi.mock('@/lib/boardsApi', () => ({
   getNowNext: vi.fn(),
   getBoardLiveTiming: vi.fn(),
   getRaceClock: vi.fn(),
+  getRoundFastestLap: vi.fn(),
 }));
 
-import { getBoardLiveTiming, getNowNext, getRaceClock } from '@/lib/boardsApi';
+import { getBoardLiveTiming, getNowNext, getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
   raceId: 12,
@@ -89,6 +90,7 @@ beforeEach(() => {
     row(3, 'Walk-in Wendy', 15_400),
   ]);
   vi.mocked(getRaceClock).mockResolvedValue(clock());
+  vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
 });
 
 afterEach(() => {
@@ -96,12 +98,11 @@ afterEach(() => {
 });
 
 describe('OverlayBoard', () => {
-  it('shows nothing on a transparent page while no race is on track', async () => {
+  it('shows a small idle panel on a transparent page while no race is on track', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(null));
-    const { container } = renderOverlay();
+    renderOverlay();
 
-    await waitFor(() => expect(getNowNext).toHaveBeenCalled());
-    expect(container).toBeEmptyDOMElement();
+    expect(await screen.findByText('No race on track')).toBeInTheDocument();
     expect(document.body.style.background).toBe('transparent');
     expect(document.documentElement.style.background).toBe('transparent');
   });
@@ -114,6 +115,34 @@ describe('OverlayBoard', () => {
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
     expect(screen.getByText('13.870')).toBeInTheDocument();
     expect(await screen.findByLabelText('Race clock')).toHaveTextContent('3:45');
+  });
+
+  it('flashes a new lap in the colour the live timing screen uses', async () => {
+    stompFrames['/topic/race/12/timing'] = [{ ...row(1, 'Grace Hopper', 13_500), overallFastestLapMs: 13_500 }];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay();
+
+    const driver = await screen.findByText('Grace Hopper');
+    expect(driver.closest('tr')).toHaveClass('bg-purple-500/40');
+  });
+
+  it('ticker starts with the heat\'s total laps, then the fastest lap and the round\'s fastest', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: 12_900, driverName: 'Katherine Johnson' });
+    renderOverlay();
+
+    const ticker = await screen.findByLabelText('Race stats');
+    expect(ticker).toHaveTextContent('Laps in heat17');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(ticker).toHaveTextContent('Grace Hopper');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5000);
+    });
+    expect(ticker).toHaveTextContent('Katherine Johnson');
   });
 
   it('follows the live timing the app pushes', async () => {

@@ -1,15 +1,18 @@
 // Streaming overlay for an OBS browser source (#29): the race in progress on a transparent page, with its
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
-// timing and state topics (useBoardRace), and shows nothing while no race is on track so the stream stays clear.
+// timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page
+// never looks like a broken overlay.
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getRaceClock } from '@/lib/boardsApi';
+import { getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const THEMES = {
   dark: {
@@ -52,13 +55,72 @@ function useNow(active: boolean) {
   return now;
 }
 
+/** How long each ticker stat stays up before the next one rolls in. */
+const TICKER_MS = 5000;
+
+/** Rolls through the heat's total laps, its fastest lap and the round's fastest lap, one stat at a time. */
+function StatsTicker({
+  rows,
+  raceId,
+  mutedClass,
+  rowClass,
+}: {
+  rows: LiveTimingRowDto[];
+  raceId: number;
+  mutedClass: string;
+  rowClass: string;
+}) {
+  const { data: round } = useQuery({
+    queryKey: publicQueryKeys.boards.roundFastest(raceId),
+    queryFn: () => getRoundFastestLap(raceId),
+    refetchInterval: BOARD_POLL_MS * 6,
+  });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), TICKER_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  let heatBest: { lapMs: number; driverName: string } | null = null;
+  let totalLaps = 0;
+  for (const row of rows) {
+    totalLaps += row.lapsCompleted;
+    if (row.bestLapMs !== null && row.bestLapMs > 0 && (heatBest === null || row.bestLapMs < heatBest.lapMs)) {
+      heatBest = { lapMs: row.bestLapMs, driverName: row.driverName };
+    }
+  }
+  // The round's fastest includes this heat, which has no snapshot until it finishes
+  const roundBest =
+    round?.lapMs != null && round.driverName && (heatBest === null || round.lapMs < heatBest.lapMs)
+      ? { lapMs: round.lapMs, driverName: round.driverName }
+      : heatBest;
+
+  const stats: Array<[string, string]> = [];
+  if (totalLaps > 0) stats.push(['Laps in heat', String(totalLaps)]);
+  if (heatBest) stats.push(['Fastest lap', `${fmtMs(heatBest.lapMs)} · ${heatBest.driverName}`]);
+  if (roundBest) stats.push(['Round fastest', `${fmtMs(roundBest.lapMs)} · ${roundBest.driverName}`]);
+  if (stats.length === 0) return null;
+
+  const [label, value] = stats[tick % stats.length];
+  return (
+    <div
+      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm', rowClass)}
+      aria-label="Race stats"
+      aria-live="off"
+    >
+      <span className={cn('text-xs uppercase tracking-wide', mutedClass)}>{label}</span>
+      <span className="min-w-0 flex-1 truncate font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const { eventId, top, showClass, theme } = parseOverlayOptions(searchParams);
   const colours = THEMES[theme];
   useTransparentPage();
 
-  const { currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
+  const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
     queryFn: () => getRaceClock(raceId!),
@@ -68,8 +130,28 @@ export default function OverlayBoard() {
 
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
+  // Judged on the whole field, so a driver below the cut-off still keeps their lap history
+  const lapFlash = useLapFlash(allRows);
 
-  if (!race) return null;
+  if (!race) {
+    const upcoming = nowNext?.nextRace?.label;
+    const message = nowNext?.eventName
+      ? 'No race on track'
+      : isError
+        ? 'Waiting for the timing server'
+        : 'No event in progress';
+    return (
+      <div className="p-4">
+        <section
+          className={cn('inline-block max-w-[26rem] rounded-lg px-4 py-2 font-sans shadow-lg', colours.panel)}
+          aria-label="Live timing overlay"
+        >
+          <p className="text-sm font-semibold">{message}</p>
+          {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
+        </section>
+      </div>
+    );
+  }
 
   const elapsed = clock ? clock.elapsedMs + (clock.running ? Math.max(0, now - clockReadAt) : 0) : null;
   const clockText =
@@ -105,28 +187,42 @@ export default function OverlayBoard() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(row => (
-                <tr key={row.entryId} className={cn('border-t', colours.row)}>
-                  <td className="w-10 py-1 pl-3">
-                    <span
-                      className={cn(
-                        'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
-                        colours.position,
-                      )}
-                    >
-                      {row.position}
-                    </span>
-                  </td>
-                  <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}</td>
-                  <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
-                  <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
-                    {fmtMs(row.lastLapMs)}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(row => {
+                const flash = lapFlash.get(row.entryId);
+                return (
+                  <tr
+                    key={row.entryId}
+                    className={cn(
+                      'border-t transition-colors',
+                      colours.row,
+                      flash === 'race-best' && 'bg-purple-500/40',
+                      flash === 'personal-best' && 'bg-blue-500/40',
+                      flash === 'improving' && 'bg-green-500/40',
+                      flash === 'slow' && 'bg-red-500/40',
+                    )}
+                  >
+                    <td className="w-10 py-1 pl-3">
+                      <span
+                        className={cn(
+                          'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
+                          colours.position,
+                        )}
+                      >
+                        {row.position}
+                      </span>
+                    </td>
+                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}</td>
+                    <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
+                    <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
+                      {fmtMs(row.lastLapMs)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
+        <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
     </div>
   );
