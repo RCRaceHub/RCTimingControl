@@ -29,8 +29,8 @@ export interface NextRaceCall {
 /** How long after the finish line the next race is called. */
 const NEXT_RACE_DELAY_MS = 4000;
 
-/** Said when the race clock reaches zero. */
-const TIME_UP_TEXT = 'Time. Cars finish as they cross the line.';
+/** Said when the race clock reaches zero, until the club words its own. */
+const DEFAULT_TIME_UP_TEXT = 'Time. Cars finish as they cross the line.';
 
 /** Clip key the server stores an entry's grid call under (AudioPreGenerationService). */
 export function gridClipKey(entry: GridEntry): string {
@@ -186,7 +186,7 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.push(setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceCountdown) return;
-        playClip('time-up', TIME_UP_TEXT);
+        fallbackSpeak(settingsRef.current?.timeUpText?.trim() || DEFAULT_TIME_UP_TEXT);
       }, upDelay));
     }
 
@@ -194,7 +194,7 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.forEach(clearTimeout);
       countdownTimeoutsRef.current = [];
     };
-  }, [raceState, raceEndsAt, playClip]);
+  }, [raceState, raceEndsAt, playClip, fallbackSpeak]);
 
   // What the race has just moved from, for the announcements that belong to a change and not to a state: a race
   // opened already finished must not sound its horn again. Declared first so the effects after it see this change.
@@ -367,9 +367,20 @@ export function useAnnouncements({
     };
   }, []);
 
+  // A car has taken the flag: its number and name, as the grid call said them
+  const gridEntriesRef = useRef(gridEntries);
+  useEffect(() => { gridEntriesRef.current = gridEntries; }, [gridEntries]);
+  const announceCarFinish = useCallback((entryId: number) => {
+    if (settingsRef.current?.announceCarFinish === false) return;
+    if (raceStateRef.current !== 'RUNNING') return;
+    const entry = gridEntriesRef.current?.find((e) => e.entryId === entryId);
+    if (entry) playClip(gridClipKey(entry), gridFallbackText(entry));
+  }, [playClip]);
+
   return {
     fallbackSpeak,
     playBeep,
+    announceCarFinish,
     playClip,
     markAbandoned,
     clearAbandoned,

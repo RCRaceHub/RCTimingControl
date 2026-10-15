@@ -90,7 +90,7 @@ public class HornSoundService {
                     s.announceCountdown(), s.announceStagger(), s.announceLapBeep(), s.announceFinish(),
                     s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(), s.startHorn(),
                     s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(), s.startCountdownSeconds(),
-                    sounds));
+                    sounds, s.announceCarFinish(), s.timeUpText()));
         }).getAudioSettings();
     }
 }

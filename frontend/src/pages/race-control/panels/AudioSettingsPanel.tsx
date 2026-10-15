@@ -75,6 +75,11 @@ export function AudioSettingsPanel() {
     mutation.mutate({ ...settings, startCountdownSeconds: seconds });
   };
 
+  const updateTimeUpText = (text: string) => {
+    if (!settings || text === settings.timeUpText) return;
+    mutation.mutate({ ...settings, timeUpText: text });
+  };
+
   const allEnabled =
     settings !== undefined &&
     ANNOUNCEMENT_TOGGLES.every(({ key }) => settings[key] !== false);
@@ -172,6 +177,21 @@ export function AudioSettingsPanel() {
                   className="w-20 h-8 text-center"
                 />
                 <span className="text-sm text-muted-foreground">seconds (0 for none)</span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm" htmlFor="time-up-text">
+                  When the race time is up, say
+                </label>
+                <Input
+                  id="time-up-text"
+                  key={settings.timeUpText}
+                  maxLength={200}
+                  defaultValue={settings.timeUpText ?? ''}
+                  onBlur={(e) => updateTimeUpText(e.target.value)}
+                  className="h-8"
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
               </div>
 
               <p className="text-xs font-semibold text-muted-foreground pt-2">

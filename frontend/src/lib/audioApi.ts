@@ -27,6 +27,10 @@ export interface AudioSettingsDto {
   startCountdownSeconds?: number;
   /** The club's own horn sound files, if it has uploaded any. */
   hornSounds?: HornSounds;
+  /** Whether each car's number and name is called as it takes the flag. */
+  announceCarFinish?: boolean;
+  /** What is said when the race clock reaches zero; the server fills in the standard wording. */
+  timeUpText?: string;
 }
 
 /** The announcement switches, in the order the settings screens show them. */
@@ -40,6 +44,7 @@ export const ANNOUNCEMENT_TOGGLES = [
   { key: 'finishHorn', label: 'Finish horn' },
   { key: 'announceRaceCalls', label: 'Grid, start, stop and resume calls' },
   { key: 'announceNextRace', label: 'Next race and marshals' },
+  { key: 'announceCarFinish', label: 'Car number and name as each car finishes' },
 ] as const satisfies readonly { key: keyof AudioSettingsDto; label: string }[];
 
 // ── Public audio endpoints ─────────────────────────────────────────────────

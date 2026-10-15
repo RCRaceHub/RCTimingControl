@@ -110,7 +110,7 @@ export default function CockpitPage() {
   const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
-  const { playBeep, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
+  const { playBeep, announceCarFinish, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
     raceId: selectedRaceId,
     settings: audioSettings ?? null,
     volume: volumePercent / 100,
@@ -134,11 +134,17 @@ export default function CockpitPage() {
   const prevPassingRef = useRef<Map<number, number>>(new Map());
   // Each driver's best lap before the latest passing, to tell whether a lap improved on it
   const prevBestRef = useRef<Map<number, number>>(new Map());
+  // The cars already called as they finished, for the race on screen: an entry can be in several races
+  const calledFinishRef = useRef<{ raceId: number | null; ids: Set<number> }>({ raceId: null, ids: new Set() });
 
   useEffect(() => {
     if (selectedRace?.status !== 'RUNNING') return;
     const prev = prevPassingRef.current;
     const prevBest = prevBestRef.current;
+    if (calledFinishRef.current.raceId !== selectedRaceId) {
+      calledFinishRef.current = { raceId: selectedRaceId, ids: new Set() };
+    }
+    const called = calledFinishRef.current;
     liveRows.forEach((row) => {
       const prevTime = prev.get(row.entryId);
       if (
@@ -147,6 +153,10 @@ export default function CockpitPage() {
       ) {
         playBeep(isImprovingLap(prevBest.get(row.entryId), row));
       }
+      if (row.finished && !called.ids.has(row.entryId)) {
+        called.ids.add(row.entryId);
+        announceCarFinish(row.entryId);
+      }
       if (row.lastPassingTimeMs) {
         prev.set(row.entryId, row.lastPassingTimeMs);
       }
@@ -154,7 +164,7 @@ export default function CockpitPage() {
         prevBest.set(row.entryId, row.bestLapMs);
       }
     });
-  }, [liveRows, playBeep, selectedRace?.status]);
+  }, [liveRows, playBeep, announceCarFinish, selectedRaceId, selectedRace?.status]);
 
   // Subscribe to unknown transponder events when a race is running
   const unknownTopic =

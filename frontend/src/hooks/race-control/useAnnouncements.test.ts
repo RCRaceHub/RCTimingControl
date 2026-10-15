@@ -345,3 +345,47 @@ describe('useAnnouncements countdown', () => {
     expect(speak).not.toHaveBeenCalled();
   });
 });
+
+describe('useAnnouncements as cars finish and when the time is up', () => {
+  it('calls the car number and name of a car that takes the flag', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'RUNNING', gridEntries: [
+        { entryId: 11, carNumber: '7', driverName: 'Alex Rowe' },
+      ] }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak.mock.calls[0][0].text).toBe('Car 7, Alex Rowe.');
+  });
+
+  it('stays quiet when the car calls are switched off', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, announceCarFinish: false } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        gridEntries: grid,
+      }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('says the clubs own wording when the clock reaches zero', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, timeUpText: 'Time! Take the flag.' } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 5_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(5_100); });
+
+    expect(speak.mock.calls.at(-1)?.[0].text).toBe('Time! Take the flag.');
+  });
+});

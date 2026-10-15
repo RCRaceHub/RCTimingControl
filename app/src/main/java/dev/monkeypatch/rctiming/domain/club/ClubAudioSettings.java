@@ -3,7 +3,8 @@ package dev.monkeypatch.rctiming.domain.club;
 /**
  * The club's audio switches. {@code startHorn} and {@code finishHorn} play a horn at the start and the finish,
  * {@code announceRaceCalls} the spoken grid call, "go" and stop, resume and abandon lines, and
- * {@code announceNextRace} the next race and marshals call after a finish. {@code startCountdownSeconds} is the
+ * {@code announceNextRace} the next race and marshals call after a finish, and {@code announceCarFinish} the car
+ * number and driver name as each car takes the flag. {@code timeUpText} is what is said when the clock reaches zero. {@code startCountdownSeconds} is the
  * lead-in between pressing Start and the race starting, 0 for none.
  *
  * <p>Settings saved before these were added have none of them, so a missing switch is on and a missing lead-in
@@ -23,10 +24,14 @@ public record ClubAudioSettings(
         Boolean announceRaceCalls,
         Boolean announceNextRace,
         Integer startCountdownSeconds,
-        HornSounds hornSounds
+        HornSounds hornSounds,
+        Boolean announceCarFinish,
+        String timeUpText
 ) {
     /** The lead-in for settings saved before it was added. */
     public static final int DEFAULT_START_COUNTDOWN_SECONDS = 10;
+    /** What is said when a timed race's clock reaches zero, until the club words its own. */
+    public static final String DEFAULT_TIME_UP_TEXT = "Time. Cars finish as they cross the line.";
 
     /**
      * The club's own horn sound files: where each is served from and how long it plays, in milliseconds, so a
@@ -59,6 +64,19 @@ public record ClubAudioSettings(
         startCountdownSeconds = startCountdownSeconds == null
                 ? DEFAULT_START_COUNTDOWN_SECONDS : startCountdownSeconds;
         hornSounds = hornSounds == null ? HornSounds.NONE : hornSounds;
+        announceCarFinish = announceCarFinish == null || announceCarFinish;
+        timeUpText = timeUpText == null || timeUpText.isBlank() ? DEFAULT_TIME_UP_TEXT : timeUpText.strip();
+    }
+
+    /** The settings from before the finish calls and the time call wording, which take their defaults. */
+    public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
+                             boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
+                             int[] countdownIntervals, Boolean startHorn, Boolean finishHorn,
+                             Boolean announceRaceCalls, Boolean announceNextRace, Integer startCountdownSeconds,
+                             HornSounds hornSounds) {
+        this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
+                runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
+                startCountdownSeconds, hornSounds, null, null);
     }
 
     /** The settings from before the club's own horn sounds, which have none. */

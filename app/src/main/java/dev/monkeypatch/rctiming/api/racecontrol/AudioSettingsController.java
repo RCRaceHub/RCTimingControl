@@ -60,13 +60,15 @@ public class AudioSettingsController {
             boolean announceRaceCalls,
             boolean announceNextRace,
             int startCountdownSeconds,
-            ClubAudioSettings.HornSounds hornSounds
+            ClubAudioSettings.HornSounds hornSounds,
+            boolean announceCarFinish,
+            String timeUpText
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds());
+                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
         }
     }
 
@@ -86,7 +88,9 @@ public class AudioSettingsController {
             Boolean finishHorn,
             Boolean announceRaceCalls,
             Boolean announceNextRace,
-            @Min(0) @Max(60) Integer startCountdownSeconds
+            @Min(0) @Max(60) Integer startCountdownSeconds,
+            Boolean announceCarFinish,
+            @Size(max = 200) String timeUpText
     ) {
         /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
         @JsonIgnore
@@ -129,7 +133,10 @@ public class AudioSettingsController {
                             patch.announceNextRace() != null ? patch.announceNextRace() : s.announceNextRace(),
                             patch.startCountdownSeconds() != null
                                     ? patch.startCountdownSeconds() : s.startCountdownSeconds(),
-                            s.hornSounds()  // changed only by uploading or removing a sound
+                            s.hornSounds(),  // changed only by uploading or removing a sound
+                            patch.announceCarFinish() != null ? patch.announceCarFinish() : s.announceCarFinish(),
+                            // Blank goes back to the standard wording
+                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText()
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));

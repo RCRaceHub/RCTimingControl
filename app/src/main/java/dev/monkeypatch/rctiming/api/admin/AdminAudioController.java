@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -54,13 +55,15 @@ public class AdminAudioController {
             Boolean announceRaceCalls,
             Boolean announceNextRace,
             @Min(0) @Max(60) Integer startCountdownSeconds,
-            ClubAudioSettings.HornSounds hornSounds
+            ClubAudioSettings.HornSounds hornSounds,
+            Boolean announceCarFinish,
+            @Size(max = 200) String timeUpText
     ) {
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), defaultVoiceId,
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds());
+                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
         }
     }
 
@@ -93,7 +96,9 @@ public class AdminAudioController {
                     dto.announceRaceCalls() != null ? dto.announceRaceCalls() : kept.announceRaceCalls(),
                     dto.announceNextRace() != null ? dto.announceNextRace() : kept.announceNextRace(),
                     dto.startCountdownSeconds() != null ? dto.startCountdownSeconds() : kept.startCountdownSeconds(),
-                    kept.hornSounds()  // changed only by uploading or removing a sound
+                    kept.hornSounds(),  // changed only by uploading or removing a sound
+                    dto.announceCarFinish() != null ? dto.announceCarFinish() : kept.announceCarFinish(),
+                    dto.timeUpText() != null ? dto.timeUpText() : kept.timeUpText()
             ));
             // No voice chosen on the page: keep the one stored (the column is NOT NULL)
             if (dto.defaultVoiceId() != null && !dto.defaultVoiceId().isBlank()) {
