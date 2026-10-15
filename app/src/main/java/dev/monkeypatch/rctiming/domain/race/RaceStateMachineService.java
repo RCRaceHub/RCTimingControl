@@ -171,7 +171,7 @@ public class RaceStateMachineService {
                 .stream().filter(q -> q.getStatus() != RaceStatus.FINISHED).count();
         if (unfinished > 0) {
             throw new IllegalStateTransitionException(
-                "Cannot start a final until all qualifying heats for its class are finished ("
+                "Cannot call the grid for or start a final until all qualifying heats for its class are finished ("
                 + unfinished + " still to run)");
         }
     }
@@ -180,7 +180,13 @@ public class RaceStateMachineService {
     private void seedFinalsAfterQualifying(Race finishedRace) {
         Round round = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
         if (round != null && round.getType() == RoundType.QUALIFIER) {
-            autoFinalsSeedingService.seedIfQualifyingComplete(finishedRace.getEventClassId());
+            // Not allowed to fail the finish: the official can still seed the finals by hand
+            try {
+                autoFinalsSeedingService.seedIfQualifyingComplete(finishedRace.getEventClassId());
+            } catch (RuntimeException e) {
+                log.warn("Could not seed the finals of event class {} after race {} finished",
+                        finishedRace.getEventClassId(), finishedRace.getId(), e);
+            }
         }
     }
 

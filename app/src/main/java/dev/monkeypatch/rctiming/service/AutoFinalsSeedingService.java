@@ -61,6 +61,10 @@ public class AutoFinalsSeedingService {
         if (qualifiers.stream().anyMatch(q -> q.getStatus() != RaceStatus.FINISHED)) {
             return;
         }
+        // A class whose qualifying was all abandoned has no results to seed from
+        if (qualifiers.stream().allMatch(q -> q.getAbandonedAt() != null)) {
+            return;
+        }
         List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         if (finals.isEmpty() || finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
             return;
