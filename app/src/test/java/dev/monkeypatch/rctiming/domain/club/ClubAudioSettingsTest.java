@@ -18,7 +18,7 @@ class ClubAudioSettingsTest {
         assertThat(settings.finishHorn()).isTrue();
         assertThat(settings.announceRaceCalls()).isTrue();
         assertThat(settings.announceNextRace()).isTrue();
-        assertThat(settings.startCountdownSeconds()).isZero();
+        assertThat(settings.startCountdownSeconds()).isEqualTo(10);
     }
 
     @Test

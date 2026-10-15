@@ -167,7 +167,7 @@ export function AudioSettingsPanel() {
                   type="number"
                   min={0}
                   max={60}
-                  defaultValue={settings.startCountdownSeconds ?? 0}
+                  defaultValue={settings.startCountdownSeconds ?? 10}
                   onBlur={(e) => updateStartCountdown(Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)))}
                   className="w-20 h-8 text-center"
                 />

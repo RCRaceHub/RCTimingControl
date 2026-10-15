@@ -21,6 +21,7 @@ import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { AudioSettingsPanel } from './panels/AudioSettingsPanel';
+import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
@@ -105,12 +106,12 @@ export default function CockpitPage() {
     ? { label: nextReadiness.raceLabel, marshals: nextReadiness.marshalDuty.map((m) => m.driverName) }
     : null;
 
-  // The race clock tells the countdown announcements when the race ends. It is read again when the race
-  // starts or resumes (the status is part of the key), since a stoppage moves the end.
+  // The race clock shows the time left, and tells the countdown announcements when the race ends. It is read
+  // again when the race starts, stops or resumes (the status is part of the key), since a stoppage moves the end.
   const { data: raceClock, dataUpdatedAt: raceClockReadAt } = useQuery({
     queryKey: raceControlQueryKeys.raceClock(selectedRaceId, selectedRace?.status),
     queryFn: () => getRaceClock(selectedRaceId!),
-    enabled: selectedRaceId != null && selectedRace?.status === 'RUNNING',
+    enabled: selectedRaceId != null && (selectedRace?.status === 'RUNNING' || selectedRace?.status === 'STOPPED'),
   });
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
@@ -355,6 +356,7 @@ export default function CockpitPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
                   <Button onClick={onFinish} disabled={mutations.finish.isPending}>
@@ -404,6 +406,7 @@ export default function CockpitPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 <Button onClick={onStart} disabled={mutations.start.isPending}>
                   {mutations.start.isPending ? 'Resuming…' : 'Resume Race'}

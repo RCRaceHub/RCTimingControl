@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -90,6 +91,27 @@ export default function AdminAudioSettingsPage() {
                   />
                 </div>
               ))}
+
+              <div className="flex items-center gap-2 pt-2">
+                <Label htmlFor="admin-start-countdown" className="shrink-0">Start lead-in</Label>
+                <Input
+                  id="admin-start-countdown"
+                  type="number"
+                  min={0}
+                  max={60}
+                  value={displaySettings.startCountdownSeconds ?? 10}
+                  onChange={(e) =>
+                    setLocalSettings({
+                      ...displaySettings,
+                      startCountdownSeconds: Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)),
+                    })
+                  }
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">
+                  seconds between pressing Start and the race starting (0 for none)
+                </span>
+              </div>
 
               <div className="space-y-2 pt-2">
                 <Label htmlFor="default-voice">Default voice</Label>

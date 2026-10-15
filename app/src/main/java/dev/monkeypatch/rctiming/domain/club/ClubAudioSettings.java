@@ -7,7 +7,8 @@ package dev.monkeypatch.rctiming.domain.club;
  * lead-in between pressing Start and the race starting, 0 for none.
  *
  * <p>Settings saved before these were added have none of them, so a missing switch is on and a missing lead-in
- * is none. {@code hornSounds} holds the club's own start and finish sound files, none until the club uploads one.
+ * is 10 seconds (0 means none). {@code hornSounds} holds the club's own start and finish sound files, none until
+ * the club uploads one.
  */
 public record ClubAudioSettings(
         boolean announceCountdown,
@@ -24,6 +25,9 @@ public record ClubAudioSettings(
         Integer startCountdownSeconds,
         HornSounds hornSounds
 ) {
+    /** The lead-in for settings saved before it was added. */
+    public static final int DEFAULT_START_COUNTDOWN_SECONDS = 10;
+
     /**
      * The club's own horn sound files: where each is served from and how long it plays, in milliseconds, so a
      * spoken line can follow it. A horn with no file uses the built-in one.
@@ -52,7 +56,8 @@ public record ClubAudioSettings(
         finishHorn = finishHorn == null || finishHorn;
         announceRaceCalls = announceRaceCalls == null || announceRaceCalls;
         announceNextRace = announceNextRace == null || announceNextRace;
-        startCountdownSeconds = startCountdownSeconds == null ? 0 : startCountdownSeconds;
+        startCountdownSeconds = startCountdownSeconds == null
+                ? DEFAULT_START_COUNTDOWN_SECONDS : startCountdownSeconds;
         hornSounds = hornSounds == null ? HornSounds.NONE : hornSounds;
     }
 
