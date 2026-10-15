@@ -155,6 +155,33 @@ describe('CockpitPage jump to a race', () => {
   });
 });
 
+describe('CockpitPage final guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    mockUseStomp.mockImplementation(() => ({ data: null, status: 'connected' }));
+  });
+
+  function runOrderWith(qualifierStatus: string) {
+    mockRunOrder.mockReturnValue({
+      data: [
+        { raceId: 4, status: qualifierStatus, roundType: 'QUALIFIER', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 5, status: 'PENDING', roundType: 'FINAL', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+  }
+
+  it('blocks Call Grid on a final while a qualifying heat is unfinished', () => {
+    runOrderWith('PENDING');
+    renderCockpit();
+    fireEvent.click(screen.getByText(/Final/));
+    expect(screen.getByRole('button', { name: 'Call Grid' })).toBeDisabled();
+    expect(screen.getByText(/1 qualifying heat for 13.5 Touring still to finish/)).toBeInTheDocument();
+  });
+});
+
 describe('CockpitPage bump-up alert', () => {
   const bumpUpTopic = '/topic/race/5/bump-up-alert';
 

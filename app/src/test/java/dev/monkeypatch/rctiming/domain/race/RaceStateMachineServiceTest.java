@@ -100,6 +100,41 @@ class RaceStateMachineServiceTest {
     }
 
     @Test
+    void final_cannotBeCalledOrStartedWhileAQualifyingHeatIsUnfinished() {
+        Race finalRace = finalRace(RaceStatus.PENDING);
+        when(raceRepository.findByEventClassIdAndRoundType(5L, RoundType.QUALIFIER))
+                .thenReturn(List.of(qualifier(RaceStatus.FINISHED), qualifier(RaceStatus.PENDING)));
+
+        assertThatThrownBy(() -> service.callGrid(finalRace)).isInstanceOf(IllegalStateTransitionException.class);
+        finalRace.setStatus(RaceStatus.GRID);
+        assertThatThrownBy(() -> service.start(finalRace)).isInstanceOf(IllegalStateTransitionException.class);
+        assertThat(finalRace.getStatus()).isEqualTo(RaceStatus.GRID);
+        verify(raceRepository, never()).save(any());
+    }
+
+    @Test
+    void final_canStartOnceEveryQualifyingHeatIsFinished() {
+        Race finalRace = finalRace(RaceStatus.GRID);
+        when(raceRepository.findByEventClassIdAndRoundType(5L, RoundType.QUALIFIER))
+                .thenReturn(List.of(qualifier(RaceStatus.FINISHED), qualifier(RaceStatus.FINISHED)));
+
+        service.start(finalRace);
+
+        assertThat(finalRace.getStatus()).isEqualTo(RaceStatus.RUNNING);
+    }
+
+    @Test
+    void qualifier_isNotHeldUpByOtherQualifyingHeats() {
+        Round qualifierRound = new Round();
+        qualifierRound.setType(RoundType.QUALIFIER);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(qualifierRound));
+
+        service.callGrid(race(RaceStatus.PENDING));
+
+        verify(raceRepository, never()).findByEventClassIdAndRoundType(any(), any());
+    }
+
+    @Test
     void resume_keepsTheFirstStartTime() {
         Instant first = Instant.parse("2026-10-18T14:00:00Z");
         Race race = race(RaceStatus.STOPPED);
@@ -196,6 +231,21 @@ class RaceStateMachineServiceTest {
         race.setId(7L);
         race.setRoundId(3L);
         race.setStatus(status);
+        return race;
+    }
+
+    private Race finalRace(RaceStatus status) {
+        Round finalRound = new Round();
+        finalRound.setType(RoundType.FINAL);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(finalRound));
+        Race race = race(status);
+        race.setEventClassId(5L);
+        return race;
+    }
+
+    private static Race qualifier(RaceStatus status) {
+        Race race = race(status);
+        race.setId(null);
         return race;
     }
 

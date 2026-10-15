@@ -70,12 +70,17 @@ public class RaceStateMachineService {
     // listener reads them.
 
     public void callGrid(Race race) {
+        requireAllowed(race, RaceStatus.GRID);
+        requireQualifyingComplete(race);
         transition(race, RaceStatus.GRID);
     }
 
     /** Starts the race, or resumes a stopped one: a resume keeps the first start time, so the clock carries on. */
     public void start(Race race) {
         requireAllowed(race, RaceStatus.RUNNING);
+        if (race.getStatus() != RaceStatus.STOPPED) {
+            requireQualifyingComplete(race);
+        }
         if (race.getStartedAt() == null) {
             race.setStartedAt(Instant.now());
         }
@@ -144,6 +149,24 @@ public class RaceStateMachineService {
         if (target == RaceStatus.FINISHED) {
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
+        }
+    }
+
+    /**
+     * A final can't be called to the grid or started until every qualifying heat for its class is finished
+     * (an abandoned heat counts as finished). Other races are not held up.
+     */
+    private void requireQualifyingComplete(Race race) {
+        Round round = roundRepository.findById(race.getRoundId()).orElse(null);
+        if (round == null || round.getType() != RoundType.FINAL) {
+            return;
+        }
+        long unfinished = raceRepository.findByEventClassIdAndRoundType(race.getEventClassId(), RoundType.QUALIFIER)
+                .stream().filter(q -> q.getStatus() != RaceStatus.FINISHED).count();
+        if (unfinished > 0) {
+            throw new IllegalStateTransitionException(
+                "Cannot start a final until all qualifying heats for its class are finished ("
+                + unfinished + " still to run)");
         }
     }
 
