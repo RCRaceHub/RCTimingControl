@@ -220,6 +220,19 @@ class TransponderLinkServiceTest {
         verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
     }
 
+    @Test
+    void link_whenBothNumbersAreInUse_savesNothingOnTheEntry() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1111111", "2222222");
+        when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(2);
+        when(lapTimingService.countPassingsForTransponder(7L, "2222222")).thenReturn(4);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verifyNoInteractions(swapService);
+        verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
+    }
+
     private void entry11(String primary, String secondary) {
         when(labels.eventOf(7L)).thenReturn(5L);
         Entry entry = new Entry();

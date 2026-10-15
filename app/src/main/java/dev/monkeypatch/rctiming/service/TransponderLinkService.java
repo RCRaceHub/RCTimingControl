@@ -101,42 +101,51 @@ public class TransponderLinkService {
         int lapsCredited = Math.max(0, lapTimingService.countPassingsForTransponder(raceId, transponderNumber) - 1);
 
         linkAuditRepository.save(new UnknownTransponderLinkAudit(raceId, transponderNumber, entryId, userId));
+        Long eventId = labels.eventOf(raceId);
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("transponderNumber", transponderNumber);
         after.put("entryId", entryId);
         after.put("lapsCredited", lapsCredited);
         audit.entry(Actor.official(userId), "UNKNOWN_TRANSPONDER_LINKED")
-                .entity("race", raceId).race(raceId).event(labels.eventOf(raceId))
+                .entity("race", raceId).race(raceId).event(eventId)
                 .summary("Linked transponder " + transponderNumber + " to " + labels.driver(entryId) + " in "
                         + labels.race(raceId) + ", crediting " + lapsCredited + " laps")
                 .after(after).record();
 
-        saveOnEntry(raceId, transponderNumber, entryId, userId);
+        saveOnEntry(raceId, eventId, transponderNumber, entryId, userId);
 
         AfterCommit.run(() -> lapTimingService.linkTransponder(raceId, transponderNumber, entryId));
         return lapsCredited;
     }
 
     /**
-     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way: in place
-     * of the primary when it has not passed in this race and there is no secondary or the secondary has,
-     * otherwise in the secondary slot (empty, or the one that has not passed). A number another competitor's entry holds is only linked for this
-     * race, as a swap would refuse it. The entry is changed only if its number is not already the entry's.
+     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. It goes in
+     * the primary slot when the primary has not passed in this race (and there is no secondary, or the secondary
+     * has passed), otherwise in the secondary slot when that is empty or has not passed. If both numbers have
+     * passed, nothing is saved, since replacing either would stop it counting. A number another competitor's
+     * entry holds is only linked for this race, as a swap would refuse it.
      */
-    private void saveOnEntry(long raceId, String transponderNumber, long entryId, long userId) {
-        Long eventId = labels.eventOf(raceId);
+    private void saveOnEntry(long raceId, Long eventId, String transponderNumber, long entryId, long userId) {
         Entry entry = entryRepository.findById(entryId).orElse(null);
         if (eventId == null || entry == null || transponderNumber.equals(entry.getTransponderNumberSnapshot())
                 || transponderNumber.equals(entry.getSecondaryTransponderNumber())) {
             return;
         }
-        boolean primarySeen = lapTimingService.countPassingsForTransponder(raceId, entry.getTransponderNumberSnapshot()) > 0;
+        String primary = entry.getTransponderNumberSnapshot();
         String secondary = entry.getSecondaryTransponderNumber();
-        boolean secondarySeen = secondary != null && !secondary.isBlank()
-                && lapTimingService.countPassingsForTransponder(raceId, secondary) > 0;
         boolean hasSecondary = secondary != null && !secondary.isBlank();
-        TransponderSlot slot = !primarySeen && (!hasSecondary || secondarySeen)
-                ? TransponderSlot.PRIMARY : TransponderSlot.SECONDARY;
+        boolean primarySeen = primary != null && lapTimingService.countPassingsForTransponder(raceId, primary) > 0;
+        boolean secondarySeen = hasSecondary && lapTimingService.countPassingsForTransponder(raceId, secondary) > 0;
+        TransponderSlot slot;
+        if (!primarySeen && (!hasSecondary || secondarySeen)) {
+            slot = TransponderSlot.PRIMARY;
+        } else if (!hasSecondary || !secondarySeen) {
+            slot = TransponderSlot.SECONDARY;
+        } else {
+            log.info("Transponder {} linked to entry {} for race {} only: both its numbers are in use",
+                    transponderNumber, entryId, raceId);
+            return;
+        }
         SwapResult result = swapService.swap(eventId, entryId, slot, transponderNumber, userId);
         if (!(result instanceof SwapResult.Success)) {
             log.info("Transponder {} linked to entry {} for race {} only: not saved on the entry ({})",
