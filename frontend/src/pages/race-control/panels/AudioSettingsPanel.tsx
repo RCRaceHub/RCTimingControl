@@ -65,7 +65,9 @@ export function AudioSettingsPanel() {
     mutation.mutate(updated);
   };
 
-  const updateRunningOrder = (change: Partial<Pick<AudioSettingsDto, 'runningOrderPercent' | 'runningOrderAllUpTo'>>) => {
+  const updateRunningOrder = (
+    change: Partial<Pick<AudioSettingsDto, 'runningOrderPercent' | 'runningOrderAllUpTo'>>,
+  ) => {
     if (!settings) return;
     mutation.mutate({ ...settings, ...change });
   };

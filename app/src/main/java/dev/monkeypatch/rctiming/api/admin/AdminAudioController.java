@@ -62,7 +62,8 @@ public class AdminAudioController {
     ) {
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(), defaultVoiceId,
+                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
+                    defaultVoiceId,
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
                     s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
         }

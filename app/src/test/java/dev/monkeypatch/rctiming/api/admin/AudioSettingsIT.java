@@ -79,7 +79,8 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     void theAdminFormKeepsTheCountdownIntervalsItDoesNotCarry() {
         Map<String, Object> form = Map.of(
                 "announceCountdown", false, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 25, "runningOrderAllUpTo", 4,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 25,
+                "runningOrderAllUpTo", 4,
                 "defaultVoiceId", "en_GB-alan-medium");
 
         ResponseEntity<JsonNode> saved = call(HttpMethod.PUT, ADMIN_SETTINGS, form);
@@ -192,6 +193,10 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderPercent", 0)).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderPercent", 101)).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderAllUpTo", 101)).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderAllUpTo", -1)).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         Map<String, Object> form = Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
