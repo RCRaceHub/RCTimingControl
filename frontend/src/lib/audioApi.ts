@@ -80,7 +80,10 @@ export interface AudioSettingsDto {
   announceLapBeep: boolean;
   announceFinish: boolean;
   announceRunningOrder: boolean;
-  runningOrderDepth: number;
+  /** The share of the drivers each running-order call names, rounded up. */
+  runningOrderPercent: number;
+  /** A race with this many drivers or fewer has them all named. */
+  runningOrderAllUpTo: number;
   defaultVoiceId: string;
   countdownIntervals?: number[];
   /** The server always sends these; a missing one counts as on (the lead-in as none). */

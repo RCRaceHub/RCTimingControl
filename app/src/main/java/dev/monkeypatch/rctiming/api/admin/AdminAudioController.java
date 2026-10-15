@@ -49,7 +49,8 @@ public class AdminAudioController {
             boolean announceLapBeep,
             boolean announceFinish,
             boolean announceRunningOrder,
-            @Min(1) @Max(20) int runningOrderDepth,
+            @Min(1) @Max(100) Integer runningOrderPercent,
+            @Min(0) @Max(100) Integer runningOrderAllUpTo,
             String defaultVoiceId,
             @Size(max = 10) int[] countdownIntervals,
             Boolean startHorn,
@@ -74,8 +75,8 @@ public class AdminAudioController {
 
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), defaultVoiceId,
-                    s.countdownIntervals(),
+                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
+                    defaultVoiceId, s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
                     s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
                     s.finalBeeps(), s.wording(), s.tuning());
@@ -103,7 +104,7 @@ public class AdminAudioController {
                     dto.announceLapBeep(),
                     dto.announceFinish(),
                     dto.announceRunningOrder(),
-                    dto.runningOrderDepth(),
+                    kept.runningOrderDepth(),  // no longer used, kept as saved
                     dto.countdownIntervals() != null ? dto.countdownIntervals() : kept.countdownIntervals(),
                     // a field the form leaves out keeps its saved value
                     dto.startHorn() != null ? dto.startHorn() : kept.startHorn(),
@@ -117,7 +118,9 @@ public class AdminAudioController {
                     dto.tickSound() != null ? dto.tickSound() : kept.tickSound(),
                     dto.finalBeeps() != null ? dto.finalBeeps() : kept.finalBeeps(),
                     dto.wording() != null ? dto.wording() : kept.wording(),
-                    dto.tuning() != null ? dto.tuning() : kept.tuning()
+                    dto.tuning() != null ? dto.tuning() : kept.tuning(),
+                    dto.runningOrderPercent() != null ? dto.runningOrderPercent() : kept.runningOrderPercent(),
+                    dto.runningOrderAllUpTo() != null ? dto.runningOrderAllUpTo() : kept.runningOrderAllUpTo()
             ));
             // No voice chosen on the page: keep the one stored (the column is NOT NULL)
             if (dto.defaultVoiceId() != null && !dto.defaultVoiceId().isBlank()) {

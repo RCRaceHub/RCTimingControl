@@ -66,9 +66,11 @@ export function AudioSettingsPanel() {
     mutation.mutate(updated);
   };
 
-  const updateDepth = (depth: number) => {
+  const updateRunningOrder = (
+    change: Partial<Pick<AudioSettingsDto, 'runningOrderPercent' | 'runningOrderAllUpTo'>>,
+  ) => {
     if (!settings) return;
-    mutation.mutate({ ...settings, runningOrderDepth: depth });
+    mutation.mutate({ ...settings, ...change });
   };
 
   const updateStartCountdown = (seconds: number) => {
@@ -149,19 +151,42 @@ export function AudioSettingsPanel() {
               ))}
 
               <div className="flex items-center gap-2">
-                <label className="text-sm shrink-0" htmlFor="running-order-depth">
-                  Running order depth
+                <label className="text-sm shrink-0" htmlFor="running-order-percent">
+                  Running order names the top
                 </label>
                 <Input
-                  id="running-order-depth"
+                  id="running-order-percent"
                   type="number"
                   min={1}
-                  max={20}
-                  defaultValue={settings.runningOrderDepth}
-                  onBlur={(e) => updateDepth(parseInt(e.target.value, 10) || 3)}
+                  max={100}
+                  defaultValue={settings.runningOrderPercent}
+                  onBlur={(e) =>
+                    updateRunningOrder({
+                      runningOrderPercent: Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 50)),
+                    })
+                  }
                   className="w-20 h-8 text-center"
                 />
-                <span className="text-sm text-muted-foreground">positions</span>
+                <span className="text-sm text-muted-foreground">% of drivers</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm shrink-0" htmlFor="running-order-all-up-to">
+                  ...but all of them when there are
+                </label>
+                <Input
+                  id="running-order-all-up-to"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={settings.runningOrderAllUpTo}
+                  onBlur={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    updateRunningOrder({ runningOrderAllUpTo: Math.min(100, Math.max(0, Number.isNaN(n) ? 5 : n)) });
+                  }}
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">or fewer</span>
               </div>
 
               <div className="flex items-center gap-2">

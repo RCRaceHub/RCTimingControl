@@ -19,7 +19,8 @@ const defaultSettings = {
   announceLapBeep: false,
   announceFinish: true,
   announceRunningOrder: false,
-  runningOrderDepth: 3,
+  runningOrderPercent: 50,
+  runningOrderAllUpTo: 5,
   defaultVoiceId: 'en_GB-alan-medium',
 };
 

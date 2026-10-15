@@ -11,7 +11,8 @@ const settings = {
   announceLapBeep: true,
   announceFinish: true,
   announceRunningOrder: true,
-  runningOrderDepth: 3,
+  runningOrderPercent: 50,
+  runningOrderAllUpTo: 5,
   defaultVoiceId: '',
 } as AudioSettingsDto;
 

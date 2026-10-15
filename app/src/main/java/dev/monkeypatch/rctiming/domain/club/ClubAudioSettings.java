@@ -37,10 +37,16 @@ public record ClubAudioSettings(
         Boolean tickSound,
         Boolean finalBeeps,
         Wording wording,
-        Tuning tuning
+        Tuning tuning,
+        Integer runningOrderPercent,
+        Integer runningOrderAllUpTo
 ) {
     /** The lead-in for settings saved before it was added. */
     public static final int DEFAULT_START_COUNTDOWN_SECONDS = 10;
+    /** The share of the field the running order names, until the club sets its own. */
+    public static final int DEFAULT_RUNNING_ORDER_PERCENT = 50;
+    /** A race with this many drivers or fewer has them all named, until the club sets its own. */
+    public static final int DEFAULT_RUNNING_ORDER_ALL_UP_TO = 5;
     /** What is said when a timed race's clock reaches zero, until the club words its own. */
     public static final String DEFAULT_TIME_UP_TEXT = "Time. Cars finish as they cross the line.";
 
@@ -179,6 +185,21 @@ public record ClubAudioSettings(
         finalBeeps = finalBeeps == null || finalBeeps;
         wording = wording == null ? Wording.STANDARD : wording;
         tuning = tuning == null ? Tuning.STANDARD : tuning;
+        runningOrderPercent = runningOrderPercent == null ? DEFAULT_RUNNING_ORDER_PERCENT : runningOrderPercent;
+        runningOrderAllUpTo = runningOrderAllUpTo == null ? DEFAULT_RUNNING_ORDER_ALL_UP_TO : runningOrderAllUpTo;
+    }
+
+    /** The settings from before the running order named a share of the field, which take their defaults. */
+    public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
+                             boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
+                             int[] countdownIntervals, Boolean startHorn, Boolean finishHorn,
+                             Boolean announceRaceCalls, Boolean announceNextRace, Integer startCountdownSeconds,
+                             HornSounds hornSounds, Boolean announceCarFinish, String timeUpText,
+                             Boolean tickSound, Boolean finalBeeps, Wording wording, Tuning tuning) {
+        this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
+                runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
+                startCountdownSeconds, hornSounds, announceCarFinish, timeUpText, tickSound, finalBeeps, wording,
+                tuning, null, null);
     }
 
     /** The settings from before the wording, timings and tones could be changed, which take their defaults. */
@@ -205,11 +226,22 @@ public record ClubAudioSettings(
                 || !announceCarFinish.equals(other.announceCarFinish);
     }
 
+    /**
+     * How many drivers a running-order call names for a field of this size: all of them when the field is
+     * {@code runningOrderAllUpTo} or fewer, otherwise {@code runningOrderPercent} of it rounded up.
+     */
+    public int runningOrderCount(int drivers) {
+        if (drivers <= runningOrderAllUpTo) {
+            return drivers;
+        }
+        return Math.min(drivers, Math.max(1, (drivers * runningOrderPercent + 99) / 100));
+    }
+
     public ClubAudioSettings withHornSounds(HornSounds sounds) {
         return new ClubAudioSettings(announceCountdown, announceStagger, announceLapBeep, announceFinish,
                 announceRunningOrder, runningOrderDepth, countdownIntervals, startHorn, finishHorn,
                 announceRaceCalls, announceNextRace, startCountdownSeconds, sounds, announceCarFinish, timeUpText,
-                tickSound, finalBeeps, wording, tuning);
+                tickSound, finalBeeps, wording, tuning, runningOrderPercent, runningOrderAllUpTo);
     }
 
     /** The settings from before the finish calls and the time call wording, which take their defaults. */

@@ -22,6 +22,39 @@ class ClubAudioSettingsTest {
     }
 
     @Test
+    void theRunningOrderNamesHalfTheFieldRoundedUpOrEveryoneInASmallRace() {
+        ClubAudioSettings defaults = ClubAudioSettings.defaults();
+
+        assertThat(defaults.runningOrderCount(0)).isZero();
+        assertThat(defaults.runningOrderCount(1)).isEqualTo(1);
+        assertThat(defaults.runningOrderCount(5)).isEqualTo(5);
+        assertThat(defaults.runningOrderCount(6)).isEqualTo(3);
+        assertThat(defaults.runningOrderCount(7)).isEqualTo(4);
+        assertThat(defaults.runningOrderCount(10)).isEqualTo(5);
+        assertThat(defaults.runningOrderCount(11)).isEqualTo(6);
+    }
+
+    @Test
+    void theRunningOrderShareAndSmallRaceLimitAreTheClubsOwn() {
+        ClubAudioSettings own = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, 25, 2);
+
+        assertThat(own.runningOrderCount(2)).isEqualTo(2);
+        assertThat(own.runningOrderCount(8)).isEqualTo(2);
+        assertThat(own.runningOrderCount(9)).isEqualTo(3);
+    }
+
+    @Test
+    void settingsSavedBeforeTheRunningOrderShareTakeFiftyPercentAndFive() throws Exception {
+        String saved = "{\"announceRunningOrder\": true, \"runningOrderDepth\": 3}";
+
+        ClubAudioSettings settings = new ObjectMapper().readValue(saved, ClubAudioSettings.class);
+
+        assertThat(settings.runningOrderPercent()).isEqualTo(50);
+        assertThat(settings.runningOrderAllUpTo()).isEqualTo(5);
+    }
+
+    @Test
     void savedChoicesAreKept() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         ClubAudioSettings changed = new ClubAudioSettings(true, true, true, true, true, 3, null,
