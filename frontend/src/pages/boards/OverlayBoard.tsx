@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getRaceClock } from '@/lib/boardsApi';
+import { getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
@@ -51,6 +52,65 @@ function useNow(active: boolean) {
     return () => clearInterval(timer);
   }, [active]);
   return now;
+}
+
+/** How long each ticker stat stays up before the next one rolls in. */
+const TICKER_MS = 5000;
+
+/** Rolls through the heat's total laps, its fastest lap and the round's fastest lap, one stat at a time. */
+function StatsTicker({
+  rows,
+  raceId,
+  mutedClass,
+  rowClass,
+}: {
+  rows: LiveTimingRowDto[];
+  raceId: number;
+  mutedClass: string;
+  rowClass: string;
+}) {
+  const { data: round } = useQuery({
+    queryKey: publicQueryKeys.boards.roundFastest(raceId),
+    queryFn: () => getRoundFastestLap(raceId),
+    refetchInterval: BOARD_POLL_MS * 6,
+  });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), TICKER_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  let heatBest: { lapMs: number; driverName: string } | null = null;
+  let totalLaps = 0;
+  for (const row of rows) {
+    totalLaps += row.lapsCompleted;
+    if (row.bestLapMs !== null && row.bestLapMs > 0 && (heatBest === null || row.bestLapMs < heatBest.lapMs)) {
+      heatBest = { lapMs: row.bestLapMs, driverName: row.driverName };
+    }
+  }
+  // The round's fastest includes this heat, which has no snapshot until it finishes
+  const roundBest =
+    round?.lapMs != null && round.driverName && (heatBest === null || round.lapMs < heatBest.lapMs)
+      ? { lapMs: round.lapMs, driverName: round.driverName }
+      : heatBest;
+
+  const stats: Array<[string, string]> = [];
+  if (totalLaps > 0) stats.push(['Laps in heat', String(totalLaps)]);
+  if (heatBest) stats.push(['Fastest lap', `${fmtMs(heatBest.lapMs)} · ${heatBest.driverName}`]);
+  if (roundBest) stats.push(['Round fastest', `${fmtMs(roundBest.lapMs)} · ${roundBest.driverName}`]);
+  if (stats.length === 0) return null;
+
+  const [label, value] = stats[tick % stats.length];
+  return (
+    <div
+      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm', rowClass)}
+      aria-label="Race stats"
+      aria-live="off"
+    >
+      <span className={cn('text-xs uppercase tracking-wide', mutedClass)}>{label}</span>
+      <span className="min-w-0 flex-1 truncate font-semibold tabular-nums">{value}</span>
+    </div>
+  );
 }
 
 export default function OverlayBoard() {
@@ -161,6 +221,7 @@ export default function OverlayBoard() {
             </tbody>
           </table>
         )}
+        <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
     </div>
   );
