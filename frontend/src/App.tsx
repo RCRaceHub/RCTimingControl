@@ -34,6 +34,7 @@ const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSett
 const BackupsPage = lazy(() => import('@/pages/admin/backups/BackupsPage'));
 const ResultsExportsPage = lazy(() => import('@/pages/admin/results-exports/ResultsExportsPage'));
 const CompetitorsPage = lazy(() => import('@/pages/admin/competitors/CompetitorsPage'));
+const WalkInPage = lazy(() => import('@/pages/race-control/walk-in/WalkInPage'));
 const TransponderPage = lazy(() => import('@/pages/race-control/transponders/TransponderPage'));
 const RaceControlLayout = lazy(() => import('@/pages/race-control/RaceControlLayout'));
 const CockpitPage = lazy(() => import('@/pages/race-control/CockpitPage'));
@@ -115,6 +116,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <CockpitPage /> },
           { path: 'practice', element: <PracticeLandingPage /> },
+          { path: 'walk-in', element: <WalkInPage /> },
           { path: 'transponders', element: <TransponderPage /> },
           { path: 'referee', element: <RefereePage /> },
           { path: 'results/:raceId', element: <PrintResultsPage /> },

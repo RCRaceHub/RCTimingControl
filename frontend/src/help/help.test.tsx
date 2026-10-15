@@ -5,6 +5,7 @@ import { ResultsExportsHelp } from './ResultsExportsHelp';
 import { DecoderHelp } from './DecoderHelp';
 import { EventManagementHelp } from './EventManagementHelp';
 import { TransponderHelp } from './TransponderHelp';
+import { WalkInHelp } from './WalkInHelp';
 import { RaceControlHelp } from './RaceControlHelp';
 import { ChampionshipHelp } from './ChampionshipHelp';
 import { PracticeHelp } from './PracticeHelp';
@@ -62,7 +63,7 @@ describe('help panels', () => {
 
   it('link to the printable guides that cover the screen', () => {
     const adminOnly = [BackupsHelp, ResultsExportsHelp, DecoderHelp, OfficialsHelp, SetupWizardHelp];
-    const meetingOnly = [TransponderHelp, RaceControlHelp, PracticeHelp, RefereeHelp];
+    const meetingOnly = [TransponderHelp, WalkInHelp, RaceControlHelp, PracticeHelp, RefereeHelp];
     const both = [EntryManagementHelp, EventManagementHelp, ChampionshipHelp];
     const hrefs = (Panel: () => React.ReactElement) => {
       const { container, unmount } = render(<Panel />);

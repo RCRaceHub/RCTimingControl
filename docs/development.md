@@ -218,6 +218,7 @@ None of them needs Docker. Each backend test run creates a temporary SQLite data
 | `/admin/*` | ADMIN / RACE_DIRECTOR / REFEREE | Admin panel. ADMIN only: club profile, tracks, formats, decoder, backups, results exports and officials (#132). Events and championships open to every official, but only an admin edits one (any official can still record a championship exclusion, a referee's disqualification); a race director also moves it through its day |
 | `/admin/race-control` | ADMIN / RACE_DIRECTOR / REFEREE | Pick an in-progress event for race control |
 | `/race-control/event/:id` | ADMIN / RACE_DIRECTOR / REFEREE | Race control cockpit |
+| `/race-control/event/:id/walk-in` | ADMIN / RACE_DIRECTOR (REFEREE sees it, cannot add) | Add a walk-in entry |
 | `/race-control/event/:id/transponders` | ADMIN / RACE_DIRECTOR / REFEREE | Transponder swap |
 | `/race-control/event/:id/referee` | ADMIN / RACE_DIRECTOR / REFEREE | Referee timing view |
 | `/race-control/event/:id/practice` | ADMIN / RACE_DIRECTOR / REFEREE | Open practice |
