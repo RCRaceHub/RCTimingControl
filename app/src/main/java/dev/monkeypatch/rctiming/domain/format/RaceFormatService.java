@@ -26,6 +26,8 @@ import java.util.Map;
 @Transactional
 public class RaceFormatService {
 
+    static final int DEFAULT_STAGGER_INTERVAL_SECONDS = 1;
+
     private final RaceFormatTemplateRepository templateRepository;
     private final EventClassRepository eventClassRepository;
     private final ObjectMapper objectMapper;
@@ -106,6 +108,23 @@ public class RaceFormatService {
             return fromFormat;
         }
         return isFinal ? StartType.GRID : StartType.STAGGER;
+    }
+
+    /**
+     * The seconds between driver calls in a stagger start, from the class's format. One second when the class has
+     * no format or the format sets none (FORMAT-11).
+     */
+    @Transactional(readOnly = true)
+    public int staggerIntervalSeconds(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return DEFAULT_STAGGER_INTERVAL_SECONDS;
+        }
+        int seconds = switch (getEffectiveConfig(eventClass)) {
+            case TimedRaceConfig timed -> timed.staggerIntervalSeconds();
+            case BumpUpConfig bumpUp -> bumpUp.staggerIntervalSeconds();
+            case PointsFinalsConfig points -> points.staggerIntervalSeconds();
+        };
+        return seconds > 0 ? seconds : DEFAULT_STAGGER_INTERVAL_SECONDS;
     }
 
     /**

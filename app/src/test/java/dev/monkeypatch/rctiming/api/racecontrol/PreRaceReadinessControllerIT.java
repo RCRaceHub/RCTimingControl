@@ -143,6 +143,8 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         Map<String, Object> body = resp.getBody();
         assertThat(body).isNotNull();
         assertThat(body.get("firstRaceOfEvent")).isEqualTo(true);
+        assertThat(body.get("startType")).isEqualTo("GRID");
+        assertThat(body.get("staggerIntervalSeconds")).isEqualTo(3);
         assertThat((List<?>) body.get("marshalDuty")).isEmpty();
         List<Map<String, Object>> gridCall = (List<Map<String, Object>>) body.get("gridCall");
         assertThat(gridCall).hasSize(3);

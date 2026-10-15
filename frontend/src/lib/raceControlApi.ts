@@ -30,6 +30,8 @@ export type PreRaceReadinessDto = {
   firstRaceOfEvent: boolean;
   gridCall: GridCallSlotDto[];
   marshalDuty: MarshalDutyRowDto[];
+  startType: 'STAGGER' | 'GRID' | 'ROLLING' | null;
+  staggerIntervalSeconds: number;
 };
 
 export type RunOrderItemDto = {
