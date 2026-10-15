@@ -104,7 +104,7 @@ The connection dropped, or the decoder is not accepting connections. RCTC retrie
 
 ### Unknown transponder alerts appear in race control
 
-A PASSING record arrived for a transponder number not assigned to any entry in the current race. Use **Link to entry** in race control to assign it. Laps already counted are credited to the entry automatically.
+A PASSING record arrived for a transponder number not assigned to any entry in the current race. Use **Link to entry** in race control to assign it. Laps already counted are credited to the entry automatically, and the number is kept on the entry, so it counts in the event's later races without linking again.
 
 ---
 
