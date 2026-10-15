@@ -120,6 +120,20 @@ class RaceStateMachineServiceTest {
     }
 
     @Test
+    void callGrid_keepsTheStartTypeOfARaceWithNoEventClass() {
+        Round practiceRound = new Round();
+        practiceRound.setType(RoundType.PRACTICE);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(practiceRound));
+        Race race = race(RaceStatus.PENDING);
+        race.setStartType(StartType.ROLLING);
+
+        service.callGrid(race);
+
+        assertThat(race.getStartType()).isEqualTo(StartType.ROLLING);
+        verify(raceFormatService, never()).startType(any(), any());
+    }
+
+    @Test
     void finishingPractice_doesNotSetTheQualifyingOrder() {
         Race race = finishedHeat(RoundType.PRACTICE, RoundType.QUALIFIER);
 

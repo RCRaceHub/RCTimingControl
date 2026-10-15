@@ -104,6 +104,9 @@ public class RaceStateMachineService {
         }
         EventClass eventClass = race.getEventClassId() == null ? null
                 : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        if (eventClass == null) {
+            return;
+        }
         race.setStartType(raceFormatService.startType(eventClass, round.getType()));
     }
 
