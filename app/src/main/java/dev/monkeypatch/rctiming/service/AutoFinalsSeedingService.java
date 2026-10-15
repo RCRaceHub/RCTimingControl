@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.service;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
@@ -14,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,23 +60,51 @@ public class AutoFinalsSeedingService {
 
     /** Call after a qualifying heat of the class has finished and been saved. */
     public void seedIfQualifyingComplete(Long eventClassId) {
-        List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
-        if (qualifiers.stream().anyMatch(q -> q.getStatus() != RaceStatus.FINISHED)) {
-            return;
-        }
-        // A class whose qualifying was all abandoned has no results to seed from
-        if (qualifiers.stream().allMatch(q -> q.getAbandonedAt() != null)) {
+        if (!qualifyingComplete(eventClassId)) {
             return;
         }
         List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         if (finals.isEmpty() || finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
             return;
         }
-        List<Long> standings = qualifyingStandingsService.standingsFor(eventClassId);
-        if (standings.isEmpty()) {
+        if (qualifyingStandingsService.standingsFor(eventClassId).isEmpty()) {
             log.info("Not seeding the finals of event class {}: no qualifying result", eventClassId);
             return;
         }
+        seed(Actor.system("finals-seeding"), eventClassId, "when qualifying finished");
+    }
+
+    /** Every qualifying heat is finished and at least one was not abandoned, so there are results to seed from. */
+    private boolean qualifyingComplete(Long eventClassId) {
+        List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
+        return qualifiers.stream().allMatch(q -> q.getStatus() == RaceStatus.FINISHED)
+                && qualifiers.stream().anyMatch(q -> q.getAbandonedAt() == null);
+    }
+
+    /**
+     * Seeds the class's finals again from the qualifying results, on an official's say, after a result changed
+     * (a heat re-run or corrected). Refused until every qualifying heat is finished, since a driver who is only
+     * in an unfinished heat would be left out of every final, and once a final has started.
+     */
+    @Transactional
+    public void reseed(Actor actor, Long eventId, Long eventClassId) {
+        EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
+        if (!eventClass.getEventId().equals(eventId)) {
+            throw new EntityNotFoundException("Event class " + eventClassId + " not found in event " + eventId);
+        }
+        if (!qualifyingComplete(eventClassId)) {
+            throw new StateConflictException(
+                "Every qualifying heat for this class must be finished, and not all abandoned, before its finals are seeded");
+        }
+        seed(actor, eventClassId, "on request");
+    }
+
+    private void seed(Actor actor, Long eventClassId, String when) {
+        List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
+        if (finals.isEmpty()) {
+            throw new StateConflictException("This class has no finals to seed; generate the rounds first");
+        }
+        List<Long> standings = qualifyingStandingsService.standingsFor(eventClassId);
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         int finalsCount = finals.size();
         int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount);
@@ -84,9 +115,9 @@ public class AutoFinalsSeedingService {
         after.put("carsPerFinal", layout[0]);
         after.put("bumpCount", layout[1]);
         after.put("qualifyingOrder", standings);
-        audit.entry(Actor.system("finals-seeding"), "FINALS_SEEDED").entity("event_class", eventClassId)
+        audit.entry(actor, "FINALS_SEEDED").entity("event_class", eventClassId)
                 .event(eventClass.getEventId())
-                .summary("Seeded the finals from " + standings.size() + " qualifiers when qualifying finished ("
+                .summary("Seeded the finals from " + standings.size() + " qualifiers " + when + " ("
                         + finalsCount + " finals, " + layout[0] + " cars each, " + layout[1] + " bumping up)")
                 .after(after).record();
     }

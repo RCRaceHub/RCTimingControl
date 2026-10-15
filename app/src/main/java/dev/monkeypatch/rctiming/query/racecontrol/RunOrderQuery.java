@@ -38,6 +38,7 @@ public class RunOrderQuery {
         return dsl
                 .select(
                         RACES.ID,
+                        RACES.EVENT_CLASS_ID,
                         ROUNDS.SEQUENCE_IN_EVENT,
                         ROUNDS.ROUND_NUMBER,
                         ROUNDS.TYPE,
@@ -56,6 +57,7 @@ public class RunOrderQuery {
                         RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
                 .fetch(r -> new RunOrderItemDto(
                         r.get(RACES.ID),
+                        r.get(RACES.EVENT_CLASS_ID),
                         r.get(ROUNDS.SEQUENCE_IN_EVENT),
                         r.get(ROUNDS.ROUND_NUMBER),
                         r.get(ROUNDS.TYPE),

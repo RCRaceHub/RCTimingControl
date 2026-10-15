@@ -63,6 +63,11 @@ public class QualifyingStandingsService {
      * qualifying heats. Empty when no qualifying heat has finished.
      */
     public List<Long> standingsFor(Long eventClassId) {
+        return rankedResultsFor(eventClassId).stream().map(QualifyingResult::entryId).toList();
+    }
+
+    /** The same order with each driver's total laps and best lap, for showing the overall qualifying table. */
+    public List<QualifyingResult> rankedResultsFor(Long eventClassId) {
         Map<Long, QualifyingResult> byEntry = new LinkedHashMap<>();
         for (Race race : raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER)) {
             if (race.getStatus() != RaceStatus.FINISHED) {
@@ -87,17 +92,20 @@ public class QualifyingStandingsService {
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
                 .stream().map(Entry::getId).collect(Collectors.toSet());
         byEntry.keySet().removeAll(withdrawn);
-        return rank(byEntry.values());
+        return rankResults(byEntry.values());
     }
 
     /** Laps completed, most first, then best lap, quickest first, then entry id. */
     static List<Long> rank(Collection<QualifyingResult> results) {
+        return rankResults(results).stream().map(QualifyingResult::entryId).toList();
+    }
+
+    private static List<QualifyingResult> rankResults(Collection<QualifyingResult> results) {
         return results.stream()
                 .sorted(Comparator
                         .comparingInt(QualifyingResult::lapsCompleted).reversed()
                         .thenComparingLong(QualifyingResult::bestLapMs)
                         .thenComparing(QualifyingResult::entryId))
-                .map(QualifyingResult::entryId)
                 .toList();
     }
 
@@ -107,7 +115,12 @@ public class QualifyingStandingsService {
      * @param bestLapMs     best single lap in milliseconds across all heats; {@code Long.MAX_VALUE} for none
      * @param lapsCompleted total laps across all heats
      */
-    record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted) {
+    public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted) {
+
+        /** Whether the driver set a timed lap in any heat. */
+        public boolean hasBestLap() {
+            return bestLapMs != NO_LAP;
+        }
 
         QualifyingResult plus(QualifyingResult other) {
             return new QualifyingResult(entryId, Math.min(bestLapMs, other.bestLapMs),

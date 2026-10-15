@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record RunOrderItemDto(
         long raceId,
+        long eventClassId,
         int sequenceInEvent,
         int roundNumber,
         String roundType,       // "PRACTICE" | "QUALIFIER" | "FINAL"

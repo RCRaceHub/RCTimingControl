@@ -39,6 +39,8 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @Autowired BumpUpSeedingService bumpUpSeedingService;
     @Autowired EventRunOrderService runOrderService;
     @Autowired QualifyingStandingsService qualifyingStandingsService;
+    @Autowired AutoFinalsSeedingService autoFinalsSeedingService;
+    @Autowired QualifyingTableService qualifyingTableService;
     @Autowired RaceRepository raceRepository;
     @Autowired RaceEntryRepository raceEntryRepository;
     @Autowired JdbcTemplate jdbc;
@@ -200,6 +202,54 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 "select * from audit_log where event_id = ? and action = 'FINALS_SEEDED'", eventId);
         assertThat(audited).hasSize(1);
         assertThat(audited.get(0).get("summary").toString()).contains("from 20 qualifiers");
+    }
+
+    @Test
+    void showsTheOverallQualifyingTableAndSeedsTheFinalsFromItOnRequest() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                    heat.getRoundId());
+            finishWithResult(heat, buggies, round);
+        }
+
+        var table = qualifyingTableService.forEvent(eventId).stream()
+                .filter(t -> t.eventClassId() == buggyClass).findFirst().orElseThrow();
+        assertThat(table.rows()).hasSize(20);
+        assertThat(table.rows().get(0).entryId()).isEqualTo(buggies.get(0));
+        assertThat(table.rows().get(0).driverName()).startsWith("Driver " + buggyClass + "-1 ");
+        assertThat(table.rows().get(0).lapsCompleted()).isEqualTo(21);
+        assertThat(table.finalsStarted()).isFalse();
+
+        autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass);
+
+        // An even split of the table over the two finals: ranks 1-10 in the A final, 11-20 in the B final
+        List<Long> order = table.rows().stream().map(r -> r.entryId()).toList();
+        assertThat(gridOf(finalOf(buggyClass, "A"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(order.subList(0, 10));
+        assertThat(gridOf(finalOf(buggyClass, "B"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(order.subList(10, 20));
+    }
+
+    @Test
+    void reseedingIsRefusedUntilEveryQualifyingHeatIsFinished() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        List<Race> heats = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER);
+        Race first = heats.get(0);
+        int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                first.getRoundId());
+        finishWithResult(first, buggies, round);
+
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass))
+                .isInstanceOf(StateConflictException.class);
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId + 1_000_000,
+                buggyClass)).isInstanceOf(EntityNotFoundException.class);
     }
 
     /** Marks the heat finished (as the race control does) and stores its result; each row is entry, laps, best lap. */
