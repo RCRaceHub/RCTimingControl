@@ -25,8 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Entry search and transponder swap for race control (L11). Open to every
- * official.
+ * Entry search and transponder swap for race control. Open to every official.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/events/{eventId}")
