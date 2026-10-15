@@ -112,7 +112,7 @@ export default function CockpitPage() {
   });
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
-  const { playBeep, setClipMap, markAbandoned } = useAnnouncements({
+  const { playBeep, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
     raceId: selectedRaceId,
     settings: audioSettings ?? null,
     volume: volumePercent / 100,
@@ -227,6 +227,7 @@ export default function CockpitPage() {
     seconds: audioSettings?.startCountdownSeconds ?? 0,
     volume: volumePercent / 100,
     onDone: onStart,
+    watch: `${selectedRaceId}:${selectedRace?.status}`,
   });
 
   function onStop() {
@@ -257,7 +258,10 @@ export default function CockpitPage() {
     if (!confirmed) return;
     if (selectedRaceId != null) markAbandoned(selectedRaceId);
     mutations.abandon.mutate(undefined, {
-      onError: commandFailed('Abandon'),
+      onError: (err) => {
+        clearAbandoned();
+        commandFailed('Abandon')(err);
+      },
     });
   }
 

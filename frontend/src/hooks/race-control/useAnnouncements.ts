@@ -190,22 +190,31 @@ export function useAnnouncements({
     state: undefined,
   });
   const movedFromRef = useRef<string | undefined>(undefined);
+  const gridSaidRef = useRef<number | null>(null);
+  const raceIdRef = useRef(raceId);
+  useEffect(() => { raceIdRef.current = raceId; }, [raceId]);
   useEffect(() => {
     if (!raceState) return;
     const last = lastStateRef.current;
     const prev = last.raceId === raceId ? last.state : undefined;
     lastStateRef.current = { raceId, state: raceState };
     movedFromRef.current = prev ?? undefined;
+    // A race that leaves the grid may be called to it again
+    if (raceState !== 'GRID') gridSaidRef.current = null;
+    // Stop and resume lines
     if (!prev || prev === raceState || settingsRef.current?.announceRaceCalls === false) return;
     if (raceState === 'STOPPED') fallbackSpeak('Race stopped.');
     if (raceState === 'RUNNING' && prev === 'STOPPED') fallbackSpeak('Race resumed.');
-    // Stop and resume lines
   }, [raceState, raceId, fallbackSpeak]);
 
   // A race the director abandoned ends with its own line, not the chequered flag
   const abandonedRef = useRef<number | null>(null);
   const markAbandoned = useCallback((abandonedRaceId: number) => {
     abandonedRef.current = abandonedRaceId;
+  }, []);
+  // For an abandon the server refused
+  const clearAbandoned = useCallback(() => {
+    abandonedRef.current = null;
   }, []);
 
   // Finish: the horn, then the spoken line (AUDIO-05). The horn and the line have a switch each.
@@ -215,6 +224,7 @@ export function useAnnouncements({
     if (movedFromRef.current !== 'RUNNING' && movedFromRef.current !== 'STOPPED') return;
     const s = settingsRef.current;
     if (abandonedRef.current === raceId) {
+      abandonedRef.current = null;
       if (s?.announceFinish !== false) fallbackSpeak('Race abandoned.');
       return;
     }
@@ -225,10 +235,11 @@ export function useAnnouncements({
   }, [raceState, raceId, playClip, fallbackSpeak]);
 
   // The grid call: which race, and how many drivers, once the grid is known. Once per race.
-  const gridSaidRef = useRef<number | null>(null);
   const gridCount = gridEntries?.length;
   useEffect(() => {
     if (raceState !== 'GRID' || raceId == null || !raceLabel || gridCount == null) return;
+    // Only a race seen to be called to the grid: one opened already on it stays quiet
+    if (movedFromRef.current !== 'PENDING') return;
     if (gridSaidRef.current === raceId) return;
     gridSaidRef.current = raceId;
     if (settingsRef.current?.announceRaceCalls === false) return;
@@ -238,17 +249,23 @@ export function useAnnouncements({
 
   // Next race and its marshals, a moment after the finish line. Once per finished race.
   const nextSaidRef = useRef<number | null>(null);
+  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     if (raceState !== 'FINISHED' || raceId == null || !nextRace) return;
+    if (movedFromRef.current !== 'RUNNING' && movedFromRef.current !== 'STOPPED') return;
     if (nextSaidRef.current === raceId) return;
     nextSaidRef.current = raceId;
     if (settingsRef.current?.announceNextRace === false) return;
     const marshals = nextRace.marshals.length > 0 ? ` Marshals: ${nextRace.marshals.join(', ')}.` : '';
-    // Not cancelled by the effect rerunning, but dropped if the director has moved on
-    setTimeout(() => {
-      if (raceStateRef.current === 'FINISHED') fallbackSpeak(`Next race: ${nextRace.label}.${marshals}`);
+    // Not cancelled by the effect rerunning, but dropped if the director has moved on to another race
+    clearTimeout(nextTimerRef.current);
+    nextTimerRef.current = setTimeout(() => {
+      if (raceStateRef.current === 'FINISHED' && raceIdRef.current === raceId) {
+        fallbackSpeak(`Next race: ${nextRace.label}.${marshals}`);
+      }
     }, NEXT_RACE_DELAY_MS);
   }, [raceState, raceId, nextRace, fallbackSpeak]);
+  useEffect(() => () => clearTimeout(nextTimerRef.current), [raceId]);
 
   // The stagger is called when the race starts (GRID to RUNNING), so each driver starts as their name is called
   // (AUDIO-03). It runs at most once per start, even if gridEntries refetches, and a race opened already
@@ -354,6 +371,7 @@ export function useAnnouncements({
     playBeep,
     playClip,
     markAbandoned,
+    clearAbandoned,
     setClipMap,
   };
 }

@@ -17,7 +17,7 @@ afterEach(() => vi.useRealTimers());
 describe('useStartCountdown', () => {
   it('starts at once with no lead-in', () => {
     const onDone = vi.fn();
-    const { result } = renderHook(() => useStartCountdown({ seconds: 0, volume: 1, onDone }));
+    const { result } = renderHook(() => useStartCountdown({ seconds: 0, volume: 1, onDone, watch: 'a' }));
     act(() => result.current.begin());
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(speak).not.toHaveBeenCalled();
@@ -25,7 +25,7 @@ describe('useStartCountdown', () => {
 
   it('says the lead-in, ticks the last five seconds, then starts', () => {
     const onDone = vi.fn();
-    const { result } = renderHook(() => useStartCountdown({ seconds: 7, volume: 1, onDone }));
+    const { result } = renderHook(() => useStartCountdown({ seconds: 7, volume: 1, onDone, watch: 'a' }));
     act(() => result.current.begin());
     expect(speak).toHaveBeenCalledWith('Starting in 7 seconds.', 1);
     expect(result.current.remaining).toBe(7);
@@ -47,11 +47,34 @@ describe('useStartCountdown', () => {
 
   it('does not start when cancelled', () => {
     const onDone = vi.fn();
-    const { result } = renderHook(() => useStartCountdown({ seconds: 3, volume: 1, onDone }));
+    const { result } = renderHook(() => useStartCountdown({ seconds: 3, volume: 1, onDone, watch: 'a' }));
     act(() => result.current.begin());
     act(() => result.current.cancel());
     act(() => { vi.advanceTimersByTime(10_000); });
     expect(onDone).not.toHaveBeenCalled();
     expect(result.current.remaining).toBeNull();
+  });
+
+  it('drops the count when another race is selected', () => {
+    const onDone = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ watch }: { watch: string }) => useStartCountdown({ seconds: 3, volume: 1, onDone, watch }),
+      { initialProps: { watch: 'race-1:GRID' } },
+    );
+    act(() => result.current.begin());
+    rerender({ watch: 'race-2:GRID' });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(onDone).not.toHaveBeenCalled();
+    expect(result.current.remaining).toBeNull();
+  });
+
+  it('ignores a second press while counting', () => {
+    const onDone = vi.fn();
+    const { result } = renderHook(() => useStartCountdown({ seconds: 3, volume: 1, onDone, watch: 'a' }));
+    act(() => result.current.begin());
+    act(() => result.current.begin());
+    expect(speak).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 });

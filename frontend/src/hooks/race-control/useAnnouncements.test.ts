@@ -10,8 +10,8 @@ import type { AudioSettingsDto } from '@/lib/audioApi';
 
 vi.mock('@/hooks/race-control/useStomp', () => ({ useStomp: () => ({ data: null }) }));
 
-const playStartHorn = vi.fn(() => 1200);
-const playFinishHorn = vi.fn(() => 1800);
+const playStartHorn = vi.fn<(volume: number) => number>(() => 1200);
+const playFinishHorn = vi.fn<(volume: number) => number>(() => 1800);
 vi.mock('@/lib/sounds', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/sounds')>()),
   playStartHorn: (v: number) => playStartHorn(v),
@@ -169,10 +169,18 @@ describe('useAnnouncements stagger start', () => {
     const { rerender } = renderHook(
       (p: { raceState: string }) =>
         useAnnouncements({ raceId: 5, settings, raceState: p.raceState, gridEntries: grid, raceLabel: 'Qualifying 1, Touring, Heat 2' }),
-      { initialProps: { raceState: 'GRID' } },
+      { initialProps: { raceState: 'PENDING' } },
     );
     rerender({ raceState: 'GRID' });
+    rerender({ raceState: 'GRID' });
     expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Qualifying 1, Touring, Heat 2. 2 drivers to the grid.']);
+  });
+
+  it('stays quiet about the grid for a race opened already on it', () => {
+    renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'GRID', gridEntries: grid, raceLabel: 'Heat 2' }),
+    );
+    expect(speak).not.toHaveBeenCalled();
   });
 
   it('calls the drivers when the start comes without the grid being seen', () => {
@@ -237,6 +245,25 @@ describe('useAnnouncements finish', () => {
     act(() => { vi.advanceTimersByTime(5000); });
     expect(playFinishHorn).not.toHaveBeenCalled();
     expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Race abandoned.']);
+  });
+
+  it('forgets an abandon the server refused', () => {
+    const { result, rerender } = renderHook(
+      (p: { raceState: string }) => useAnnouncements({ raceId: 5, settings, raceState: p.raceState }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+    act(() => result.current.markAbandoned(5));
+    act(() => result.current.clearAbandoned());
+    rerender({ raceState: 'FINISHED' });
+    expect(playFinishHorn).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet about the next race for a finished race that was only opened', () => {
+    renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'FINISHED', nextRace: { label: 'Final A', marshals: [] } }),
+    );
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).not.toHaveBeenCalled();
   });
 
   it('calls the next race and its marshals after the finish line', () => {

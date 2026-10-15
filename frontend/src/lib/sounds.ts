@@ -17,13 +17,22 @@ const FINISH_BLASTS: Blast[] = [
   { at: 1.1, length: 0.6, hz: 440 },
 ];
 
+// One context for every sound: browsers cap how many can be open, and a start horn that comes from a
+// server message, not a click, may find it suspended until it is resumed
+let shared: AudioContext | null = null;
+
+function context(): AudioContext {
+  if (!shared || shared.state === 'closed') shared = new AudioContext();
+  if (shared.state === 'suspended') void shared.resume().catch(() => undefined);
+  return shared;
+}
+
 function play(blasts: Blast[], volume: number, wave: OscillatorType) {
   try {
-    const ctx = new AudioContext();
+    const ctx = context();
     const gain = ctx.createGain();
     gain.gain.value = Math.min(1, Math.max(0, volume)) * 0.6;
     gain.connect(ctx.destination);
-    let end = 0;
     for (const { at, length, hz } of blasts) {
       const osc = ctx.createOscillator();
       osc.type = wave;
@@ -31,10 +40,8 @@ function play(blasts: Blast[], volume: number, wave: OscillatorType) {
       osc.connect(gain);
       osc.start(ctx.currentTime + at);
       osc.stop(ctx.currentTime + at + length);
-      end = Math.max(end, at + length);
+      osc.onended = () => osc.disconnect();
     }
-    // Close the context after the last blast to release its audio resources
-    setTimeout(() => ctx.close().catch(() => undefined), (end + 0.2) * 1000);
   } catch (e) {
     console.warn('Horn failed:', e);
   }

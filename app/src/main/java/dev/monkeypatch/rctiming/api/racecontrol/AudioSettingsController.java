@@ -5,9 +5,12 @@ import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfile;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,6 +19,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
 
 /**
  * Race control–facing audio settings endpoint (AUDIO-07).
@@ -69,13 +74,20 @@ public class AudioSettingsController {
             Boolean announceFinish,
             Boolean announceRunningOrder,
             @Min(1) @Max(20) Integer runningOrderDepth,
-            int[] countdownIntervals,
+            @Size(max = 10) int[] countdownIntervals,
             Boolean startHorn,
             Boolean finishHorn,
             Boolean announceRaceCalls,
             Boolean announceNextRace,
             @Min(0) @Max(60) Integer startCountdownSeconds
-    ) {}
+    ) {
+        /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
+        @JsonIgnore
+        @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
+        public boolean isCountdownIntervalsInRange() {
+            return countdownIntervals == null || Arrays.stream(countdownIntervals).allMatch(i -> i >= 1 && i <= 3600);
+        }
+    }
 
     /**
      * Returns the current audio settings from the club profile.

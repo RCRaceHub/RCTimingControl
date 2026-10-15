@@ -56,6 +56,11 @@ public class AudioPreGenerationService {
     /** Races whose clips are being made now, so two requests do not make them twice */
     private final Set<Long> generating = ConcurrentHashMap.newKeySet();
 
+    /** When a try that made no clips may be repeated, by race */
+    private final Map<Long, Long> retryAfter = new ConcurrentHashMap<>();
+
+    private static final long RETRY_AFTER_MS = 30_000;
+
     /** One daemon thread for remaking lost clips, off the request that found them lost */
     private final Executor regenerateExecutor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "audio-clip-regenerate");
@@ -98,18 +103,31 @@ public class AudioPreGenerationService {
 
     /**
      * Makes the race's clips again when a client asks for them and the app no longer holds them, as after a
-     * restart between the grid call and the start. Does nothing for a race that is not on the grid or running.
+     * restart between the grid call and the start. Does nothing for a race that is not on the grid or running,
+     * and waits a while after a try that made nothing, so a speech outage is not hit by every poll.
      */
     private void regenerateIfLost(Long raceId) {
-        if (clipCache.containsKey(raceId) || generating.contains(raceId)) {
+        if (clipCache.containsKey(raceId)
+                || System.currentTimeMillis() < retryAfter.getOrDefault(raceId, 0L)) {
             return;
         }
         Race race = raceRepository.findById(raceId).orElse(null);
         if (race == null || (race.getStatus() != RaceStatus.GRID && race.getStatus() != RaceStatus.RUNNING)) {
             return;
         }
+        if (!generating.add(raceId)) {
+            return;
+        }
         log.info("Race {} has no clips held (restart?) — making them again", raceId);
-        regenerateExecutor.execute(() -> generateClips(raceId));
+        regenerateExecutor.execute(() -> {
+            try {
+                if (!clipCache.containsKey(raceId)) {
+                    makeClips(raceId);
+                }
+            } finally {
+                generating.remove(raceId);
+            }
+        });
     }
 
     private void generateClips(Long raceId) {
@@ -124,6 +142,17 @@ public class AudioPreGenerationService {
     }
 
     private void makeClips(Long raceId) {
+        try {
+            buildClips(raceId);
+        } catch (RuntimeException e) {
+            log.warn("Making the audio clips for race {} failed", raceId, e);
+        }
+        if (!clipCache.containsKey(raceId)) {
+            retryAfter.put(raceId, System.currentTimeMillis() + RETRY_AFTER_MS);
+        }
+    }
+
+    private void buildClips(Long raceId) {
         Race race = raceRepository.findById(raceId).orElse(null);
         if (race == null) {
             log.warn("Race {} not found for audio pre-generation", raceId);
@@ -166,6 +195,11 @@ public class AudioPreGenerationService {
             clips.put("finish", finishUrl);
         }
 
+        // A race that finished while its clips were being made must not get them back
+        Race latest = raceRepository.findById(raceId).orElse(null);
+        if (latest == null || latest.getStatus() == RaceStatus.FINISHED) {
+            return;
+        }
         clipCache.put(raceId, Collections.unmodifiableMap(clips));
         log.info("Audio pre-generation complete for race {}: {} clips cached", raceId, clips.size());
     }
@@ -184,12 +218,15 @@ public class AudioPreGenerationService {
      */
     public void clearClips(Long raceId) {
         clipCache.remove(raceId);
+        retryAfter.remove(raceId);
     }
 
+    /** The same wording as the browser's own, such as "1 minute 30 seconds". */
     private static String formatCountdownLabel(int seconds) {
-        if (seconds >= 60 && seconds % 60 == 0) {
-            int minutes = seconds / 60;
-            return minutes + " minute" + (minutes == 1 ? "" : "s");
+        int minutes = seconds / 60;
+        int rest = seconds % 60;
+        if (minutes > 0) {
+            return minutes + " minute" + (minutes > 1 ? "s" : "") + (rest > 0 ? " " + rest + " seconds" : "");
         }
         return seconds + " seconds";
     }
