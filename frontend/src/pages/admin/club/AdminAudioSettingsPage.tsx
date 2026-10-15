@@ -99,8 +99,8 @@ export default function AdminAudioSettingsPage() {
                   type="number"
                   min={0}
                   max={60}
-                  value={displaySettings.startCountdownSeconds ?? 10}
-                  onChange={(e) =>
+                  defaultValue={displaySettings.startCountdownSeconds ?? 10}
+                  onBlur={(e) =>
                     setLocalSettings({
                       ...displaySettings,
                       startCountdownSeconds: Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)),

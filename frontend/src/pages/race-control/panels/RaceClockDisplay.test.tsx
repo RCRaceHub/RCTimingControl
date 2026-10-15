@@ -30,9 +30,8 @@ describe('RaceClockDisplay', () => {
   });
 
   it('shows the time so far for a race with no set length', () => {
-    render(
-      <RaceClockDisplay clock={clock({ durationMs: null, remainingMs: null, elapsedMs: 61_000 })} readAt={Date.now()} />,
-    );
+    const untimed = clock({ durationMs: null, remainingMs: null, elapsedMs: 61_000 });
+    render(<RaceClockDisplay clock={untimed} readAt={Date.now()} />);
     expect(screen.getByRole('timer')).toHaveTextContent('Race time1:01');
   });
 

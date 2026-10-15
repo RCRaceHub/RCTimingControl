@@ -112,6 +112,8 @@ export default function CockpitPage() {
     queryKey: raceControlQueryKeys.raceClock(selectedRaceId, selectedRace?.status),
     queryFn: () => getRaceClock(selectedRaceId!),
     enabled: selectedRaceId != null && (selectedRace?.status === 'RUNNING' || selectedRace?.status === 'STOPPED'),
+    // Not kept: a clock read before an earlier stoppage would show the wrong time until the new one arrives
+    gcTime: 0,
   });
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
@@ -227,7 +229,7 @@ export default function CockpitPage() {
 
   // From the grid, Start first runs the club's lead-in (if it has one), then starts the race
   const startCountdown = useStartCountdown({
-    seconds: audioSettings?.startCountdownSeconds ?? 0,
+    seconds: audioSettings?.startCountdownSeconds ?? 10,
     volume: volumePercent / 100,
     onDone: onStart,
     watch: `${selectedRaceId}:${selectedRace?.status}`,
