@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs } from '@/lib/sounds';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs, type LapPace } from '@/lib/sounds';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
@@ -379,10 +379,10 @@ export function useAnnouncements({
 
   // Per-lap improvement beeps (AUDIO-04)
   const playBeep = useCallback(
-    (improving: boolean) => {
+    (pace: LapPace) => {
       if (settingsRef.current && !settingsRef.current.announceLapBeep) return;
       const tuning = tuningOf(settingsRef.current);
-      playLapBeep(volumeRef.current, improving, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
+      playLapBeep(volumeRef.current, pace, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
         settingsRef.current?.hornSounds);
     },
     [],

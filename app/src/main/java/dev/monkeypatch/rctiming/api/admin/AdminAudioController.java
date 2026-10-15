@@ -130,7 +130,7 @@ public class AdminAudioController {
         return ResponseEntity.ok(dto);
     }
 
-    /** Replaces the start or finish horn, the tick or the lap beep with the club's own sound file (#278, #281, #299). */
+    /** Replaces a horn, the tick or a lap beep with the club's own sound file (#278, #281, #299). */
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")

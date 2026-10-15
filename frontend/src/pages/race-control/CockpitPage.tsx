@@ -14,7 +14,7 @@ import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
 import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { usePregeneratedClips } from '@/hooks/race-control/usePregeneratedClips';
-import { isImprovingLap, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
+import { lapPace, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
 import { getAudioSettings } from '@/lib/audioApi';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
@@ -155,7 +155,7 @@ export default function CockpitPage() {
         row.lastPassingTimeMs &&
         row.lastPassingTimeMs !== prevTime
       ) {
-        playBeep(isImprovingLap(prevBest.get(row.entryId), row));
+        playBeep(lapPace(prevBest.get(row.entryId), row));
       }
       if (row.lastPassingTimeMs) {
         prev.set(row.entryId, row.lastPassingTimeMs);

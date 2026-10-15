@@ -17,9 +17,12 @@ import java.util.Set;
 public class HornSoundService {
 
     public enum Horn {
-        START, FINISH, TICK, LAP_BEEP;
+        START, FINISH, TICK, LAP_BEEP, FASTER_BEEP, SLOWER_BEEP;
 
-        /** The name in a URL and a file name: {@code start}, {@code finish}, {@code tick} or {@code lap-beep}. */
+        /**
+         * The name in a URL and a file name: {@code start}, {@code finish}, {@code tick}, {@code lap-beep}
+         * (on pace), {@code faster-beep} or {@code slower-beep}.
+         */
         public String slug() {
             return name().toLowerCase().replace('_', '-');
         }
@@ -31,7 +34,8 @@ public class HornSoundService {
                     return horn;
                 }
             }
-            throw new IllegalArgumentException("Unknown horn: " + name + ". Use start, finish, tick or lap-beep");
+            throw new IllegalArgumentException("Unknown horn: " + name
+                    + ". Use start, finish, tick, lap-beep, faster-beep or slower-beep");
         }
     }
 
@@ -94,6 +98,8 @@ public class HornSoundService {
                 case FINISH -> s.hornSounds().withFinish(url, ms);
                 case TICK -> s.hornSounds().withTick(url, ms);
                 case LAP_BEEP -> s.hornSounds().withLapBeep(url, ms);
+                case FASTER_BEEP -> s.hornSounds().withFasterBeep(url, ms);
+                case SLOWER_BEEP -> s.hornSounds().withSlowerBeep(url, ms);
             };
             profile.setAudioSettings(s.withHornSounds(sounds));
         }).getAudioSettings();

@@ -5,14 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { removeHornSound, uploadHornSound, type SoundName } from '@/lib/audioApi';
 import { playFinishHorn, playLapBeep, playStartHorn, playTick, type HornSounds } from '@/lib/sounds';
+import { ON_PACE_TOLERANCE } from '@/hooks/race-control/raceAudioCues';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 const HORNS = [
   { horn: 'start', label: 'Start horn', play: playStartHorn, url: 'startUrl' },
   { horn: 'finish', label: 'Finish horn', play: playFinishHorn, url: 'finishUrl' },
   { horn: 'tick', label: 'Tick', play: (v: number, s?: HornSounds) => playTick(v, false, s), url: 'tickUrl' },
-  { horn: 'lap-beep', label: 'Lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, true, undefined, s),
+  { horn: 'lap-beep', label: 'On-pace lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, 'onPace', undefined, s),
     url: 'lapBeepUrl' },
+  { horn: 'faster-beep', label: 'Faster lap beep', url: 'fasterBeepUrl',
+    play: (v: number, s?: HornSounds) => playLapBeep(v, 'faster', undefined, s) },
+  { horn: 'slower-beep', label: 'Slower lap beep', url: 'slowerBeepUrl',
+    play: (v: number, s?: HornSounds) => playLapBeep(v, 'slower', undefined, s) },
 ] as const;
 
 /** How long a sound file plays, in milliseconds, read by the browser before it is uploaded. */
@@ -69,7 +74,9 @@ export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in sound.
+          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in sound. A faster lap beats the driver's best, on pace is within{' '}
+          {ON_PACE_TOLERANCE * 100}% of it, and slower is anything beyond. A faster or slower lap with no file of its
+          own uses the on-pace one.
         </p>
         {HORNS.map(({ horn, label, play, url }) => {
           const custom = Boolean(sounds?.[url]);
