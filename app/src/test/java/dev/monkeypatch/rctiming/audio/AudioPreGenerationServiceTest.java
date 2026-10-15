@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.audio;
 
+import dev.monkeypatch.rctiming.domain.club.AudioSettingsChangedEvent;
 import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfile;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -295,5 +296,58 @@ class AudioPreGenerationServiceTest {
         assertThat(service.getClipMap(1L)).isEmpty();
 
         verifyNoInteractions(clipService);
+    }
+
+    @Test
+    void onRaceGridTransition_saysTheClubsWordingForTheFinishAndTheCarFinishCalls() {
+        ClubAudioSettings own = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null, null,
+                null, null, null, null, null, null,
+                new ClubAudioSettings.Wording(null, null, null, null, null, null, "That is the race.", null, null,
+                        null, "{name} home in car {car}."),
+                null);
+        when(clubProfileService.audioSettings()).thenReturn(own);
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(race));
+        RaceEntry raceEntry = new RaceEntry();
+        raceEntry.setEntryId(100L);
+        raceEntry.setCarNumber(12);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(1L)).thenReturn(List.of(raceEntry));
+        Entry entry = new Entry();
+        entry.setId(100L);
+        entry.setCompetitorId(200L);
+        when(entryRepository.findById(100L)).thenReturn(Optional.of(entry));
+        Competitor competitor = new Competitor();
+        competitor.setDisplayName("Alan Smith");
+        when(competitorRepository.findById(200L)).thenReturn(Optional.of(competitor));
+        when(clubProfileService.defaultVoiceId()).thenReturn(Optional.of(clubProfile.getDefaultVoiceId()));
+        when(clipService.generateCarFinishClip(anyLong(), anyLong(), anyString(), anyString()))
+                .thenReturn("http://localhost:8080/storage/car-finish.wav");
+        when(clipService.generateRaceFinishedClip(anyLong(), anyString(), anyString())).thenReturn(null);
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1L, RaceStatus.GRID));
+
+        verify(clipService).generateRaceFinishedClip(eq(1L), eq("That is the race."), anyString());
+        verify(clipService).generateCarFinishClip(eq(1L), eq(100L), eq("Alan Smith home in car 12."), anyString());
+        assertThat(service.getClipMap(1L)).containsKey("car-finish-100");
+    }
+
+    @Test
+    void whenTheClubChangesItsSettings_theClipsOfARaceOnTheGridAreMadeAgainInTheNewWording() {
+        race.setStatus(RaceStatus.GRID);
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(race));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(1L)).thenReturn(Collections.emptyList());
+        when(clubProfileService.defaultVoiceId()).thenReturn(Optional.of(clubProfile.getDefaultVoiceId()));
+        when(clipService.generateRaceFinishedClip(anyLong(), anyString(), anyString()))
+                .thenReturn("http://localhost:8080/storage/finish.wav");
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1L, RaceStatus.GRID));
+        verify(clipService).generateRaceFinishedClip(eq(1L), eq("Race finished. Checkered flag."), anyString());
+
+        when(clubProfileService.audioSettings()).thenReturn(new ClubAudioSettings(true, true, true, true, true, 3,
+                null, null, null, null, null, null, null, null, null, null, null,
+                new ClubAudioSettings.Wording(null, null, null, null, null, null, "All done.", null, null, null,
+                        null),
+                null));
+        service.onAudioSettingsChanged(new AudioSettingsChangedEvent());
+
+        verify(clipService).generateRaceFinishedClip(eq(1L), eq("All done."), anyString());
     }
 }

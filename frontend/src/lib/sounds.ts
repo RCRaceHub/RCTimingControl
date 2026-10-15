@@ -10,6 +10,10 @@ export interface HornSounds {
   startMs?: number | null;
   finishUrl?: string | null;
   finishMs?: number | null;
+  tickUrl?: string | null;
+  tickMs?: number | null;
+  lapBeepUrl?: string | null;
+  lapBeepMs?: number | null;
 }
 
 /** How long the start horn sounds. */
@@ -135,12 +139,25 @@ export function playFinishHorn(volume: number, sounds?: HornSounds | null): numb
   return finishHornMs(sounds);
 }
 
-/** The beep for a lap: higher when the driver improved. */
-export function playLapBeep(volume: number, improving: boolean) {
-  play([{ at: 0, length: 0.2, hz: improving ? 880 : 440 }], volume, 'sine');
+/** The lap beep's tone: its pitch, and its length in milliseconds. */
+export interface BeepTone {
+  hz?: number;
+  ms?: number;
 }
 
-/** A short tick for the start countdown; the last one is higher. */
-export function playTick(volume: number, last = false) {
-  play([{ at: 0, length: last ? 0.4 : 0.15, hz: last ? 1040 : 780 }], volume, 'sine');
+/** The beep for a lap: an octave higher when the driver improved; the club's own sound if it has one. */
+export function playLapBeep(volume: number, improving: boolean, tone?: BeepTone, sounds?: HornSounds | null) {
+  const builtIn = () => {
+    const hz = tone?.hz ?? 440;
+    play([{ at: 0, length: (tone?.ms ?? 200) / 1000, hz: improving ? hz * 2 : hz }], volume, 'sine');
+  };
+  if (sounds?.lapBeepUrl && sounds.lapBeepMs) playFile(sounds.lapBeepUrl, volume, builtIn);
+  else builtIn();
+}
+
+/** A short tick for the start countdown and the end of a timed race; the last one is higher. */
+export function playTick(volume: number, last = false, sounds?: HornSounds | null) {
+  const builtIn = () => play([{ at: 0, length: last ? 0.4 : 0.15, hz: last ? 1040 : 780 }], volume, 'sine');
+  if (sounds?.tickUrl && sounds.tickMs) playFile(sounds.tickUrl, volume, builtIn);
+  else builtIn();
 }

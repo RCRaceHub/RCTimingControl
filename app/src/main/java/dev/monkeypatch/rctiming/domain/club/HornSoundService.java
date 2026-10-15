@@ -9,24 +9,29 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * The club's own start and finish horn sounds (#278, #281). A club uploads a short sound file to replace a
- * built-in horn, or removes it to go back to the built-in one. The browser tells us how long the sound plays,
+ * The club's own start and finish horn, tick and lap beep sounds (#278, #281, #299). A club uploads a short
+ * sound file to replace a built-in sound, or removes it to go back to the built-in one. The browser tells us how long the sound plays,
  * so race control can wait that long before the spoken line.
  */
 @Service
 public class HornSoundService {
 
     public enum Horn {
-        START, FINISH;
+        START, FINISH, TICK, LAP_BEEP;
 
-        /** The horn named in a URL, {@code start} or {@code finish}. */
+        /** The name in a URL and a file name: {@code start}, {@code finish}, {@code tick} or {@code lap-beep}. */
+        public String slug() {
+            return name().toLowerCase().replace('_', '-');
+        }
+
+        /** The sound named in a URL. */
         public static Horn of(String name) {
             for (Horn horn : values()) {
-                if (horn.name().equalsIgnoreCase(name)) {
+                if (horn.slug().equalsIgnoreCase(name)) {
                     return horn;
                 }
             }
-            throw new IllegalArgumentException("Unknown horn: " + name + ". Use start or finish");
+            throw new IllegalArgumentException("Unknown horn: " + name + ". Use start, finish, tick or lap-beep");
         }
     }
 
@@ -71,12 +76,12 @@ public class HornSoundService {
             case "audio/ogg", "application/ogg" -> "ogg";
             default -> "wav";
         };
-        String url = storage.upload("horns/" + horn.name().toLowerCase() + "-" + System.currentTimeMillis()
+        String url = storage.upload("horns/" + horn.slug() + "-" + System.currentTimeMillis()
                 + "." + extension, bytes);
         return change(actor, horn, url, durationMs);
     }
 
-    /** Goes back to the built-in horn. The old file stays in storage, which has no delete; it is at most 1 MB. */
+    /** Goes back to the built-in sound. The old file stays in storage, which has no delete; it is at most 1 MB. */
     public ClubAudioSettings remove(Actor actor, Horn horn) {
         return change(actor, horn, null, null);
     }
@@ -84,13 +89,13 @@ public class HornSoundService {
     private ClubAudioSettings change(Actor actor, Horn horn, String url, Integer ms) {
         return clubProfileService.changeAudioSettings(actor, profile -> {
             ClubAudioSettings s = profile.getAudioSettings();
-            ClubAudioSettings.HornSounds sounds = horn == Horn.START
-                    ? s.hornSounds().withStart(url, ms) : s.hornSounds().withFinish(url, ms);
-            profile.setAudioSettings(new ClubAudioSettings(
-                    s.announceCountdown(), s.announceStagger(), s.announceLapBeep(), s.announceFinish(),
-                    s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(), s.startHorn(),
-                    s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(), s.startCountdownSeconds(),
-                    sounds, s.announceCarFinish(), s.timeUpText()));
+            ClubAudioSettings.HornSounds sounds = switch (horn) {
+                case START -> s.hornSounds().withStart(url, ms);
+                case FINISH -> s.hornSounds().withFinish(url, ms);
+                case TICK -> s.hornSounds().withTick(url, ms);
+                case LAP_BEEP -> s.hornSounds().withLapBeep(url, ms);
+            };
+            profile.setAudioSettings(s.withHornSounds(sounds));
         }).getAudioSettings();
     }
 }

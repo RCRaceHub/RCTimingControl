@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { speakWithBrowser } from '@/lib/speech';
@@ -194,6 +195,12 @@ export function AudioSettingsPanel() {
                 <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
               </div>
 
+              <AudioDetailFields
+                settings={settings}
+                onChange={(next) => mutation.mutate(next)}
+                idPrefix="rc"
+              />
+
               <p className="text-xs font-semibold text-muted-foreground pt-2">
                 Volume
               </p>
@@ -230,10 +237,11 @@ export function AudioSettingsPanel() {
                 <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100, settings.hornSounds)}>
                   ▶ Finish horn
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playTick(volume / 100)}>
+                <Button variant="outline" size="sm" onClick={() => playTick(volume / 100, false, settings.hornSounds)}>
                   ▶ Tick
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, true)}>
+                <Button variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, true, {
+                  hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs }, settings.hornSounds)}>
                   ▶ Lap beep
                 </Button>
                 <Button variant="outline" size="sm" onClick={testPiper} disabled={piperTesting}>

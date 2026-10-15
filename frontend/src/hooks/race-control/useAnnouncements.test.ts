@@ -4,6 +4,7 @@ import {
   useAnnouncements,
   gridClipKey,
   gridFallbackText,
+  carFinishText,
   type GridEntry,
 } from './useAnnouncements';
 import type { AudioSettingsDto } from '@/lib/audioApi';
@@ -12,8 +13,12 @@ vi.mock('@/hooks/race-control/useStomp', () => ({ useStomp: () => ({ data: null 
 
 const playStartHorn = vi.fn<(volume: number) => number>(() => 1200);
 const playFinishHorn = vi.fn<(volume: number) => number>(() => 1800);
+const playTick = vi.fn();
+const playLapBeep = vi.fn();
 vi.mock('@/lib/sounds', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/sounds')>()),
+  playTick: (...args: unknown[]) => playTick(...args),
+  playLapBeep: (...args: unknown[]) => playLapBeep(...args),
   playStartHorn: (v: number) => playStartHorn(v),
   playFinishHorn: (v: number) => playFinishHorn(v),
 }));
@@ -44,6 +49,8 @@ beforeEach(() => {
   audioPlay.mockClear();
   playStartHorn.mockClear();
   playFinishHorn.mockClear();
+  playTick.mockClear();
+  playLapBeep.mockClear();
   speak.mockClear();
   audioUrls.length = 0;
   vi.stubGlobal(
@@ -409,5 +416,81 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
     act(() => { vi.advanceTimersByTime(5_100); });
 
     expect(speak.mock.calls.at(-1)?.[0].text).toBe('Time! Take the flag.');
+  });
+
+  it('beeps each of the final seconds of a timed race, the last one higher', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, tuning: { finalSeconds: 3 } } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 10_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(6_900); });
+    expect(playTick).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(3_000); });
+
+    expect(playTick.mock.calls.map((c) => c[1])).toEqual([false, false, true]);
+  });
+
+  it('keeps the final beeps quiet when they are switched off', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, finalBeeps: false } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 10_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(10_000); });
+
+    expect(playTick).not.toHaveBeenCalled();
+  });
+
+  it('uses the clubs lap beep tone', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, tuning: { lapBeepHz: 600, lapBeepMs: 300 } } as AudioSettingsDto,
+        raceState: 'RUNNING',
+      }),
+    );
+
+    act(() => { result.current.playBeep(true); });
+
+    expect(playLapBeep).toHaveBeenCalledWith(0.8, true, { hz: 600, ms: 300 }, undefined);
+  });
+
+  it('words the stop and resume lines as the club has', () => {
+    const club = { ...settings, wording: { stop: 'Red flag.', resume: 'Green flag.' } } as AudioSettingsDto;
+    const { rerender } = renderHook(
+      ({ raceState }: { raceState: string }) => useAnnouncements({ raceId: 5, settings: club, raceState }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+
+    rerender({ raceState: 'STOPPED' });
+    rerender({ raceState: 'RUNNING' });
+
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Red flag.', 'Green flag.']);
+  });
+});
+
+describe('carFinishText', () => {
+  const entry: GridEntry = { entryId: 1, carNumber: '12', driverName: 'Alex Rowe' };
+
+  it('says the standard call when the club has not worded one', () => {
+    expect(carFinishText(entry, settings)).toBe('Car 12, Alex Rowe.');
+  });
+
+  it('fills in the clubs wording', () => {
+    const club = { ...settings, wording: { carFinish: '{name} in car {car}, home!' } } as AudioSettingsDto;
+    expect(carFinishText(entry, club)).toBe('Alex Rowe in car 12, home!');
+  });
+
+  it('calls a car with no number by name alone', () => {
+    expect(carFinishText({ ...entry, carNumber: null }, settings)).toBe('Alex Rowe.');
   });
 });
