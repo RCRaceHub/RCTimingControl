@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.infrastructure.audio;
 
+import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
@@ -39,8 +40,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>After 10 minutes: every 5 minutes</li>
  * </ul>
  * Names are spoken as the competitor's spoken name when set (#119).
- * The announcement depth (top N positions) is taken from the club's {@code audioSettings.runningOrderDepth}
- * with a default of 3.
+ * Each call names the top {@code audioSettings.runningOrderPercent} of the drivers (50% by default, rounded up),
+ * or all of them when the race has {@code runningOrderAllUpTo} drivers or fewer (5 by default).
  * <p>
  * The service registers/deregisters races via {@link RaceStatusChangedEvent}:
  * RUNNING → starts tracking; STOPPED/FINISHED → stops tracking.
@@ -133,7 +134,7 @@ public class RunningOrderAnnouncementService {
         }
 
         Instant now = Instant.now();
-        int announcementDepth = resolveAnnouncementDepth();
+        ClubAudioSettings settings = clubProfileService.audioSettings();
 
         for (Map.Entry<Long, Instant> entry : raceStartTimes.entrySet()) {
             Long raceId = entry.getKey();
@@ -154,13 +155,13 @@ public class RunningOrderAnnouncementService {
             // Check if enough time has passed since the last announcement
             Duration sinceLast = Duration.between(lastAnnouncement, now);
             if (sinceLast.compareTo(interval) >= 0) {
-                broadcastRunningOrder(raceId, announcementDepth);
+                broadcastRunningOrder(raceId, settings);
                 lastAnnouncementTimes.put(raceId, now);
             }
         }
     }
 
-    private void broadcastRunningOrder(Long raceId, int depth) {
+    private void broadcastRunningOrder(Long raceId, ClubAudioSettings settings) {
         Optional<LiveRaceState> stateOpt = lapTimingService.peek(raceId);
         if (stateOpt.isEmpty()) {
             return;
@@ -171,15 +172,16 @@ public class RunningOrderAnnouncementService {
             return;
         }
 
+        int count = settings.runningOrderCount(rows.size());
         List<String> positions = rows.stream()
                 .sorted(Comparator.comparingInt(LiveTimingRowDto::position))
-                .limit(depth)
+                .limit(count)
                 .map(this::spokenNameOf)
                 .toList();
 
         RunningOrderAnnouncement announcement = new RunningOrderAnnouncement("running-order", positions);
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", announcement);
-        log.debug("Broadcast running order for race {}: top {} — {}", raceId, depth, positions);
+        log.debug("Broadcast running order for race {}: top {} of {} — {}", raceId, count, rows.size(), positions);
     }
 
     /** What to say for a row: the competitor's spoken name (#119), else their tidied name (#120). */
@@ -189,10 +191,6 @@ public class RunningOrderAnnouncementService {
                 .flatMap(competitorRepository::findById)
                 .map(Competitor::speechName)
                 .orElseGet(() -> SpeechName.tidy(row.driverName()));
-    }
-
-    private int resolveAnnouncementDepth() {
-        return clubProfileService.audioSettings().runningOrderDepth();
     }
 
     /**

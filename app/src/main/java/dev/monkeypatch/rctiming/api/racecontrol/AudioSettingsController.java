@@ -53,7 +53,8 @@ public class AudioSettingsController {
             boolean announceLapBeep,
             boolean announceFinish,
             boolean announceRunningOrder,
-            int runningOrderDepth,
+            int runningOrderPercent,
+            int runningOrderAllUpTo,
             int[] countdownIntervals,
             boolean startHorn,
             boolean finishHorn,
@@ -66,7 +67,7 @@ public class AudioSettingsController {
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(),
+                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(), s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
                     s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
         }
@@ -82,7 +83,8 @@ public class AudioSettingsController {
             Boolean announceLapBeep,
             Boolean announceFinish,
             Boolean announceRunningOrder,
-            @Min(1) @Max(20) Integer runningOrderDepth,
+            @Min(1) @Max(100) Integer runningOrderPercent,
+            @Min(0) @Max(100) Integer runningOrderAllUpTo,
             @Size(max = 10) int[] countdownIntervals,
             Boolean startHorn,
             Boolean finishHorn,
@@ -125,7 +127,7 @@ public class AudioSettingsController {
                             patch.announceLapBeep() != null ? patch.announceLapBeep() : s.announceLapBeep(),
                             patch.announceFinish() != null ? patch.announceFinish() : s.announceFinish(),
                             patch.announceRunningOrder() != null ? patch.announceRunningOrder() : s.announceRunningOrder(),
-                            patch.runningOrderDepth() != null ? patch.runningOrderDepth() : s.runningOrderDepth(),
+                            s.runningOrderDepth(),  // no longer used, kept as saved
                             patch.countdownIntervals() != null ? patch.countdownIntervals() : s.countdownIntervals(),
                             patch.startHorn() != null ? patch.startHorn() : s.startHorn(),
                             patch.finishHorn() != null ? patch.finishHorn() : s.finishHorn(),
@@ -136,7 +138,9 @@ public class AudioSettingsController {
                             s.hornSounds(),  // changed only by uploading or removing a sound
                             patch.announceCarFinish() != null ? patch.announceCarFinish() : s.announceCarFinish(),
                             // Blank goes back to the standard wording
-                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText()
+                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText(),
+                            patch.runningOrderPercent() != null ? patch.runningOrderPercent() : s.runningOrderPercent(),
+                            patch.runningOrderAllUpTo() != null ? patch.runningOrderAllUpTo() : s.runningOrderAllUpTo()
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));

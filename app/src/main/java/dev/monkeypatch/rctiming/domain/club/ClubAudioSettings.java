@@ -26,10 +26,16 @@ public record ClubAudioSettings(
         Integer startCountdownSeconds,
         HornSounds hornSounds,
         Boolean announceCarFinish,
-        String timeUpText
+        String timeUpText,
+        Integer runningOrderPercent,
+        Integer runningOrderAllUpTo
 ) {
     /** The lead-in for settings saved before it was added. */
     public static final int DEFAULT_START_COUNTDOWN_SECONDS = 10;
+    /** The share of the field the running order names, until the club sets its own. */
+    public static final int DEFAULT_RUNNING_ORDER_PERCENT = 50;
+    /** A race with this many drivers or fewer has them all named, until the club sets its own. */
+    public static final int DEFAULT_RUNNING_ORDER_ALL_UP_TO = 5;
     /** What is said when a timed race's clock reaches zero, until the club words its own. */
     public static final String DEFAULT_TIME_UP_TEXT = "Time. Cars finish as they cross the line.";
 
@@ -66,6 +72,30 @@ public record ClubAudioSettings(
         hornSounds = hornSounds == null ? HornSounds.NONE : hornSounds;
         announceCarFinish = announceCarFinish == null || announceCarFinish;
         timeUpText = timeUpText == null || timeUpText.isBlank() ? DEFAULT_TIME_UP_TEXT : timeUpText.strip();
+        runningOrderPercent = runningOrderPercent == null ? DEFAULT_RUNNING_ORDER_PERCENT : runningOrderPercent;
+        runningOrderAllUpTo = runningOrderAllUpTo == null ? DEFAULT_RUNNING_ORDER_ALL_UP_TO : runningOrderAllUpTo;
+    }
+
+    /** The settings from before the running order named a share of the field, which take their defaults. */
+    public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
+                             boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
+                             int[] countdownIntervals, Boolean startHorn, Boolean finishHorn,
+                             Boolean announceRaceCalls, Boolean announceNextRace, Integer startCountdownSeconds,
+                             HornSounds hornSounds, Boolean announceCarFinish, String timeUpText) {
+        this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
+                runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
+                startCountdownSeconds, hornSounds, announceCarFinish, timeUpText, null, null);
+    }
+
+    /**
+     * How many drivers a running-order call names for a field of this size: all of them when the field is
+     * {@code runningOrderAllUpTo} or fewer, otherwise {@code runningOrderPercent} of it rounded up.
+     */
+    public int runningOrderCount(int drivers) {
+        if (drivers <= runningOrderAllUpTo) {
+            return drivers;
+        }
+        return Math.min(drivers, Math.max(1, (drivers * runningOrderPercent + 99) / 100));
     }
 
     /** The settings from before the finish calls and the time call wording, which take their defaults. */

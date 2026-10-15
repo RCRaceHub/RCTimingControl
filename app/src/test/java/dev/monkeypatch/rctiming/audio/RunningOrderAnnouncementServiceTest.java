@@ -62,7 +62,7 @@ class RunningOrderAnnouncementServiceTest {
         clubProfile = new ClubProfile();
         clubProfile.setId(1L);
         clubProfile.setName("Test Club");
-        clubProfile.setAudioSettings(ClubAudioSettings.defaults()); // runningOrderDepth = 3
+        clubProfile.setAudioSettings(ClubAudioSettings.defaults()); // 50% of the field, all at 5 or fewer
     }
 
     @Test
@@ -212,6 +212,25 @@ class RunningOrderAnnouncementServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/race/1/audio"), sent.capture());
         assertThat(((RunningOrderAnnouncementService.RunningOrderAnnouncement) sent.getValue()).positions())
                 .containsExactly("Shiv-awn Keen", "Sam Ito", "Tom Hall"); // no competitor found: the row's name, tidied
+    }
+
+    @Test
+    void checkAndAnnounce_namesHalfTheFieldWhenThereAreMoreThanFiveDrivers() throws Exception {
+        service.onRaceStarted(1L);
+        backdateRaceStart(1L, Instant.now().minusSeconds(150));
+        LiveRaceState liveState = mock(LiveRaceState.class);
+        when(liveState.calculatePositions()).thenReturn(List.of(makeRow(1, "A"), makeRow(2, "B"), makeRow(3, "C"),
+                makeRow(4, "D"), makeRow(5, "E"), makeRow(6, "F"), makeRow(7, "G")));
+        when(lapTimingService.peek(1L)).thenReturn(Optional.of(liveState));
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(runningRace));
+        when(clubProfileService.audioSettings()).thenReturn(clubProfile.getAudioSettings());
+
+        service.checkAndAnnounce();
+
+        ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/race/1/audio"), sent.capture());
+        assertThat(((RunningOrderAnnouncementService.RunningOrderAnnouncement) sent.getValue()).positions())
+                .hasSize(4); // half of seven, rounded up
     }
 
     // -------------------------------------------------------------------------

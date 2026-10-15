@@ -79,7 +79,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     void theAdminFormKeepsTheCountdownIntervalsItDoesNotCarry() {
         Map<String, Object> form = Map.of(
                 "announceCountdown", false, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 5,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 25, "runningOrderAllUpTo", 4,
                 "defaultVoiceId", "en_GB-alan-medium");
 
         ResponseEntity<JsonNode> saved = call(HttpMethod.PUT, ADMIN_SETTINGS, form);
@@ -88,7 +88,8 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
         assertThat(now.announceCountdown()).isFalse();
-        assertThat(now.runningOrderDepth()).isEqualTo(5);
+        assertThat(now.runningOrderPercent()).isEqualTo(25);
+        assertThat(now.runningOrderAllUpTo()).isEqualTo(4);
         assertThat(now.countdownIntervals()).containsExactly(900, 120);
     }
 
@@ -97,7 +98,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", false, "startCountdownSeconds", 10));
         Map<String, Object> form = Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50,
                 "defaultVoiceId", "en_GB-alan-medium");
 
         assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -158,7 +159,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         Map<String, Object> form = new HashMap<>(Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3));
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50));
         form.put("defaultVoiceId", null);
         ResponseEntity<JsonNode> saved = call(HttpMethod.PUT, ADMIN_SETTINGS, form);
 
@@ -176,7 +177,8 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         JsonNode saved = patched.getBody();
         assertThat(saved.get("announceLapBeep").asBoolean()).isFalse();
         assertThat(saved.get("announceCountdown").asBoolean()).isTrue();
-        assertThat(saved.get("runningOrderDepth").asInt()).isEqualTo(3);
+        assertThat(saved.get("runningOrderPercent").asInt()).isEqualTo(50);
+        assertThat(saved.get("runningOrderAllUpTo").asInt()).isEqualTo(5);
         assertThat(saved.get("countdownIntervals")).hasSize(2);
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
@@ -186,20 +188,20 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void aDepthOutsideOneToTwentyIsRefused() {
-        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderDepth", 0)).getStatusCode())
+    void aRunningOrderShareOutsideOneToHundredIsRefused() {
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderPercent", 0)).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderDepth", 21)).getStatusCode())
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("runningOrderPercent", 101)).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         Map<String, Object> form = Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 500,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 500,
                 "defaultVoiceId", "en_GB-alan-medium");
         assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
-        assertThat(now.runningOrderDepth()).isEqualTo(3);
+        assertThat(now.runningOrderPercent()).isEqualTo(50);
     }
 
     @Test
@@ -238,7 +240,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         uploadHorn("finish", "audio/ogg", new byte[]{9}, 2000);
         Map<String, Object> form = Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
-                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50,
                 "defaultVoiceId", "en_GB-alan-medium");
 
         call(HttpMethod.PUT, ADMIN_SETTINGS, form);
