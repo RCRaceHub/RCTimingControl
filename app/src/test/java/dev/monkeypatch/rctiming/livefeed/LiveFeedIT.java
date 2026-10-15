@@ -110,6 +110,9 @@ class LiveFeedIT extends AbstractIntegrationTest {
         // Ada leads by a lap's worth of a second; Grace is a lap down
         LiveRaceState state = lapTimingService.stateFor(raceId);
         long start = clock.instant().toEpochMilli() * 1000;
+        // The first crossing of the line only starts timing the first lap
+        passing(state, ada, "1" + run, start);
+        passing(state, grace, "2" + run, start + 1_000_000L);
         passing(state, ada, "1" + run, start + 20_000_000L);
         passing(state, grace, "2" + run, start + 21_000_000L);
         passing(state, ada, "1" + run, start + 40_000_000L);

@@ -107,7 +107,7 @@ public class LiveRaceState {
      * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race with a length, where the car's time on
      * the track may have run out. When {@code windowEnded}, the passing that counts a lap is the car's last: it has
      * taken the flag, and its later passings are kept in the history but not counted. A passing too soon to count
-     * (TRACK-02) does not flag the car.
+     * (TRACK-02) does not flag the car, and neither does a first passing, which only starts timing the first lap.
      */
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
                                                 boolean windowEnded) {
@@ -130,7 +130,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
-            if (windowEnded) {
+            if (windowEnded && pos.getLapsCompleted() > 0) {
                 flagged.add(entryId);
             }
         }
@@ -307,9 +307,11 @@ public class LiveRaceState {
     }
 
     /**
-     * Counts one more lap for a position and works out its lap time from the previous passing: last,
-     * best and average lap, and the race's overall best. A gap of 0 or less (a repeat or out-of-order
-     * passing) still counts the lap but gives no lap time, unless the entry has a minimum lap: then it is ignored.
+     * Records a passing for a position. A car's first passing after the start is not a lap: it only
+     * starts the timing of the first lap. Every later passing counts one more lap and works out its lap
+     * time from the previous passing: last, best and average lap, and the race's overall best. A gap of 0
+     * or less (a repeat or out-of-order passing) still counts the lap but gives no lap time, unless the
+     * entry has a minimum lap: then it is ignored.
      *
      * <p>A passing sooner after the car's last counted one than its minimum lap (TRACK-02) is ignored: a double
      * read of the loop or a cut. It leaves the car's last passing alone, so the next real crossing is timed from
@@ -322,9 +324,9 @@ public class LiveRaceState {
         if (minimum != null && prevPassingTime > 0 && passingTimeMs - prevPassingTime < minimum) {
             return false;
         }
-        pos.setLapsCompleted(pos.getLapsCompleted() + 1);
         pos.setLastPassingTimeMs(passingTimeMs);
         if (prevPassingTime > 0) {
+            pos.setLapsCompleted(pos.getLapsCompleted() + 1);
             long lapMs = passingTimeMs - prevPassingTime;
             if (lapMs > 0) {
                 pos.setLastLapMs(lapMs);

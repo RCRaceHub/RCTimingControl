@@ -28,7 +28,7 @@ class LiveRaceStateMinimumLapTest {
         pass(1L, 125);
 
         LiveRacePosition position = state.positions.get(1L);
-        assertThat(position.getLapsCompleted()).isEqualTo(2);
+        assertThat(position.getLapsCompleted()).isEqualTo(1);
         // Timed from the last lap that counted, not from the ignored read
         assertThat(position.getLastLapMs()).isEqualTo(25_000L);
     }
@@ -37,7 +37,7 @@ class LiveRaceStateMinimumLapTest {
     void theFirstPassingIsNeverIgnored() {
         pass(1L, 100);
 
-        assertThat(state.positions.get(1L).getLapsCompleted()).isEqualTo(1);
+        assertThat(state.positions.get(1L).getLastPassingTimeMs()).isEqualTo(100_000L);
     }
 
     @Test
@@ -45,7 +45,7 @@ class LiveRaceStateMinimumLapTest {
         pass(1L, 100);
         pass(1L, 110);
 
-        assertThat(state.positions.get(1L).getLapsCompleted()).isEqualTo(2);
+        assertThat(state.positions.get(1L).getLapsCompleted()).isEqualTo(1);
     }
 
     @Test
@@ -53,7 +53,7 @@ class LiveRaceStateMinimumLapTest {
         pass(2L, 100);
         pass(2L, 101);
 
-        assertThat(state.positions.get(2L).getLapsCompleted()).isEqualTo(2);
+        assertThat(state.positions.get(2L).getLapsCompleted()).isEqualTo(1);
     }
 
     @Test

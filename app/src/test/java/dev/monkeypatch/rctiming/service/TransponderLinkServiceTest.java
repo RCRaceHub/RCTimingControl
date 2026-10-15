@@ -57,7 +57,7 @@ class TransponderLinkServiceTest {
 
         int lapsCredited = service().link(7L, "1234567", 11L, 3L);
 
-        assertThat(lapsCredited).isEqualTo(4);
+        assertThat(lapsCredited).isEqualTo(3);
         ArgumentCaptor<UnknownTransponderLinkAudit> row = ArgumentCaptor.forClass(UnknownTransponderLinkAudit.class);
         InOrder order = inOrder(lapTimingService, linkAuditRepository);
         order.verify(lapTimingService).countPassingsForTransponder(7L, "1234567");
