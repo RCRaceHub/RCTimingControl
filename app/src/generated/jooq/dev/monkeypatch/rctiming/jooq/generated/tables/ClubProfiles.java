@@ -141,6 +141,11 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, String> PRIVACY_NOTICE = createField(DSL.name("privacy_notice"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>club_profiles.racehub_results_url</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> RACEHUB_RESULTS_URL = createField(DSL.name("racehub_results_url"), SQLDataType.CLOB, this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

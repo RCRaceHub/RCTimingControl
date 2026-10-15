@@ -4,7 +4,6 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -37,7 +37,6 @@ import java.util.Set;
  * revision, so sending the same export twice is safe.
  */
 @Component
-@EnableConfigurationProperties(RaceHubResultsProperties.class)
 public class ResultsSender {
 
     static final Duration FIRST_BACKOFF = Duration.ofSeconds(30);
@@ -48,14 +47,14 @@ public class ResultsSender {
 
     private final ResultsOutboxRepository outboxRepository;
     private final EventRepository eventRepository;
-    private final RaceHubResultsProperties properties;
+    private final RaceHubResultsEndpoint endpoint;
     private final RestClient restClient;
 
     public ResultsSender(ResultsOutboxRepository outboxRepository, EventRepository eventRepository,
-                         RaceHubResultsProperties properties, RestClient.Builder restClientBuilder) {
+                         RaceHubResultsEndpoint endpoint, RestClient.Builder restClientBuilder) {
         this.outboxRepository = outboxRepository;
         this.eventRepository = eventRepository;
-        this.properties = properties;
+        this.endpoint = endpoint;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
         requestFactory.setReadTimeout(Duration.ofSeconds(20));
@@ -64,7 +63,7 @@ public class ResultsSender {
 
     @Scheduled(initialDelay = 15_000, fixedDelayString = "${rctiming.racehub.send-interval-ms:15000}")
     public void sendDue() {
-        if (!properties.sendingEnabled()) {
+        if (!endpoint.snapshot().sendingEnabled()) {
             return;
         }
         List<ResultsOutboxItem> due = outboxRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByIdAsc(
@@ -92,12 +91,17 @@ public class ResultsSender {
     /** Sends one export and records the outcome. Returns whether it was accepted. */
     boolean send(ResultsOutboxItem item) {
         String key = idempotencyKey(item);
+        URI url = endpoint.resultsUrl();
+        if (url == null) {
+            // The address was cleared since this pass began; the export waits like any other failure
+            return failed(item, "No RaceHub address is set");
+        }
         try {
             restClient.post()
-                    .uri(properties.resultsUrl())
+                    .uri(url)
                     .contentType(MediaType.APPLICATION_JSON)
                     .headers(h -> {
-                        h.setBearerAuth(properties.token());
+                        h.setBearerAuth(endpoint.token());
                         h.set("Idempotency-Key", key);
                     })
                     .body(item.getPayload())

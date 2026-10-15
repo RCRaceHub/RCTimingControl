@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -224,6 +225,35 @@ public class ClubProfileService {
                 .before(before).after(decoderValues(saved)).record();
         eventPublisher.publishEvent(new DecoderSettingsChangedEvent(new DecoderSettings(host, port, protocol)));
         return saved;
+    }
+
+    /** The RaceHub address set in the admin panel, or empty when the club has not set one. */
+    @Transactional(readOnly = true)
+    public Optional<String> getRaceHubResultsUrl() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getRacehubResultsUrl)
+                .filter(url -> !url.isBlank());
+    }
+
+    /** Sets the RaceHub address results are sent to; null or blank clears it, so the settings file's applies. */
+    public void updateRaceHubResultsUrl(Actor actor, String url) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        // The address may carry a query string with a secret, so the audit row names only where it points
+        String before = profile.getRacehubResultsUrl() == null ? null : hostOf(profile.getRacehubResultsUrl());
+        String cleaned = url == null || url.isBlank() ? null : url.strip();
+        profile.setRacehubResultsUrl(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        String after = cleaned == null ? null : hostOf(cleaned);
+        audit.entry(actor, "RACEHUB_RESULTS_URL_CHANGED").entity("club_profile", saved.getId())
+                .summary(after == null ? "Cleared the RaceHub results address"
+                        : "Changed the RaceHub results address to " + after)
+                .before(Collections.singletonMap("resultsHost", before))
+                .after(Collections.singletonMap("resultsHost", after)).record();
+    }
+
+    private static String hostOf(String url) {
+        java.net.URI uri = java.net.URI.create(url);
+        return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() >= 0 ? ":" + uri.getPort() : "");
     }
 
     private static Map<String, Object> profileValues(ClubProfile p) {

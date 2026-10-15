@@ -258,6 +258,20 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (String) get(16);
     }
 
+    /**
+     * Setter for <code>club_profiles.racehub_results_url</code>.
+     */
+    public void setRacehubResultsUrl(String value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.racehub_results_url</code>.
+     */
+    public String getRacehubResultsUrl() {
+        return (String) get(17);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -281,7 +295,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -301,6 +315,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setDecoderPort(decoderPort);
         setDecoderProtocol(decoderProtocol);
         setPrivacyNotice(privacyNotice);
+        setRacehubResultsUrl(racehubResultsUrl);
         resetChangedOnNotNull();
     }
 }

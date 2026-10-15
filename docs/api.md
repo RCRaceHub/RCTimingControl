@@ -773,7 +773,12 @@ Newest first. Every filter is optional and the ones given must all match: `entit
 ```http
 GET /api/v1/admin/results-exports
 ```
-**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "missingSettings": [], "exports": [Export] }`, the newest 100 first. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names the settings still needed. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "exports": [Export] }`, the newest 100 first. `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+
+```http
+PUT /api/v1/admin/results-exports/address
+```
+Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the same body as the list. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
 
 ```http
 POST /api/v1/admin/results-exports/{id}/retry
