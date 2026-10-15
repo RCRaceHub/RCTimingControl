@@ -43,11 +43,18 @@ public class AudioSettingsController {
             boolean announceFinish,
             boolean announceRunningOrder,
             int runningOrderDepth,
-            int[] countdownIntervals
+            int[] countdownIntervals,
+            boolean startHorn,
+            boolean finishHorn,
+            boolean announceRaceCalls,
+            boolean announceNextRace,
+            int startCountdownSeconds
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals());
+                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(),
+                    s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
+                    s.startCountdownSeconds());
         }
     }
 
@@ -62,7 +69,12 @@ public class AudioSettingsController {
             Boolean announceFinish,
             Boolean announceRunningOrder,
             @Min(1) @Max(20) Integer runningOrderDepth,
-            int[] countdownIntervals
+            int[] countdownIntervals,
+            Boolean startHorn,
+            Boolean finishHorn,
+            Boolean announceRaceCalls,
+            Boolean announceNextRace,
+            @Min(0) @Max(60) Integer startCountdownSeconds
     ) {}
 
     /**
@@ -91,7 +103,13 @@ public class AudioSettingsController {
                             patch.announceFinish() != null ? patch.announceFinish() : s.announceFinish(),
                             patch.announceRunningOrder() != null ? patch.announceRunningOrder() : s.announceRunningOrder(),
                             patch.runningOrderDepth() != null ? patch.runningOrderDepth() : s.runningOrderDepth(),
-                            patch.countdownIntervals() != null ? patch.countdownIntervals() : s.countdownIntervals()
+                            patch.countdownIntervals() != null ? patch.countdownIntervals() : s.countdownIntervals(),
+                            patch.startHorn() != null ? patch.startHorn() : s.startHorn(),
+                            patch.finishHorn() != null ? patch.finishHorn() : s.finishHorn(),
+                            patch.announceRaceCalls() != null ? patch.announceRaceCalls() : s.announceRaceCalls(),
+                            patch.announceNextRace() != null ? patch.announceNextRace() : s.announceNextRace(),
+                            patch.startCountdownSeconds() != null
+                                    ? patch.startCountdownSeconds() : s.startCountdownSeconds()
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));

@@ -21,14 +21,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Pre-generates all predictable audio clips for a race when it transitions to {@code GRID} state.
  * <p>
  * Clips generated (AUDIO-09):
  * <ul>
- *   <li>Countdown intervals: 10m, 5m, 2m, 1m, 30s</li>
+ *   <li>Countdown intervals: the club's {@code countdownIntervals} (10m, 5m, 2m, 1m, 30s unless changed)</li>
  *   <li>Grid calls: one per entry, keyed {@code grid-<entryId>}, saying the competitor's spoken name (or display name)</li>
  *   <li>Race finished: one clip, keyed {@code finish}</li>
  * </ul>
@@ -40,9 +43,6 @@ public class AudioPreGenerationService {
 
     private static final Logger log = LoggerFactory.getLogger(AudioPreGenerationService.class);
 
-    /** Countdown intervals in seconds: 10 min, 5 min, 2 min, 1 min, 30 sec */
-    private static final int[] COUNTDOWN_SECONDS = {600, 300, 120, 60, 30};
-
     private final TtsClipService clipService;
     private final RaceRepository raceRepository;
     private final RaceEntryRepository raceEntryRepository;
@@ -52,6 +52,16 @@ public class AudioPreGenerationService {
 
     /** In-memory clip cache: raceId → Map<clipKey, url> */
     private final Map<Long, Map<String, String>> clipCache = new ConcurrentHashMap<>();
+
+    /** Races whose clips are being made now, so two requests do not make them twice */
+    private final Set<Long> generating = ConcurrentHashMap.newKeySet();
+
+    /** One daemon thread for remaking lost clips, off the request that found them lost */
+    private final Executor regenerateExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "audio-clip-regenerate");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public AudioPreGenerationService(TtsClipService clipService,
                                      RaceRepository raceRepository,
@@ -82,9 +92,38 @@ public class AudioPreGenerationService {
             return;
         }
 
-        Long raceId = event.getRaceId();
-        log.info("Race {} entered GRID — starting audio pre-generation", raceId);
+        log.info("Race {} entered GRID — starting audio pre-generation", event.getRaceId());
+        generateClips(event.getRaceId());
+    }
 
+    /**
+     * Makes the race's clips again when a client asks for them and the app no longer holds them, as after a
+     * restart between the grid call and the start. Does nothing for a race that is not on the grid or running.
+     */
+    private void regenerateIfLost(Long raceId) {
+        if (clipCache.containsKey(raceId) || generating.contains(raceId)) {
+            return;
+        }
+        Race race = raceRepository.findById(raceId).orElse(null);
+        if (race == null || (race.getStatus() != RaceStatus.GRID && race.getStatus() != RaceStatus.RUNNING)) {
+            return;
+        }
+        log.info("Race {} has no clips held (restart?) — making them again", raceId);
+        regenerateExecutor.execute(() -> generateClips(raceId));
+    }
+
+    private void generateClips(Long raceId) {
+        if (!generating.add(raceId)) {
+            return;
+        }
+        try {
+            makeClips(raceId);
+        } finally {
+            generating.remove(raceId);
+        }
+    }
+
+    private void makeClips(Long raceId) {
         Race race = raceRepository.findById(raceId).orElse(null);
         if (race == null) {
             log.warn("Race {} not found for audio pre-generation", raceId);
@@ -97,7 +136,7 @@ public class AudioPreGenerationService {
         Map<String, String> clips = new HashMap<>();
 
         // 1. Countdown clips (AUDIO-02). The text matches the browser's spoken fallback.
-        for (int seconds : COUNTDOWN_SECONDS) {
+        for (int seconds : clubProfileService.audioSettings().countdownIntervals()) {
             String url = clipService.generateCountdownClip(
                     raceId, seconds, formatCountdownLabel(seconds) + " remaining.", voiceId);
             if (url != null) {
@@ -136,6 +175,7 @@ public class AudioPreGenerationService {
      * Called by {@code AudioClipController} (AUDIO-10).
      */
     public Map<String, String> getClipMap(Long raceId) {
+        regenerateIfLost(raceId);
         return clipCache.getOrDefault(raceId, Collections.emptyMap());
     }
 

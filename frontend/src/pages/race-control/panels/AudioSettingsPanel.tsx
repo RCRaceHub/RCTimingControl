@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { speakWithBrowser } from '@/lib/speech';
+import { playFinishHorn, playStartHorn, playTick } from '@/lib/sounds';
 import {
   ANNOUNCEMENT_TOGGLES,
   getAudioSettings,
@@ -38,7 +39,7 @@ export function AudioSettingsPanel() {
 
   const toggleSetting = (key: keyof AudioSettingsDto) => {
     if (!settings) return;
-    const updated = { ...settings, [key]: !settings[key] };
+    const updated = { ...settings, [key]: settings[key] === false };
     mutation.mutate(updated);
   };
 
@@ -47,12 +48,17 @@ export function AudioSettingsPanel() {
     mutation.mutate({ ...settings, runningOrderDepth: depth });
   };
 
+  const updateStartCountdown = (seconds: number) => {
+    if (!settings) return;
+    mutation.mutate({ ...settings, startCountdownSeconds: seconds });
+  };
+
   const allEnabled =
     settings !== undefined &&
-    ANNOUNCEMENT_TOGGLES.every(({ key }) => settings[key]);
+    ANNOUNCEMENT_TOGGLES.every(({ key }) => settings[key] !== false);
   const someEnabled =
     settings !== undefined &&
-    ANNOUNCEMENT_TOGGLES.some(({ key }) => settings[key]);
+    ANNOUNCEMENT_TOGGLES.some(({ key }) => settings[key] !== false);
 
   const statusDot = allEnabled
     ? 'bg-[var(--flag-green)]'
@@ -107,7 +113,7 @@ export function AudioSettingsPanel() {
                   </label>
                   <Switch
                     id={`toggle-${key}`}
-                    checked={settings[key]}
+                    checked={settings[key] !== false}
                     onCheckedChange={() => toggleSetting(key)}
                     aria-label={label}
                   />
@@ -128,6 +134,22 @@ export function AudioSettingsPanel() {
                   className="w-20 h-8 text-center"
                 />
                 <span className="text-sm text-muted-foreground">positions</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm shrink-0" htmlFor="start-countdown">
+                  Start lead-in
+                </label>
+                <Input
+                  id="start-countdown"
+                  type="number"
+                  min={0}
+                  max={60}
+                  defaultValue={settings.startCountdownSeconds ?? 0}
+                  onBlur={(e) => updateStartCountdown(Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">seconds (0 for none)</span>
               </div>
 
               <p className="text-xs font-semibold text-muted-foreground pt-2">
@@ -151,16 +173,28 @@ export function AudioSettingsPanel() {
                 <span className="text-xs w-8 text-right">{volume}%</span>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={testAudio}
-                aria-label="Test audio"
-              >
-                ▶ Test Audio
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={testAudio}
+                  aria-label="Test audio"
+                >
+                  ▶ Test Audio
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playStartHorn(volume / 100)}>
+                  ▶ Start horn
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100)}>
+                  ▶ Finish horn
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playTick(volume / 100)}>
+                  ▶ Tick
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Plays a sample announcement to verify speakers are working.
+                Plays a sample announcement and each sound to verify speakers are working. They play in this
+                browser, which is where the race is announced.
               </p>
             </>
           ) : null}

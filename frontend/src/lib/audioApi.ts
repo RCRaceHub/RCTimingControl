@@ -17,6 +17,13 @@ export interface AudioSettingsDto {
   runningOrderDepth: number;
   defaultVoiceId: string;
   countdownIntervals?: number[];
+  /** The server always sends these; a missing one counts as on (the lead-in as none). */
+  startHorn?: boolean;
+  finishHorn?: boolean;
+  announceRaceCalls?: boolean;
+  announceNextRace?: boolean;
+  /** Seconds between pressing Start and the race starting; 0 for none. */
+  startCountdownSeconds?: number;
 }
 
 /** The announcement switches, in the order the settings screens show them. */
@@ -26,6 +33,10 @@ export const ANNOUNCEMENT_TOGGLES = [
   { key: 'announceLapBeep', label: 'Lap improvement beeps' },
   { key: 'announceFinish', label: 'Finish announcements' },
   { key: 'announceRunningOrder', label: 'Running order' },
+  { key: 'startHorn', label: 'Start horn' },
+  { key: 'finishHorn', label: 'Finish horn' },
+  { key: 'announceRaceCalls', label: 'Grid, start, stop and resume calls' },
+  { key: 'announceNextRace', label: 'Next race and marshals' },
 ] as const satisfies readonly { key: keyof AudioSettingsDto; label: string }[];
 
 // ── Public audio endpoints ─────────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import type { AudioSettingsDto } from '@/lib/audioApi';
 import { speakWithBrowser } from '@/lib/speech';
+import { FINISH_HORN_MS, START_HORN_MS, playFinishHorn, playStartHorn } from '@/lib/sounds';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
@@ -17,6 +18,16 @@ export interface GridEntry {
   /** What the announcer says for this driver (#119, #120); the driver name when the server sent none. */
   speechName?: string | null;
 }
+
+/** The race after a finished one, for the call between races. */
+export interface NextRaceCall {
+  label: string;
+  /** The drivers who marshal it, from the race that has just finished. */
+  marshals: string[];
+}
+
+/** How long after the finish line the next race is called. */
+const NEXT_RACE_DELAY_MS = 4000;
 
 /** Clip key the server stores an entry's grid call under (AudioPreGenerationService). */
 export function gridClipKey(entry: GridEntry): string {
@@ -45,6 +56,10 @@ interface UseAnnouncementsOptions {
   startType?: string | null;
   /** Seconds between driver calls in a stagger start (FORMAT-11). */
   staggerIntervalSeconds?: number;
+  /** The selected race's name and how many drivers are on its grid, for the grid call. */
+  raceLabel?: string;
+  /** The race after this one, once this one has finished. */
+  nextRace?: NextRaceCall | null;
 }
 
 /**
@@ -63,6 +78,8 @@ export function useAnnouncements({
   gridEntries,
   startType,
   staggerIntervalSeconds = 1,
+  raceLabel,
+  nextRace,
 }: UseAnnouncementsOptions) {
   // Refs so closures inside timeouts always read latest values without stale captures
   const volumeRef = useRef(volume);
@@ -166,22 +183,83 @@ export function useAnnouncements({
     };
   }, [raceState, raceEndsAt, playClip]);
 
-  // Finish announcement: fire when race transitions to FINISHED (AUDIO-05)
+  // What the race has just moved from, for the announcements that belong to a change and not to a state: a race
+  // opened already finished must not sound its horn again. Declared first so the effects after it see this change.
+  const lastStateRef = useRef<{ raceId: number | null; state: string | null | undefined }>({
+    raceId: null,
+    state: undefined,
+  });
+  const movedFromRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!raceState) return;
+    const last = lastStateRef.current;
+    const prev = last.raceId === raceId ? last.state : undefined;
+    lastStateRef.current = { raceId, state: raceState };
+    movedFromRef.current = prev ?? undefined;
+    if (!prev || prev === raceState || settingsRef.current?.announceRaceCalls === false) return;
+    if (raceState === 'STOPPED') fallbackSpeak('Race stopped.');
+    if (raceState === 'RUNNING' && prev === 'STOPPED') fallbackSpeak('Race resumed.');
+    // Stop and resume lines
+  }, [raceState, raceId, fallbackSpeak]);
+
+  // A race the director abandoned ends with its own line, not the chequered flag
+  const abandonedRef = useRef<number | null>(null);
+  const markAbandoned = useCallback((abandonedRaceId: number) => {
+    abandonedRef.current = abandonedRaceId;
+  }, []);
+
+  // Finish: the horn, then the spoken line (AUDIO-05). The horn and the line have a switch each.
   useEffect(() => {
     if (raceState !== 'FINISHED') return;
+    // Only a race seen to finish: one opened already finished stays quiet
+    if (movedFromRef.current !== 'RUNNING' && movedFromRef.current !== 'STOPPED') return;
     const s = settingsRef.current;
+    if (abandonedRef.current === raceId) {
+      if (s?.announceFinish !== false) fallbackSpeak('Race abandoned.');
+      return;
+    }
+    const hornMs = s?.finishHorn !== false ? playFinishHorn(volumeRef.current) : 0;
     if (!s?.announceFinish) return;
-    playClip('finish', 'Race finished. Checkered flag.');
-  }, [raceState, playClip]);
+    const t = setTimeout(() => playClip('finish', 'Race finished. Checkered flag.'), hornMs ? FINISH_HORN_MS : 0);
+    return () => clearTimeout(t);
+  }, [raceState, raceId, playClip, fallbackSpeak]);
+
+  // The grid call: which race, and how many drivers, once the grid is known. Once per race.
+  const gridSaidRef = useRef<number | null>(null);
+  const gridCount = gridEntries?.length;
+  useEffect(() => {
+    if (raceState !== 'GRID' || raceId == null || !raceLabel || gridCount == null) return;
+    if (gridSaidRef.current === raceId) return;
+    gridSaidRef.current = raceId;
+    if (settingsRef.current?.announceRaceCalls === false) return;
+    const drivers = gridCount === 1 ? '1 driver' : `${gridCount} drivers`;
+    fallbackSpeak(`${raceLabel}. ${drivers} to the grid.`);
+  }, [raceState, raceId, raceLabel, gridCount, fallbackSpeak]);
+
+  // Next race and its marshals, a moment after the finish line. Once per finished race.
+  const nextSaidRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (raceState !== 'FINISHED' || raceId == null || !nextRace) return;
+    if (nextSaidRef.current === raceId) return;
+    nextSaidRef.current = raceId;
+    if (settingsRef.current?.announceNextRace === false) return;
+    const marshals = nextRace.marshals.length > 0 ? ` Marshals: ${nextRace.marshals.join(', ')}.` : '';
+    // Not cancelled by the effect rerunning, but dropped if the director has moved on
+    setTimeout(() => {
+      if (raceStateRef.current === 'FINISHED') fallbackSpeak(`Next race: ${nextRace.label}.${marshals}`);
+    }, NEXT_RACE_DELAY_MS);
+  }, [raceState, raceId, nextRace, fallbackSpeak]);
 
   // The stagger is called when the race starts (GRID to RUNNING), so each driver starts as their name is called
   // (AUDIO-03). It runs at most once per start, even if gridEntries refetches, and a race opened already
   // running does not replay it.
   const staggerArmedRef = useRef(false);
   const staggerFiredRef = useRef(false);
+  const hornFiredRef = useRef(false);
   const clearStagger = useCallback(() => {
     staggerArmedRef.current = false;
     staggerFiredRef.current = false;
+    hornFiredRef.current = false;
     staggerTimeoutsRef.current.forEach(clearTimeout);
     staggerTimeoutsRef.current = [];
   }, []);
@@ -197,6 +275,7 @@ export function useAnnouncements({
     if (raceState === 'GRID' || raceState === 'PENDING') {
       staggerArmedRef.current = true;
       staggerFiredRef.current = false;
+      hornFiredRef.current = false;
       return;
     }
     // A stop keeps the armed state: the race resumes without calling the drivers again
@@ -204,24 +283,40 @@ export function useAnnouncements({
       if (raceState !== 'STOPPED') clearStagger();
       return;
     }
-    if (!staggerArmedRef.current || staggerFiredRef.current) return;
+    if (!staggerArmedRef.current) return;
+
+    // The start horn, once, then the line for a start with no driver calls
+    let hornMs = 0;
+    if (!hornFiredRef.current) {
+      hornFiredRef.current = true;
+      if (settingsRef.current?.startHorn !== false) hornMs = playStartHorn(volumeRef.current);
+      if (startType && startType !== 'STAGGER' && settingsRef.current?.announceRaceCalls !== false) {
+        const t = setTimeout(() => {
+          if (raceStateRef.current === 'RUNNING') fallbackSpeak('Race started.');
+        }, hornMs ? START_HORN_MS : 0);
+        staggerTimeoutsRef.current.push(t);
+      }
+    }
+    if (staggerFiredRef.current) return;
     if (startType !== 'STAGGER') return;
     if (!settingsRef.current?.announceStagger) return;
     if (!gridEntries || gridEntries.length === 0) return;
 
     staggerFiredRef.current = true;
     const stepMs = Math.max(staggerIntervalSeconds, 1) * 1000;
+    // The first driver is called once the horn has sounded
+    const startAfterMs = settingsRef.current?.startHorn !== false ? START_HORN_MS : 0;
 
     gridEntries.forEach((entry, index) => {
       const t = setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceStagger) return;
         playClip(gridClipKey(entry), gridFallbackText(entry));
-      }, index * stepMs);
+      }, startAfterMs + index * stepMs);
 
       staggerTimeoutsRef.current.push(t);
     });
-  }, [raceState, gridEntries, startType, staggerIntervalSeconds, clearStagger, playClip]);
+  }, [raceState, gridEntries, startType, staggerIntervalSeconds, clearStagger, playClip, fallbackSpeak]);
 
   // Per-lap improvement beeps (AUDIO-04) via AudioContext
   const playBeep = useCallback(
@@ -258,6 +353,7 @@ export function useAnnouncements({
     fallbackSpeak,
     playBeep,
     playClip,
+    markAbandoned,
     setClipMap,
   };
 }

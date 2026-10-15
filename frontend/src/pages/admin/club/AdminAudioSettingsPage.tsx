@@ -49,7 +49,7 @@ export default function AdminAudioSettingsPage() {
 
   const handleToggle = (key: keyof AudioSettingsDto) => {
     if (!displaySettings) return;
-    setLocalSettings({ ...displaySettings, [key]: !displaySettings[key] });
+    setLocalSettings({ ...displaySettings, [key]: displaySettings[key] === false });
   };
 
   const handleVoiceChange = (voiceId: string) => {
@@ -83,7 +83,7 @@ export default function AdminAudioSettingsPage() {
                   <Label htmlFor={`admin-toggle-${key}`}>{label}</Label>
                   <Switch
                     id={`admin-toggle-${key}`}
-                    checked={displaySettings[key]}
+                    checked={displaySettings[key] !== false}
                     onCheckedChange={() => handleToggle(key)}
                     aria-label={label}
                   />

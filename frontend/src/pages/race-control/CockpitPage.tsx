@@ -8,7 +8,8 @@ import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
-import { useAnnouncements } from '@/hooks/race-control/useAnnouncements';
+import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
+import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { usePregeneratedClips } from '@/hooks/race-control/usePregeneratedClips';
 import { isImprovingLap, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
@@ -90,6 +91,18 @@ export default function CockpitPage() {
   );
   const gridEntries = preRaceReadiness?.gridCall;
 
+  // The race after a finished one, with the marshals it will have (the drivers of the race just finished), for the
+  // call between races
+  const selectedIndex = runOrder.findIndex((r) => r.raceId === selectedRaceId);
+  const nextItem =
+    selectedRace?.status === 'FINISHED'
+      ? runOrder.slice(selectedIndex + 1).find((r) => r.status === 'PENDING')
+      : undefined;
+  const { data: nextReadiness } = usePreRaceReadiness(nextItem ? nextItem.raceId : null);
+  const nextRace: NextRaceCall | null = nextReadiness
+    ? { label: nextReadiness.raceLabel, marshals: nextReadiness.marshalDuty.map((m) => m.driverName) }
+    : null;
+
   // The race clock tells the countdown announcements when the race ends. It is read again when the race
   // starts or resumes (the status is part of the key), since a stoppage moves the end.
   const { data: raceClock, dataUpdatedAt: raceClockReadAt } = useQuery({
@@ -99,7 +112,7 @@ export default function CockpitPage() {
   });
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
-  const { playBeep, setClipMap } = useAnnouncements({
+  const { playBeep, setClipMap, markAbandoned } = useAnnouncements({
     raceId: selectedRaceId,
     settings: audioSettings ?? null,
     volume: volumePercent / 100,
@@ -108,6 +121,8 @@ export default function CockpitPage() {
     gridEntries,
     startType: preRaceReadiness?.startType,
     staggerIntervalSeconds: preRaceReadiness?.staggerIntervalSeconds,
+    raceLabel: preRaceReadiness?.raceLabel,
+    nextRace,
   });
 
   // Fetch and cache pre-generated clips when race enters GRID (AUDIO-10)
@@ -207,6 +222,13 @@ export default function CockpitPage() {
     });
   }
 
+  // From the grid, Start first runs the club's lead-in (if it has one), then starts the race
+  const startCountdown = useStartCountdown({
+    seconds: audioSettings?.startCountdownSeconds ?? 0,
+    volume: volumePercent / 100,
+    onDone: onStart,
+  });
+
   function onStop() {
     mutations.stop.mutate(undefined, {
       onError: commandFailed('Stop'),
@@ -233,6 +255,7 @@ export default function CockpitPage() {
       destructive: true,
     });
     if (!confirmed) return;
+    if (selectedRaceId != null) markAbandoned(selectedRaceId);
     mutations.abandon.mutate(undefined, {
       onError: commandFailed('Abandon'),
     });
@@ -304,11 +327,21 @@ export default function CockpitPage() {
 
       case 'GRID':
         return (
-          <GridEditorPanel
-            raceId={selectedRace.raceId}
-            onStart={onStart}
-            isStarting={mutations.start.isPending}
-          />
+          <div className="flex flex-col gap-3">
+            <GridEditorPanel
+              raceId={selectedRace.raceId}
+              onStart={startCountdown.begin}
+              isStarting={mutations.start.isPending || startCountdown.remaining != null}
+            />
+            {startCountdown.remaining != null && (
+              <div className="flex items-center gap-3" role="status">
+                <span className="text-lg font-semibold">Starting in {startCountdown.remaining}…</span>
+                <Button variant="outline" size="sm" onClick={startCountdown.cancel}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
         );
 
       case 'RUNNING':
