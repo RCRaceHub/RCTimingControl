@@ -1,4 +1,5 @@
 import api from './api';
+import type { HornSounds } from './sounds';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,8 @@ export interface AudioSettingsDto {
   announceNextRace?: boolean;
   /** Seconds between pressing Start and the race starting; 0 for none. */
   startCountdownSeconds?: number;
+  /** The club's own horn sound files, if it has uploaded any. */
+  hornSounds?: HornSounds;
 }
 
 /** The announcement switches, in the order the settings screens show them. */
@@ -68,3 +71,21 @@ export const getAdminAudioSettings = () =>
 /** PUT admin-level audio settings. */
 export const saveAdminAudioSettings = (settings: AudioSettingsDto) =>
   api.put<AudioSettingsDto>('/api/v1/admin/audio/settings', settings).then(r => r.data);
+
+/** Replace the start or finish horn with the club's own sound file; `durationMs` is how long it plays. */
+export const uploadHornSound = (horn: 'start' | 'finish', file: File, durationMs: number) => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('durationMs', String(durationMs));
+  return api.put<HornSounds>(`/api/v1/admin/audio/horns/${horn}`, form).then(r => r.data);
+};
+
+/** Go back to the built-in horn. */
+export const removeHornSound = (horn: 'start' | 'finish') =>
+  api.delete<HornSounds>(`/api/v1/admin/audio/horns/${horn}`).then(r => r.data);
+
+// ── Piper test ─────────────────────────────────────────────────────────────
+
+/** A spoken sample from the club's Piper voice, as a WAV; rejects if Piper is off or cannot be reached. */
+export const getPiperTestClip = () =>
+  api.get<Blob>('/api/v1/race-control/settings/audio/piper-test', { responseType: 'blob' }).then(r => r.data);
