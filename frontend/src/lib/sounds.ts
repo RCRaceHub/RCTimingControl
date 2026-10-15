@@ -30,18 +30,19 @@ function context(): AudioContext {
     shared.onstatechange = notify;
     notify();
   }
-  if (shared.state === 'suspended') void shared.resume().catch(() => undefined);
+  if (shared.state !== 'running') void shared.resume().catch(() => undefined);
   return shared;
 }
 
 /**
- * Whether this browser lets the page make sound: false until the page has had a click or key press, when the
- * browser's autoplay rule keeps the horn silent.
+ * Whether the browser is holding the page's sound back, as its autoplay rule does until the page has had a click
+ * or key press. False before the first attempt to start audio, and where the browser has no audio at all.
  */
-export function audioAllowed(): boolean {
-  return shared != null && shared.state === 'running';
+export function audioBlocked(): boolean {
+  return shared != null && shared.state !== 'running';
 }
 
+/** Calls the listener whenever the audio context is created or changes state; returns the way to stop. */
 export function subscribeAudioState(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -49,8 +50,9 @@ export function subscribeAudioState(listener: () => void) {
   };
 }
 
-/** Starts the audio context; called from a click, which the browser then lets sound. */
+/** Starts the audio context, on page load and again from a click or key press, which the browser then lets sound. */
 export function unlockAudio() {
+  if (typeof AudioContext === 'undefined') return;
   try {
     context();
   } catch (e) {

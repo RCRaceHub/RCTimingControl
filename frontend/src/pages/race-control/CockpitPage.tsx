@@ -483,7 +483,7 @@ export default function CockpitPage() {
             </div>
           )}
 
-        {!audio.allowed && (
+        {audio.blocked && (
           <div
             role="status"
             className="m-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"

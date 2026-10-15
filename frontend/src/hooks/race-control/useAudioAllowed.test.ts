@@ -3,13 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAudioAllowed } from './useAudioAllowed';
 
 class FakeAudioContext {
-  static instances: FakeAudioContext[] = [];
   static allow = false;
   state: 'suspended' | 'running' | 'closed' = 'suspended';
   onstatechange: (() => void) | null = null;
-  constructor() {
-    FakeAudioContext.instances.push(this);
-  }
   resume() {
     if (!FakeAudioContext.allow) return Promise.resolve();
     this.state = 'running';
@@ -20,7 +16,6 @@ class FakeAudioContext {
 
 describe('useAudioAllowed', () => {
   beforeEach(() => {
-    FakeAudioContext.instances = [];
     FakeAudioContext.allow = false;
     vi.stubGlobal('AudioContext', FakeAudioContext);
   });
@@ -28,14 +23,14 @@ describe('useAudioAllowed', () => {
     vi.unstubAllGlobals();
   });
 
-  it('is false while the browser holds the audio back and true after a click lets it run', async () => {
+  it('is blocked while the browser holds the audio back and clears after a click lets it run', async () => {
     const { result } = renderHook(() => useAudioAllowed());
-    expect(result.current.allowed).toBe(false);
+    expect(result.current.blocked).toBe(true);
 
     FakeAudioContext.allow = true;
     await act(async () => {
       window.dispatchEvent(new Event('pointerdown'));
     });
-    expect(result.current.allowed).toBe(true);
+    expect(result.current.blocked).toBe(false);
   });
 });
