@@ -45,6 +45,10 @@ public class LiveRaceState {
     final Map<Long, Long> minLapMs = new HashMap<>();
     /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
     Long lastLapCreditedAtMs = null;
+    /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
+    final Set<Long> flagged = new HashSet<>();
+    /** Whether the finish has been asked for, so it is asked for once. */
+    boolean finishRequested = false;
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
@@ -73,6 +77,16 @@ public class LiveRaceState {
      * the passing counts a lap, for the last lap timeout.
      */
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs) {
+        return applyLapPassing(event, entryId, nowMs, false);
+    }
+
+    /**
+     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race whose clock may have run out. When
+     * {@code clockExpired}, the passing that counts a lap is the car's last: it has taken the flag, and its later
+     * passings are kept in the history but not counted. A passing too soon to count (TRACK-02) does not flag the car.
+     */
+    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
+                                                boolean clockExpired) {
         lapHistory.add(event);
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
@@ -87,11 +101,45 @@ public class LiveRaceState {
             return p;
         });
 
+        if (flagged.contains(entryId)) {
+            return false;
+        }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
+            if (clockExpired) {
+                flagged.add(entryId);
+            }
         }
 
         return false;
+    }
+
+    /**
+     * Whether every car that has passed the line has taken the flag, so the race is over. False until at least one
+     * car has passed. A car that never crossed is not waited for; the last lap timeout covers a car that stops.
+     * Returns true once only, so the caller finishes the race once.
+     */
+    public synchronized boolean takeFinishRequest() {
+        if (finishRequested || !allFlagged()) {
+            return false;
+        }
+        finishRequested = true;
+        return true;
+    }
+
+    /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */
+    public synchronized boolean allFlagged() {
+        boolean any = false;
+        for (LiveRacePosition pos : positions.values()) {
+            if (pos.getLastPassingTimeMs() == 0) {
+                continue;
+            }
+            any = true;
+            if (!flagged.contains(pos.getEntryId())) {
+                return false;
+            }
+        }
+        return any;
     }
 
     /** Server time of the last passing that counted a lap, or empty if none has yet. */

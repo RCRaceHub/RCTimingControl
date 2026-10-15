@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import org.springframework.context.ApplicationEventPublisher;
+import dev.monkeypatch.rctiming.timing.RaceClockService;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -164,7 +166,8 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         // Called directly so the passings are processed synchronously (the bean's listener is @Async)
         LapTimingService timing = new LapTimingService(mock(LiveTimingHub.class), raceEntryRepository,
-                entryRepository, competitorRepository, mock(LapThresholdQuery.class));
+                entryRepository, competitorRepository, mock(LapThresholdQuery.class),
+                mock(RaceClockService.class), mock(ApplicationEventPublisher.class));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 1_000_000L));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 31_000_000L));
 

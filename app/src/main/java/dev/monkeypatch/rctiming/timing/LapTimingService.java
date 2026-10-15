@@ -14,6 +14,8 @@ import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
@@ -57,17 +59,28 @@ public class LapTimingService {
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final LapThresholdQuery lapThresholdQuery;
+    private final RaceClockService raceClockService;
+    private final ApplicationEventPublisher publisher;
+    /** Timed races whose clock has run out. Never goes back for the same run, since a clock only counts up. */
+    private final Set<Long> clockExpired = ConcurrentHashMap.newKeySet();
+    /** Each running race's length in milliseconds, read once so a passing never queries for it; -1 for none. */
+    private final Map<Long, Long> raceLengths = new ConcurrentHashMap<>();
 
+    @Autowired
     public LapTimingService(LiveTimingHub liveTimingHub,
                             RaceEntryRepository raceEntryRepository,
                             EntryRepository entryRepository,
                             CompetitorRepository competitorRepository,
-                            LapThresholdQuery lapThresholdQuery) {
+                            LapThresholdQuery lapThresholdQuery,
+                            RaceClockService raceClockService,
+                            ApplicationEventPublisher publisher) {
         this.liveTimingHub = liveTimingHub;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.lapThresholdQuery = lapThresholdQuery;
+        this.raceClockService = raceClockService;
+        this.publisher = publisher;
     }
 
     /**
@@ -130,13 +143,34 @@ public class LapTimingService {
             entryId = resolveEntryId(raceId, transponderNumber);
         }
 
-        boolean firstUnknown = state.applyLapPassing(event, entryId);
+        boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
+                clockExpired(raceId));
 
         if (entryId == null && firstUnknown) {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
         }
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+
+        if (state.takeFinishRequest()) {
+            publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
+        }
+    }
+
+    /** Whether the race has a length and its clock has run out, so the next lap a car counts is its last. */
+    private boolean clockExpired(long raceId) {
+        if (clockExpired.contains(raceId)) {
+            return true;
+        }
+        long length = raceLengths.computeIfAbsent(raceId, id -> raceClockService.durationMsOf(id).orElse(-1L));
+        if (length < 0) {
+            return false;
+        }
+        boolean expired = raceClockService.clockOf(raceId, RaceStatus.RUNNING, length).remainingMs() <= 0;
+        if (expired) {
+            clockExpired.add(raceId);
+        }
+        return expired;
     }
 
     /**
@@ -168,6 +202,8 @@ public class LapTimingService {
      */
     public void releaseState(long raceId) {
         released.add(raceId);
+        clockExpired.remove(raceId);
+        raceLengths.remove(raceId);
         states.remove(raceId);
     }
 
@@ -178,6 +214,10 @@ public class LapTimingService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.GRID) {
+            clockExpired.remove(event.getRaceId());
+            raceLengths.remove(event.getRaceId());
+        }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
         }

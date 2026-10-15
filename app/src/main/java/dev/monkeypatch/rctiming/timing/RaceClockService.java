@@ -114,6 +114,12 @@ public class RaceClockService {
         return new RaceClockDto(raceId, status.name(), elapsed, durationMs, remaining, running);
     }
 
+    /** The length of the race from its format, or empty for an unknown race or one with no length. */
+    @Transactional(readOnly = true)
+    public Optional<Long> durationMsOf(long raceId) {
+        return raceRepository.findById(raceId).map(this::durationMs);
+    }
+
     private Long durationMs(Race race) {
         if (race.getEventClassId() == null) {
             return null;
