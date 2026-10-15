@@ -33,8 +33,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -233,8 +235,47 @@ class RunningOrderAnnouncementServiceTest {
                 .hasSize(4); // half of seven, rounded up
     }
 
+    @Test
+    void checkAndAnnounce_followsTheClubsOwnCadence() throws Exception {
+        // Called every minute for the first 5 minutes, then every 3
+        ClubAudioSettings own = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null,
+                null, null, null, null, null, null, null, null, new ClubAudioSettings.Tuning(5, 1, 3, null, null,
+                null));
+        when(clubProfileService.audioSettings()).thenReturn(own);
+        when(raceRepository.findById(1L)).thenReturn(Optional.of(runningRace));
+        LiveRaceState liveState = mock(LiveRaceState.class);
+        when(liveState.calculatePositions()).thenReturn(List.of(makeRow(1, "Racer A")));
+        when(lapTimingService.peek(1L)).thenReturn(Optional.of(liveState));
+        lenient().when(entryRepository.findById(any())).thenReturn(Optional.empty());
+
+        // 70 seconds in: past the early minute
+        service.onRaceStarted(1L);
+        backdateRaceStart(1L, Instant.now().minusSeconds(70));
+        service.checkAndAnnounce();
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+
+        // 7 minutes in, the last call 2 minutes ago: not yet due on the 3 minute cadence
+        service.onRaceStarted(1L);
+        backdateRaceStart(1L, Instant.now().minusSeconds(420));
+        lastAnnouncement(1L, Instant.now().minusSeconds(120));
+        service.checkAndAnnounce();
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+
+        lastAnnouncement(1L, Instant.now().minusSeconds(200));
+        service.checkAndAnnounce();
+        verify(messagingTemplate, times(2)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
+
+    private void lastAnnouncement(Long raceId, Instant time) throws Exception {
+        Field lastField = RunningOrderAnnouncementService.class.getDeclaredField("lastAnnouncementTimes");
+        lastField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<Long, Instant> lastTimes = (Map<Long, Instant>) lastField.get(service);
+        lastTimes.put(raceId, time);
+    }
     // -------------------------------------------------------------------------
 
     private void backdateRaceStart(Long raceId, Instant backdatedTime) throws Exception {

@@ -24,8 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-
 /**
  * Race control–facing audio settings endpoint (AUDIO-07).
  * <p>
@@ -63,20 +61,26 @@ public class AudioSettingsController {
             int startCountdownSeconds,
             ClubAudioSettings.HornSounds hornSounds,
             boolean announceCarFinish,
-            String timeUpText
+            String timeUpText,
+            boolean tickSound,
+            boolean finalBeeps,
+            ClubAudioSettings.Wording wording,
+            ClubAudioSettings.Tuning tuning
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
                     s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
+                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
+                    s.finalBeeps(), s.wording(), s.tuning());
         }
     }
 
     /**
      * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
-     * toggle it changed.
+     * toggle it changed. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
+     * the full object (a line left empty has the standard wording).
      */
     public record AudioSettingsPatch(
             Boolean announceCountdown,
@@ -93,13 +97,17 @@ public class AudioSettingsController {
             Boolean announceNextRace,
             @Min(0) @Max(60) Integer startCountdownSeconds,
             Boolean announceCarFinish,
-            @Size(max = 200) String timeUpText
+            @Size(max = 200) String timeUpText,
+            Boolean tickSound,
+            Boolean finalBeeps,
+            @Valid ClubAudioSettings.Wording wording,
+            @Valid ClubAudioSettings.Tuning tuning
     ) {
         /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
         @JsonIgnore
         @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
         public boolean isCountdownIntervalsInRange() {
-            return countdownIntervals == null || Arrays.stream(countdownIntervals).allMatch(i -> i >= 1 && i <= 3600);
+            return ClubAudioSettings.intervalsInRange(countdownIntervals);
         }
     }
 
@@ -140,6 +148,10 @@ public class AudioSettingsController {
                             patch.announceCarFinish() != null ? patch.announceCarFinish() : s.announceCarFinish(),
                             // Blank goes back to the standard wording
                             patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText(),
+                            patch.tickSound() != null ? patch.tickSound() : s.tickSound(),
+                            patch.finalBeeps() != null ? patch.finalBeeps() : s.finalBeeps(),
+                            patch.wording() != null ? patch.wording() : s.wording(),
+                            patch.tuning() != null ? patch.tuning() : s.tuning(),
                             patch.runningOrderPercent() != null ? patch.runningOrderPercent() : s.runningOrderPercent(),
                             patch.runningOrderAllUpTo() != null ? patch.runningOrderAllUpTo() : s.runningOrderAllUpTo()
                     ));

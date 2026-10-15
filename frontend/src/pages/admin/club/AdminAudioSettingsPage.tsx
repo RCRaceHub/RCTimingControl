@@ -21,6 +21,7 @@ import {
   listVoices,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
+import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { HornSoundsCard } from './HornSoundsCard';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
@@ -124,6 +125,8 @@ export default function AdminAudioSettingsPage() {
                 />
                 <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
               </div>
+
+              <AudioDetailFields settings={displaySettings} onChange={setLocalSettings} idPrefix="admin" />
 
               <div className="space-y-2 pt-2">
                 <Label htmlFor="default-voice">Default voice</Label>

@@ -34,10 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Broadcasts the current running order to the race audio STOMP topic at regular intervals (AUDIO-06).
  * <p>
- * Interval schedule:
+ * Interval schedule, from the club's {@code audioSettings.tuning} (#299):
  * <ul>
- *   <li>First 10 minutes of a race: every 2 minutes</li>
- *   <li>After 10 minutes: every 5 minutes</li>
+ *   <li>Early in a race (the first 10 minutes unless changed): every 2 minutes unless changed</li>
+ *   <li>After that: every 5 minutes unless changed</li>
  * </ul>
  * Names are spoken as the competitor's spoken name when set (#119).
  * Each call names the top {@code audioSettings.runningOrderPercent} of the drivers (50% by default, rounded up),
@@ -50,13 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RunningOrderAnnouncementService {
 
     private static final Logger log = LoggerFactory.getLogger(RunningOrderAnnouncementService.class);
-
-    /** Two-minute interval for the first 10 minutes of a race. */
-    private static final Duration INITIAL_INTERVAL = Duration.ofMinutes(2);
-    /** Five-minute interval after the first 10 minutes. */
-    private static final Duration LATER_INTERVAL = Duration.ofMinutes(5);
-    /** Period during which the shorter interval applies. */
-    private static final Duration INITIAL_PERIOD = Duration.ofMinutes(10);
 
     private final RaceRepository raceRepository;
     private final ClubProfileService clubProfileService;
@@ -135,6 +128,10 @@ public class RunningOrderAnnouncementService {
 
         Instant now = Instant.now();
         ClubAudioSettings settings = clubProfileService.audioSettings();
+        ClubAudioSettings.Tuning tuning = settings.tuning();
+        Duration initialPeriod = Duration.ofMinutes(tuning.runningOrderEarlyPeriodMinutes());
+        Duration initialInterval = Duration.ofMinutes(tuning.runningOrderEarlyEveryMinutes());
+        Duration laterInterval = Duration.ofMinutes(tuning.runningOrderLaterEveryMinutes());
 
         for (Map.Entry<Long, Instant> entry : raceStartTimes.entrySet()) {
             Long raceId = entry.getKey();
@@ -148,9 +145,9 @@ public class RunningOrderAnnouncementService {
                 continue;
             }
 
-            // Determine which interval applies (first 10 min vs. thereafter)
+            // Determine which interval applies (early period vs. thereafter)
             Duration elapsed = Duration.between(startTime, now);
-            Duration interval = elapsed.compareTo(INITIAL_PERIOD) < 0 ? INITIAL_INTERVAL : LATER_INTERVAL;
+            Duration interval = elapsed.compareTo(initialPeriod) < 0 ? initialInterval : laterInterval;
 
             // Check if enough time has passed since the last announcement
             Duration sinceLast = Duration.between(lastAnnouncement, now);

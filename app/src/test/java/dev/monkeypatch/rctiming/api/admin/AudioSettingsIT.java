@@ -138,6 +138,79 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void raceControlCanWordEachLineAndTuneTheTimingsAndTheOtherFieldsAreKept() {
+        ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of(
+                "wording", Map.of("go", "Go go go!", "carFinish", "{name} is home in car {car}."),
+                "tuning", Map.of("runningOrderLaterEveryMinutes", 3, "finalSeconds", 3, "lapBeepHz", 600),
+                "tickSound", false, "finalBeeps", false));
+
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode body = saved.getBody();
+        assertThat(body.get("wording").get("go").asText()).isEqualTo("Go go go!");
+        assertThat(body.get("wording").get("carFinish").asText()).isEqualTo("{name} is home in car {car}.");
+        // a line left empty has the standard wording
+        assertThat(body.get("wording").get("stop").asText()).isEqualTo("Race stopped.");
+        assertThat(body.get("tuning").get("runningOrderLaterEveryMinutes").asInt()).isEqualTo(3);
+        assertThat(body.get("tuning").get("finalSeconds").asInt()).isEqualTo(3);
+        assertThat(body.get("tuning").get("lapBeepHz").asInt()).isEqualTo(600);
+        assertThat(body.get("tuning").get("lapBeepMs").asInt()).isEqualTo(200);
+        assertThat(body.get("tickSound").asBoolean()).isFalse();
+        assertThat(body.get("finalBeeps").asBoolean()).isFalse();
+
+        // a patch that leaves them out keeps them
+        JsonNode kept = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", false)).getBody();
+        assertThat(kept.get("wording").get("go").asText()).isEqualTo("Go go go!");
+        assertThat(kept.get("tuning").get("finalSeconds").asInt()).isEqualTo(3);
+    }
+
+    @Test
+    void wordingThatIsTooLongOrTuningOutOfRangeIsRefused() {
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("wording", Map.of("go", "x".repeat(201)))).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("tuning", Map.of("finalSeconds", 30))).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("tuning", Map.of("runningOrderEarlyEveryMinutes", 0))).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("tuning", Map.of("lapBeepHz", 50000))).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void theAdminFormCanSetTheCountdownTimesAndWordingAndKeepsThemWhenItLeavesThemOut() {
+        Map<String, Object> form = Map.of(
+                "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "defaultVoiceId", "en_GB-alan-medium", "countdownIntervals", new int[]{900, 45},
+                "wording", Map.of("raceFinished", "That is the race."));
+        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        ClubAudioSettings now = clubProfileRepository
+                .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
+        assertThat(now.countdownIntervals()).containsExactly(900, 45);
+        assertThat(now.wording().raceFinished()).isEqualTo("That is the race.");
+
+        Map<String, Object> bare = Map.of(
+                "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "defaultVoiceId", "en_GB-alan-medium");
+        call(HttpMethod.PUT, ADMIN_SETTINGS, bare);
+        ClubAudioSettings kept = clubProfileRepository
+                .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
+        assertThat(kept.countdownIntervals()).containsExactly(900, 45);
+        assertThat(kept.wording().raceFinished()).isEqualTo("That is the race.");
+
+        Map<String, Object> flood = Map.of(
+                "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
+                "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
+                "defaultVoiceId", "en_GB-alan-medium", "countdownIntervals", new int[]{0});
+        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, flood).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void countdownIntervalsThatWouldFloodTheSpeechEngineAreRefused() {
         assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("countdownIntervals", new int[]{0}))
                 .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -226,6 +299,24 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         assertThat(removed.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(removed.getBody().get("startUrl").isNull()).isTrue();
+    }
+
+    @Test
+    void aClubSoundReplacesTheTickAndTheLapBeepAndLeavesTheHornsAlone() {
+        uploadHorn("start", "audio/wav", new byte[]{1}, 1500);
+
+        JsonNode tick = uploadHorn("tick", "audio/wav", new byte[]{2}, 300).getBody();
+        JsonNode lap = uploadHorn("lap-beep", "audio/mpeg", new byte[]{3}, 250).getBody();
+
+        assertThat(tick.get("tickMs").asInt()).isEqualTo(300);
+        assertThat(lap.get("lapBeepMs").asInt()).isEqualTo(250);
+        assertThat(lap.get("lapBeepUrl").asText()).contains("horns/lap-beep-").endsWith(".mp3");
+        assertThat(lap.get("tickUrl").asText()).contains("horns/tick-");
+        assertThat(lap.get("startMs").asInt()).isEqualTo(1500);
+
+        JsonNode removed = call(HttpMethod.DELETE, "/api/v1/admin/audio/horns/lap-beep", null).getBody();
+        assertThat(removed.get("lapBeepUrl").isNull()).isTrue();
+        assertThat(removed.get("tickUrl").isNull()).isFalse();
     }
 
     @Test
