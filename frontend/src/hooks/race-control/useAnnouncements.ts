@@ -306,7 +306,9 @@ export function useAnnouncements({
     let hornMs = 0;
     if (!hornFiredRef.current) {
       hornFiredRef.current = true;
-      if (settingsRef.current?.startHorn !== false) hornMs = playStartHorn(volumeRef.current, settingsRef.current?.hornSounds);
+      if (settingsRef.current?.startHorn !== false) {
+        hornMs = playStartHorn(volumeRef.current, settingsRef.current?.hornSounds);
+      }
       if (startType && startType !== 'STAGGER' && settingsRef.current?.announceRaceCalls !== false) {
         const t = setTimeout(() => {
           if (raceStateRef.current === 'RUNNING') fallbackSpeak('Race started.');

@@ -110,7 +110,8 @@ public class AdminAudioController {
     public ClubAudioSettings.HornSounds uploadHorn(Authentication auth, @PathVariable String horn,
                                                     @RequestPart("file") MultipartFile file,
                                                     @RequestParam int durationMs) {
-        return hornSoundService.upload(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn), file, durationMs).hornSounds();
+        return hornSoundService.upload(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn), file, durationMs)
+                .hornSounds();
     }
 
     /** Goes back to the built-in horn. */

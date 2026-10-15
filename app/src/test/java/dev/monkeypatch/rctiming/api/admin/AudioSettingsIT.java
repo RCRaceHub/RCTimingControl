@@ -201,7 +201,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         JsonNode shown = call(HttpMethod.GET, RACE_CONTROL_SETTINGS, null).getBody();
         assertThat(shown.get("hornSounds").get("startMs").asInt()).isEqualTo(1500);
 
-        ResponseEntity<JsonNode> removed = call(HttpMethod.DELETE, ADMIN_SETTINGS.replace("settings", "horns/start"), null);
+        ResponseEntity<JsonNode> removed = call(HttpMethod.DELETE, "/api/v1/admin/audio/horns/start", null);
 
         assertThat(removed.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(removed.getBody().get("startUrl").isNull()).isTrue();

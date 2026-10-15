@@ -101,17 +101,21 @@ export function finishHornMs(sounds?: HornSounds | null): number {
 
 /** Plays the club's sound file; if the browser can't, sounds the built-in horn instead. */
 function playFile(url: string, volume: number, builtIn: () => void) {
+  // A file that will not play can fail twice (the error event and the rejected play): sound the horn once
+  let fellBack = false;
+  const fallBack = (e?: unknown) => {
+    if (fellBack) return;
+    fellBack = true;
+    console.warn('Horn sound failed:', e);
+    builtIn();
+  };
   try {
     const audio = new Audio(url);
     audio.volume = Math.min(1, Math.max(0, volume));
-    audio.onerror = builtIn;
-    audio.play().catch((e) => {
-      console.warn('Horn sound failed:', e);
-      builtIn();
-    });
+    audio.onerror = () => fallBack();
+    audio.play().catch(fallBack);
   } catch (e) {
-    console.warn('Horn sound failed:', e);
-    builtIn();
+    fallBack(e);
   }
 }
 

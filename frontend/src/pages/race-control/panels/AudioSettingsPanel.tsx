@@ -43,14 +43,17 @@ export function AudioSettingsPanel() {
   const [piperTesting, setPiperTesting] = useState(false);
   const testPiper = async () => {
     setPiperTesting(true);
+    let url: string | null = null;
     try {
-      const url = URL.createObjectURL(await getPiperTestClip());
+      url = URL.createObjectURL(await getPiperTestClip());
       const audio = new Audio(url);
       audio.volume = volume / 100;
-      audio.onended = () => URL.revokeObjectURL(url);
+      const clip = url;
+      audio.onended = () => URL.revokeObjectURL(clip);
       await audio.play();
     } catch {
-      toast.error('Piper could not be reached, so spoken calls will use the browser voice.');
+      if (url) URL.revokeObjectURL(url);
+      toast.error('Piper could not be reached or its clip would not play, so spoken calls will use the browser voice.');
     } finally {
       setPiperTesting(false);
     }

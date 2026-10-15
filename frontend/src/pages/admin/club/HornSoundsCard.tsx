@@ -16,15 +16,21 @@ const HORNS = [
 function soundLengthMs(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
-    const audio = new Audio(url);
-    audio.onloadedmetadata = () => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    const done = (fail?: string) => {
+      clearTimeout(timer);
       URL.revokeObjectURL(url);
-      resolve(Math.round(audio.duration * 1000));
+      if (fail || !Number.isFinite(audio.duration)) {
+        reject(new Error(fail ?? 'The browser cannot tell how long that file is'));
+      } else {
+        resolve(Math.round(audio.duration * 1000));
+      }
     };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('The browser cannot play that file'));
-    };
+    const timer = setTimeout(() => done('The browser took too long to read that file'), 5000);
+    audio.onloadedmetadata = () => done();
+    audio.onerror = () => done('The browser cannot play that file');
+    audio.src = url;
   });
 }
 

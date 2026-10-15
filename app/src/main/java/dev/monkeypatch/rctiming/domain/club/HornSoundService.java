@@ -30,7 +30,8 @@ public class HornSoundService {
         }
     }
 
-    static final Set<String> ALLOWED_CONTENT_TYPES = Set.of("audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg");
+    static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
+            "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave", "audio/ogg", "application/ogg");
     static final long MAX_BYTES = 1024 * 1024L;
     static final int MIN_MS = 100;
     static final int MAX_MS = 10_000;
@@ -66,8 +67,8 @@ public class HornSoundService {
             throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
         }
         String extension = switch (contentType) {
-            case "audio/mpeg" -> "mp3";
-            case "audio/ogg" -> "ogg";
+            case "audio/mpeg", "audio/mp3" -> "mp3";
+            case "audio/ogg", "application/ogg" -> "ogg";
             default -> "wav";
         };
         String url = storage.upload("horns/" + horn.name().toLowerCase() + "-" + System.currentTimeMillis()
@@ -75,7 +76,7 @@ public class HornSoundService {
         return change(actor, horn, url, durationMs);
     }
 
-    /** Goes back to the built-in horn. */
+    /** Goes back to the built-in horn. The old file stays in storage, which has no delete; it is at most 1 MB. */
     public ClubAudioSettings remove(Actor actor, Horn horn) {
         return change(actor, horn, null, null);
     }
