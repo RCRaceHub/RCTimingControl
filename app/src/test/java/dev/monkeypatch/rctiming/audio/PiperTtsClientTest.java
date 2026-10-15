@@ -194,6 +194,25 @@ class PiperTtsClientTest {
     }
 
     @Test
+    void describe_noVoiceMatchesTheLocales_listsEveryVoiceInsteadOfJustTheDefault() {
+        executor.submit(() -> {
+            try (Socket client = serverSocket.accept()) {
+                new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8)).readLine();
+                String infoResponse = "{\"type\":\"info\",\"data\":{\"tts\":[{\"name\":\"piper\",\"voices\":[" +
+                        "{\"name\":\"en_GB-alan-medium\"},{\"name\":\"en_GB-cori-high\"}]}]}}\n";
+                client.getOutputStream().write(infoResponse.getBytes(StandardCharsets.UTF_8));
+                client.getOutputStream().flush();
+            } catch (IOException ignored) {}
+        });
+        TtsProperties props = new TtsProperties("localhost:" + port, "en_GB-alan-medium", true, List.of("en_US"));
+        PiperTtsClient client = new PiperTtsClient(props, objectMapper);
+
+        List<VoiceInfo> voices = client.listVoices();
+
+        assertEquals(List.of("en_GB-alan-medium", "en_GB-cori-high"), voices.stream().map(VoiceInfo::voiceId).toList());
+    }
+
+    @Test
     void describe_returnsList_ofAvailableVoices() throws Exception {
         // Wyoming protocol: voices are nested at data.tts[*].voices
         executor.submit(() -> {
