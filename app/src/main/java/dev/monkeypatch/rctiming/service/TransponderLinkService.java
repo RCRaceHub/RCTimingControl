@@ -3,15 +3,22 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAuditRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +27,14 @@ import java.util.Map;
 
 /**
  * Links an unknown transponder to an entry during a live race (TIMING-08), crediting every passing it has
- * made since the start.
+ * made since the start. The number is also saved on the driver's entry, so it counts for the rest of the event
+ * without being linked again.
  */
 @Service
 @Transactional
 public class TransponderLinkService {
+
+    private static final Logger log = LoggerFactory.getLogger(TransponderLinkService.class);
 
     private final RaceRepository raceRepository;
     private final RaceEntryRepository raceEntryRepository;
@@ -32,19 +42,25 @@ public class TransponderLinkService {
     private final UnknownTransponderLinkAuditRepository linkAuditRepository;
     private final AuditService audit;
     private final RaceAuditLabels labels;
+    private final EntryRepository entryRepository;
+    private final TransponderSwapService swapService;
 
     public TransponderLinkService(RaceRepository raceRepository,
                                   RaceEntryRepository raceEntryRepository,
                                   LapTimingService lapTimingService,
                                   UnknownTransponderLinkAuditRepository linkAuditRepository,
                                   AuditService audit,
-                                  RaceAuditLabels labels) {
+                                  RaceAuditLabels labels,
+                                  EntryRepository entryRepository,
+                                  TransponderSwapService swapService) {
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.lapTimingService = lapTimingService;
         this.linkAuditRepository = linkAuditRepository;
         this.audit = audit;
         this.labels = labels;
+        this.entryRepository = entryRepository;
+        this.swapService = swapService;
     }
 
     /**
@@ -56,6 +72,9 @@ public class TransponderLinkService {
      * never live without its record (#217). The laps credited are counted before the commit; a passing from
      * this transponder that arrives in between is credited too, but is not in that count. With one write
      * connection, the next link request starts only after this one is live, so its checks see it.
+     *
+     * <p>The number is saved on the entry in the same transaction (see {@link #saveOnEntry}), so later races at
+     * the event find it by themselves.
      *
      * @return how many laps the link credited
      */
@@ -92,7 +111,36 @@ public class TransponderLinkService {
                         + labels.race(raceId) + ", crediting " + lapsCredited + " laps")
                 .after(after).record();
 
+        saveOnEntry(raceId, transponderNumber, entryId, userId);
+
         AfterCommit.run(() -> lapTimingService.linkTransponder(raceId, transponderNumber, entryId));
         return lapsCredited;
+    }
+
+    /**
+     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way: in place
+     * of the primary when it has not passed in this race and there is no secondary or the secondary has,
+     * otherwise in the secondary slot (empty, or the one that has not passed). A number another competitor's entry holds is only linked for this
+     * race, as a swap would refuse it. The entry is changed only if its number is not already the entry's.
+     */
+    private void saveOnEntry(long raceId, String transponderNumber, long entryId, long userId) {
+        Long eventId = labels.eventOf(raceId);
+        Entry entry = entryRepository.findById(entryId).orElse(null);
+        if (eventId == null || entry == null || transponderNumber.equals(entry.getTransponderNumberSnapshot())
+                || transponderNumber.equals(entry.getSecondaryTransponderNumber())) {
+            return;
+        }
+        boolean primarySeen = lapTimingService.countPassingsForTransponder(raceId, entry.getTransponderNumberSnapshot()) > 0;
+        String secondary = entry.getSecondaryTransponderNumber();
+        boolean secondarySeen = secondary != null && !secondary.isBlank()
+                && lapTimingService.countPassingsForTransponder(raceId, secondary) > 0;
+        boolean hasSecondary = secondary != null && !secondary.isBlank();
+        TransponderSlot slot = !primarySeen && (!hasSecondary || secondarySeen)
+                ? TransponderSlot.PRIMARY : TransponderSlot.SECONDARY;
+        SwapResult result = swapService.swap(eventId, entryId, slot, transponderNumber, userId);
+        if (!(result instanceof SwapResult.Success)) {
+            log.info("Transponder {} linked to entry {} for race {} only: not saved on the entry ({})",
+                    transponderNumber, entryId, raceId, result.getClass().getSimpleName());
+        }
     }
 }

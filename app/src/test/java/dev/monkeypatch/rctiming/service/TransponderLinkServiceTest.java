@@ -3,12 +3,17 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
@@ -24,6 +29,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,10 +50,12 @@ class TransponderLinkServiceTest {
     @Mock UnknownTransponderLinkAuditRepository linkAuditRepository;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS) AuditService audit;
     @Mock RaceAuditLabels labels;
+    @Mock EntryRepository entryRepository;
+    @Mock TransponderSwapService swapService;
 
     private TransponderLinkService service() {
         return new TransponderLinkService(raceRepository, raceEntryRepository, lapTimingService, linkAuditRepository,
-                audit, labels);
+                audit, labels, entryRepository, swapService);
     }
 
     @Test
@@ -154,6 +162,71 @@ class TransponderLinkServiceTest {
 
         verifyNoInteractions(linkAuditRepository);
         verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void link_savesTheNumberOnTheEntry_replacingAnUnseenPrimary() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1111111", null);
+        when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(0);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(swapService).swap(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
+    }
+
+    @Test
+    void link_savesTheNumberAsSecondary_whenThePrimaryIsBeingSeen() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1111111", null);
+        when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(3);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(swapService).swap(5L, 11L, TransponderSlot.SECONDARY, "1234567", 3L);
+    }
+
+    @Test
+    void link_withTwoNumbers_replacesTheOneThatHasNotPassed() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1111111", "2222222");
+        when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(0);
+        when(lapTimingService.countPassingsForTransponder(7L, "2222222")).thenReturn(4);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(swapService).swap(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
+    }
+
+    @Test
+    void link_ofANumberTheEntryAlreadyHas_changesNothingOnTheEntry() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1234567", null);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verifyNoInteractions(swapService);
+    }
+
+    @Test
+    void link_whenTheEntryCannotTakeTheNumber_stillLinksForTheRace() {
+        runningRaceWithEntry11(new LiveRaceState());
+        entry11("1111111", null);
+        when(swapService.swap(anyLong(), anyLong(), any(), any(), anyLong()))
+                .thenReturn(new SwapResult.TransponderAlreadyAssigned());
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
+    }
+
+    private void entry11(String primary, String secondary) {
+        when(labels.eventOf(7L)).thenReturn(5L);
+        Entry entry = new Entry();
+        entry.setId(11L);
+        entry.setTransponderNumberSnapshot(primary);
+        entry.setSecondaryTransponderNumber(secondary);
+        when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
     }
 
     private void runningRaceWithEntry11(LiveRaceState state) {
