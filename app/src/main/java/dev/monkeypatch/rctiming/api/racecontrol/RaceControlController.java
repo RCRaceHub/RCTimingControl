@@ -12,10 +12,13 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.MarshalService;
+import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +55,8 @@ public class RaceControlController {
     private final RoundRepository roundRepository;
     private final AuditService audit;
     private final ResultSnapshotRepository resultSnapshotRepository;
+    private final QualifyingTableService qualifyingTableService;
+    private final AutoFinalsSeedingService finalsSeedingService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
                                   RaceRepository raceRepository,
@@ -60,7 +65,9 @@ public class RaceControlController {
                                   LapTimingService lapTimingService,
                                   RoundRepository roundRepository,
                                   AuditService audit,
-                                  ResultSnapshotRepository resultSnapshotRepository) {
+                                  ResultSnapshotRepository resultSnapshotRepository,
+                                  QualifyingTableService qualifyingTableService,
+                                  AutoFinalsSeedingService finalsSeedingService) {
         this.runOrderQuery = runOrderQuery;
         this.raceRepository = raceRepository;
         this.stateMachine = stateMachine;
@@ -69,6 +76,8 @@ public class RaceControlController {
         this.roundRepository = roundRepository;
         this.audit = audit;
         this.resultSnapshotRepository = resultSnapshotRepository;
+        this.qualifyingTableService = qualifyingTableService;
+        this.finalsSeedingService = finalsSeedingService;
     }
 
     /** The referee also reads the run order: it is how the Referee View picks a race (#107). */
@@ -76,6 +85,24 @@ public class RaceControlController {
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
+    }
+
+    /** Each class's overall qualifying table: the order its finals are seeded from. */
+    @GetMapping("/event/{eventId}/qualifying")
+    public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
+        return qualifyingTableService.forEvent(eventId);
+    }
+
+    /**
+     * Seeds the class's finals again from the qualifying results so far, for after a heat was re-run or corrected.
+     * Refused once a final has started.
+     */
+    @Audited("audit_log")
+    @PostMapping("/event/{eventId}/qualifying/{eventClassId}/seed-finals")
+    @Transactional
+    public ResponseEntity<Void> seedFinals(@PathVariable long eventId, @PathVariable long eventClassId) {
+        finalsSeedingService.reseed(CurrentOfficial.actor(), eventId, eventClassId);
+        return ResponseEntity.noContent().build();
     }
 
     @Audited("audit_log")

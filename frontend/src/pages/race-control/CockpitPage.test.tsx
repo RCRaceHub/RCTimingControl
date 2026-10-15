@@ -191,8 +191,8 @@ describe('CockpitPage final guard', () => {
   function runOrderWith(qualifierStatus: string) {
     mockRunOrder.mockReturnValue({
       data: [
-        { raceId: 4, status: qualifierStatus, roundType: 'QUALIFIER', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
-        { raceId: 5, status: 'PENDING', roundType: 'FINAL', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 4, eventClassId: 7, status: qualifierStatus, roundType: 'QUALIFIER', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 5, eventClassId: 7, status: 'PENDING', roundType: 'FINAL', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
       ],
       isLoading: false,
       isError: false,

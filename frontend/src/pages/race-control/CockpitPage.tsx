@@ -20,6 +20,7 @@ import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
+import { QualifyingTablePanel } from './panels/QualifyingTablePanel';
 import { AudioSettingsPanel } from './panels/AudioSettingsPanel';
 import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import {
@@ -260,7 +261,7 @@ export default function CockpitPage() {
       ? runOrder.filter(
           (r) =>
             r.roundType === 'QUALIFIER' &&
-            r.className === selectedRace.className &&
+            r.eventClassId === selectedRace.eventClassId &&
             r.status !== 'FINISHED',
         ).length
       : 0;
@@ -399,6 +400,13 @@ export default function CockpitPage() {
                 {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
                 {selectedRace.className} still to finish before this final can run.
               </p>
+            )}
+            {selectedRace.roundType === 'FINAL' && (
+              <QualifyingTablePanel
+                eventId={eventId}
+                eventClassId={selectedRace.eventClassId}
+                canSeed={canControlRace}
+              />
             )}
           </div>
         );

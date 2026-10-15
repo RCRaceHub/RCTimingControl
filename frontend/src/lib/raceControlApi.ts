@@ -34,6 +34,7 @@ export type PreRaceReadinessDto = {
 
 export type RunOrderItemDto = {
   raceId: number;
+  eventClassId: number;
   sequenceInEvent: number;
   roundNumber: number;
   roundType: 'PRACTICE' | 'QUALIFIER' | 'FINAL';
@@ -367,4 +368,30 @@ export type RaceHistoryItem = {
 export async function getRaceHistory(raceId: number): Promise<RaceHistoryItem[]> {
   const { data } = await api.get<RaceHistoryItem[]>(`/api/v1/race-control/race/${raceId}/history`);
   return data;
+}
+
+export type QualifyingTableRow = {
+  position: number;
+  entryId: number;
+  driverName: string;
+  lapsCompleted: number;
+  bestLapMs: number | null;
+};
+
+export type QualifyingTable = {
+  eventClassId: number;
+  className: string;
+  heatsFinished: number;
+  heatsTotal: number;
+  finalsStarted: boolean;
+  rows: QualifyingTableRow[];
+};
+
+export async function getQualifying(eventId: number): Promise<QualifyingTable[]> {
+  const { data } = await api.get<QualifyingTable[]>(`/api/v1/race-control/event/${eventId}/qualifying`);
+  return data;
+}
+
+export async function seedFinalsFromQualifying(eventId: number, eventClassId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/event/${eventId}/qualifying/${eventClassId}/seed-finals`);
 }
