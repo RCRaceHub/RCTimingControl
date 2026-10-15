@@ -243,6 +243,8 @@ class TransponderLinkServiceTest {
         entry.setTransponderNumberSnapshot(primary);
         entry.setSecondaryTransponderNumber(secondary);
         when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
+        lenient().when(swapService.swap(anyLong(), anyLong(), any(), any(), anyLong()))
+                .thenReturn(new SwapResult.Success(entry, TransponderSlot.PRIMARY, primary, "1234567"));
     }
 
     private void runningRaceWithEntry11(LiveRaceState state) {
