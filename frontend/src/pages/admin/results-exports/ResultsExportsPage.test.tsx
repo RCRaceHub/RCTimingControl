@@ -6,7 +6,7 @@ import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -46,6 +46,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: true,
       resultsUrl: 'https://racehub.example/api/results',
+      savedUrl: null,
       missingSettings: [],
       exports: [
         row({ id: 3, revision: 3, reason: 'CORRECTION', status: 'FAILED', attempts: 2, lastError: 'RaceHub answered 503', sentAt: null }),
@@ -67,6 +68,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: true,
       resultsUrl: 'https://racehub.example/api/results',
+      savedUrl: null,
       missingSettings: [],
       exports: [row({ id: 7, revision: 4, status: 'FAILED', lastError: 'Connection refused', sentAt: null })],
     });
@@ -83,13 +85,14 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: false,
       resultsUrl: null,
-      missingSettings: ['rctiming.racehub.results-url', 'rctiming.racehub.token'],
+      savedUrl: null,
+      missingSettings: ['the RaceHub address', 'rctiming.racehub.token'],
       exports: [row({ status: 'QUEUED', attempts: 0, sentAt: null })],
     });
     renderPage();
 
     expect(await screen.findByText('No RaceHub address is set, so results wait here.')).toBeInTheDocument();
-    expect(screen.getByText('rctiming.racehub.results-url')).toBeInTheDocument();
+    expect(screen.getByText(/Enter the address above/)).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
     expect(screen.getByText('Waiting to send')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /now$/ })).not.toBeInTheDocument();
@@ -99,6 +102,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: false,
       resultsUrl: 'https://racehub.example/api/results',
+      savedUrl: null,
       missingSettings: ['rctiming.racehub.token'],
       exports: [],
     });
@@ -106,12 +110,29 @@ describe('ResultsExportsPage', () => {
 
     expect(await screen.findByText('No RaceHub key is set, so results wait here.')).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
-    expect(screen.queryByText('rctiming.racehub.results-url')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Enter the address above/)).not.toBeInTheDocument();
+  });
+
+  it('saves a RaceHub address typed in', async () => {
+    api.resultsExports.list.mockResolvedValue({
+      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: ['the RaceHub address'], exports: [],
+    });
+    api.resultsExports.setAddress.mockResolvedValue({
+      sendingEnabled: false, resultsUrl: 'https://racehub.example/r', savedUrl: 'https://racehub.example/r',
+      missingSettings: ['rctiming.racehub.token'], exports: [],
+    });
+    renderPage();
+
+    fireEvent.change(await screen.findByLabelText('RaceHub address'), { target: { value: 'https://racehub.example/r' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(api.resultsExports.setAddress).toHaveBeenCalledWith('https://racehub.example/r', expect.anything()));
+    await waitFor(() => expect(api.resultsExports.list).toHaveBeenCalledTimes(2));
   });
 
   it('shows an empty state before anything is sent', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: true, resultsUrl: 'https://racehub.example/r', missingSettings: [], exports: [],
+      sendingEnabled: true, resultsUrl: 'https://racehub.example/r', savedUrl: null, missingSettings: [], exports: [],
     });
     renderPage();
 

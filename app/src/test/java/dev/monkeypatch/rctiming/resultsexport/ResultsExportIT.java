@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
@@ -57,6 +58,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
     @Autowired ResultsOutboxRepository outboxRepository;
     @Autowired EventRepository eventRepository;
     @Autowired ResultsExportService exportService;
+    @Autowired ClubProfileService clubProfileService;
     @Autowired RestClient.Builder restClientBuilder;
 
     private String token;
@@ -394,7 +396,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(list.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(list.getBody().get("sendingEnabled").asBoolean()).isFalse();
         assertThat(list.getBody().get("missingSettings").toString())
-                .contains("rctiming.racehub.results-url").contains("rctiming.racehub.token");
+                .contains("the RaceHub address").contains("rctiming.racehub.token");
         assertThat(list.getBody().get("exports").findValuesAsText("eventName")).contains("Results export " + run);
 
         ResponseEntity<Void> retry = restTemplate.exchange("/api/v1/admin/results-exports/" + item.getId() + "/retry",
@@ -411,6 +413,31 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(download.getHeaders().getContentDisposition().getFilename())
                 .isEqualTo("results-event-" + eventId + "-r1.json");
         assertThat(json(download.getBody()).at("/races/0/results/0/entry_id").asText()).isEqualTo("a1-" + run);
+    }
+
+    @Test
+    void adminsCanSetAndClearTheRaceHubAddress() {
+        String url = "https://racehub-" + run + ".example/api/results";
+        ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/results-exports/address", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("resultsUrl", url), headers()), JsonNode.class);
+        assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(set.getBody().get("resultsUrl").asText()).isEqualTo(url);
+        assertThat(set.getBody().get("savedUrl").asText()).isEqualTo(url);
+        assertThat(jdbc.queryForList("select * from audit_log where action = 'RACEHUB_RESULTS_URL_CHANGED'"))
+                .isNotEmpty();
+
+        // Plain http to another machine would send the key in the clear
+        ResponseEntity<String> refused = restTemplate.exchange("/api/v1/admin/results-exports/address",
+                HttpMethod.PUT, new HttpEntity<>(Map.of("resultsUrl", "http://racehub.example/results"), headers()),
+                String.class);
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(clubProfileService.getRaceHubResultsUrl()).contains(url);
+
+        ResponseEntity<JsonNode> cleared = restTemplate.exchange("/api/v1/admin/results-exports/address",
+                HttpMethod.PUT, new HttpEntity<>(Map.of("resultsUrl", " "), headers()), JsonNode.class);
+        assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cleared.getBody().get("savedUrl").isNull()).isTrue();
+        assertThat(clubProfileService.getRaceHubResultsUrl()).isEmpty();
     }
 
     @Test
@@ -499,7 +526,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
     private ResultsSender sender(int port) {
         var properties = new RaceHubResultsProperties(URI.create("http://127.0.0.1:" + port + "/api/results"), "club-token");
-        return new ResultsSender(outboxRepository, eventRepository, properties, restClientBuilder);
+        return new ResultsSender(outboxRepository, eventRepository,
+                new RaceHubResultsEndpoint(properties, clubProfileService), restClientBuilder);
     }
 
     private static int freePort() throws IOException {

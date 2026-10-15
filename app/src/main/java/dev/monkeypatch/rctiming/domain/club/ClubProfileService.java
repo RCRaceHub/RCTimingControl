@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,6 +216,28 @@ public class ClubProfileService {
                 .before(before).after(decoderValues(saved)).record();
         eventPublisher.publishEvent(new DecoderSettingsChangedEvent(new DecoderSettings(host, port, protocol)));
         return saved;
+    }
+
+    /** The RaceHub address set in the admin panel, or empty when the club has not set one. */
+    @Transactional(readOnly = true)
+    public Optional<String> getRaceHubResultsUrl() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getRacehubResultsUrl)
+                .filter(url -> !url.isBlank());
+    }
+
+    /** Sets the RaceHub address results are sent to; null or blank clears it, so the settings file's applies. */
+    public void updateRaceHubResultsUrl(Actor actor, String url) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        String before = profile.getRacehubResultsUrl();
+        String cleaned = url == null || url.isBlank() ? null : url.strip();
+        profile.setRacehubResultsUrl(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        audit.entry(actor, "RACEHUB_RESULTS_URL_CHANGED").entity("club_profile", saved.getId())
+                .summary(cleaned == null ? "Cleared the RaceHub results address"
+                        : "Changed the RaceHub results address to " + cleaned)
+                .before(Collections.singletonMap("resultsUrl", before))
+                .after(Collections.singletonMap("resultsUrl", cleaned)).record();
     }
 
     private static Map<String, Object> profileValues(ClubProfile p) {

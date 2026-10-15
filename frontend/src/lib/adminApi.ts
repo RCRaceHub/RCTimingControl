@@ -558,8 +558,11 @@ export interface ResultsExportRowDto {
 export interface ResultsExportsDto {
   /** Whether the RaceHub address and key are both set; without them, exports wait in the queue */
   sendingEnabled: boolean;
+  /** The address in use: the one set here, else the settings file's */
   resultsUrl: string | null;
-  /** The settings still needed before anything is sent */
+  /** The address set here, or null when the settings file's is in use */
+  savedUrl: string | null;
+  /** What is still needed before anything is sent */
   missingSettings: string[];
   /** Newest first */
   exports: ResultsExportRowDto[];
@@ -871,6 +874,9 @@ export const adminApi = {
       api.get<ResultsExportsDto>('/api/v1/admin/results-exports').then(r => r.data),
     retry: (id: number) =>
       api.post(`/api/v1/admin/results-exports/${id}/retry`).then(() => undefined),
+    /** Blank clears it, so the settings file's address applies */
+    setAddress: (resultsUrl: string) =>
+      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api

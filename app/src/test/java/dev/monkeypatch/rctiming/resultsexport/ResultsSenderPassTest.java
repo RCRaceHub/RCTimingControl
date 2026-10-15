@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
 import com.sun.net.httpserver.HttpServer;
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -102,7 +103,8 @@ class ResultsSenderPassTest {
         raceHub.start();
         var properties = new RaceHubResultsProperties(
                 URI.create("http://127.0.0.1:" + raceHub.getAddress().getPort() + "/api/results"), "club-token");
-        return new ResultsSender(outbox, events, properties, RestClient.builder());
+        return new ResultsSender(outbox, events,
+                new RaceHubResultsEndpoint(properties, mock(ClubProfileService.class)), RestClient.builder());
     }
 
     private static ResultsOutboxItem item(long id, long eventId, long revision) {
