@@ -1,5 +1,6 @@
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
+import { FinishedFlag } from '@/components/FinishedFlag';
 
 function gap(row: LiveTimingRowDto): string {
   if (row.position === 1) return '—';
@@ -24,7 +25,7 @@ export function BoardLiveTable({ rows }: { rows: LiveTimingRowDto[] }) {
         {rows.map((row) => (
           <tr key={row.entryId} className="border-b border-slate-800">
             <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
-            <td className="py-3 pr-4 font-semibold">{row.driverName}</td>
+            <td className="py-3 pr-4 font-semibold">{row.driverName}{row.finished && <FinishedFlag />}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>

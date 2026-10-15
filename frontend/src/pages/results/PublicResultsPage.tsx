@@ -6,6 +6,7 @@ import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 import { getApiErrorStatus } from '@/lib/errors';
 import PrivacyLink from '@/components/layout/PrivacyLink';
+import { FinishedFlag } from '@/components/FinishedFlag';
 
 function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: PositionAtLap[] }) {
   const laps = lapHistory.filter(l => l.entryId === entryId);
@@ -121,7 +122,7 @@ export default function PublicResultsPage() {
                 onClick={() => setExpandedEntryId(expandedEntryId === row.entryId ? null : row.entryId)}
               >
                 <td className="py-2 pr-4 font-mono">{row.position}</td>
-                <td className="py-2 pr-4">{row.driverName}</td>
+                <td className="py-2 pr-4">{row.driverName}<FinishedFlag /></td>
                 <td className="py-2 pr-4 text-right font-mono">{row.carNumber ?? '—'}</td>
                 <td className="py-2 pr-4 text-right font-mono">{row.lapsCompleted}</td>
                 <td className="py-2 pr-4 text-right font-mono">

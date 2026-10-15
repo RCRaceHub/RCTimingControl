@@ -13,6 +13,7 @@ import {
 import { Printer } from 'lucide-react';
 import { fmtMs } from '@/lib/format';
 import { formatTime } from '@/lib/dates';
+import { FinishedFlag } from '@/components/FinishedFlag';
 
 type Props = {
   raceId: number;
@@ -86,7 +87,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
           {data.positions.map((row) => (
             <TableRow key={row.entryId}>
               <TableCell className="font-semibold">{row.position}</TableCell>
-              <TableCell>{row.driverName}</TableCell>
+              <TableCell>{row.driverName}<FinishedFlag /></TableCell>
               <TableCell>{row.carNumber ?? '—'}</TableCell>
               <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
               <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
