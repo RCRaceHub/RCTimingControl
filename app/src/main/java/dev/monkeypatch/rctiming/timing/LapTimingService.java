@@ -14,6 +14,8 @@ import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
@@ -57,17 +59,36 @@ public class LapTimingService {
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final LapThresholdQuery lapThresholdQuery;
+    private final RaceClockService raceClockService;
+    private final ApplicationEventPublisher publisher;
+    /** Timed races whose clock has run out. Never goes back for the same run, since a clock only counts up. */
+    private final Set<Long> clockExpired = ConcurrentHashMap.newKeySet();
 
+    /** Without a race clock, no race ever reaches the flag: its finish is left to the director. */
     public LapTimingService(LiveTimingHub liveTimingHub,
                             RaceEntryRepository raceEntryRepository,
                             EntryRepository entryRepository,
                             CompetitorRepository competitorRepository,
                             LapThresholdQuery lapThresholdQuery) {
+        this(liveTimingHub, raceEntryRepository, entryRepository, competitorRepository, lapThresholdQuery,
+                null, null);
+    }
+
+    @Autowired
+    public LapTimingService(LiveTimingHub liveTimingHub,
+                            RaceEntryRepository raceEntryRepository,
+                            EntryRepository entryRepository,
+                            CompetitorRepository competitorRepository,
+                            LapThresholdQuery lapThresholdQuery,
+                            RaceClockService raceClockService,
+                            ApplicationEventPublisher publisher) {
         this.liveTimingHub = liveTimingHub;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.lapThresholdQuery = lapThresholdQuery;
+        this.raceClockService = raceClockService;
+        this.publisher = publisher;
     }
 
     /**
@@ -130,13 +151,35 @@ public class LapTimingService {
             entryId = resolveEntryId(raceId, transponderNumber);
         }
 
-        boolean firstUnknown = state.applyLapPassing(event, entryId);
+        boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
+                clockExpired(raceId));
 
         if (entryId == null && firstUnknown) {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
         }
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+
+        if (publisher != null && state.takeFinishRequest()) {
+            publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
+        }
+    }
+
+    /** Whether the race has a length and its clock has run out, so the next lap a car counts is its last. */
+    private boolean clockExpired(long raceId) {
+        if (raceClockService == null) {
+            return false;
+        }
+        if (clockExpired.contains(raceId)) {
+            return true;
+        }
+        boolean expired = raceClockService.clock(raceId)
+                .map(clock -> clock.durationMs() != null && clock.remainingMs() <= 0)
+                .orElse(false);
+        if (expired) {
+            clockExpired.add(raceId);
+        }
+        return expired;
     }
 
     /**
@@ -168,6 +211,7 @@ public class LapTimingService {
      */
     public void releaseState(long raceId) {
         released.add(raceId);
+        clockExpired.remove(raceId);
         states.remove(raceId);
     }
 
@@ -178,6 +222,9 @@ public class LapTimingService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.GRID) {
+            clockExpired.remove(event.getRaceId());
+        }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
         }

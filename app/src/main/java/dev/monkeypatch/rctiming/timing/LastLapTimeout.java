@@ -1,20 +1,14 @@
 package dev.monkeypatch.rctiming.timing;
 
-import dev.monkeypatch.rctiming.domain.audit.Actor;
-import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
-import dev.monkeypatch.rctiming.domain.race.RaceStateMachineService;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
-import dev.monkeypatch.rctiming.domain.race.Round;
-import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Optional;
 
@@ -25,9 +19,9 @@ import java.util.Optional;
  * clock expired if none has counted since. A race with no length (a fixed number of laps), no track or no
  * max last lap is left for the race director.
  *
- * <p>It finishes the race the way the finish command does, so the result, the next heat's grid and the exports
- * follow, and writes an audit row from {@code system:last-lap-timeout}. Only the running race is looked at: a
- * stopped race is paused, and its clock is not expiring.
+ * <p>It finishes the race through {@link AutoFinish}, as {@code system:last-lap-timeout}. This is the backstop: the
+ * race normally finishes sooner, once every car has taken the flag. Only the running race is looked at: a stopped
+ * race is paused, and its clock is not expiring.
  */
 @Component
 public class LastLapTimeout {
@@ -35,26 +29,19 @@ public class LastLapTimeout {
     private static final Logger log = LoggerFactory.getLogger(LastLapTimeout.class);
 
     private final RaceRepository raceRepository;
-    private final RoundRepository roundRepository;
     private final RaceClockService raceClockService;
     private final LapTimingService lapTimingService;
     private final LapThresholdQuery lapThresholdQuery;
-    private final RaceStateMachineService stateMachine;
-    private final AuditService audit;
-    private final TransactionTemplate transactions;
+    private final AutoFinish autoFinish;
 
-    public LastLapTimeout(RaceRepository raceRepository, RoundRepository roundRepository,
+    public LastLapTimeout(RaceRepository raceRepository,
                           RaceClockService raceClockService, LapTimingService lapTimingService,
-                          LapThresholdQuery lapThresholdQuery, RaceStateMachineService stateMachine,
-                          AuditService audit, TransactionTemplate transactions) {
+                          LapThresholdQuery lapThresholdQuery, AutoFinish autoFinish) {
         this.raceRepository = raceRepository;
-        this.roundRepository = roundRepository;
         this.raceClockService = raceClockService;
         this.lapTimingService = lapTimingService;
         this.lapThresholdQuery = lapThresholdQuery;
-        this.stateMachine = stateMachine;
-        this.audit = audit;
-        this.transactions = transactions;
+        this.autoFinish = autoFinish;
     }
 
     /**
@@ -99,21 +86,7 @@ public class LastLapTimeout {
     }
 
     private void finish(long raceId, long maxLastLapMs) {
-        transactions.executeWithoutResult(status -> {
-            // Look again inside the transaction: the director may have finished or restarted it meanwhile
-            Race race = raceRepository.findById(raceId).orElse(null);
-            if (race == null || race.getStatus() != RaceStatus.RUNNING) {
-                return;
-            }
-            stateMachine.finish(race);
-            Long eventId = roundRepository.findById(race.getRoundId()).map(Round::getEventId).orElse(null);
-            audit.entry(Actor.system("last-lap-timeout"), "RACE_FINISHED")
-                    .entity("race", raceId).race(raceId).event(eventId)
-                    .summary("Finished the race automatically: no lap counted for " + maxLastLapMs / 1000
-                            + " seconds after the clock ran out")
-                    .before(RaceStatus.RUNNING).after(RaceStatus.FINISHED)
-                    .record();
-            log.info("Race {} finished by the last lap timeout", raceId);
-        });
+        autoFinish.finish(raceId, "last-lap-timeout", "Finished the race automatically: no lap counted for "
+                + maxLastLapMs / 1000 + " seconds after the clock ran out");
     }
 }
