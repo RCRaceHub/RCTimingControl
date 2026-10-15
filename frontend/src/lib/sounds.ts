@@ -21,10 +21,43 @@ const FINISH_BLASTS: Blast[] = [
 // server message, not a click, may find it suspended until it is resumed
 let shared: AudioContext | null = null;
 
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((listener) => listener());
+
 function context(): AudioContext {
-  if (!shared || shared.state === 'closed') shared = new AudioContext();
-  if (shared.state === 'suspended') void shared.resume().catch(() => undefined);
+  if (!shared || shared.state === 'closed') {
+    shared = new AudioContext();
+    shared.onstatechange = notify;
+    notify();
+  }
+  if (shared.state !== 'running') void shared.resume().catch(() => undefined);
   return shared;
+}
+
+/**
+ * Whether the browser is holding the page's sound back, as its autoplay rule does until the page has had a click
+ * or key press. False before the first attempt to start audio, and where the browser has no audio at all.
+ */
+export function audioBlocked(): boolean {
+  return shared != null && shared.state !== 'running';
+}
+
+/** Calls the listener whenever the audio context is created or changes state; returns the way to stop. */
+export function subscribeAudioState(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Starts the audio context, on page load and again from a click or key press, which the browser then lets sound. */
+export function unlockAudio() {
+  if (typeof AudioContext === 'undefined') return;
+  try {
+    context();
+  } catch (e) {
+    console.warn('Audio unlock failed:', e);
+  }
 }
 
 function play(blasts: Blast[], volume: number, wave: OscillatorType) {

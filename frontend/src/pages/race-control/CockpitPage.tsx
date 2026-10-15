@@ -8,6 +8,7 @@ import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
+import { useAudioAllowed } from '@/hooks/race-control/useAudioAllowed';
 import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
 import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
@@ -78,6 +79,7 @@ export default function CockpitPage() {
   const { rows: liveRows } = useLiveTiming(selectedRaceId);
 
   const [volumePercent] = useAudioVolume();
+  const audio = useAudioAllowed();
 
   // Fetch audio settings — shared query key with AudioSettingsPanel so only one request fires
   const { data: audioSettings } = useQuery({
@@ -480,6 +482,18 @@ export default function CockpitPage() {
               </Button>
             </div>
           )}
+
+        {audio.blocked && (
+          <div
+            role="status"
+            className="m-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+          >
+            <p>This browser is blocking sound until you click on the page.</p>
+            <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={audio.unlock}>
+              Enable sound
+            </Button>
+          </div>
+        )}
 
         <AudioSettingsPanel />
       </aside>
