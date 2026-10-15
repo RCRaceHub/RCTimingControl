@@ -242,6 +242,7 @@ export interface GenerateRoundsRequest {
   practiceRoundsCount: number;
   qualifyingRoundsCount: number;
   maxCarsPerHeat: number;
+  minCarsPerHeat: number;
   classFinalsConfigs: ClassFinalsConfigDto[];
 }
 

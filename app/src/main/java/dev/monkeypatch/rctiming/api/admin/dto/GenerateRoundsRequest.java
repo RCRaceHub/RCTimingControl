@@ -12,6 +12,7 @@ public record GenerateRoundsRequest(
         @Min(0) @Max(10) int practiceRoundsCount,
         @Min(1) @Max(10) int qualifyingRoundsCount,
         @Min(1) @Max(64) int maxCarsPerHeat,
+        @Min(1) @Max(64) Integer minCarsPerHeat,
         @NotNull List<@NotNull @Valid ClassFinalsConfigDto> classFinalsConfigs
 ) {
     /**
@@ -24,7 +25,9 @@ public record GenerateRoundsRequest(
     ) {}
 
     public RoundGenerationRequest toServiceRequest(long eventId) {
-        return new RoundGenerationRequest(eventId, practiceRoundsCount, qualifyingRoundsCount, maxCarsPerHeat,
+        int min = Math.min(maxCarsPerHeat, minCarsPerHeat != null
+                ? minCarsPerHeat : RoundGenerationRequest.DEFAULT_MIN_CARS_PER_HEAT);
+        return new RoundGenerationRequest(eventId, practiceRoundsCount, qualifyingRoundsCount, maxCarsPerHeat, min,
                 classFinalsConfigs.stream()
                         .map(c -> new RoundGenerationRequest.ClassFinalsConfig(
                                 c.eventClassId(), c.finalsCount()))
