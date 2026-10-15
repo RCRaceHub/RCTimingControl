@@ -19,6 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -152,7 +153,7 @@ public class LapTimingService {
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
 
-        if (state.takeFinishRequest()) {
+        if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
         }
     }
@@ -174,6 +175,16 @@ public class LapTimingService {
         return elapsedMs >= plan.durationMs() + state.startOffsetMs(entryId);
     }
 
+    /** Whether the last car to start has had its whole window: until then a car yet to cross the line may be racing. */
+    private boolean allWindowsEnded(long raceId, LiveRaceState state) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.durationMs() == null) {
+            return false;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        return elapsedMs >= plan.durationMs() + state.lastStartOffsetMs();
+    }
+
     private RaceClockService.RacePlan planOf(long raceId) {
         return plans.computeIfAbsent(raceId, id -> raceClockService.planOf(id).orElse(RaceClockService.RacePlan.NONE));
     }
@@ -183,7 +194,12 @@ public class LapTimingService {
         long intervalMs = planOf(raceId).staggerIntervalMs();
         Map<Long, Long> offsets = new HashMap<>();
         if (intervalMs > 0) {
-            List<RaceEntry> inGridOrder = raceEntryRepository.findByRaceIdOrderByGridPosition(raceId);
+            // The order the drivers are called in: grid position, an entry with none last, then by entry
+            List<RaceEntry> inGridOrder = raceEntryRepository.findByRaceIdOrderByGridPosition(raceId).stream()
+                    .sorted(Comparator
+                            .comparing(RaceEntry::getGridPosition, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(RaceEntry::getEntryId))
+                    .toList();
             for (int i = 0; i < inGridOrder.size(); i++) {
                 offsets.put(inGridOrder.get(i).getEntryId(), i * intervalMs);
             }

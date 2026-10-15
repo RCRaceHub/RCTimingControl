@@ -8,9 +8,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
-import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
-import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -133,14 +131,14 @@ public class RaceClockService {
     @Transactional(readOnly = true)
     public Optional<RacePlan> planOf(long raceId) {
         return raceRepository.findById(raceId).map(race -> {
-            Optional<EventClass> eventClass = race.getEventClassId() == null ? Optional.empty()
-                    : eventClassRepository.findById(race.getEventClassId());
-            Optional<RoundType> roundType = roundRepository.findById(race.getRoundId()).map(Round::getType);
-            long intervalMs = 0;
-            if (eventClass.isPresent() && roundType.isPresent()
-                    && raceFormatService.startType(eventClass.get(), roundType.get()) == StartType.STAGGER) {
-                intervalMs = raceFormatService.staggerIntervalSeconds(eventClass.get()) * 1000L;
-            }
+            EventClass eventClass = race.getEventClassId() == null ? null
+                    : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+            // As the pre-race readiness does: the race's own start, else the format's
+            StartType startType = race.getStartType() != null ? race.getStartType()
+                    : roundRepository.findById(race.getRoundId())
+                            .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
+            long intervalMs = startType == StartType.STAGGER
+                    ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
             return new RacePlan(durationMs(race), intervalMs);
         });
     }

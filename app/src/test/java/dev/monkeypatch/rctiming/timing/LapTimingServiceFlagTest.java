@@ -155,4 +155,16 @@ class LapTimingServiceFlagTest {
         lapOf("1011", 70);
         verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
     }
+
+    @Test
+    void theRaceIsNotOverWhileTheLastCarToStartHasNotCrossed() {
+        staggerWithSecondCar(120_000);
+        // Car 10's window is up, car 11 left 2 minutes later and has not crossed the line yet
+        elapsedMs = 100_000;
+        lapOf("1010", 10);
+        elapsedMs = 305_000;
+        lapOf("1010", 40);
+
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+    }
 }

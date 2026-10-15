@@ -65,9 +65,12 @@ public class LiveRaceState {
         startOffsetMs.putAll(offsets);
     }
 
-    /** When the entry's own time on the track starts, in milliseconds after the race clock starts. */
+    /**
+     * When the entry's own time on the track starts, in milliseconds after the race clock starts. An entry added to
+     * the race after the offsets were set is taken as the last to start, so it is never flagged before its time.
+     */
     public synchronized long startOffsetMs(long entryId) {
-        return startOffsetMs.getOrDefault(entryId, 0L);
+        return startOffsetMs.getOrDefault(entryId, lastStartOffsetMs());
     }
 
     /** When the last car starts, in milliseconds after the race clock starts; 0 when they all start together. */
@@ -101,12 +104,13 @@ public class LiveRaceState {
     }
 
     /**
-     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race whose clock may have run out. When
-     * {@code clockExpired}, the passing that counts a lap is the car's last: it has taken the flag, and its later
-     * passings are kept in the history but not counted. A passing too soon to count (TRACK-02) does not flag the car.
+     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race with a length, where the car's time on
+     * the track may have run out. When {@code windowEnded}, the passing that counts a lap is the car's last: it has
+     * taken the flag, and its later passings are kept in the history but not counted. A passing too soon to count
+     * (TRACK-02) does not flag the car.
      */
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
-                                                boolean clockExpired) {
+                                                boolean windowEnded) {
         lapHistory.add(event);
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
@@ -126,7 +130,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
-            if (clockExpired) {
+            if (windowEnded) {
                 flagged.add(entryId);
             }
         }
