@@ -142,6 +142,7 @@
 - [x] **AUDIO-21**: A call between races, with a switch: after a race finishes, the next race and the drivers who marshal it (#283)
 - [x] **AUDIO-22**: The countdown clips are made for the club's own countdown intervals, and a race on the grid or running whose clips were lost (an app restart) has them made again when race control asks for them (#285)
 - [x] **AUDIO-23**: The club can replace the start and finish horns with its own sound files (mp3, wav or ogg, up to 1 MB and 10 seconds) and go back to the built-in ones; race control's test buttons also try the lap beep and the Piper voice, and say if Piper cannot be reached (#278, #281, #286)
+- [x] **AUDIO-24**: The club words what is said when a timed race's clock reaches zero (empty goes back to the standard wording), and each car's number and name is called as it takes the flag, with a switch for those calls; live timing marks a car that has finished
 
 ### Race Official Views
 
@@ -355,6 +356,7 @@
 | AUDIO-21 | Audio improvements | Complete (#283) |
 | AUDIO-22 | Audio improvements | Complete (#285) |
 | AUDIO-23 | Audio improvements | Complete (#278, #281, #286) |
+| AUDIO-24 | Audio improvements | Complete |
 | OFFICIAL-01 | Phase 4 | Complete |
 | OFFICIAL-02 | Phase 4 | Complete |
 | OFFICIAL-03 | Phase 4 | Complete |

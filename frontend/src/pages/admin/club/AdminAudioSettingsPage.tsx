@@ -114,6 +114,18 @@ export default function AdminAudioSettingsPage() {
               </div>
 
               <div className="space-y-2 pt-2">
+                <Label htmlFor="admin-time-up-text">When the race time is up, say</Label>
+                <Input
+                  id="admin-time-up-text"
+                  key={displaySettings.timeUpText}
+                  maxLength={200}
+                  defaultValue={displaySettings.timeUpText ?? ''}
+                  onBlur={(e) => setLocalSettings({ ...displaySettings, timeUpText: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
+              </div>
+
+              <div className="space-y-2 pt-2">
                 <Label htmlFor="default-voice">Default voice</Label>
                 {voicesLoading ? (
                   <p className="text-sm text-muted-foreground">Loading voices…</p>

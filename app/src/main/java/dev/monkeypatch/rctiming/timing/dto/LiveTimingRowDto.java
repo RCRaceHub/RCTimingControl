@@ -13,6 +13,8 @@ public record LiveTimingRowDto(
         int lapsDown,
         int intervalLapsDown,
         Long gapToLeaderMs,
-        Long gapToAheadMs
+        Long gapToAheadMs,
+        /** The car has taken the flag: its time on the track is up and its last lap has counted. */
+        boolean finished
 ) {
 }

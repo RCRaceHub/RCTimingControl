@@ -233,7 +233,8 @@ public class LiveRaceState {
                     lapsDown,
                     intervalLapsDown,
                     gapToLeader,
-                    gapToAhead
+                    gapToAhead,
+                    flagged.contains(pos.getEntryId())
             ));
             prevLastPassing = pos.getLastPassingTimeMs();
             prevLaps = pos.getLapsCompleted();

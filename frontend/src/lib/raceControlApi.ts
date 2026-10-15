@@ -91,6 +91,8 @@ export type LiveTimingRowDto = {
   intervalLapsDown: number;
   gapToLeaderMs: number | null;
   gapToAheadMs: number | null;
+  /** The car has taken the flag: its time is up and its last lap has counted. */
+  finished?: boolean;
 };
 
 export type RaceStateChangeDto = {

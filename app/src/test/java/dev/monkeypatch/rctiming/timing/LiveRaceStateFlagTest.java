@@ -84,4 +84,14 @@ class LiveRaceStateFlagTest {
     void noRaceIsOverBeforeAnyCarHasPassed() {
         assertThat(state.takeFinishRequest()).isFalse();
     }
+
+    @Test
+    void aCarThatTookTheFlagIsMarkedFinishedInLiveTiming() {
+        pass(1, 10, false);
+        pass(2, 12, false);
+        pass(1, 40, true);
+
+        assertThat(state.calculatePositions()).extracting(r -> r.entryId() + ":" + r.finished())
+                .containsExactlyInAnyOrder("1:true", "2:false");
+    }
 }

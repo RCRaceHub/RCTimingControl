@@ -122,6 +122,20 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void raceControlCanWordTheTimeCallAndSwitchOffTheCarFinishCalls() {
+        ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS,
+                Map.of("timeUpText", "Time up, one more lap.", "announceCarFinish", false));
+
+        assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saved.getBody().get("timeUpText").asText()).isEqualTo("Time up, one more lap.");
+        assertThat(saved.getBody().get("announceCarFinish").asBoolean()).isFalse();
+
+        ResponseEntity<JsonNode> reset = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("timeUpText", ""));
+        assertThat(reset.getBody().get("timeUpText").asText()).isEqualTo(ClubAudioSettings.DEFAULT_TIME_UP_TEXT);
+        assertThat(reset.getBody().get("announceCarFinish").asBoolean()).isFalse();
+    }
+
+    @Test
     void countdownIntervalsThatWouldFloodTheSpeechEngineAreRefused() {
         assertThat(call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("countdownIntervals", new int[]{0}))
                 .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
