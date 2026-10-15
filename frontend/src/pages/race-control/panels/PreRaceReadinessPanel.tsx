@@ -52,9 +52,9 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h3 className="text-sm font-semibold mb-2">Marshal Duty</h3>
-          {data.firstRaceOfEvent ? (
+          {data.marshalDuty.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No previous race — first race of the event.
+              No marshals — no other race in this round to marshal it.
             </p>
           ) : (
             <Table>

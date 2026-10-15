@@ -100,11 +100,29 @@ public class PreRaceReadinessQuery {
                 .fetchOne();
 
         boolean firstRaceOfEvent = (previousRaceRow == null);
+
+        // The first race of the event has no race before it, so the last race of its own round
+        // marshals it, the way the last heat of a round marshals the first heat of the next.
+        Long marshalRaceId = previousRaceRow != null ? previousRaceRow.get(RACES.ID) : null;
+        if (marshalRaceId == null) {
+            var lastInRound = dsl
+                    .select(RACES.ID)
+                    .from(RACES)
+                    .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                    .where(ROUNDS.EVENT_ID.eq(eventId))
+                    .and(ROUNDS.SEQUENCE_IN_EVENT.eq(sequenceInEvent))
+                    .orderBy(RACES.SEQUENCE_IN_ROUND.desc())
+                    .limit(1)
+                    .fetchOne();
+            if (lastInRound != null && lastInRound.get(RACES.ID) != raceId) {
+                marshalRaceId = lastInRound.get(RACES.ID);
+            }
+        }
         List<MarshalDutyRowDto> marshalDuty;
 
-        if (previousRaceRow != null) {
-            // Build marshalDuty from previous race's entries + absence counts
-            long previousRaceId = previousRaceRow.get(RACES.ID);
+        if (marshalRaceId != null) {
+            // Build marshalDuty from the marshalling race's entries + absence counts
+            long previousRaceId = marshalRaceId;
 
             // Correlated subquery alias for absence count
             var absenceCount = DSL.select(DSL.count())

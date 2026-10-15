@@ -125,4 +125,15 @@ class RoundGeneratorServiceTest {
         assertThat(raceEntries).extracting(RaceEntry::getEntryId)
                 .containsExactlyInAnyOrderElementsOf(entries.stream().map(Entry::getId).toList());
     }
+
+    @Test
+    void heatCount_neverLeavesTwoOrMoreCarsInOneHeat() {
+        assertThat(RoundGeneratorService.heatCount(0, 10)).isZero();
+        assertThat(RoundGeneratorService.heatCount(1, 10)).isEqualTo(1);
+        assertThat(RoundGeneratorService.heatCount(2, 10)).isEqualTo(2);
+        assertThat(RoundGeneratorService.heatCount(8, 10)).isEqualTo(2);
+        assertThat(RoundGeneratorService.heatCount(10, 10)).isEqualTo(2);
+        assertThat(RoundGeneratorService.heatCount(11, 10)).isEqualTo(2);
+        assertThat(RoundGeneratorService.heatCount(21, 10)).isEqualTo(3);
+    }
 }
