@@ -22,11 +22,16 @@ import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { AudioSettingsPanel } from './panels/AudioSettingsPanel';
 import { RaceClockDisplay } from './panels/RaceClockDisplay';
+import {
+  useSidebarLayout,
+  SIDEBAR_MIN_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+} from '@/hooks/race-control/useSidebarLayout';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -95,6 +100,7 @@ export default function CockpitPage() {
   const { rows: liveRows } = useLiveTiming(selectedRaceId);
 
   const [volumePercent] = useAudioVolume();
+  const sidebar = useSidebarLayout();
   const audio = useAudioAllowed();
 
   // Fetch audio settings — shared query key with AudioSettingsPanel so only one request fires
@@ -517,11 +523,34 @@ export default function CockpitPage() {
 
   return (
     <div className="flex h-full gap-0">
-      <aside className="w-56 shrink-0 border-r overflow-y-auto">
-        <div className="px-4 py-3 border-b">
+      {sidebar.collapsed ? (
+        <div className="shrink-0 border-r px-1 py-2">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Show run order"
+            title="Show run order"
+            onClick={sidebar.toggleCollapsed}
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+      <>
+      <aside className="shrink-0 overflow-y-auto" style={{ width: sidebar.width }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Run Order
           </p>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Hide run order"
+            title="Hide run order"
+            onClick={sidebar.toggleCollapsed}
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </Button>
         </div>
         {isLoading ? (
           <div className="p-4 space-y-2">
@@ -577,7 +606,24 @@ export default function CockpitPage() {
         <AudioSettingsPanel />
       </aside>
 
-      <Separator orientation="vertical" />
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize run order"
+        aria-valuenow={sidebar.width}
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={SIDEBAR_MAX_WIDTH}
+        tabIndex={0}
+        title="Drag to resize, double-click to reset"
+        className={`w-1.5 shrink-0 cursor-col-resize border-r touch-none hover:bg-primary/30 focus-visible:bg-primary/30 focus-visible:outline-none ${
+          sidebar.dragging ? 'bg-primary/40' : ''
+        }`}
+        onPointerDown={sidebar.startDrag}
+        onKeyDown={sidebar.onHandleKeyDown}
+        onDoubleClick={sidebar.resetWidth}
+      />
+      </>
+      )}
 
       <main className="flex-1 overflow-y-auto p-6">
         {renderMainPanel()}
