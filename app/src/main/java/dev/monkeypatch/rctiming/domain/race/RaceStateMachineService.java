@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -39,6 +40,10 @@ public class RaceStateMachineService {
         VALID_TRANSITIONS = Map.copyOf(m);
     }
 
+    /** The states an abandon is allowed from: any that is not already finished. */
+    private static final Set<RaceStatus> ABANDONABLE =
+            EnumSet.of(RaceStatus.PENDING, RaceStatus.GRID, RaceStatus.RUNNING, RaceStatus.STOPPED);
+
     private final LiveTimingHub liveTimingHub;
     private final RoundGeneratorService roundGeneratorService;
     private final RaceRepository raceRepository;
@@ -47,6 +52,7 @@ public class RaceStateMachineService {
     private final ResultSnapshotService resultSnapshotService;
     private final ApplicationEventPublisher eventPublisher;
     private final BumpUpSeedingService bumpUpSeedingService;
+    private final AutoFinalsSeedingService autoFinalsSeedingService;
 
     public RaceStateMachineService(LiveTimingHub liveTimingHub,
                                    RoundGeneratorService roundGeneratorService,
@@ -55,7 +61,8 @@ public class RaceStateMachineService {
                                    RoundRepository roundRepository,
                                    ResultSnapshotService resultSnapshotService,
                                    ApplicationEventPublisher eventPublisher,
-                                   BumpUpSeedingService bumpUpSeedingService) {
+                                   BumpUpSeedingService bumpUpSeedingService,
+                                   AutoFinalsSeedingService autoFinalsSeedingService) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -64,18 +71,24 @@ public class RaceStateMachineService {
         this.resultSnapshotService = resultSnapshotService;
         this.eventPublisher = eventPublisher;
         this.bumpUpSeedingService = bumpUpSeedingService;
+        this.autoFinalsSeedingService = autoFinalsSeedingService;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every
     // listener reads them.
 
     public void callGrid(Race race) {
+        requireAllowed(race, RaceStatus.GRID);
+        requireQualifyingComplete(race);
         transition(race, RaceStatus.GRID);
     }
 
     /** Starts the race, or resumes a stopped one: a resume keeps the first start time, so the clock carries on. */
     public void start(Race race) {
         requireAllowed(race, RaceStatus.RUNNING);
+        if (race.getStatus() != RaceStatus.STOPPED) {
+            requireQualifyingComplete(race);
+        }
         if (race.getStartedAt() == null) {
             race.setStartedAt(Instant.now());
         }
@@ -92,13 +105,20 @@ public class RaceStateMachineService {
         transition(race, RaceStatus.FINISHED);
     }
 
-    /** Finishes the race and marks it abandoned at the same moment. */
+    /**
+     * Finishes the race and marks it abandoned at the same moment. Unlike a finish, a race that has not started
+     * can be abandoned too, so a heat that will never run (no one in it, or no-shows) stops holding up its class's
+     * finals.
+     */
     public void abandon(Race race) {
-        requireAllowed(race, RaceStatus.FINISHED);
+        if (!ABANDONABLE.contains(race.getStatus())) {
+            throw new IllegalStateTransitionException(
+                "Cannot abandon race " + race.getId() + " in state " + race.getStatus());
+        }
         Instant now = Instant.now();
         race.setFinishedAt(now);
         race.setAbandonedAt(now);
-        transition(race, RaceStatus.FINISHED);
+        move(race, RaceStatus.FINISHED);
     }
 
     /**
@@ -128,6 +148,11 @@ public class RaceStateMachineService {
      */
     void transition(Race race, RaceStatus target) {
         requireAllowed(race, target);
+        move(race, target);
+    }
+
+    /** The move itself, once the caller has checked it is allowed. */
+    private void move(Race race, RaceStatus target) {
         race.setStatus(target);
 
         // Save before anything reacts, so the result snapshot and the listeners read the race's new
@@ -144,6 +169,40 @@ public class RaceStateMachineService {
         if (target == RaceStatus.FINISHED) {
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
+            // After the snapshot, since the finals are seeded from the qualifying results stored with it
+            seedFinalsAfterQualifying(race);
+        }
+    }
+
+    /**
+     * A final can't be called to the grid or started until every qualifying heat for its class is finished
+     * (an abandoned heat counts as finished). Other races are not held up.
+     */
+    private void requireQualifyingComplete(Race race) {
+        Round round = roundRepository.findById(race.getRoundId()).orElse(null);
+        if (round == null || round.getType() != RoundType.FINAL) {
+            return;
+        }
+        long unfinished = raceRepository.findByEventClassIdAndRoundType(race.getEventClassId(), RoundType.QUALIFIER)
+                .stream().filter(q -> q.getStatus() != RaceStatus.FINISHED).count();
+        if (unfinished > 0) {
+            throw new IllegalStateTransitionException(
+                "Cannot call the grid for or start a final until all qualifying heats for its class are finished ("
+                + unfinished + " still to run)");
+        }
+    }
+
+    /** When the last qualifying heat of a class finishes, its finals are seeded from the qualifying results. */
+    private void seedFinalsAfterQualifying(Race finishedRace) {
+        Round round = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
+        if (round != null && round.getType() == RoundType.QUALIFIER) {
+            // Not allowed to fail the finish: the official can still seed the finals by hand
+            try {
+                autoFinalsSeedingService.seedIfQualifyingComplete(finishedRace.getEventClassId());
+            } catch (RuntimeException e) {
+                log.warn("Could not seed the finals of event class {} after race {} finished",
+                        finishedRace.getEventClassId(), finishedRace.getId(), e);
+            }
         }
     }
 

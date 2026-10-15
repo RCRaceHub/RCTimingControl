@@ -230,6 +230,18 @@ export default function CockpitPage() {
     setLinkTransponderNumber('');
   }
 
+  // A final can't be called or started until every qualifying heat for its class is finished
+  const unfinishedQualifiers =
+    selectedRace?.roundType === 'FINAL'
+      ? runOrder.filter(
+          (r) =>
+            r.roundType === 'QUALIFIER' &&
+            r.className === selectedRace.className &&
+            r.status !== 'FINISHED',
+        ).length
+      : 0;
+  const finalBlocked = unfinishedQualifiers > 0;
+
   function onCallGrid() {
     mutations.callGrid.mutate(undefined, {
       onError: commandFailed('Call grid'),
@@ -341,11 +353,28 @@ export default function CockpitPage() {
             <p className="text-sm text-muted-foreground">Race is pending. Call the grid when ready.</p>
             <Button
               onClick={onCallGrid}
-              disabled={mutations.callGrid.isPending}
+              disabled={mutations.callGrid.isPending || finalBlocked}
               className="w-fit"
             >
               {mutations.callGrid.isPending ? 'Calling grid…' : 'Call Grid'}
             </Button>
+            {canControlRace && (
+              <Button
+                variant="outline"
+                onClick={onAbandon}
+                disabled={mutations.abandon.isPending}
+                className="w-fit"
+                title="For a heat that will never run, such as one with no one in it"
+              >
+                Abandon heat
+              </Button>
+            )}
+            {finalBlocked && (
+              <p className="text-sm text-destructive">
+                {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
+                {selectedRace.className} still to finish before this final can run.
+              </p>
+            )}
           </div>
         );
 
@@ -355,8 +384,14 @@ export default function CockpitPage() {
             <GridEditorPanel
               raceId={selectedRace.raceId}
               onStart={startCountdown.begin}
-              isStarting={mutations.start.isPending || startCountdown.remaining != null}
+              isStarting={mutations.start.isPending || startCountdown.remaining != null || finalBlocked}
             />
+            {finalBlocked && (
+              <p className="text-sm text-destructive">
+                {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
+                {selectedRace.className} still to finish before this final can start.
+              </p>
+            )}
             {startCountdown.remaining != null && (
               <div className="flex items-center gap-3" role="status">
                 <span className="text-lg font-semibold">Starting in {startCountdown.remaining}…</span>
