@@ -95,13 +95,24 @@ class LapTimingServiceTransponderTest {
     }
 
     @Test
+    void theFirstPassingStartsTheFirstLapAndIsNotCounted() {
+        addEntry(1L, 10L, "1001", null, EntryStatus.CONFIRMED);
+
+        lap(1L, "1001", 1_000);
+        assertThat(lapsFor(1L, 10L)).isZero();
+
+        lap(1L, "1001", 31_000);
+        assertThat(lapsFor(1L, 10L)).isEqualTo(1);
+    }
+
+    @Test
     void secondaryTransponderGetsLaps() {
         addEntry(1L, 10L, "1001", "2002", EntryStatus.CONFIRMED);
 
         lap(1L, "1001", 1_000);
         lap(1L, "2002", 31_000);
 
-        assertThat(lapsFor(1L, 10L)).isEqualTo(2);
+        assertThat(lapsFor(1L, 10L)).isEqualTo(1);
         verify(hub, never()).broadcastUnknownTransponder(anyLong(), eq("2002"));
     }
 
@@ -112,7 +123,9 @@ class LapTimingServiceTransponderTest {
         addEntry(2L, 20L, "5555", null, EntryStatus.CONFIRMED);
 
         lap(1L, "5555", 1_000);
+        lap(1L, "5555", 31_000);
         lap(2L, "5555", 2_000);
+        lap(2L, "5555", 32_000);
 
         assertThat(lapsFor(1L, 10L)).isEqualTo(1);
         assertThat(lapsFor(2L, 20L)).isEqualTo(1);
@@ -142,7 +155,7 @@ class LapTimingServiceTransponderTest {
         service.linkTransponder(1L, "7777", 11L);
         lap(1L, "7777", 31_000);
 
-        assertThat(lapsFor(1L, 11L)).isEqualTo(2);
+        assertThat(lapsFor(1L, 11L)).isEqualTo(1);
         assertThat(lapsFor(1L, 10L)).isZero();
     }
 
@@ -152,6 +165,7 @@ class LapTimingServiceTransponderTest {
         addEntry(1L, 11L, "4444", null, EntryStatus.CONFIRMED);
 
         lap(1L, "4444", 1_000);
+        lap(1L, "4444", 31_000);
 
         assertThat(lapsFor(1L, 11L)).isEqualTo(1);
         verify(hub, never()).broadcastUnknownTransponder(anyLong(), eq("4444"));
@@ -182,7 +196,7 @@ class LapTimingServiceTransponderTest {
         lap(2L, "3003", 31_000);
         lap(2L, "1001", 32_000);
 
-        assertThat(lapsFor(2L, 10L)).isEqualTo(2);
+        assertThat(lapsFor(2L, 10L)).isEqualTo(1);
         verify(hub).broadcastUnknownTransponder(2L, "1001");
     }
 

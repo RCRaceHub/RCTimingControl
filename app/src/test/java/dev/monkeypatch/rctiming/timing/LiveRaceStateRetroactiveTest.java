@@ -30,7 +30,7 @@ class LiveRaceStateRetroactiveTest {
                 .filter(p -> p.entryId() == 100L)
                 .findFirst()
                 .orElseThrow();
-        assertThat(entry100.lapsCompleted()).isEqualTo(3);
+        assertThat(entry100.lapsCompleted()).isEqualTo(2);
     }
 
     @Test
