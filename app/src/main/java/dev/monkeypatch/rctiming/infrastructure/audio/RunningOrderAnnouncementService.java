@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.infrastructure.audio;
 
+import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
@@ -33,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Broadcasts the current running order to the race audio STOMP topic at regular intervals (AUDIO-06).
  * <p>
- * Interval schedule:
+ * Interval schedule, from the club's {@code audioSettings.tuning} (#299):
  * <ul>
  *   <li>First 10 minutes of a race: every 2 minutes</li>
  *   <li>After 10 minutes: every 5 minutes</li>
@@ -49,13 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RunningOrderAnnouncementService {
 
     private static final Logger log = LoggerFactory.getLogger(RunningOrderAnnouncementService.class);
-
-    /** Two-minute interval for the first 10 minutes of a race. */
-    private static final Duration INITIAL_INTERVAL = Duration.ofMinutes(2);
-    /** Five-minute interval after the first 10 minutes. */
-    private static final Duration LATER_INTERVAL = Duration.ofMinutes(5);
-    /** Period during which the shorter interval applies. */
-    private static final Duration INITIAL_PERIOD = Duration.ofMinutes(10);
 
     private final RaceRepository raceRepository;
     private final ClubProfileService clubProfileService;
@@ -133,7 +127,12 @@ public class RunningOrderAnnouncementService {
         }
 
         Instant now = Instant.now();
-        int announcementDepth = resolveAnnouncementDepth();
+        ClubAudioSettings settings = clubProfileService.audioSettings();
+        int announcementDepth = settings.runningOrderDepth();
+        ClubAudioSettings.Tuning tuning = settings.tuning();
+        Duration initialPeriod = Duration.ofMinutes(tuning.runningOrderEarlyPeriodMinutes());
+        Duration initialInterval = Duration.ofMinutes(tuning.runningOrderEarlyEveryMinutes());
+        Duration laterInterval = Duration.ofMinutes(tuning.runningOrderLaterEveryMinutes());
 
         for (Map.Entry<Long, Instant> entry : raceStartTimes.entrySet()) {
             Long raceId = entry.getKey();
@@ -149,7 +148,7 @@ public class RunningOrderAnnouncementService {
 
             // Determine which interval applies (first 10 min vs. thereafter)
             Duration elapsed = Duration.between(startTime, now);
-            Duration interval = elapsed.compareTo(INITIAL_PERIOD) < 0 ? INITIAL_INTERVAL : LATER_INTERVAL;
+            Duration interval = elapsed.compareTo(initialPeriod) < 0 ? initialInterval : laterInterval;
 
             // Check if enough time has passed since the last announcement
             Duration sinceLast = Duration.between(lastAnnouncement, now);
@@ -189,10 +188,6 @@ public class RunningOrderAnnouncementService {
                 .flatMap(competitorRepository::findById)
                 .map(Competitor::speechName)
                 .orElseGet(() -> SpeechName.tidy(row.driverName()));
-    }
-
-    private int resolveAnnouncementDepth() {
-        return clubProfileService.audioSettings().runningOrderDepth();
     }
 
     /**

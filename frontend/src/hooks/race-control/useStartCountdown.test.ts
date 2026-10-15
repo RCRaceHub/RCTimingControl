@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import type { AudioSettingsDto } from '@/lib/audioApi';
 import { useStartCountdown } from './useStartCountdown';
 
 const playTick = vi.fn();
@@ -37,7 +38,7 @@ describe('useStartCountdown', () => {
 
     act(() => { vi.advanceTimersByTime(4000); });
     expect(result.current.remaining).toBe(1);
-    expect(playTick).toHaveBeenLastCalledWith(1, true);
+    expect(playTick).toHaveBeenLastCalledWith(1, true, undefined);
     expect(onDone).not.toHaveBeenCalled();
 
     act(() => { vi.advanceTimersByTime(1000); });
@@ -75,6 +76,29 @@ describe('useStartCountdown', () => {
     act(() => result.current.begin());
     expect(speak).toHaveBeenCalledTimes(1);
     act(() => { vi.advanceTimersByTime(3000); });
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('says the clubs own lead-in and ticks the seconds it asks for', () => {
+    const onDone = vi.fn();
+    const settings = { wording: { startLeadIn: 'Get ready, {seconds} to go.' }, tuning: { finalSeconds: 2 } } as AudioSettingsDto;
+    const { result } = renderHook(() => useStartCountdown({ seconds: 4, volume: 1, onDone, watch: 'a', settings }));
+    act(() => result.current.begin());
+    expect(speak).toHaveBeenCalledWith('Get ready, 4 to go.', 1);
+
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(playTick).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(1000); });
+    expect(playTick).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not tick when the ticks are switched off', () => {
+    const onDone = vi.fn();
+    const settings = { tickSound: false } as AudioSettingsDto;
+    const { result } = renderHook(() => useStartCountdown({ seconds: 3, volume: 1, onDone, watch: 'a', settings }));
+    act(() => result.current.begin());
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(playTick).not.toHaveBeenCalled();
     expect(onDone).toHaveBeenCalledTimes(1);
   });
 });

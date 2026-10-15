@@ -5,7 +5,9 @@ import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.HornSoundService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -24,10 +26,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
+
 /**
  * Club-wide announcer settings (AUDIO-07), for admins and race directors. The PUT here replaces the toggles and
- * the default voice; the countdown intervals are not part of it and are left as they are. Race control's
- * {@code AudioSettingsController} updates any of the settings, intervals included.
+ * the default voice; the countdown intervals, wording and tuning are kept when it leaves them out.
  */
 @RestController
 @RequestMapping("/api/v1/admin/audio")
@@ -50,6 +53,7 @@ public class AdminAudioController {
             boolean announceRunningOrder,
             @Min(1) @Max(20) int runningOrderDepth,
             String defaultVoiceId,
+            @Size(max = 10) int[] countdownIntervals,
             Boolean startHorn,
             Boolean finishHorn,
             Boolean announceRaceCalls,
@@ -57,13 +61,26 @@ public class AdminAudioController {
             @Min(0) @Max(60) Integer startCountdownSeconds,
             ClubAudioSettings.HornSounds hornSounds,
             Boolean announceCarFinish,
-            @Size(max = 200) String timeUpText
+            @Size(max = 200) String timeUpText,
+            Boolean tickSound,
+            Boolean finalBeeps,
+            @Valid ClubAudioSettings.Wording wording,
+            @Valid ClubAudioSettings.Tuning tuning
     ) {
+        /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
+        @JsonIgnore
+        @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
+        public boolean isCountdownIntervalsInRange() {
+            return countdownIntervals == null || Arrays.stream(countdownIntervals).allMatch(i -> i >= 1 && i <= 3600);
+        }
+
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), defaultVoiceId,
+                    s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
+                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
+                    s.finalBeeps(), s.wording(), s.tuning());
         }
     }
 
@@ -89,7 +106,7 @@ public class AdminAudioController {
                     dto.announceFinish(),
                     dto.announceRunningOrder(),
                     dto.runningOrderDepth(),
-                    kept.countdownIntervals(),  // not part of this form: keep them
+                    dto.countdownIntervals() != null ? dto.countdownIntervals() : kept.countdownIntervals(),
                     // a field the form leaves out keeps its saved value
                     dto.startHorn() != null ? dto.startHorn() : kept.startHorn(),
                     dto.finishHorn() != null ? dto.finishHorn() : kept.finishHorn(),
@@ -98,7 +115,11 @@ public class AdminAudioController {
                     dto.startCountdownSeconds() != null ? dto.startCountdownSeconds() : kept.startCountdownSeconds(),
                     kept.hornSounds(),  // changed only by uploading or removing a sound
                     dto.announceCarFinish() != null ? dto.announceCarFinish() : kept.announceCarFinish(),
-                    dto.timeUpText() != null ? dto.timeUpText() : kept.timeUpText()
+                    dto.timeUpText() != null ? dto.timeUpText() : kept.timeUpText(),
+                    dto.tickSound() != null ? dto.tickSound() : kept.tickSound(),
+                    dto.finalBeeps() != null ? dto.finalBeeps() : kept.finalBeeps(),
+                    dto.wording() != null ? dto.wording() : kept.wording(),
+                    dto.tuning() != null ? dto.tuning() : kept.tuning()
             ));
             // No voice chosen on the page: keep the one stored (the column is NOT NULL)
             if (dto.defaultVoiceId() != null && !dto.defaultVoiceId().isBlank()) {
@@ -108,7 +129,7 @@ public class AdminAudioController {
         return ResponseEntity.ok(dto);
     }
 
-    /** Replaces the start or finish horn with the club's own sound file (#278, #281). */
+    /** Replaces the start or finish horn, the tick or the lap beep with the club's own sound file (#278, #281, #299). */
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
@@ -119,7 +140,7 @@ public class AdminAudioController {
                 .hornSounds();
     }
 
-    /** Goes back to the built-in horn. */
+    /** Goes back to the built-in sound. */
     @Audited("audit_log")
     @DeleteMapping("/horns/{horn}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")

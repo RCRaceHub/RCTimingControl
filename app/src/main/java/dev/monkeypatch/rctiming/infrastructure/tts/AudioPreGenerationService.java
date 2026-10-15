@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.infrastructure.tts;
 
+import dev.monkeypatch.rctiming.domain.club.AudioSettingsChangedEvent;
+import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
@@ -33,7 +35,8 @@ import java.util.concurrent.Executors;
  * <ul>
  *   <li>Countdown intervals: the club's {@code countdownIntervals} (10m, 5m, 2m, 1m, 30s unless changed)</li>
  *   <li>Grid calls: one per entry, keyed {@code grid-<entryId>}, saying the competitor's spoken name (or display name)</li>
- *   <li>Race finished: one clip, keyed {@code finish}</li>
+ *   <li>Race finished: one clip, keyed {@code finish}, in the club's wording</li>
+ *   <li>Car finish: one per entry, keyed {@code car-finish-<entryId>}, in the club's wording (#299)</li>
  * </ul>
  * All clip URLs are cached in-memory keyed by raceId and served to the race control client
  * via {@link #getClipMap(Long)} (AUDIO-10).
@@ -102,6 +105,32 @@ public class AudioPreGenerationService {
     }
 
     /**
+     * The club has changed its announcer settings: the clips held for races on the grid or running were made with
+     * the old wording, voice or countdown times, so they are dropped and made again (#299). A race that has
+     * none held is left alone: its clips are made at the grid call.
+     */
+    @Async
+    @EventListener
+    public void onAudioSettingsChanged(AudioSettingsChangedEvent event) {
+        for (Long raceId : List.copyOf(clipCache.keySet())) {
+            Race race = raceRepository.findById(raceId).orElse(null);
+            if (race == null || (race.getStatus() != RaceStatus.GRID && race.getStatus() != RaceStatus.RUNNING)) {
+                continue;
+            }
+            // The new set replaces the old in one step, so a browser asking meanwhile always finds a set
+            if (generating.add(raceId)) {
+                try {
+                    buildClips(raceId);
+                } catch (RuntimeException e) {
+                    log.warn("Making the audio clips for race {} again failed", raceId, e);
+                } finally {
+                    generating.remove(raceId);
+                }
+            }
+        }
+    }
+
+    /**
      * Makes the race's clips again when a client asks for them and the app no longer holds them, as after a
      * restart between the grid call and the start. Does nothing for a race that is not on the grid or running,
      * and waits a while after a try that made nothing, so a speech outage is not hit by every poll.
@@ -164,8 +193,10 @@ public class AudioPreGenerationService {
 
         Map<String, String> clips = new HashMap<>();
 
+        ClubAudioSettings settings = clubProfileService.audioSettings();
+
         // 1. Countdown clips (AUDIO-02). The text matches the browser's spoken fallback.
-        for (int seconds : clubProfileService.audioSettings().countdownIntervals()) {
+        for (int seconds : settings.countdownIntervals()) {
             String url = clipService.generateCountdownClip(
                     raceId, seconds, formatCountdownLabel(seconds) + " remaining.", voiceId);
             if (url != null) {
@@ -186,11 +217,20 @@ public class AudioPreGenerationService {
             if (url != null) {
                 clips.put("grid-" + entry.getId(), url);
             }
+
+            // The call as the car takes the flag, in the club's wording
+            String finishCall = ClubAudioSettings.Wording.fill(settings.wording().carFinish(),
+                    "car", raceEntry.getCarNumber() == null ? "" : String.valueOf(raceEntry.getCarNumber()),
+                    "name", competitor.speechName());
+            String finishCallUrl = clipService.generateCarFinishClip(raceId, entry.getId(), finishCall, voiceId);
+            if (finishCallUrl != null) {
+                clips.put("car-finish-" + entry.getId(), finishCallUrl);
+            }
         }
 
         // 3. Race finished (AUDIO-05): one clip for the whole race
         String finishUrl = clipService.generateRaceFinishedClip(
-                raceId, "Race finished. Checkered flag.", voiceId);
+                raceId, settings.wording().raceFinished(), voiceId);
         if (finishUrl != null) {
             clips.put("finish", finishUrl);
         }

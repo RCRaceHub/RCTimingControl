@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
-import type { AudioSettingsDto } from '@/lib/audioApi';
+import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playLapBeep, playStartHorn, startHornMs } from '@/lib/sounds';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs } from '@/lib/sounds';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
@@ -41,6 +41,15 @@ export function gridClipKey(entry: GridEntry): string {
 export function gridFallbackText(entry: GridEntry): string {
   const name = entry.speechName?.trim() || entry.driverName;
   return entry.carNumber ? `Car ${entry.carNumber}, ${name}.` : `${name}.`;
+}
+
+/** What the browser says as a car takes the flag when no clip is available: the club's wording of the call. */
+export function carFinishText(entry: GridEntry, settings: AudioSettingsDto | null | undefined): string {
+  const name = entry.speechName?.trim() || entry.driverName;
+  const template = wordingOf(settings, 'carFinish');
+  // A car with no number is called by name alone, as a grid call is
+  if (!entry.carNumber && template.includes('{car}')) return `${name}.`;
+  return fillWording(template, { car: entry.carNumber ?? '', name });
 }
 
 interface UseAnnouncementsOptions {
@@ -139,10 +148,8 @@ export function useAnnouncements({
     const s = settingsRef.current;
     if (!s?.announceRunningOrder) return;
     if (audioEvent.type === 'running-order' && audioEvent.positions?.length > 0) {
-      const text = `Running order: ${audioEvent.positions
-        .map((name, i) => `${i + 1}, ${name}`)
-        .join('. ')}.`;
-      fallbackSpeak(text);
+      const positions = audioEvent.positions.map((name, i) => `${i + 1}, ${name}`).join('. ');
+      fallbackSpeak(fillWording(wordingOf(s, 'runningOrder'), { positions }));
     }
   }, [audioEvent, fallbackSpeak]);
 
@@ -180,6 +187,20 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.push(t);
     });
 
+    // A beep for each of the club's final seconds, the last one higher
+    if (s.finalBeeps !== false) {
+      const finalSeconds = tuningOf(s).finalSeconds;
+      for (let left = finalSeconds; left >= 1; left--) {
+        const delay = raceEndsAt - left * 1000 - now;
+        if (delay <= 0) continue;
+        countdownTimeoutsRef.current.push(setTimeout(() => {
+          if (raceStateRef.current !== 'RUNNING') return;
+          if (settingsRef.current?.finalBeeps === false) return;
+          playTick(volumeRef.current, left === 1, settingsRef.current?.hornSounds);
+        }, delay));
+      }
+    }
+
     // At zero the clock is up for the first car: each car now finishes as it crosses the line
     const upDelay = raceEndsAt - now;
     if (upDelay > 0) {
@@ -216,8 +237,8 @@ export function useAnnouncements({
     if (raceState !== 'GRID') gridSaidRef.current = null;
     // Stop and resume lines
     if (!prev || prev === raceState || settingsRef.current?.announceRaceCalls === false) return;
-    if (raceState === 'STOPPED') fallbackSpeak('Race stopped.');
-    if (raceState === 'RUNNING' && prev === 'STOPPED') fallbackSpeak('Race resumed.');
+    if (raceState === 'STOPPED') fallbackSpeak(wordingOf(settingsRef.current, 'stop'));
+    if (raceState === 'RUNNING' && prev === 'STOPPED') fallbackSpeak(wordingOf(settingsRef.current, 'resume'));
   }, [raceState, raceId, fallbackSpeak]);
 
   // A race the director abandoned ends with its own line, not the chequered flag
@@ -238,12 +259,12 @@ export function useAnnouncements({
     const s = settingsRef.current;
     if (abandonedRef.current === raceId) {
       abandonedRef.current = null;
-      if (s?.announceFinish !== false) fallbackSpeak('Race abandoned.');
+      if (s?.announceFinish !== false) fallbackSpeak(wordingOf(s, 'abandon'));
       return;
     }
     const hornMs = s?.finishHorn !== false ? playFinishHorn(volumeRef.current, s?.hornSounds) : 0;
     if (!s?.announceFinish) return;
-    const t = setTimeout(() => playClip('finish', 'Race finished. Checkered flag.'), hornMs);
+    const t = setTimeout(() => playClip('finish', wordingOf(s, 'raceFinished')), hornMs);
     return () => clearTimeout(t);
   }, [raceState, raceId, playClip, fallbackSpeak]);
 
@@ -257,7 +278,7 @@ export function useAnnouncements({
     gridSaidRef.current = raceId;
     if (settingsRef.current?.announceRaceCalls === false) return;
     const drivers = gridCount === 1 ? '1 driver' : `${gridCount} drivers`;
-    fallbackSpeak(`${raceLabel}. ${drivers} to the grid.`);
+    fallbackSpeak(fillWording(wordingOf(settingsRef.current, 'gridCall'), { race: raceLabel, drivers }));
   }, [raceState, raceId, raceLabel, gridCount, fallbackSpeak]);
 
   // Next race and its marshals, a moment after the finish line. Once per finished race.
@@ -269,12 +290,15 @@ export function useAnnouncements({
     if (nextSaidRef.current === raceId) return;
     nextSaidRef.current = raceId;
     if (settingsRef.current?.announceNextRace === false) return;
-    const marshals = nextRace.marshals.length > 0 ? ` Marshals: ${nextRace.marshals.join(', ')}.` : '';
+    const wording = settingsRef.current;
+    const marshals = nextRace.marshals.length > 0
+      ? ` ${fillWording(wordingOf(wording, 'marshals'), { marshals: nextRace.marshals.join(', ') })}`
+      : '';
     // Not cancelled by the effect rerunning, but dropped if the director has moved on to another race
     clearTimeout(nextTimerRef.current);
     nextTimerRef.current = setTimeout(() => {
       if (raceStateRef.current === 'FINISHED' && raceIdRef.current === raceId) {
-        fallbackSpeak(`Next race: ${nextRace.label}.${marshals}`);
+        fallbackSpeak(`${fillWording(wordingOf(wording, 'nextRace'), { race: nextRace.label })}${marshals}`);
       }
     }, NEXT_RACE_DELAY_MS);
   }, [raceState, raceId, nextRace, fallbackSpeak]);
@@ -324,7 +348,7 @@ export function useAnnouncements({
       }
       if (startType && startType !== 'STAGGER' && settingsRef.current?.announceRaceCalls !== false) {
         const t = setTimeout(() => {
-          if (raceStateRef.current === 'RUNNING') fallbackSpeak('Race started.');
+          if (raceStateRef.current === 'RUNNING') fallbackSpeak(wordingOf(settingsRef.current, 'go'));
         }, hornMs);
         staggerTimeoutsRef.current.push(t);
       }
@@ -354,7 +378,9 @@ export function useAnnouncements({
   const playBeep = useCallback(
     (improving: boolean) => {
       if (settingsRef.current && !settingsRef.current.announceLapBeep) return;
-      playLapBeep(volumeRef.current, improving);
+      const tuning = tuningOf(settingsRef.current);
+      playLapBeep(volumeRef.current, improving, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
+        settingsRef.current?.hornSounds);
     },
     [],
   );
@@ -377,7 +403,7 @@ export function useAnnouncements({
     if (state !== 'RUNNING' && state !== 'FINISHED') return true;
     const entry = gridEntriesRef.current?.find((e) => e.entryId === entryId);
     if (!entry) return false;
-    playClip(gridClipKey(entry), gridFallbackText(entry));
+    playClip(`car-finish-${entryId}`, carFinishText(entry, settingsRef.current));
     return true;
   }, [playClip]);
 

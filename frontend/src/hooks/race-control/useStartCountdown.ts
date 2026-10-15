@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { playTick } from '@/lib/sounds';
 import { speakWithBrowser } from '@/lib/speech';
-
-/** From this many seconds out, every second ticks. */
-const TICK_FROM = 5;
 
 interface UseStartCountdownOptions {
   /** The lead-in in seconds; 0 starts at once. */
@@ -11,23 +9,27 @@ interface UseStartCountdownOptions {
   volume: number;
   /** Called when the count reaches zero (or at once with no lead-in): sends the start command. */
   onDone: () => void;
+  /** The club's audio settings: the wording of the call, whether it ticks, and how many seconds tick. */
+  settings?: AudioSettingsDto | null;
   /** Changes when the count no longer belongs to what is on screen (another race, or the race's state moved). */
   watch: string;
 }
 
 /**
  * The lead-in between pressing Start and the race starting: a spoken "starting in N seconds", then a tick each
- * second for the last five. {@code remaining} is null when no count is running.
+ * second for the last few (the club's final-seconds count). {@code remaining} is null when no count is running.
  */
-export function useStartCountdown({ seconds, volume, onDone, watch }: UseStartCountdownOptions) {
+export function useStartCountdown({ seconds, volume, onDone, watch, settings }: UseStartCountdownOptions) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onDoneRef = useRef(onDone);
   const volumeRef = useRef(volume);
+  const settingsRef = useRef(settings);
   useEffect(() => {
     onDoneRef.current = onDone;
     volumeRef.current = volume;
-  }, [onDone, volume]);
+    settingsRef.current = settings;
+  }, [onDone, volume, settings]);
 
   const runningRef = useRef(false);
 
@@ -51,7 +53,10 @@ export function useStartCountdown({ seconds, volume, onDone, watch }: UseStartCo
         return;
       }
       setRemaining(left);
-      if (left <= TICK_FROM) playTick(volumeRef.current, left === 1);
+      const current = settingsRef.current;
+      if (current?.tickSound !== false && left <= tuningOf(current).finalSeconds) {
+        playTick(volumeRef.current, left === 1, current?.hornSounds);
+      }
       timerRef.current = setTimeout(() => stepRef.current(left - 1), 1000);
     };
   }, []);
@@ -63,7 +68,7 @@ export function useStartCountdown({ seconds, volume, onDone, watch }: UseStartCo
       return;
     }
     runningRef.current = true;
-    speakWithBrowser(`Starting in ${seconds} seconds.`, volumeRef.current);
+    speakWithBrowser(fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds }), volumeRef.current);
     stepRef.current(seconds);
   }, [seconds]);
 

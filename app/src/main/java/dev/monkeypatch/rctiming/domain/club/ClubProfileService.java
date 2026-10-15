@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.club;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -197,6 +198,8 @@ public class ClubProfileService {
         audit.entry(actor, "AUDIO_SETTINGS_CHANGED").entity("club_profile", saved.getId())
                 .summary("Changed the announcer settings")
                 .before(before).after(audioValues(saved)).record();
+        // After the commit, so the clips are made from the settings as saved
+        AfterCommit.run(() -> eventPublisher.publishEvent(new AudioSettingsChangedEvent()));
         return saved;
     }
 

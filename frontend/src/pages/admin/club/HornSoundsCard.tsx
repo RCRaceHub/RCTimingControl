@@ -3,13 +3,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { removeHornSound, uploadHornSound } from '@/lib/audioApi';
-import { playFinishHorn, playStartHorn, type HornSounds } from '@/lib/sounds';
+import { removeHornSound, uploadHornSound, type SoundName } from '@/lib/audioApi';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick, type HornSounds } from '@/lib/sounds';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 const HORNS = [
   { horn: 'start', label: 'Start horn', play: playStartHorn, url: 'startUrl' },
   { horn: 'finish', label: 'Finish horn', play: playFinishHorn, url: 'finishUrl' },
+  { horn: 'tick', label: 'Tick', play: (v: number, s?: HornSounds) => playTick(v, false, s), url: 'tickUrl' },
+  { horn: 'lap-beep', label: 'Lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, true, undefined, s), url: 'lapBeepUrl' },
 ] as const;
 
 /** How long a sound file plays, in milliseconds, read by the browser before it is uploaded. */
@@ -34,27 +36,27 @@ function soundLengthMs(file: File): Promise<number> {
   });
 }
 
-/** Replace the start and finish horns with the club's own sound files, or go back to the built-in ones. */
+/** Replace the horns, the tick and the lap beep with the club's own sound files, or go back to the built-in ones. */
 export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
   const queryClient = useQueryClient();
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const refresh = () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
 
   const upload = useMutation({
-    mutationFn: async ({ horn, file }: { horn: 'start' | 'finish'; file: File }) =>
+    mutationFn: async ({ horn, file }: { horn: SoundName; file: File }) =>
       uploadHornSound(horn, file, await soundLengthMs(file)),
     onSuccess: () => {
       refresh();
-      toast.success('Horn sound saved.');
+      toast.success('Sound saved.');
     },
     onError: () => toast.error('Could not save that sound. Use a short mp3, wav or ogg file under 1 MB.'),
   });
 
   const remove = useMutation({
-    mutationFn: (horn: 'start' | 'finish') => removeHornSound(horn),
+    mutationFn: (horn: SoundName) => removeHornSound(horn),
     onSuccess: () => {
       refresh();
-      toast.success('Back to the built-in horn.');
+      toast.success('Back to the built-in sound.');
     },
     onError: () => toast.error('Could not remove that sound.'),
   });
@@ -62,11 +64,11 @@ export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Horn sounds</CardTitle>
+        <CardTitle>Horn and beep sounds</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in horn.
+          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in sound.
         </p>
         {HORNS.map(({ horn, label, play, url }) => {
           const custom = Boolean(sounds?.[url]);

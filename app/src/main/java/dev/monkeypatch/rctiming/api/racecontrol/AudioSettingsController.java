@@ -62,13 +62,18 @@ public class AudioSettingsController {
             int startCountdownSeconds,
             ClubAudioSettings.HornSounds hornSounds,
             boolean announceCarFinish,
-            String timeUpText
+            String timeUpText,
+            boolean tickSound,
+            boolean finalBeeps,
+            ClubAudioSettings.Wording wording,
+            ClubAudioSettings.Tuning tuning
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderDepth(), s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText());
+                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
+                    s.finalBeeps(), s.wording(), s.tuning());
         }
     }
 
@@ -90,7 +95,11 @@ public class AudioSettingsController {
             Boolean announceNextRace,
             @Min(0) @Max(60) Integer startCountdownSeconds,
             Boolean announceCarFinish,
-            @Size(max = 200) String timeUpText
+            @Size(max = 200) String timeUpText,
+            Boolean tickSound,
+            Boolean finalBeeps,
+            @Valid ClubAudioSettings.Wording wording,
+            @Valid ClubAudioSettings.Tuning tuning
     ) {
         /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
         @JsonIgnore
@@ -136,7 +145,11 @@ public class AudioSettingsController {
                             s.hornSounds(),  // changed only by uploading or removing a sound
                             patch.announceCarFinish() != null ? patch.announceCarFinish() : s.announceCarFinish(),
                             // Blank goes back to the standard wording
-                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText()
+                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText(),
+                            patch.tickSound() != null ? patch.tickSound() : s.tickSound(),
+                            patch.finalBeeps() != null ? patch.finalBeeps() : s.finalBeeps(),
+                            patch.wording() != null ? patch.wording() : s.wording(),
+                            patch.tuning() != null ? patch.tuning() : s.tuning()
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));

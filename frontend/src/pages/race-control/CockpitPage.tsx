@@ -259,6 +259,7 @@ export default function CockpitPage() {
     seconds: audioSettings?.startCountdownSeconds ?? 10,
     volume: volumePercent / 100,
     onDone: onStart,
+    settings: audioSettings,
     watch: `${selectedRaceId}:${selectedRace?.status}`,
   });
 
