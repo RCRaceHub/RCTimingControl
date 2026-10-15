@@ -170,7 +170,7 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         LiveTimingRowDto row = timing.peek(raceId).orElseThrow().calculatePositions().stream()
                 .filter(r -> r.entryId() == entryId).findFirst().orElseThrow();
-        assertThat(row.lapsCompleted()).isEqualTo(2);
+        assertThat(row.lapsCompleted()).isEqualTo(1);
     }
 
     @Test

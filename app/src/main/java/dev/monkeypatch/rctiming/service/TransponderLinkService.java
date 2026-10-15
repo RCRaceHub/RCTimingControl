@@ -75,8 +75,8 @@ public class TransponderLinkService {
                     + " is already linked to another entry in this race");
         }
 
-        // Counted before linking, since linking credits them
-        int lapsCredited = lapTimingService.countPassingsForTransponder(raceId, transponderNumber);
+        // Counted before linking, since linking credits them. The first passing only starts timing a lap
+        int lapsCredited = Math.max(0, lapTimingService.countPassingsForTransponder(raceId, transponderNumber) - 1);
 
         linkAuditRepository.save(new UnknownTransponderLinkAudit(raceId, transponderNumber, entryId, userId));
         Map<String, Object> after = new LinkedHashMap<>();
