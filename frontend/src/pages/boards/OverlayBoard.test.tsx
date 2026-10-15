@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
@@ -113,6 +113,15 @@ describe('OverlayBoard', () => {
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
     expect(screen.getByText('13.870')).toBeInTheDocument();
     expect(await screen.findByLabelText('Race clock')).toHaveTextContent('3:45');
+  });
+
+  it('flashes a new lap in the colour the live timing screen uses', async () => {
+    stompFrames['/topic/race/12/timing'] = [{ ...row(1, 'Grace Hopper', 13_500), overallFastestLapMs: 13_500 }];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay();
+
+    const driver = await screen.findByText('Grace Hopper');
+    expect(driver.closest('tr')).toHaveClass('bg-purple-500/40');
   });
 
   it('follows the live timing the app pushes', async () => {

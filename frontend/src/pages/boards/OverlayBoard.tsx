@@ -9,6 +9,7 @@ import { getRaceClock } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 const THEMES = {
@@ -68,6 +69,8 @@ export default function OverlayBoard() {
 
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
+  // Judged on the whole field, so a driver below the cut-off still keeps their lap history
+  const lapFlash = useLapFlash(allRows);
 
   if (!race) {
     const upcoming = nowNext?.nextRace?.label;
@@ -123,25 +126,38 @@ export default function OverlayBoard() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(row => (
-                <tr key={row.entryId} className={cn('border-t', colours.row)}>
-                  <td className="w-10 py-1 pl-3">
-                    <span
-                      className={cn(
-                        'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
-                        colours.position,
-                      )}
-                    >
-                      {row.position}
-                    </span>
-                  </td>
-                  <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}</td>
-                  <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
-                  <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
-                    {fmtMs(row.lastLapMs)}
-                  </td>
-                </tr>
-              ))}
+              {rows.map(row => {
+                const flash = lapFlash.get(row.entryId);
+                return (
+                  <tr
+                    key={row.entryId}
+                    className={cn(
+                      'border-t transition-colors',
+                      colours.row,
+                      flash === 'race-best' && 'bg-purple-500/40',
+                      flash === 'personal-best' && 'bg-blue-500/40',
+                      flash === 'improving' && 'bg-green-500/40',
+                      flash === 'slow' && 'bg-red-500/40',
+                    )}
+                  >
+                    <td className="w-10 py-1 pl-3">
+                      <span
+                        className={cn(
+                          'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
+                          colours.position,
+                        )}
+                      >
+                        {row.position}
+                      </span>
+                    </td>
+                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}</td>
+                    <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
+                    <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
+                      {fmtMs(row.lastLapMs)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
