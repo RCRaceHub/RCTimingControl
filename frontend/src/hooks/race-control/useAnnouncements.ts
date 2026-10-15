@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playLapBeep, type LapPace, playStartHorn, playTick, startHornMs } from '@/lib/sounds';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs, type LapPace } from '@/lib/sounds';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 

@@ -19,7 +19,10 @@ public class HornSoundService {
     public enum Horn {
         START, FINISH, TICK, LAP_BEEP, FASTER_BEEP, SLOWER_BEEP;
 
-        /** The name in a URL and a file name: {@code start}, {@code finish}, {@code tick}, {@code lap-beep} (on pace), {@code faster-beep} or {@code slower-beep}. */
+        /**
+         * The name in a URL and a file name: {@code start}, {@code finish}, {@code tick}, {@code lap-beep}
+         * (on pace), {@code faster-beep} or {@code slower-beep}.
+         */
         public String slug() {
             return name().toLowerCase().replace('_', '-');
         }
@@ -31,7 +34,8 @@ public class HornSoundService {
                     return horn;
                 }
             }
-            throw new IllegalArgumentException("Unknown horn: " + name + ". Use start, finish, tick, lap-beep, faster-beep or slower-beep");
+            throw new IllegalArgumentException("Unknown horn: " + name
+                    + ". Use start, finish, tick, lap-beep, faster-beep or slower-beep");
         }
     }
 

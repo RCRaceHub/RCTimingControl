@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { removeHornSound, uploadHornSound, type SoundName } from '@/lib/audioApi';
 import { playFinishHorn, playLapBeep, playStartHorn, playTick, type HornSounds } from '@/lib/sounds';
+import { ON_PACE_TOLERANCE } from '@/hooks/race-control/raceAudioCues';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 const HORNS = [
@@ -73,7 +74,9 @@ export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in sound. A faster lap beats the driver's best, on pace is within 2% of it, and slower is anything beyond.
+          Upload a short mp3, wav or ogg file (up to 1 MB, 10 seconds) to replace a built-in sound. A faster lap beats the driver's best, on pace is within{' '}
+          {ON_PACE_TOLERANCE * 100}% of it, and slower is anything beyond. A faster or slower lap with no file of its
+          own uses the on-pace one.
         </p>
         {HORNS.map(({ horn, label, play, url }) => {
           const custom = Boolean(sounds?.[url]);
