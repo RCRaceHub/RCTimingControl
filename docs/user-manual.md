@@ -43,9 +43,9 @@ A championship adds up results from several events with a best-X-from-Y rule, a 
 
 ## On the day
 
-### 7. Swap a transponder
+### 7. Add a walk-in and swap a transponder
 
-If a driver changes their transponder on the day, open **Race Control**, choose the event, then **Transponders**. Find the entry by name and enter the new number. A swap is logged, and a later RaceHub re-import keeps it. Section 1 of the Race Meeting Guide covers the pre-meeting checks.
+RCTC treats every entrant as present; check-in is RaceHub's. For a driver who did not book, open **Race Control**, choose the event, then **Walk-in**, pick their class and enter them (admins and race directors). Then generate or regenerate rounds so they are in the run order. If a driver changes their transponder on the day, open **Race Control**, choose the event, then **Transponders**. Find the entry by name and enter the new number. A swap is logged, and a later RaceHub re-import keeps it. Section 1 of the Race Meeting Guide covers the pre-meeting checks.
 
 ### 8. Run the races
 

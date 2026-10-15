@@ -36,7 +36,10 @@ export default function MeetingGuidePage() {
             (see the Admin Configuration Guide, section 5).
           </li>
           <li>
-            <span className="font-semibold">Swap a transponder:</span> If a driver changes their
+            <span className="font-semibold">Walk-ins and swaps:</span> RCTC treats every entrant as
+            present, since RaceHub handles check-in. For a driver who did not book, open
+            <span className="font-semibold"> Walk-in</span> in race control, pick their class and
+            enter them. If a driver changes their
             transponder on the day, open <span className="font-semibold">Transponders</span> in race
             control, find the entry and enter the new number. The swap is logged, and a later import
             of the booking file keeps the swapped number (the entry list notes the number the booking
