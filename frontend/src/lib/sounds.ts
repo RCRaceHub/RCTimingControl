@@ -21,10 +21,41 @@ const FINISH_BLASTS: Blast[] = [
 // server message, not a click, may find it suspended until it is resumed
 let shared: AudioContext | null = null;
 
+const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((listener) => listener());
+
 function context(): AudioContext {
-  if (!shared || shared.state === 'closed') shared = new AudioContext();
+  if (!shared || shared.state === 'closed') {
+    shared = new AudioContext();
+    shared.onstatechange = notify;
+    notify();
+  }
   if (shared.state === 'suspended') void shared.resume().catch(() => undefined);
   return shared;
+}
+
+/**
+ * Whether this browser lets the page make sound: false until the page has had a click or key press, when the
+ * browser's autoplay rule keeps the horn silent.
+ */
+export function audioAllowed(): boolean {
+  return shared != null && shared.state === 'running';
+}
+
+export function subscribeAudioState(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Starts the audio context; called from a click, which the browser then lets sound. */
+export function unlockAudio() {
+  try {
+    context();
+  } catch (e) {
+    console.warn('Audio unlock failed:', e);
+  }
 }
 
 function play(blasts: Blast[], volume: number, wave: OscillatorType) {
