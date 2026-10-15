@@ -153,6 +153,9 @@ export function useAnnouncements({
     }
   }, [audioEvent, fallbackSpeak]);
 
+  // A change to the call times or the final-seconds count mid-race applies to the calls still to come
+  const countdownKey = `${settings?.countdownIntervals?.join(',')}:${settings?.tuning?.finalSeconds}`;
+
   // Countdown timer: schedule announcements when race starts (AUDIO-02)
   useEffect(() => {
     countdownTimeoutsRef.current.forEach(clearTimeout);
@@ -215,7 +218,7 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.forEach(clearTimeout);
       countdownTimeoutsRef.current = [];
     };
-  }, [raceState, raceEndsAt, playClip, fallbackSpeak]);
+  }, [raceState, raceEndsAt, playClip, fallbackSpeak, countdownKey]);
 
   // What the race has just moved from, for the announcements that belong to a change and not to a state: a race
   // opened already finished must not sound its horn again. Declared first so the effects after it see this change.
@@ -290,15 +293,15 @@ export function useAnnouncements({
     if (nextSaidRef.current === raceId) return;
     nextSaidRef.current = raceId;
     if (settingsRef.current?.announceNextRace === false) return;
-    const wording = settingsRef.current;
+    const s = settingsRef.current;
     const marshals = nextRace.marshals.length > 0
-      ? ` ${fillWording(wordingOf(wording, 'marshals'), { marshals: nextRace.marshals.join(', ') })}`
+      ? ` ${fillWording(wordingOf(s, 'marshals'), { marshals: nextRace.marshals.join(', ') })}`
       : '';
     // Not cancelled by the effect rerunning, but dropped if the director has moved on to another race
     clearTimeout(nextTimerRef.current);
     nextTimerRef.current = setTimeout(() => {
       if (raceStateRef.current === 'FINISHED' && raceIdRef.current === raceId) {
-        fallbackSpeak(`${fillWording(wordingOf(wording, 'nextRace'), { race: nextRace.label })}${marshals}`);
+        fallbackSpeak(`${fillWording(wordingOf(s, 'nextRace'), { race: nextRace.label })}${marshals}`);
       }
     }, NEXT_RACE_DELAY_MS);
   }, [raceState, raceId, nextRace, fallbackSpeak]);

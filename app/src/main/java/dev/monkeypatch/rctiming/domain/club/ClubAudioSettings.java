@@ -121,11 +121,14 @@ public record ClubAudioSettings(
 
         /** The line with each {@code {key}} replaced by its value in {@code values} (pairs of key and value). */
         public static String fill(String template, String... values) {
-            String text = template;
+            java.util.Map<String, String> byKey = new java.util.HashMap<>();
             for (int i = 0; i + 1 < values.length; i += 2) {
-                text = text.replace("{" + values[i] + "}", values[i + 1]);
+                byKey.put(values[i], values[i + 1]);
             }
-            return text;
+            // One pass, so a value that holds a later {key} is not filled in again
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\{(\\w+)}").matcher(template);
+            return matcher.replaceAll(m -> java.util.regex.Matcher.quoteReplacement(
+                    byKey.getOrDefault(m.group(1), m.group())));
         }
     }
 
@@ -187,6 +190,19 @@ public record ClubAudioSettings(
         this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
                 runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
                 startCountdownSeconds, hornSounds, announceCarFinish, timeUpText, null, null, null, null);
+    }
+
+    /** Each countdown call is a clip the server makes, so each time must be from a second up to an hour. */
+    public static boolean intervalsInRange(int[] intervals) {
+        return intervals == null || java.util.Arrays.stream(intervals).allMatch(i -> i >= 1 && i <= 3600);
+    }
+
+    /** Whether the clips made for a race would come out differently under {@code other}. */
+    public boolean clipsDifferFrom(ClubAudioSettings other) {
+        return !java.util.Arrays.equals(countdownIntervals, other.countdownIntervals)
+                || !wording.carFinish().equals(other.wording.carFinish())
+                || !wording.raceFinished().equals(other.wording.raceFinished())
+                || !announceCarFinish.equals(other.announceCarFinish);
     }
 
     public ClubAudioSettings withHornSounds(HornSounds sounds) {

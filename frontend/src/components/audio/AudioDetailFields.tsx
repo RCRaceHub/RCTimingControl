@@ -26,7 +26,7 @@ const WORDING_FIELDS: { key: keyof AudioWording; label: string; fills?: string }
 
 const TUNING_FIELDS: { key: keyof AudioTuning; label: string; unit: string; min: number; max: number }[] = [
   { key: 'runningOrderEarlyPeriodMinutes', label: 'Running order: early period', unit: 'minutes', min: 0, max: 120 },
-  { key: 'runningOrderEarlyEveryMinutes', label: 'Called every, in the early period', unit: 'minutes', min: 1, max: 60 },
+  { key: 'runningOrderEarlyEveryMinutes', label: 'Called every, early on', unit: 'minutes', min: 1, max: 60 },
   { key: 'runningOrderLaterEveryMinutes', label: 'Called every, after it', unit: 'minutes', min: 1, max: 60 },
   { key: 'finalSeconds', label: 'Final seconds counted', unit: 'seconds (0 for none)', min: 0, max: 10 },
   { key: 'lapBeepHz', label: 'Lap beep pitch', unit: 'Hz', min: 100, max: 2000 },
@@ -119,7 +119,8 @@ export function AudioDetailFields({ settings, onChange, idPrefix }: AudioDetailF
             max={max}
             defaultValue={tuning[key]}
             onBlur={(e) => {
-              const value = clamp(parseInt(e.target.value, 10) || min, min, max);
+              const typed = parseInt(e.target.value, 10);
+              const value = Number.isNaN(typed) ? tuning[key] : clamp(typed, min, max);
               if (value === tuning[key]) {
                 e.target.value = String(value);
                 return;

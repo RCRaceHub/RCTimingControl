@@ -19,10 +19,15 @@ public class HornSoundService {
     public enum Horn {
         START, FINISH, TICK, LAP_BEEP;
 
-        /** The horn named in a URL, {@code start} or {@code finish}. */
+        /** The name in a URL and a file name: {@code start}, {@code finish}, {@code tick} or {@code lap-beep}. */
+        public String slug() {
+            return name().toLowerCase().replace('_', '-');
+        }
+
+        /** The sound named in a URL. */
         public static Horn of(String name) {
             for (Horn horn : values()) {
-                if (horn.name().replace('_', '-').equalsIgnoreCase(name)) {
+                if (horn.slug().equalsIgnoreCase(name)) {
                     return horn;
                 }
             }
@@ -71,12 +76,12 @@ public class HornSoundService {
             case "audio/ogg", "application/ogg" -> "ogg";
             default -> "wav";
         };
-        String url = storage.upload("horns/" + horn.name().toLowerCase().replace('_', '-') + "-" + System.currentTimeMillis()
+        String url = storage.upload("horns/" + horn.slug() + "-" + System.currentTimeMillis()
                 + "." + extension, bytes);
         return change(actor, horn, url, durationMs);
     }
 
-    /** Goes back to the built-in horn. The old file stays in storage, which has no delete; it is at most 1 MB. */
+    /** Goes back to the built-in sound. The old file stays in storage, which has no delete; it is at most 1 MB. */
     public ClubAudioSettings remove(Actor actor, Horn horn) {
         return change(actor, horn, null, null);
     }

@@ -36,8 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Interval schedule, from the club's {@code audioSettings.tuning} (#299):
  * <ul>
- *   <li>First 10 minutes of a race: every 2 minutes</li>
- *   <li>After 10 minutes: every 5 minutes</li>
+ *   <li>Early in a race (the first 10 minutes unless changed): every 2 minutes unless changed</li>
+ *   <li>After that: every 5 minutes unless changed</li>
  * </ul>
  * Names are spoken as the competitor's spoken name when set (#119).
  * The announcement depth (top N positions) is taken from the club's {@code audioSettings.runningOrderDepth}
@@ -146,7 +146,7 @@ public class RunningOrderAnnouncementService {
                 continue;
             }
 
-            // Determine which interval applies (first 10 min vs. thereafter)
+            // Determine which interval applies (early period vs. thereafter)
             Duration elapsed = Duration.between(startTime, now);
             Duration interval = elapsed.compareTo(initialPeriod) < 0 ? initialInterval : laterInterval;
 

@@ -11,7 +11,8 @@ const HORNS = [
   { horn: 'start', label: 'Start horn', play: playStartHorn, url: 'startUrl' },
   { horn: 'finish', label: 'Finish horn', play: playFinishHorn, url: 'finishUrl' },
   { horn: 'tick', label: 'Tick', play: (v: number, s?: HornSounds) => playTick(v, false, s), url: 'tickUrl' },
-  { horn: 'lap-beep', label: 'Lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, true, undefined, s), url: 'lapBeepUrl' },
+  { horn: 'lap-beep', label: 'Lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, true, undefined, s),
+    url: 'lapBeepUrl' },
 ] as const;
 
 /** How long a sound file plays, in milliseconds, read by the browser before it is uploaded. */

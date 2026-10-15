@@ -59,6 +59,9 @@ public class AudioPreGenerationService {
     /** Races whose clips are being made now, so two requests do not make them twice */
     private final Set<Long> generating = ConcurrentHashMap.newKeySet();
 
+    /** Races whose settings changed while their clips were being made, so they are made once more */
+    private final Set<Long> remake = ConcurrentHashMap.newKeySet();
+
     /** When a try that made no clips may be repeated, by race */
     private final Map<Long, Long> retryAfter = new ConcurrentHashMap<>();
 
@@ -117,15 +120,26 @@ public class AudioPreGenerationService {
             if (race == null || (race.getStatus() != RaceStatus.GRID && race.getStatus() != RaceStatus.RUNNING)) {
                 continue;
             }
-            // The new set replaces the old in one step, so a browser asking meanwhile always finds a set
-            if (generating.add(raceId)) {
-                try {
+            // Being made now from the old settings: it is made once more when that one is done
+            remake.add(raceId);
+            remakeIfAsked(raceId);
+        }
+    }
+
+    /**
+     * Makes the race's clips again if a settings change asked for it and none are being made. The new set replaces
+     * the old in one step, so a browser asking meanwhile always finds a set.
+     */
+    private void remakeIfAsked(Long raceId) {
+        while (remake.contains(raceId) && generating.add(raceId)) {
+            try {
+                if (remake.remove(raceId)) {
                     buildClips(raceId);
-                } catch (RuntimeException e) {
-                    log.warn("Making the audio clips for race {} again failed", raceId, e);
-                } finally {
-                    generating.remove(raceId);
                 }
+            } catch (RuntimeException e) {
+                log.warn("Making the audio clips for race {} again failed", raceId, e);
+            } finally {
+                generating.remove(raceId);
             }
         }
     }
@@ -156,6 +170,7 @@ public class AudioPreGenerationService {
             } finally {
                 generating.remove(raceId);
             }
+            remakeIfAsked(raceId);
         });
     }
 
@@ -168,6 +183,7 @@ public class AudioPreGenerationService {
         } finally {
             generating.remove(raceId);
         }
+        remakeIfAsked(raceId);
     }
 
     private void makeClips(Long raceId) {
@@ -219,12 +235,18 @@ public class AudioPreGenerationService {
             }
 
             // The call as the car takes the flag, in the club's wording
-            String finishCall = ClubAudioSettings.Wording.fill(settings.wording().carFinish(),
-                    "car", raceEntry.getCarNumber() == null ? "" : String.valueOf(raceEntry.getCarNumber()),
-                    "name", competitor.speechName());
-            String finishCallUrl = clipService.generateCarFinishClip(raceId, entry.getId(), finishCall, voiceId);
-            if (finishCallUrl != null) {
-                clips.put("car-finish-" + entry.getId(), finishCallUrl);
+            if (settings.announceCarFinish()) {
+                // A car with no number is called by name alone, as the browser does
+                String template = settings.wording().carFinish();
+                String finishCall = raceEntry.getCarNumber() == null && template.contains("{car}")
+                        ? competitor.speechName() + "."
+                        : ClubAudioSettings.Wording.fill(template, "car",
+                                raceEntry.getCarNumber() == null ? "" : String.valueOf(raceEntry.getCarNumber()),
+                                "name", competitor.speechName());
+                String finishCallUrl = clipService.generateCarFinishClip(raceId, entry.getId(), finishCall, voiceId);
+                if (finishCallUrl != null) {
+                    clips.put("car-finish-" + entry.getId(), finishCallUrl);
+                }
             }
         }
 

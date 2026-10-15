@@ -1,11 +1,11 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.HornSoundService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Arrays;
 
 /**
  * Club-wide announcer settings (AUDIO-07), for admins and race directors. The PUT here replaces the toggles and
@@ -71,7 +69,7 @@ public class AdminAudioController {
         @JsonIgnore
         @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
         public boolean isCountdownIntervalsInRange() {
-            return countdownIntervals == null || Arrays.stream(countdownIntervals).allMatch(i -> i >= 1 && i <= 3600);
+            return ClubAudioSettings.intervalsInRange(countdownIntervals);
         }
 
         static AudioSettingsDto of(ClubAudioSettings s, String defaultVoiceId) {

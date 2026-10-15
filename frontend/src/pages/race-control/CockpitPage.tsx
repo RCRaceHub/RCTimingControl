@@ -128,6 +128,9 @@ export default function CockpitPage() {
     raceId: selectedRaceId,
     raceState: selectedRace?.status,
     setClipMap,
+    settingsKey: audioSettings
+      ? JSON.stringify([audioSettings.countdownIntervals, audioSettings.wording, audioSettings.announceCarFinish])
+      : undefined,
   });
 
   // Track previous last-lap timestamps to detect new laps (AUDIO-04 beep wiring)

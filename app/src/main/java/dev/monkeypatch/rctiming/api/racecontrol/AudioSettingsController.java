@@ -24,8 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-
 /**
  * Race control–facing audio settings endpoint (AUDIO-07).
  * <p>
@@ -79,7 +77,8 @@ public class AudioSettingsController {
 
     /**
      * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
-     * toggle it changed.
+     * toggle it changed. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
+     * the full object (a line left empty has the standard wording).
      */
     public record AudioSettingsPatch(
             Boolean announceCountdown,
@@ -105,7 +104,7 @@ public class AudioSettingsController {
         @JsonIgnore
         @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
         public boolean isCountdownIntervalsInRange() {
-            return countdownIntervals == null || Arrays.stream(countdownIntervals).allMatch(i -> i >= 1 && i <= 3600);
+            return ClubAudioSettings.intervalsInRange(countdownIntervals);
         }
     }
 

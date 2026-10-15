@@ -193,13 +193,19 @@ public class ClubProfileService {
     public ClubProfile changeAudioSettings(Actor actor, Consumer<ClubProfile> change) {
         ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
         Map<String, Object> before = audioValues(profile);
+        ClubAudioSettings settingsBefore = profile.getAudioSettings();
+        String voiceBefore = profile.getDefaultVoiceId();
         change.accept(profile);
         ClubProfile saved = clubProfileRepository.save(profile);
         audit.entry(actor, "AUDIO_SETTINGS_CHANGED").entity("club_profile", saved.getId())
                 .summary("Changed the announcer settings")
                 .before(before).after(audioValues(saved)).record();
-        // After the commit, so the clips are made from the settings as saved
-        AfterCommit.run(() -> eventPublisher.publishEvent(new AudioSettingsChangedEvent()));
+        // Only a change the clips are made from, and after the commit, so they are made from the settings as saved
+        boolean clipsChange = settingsBefore.clipsDifferFrom(saved.getAudioSettings())
+                || !java.util.Objects.equals(voiceBefore, saved.getDefaultVoiceId());
+        if (clipsChange) {
+            AfterCommit.run(() -> eventPublisher.publishEvent(new AudioSettingsChangedEvent()));
+        }
         return saved;
     }
 
