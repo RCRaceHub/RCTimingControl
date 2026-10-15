@@ -33,7 +33,7 @@ class LapTimingServiceFlagTest {
     private RaceClockService clock;
     private ApplicationEventPublisher publisher;
     private LapTimingService service;
-    private long remainingMs;
+    private long elapsedMs;
 
     @BeforeEach
     void setUp() {
@@ -56,9 +56,9 @@ class LapTimingServiceFlagTest {
         when(entries.findAllById(any())).thenReturn(List.of(entry));
         when(entries.findById(anyLong())).thenReturn(Optional.of(entry));
 
-        when(clock.durationMsOf(RACE)).thenReturn(Optional.of(300_000L));
-        when(clock.clockOf(anyLong(), any(RaceStatus.class), any()))
-                .thenAnswer(inv -> new RaceClockDto(RACE, "RUNNING", 0, 300_000L, remainingMs, true));
+        when(clock.planOf(RACE)).thenReturn(Optional.of(new RaceClockService.RacePlan(300_000L, 0)));
+        when(clock.clockOf(anyLong(), any(RaceStatus.class), any())).thenAnswer(inv -> new RaceClockDto(RACE,
+                "RUNNING", elapsedMs, 300_000L, Math.max(0, 300_000L - elapsedMs), true));
     }
 
     private void lap(long seconds) {
@@ -67,18 +67,18 @@ class LapTimingServiceFlagTest {
 
     @Test
     void theRaceIsOverWhenTheOnlyCarCrossesAfterTheClockRanOut() {
-        remainingMs = 60_000;
+        elapsedMs = 240_000;
         lap(10);
         verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
 
-        remainingMs = 0;
+        elapsedMs = 300_000;
         lap(40);
         verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
     }
 
     @Test
     void theFinishIsAskedForOnceAndLaterPassingsAreNotCounted() {
-        remainingMs = 0;
+        elapsedMs = 300_000;
         lap(10);
         lap(40);
         lap(70);
@@ -89,20 +89,81 @@ class LapTimingServiceFlagTest {
 
     @Test
     void theRaceLengthIsReadOnceNotOnEveryPassing() {
-        remainingMs = 60_000;
+        elapsedMs = 240_000;
         lap(10);
         lap(40);
         lap(70);
 
-        verify(clock, times(1)).durationMsOf(RACE);
+        verify(clock, times(1)).planOf(RACE);
     }
 
     @Test
     void aRaceWithNoLengthNeverReachesTheFlag() {
-        when(clock.durationMsOf(RACE)).thenReturn(Optional.empty());
-        remainingMs = 0;
+        when(clock.planOf(RACE)).thenReturn(Optional.of(RaceClockService.RacePlan.NONE));
+        elapsedMs = 300_000;
         lap(10);
         lap(40);
+
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+    }
+
+    /** A second car, in grid order after the first, in a stagger start with the given gap. */
+    private void staggerWithSecondCar(long intervalMs) {
+        RaceEntryRepository raceEntries = mock(RaceEntryRepository.class);
+        EntryRepository entries = mock(EntryRepository.class);
+        service = new LapTimingService(mock(LiveTimingHub.class), raceEntries, entries,
+                mock(CompetitorRepository.class), mock(LapThresholdQuery.class), clock, publisher);
+        List<RaceEntry> grid = new java.util.ArrayList<>();
+        List<Entry> found = new java.util.ArrayList<>();
+        for (long id : new long[]{10L, 11L}) {
+            RaceEntry raceEntry = new RaceEntry();
+            raceEntry.setRaceId(RACE);
+            raceEntry.setEntryId(id);
+            grid.add(raceEntry);
+            Entry entry = new Entry();
+            entry.setId(id);
+            entry.setTransponderNumberSnapshot(String.valueOf(1000 + id));
+            entry.setStatus(EntryStatus.CONFIRMED);
+            found.add(entry);
+        }
+        when(raceEntries.findByRaceIdOrderByGridPosition(RACE)).thenReturn(grid);
+        when(entries.findAllById(any())).thenReturn(found);
+        when(entries.findById(anyLong())).thenAnswer(inv -> found.stream()
+                .filter(e -> e.getId().equals(inv.getArgument(0))).findFirst());
+        when(clock.planOf(RACE)).thenReturn(Optional.of(new RaceClockService.RacePlan(300_000L, intervalMs)));
+    }
+
+    private void lapOf(String transponder, long seconds) {
+        service.onLapPassing(new LapPassingEvent(RACE, transponder, seconds * 1_000_000L));
+    }
+
+    @Test
+    void aStaggeredCarKeepsRacingUntilItsOwnWindowEnds() {
+        staggerWithSecondCar(5_000);
+        elapsedMs = 100_000;
+        lapOf("1010", 10);
+        lapOf("1011", 12);
+
+        // The race clock is up for the first car, but the second left 5 s later and has 5 s to go
+        elapsedMs = 302_000;
+        lapOf("1010", 40);
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+        lapOf("1011", 42);
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+
+        elapsedMs = 306_000;
+        lapOf("1011", 70);
+        verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
+    }
+
+    @Test
+    void theRaceIsNotOverWhileTheLastCarToStartHasNotCrossed() {
+        staggerWithSecondCar(120_000);
+        // Car 10's window is up, car 11 left 2 minutes later and has not crossed the line yet
+        elapsedMs = 100_000;
+        lapOf("1010", 10);
+        elapsedMs = 305_000;
+        lapOf("1010", 40);
 
         verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
     }

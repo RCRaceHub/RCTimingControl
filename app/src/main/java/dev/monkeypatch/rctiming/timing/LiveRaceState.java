@@ -47,12 +47,35 @@ public class LiveRaceState {
     Long lastLapCreditedAtMs = null;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
+    /**
+     * When each entry's own time on the track starts, in milliseconds after the race clock starts: a stagger start
+     * sends the cars off one at a time, so each has its own window. An entry not listed starts at 0.
+     */
+    final Map<Long, Long> startOffsetMs = new HashMap<>();
     /** Whether the finish has been asked for, so it is asked for once. */
     boolean finishRequested = false;
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
         return runtimeLinks.get(transponderNumber);
+    }
+
+    /** Sets when each entry starts, in milliseconds after the race clock starts. Called at state creation time. */
+    public synchronized void putStartOffsets(Map<Long, Long> offsets) {
+        startOffsetMs.putAll(offsets);
+    }
+
+    /**
+     * When the entry's own time on the track starts, in milliseconds after the race clock starts. An entry added to
+     * the race after the offsets were set is taken as the last to start, so it is never flagged before its time.
+     */
+    public synchronized long startOffsetMs(long entryId) {
+        return startOffsetMs.getOrDefault(entryId, lastStartOffsetMs());
+    }
+
+    /** When the last car starts, in milliseconds after the race clock starts; 0 when they all start together. */
+    public synchronized long lastStartOffsetMs() {
+        return startOffsetMs.values().stream().mapToLong(Long::longValue).max().orElse(0L);
     }
 
     /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */
@@ -81,12 +104,13 @@ public class LiveRaceState {
     }
 
     /**
-     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race whose clock may have run out. When
-     * {@code clockExpired}, the passing that counts a lap is the car's last: it has taken the flag, and its later
-     * passings are kept in the history but not counted. A passing too soon to count (TRACK-02) does not flag the car.
+     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race with a length, where the car's time on
+     * the track may have run out. When {@code windowEnded}, the passing that counts a lap is the car's last: it has
+     * taken the flag, and its later passings are kept in the history but not counted. A passing too soon to count
+     * (TRACK-02) does not flag the car.
      */
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
-                                                boolean clockExpired) {
+                                                boolean windowEnded) {
         lapHistory.add(event);
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
@@ -106,7 +130,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
-            if (clockExpired) {
+            if (windowEnded) {
                 flagged.add(entryId);
             }
         }

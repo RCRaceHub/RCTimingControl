@@ -29,6 +29,9 @@ export interface NextRaceCall {
 /** How long after the finish line the next race is called. */
 const NEXT_RACE_DELAY_MS = 4000;
 
+/** Said when the race clock reaches zero. */
+const TIME_UP_TEXT = 'Time. Cars finish as they cross the line.';
+
 /** Clip key the server stores an entry's grid call under (AudioPreGenerationService). */
 export function gridClipKey(entry: GridEntry): string {
   return `grid-${entry.entryId}`;
@@ -176,6 +179,16 @@ export function useAnnouncements({
 
       countdownTimeoutsRef.current.push(t);
     });
+
+    // At zero the clock is up for the first car: each car now finishes as it crosses the line
+    const upDelay = raceEndsAt - now;
+    if (upDelay > 0) {
+      countdownTimeoutsRef.current.push(setTimeout(() => {
+        if (raceStateRef.current !== 'RUNNING') return;
+        if (!settingsRef.current?.announceCountdown) return;
+        playClip('time-up', TIME_UP_TEXT);
+      }, upDelay));
+    }
 
     return () => {
       countdownTimeoutsRef.current.forEach(clearTimeout);

@@ -19,6 +19,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,10 +63,8 @@ public class LapTimingService {
     private final LapThresholdQuery lapThresholdQuery;
     private final RaceClockService raceClockService;
     private final ApplicationEventPublisher publisher;
-    /** Timed races whose clock has run out. Never goes back for the same run, since a clock only counts up. */
-    private final Set<Long> clockExpired = ConcurrentHashMap.newKeySet();
-    /** Each running race's length in milliseconds, read once so a passing never queries for it; -1 for none. */
-    private final Map<Long, Long> raceLengths = new ConcurrentHashMap<>();
+    /** Each running race's length and stagger, read once so a passing never queries for them. */
+    private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
 
     @Autowired
     public LapTimingService(LiveTimingHub liveTimingHub,
@@ -93,6 +93,7 @@ public class LapTimingService {
             LiveRaceState state = new LiveRaceState();
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
+            state.putStartOffsets(startOffsets(id));
             return state;
         });
     }
@@ -144,7 +145,7 @@ public class LapTimingService {
         }
 
         boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
-                clockExpired(raceId));
+                windowEnded(raceId, state, entryId));
 
         if (entryId == null && firstUnknown) {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
@@ -152,25 +153,58 @@ public class LapTimingService {
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
 
-        if (state.takeFinishRequest()) {
+        if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
         }
     }
 
-    /** Whether the race has a length and its clock has run out, so the next lap a car counts is its last. */
-    private boolean clockExpired(long raceId) {
-        if (clockExpired.contains(raceId)) {
-            return true;
-        }
-        long length = raceLengths.computeIfAbsent(raceId, id -> raceClockService.durationMsOf(id).orElse(-1L));
-        if (length < 0) {
+    /**
+     * Whether the entry's time on the track has run out, so the next lap it counts is its last. A timed race gives
+     * each car the race's length from its own start; in a stagger start the cars leave one after another, so the
+     * last car's window ends after the first car's.
+     */
+    private boolean windowEnded(long raceId, LiveRaceState state, Long entryId) {
+        if (entryId == null) {
             return false;
         }
-        boolean expired = raceClockService.clockOf(raceId, RaceStatus.RUNNING, length).remainingMs() <= 0;
-        if (expired) {
-            clockExpired.add(raceId);
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.durationMs() == null) {
+            return false;
         }
-        return expired;
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        return elapsedMs >= plan.durationMs() + state.startOffsetMs(entryId);
+    }
+
+    /** Whether the last car to start has had its whole window: until then a car yet to cross the line may be racing. */
+    private boolean allWindowsEnded(long raceId, LiveRaceState state) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.durationMs() == null) {
+            return false;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        return elapsedMs >= plan.durationMs() + state.lastStartOffsetMs();
+    }
+
+    private RaceClockService.RacePlan planOf(long raceId) {
+        return plans.computeIfAbsent(raceId, id -> raceClockService.planOf(id).orElse(RaceClockService.RacePlan.NONE));
+    }
+
+    /** When each of the race's entries starts, in grid order, for a stagger start; none for any other start. */
+    private Map<Long, Long> startOffsets(long raceId) {
+        long intervalMs = planOf(raceId).staggerIntervalMs();
+        Map<Long, Long> offsets = new HashMap<>();
+        if (intervalMs > 0) {
+            // The order the drivers are called in: grid position, an entry with none last, then by entry
+            List<RaceEntry> inGridOrder = raceEntryRepository.findByRaceIdOrderByGridPosition(raceId).stream()
+                    .sorted(Comparator
+                            .comparing(RaceEntry::getGridPosition, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(RaceEntry::getEntryId))
+                    .toList();
+            for (int i = 0; i < inGridOrder.size(); i++) {
+                offsets.put(inGridOrder.get(i).getEntryId(), i * intervalMs);
+            }
+        }
+        return offsets;
     }
 
     /**
@@ -202,8 +236,7 @@ public class LapTimingService {
      */
     public void releaseState(long raceId) {
         released.add(raceId);
-        clockExpired.remove(raceId);
-        raceLengths.remove(raceId);
+        plans.remove(raceId);
         states.remove(raceId);
     }
 
@@ -215,8 +248,7 @@ public class LapTimingService {
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         if (event.getNewStatus() == RaceStatus.GRID) {
-            clockExpired.remove(event.getRaceId());
-            raceLengths.remove(event.getRaceId());
+            plans.remove(event.getRaceId());
         }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
