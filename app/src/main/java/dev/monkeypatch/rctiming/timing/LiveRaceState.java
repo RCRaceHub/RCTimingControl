@@ -107,7 +107,7 @@ public class LiveRaceState {
      * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race with a length, where the car's time on
      * the track may have run out. When {@code windowEnded}, the passing that counts a lap is the car's last: it has
      * taken the flag, and its later passings are kept in the history but not counted. A passing too soon to count
-     * (TRACK-02) does not flag the car.
+     * (TRACK-02) does not flag the car, and neither does a first passing, which only starts timing the first lap.
      */
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
                                                 boolean windowEnded) {
@@ -130,7 +130,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
-            if (windowEnded) {
+            if (windowEnded && pos.getLapsCompleted() > 0) {
                 flagged.add(entryId);
             }
         }

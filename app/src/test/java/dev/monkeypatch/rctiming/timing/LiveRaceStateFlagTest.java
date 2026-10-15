@@ -29,7 +29,16 @@ class LiveRaceStateFlagTest {
         pass(1, 40, true);
         pass(1, 70, true);
 
-        assertThat(laps(1)).isEqualTo(2);
+        assertThat(laps(1)).isEqualTo(1);
+    }
+
+    @Test
+    void aFirstPassingAfterTheClockRanOutDoesNotTakeTheFlag() {
+        pass(1, 40, true);
+        assertThat(state.takeFinishRequest()).isFalse();
+
+        pass(1, 70, true);
+        assertThat(state.takeFinishRequest()).isTrue();
     }
 
     @Test
