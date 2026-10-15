@@ -1,15 +1,19 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ChevronDown, ChevronUp, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { speakWithBrowser } from '@/lib/speech';
+import { playFinishHorn, playLapBeep, playStartHorn, playTick } from '@/lib/sounds';
 import {
   ANNOUNCEMENT_TOGGLES,
   getAudioSettings,
+  getPiperTestClip,
   patchAudioSettings,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
@@ -36,23 +40,55 @@ export function AudioSettingsPanel() {
     volume / 100,
   );
 
+  // Test Piper: play a clip from the club's Piper voice, or say it can't be reached
+  const [piperTesting, setPiperTesting] = useState(false);
+  const testPiper = async () => {
+    setPiperTesting(true);
+    let url: string | null = null;
+    try {
+      url = URL.createObjectURL(await getPiperTestClip());
+      const audio = new Audio(url);
+      audio.volume = volume / 100;
+      const clip = url;
+      audio.onended = () => URL.revokeObjectURL(clip);
+      await audio.play();
+    } catch {
+      if (url) URL.revokeObjectURL(url);
+      toast.error('Piper could not be reached or its clip would not play, so spoken calls will use the browser voice.');
+    } finally {
+      setPiperTesting(false);
+    }
+  };
+
   const toggleSetting = (key: keyof AudioSettingsDto) => {
     if (!settings) return;
-    const updated = { ...settings, [key]: !settings[key] };
+    const updated = { ...settings, [key]: settings[key] === false };
     mutation.mutate(updated);
   };
 
-  const updateDepth = (depth: number) => {
+  const updateRunningOrder = (
+    change: Partial<Pick<AudioSettingsDto, 'runningOrderPercent' | 'runningOrderAllUpTo'>>,
+  ) => {
     if (!settings) return;
-    mutation.mutate({ ...settings, runningOrderDepth: depth });
+    mutation.mutate({ ...settings, ...change });
+  };
+
+  const updateStartCountdown = (seconds: number) => {
+    if (!settings) return;
+    mutation.mutate({ ...settings, startCountdownSeconds: seconds });
+  };
+
+  const updateTimeUpText = (text: string) => {
+    if (!settings || text === settings.timeUpText) return;
+    mutation.mutate({ ...settings, timeUpText: text });
   };
 
   const allEnabled =
     settings !== undefined &&
-    ANNOUNCEMENT_TOGGLES.every(({ key }) => settings[key]);
+    ANNOUNCEMENT_TOGGLES.every(({ key }) => settings[key] !== false);
   const someEnabled =
     settings !== undefined &&
-    ANNOUNCEMENT_TOGGLES.some(({ key }) => settings[key]);
+    ANNOUNCEMENT_TOGGLES.some(({ key }) => settings[key] !== false);
 
   const statusDot = allEnabled
     ? 'bg-[var(--flag-green)]'
@@ -62,7 +98,6 @@ export function AudioSettingsPanel() {
 
   return (
     <div className="border-b" data-testid="audio-settings-panel">
-      {/* Trigger row */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex h-10 w-full items-center gap-2 px-4 hover:bg-muted/50 select-none"
@@ -83,7 +118,6 @@ export function AudioSettingsPanel() {
         )}
       </button>
 
-      {/* Expanded panel */}
       {isOpen && (
         <div
           id="audio-settings-panel-content"
@@ -109,7 +143,7 @@ export function AudioSettingsPanel() {
                   </label>
                   <Switch
                     id={`toggle-${key}`}
-                    checked={settings[key]}
+                    checked={settings[key] !== false}
                     onCheckedChange={() => toggleSetting(key)}
                     aria-label={label}
                   />
@@ -117,20 +151,80 @@ export function AudioSettingsPanel() {
               ))}
 
               <div className="flex items-center gap-2">
-                <label className="text-sm shrink-0" htmlFor="running-order-depth">
-                  Running order depth
+                <label className="text-sm shrink-0" htmlFor="running-order-percent">
+                  Running order names the top
                 </label>
                 <Input
-                  id="running-order-depth"
+                  id="running-order-percent"
                   type="number"
                   min={1}
-                  max={20}
-                  defaultValue={settings.runningOrderDepth}
-                  onBlur={(e) => updateDepth(parseInt(e.target.value, 10) || 3)}
+                  max={100}
+                  defaultValue={settings.runningOrderPercent}
+                  onBlur={(e) =>
+                    updateRunningOrder({
+                      runningOrderPercent: Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 50)),
+                    })
+                  }
                   className="w-20 h-8 text-center"
                 />
-                <span className="text-sm text-muted-foreground">positions</span>
+                <span className="text-sm text-muted-foreground">% of drivers</span>
               </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm shrink-0" htmlFor="running-order-all-up-to">
+                  ...but all of them when there are
+                </label>
+                <Input
+                  id="running-order-all-up-to"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={settings.runningOrderAllUpTo}
+                  onBlur={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    updateRunningOrder({ runningOrderAllUpTo: Math.min(100, Math.max(0, Number.isNaN(n) ? 5 : n)) });
+                  }}
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">or fewer</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm shrink-0" htmlFor="start-countdown">
+                  Start lead-in
+                </label>
+                <Input
+                  id="start-countdown"
+                  type="number"
+                  min={0}
+                  max={60}
+                  defaultValue={settings.startCountdownSeconds ?? 10}
+                  onBlur={(e) => updateStartCountdown(Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">seconds (0 for none)</span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm" htmlFor="time-up-text">
+                  When the race time is up, say
+                </label>
+                <Input
+                  id="time-up-text"
+                  key={settings.timeUpText}
+                  maxLength={200}
+                  defaultValue={settings.timeUpText ?? ''}
+                  onBlur={(e) => updateTimeUpText(e.target.value)}
+                  className="h-8"
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
+              </div>
+
+              <AudioDetailFields
+                settings={settings}
+                onChange={(next) => mutation.mutate(next)}
+                idPrefix="rc"
+              />
 
               <p className="text-xs font-semibold text-muted-foreground pt-2">
                 Volume
@@ -153,16 +247,38 @@ export function AudioSettingsPanel() {
                 <span className="text-xs w-8 text-right">{volume}%</span>
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={testAudio}
-                aria-label="Test audio"
-              >
-                ▶ Test Audio
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={testAudio}
+                  aria-label="Test audio"
+                >
+                  ▶ Test Audio
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playStartHorn(volume / 100, settings.hornSounds)}>
+                  ▶ Start horn
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100, settings.hornSounds)}>
+                  ▶ Finish horn
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => playTick(volume / 100, false, settings.hornSounds)}>
+                  ▶ Tick
+                </Button>
+                {([['faster', 'Faster lap'], ['onPace', 'On-pace lap'], ['slower', 'Slower lap']] as const).map(
+                  ([pace, label]) => (
+                    <Button key={pace} variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, pace, {
+                      hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs }, settings.hornSounds)}>
+                      ▶ {label}
+                    </Button>
+                  ))}
+                <Button variant="outline" size="sm" onClick={testPiper} disabled={piperTesting}>
+                  {piperTesting ? 'Asking Piper…' : '▶ Piper voice'}
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Plays a sample announcement to verify speakers are working.
+                Plays a sample announcement and each sound to verify speakers are working. They play in this
+                browser, which is where the race is announced.
               </p>
             </>
           ) : null}

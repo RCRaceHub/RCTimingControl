@@ -269,13 +269,13 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("client-side per D-08 + plan 05; no backend endpoint exists")
+    @Disabled("worked out in the browser; no backend endpoint exists")
     void proximityAlertLogic_computedFromLiveTimingStream() {
         // Covered by Vitest in frontend/src/pages/race-control/referee/alerts.test.ts
     }
 
     @Test
-    @Disabled("client-side per D-08 + plan 05; no backend endpoint exists")
+    @Disabled("worked out in the browser; no backend endpoint exists")
     void backmarkerDetection_flagsLappedCars() {
         // Covered by Vitest in frontend/src/pages/race-control/referee/alerts.test.ts
     }
@@ -529,10 +529,7 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
         race.setUpdatedAt(now);
         race = raceRepository.save(race);
 
-        User user = userRepository.findAll().stream().findFirst().orElseThrow();
-
         Entry entry = new Entry();
-        entry.setUserId(user.getId());
         entry.setEventId(event.getId());
         entry.setEventClassId(ec.getId());
         entry.setTransponderNumberSnapshot("T-" + UUID.randomUUID().toString().substring(0, 8));

@@ -11,6 +11,8 @@ export interface PracticeSessionDto {
   eventName: string | null;
   status: PracticeStatus;
   bestLapN: number;
+  /** How long a transponder may be quiet before its next lap starts a new run */
+  pauseSeconds: number;
   startedAt: string | null;
   stoppedAt: string | null;
 }
@@ -24,6 +26,8 @@ export interface PracticeTimingRowDto {
   bestLapMs: number | null;
   bestConsecutiveNMs: number | null;
   lastLapMs: number | null;
+  /** How many runs the driver has had; a long pause between laps starts a new one */
+  runs: number;
   isUnknown: boolean;
 }
 
@@ -31,6 +35,22 @@ export interface CreateSessionRequest {
   name: string;
   eventId?: number;
   bestLapN?: number;
+  pauseSeconds?: number;
+}
+
+/** Name a transponder in a session: an existing competitor, or a new walk-in made from a name. */
+export interface LinkTransponderRequest {
+  transponderNumber: string;
+  competitorId?: number;
+  newName?: string;
+  /** Say a new name is a different person from the existing competitors it matches. */
+  confirmNewCompetitor?: boolean;
+}
+
+export interface PracticeDriverDto {
+  transponderNumber: string;
+  competitorId: number;
+  displayName: string | null;
 }
 
 // ── API client ─────────────────────────────────────────────────────────────
@@ -62,3 +82,32 @@ export const getSnapshot = (id: number) =>
 /** Get the final results for a stopped session. */
 export const getResults = (id: number) =>
   api.get<PracticeTimingRowDto[]>(`/api/v1/practice-sessions/${id}/results`).then(r => r.data);
+
+/** Name a transponder in a session. A name matching someone already there answers 409 with the matches. */
+export const linkTransponder = (id: number, req: LinkTransponderRequest) =>
+  api.post<PracticeDriverDto>(`/api/v1/practice-sessions/${id}/link-transponder`, req).then(r => r.data);
+
+/** One driver's practice across a day, added up over every session they were timed in. */
+export interface PracticeDayRowDto {
+  competitorId: number | null;
+  name: string | null;
+  transponderNumbers: string;
+  sessions: number;
+  runs: number;
+  laps: number;
+  bestLapMs: number | null;
+  bestConsecutiveNMs: number | null;
+}
+
+export interface PracticeDayDto {
+  date: string;
+  bestLapN: number;
+  sessions: PracticeSessionDto[];
+  rows: PracticeDayRowDto[];
+}
+
+/** The day's practice; `date` is YYYY-MM-DD, today when left out. */
+export const getPracticeDay = (date?: string, bestLapN?: number) =>
+  api
+    .get<PracticeDayDto>('/api/v1/practice-sessions/day', { params: { date, bestLapN } })
+    .then(r => r.data);

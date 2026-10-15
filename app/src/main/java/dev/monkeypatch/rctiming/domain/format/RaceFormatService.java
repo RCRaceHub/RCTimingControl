@@ -13,9 +13,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Race format templates, and the format a class actually races to. A class keeps its own snapshot of the
+ * template it was given, so editing the template afterwards changes nothing already set up (FORMAT-06), and
+ * an optional override patch is merged over that snapshot at read time (FORMAT-07).
+ *
+ * <p>The merge is one level deep: an override replaces a top-level field of the config, so it cannot change
+ * part of a nested object. A key that is not a field of the config's type is not ignored either: the merge
+ * fails, and every read of that class's format throws until the override is corrected.
+ */
 @Service
 @Transactional
 public class RaceFormatService {
+
+    static final int DEFAULT_STAGGER_INTERVAL_SECONDS = 1;
 
     private final RaceFormatTemplateRepository templateRepository;
     private final EventClassRepository eventClassRepository;
@@ -100,6 +111,23 @@ public class RaceFormatService {
     }
 
     /**
+     * The seconds between driver calls in a stagger start, from the class's format. One second when the class has
+     * no format or the format sets none (FORMAT-11).
+     */
+    @Transactional(readOnly = true)
+    public int staggerIntervalSeconds(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return DEFAULT_STAGGER_INTERVAL_SECONDS;
+        }
+        int seconds = switch (getEffectiveConfig(eventClass)) {
+            case TimedRaceConfig timed -> timed.staggerIntervalSeconds();
+            case BumpUpConfig bumpUp -> bumpUp.staggerIntervalSeconds();
+            case PointsFinalsConfig points -> points.staggerIntervalSeconds();
+        };
+        return seconds > 0 ? seconds : DEFAULT_STAGGER_INTERVAL_SECONDS;
+    }
+
+    /**
      * Creates a new EventClass with a deep copy of the template's config as the
      * configSnapshot. The template reference is stored for audit purposes (FORMAT-06).
      * Template edits do not affect the snapshot after assignment.
@@ -116,8 +144,6 @@ public class RaceFormatService {
         eventClass.setTemplateId(template.getId());
         return eventClass;
     }
-
-    // --- CRUD methods for format templates ---
 
     @Transactional(readOnly = true)
     public List<RaceFormatTemplate> findAll() {

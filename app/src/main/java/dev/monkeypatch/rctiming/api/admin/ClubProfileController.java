@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LogoUploadService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,7 +47,7 @@ public class ClubProfileController {
     public ClubProfileDto getProfile() {
         return clubProfileService.getProfile()
                 .map(ClubProfileDto::from)
-                .orElseGet(() -> new ClubProfileDto(null, "", null, null, null, null, null, "UTC", null, null));
+                .orElseGet(() -> new ClubProfileDto(null, "", null, null, null, null, null, "UTC", null));
     }
 
     @Audited("audit_log")
@@ -55,8 +56,21 @@ public class ClubProfileController {
     public ClubProfileDto createOrUpdateProfile(Authentication auth, @RequestBody @Valid CreateClubProfileRequest request) {
         return ClubProfileDto.from(clubProfileService.createOrUpdateProfile(CurrentOfficial.actor(auth),
                 new ClubProfileService.ClubDetails(request.name(), request.email(), request.phone(),
-                        request.websiteUrl(), request.latitude(), request.longitude(), request.timezone(),
-                        request.logoType())));
+                        request.websiteUrl(), request.latitude(), request.longitude(), request.timezone())));
+    }
+
+    @GetMapping("/privacy-notice")
+    public PrivacyNoticeEditDto getPrivacyNotice() {
+        return PrivacyNoticeEditDto.from(clubProfileService.privacyNotice());
+    }
+
+    @Audited("audit_log")
+    @PutMapping("/privacy-notice")
+    @PreAuthorize("hasRole('ADMIN')")
+    public PrivacyNoticeEditDto changePrivacyNotice(Authentication auth,
+                                                    @RequestBody @Valid PrivacyNoticeRequest request) {
+        return PrivacyNoticeEditDto.from(
+                clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
     }
 
     @GetMapping("/affiliations")
@@ -98,5 +112,15 @@ public class ClubProfileController {
         Long profileId = clubProfileService.getSingletonProfileId();
         String url = logoUploadService.uploadLogo(CurrentOfficial.actor(auth), profileId, file);
         return new LogoUploadResponse(url);
+    }
+
+    /** {@code text} blank means go back to the default notice. */
+    public record PrivacyNoticeRequest(@Size(max = 20000) String text) {}
+
+    /** {@code customised}: whether {@code text} is the club's own, or the default. */
+    public record PrivacyNoticeEditDto(String text, boolean customised) {
+        static PrivacyNoticeEditDto from(ClubProfileService.PrivacyNotice n) {
+            return new PrivacyNoticeEditDto(n.text(), n.customised());
+        }
     }
 }

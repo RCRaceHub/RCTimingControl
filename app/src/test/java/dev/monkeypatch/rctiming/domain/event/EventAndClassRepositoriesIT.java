@@ -86,8 +86,6 @@ class EventAndClassRepositoriesIT extends AbstractIntegrationTest {
         e.setName("Club round 1");
         e.setEventDate(LocalDate.of(2026, 10, 5));
         e.setStatus(EventStatus.OPEN);
-        e.setEntryOpensAt(T1);
-        e.setEntryClosesAt(T2);
         e.setCreatedAt(T1);
         e.setUpdatedAt(T1);
         e.setRacehubLastImportAt(T1);
@@ -101,8 +99,6 @@ class EventAndClassRepositoriesIT extends AbstractIntegrationTest {
             c.setName("Club round 2");
             c.setEventDate(LocalDate.of(2026, 11, 1));
             c.setStatus(EventStatus.COMPLETED);
-            c.setEntryOpensAt(null);
-            c.setEntryClosesAt(null);
             c.setCreatedAt(T2);
             c.setUpdatedAt(T2);
             c.setRacehubLastImportAt(T2);
@@ -138,8 +134,6 @@ class EventAndClassRepositoriesIT extends AbstractIntegrationTest {
         ec.setConfigOverride(Map.of("durationMinutes", 6));
         ec.setCombinedRaceGroup(3L);
         ec.setFinalsCount(2);
-        ec.setCarsPerFinal(10);
-        ec.setBumpCount(1);
         ec.setCreatedAt(T1);
         ec.setUpdatedAt(T1);
         EventClass saved = assertSavedAndReloaded(eventClasses, ec, c -> {
@@ -149,8 +143,6 @@ class EventAndClassRepositoriesIT extends AbstractIntegrationTest {
             c.setConfigOverride(null);
             c.setCombinedRaceGroup(null);
             c.setFinalsCount(null);
-            c.setCarsPerFinal(null);
-            c.setBumpCount(null);
             c.setUpdatedAt(T2);
             return c;
         }, EventClass::getId);

@@ -212,8 +212,6 @@ public class EntryFeedService {
         }
     }
 
-    // ── Fetching ───────────────────────────────────────────────────────────────────
-
     private record Problem(EntryFeedStatus status, String message) {
     }
 
@@ -248,8 +246,6 @@ public class EntryFeedService {
         }
         return new Download(export, null);
     }
-
-    // ── Recording outcomes ─────────────────────────────────────────────────────────
 
     private Optional<EntryFeed> hold(EntryFeed feed, RaceHubEntryExport export, String message) {
         String document;
@@ -323,8 +319,6 @@ public class EntryFeedService {
     private EntryFeed removedWhileFetching(Optional<EntryFeed> recorded) {
         return recorded.orElseThrow(() -> new EntityNotFoundException("The entry feed was removed while it was fetched"));
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────────
 
     private RaceHubEntryExport heldExport(EntryFeed feed) {
         if (feed.getHeldDocument() == null) {

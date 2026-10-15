@@ -6,7 +6,6 @@ import java.time.Instant;
 
 public record EntryDto(
         Long id,
-        Long userId,
         Long eventId,
         Long eventClassId,
         String transponderNumberSnapshot,
@@ -18,7 +17,6 @@ public record EntryDto(
     public static EntryDto from(Entry e) {
         return new EntryDto(
                 e.getId(),
-                e.getUserId(),
                 e.getEventId(),
                 e.getEventClassId(),
                 e.getTransponderNumberSnapshot(),

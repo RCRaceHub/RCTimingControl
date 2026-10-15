@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminAudioSettingsPage from './AdminAudioSettingsPage';
 
@@ -19,7 +19,8 @@ const defaultSettings = {
   announceLapBeep: false,
   announceFinish: true,
   announceRunningOrder: false,
-  runningOrderDepth: 3,
+  runningOrderPercent: 50,
+  runningOrderAllUpTo: 5,
   defaultVoiceId: 'en_GB-alan-medium',
 };
 
@@ -72,5 +73,21 @@ describe('AdminAudioSettingsPage', () => {
     );
 
     expect(screen.queryByText(/blocklist/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the start lead-in and saves a change to it', async () => {
+    vi.mocked(audioApi.getAdminAudioSettings).mockResolvedValue(
+      { ...defaultSettings, startCountdownSeconds: 10 } as never,
+    );
+    render(<AdminAudioSettingsPage />, { wrapper });
+
+    const field = await screen.findByLabelText('Start lead-in');
+    expect(field).toHaveValue(10);
+    fireEvent.change(field, { target: { value: '20' } });
+    fireEvent.blur(field);
+    fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
+
+    await waitFor(() => expect(audioApi.saveAdminAudioSettings).toHaveBeenCalled());
+    expect(vi.mocked(audioApi.saveAdminAudioSettings).mock.calls[0][0]).toMatchObject({ startCountdownSeconds: 20 });
   });
 });

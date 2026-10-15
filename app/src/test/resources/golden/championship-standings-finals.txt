@@ -1,0 +1,5 @@
+Mod | Alice Smith | 25 | R1:2/8 R2:3/6d R3:1/10
+Mod | Bob Jones | 21 | R1:1/10 R2:0/0xd R3:2/8
+Mod | Cara Lee | 19 | R1:3/6 R2:1/10 R3:0/0d
+Stock | Dan Moss | 16 | R1:1/10 R2:2/8d R3:1/10d
+Stock | Alice Smith | 13 | R1:2/8d R2:1/10 R3:0/0d

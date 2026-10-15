@@ -1,17 +1,26 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.NameVisibilityChangedEvent;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +36,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><strong>Threading.</strong> Decoder passings reach {@link #onLapPassing} synchronously on the
  * single timing thread ({@code timingExecutor}), so they are handled one at a time in decoder order and
  * broadcasts go out in that order. REST requests (marshal laps, lap penalties, transponder links) call in from
- * request threads, so every change to a {@link LiveRaceState} is made while holding that state's monitor.
+ * request threads; {@link LiveRaceState}'s own methods are synchronized, which is what keeps those changes
+ * apart from the timing thread's.
+ *
+ * <p>Each change is made under that lock, but the positions it broadcasts are worked out in a second,
+ * separate call. A passing landing between the two is in both snapshots, so a request thread's broadcast can
+ * carry a later picture than the timing thread's that follows it. Clients take the latest message as the
+ * truth, and the stored result comes from the state itself, not from a broadcast, so this is harmless.
  */
 @Service
 public class LapTimingService {
@@ -35,31 +50,58 @@ public class LapTimingService {
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
 
     private final Map<Long, LiveRaceState> states = new ConcurrentHashMap<>();
+    /**
+     * Races whose state was released and that have not started again. A passing whose race lookup ran before the
+     * finish or restart committed can reach {@link #onLapPassing} after the release; without this it would
+     * recreate the state and the next start would carry one stale lap.
+     */
+    private final Set<Long> released = ConcurrentHashMap.newKeySet();
     private final LiveTimingHub liveTimingHub;
     private final RaceEntryRepository raceEntryRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
+    private final LapThresholdQuery lapThresholdQuery;
+    private final RaceClockService raceClockService;
+    private final ApplicationEventPublisher publisher;
+    /** Each running race's length and stagger, read once so a passing never queries for them. */
+    private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
 
+    @Autowired
     public LapTimingService(LiveTimingHub liveTimingHub,
                             RaceEntryRepository raceEntryRepository,
                             EntryRepository entryRepository,
-                            CompetitorRepository competitorRepository) {
+                            CompetitorRepository competitorRepository,
+                            LapThresholdQuery lapThresholdQuery,
+                            RaceClockService raceClockService,
+                            ApplicationEventPublisher publisher) {
         this.liveTimingHub = liveTimingHub;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
+        this.lapThresholdQuery = lapThresholdQuery;
+        this.raceClockService = raceClockService;
+        this.publisher = publisher;
     }
 
     /**
      * Returns existing LiveRaceState for this raceId, or creates a new one and pre-loads
-     * entry display names so calculatePositions() can include driver names.
+     * entry display names so calculatePositions() can include driver names, and each entry's
+     * minimum lap time. A change to the track's thresholds mid-race is not picked up.
      */
     public LiveRaceState stateFor(long raceId) {
         return states.computeIfAbsent(raceId, id -> {
             LiveRaceState state = new LiveRaceState();
             loadEntryNames(id, state);
+            state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
+            state.putStartOffsets(startOffsets(id));
             return state;
         });
+    }
+
+    /** A competitor's public name changed (#265): races in progress take the new names from the next row. */
+    @EventListener
+    public void onNameVisibilityChanged(NameVisibilityChangedEvent event) {
+        states.forEach(this::loadEntryNames);
     }
 
     /**
@@ -83,9 +125,18 @@ public class LapTimingService {
         if (raceId == LapPassingEvent.NO_RACE) {
             return;
         }
+        if (released.contains(raceId)) {
+            log.debug("Dropped a passing for race {}, which has been released", raceId);
+            return;
+        }
         String transponderNumber = event.transponderNumber();
 
         LiveRaceState state = stateFor(raceId);
+        if (released.contains(raceId)) {
+            // Released between the check above and stateFor, which then made a new state: take it away again
+            states.remove(raceId);
+            return;
+        }
 
         // Check runtime links first — these take priority over transponderNumberSnapshot
         Long entryId = state.getRuntimeLink(transponderNumber);
@@ -93,13 +144,67 @@ public class LapTimingService {
             entryId = resolveEntryId(raceId, transponderNumber);
         }
 
-        boolean firstUnknown = state.applyLapPassing(event, entryId);
+        boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
+                windowEnded(raceId, state, entryId));
 
         if (entryId == null && firstUnknown) {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
         }
 
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+
+        if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
+            publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
+        }
+    }
+
+    /**
+     * Whether the entry's time on the track has run out, so the next lap it counts is its last. A timed race gives
+     * each car the race's length from its own start; in a stagger start the cars leave one after another, so the
+     * last car's window ends after the first car's.
+     */
+    private boolean windowEnded(long raceId, LiveRaceState state, Long entryId) {
+        if (entryId == null) {
+            return false;
+        }
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.durationMs() == null) {
+            return false;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        return elapsedMs >= plan.durationMs() + state.startOffsetMs(entryId);
+    }
+
+    /** Whether the last car to start has had its whole window: until then a car yet to cross the line may be racing. */
+    private boolean allWindowsEnded(long raceId, LiveRaceState state) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.durationMs() == null) {
+            return false;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        return elapsedMs >= plan.durationMs() + state.lastStartOffsetMs();
+    }
+
+    private RaceClockService.RacePlan planOf(long raceId) {
+        return plans.computeIfAbsent(raceId, id -> raceClockService.planOf(id).orElse(RaceClockService.RacePlan.NONE));
+    }
+
+    /** When each of the race's entries starts, in grid order, for a stagger start; none for any other start. */
+    private Map<Long, Long> startOffsets(long raceId) {
+        long intervalMs = planOf(raceId).staggerIntervalMs();
+        Map<Long, Long> offsets = new HashMap<>();
+        if (intervalMs > 0) {
+            // The order the drivers are called in: grid position, an entry with none last, then by entry
+            List<RaceEntry> inGridOrder = raceEntryRepository.findByRaceIdOrderByGridPosition(raceId).stream()
+                    .sorted(Comparator
+                            .comparing(RaceEntry::getGridPosition, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(RaceEntry::getEntryId))
+                    .toList();
+            for (int i = 0; i < inGridOrder.size(); i++) {
+                offsets.put(inGridOrder.get(i).getEntryId(), i * intervalMs);
+            }
+        }
+        return offsets;
     }
 
     /**
@@ -108,9 +213,7 @@ public class LapTimingService {
      */
     public void applyMarshalAdjustment(long raceId, long entryId, int lapDelta, MarshalAdjustmentDto dto) {
         LiveRaceState state = stateFor(raceId);
-        synchronized (state) {
-            state.applyLapDelta(entryId, lapDelta);
-        }
+        state.applyLapDelta(entryId, lapDelta);
         liveTimingHub.broadcastMarshalAdjustment(raceId, dto);
         liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
     }
@@ -121,23 +224,39 @@ public class LapTimingService {
      */
     public void applyLapPenalty(long raceId, long entryId, int laps) {
         peek(raceId).ifPresent(state -> {
-            synchronized (state) {
-                state.applyLapDelta(entryId, -laps);
-            }
+            state.applyLapDelta(entryId, -laps);
             liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
         });
     }
 
     /**
-     * Releases in-memory state for a finished race, freeing memory.
+     * Releases in-memory state for a finished race, freeing memory, and drops any passing for the race until it
+     * is running again.
      * Idempotent — no-op if no state is present.
      */
     public void releaseState(long raceId) {
+        released.add(raceId);
+        plans.remove(raceId);
         states.remove(raceId);
     }
 
     /**
-     * Phase 5 / TIMING-08: links an unknown transponder to an entry for the given race.
+     * A race going to RUNNING takes passings again. Done at once, not after the commit: the decoder lookup finds the
+     * race as soon as the commit lands, which can be before an after-commit callback runs, and the passing would
+     * then be dropped. If the start rolls back the race is not running, so no lookup finds it.
+     */
+    @EventListener
+    public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.GRID) {
+            plans.remove(event.getRaceId());
+        }
+        if (event.getNewStatus() == RaceStatus.RUNNING) {
+            released.remove(event.getRaceId());
+        }
+    }
+
+    /**
+     * Links an unknown transponder to an entry for the given race.
      * Retroactively credits all passings from that transponder since race start and
      * broadcasts updated positions via STOMP.
      */
@@ -151,7 +270,7 @@ public class LapTimingService {
     }
 
     /**
-     * Phase 5: returns the count of lapHistory entries matching the given transponder number.
+     * Returns the count of lapHistory entries matching the given transponder number.
      * Used by TransponderLinkService to report lapsCredited before linking.
      */
     public int countPassingsForTransponder(long raceId, String transponderNumber) {
@@ -160,16 +279,18 @@ public class LapTimingService {
     }
 
     /**
-     * Pre-loads each entry's competitor display name into the given state so calculatePositions()
-     * can include driver names without hitting the DB on every lap.
+     * Pre-loads each entry's competitor name into the given state so calculatePositions()
+     * can include driver names without hitting the DB on every lap. It is the public name (#265): live timing
+     * goes to anonymous screens and the live feed.
      */
     private void loadEntryNames(long raceId, LiveRaceState state) {
+        PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)
-                    .ifPresent(competitor ->
-                            state.putEntryName(raceEntry.getEntryId(), competitor.getDisplayName()));
+                    .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
+                            names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
         }
     }
 

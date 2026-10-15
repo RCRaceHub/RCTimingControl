@@ -12,13 +12,11 @@ export default function AdminGuidePage() {
         <p className="text-sm text-muted-foreground mt-1">For administrators — RC Timing Club</p>
       </div>
 
-      {/* Section 1: Club Configuration */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">1. Club Configuration</h2>
         <p className="text-sm mb-3">
-          Club Profile holds the name, contact details, and logo displayed throughout
-          the system. This should be completed during initial setup before creating
-          events.
+          Club Profile holds the name, contact details and logo. The name and logo appear on
+          printable results. Complete it during initial setup, before creating events.
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm">
           <li>
@@ -29,18 +27,16 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Enter club details:</span> Fill in the club
-            name, contact email, and contact phone number. These appear in event
-            communications and on printable result sheets.
+            name, email, phone and any of the other fields, and upload a logo if you have one.
+            The club name and logo appear on the printable results.
           </li>
           <li>
             <span className="font-semibold">Save:</span> Click
-            <span className="font-semibold"> Save Profile</span>. The club name updates
-            throughout the Admin panel immediately.
+            <span className="font-semibold"> Save Profile</span>.
           </li>
         </ol>
       </section>
 
-      {/* Section 2: Tracks */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">2. Tracks</h2>
         <p className="text-sm mb-3">
@@ -61,20 +57,21 @@ export default function AdminGuidePage() {
             you want them.
           </li>
           <li>
-            <span className="font-semibold">Assign to an event:</span> When creating or
-            editing an event, select the track from the track dropdown. Each event runs
-            on one track.
+            <span className="font-semibold">Assign to an event:</span> On the event&apos;s
+            page, while the event is still a draft, choose the track from the
+            <span className="font-semibold"> Track</span> list and click
+            <span className="font-semibold"> Save Event Details</span>. Each event runs on one
+            track.
           </li>
         </ol>
       </section>
 
-      {/* Section 3: Race Format Templates */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">3. Race Format Templates</h2>
         <p className="text-sm mb-3">
           Race Formats define how a race is run — duration, number of qualifiers, finals
-          structure, and bump-up rules. Formats are templates: they are assigned to
-          events at event creation time, and a snapshot is taken so that later template
+          structure, and bump-up rules. Formats are templates: one is chosen for each class
+          when the class is added to an event, and a snapshot is taken so that later template
           edits do not affect existing events.
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm">
@@ -86,19 +83,19 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Create a format:</span> Click
-            <span className="font-semibold"> Create Format Template</span>. Enter the format name
-            (e.g. "5-Minute Timed Qualifier + ABC Finals") and configure the heat
-            duration in seconds, number of qualifier rounds, and finals structure.
+            <span className="font-semibold"> Create Template</span>. Enter the format name
+            (e.g. "5-Minute Timed Qualifier + ABC Finals"), choose the format type, and set
+            its fields, such as the heat duration in minutes, the number of qualifying heats
+            and the finals.
           </li>
           <li>
-            <span className="font-semibold">Edit a format:</span> Click any existing
-            format to open its editor. Changes only affect future event assignments —
+            <span className="font-semibold">Edit a format:</span> Click the pencil beside a
+            format to open its editor. Changes only affect classes added after the change;
             events already using this format are not affected.
           </li>
         </ol>
       </section>
 
-      {/* Section 4: Creating an Event */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">4. Creating an Event</h2>
         <p className="text-sm mb-3">
@@ -114,8 +111,9 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Create an event:</span> Click
-            <span className="font-semibold"> Create Event</span>. Enter the event name,
-            date, and select a track. The event is created in DRAFT status.
+            <span className="font-semibold"> Create Event</span>. Enter the event name and
+            date. The event is created in DRAFT status; choose its track on the event&apos;s
+            page before it leaves draft.
           </li>
           <li>
             <span className="font-semibold">Add classes:</span> Open the event detail
@@ -144,7 +142,8 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Start the event:</span> On the day, click
             <span className="font-semibold"> Start Event</span> to move to IN_PROGRESS.
-            Open Race Control from the event row shortcut link.
+            The event&apos;s row in the Events list then has a
+            <span className="font-semibold"> Race Control</span> button.
           </li>
           <li>
             <span className="font-semibold">Complete the event:</span> After all races
@@ -154,7 +153,6 @@ export default function AdminGuidePage() {
         </ol>
       </section>
 
-      {/* Section 5: Managing Classes and Entries */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">5. Managing Classes and Entries</h2>
         <p className="text-sm mb-3">
@@ -172,13 +170,14 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Generate rounds:</span> Once the event is in
             progress, open Race Control and click
-            <span className="font-semibold"> Generate Rounds</span> to create the race
+            <span className="font-semibold"> Generate Rounds</span> in the cockpit to create the race
             schedule (practice, qualifiers and finals) for all the event&apos;s classes.
           </li>
           <li>
             <span className="font-semibold">View entries:</span> Click the
-            <span className="font-semibold"> Entries</span> tab in the event detail to
-            see all entries. The list shows each competitor's name, class, and transponders.
+            <span className="font-semibold"> Entries</span> tab in the event detail. When the
+            event has more than one class, pick a class to see its entries. The list shows each
+            driver&apos;s name, transponder and status.
           </li>
           <li>
             <span className="font-semibold">Import from RaceHub:</span> Click
@@ -228,7 +227,7 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Swaps survive a re-import:</span> If an official swapped
-            a driver&apos;s transponder at the check-in desk, importing a newer file later keeps the
+            a driver&apos;s transponder on the day, importing a newer file later keeps the
             swapped number. The entry list then shows &quot;Booking has transponder &hellip;. Keeping
             the number swapped on the day.&quot; under the entry so you can see the booking differs.
             Nothing is blocked, and swapping to the booking&apos;s number clears the note.
@@ -249,7 +248,6 @@ export default function AdminGuidePage() {
         </ol>
       </section>
 
-      {/* Section 6: Championships */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">6. Championships</h2>
         <p className="text-sm mb-3">
@@ -278,12 +276,12 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Add classes (Classes tab):</span> Click
-            <span className="font-semibold">Add Class</span> to assign racing classes.
+            <span className="font-semibold"> Add Class</span> to assign racing classes.
             Each class can optionally override the global best-X-from-Y setting.
           </li>
           <li>
             <span className="font-semibold">Link events (Events tab):</span> Click
-            <span className="font-semibold">Link Event</span> to add an event as a round
+            <span className="font-semibold"> Link Event</span> to add an event as a round
             in the championship. Assign a round number to each linked event.
           </li>
           <li>
@@ -298,15 +296,15 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Add exclusions (Exclusions tab):</span>
-            Use the <span className="font-semibold">Exclusions</span> tab to exclude a
-            driver from a specific round (e.g. DQ at scrutineering). Enter the driver,
-            the event, and the reason. The exclusion is reflected immediately in the
+            On the <span className="font-semibold">Exclusions</span> tab, click
+            <span className="font-semibold"> Add Exclusion</span> to exclude a driver from a
+            specific round (e.g. DQ at scrutineering). Enter the driver, the event, and the
+            reason. The exclusion is reflected immediately in the
             Standings tab.
           </li>
         </ol>
       </section>
 
-      {/* Section 7: Officials and Competitors */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">7. Officials and Competitors</h2>
         <p className="text-sm mb-3">
@@ -317,12 +315,12 @@ export default function AdminGuidePage() {
         <ol className="list-decimal list-inside space-y-2 text-sm">
           <li>
             <span className="font-semibold">Staff accounts:</span> The setup wizard&apos;s
-            <span className="font-semibold"> Staff</span> step creates the first official
-            accounts and their roles:
+            <span className="font-semibold"> Staff Account</span> step adds officials and their
+            roles:
             <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
               <li><span className="font-semibold">ADMIN</span> — full club configuration, all events</li>
-              <li><span className="font-semibold">RACE_DIRECTOR</span> — access to race control: start/stop races, call grid, marshal laps</li>
-              <li><span className="font-semibold">REFEREE</span> — Referee View: raise incidents, apply penalties, link transponders</li>
+              <li><span className="font-semibold">RACE_DIRECTOR</span> — access to race control: start/stop races, call grid, marshal laps, link unknown transponders</li>
+              <li><span className="font-semibold">REFEREE</span> — Referee View: raise incidents, apply penalties, record marshal absences</li>
             </ul>
           </li>
           <li>
@@ -351,7 +349,8 @@ export default function AdminGuidePage() {
             to hear it in the announcer voice, then <span className="font-semibold">Save</span>.
             It stays with the driver for later meetings and imports never change it. It is used for
             the grid call of the next race to reach the grid, and for the running order from its
-            next announcement. Only admins can change it. Clear it to go back to the name as
+            next announcement. Any official can change it. Click
+            <span className="font-semibold"> Clear</span> to go back to the name as
             written. Without one, RCTC tidies the name for speech: bracketed nicknames and club
             tags are left out, emoji and stray symbols dropped, and names in capitals are said as
             normal capitals. The page shows <span className="font-semibold">Spoken as</span> when that
@@ -371,7 +370,6 @@ export default function AdminGuidePage() {
         </ol>
       </section>
 
-      {/* Section 8: First-Run Setup Wizard */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">8. First-Run Setup Wizard</h2>
         <p className="text-sm mb-3">
@@ -383,8 +381,9 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Access the wizard:</span> In the Admin
             sidebar under <span className="font-semibold">Operations</span>, click
-            <span className="font-semibold"> Setup Wizard</span>. The wizard is also
-            shown automatically on first login before any club configuration exists.
+            <span className="font-semibold"> Setup Wizard</span>. Until the club profile is saved,
+            RCTC opens the wizard by itself. On a fresh install it starts with a form that
+            creates the first admin account.
           </li>
           <li>
             <span className="font-semibold">Step 1 — Club Profile:</span> Enter the club
@@ -404,9 +403,9 @@ export default function AdminGuidePage() {
             to it, with an "Add another format" button.
           </li>
           <li>
-            <span className="font-semibold">Step 4 — Staff Account:</span> Create the
-            first staff (admin) account. This step is shown only before any admin account
-            exists.
+            <span className="font-semibold">Step 4 — Staff Account:</span> Add at least one
+            staff account and choose its roles. More officials can be added later from the
+            Officials page.
           </li>
           <li>
             <span className="font-semibold">Step 5 — Decoder Config:</span> Enter the
@@ -414,20 +413,23 @@ export default function AdminGuidePage() {
             protocol). RCTC uses this configuration to connect to the decoder.
           </li>
           <li>
-            <span className="font-semibold">Navigate the wizard:</span> Click each step
-            in the left sidebar to move between steps. Completed steps show a green
-            tick. You can return to any step at any time.
+            <span className="font-semibold">Navigate the wizard:</span> Use
+            <span className="font-semibold"> Save and Continue</span>,
+            <span className="font-semibold"> Back</span> and, where a step offers it,
+            <span className="font-semibold"> Skip for now</span> (the last step finishes with
+            <span className="font-semibold"> Save and Finish</span>). Completed steps show a
+            green tick in the left sidebar. Once the club profile is saved, you can click any
+            step in the sidebar to go back to it.
           </li>
           <li>
             <span className="font-semibold">Skip the wizard:</span> If you prefer to
-            configure sections individually, use the standard Admin sidebar pages at any
-            time. The wizard is advisory — all its steps are also accessible via the
-            individual Configuration pages.
+            configure sections individually, click <span className="font-semibold">Skip
+            wizard</span> once the club profile is saved and use the Admin sidebar pages instead. Every
+            step has its own page in the Admin panel as well.
           </li>
         </ol>
       </section>
 
-      {/* Section 9: Backups, results export, live feed, decoder */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">9. Backups, Results to RaceHub, Live Feed and Decoder</h2>
         <p className="text-sm mb-3">

@@ -18,6 +18,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A club's championships: their settings, the classes and events that count toward them, the points scale and
+ * the exclusions (CHAMP-01 to CHAMP-09). It is the write side only; the standings themselves are worked out on
+ * demand from the stored results by {@code ChampionshipStandingsQuery}, never stored or added up as races
+ * finish.
+ */
 @Service
 @Transactional
 public class ChampionshipService {
@@ -108,7 +114,7 @@ public class ChampionshipService {
                 pointsScaleRepository.findByChampionshipIdOrderByPositionAsc(id));
     }
 
-    /** Adds a class; a null best-X-from-Y inherits the championship's (D-11). */
+    /** Adds a class; a null best-X-from-Y inherits the championship's. */
     public ChampionshipClass addClass(Actor actor, Long championshipId, Long racingClassId,
                                       Integer bestXFromYX, Integer bestXFromYY) {
         championshipRepository.requireExists(championshipId);
@@ -271,8 +277,6 @@ public class ChampionshipService {
         c.setTqBonusPoints(settings.tqBonusPoints());
         c.setAfinalWinnerBonusPoints(settings.afinalWinnerBonusPoints());
     }
-
-    // ── Audit values ────────────────────────────────────────────────────────────
 
     private static Map<String, Object> settingsOf(Championship c) {
         Map<String, Object> m = new LinkedHashMap<>();

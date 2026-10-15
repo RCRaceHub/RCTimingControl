@@ -118,14 +118,14 @@ class ClubConfigAuditIT extends AbstractIntegrationTest {
         long before = mine("AUDIO_SETTINGS_CHANGED").size();
         send("PUT", "/api/v1/admin/audio/settings", Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true, "announceFinish", true,
-                "announceRunningOrder", true, "runningOrderDepth", 4, "defaultVoiceId", "voice-" + run));
+                "announceRunningOrder", true, "runningOrderPercent", 40, "defaultVoiceId", "voice-" + run));
         send("PATCH", "/api/v1/race-control/settings/audio", Map.of("announceLapBeep", false));
 
         List<Map<String, Object>> rows = mine("AUDIO_SETTINGS_CHANGED");
         assertThat(rows).hasSize((int) before + 2);
         Map<String, Object> admin = rows.get(rows.size() - 2);
         Map<String, Object> patch = rows.get(rows.size() - 1);
-        assertThat(admin.get("after_json").toString()).contains("voice-" + run).contains("\"runningOrderDepth\":4");
+        assertThat(admin.get("after_json").toString()).contains("voice-" + run).contains("\"runningOrderPercent\":40");
         assertThat(patch.get("before_json").toString()).contains("\"announceLapBeep\":true");
         assertThat(patch.get("after_json").toString()).contains("\"announceLapBeep\":false");
     }

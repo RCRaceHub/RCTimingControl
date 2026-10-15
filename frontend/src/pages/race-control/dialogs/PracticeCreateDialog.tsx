@@ -32,6 +32,10 @@ const createSchema = z.object({
     .int()
     .min(1, 'Must be at least 1')
     .max(20, 'Must be at most 20'),
+  pauseMinutes: z
+    .number({ coerce: true })
+    .min(1, 'Must be at least 1')
+    .max(60, 'Must be at most 60'),
 });
 
 type CreateForm = z.infer<typeof createSchema>;
@@ -56,7 +60,8 @@ export function PracticeCreateDialog({
     resolver: zodResolver(createSchema),
     defaultValues: {
       name: '',
-      bestLapN: 3,
+      bestLapN: 5,
+      pauseMinutes: 3,
     },
   });
 
@@ -66,6 +71,7 @@ export function PracticeCreateDialog({
         name: values.name,
         eventId,
         bestLapN: values.bestLapN,
+        pauseSeconds: Math.round(values.pauseMinutes * 60),
       }),
     onSuccess: (session) => {
       queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.practice.sessions() });
@@ -117,15 +123,29 @@ export function PracticeCreateDialog({
               name="bestLapN"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Best consecutive laps (N)</FormLabel>
+                  <FormLabel>Laps to average (N)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min={1}
                       max={20}
                       {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 3)}
+                      onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 5)}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="pauseMinutes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pause that starts a new run (minutes)</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={1} max={60} step="any" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

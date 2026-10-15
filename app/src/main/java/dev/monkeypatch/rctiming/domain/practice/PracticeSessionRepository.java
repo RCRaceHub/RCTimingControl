@@ -6,6 +6,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,12 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
         return findWhere(PRACTICE_SESSIONS.STATUS.eq(PracticeStatus.RUNNING.name()));
     }
 
+    /** The sessions that started at or after {@code from} and before {@code to}, oldest first. */
+    public List<PracticeSession> findStartedBetween(Instant from, Instant to) {
+        return findWhere(PRACTICE_SESSIONS.STARTED_AT.ge(from).and(PRACTICE_SESSIONS.STARTED_AT.lt(to)),
+                PRACTICE_SESSIONS.STARTED_AT.asc(), PRACTICE_SESSIONS.ID.asc());
+    }
+
     public List<PracticeSession> findByEventId(Long eventId) {
         return findWhere(PRACTICE_SESSIONS.EVENT_ID.eq(eventId));
     }
@@ -44,6 +51,7 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
         s.setEventId(r.getEventId());
         s.setStatus(r.getStatus() == null ? null : PracticeStatus.valueOf(r.getStatus()));
         s.setBestLapN(r.getBestLapN());
+        s.setPauseSeconds(r.getPauseSeconds());
         s.setCreatedByUserId(r.getCreatedByUserId());
         s.setStartedAt(r.getStartedAt());
         s.setStoppedAt(r.getStoppedAt());
@@ -58,6 +66,7 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
         r.setEventId(s.getEventId());
         r.setStatus(s.getStatus() == null ? null : s.getStatus().name());
         r.setBestLapN(s.getBestLapN());
+        r.setPauseSeconds(s.getPauseSeconds());
         r.setCreatedByUserId(s.getCreatedByUserId());
         r.setStartedAt(s.getStartedAt());
         r.setStoppedAt(s.getStoppedAt());

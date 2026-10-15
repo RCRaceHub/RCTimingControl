@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * The app's version and the addresses other devices on the venue network can open it at. It is open to
+ * anyone, signed in or not, so a spectator's phone or the announcer's laptop can find the boards. Nothing
+ * here is secret on a venue network, which is the only place the app runs.
+ */
 @RestController
 @RequestMapping("/api/v1/about")
 public class AboutController {

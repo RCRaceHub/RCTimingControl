@@ -18,7 +18,8 @@ COPY app/ app/
 COPY decoder-protocol/ decoder-protocol/
 COPY decoder-simulator/ decoder-simulator/
 COPY frontend/ frontend/
-RUN chmod +x gradlew && ./gradlew -PbundleFrontend :app:bootJar -x test -x generateJooq --no-daemon
+# A Windows checkout can leave CRLF in gradlew, which makes its shebang read "sh\r" ("not found")
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew -PbundleFrontend :app:bootJar -x test -x generateJooq --no-daemon
 
 FROM eclipse-temurin:21-jre
 # The base image already has curl, which the health check uses

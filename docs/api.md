@@ -83,8 +83,7 @@ Authorization: Bearer <token>
   "websiteUrl": "https://southsiderc.com",
   "latitude": 51.5,
   "longitude": -0.1,
-  "timezone": "Europe/London",
-  "logoType": "SVG"
+  "timezone": "Europe/London"
 }
 ```
 
@@ -104,8 +103,7 @@ Content-Type: application/json
   "websiteUrl": "https://southsiderc.com",
   "latitude": 51.5074,
   "longitude": -0.1278,
-  "timezone": "Europe/London",
-  "logoType": "SVG"
+  "timezone": "Europe/London"
 }
 ```
 
@@ -340,10 +338,9 @@ No authentication required.
 
 ```http
 GET /events
-GET /events/{id}
 ```
 
-Returns published events with their classes, entry availability, and entry window dates.
+Returns the published events (published, open, entries closed or in progress), soonest first: each one's `id`, `name`, `eventDate`, the ids of its finished races (`finishedRaceIds`) and the championship it counts towards (`championshipId`, or null). Entry windows belong to RaceHub, so the schedule does not show them.
 
 ---
 
@@ -376,7 +373,7 @@ Requires `ADMIN`. With `dryRun=true` it returns the preview and saves nothing. E
 
 `action` is `CREATE`, `UPDATE`, `WITHDRAW`, `UNCHANGED` (a replay), `STALE` (an older version) or `SKIP` (withdrawn and never imported).
 
-A transponder swapped at the check-in desk survives a re-import (#50). When an update carries a different number for a slot swapped on the day, the swapped number is kept, a warning names both numbers, and the file's number is stored on the entry as `importedTransponderNumber` (or `importedSecondaryTransponderNumber`). The entry list and the check-in desk show it. Nothing is blocked, and swapping to the file's number clears it.
+A transponder swapped on the day survives a re-import (#50). When an update carries a different number for a slot swapped on the day, the swapped number is kept, a warning names both numbers, and the file's number is stored on the entry as `importedTransponderNumber` (or `importedSecondaryTransponderNumber`). The entry list shows it. Nothing is blocked, and swapping to the file's number clears it.
 
 ### The file format, for any booking system
 
@@ -524,7 +521,7 @@ Content-Type: application/json
 { "spokenName": "Shiv-awn Keen" }
 ```
 
-Requires `ADMIN`, `RACE_DIRECTOR` or `REFEREE`, so a name can be fixed at the check-in desk on the day. Every real change is recorded with who made it (see below); saving the same value again records nothing. Send an empty string to clear it. The text is trimmed and can be at most 100 characters (400 otherwise); an unknown competitor is 404. Returns the competitor. The grid-call audio uses it from the next race to reach the grid (the clips are made then), the running order from its next announcement, and a RaceHub or CSV re-import never changes it.
+Requires `ADMIN`, `RACE_DIRECTOR` or `REFEREE`, so a name can be fixed on the day. Every real change is recorded with who made it (see below); saving the same value again records nothing. Send an empty string to clear it. The text is trimmed and can be at most 100 characters (400 otherwise); an unknown competitor is 404. Returns the competitor. The grid-call audio uses it from the next race to reach the grid (the clips are made then), the running order from its next announcement, and a RaceHub or CSV re-import never changes it.
 
 ### See who changed how a name is said
 
@@ -620,7 +617,7 @@ GET /admin/entries/{id}/history
 Authorization: Bearer <token>
 ```
 
-Admin only; **404** for an unknown entry. Oldest first: `[{ "at": "...", "actor": "Dana Director", "summary": "Withdrawn", "reason": "Driver went home" }]`. It lists a walk-in being added, check-in, transponder swaps, a competitor merge and withdrawal by an official. Changes made by importing an entry file are recorded once per import, not per entry, so they are not listed. `actor` is a name only, and `reason` is null where the action asks for none.
+Admin only; **404** for an unknown entry. Oldest first: `[{ "at": "...", "actor": "Dana Director", "summary": "Withdrawn", "reason": "Driver went home" }]`. It lists a walk-in being added, transponder swaps, a competitor merge and withdrawal by an official. Changes made by importing an entry file are recorded once per import, not per entry, so they are not listed. `actor` is a name only, and `reason` is null where the action asks for none.
 
 ---
 
@@ -637,17 +634,15 @@ POST /race-control/race/{raceId}/restart
 
 Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`) and the live positions held in memory.
 
-## Race control — Check-in & transponder swap
+## Race control — Entry search & transponder swap
 
-Open to any official (`ADMIN`, `RACE_DIRECTOR` or `REFEREE`). Withdrawn entries are never returned. Check-in recorded here is authoritative on the day; `racehubArrival` is RaceHub's arrival mark, shown read-only (`ARRIVED`, `NOT_ARRIVED`, or null for entries not imported).
+Open to any official (`ADMIN`, `RACE_DIRECTOR` or `REFEREE`). Withdrawn entries are never returned.
 
 ```http
-POST /race-control/events/{eventId}/check-in/resolve   { "transponderNumber": "1234567" }
-GET  /race-control/events/{eventId}/check-in/search?query=jane
-POST /race-control/events/{eventId}/check-in/entries/{entryId}/confirm
+GET  /race-control/events/{eventId}/entries/search?query=jane
 ```
 
-`resolve` matches the primary or secondary transponder and returns a list, because one competitor may use a transponder in more than one class. Each item is `{ "entryId": 101, "competitorName": "Jane Doe", "className": "Stock Buggy", "transponderNumber": "1234567", "secondaryTransponderNumber": null, "checkedIn": false, "checkedInAt": null, "racehubArrival": "ARRIVED" }`. **404** when nothing matches. Refusals are Problem Details with a readable `detail` and a code in `error`, here `"error": "not_found"`. `search` is a case-insensitive name match. `confirm` returns `{ "entry": {...}, "alreadyCheckedIn": false }` and is idempotent: a repeat keeps the first check-in time. **409** `entry_withdrawn`.
+`search` is a case-insensitive name match, to find the entry to swap. Each item is `{ "entryId": 101, "competitorName": "Jane Doe", "competitorId": 7, "spokenName": null, "speechName": "Jane Doe", "className": "Stock Buggy", "transponderNumber": "1234567", "secondaryTransponderNumber": null, "importedTransponderNumber": null, "importedSecondaryTransponderNumber": null }`. Refusals are Problem Details with a readable `detail` and a code in `error`.
 
 ```http
 POST /race-control/events/{eventId}/entries/{entryId}/transponder-swap
@@ -658,7 +653,7 @@ Content-Type: application/json
 
 `slot` is `PRIMARY` or `SECONDARY`. A blank number removes the secondary. **200 OK** with `{ "entryId": 101, "slot": "PRIMARY", "oldTransponderNumber": "1234567", "newTransponderNumber": "7654321" }`; the change is written to the entry audit log as `TRANSPONDER_SWAP`, and laps count on the new number from the next passing. **409** `transponder_already_assigned` if another competitor's entry in the event uses the number (the same competitor's other entries may share it), or `entry_withdrawn`. **400** `same_as_other_transponder` or `primary_required`.
 
-The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `checkedIn` and `racehubArrival` on each slot.
+The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot.
 
 ## Race control — Race entries, transponder links and history
 
@@ -695,6 +690,11 @@ GET /boards/races/{raceId}/live-timing
 GET /boards/races/{raceId}/clock
 ```
 **200 OK** — `{ "raceId": 412, "status": "RUNNING", "elapsedMs": 183400, "durationMs": 300000, "remainingMs": 116600, "running": true }`, for the streaming overlay at `/boards/overlay`. `elapsedMs` is race time so far, not counting time stopped; while `running` is true a client counts on from it locally. `durationMs` and `remainingMs` are null when the race's format sets no length. For a race the app hasn't seen change since it started, the time is worked out from its start and finish times, so a stop before the restart isn't allowed for. **404** for an unknown race.
+
+```http
+GET /boards/races/{raceId}/round-fastest-lap
+```
+**200 OK** — `{ "lapMs": 18500, "driverName": "Sam Second" }`, the fastest lap in the other finished heats of the race's round and class, for the overlay's stats ticker. Names follow the public name rule. Both fields are null when no other heat has finished.
 
 **Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing` and `/topic/race/{raceId}/state`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
 
@@ -778,7 +778,12 @@ Newest first. Every filter is optional and the ones given must all match: `entit
 ```http
 GET /api/v1/admin/results-exports
 ```
-**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "missingSettings": [], "exports": [Export] }`, the newest 100 first. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names the settings still needed. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "exports": [Export] }`, the newest 100 first. `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+
+```http
+PUT /api/v1/admin/results-exports/address
+```
+Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the same body as the list. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
 
 ```http
 POST /api/v1/admin/results-exports/{id}/retry

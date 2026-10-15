@@ -4,12 +4,24 @@ import {
   useAnnouncements,
   gridClipKey,
   gridFallbackText,
-  CLIP_GRACE_MS,
+  carFinishText,
   type GridEntry,
 } from './useAnnouncements';
 import type { AudioSettingsDto } from '@/lib/audioApi';
 
 vi.mock('@/hooks/race-control/useStomp', () => ({ useStomp: () => ({ data: null }) }));
+
+const playStartHorn = vi.fn<(volume: number) => number>(() => 1200);
+const playFinishHorn = vi.fn<(volume: number) => number>(() => 1800);
+const playTick = vi.fn();
+const playLapBeep = vi.fn();
+vi.mock('@/lib/sounds', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/sounds')>()),
+  playTick: (...args: unknown[]) => playTick(...args),
+  playLapBeep: (...args: unknown[]) => playLapBeep(...args),
+  playStartHorn: (v: number) => playStartHorn(v),
+  playFinishHorn: (v: number) => playFinishHorn(v),
+}));
 
 const settings = {
   announceCountdown: true,
@@ -17,6 +29,10 @@ const settings = {
   announceLapBeep: true,
   announceFinish: true,
   announceRunningOrder: true,
+  startHorn: true,
+  finishHorn: true,
+  announceRaceCalls: true,
+  announceNextRace: true,
 } as AudioSettingsDto;
 
 const grid: GridEntry[] = [
@@ -31,6 +47,10 @@ const speak = vi.fn();
 beforeEach(() => {
   vi.useFakeTimers();
   audioPlay.mockClear();
+  playStartHorn.mockClear();
+  playFinishHorn.mockClear();
+  playTick.mockClear();
+  playLapBeep.mockClear();
   speak.mockClear();
   audioUrls.length = 0;
   vi.stubGlobal(
@@ -63,46 +83,141 @@ describe('grid call helpers', () => {
   });
 });
 
-describe('useAnnouncements grid call', () => {
-  function setup(raceState: string, entries: GridEntry[] = grid) {
+describe('useAnnouncements stagger start', () => {
+  type P = { raceState: string; startType?: string | null; interval?: number };
+  function setup(raceState: string, extra: Partial<P> = {}, entries: GridEntry[] = grid) {
     return renderHook(
-      (p: { raceState: string }) =>
-        useAnnouncements({ raceId: 5, settings, raceState: p.raceState, gridEntries: entries }),
-      { initialProps: { raceState } },
+      (p: P) =>
+        useAnnouncements({
+          raceId: 5,
+          settings,
+          raceState: p.raceState,
+          gridEntries: entries,
+          startType: p.startType,
+          staggerIntervalSeconds: p.interval,
+        }),
+      { initialProps: { raceState, startType: 'STAGGER', interval: 2, ...extra } as P },
     );
   }
+  const clips = { 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' };
 
-  it('plays each driver\'s clip in turn once the clips have arrived', () => {
+  it('says nothing at the grid call, only once the race starts', () => {
     const { result } = setup('GRID');
-    act(() => result.current.setClipMap({ 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' }));
+    act(() => result.current.setClipMap(clips));
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(audioPlay).not.toHaveBeenCalled();
+    expect(speak).not.toHaveBeenCalled();
+  });
 
-    act(() => { vi.advanceTimersByTime(0); });
+  it('calls each driver in turn at the set interval after the start', () => {
+    const { result, rerender } = setup('GRID');
+    act(() => result.current.setClipMap(clips));
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+
+    expect(playStartHorn).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(1199); });
+    expect(audioUrls).toHaveLength(0);
+    act(() => { vi.advanceTimersByTime(1); });
     expect(audioUrls).toEqual(['http://x/11.wav']);
-    act(() => { vi.advanceTimersByTime(2000); });
+    act(() => { vi.advanceTimersByTime(1999); });
+    expect(audioUrls).toHaveLength(1);
+    act(() => { vi.advanceTimersByTime(1); });
     expect(audioUrls).toEqual(['http://x/11.wav', 'http://x/12.wav']);
     expect(speak).not.toHaveBeenCalled();
   });
 
-  it('waits for the clips instead of speaking at once', () => {
-    setup('GRID');
-    act(() => { vi.advanceTimersByTime(CLIP_GRACE_MS - 1); });
-    expect(speak).not.toHaveBeenCalled();
-    expect(audioPlay).not.toHaveBeenCalled();
-  });
-
-  it('uses the browser voice when the clips never arrive', () => {
-    setup('GRID');
-    act(() => { vi.advanceTimersByTime(CLIP_GRACE_MS); });
-    act(() => { vi.advanceTimersByTime(2000); });
+  it('uses the browser voice when the clips never arrived', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(1200 + 2000); });
     expect(speak).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the scheduled calls when the grid refetches', () => {
-    const { result, rerender } = setup('GRID');
-    act(() => result.current.setClipMap({ 'grid-11': 'http://x/11.wav', 'grid-12': 'http://x/12.wav' }));
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(1200 + 2000); });
+    expect(speak).toHaveBeenCalledTimes(2);
+    expect(playStartHorn).toHaveBeenCalledTimes(1);
+  });
+
+  it('sounds the horn and says the race has started for a grid start, with no driver calls', () => {
+    const { rerender } = setup('GRID', { startType: 'GRID' });
+    rerender({ raceState: 'RUNNING', startType: 'GRID', interval: 2 });
+    expect(playStartHorn).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Race started.']);
+  });
+
+  it('stays quiet for a race that was already running', () => {
+    setup('RUNNING');
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).not.toHaveBeenCalled();
+    expect(playStartHorn).not.toHaveBeenCalled();
+  });
+
+  it('skips the horn when it is switched off, and calls the first driver at once', () => {
+    const { rerender } = renderHook(
+      (p: { raceState: string }) =>
+        useAnnouncements({
+          raceId: 5, settings: { ...settings, startHorn: false }, raceState: p.raceState,
+          gridEntries: grid, startType: 'STAGGER', staggerIntervalSeconds: 2,
+        }),
+      { initialProps: { raceState: 'GRID' } },
+    );
+    rerender({ raceState: 'RUNNING' });
+    act(() => { vi.advanceTimersByTime(0); });
+    expect(playStartHorn).not.toHaveBeenCalled();
+    expect(speak).toHaveBeenCalledTimes(1);
+  });
+
+  it('says which race is on the grid and how many drivers, once', () => {
+    const { rerender } = renderHook(
+      (p: { raceState: string }) =>
+        useAnnouncements({ raceId: 5, settings, raceState: p.raceState, gridEntries: grid, raceLabel: 'Qualifying 1, Touring, Heat 2' }),
+      { initialProps: { raceState: 'PENDING' } },
+    );
     rerender({ raceState: 'GRID' });
-    act(() => { vi.advanceTimersByTime(2000); });
-    expect(audioUrls).toHaveLength(2);
+    rerender({ raceState: 'GRID' });
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Qualifying 1, Touring, Heat 2. 2 drivers to the grid.']);
+  });
+
+  it('stays quiet about the grid for a race opened already on it', () => {
+    renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'GRID', gridEntries: grid, raceLabel: 'Heat 2' }),
+    );
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('calls the drivers when the start comes without the grid being seen', () => {
+    const { rerender } = setup('PENDING');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(1200 + 2000); });
+    expect(speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not call the drivers again when a stopped race resumes', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(1200 + 2000); });
+    rerender({ raceState: 'STOPPED', startType: 'STAGGER', interval: 2 });
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    // two calls, then "Race stopped." and "Race resumed."
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(
+      ['Alex Rowe.', 'Sam Ito.', 'Race stopped.', 'Race resumed.']);
+    expect(playStartHorn).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops calling when the race is stopped', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(1200); });
+    rerender({ raceState: 'STOPPED', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    // the first call, then "Race stopped."; the second driver is not called
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Alex Rowe.', 'Race stopped.']);
   });
 });
 
@@ -114,7 +229,65 @@ describe('useAnnouncements finish', () => {
     );
     act(() => result.current.setClipMap({ finish: 'http://x/finish.wav' }));
     rerender({ raceState: 'FINISHED' });
+    expect(playFinishHorn).toHaveBeenCalledTimes(1);
+    expect(audioUrls).toEqual([]);
+    act(() => { vi.advanceTimersByTime(1800); });
     expect(audioUrls).toEqual(['http://x/finish.wav']);
+  });
+
+  it('stays quiet for a race opened already finished', () => {
+    renderHook(() => useAnnouncements({ raceId: 5, settings, raceState: 'FINISHED' }));
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(playFinishHorn).not.toHaveBeenCalled();
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('says the race was abandoned, without the horn or the flag', () => {
+    const { result, rerender } = renderHook(
+      (p: { raceState: string }) => useAnnouncements({ raceId: 5, settings, raceState: p.raceState }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+    act(() => result.current.markAbandoned(5));
+    rerender({ raceState: 'FINISHED' });
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(playFinishHorn).not.toHaveBeenCalled();
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Race abandoned.']);
+  });
+
+  it('forgets an abandon the server refused', () => {
+    const { result, rerender } = renderHook(
+      (p: { raceState: string }) => useAnnouncements({ raceId: 5, settings, raceState: p.raceState }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+    act(() => result.current.markAbandoned(5));
+    act(() => result.current.clearAbandoned());
+    rerender({ raceState: 'FINISHED' });
+    expect(playFinishHorn).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet about the next race for a finished race that was only opened', () => {
+    renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'FINISHED', nextRace: { label: 'Final A', marshals: [] } }),
+    );
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('calls the next race and its marshals after the finish line', () => {
+    const { rerender } = renderHook(
+      (p: { raceState: string }) =>
+        useAnnouncements({
+          raceId: 5, settings: { ...settings, finishHorn: false }, raceState: p.raceState,
+          nextRace: { label: 'Final A, Touring', marshals: ['Alex Rowe', 'Sam Ito'] },
+        }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+    rerender({ raceState: 'FINISHED' });
+    act(() => { vi.advanceTimersByTime(4000); });
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual([
+      'Race finished. Checkered flag.',
+      'Next race: Final A, Touring. Marshals: Alex Rowe, Sam Ito.',
+    ]);
   });
 
   it('does not play the previous race\'s clip when the race changes', () => {
@@ -126,6 +299,7 @@ describe('useAnnouncements finish', () => {
     act(() => result.current.setClipMap({ finish: 'http://x/race5-finish.wav' }));
     rerender({ raceId: 6, raceState: 'RUNNING' });
     rerender({ raceId: 6, raceState: 'FINISHED' });
+    act(() => { vi.advanceTimersByTime(5000); });
     expect(audioUrls).toEqual([]);
     expect(speak).toHaveBeenCalledTimes(1);
   });
@@ -152,6 +326,22 @@ describe('useAnnouncements countdown', () => {
     expect(speak.mock.calls[0][0].text).toBe('10 seconds remaining.');
   });
 
+  it('says the time is up when the clock reaches zero', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: countdownSettings,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 15_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(15_100); });
+
+    expect(speak).toHaveBeenCalledTimes(2);
+    expect(speak.mock.calls[1][0].text).toBe('Time. Cars finish as they cross the line.');
+  });
+
   it('stays silent when the race has no end to count down to', () => {
     renderHook(() =>
       useAnnouncements({ raceId: 5, settings: countdownSettings, raceState: 'RUNNING', raceEndsAt: null }),
@@ -160,5 +350,147 @@ describe('useAnnouncements countdown', () => {
     act(() => { vi.advanceTimersByTime(60_000); });
 
     expect(speak).not.toHaveBeenCalled();
+  });
+});
+
+describe('useAnnouncements as cars finish and when the time is up', () => {
+  it('calls the car number and name of a car that takes the flag', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'RUNNING', gridEntries: [
+        { entryId: 11, carNumber: '7', driverName: 'Alex Rowe' },
+      ] }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak.mock.calls[0][0].text).toBe('Car 7, Alex Rowe.');
+  });
+
+  it('says it could not call a car whose driver is not in the grid yet, so it can be tried again', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'RUNNING', gridEntries: [] }),
+    );
+
+    let handled = true;
+    act(() => { handled = result.current.announceCarFinish(11); });
+
+    expect(handled).toBe(false);
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('still calls the last car if the race has just finished', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'FINISHED', gridEntries: grid }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak.mock.calls[0][0].text).toBe('Alex Rowe.');
+  });
+
+  it('stays quiet when the car calls are switched off', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, announceCarFinish: false } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        gridEntries: grid,
+      }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('says the clubs own wording when the clock reaches zero', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, timeUpText: 'Time! Take the flag.' } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 5_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(5_100); });
+
+    expect(speak.mock.calls.at(-1)?.[0].text).toBe('Time! Take the flag.');
+  });
+
+  it('beeps each of the final seconds of a timed race, the last one higher', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, tuning: { finalSeconds: 3 } } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 10_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(6_900); });
+    expect(playTick).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(3_000); });
+
+    expect(playTick.mock.calls.map((c) => c[1])).toEqual([false, false, true]);
+  });
+
+  it('keeps the final beeps quiet when they are switched off', () => {
+    renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, finalBeeps: false } as AudioSettingsDto,
+        raceState: 'RUNNING',
+        raceEndsAt: Date.now() + 10_000,
+      }),
+    );
+
+    act(() => { vi.advanceTimersByTime(10_000); });
+
+    expect(playTick).not.toHaveBeenCalled();
+  });
+
+  it('uses the clubs lap beep tone', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, tuning: { lapBeepHz: 600, lapBeepMs: 300 } } as AudioSettingsDto,
+        raceState: 'RUNNING',
+      }),
+    );
+
+    act(() => { result.current.playBeep('faster'); });
+
+    expect(playLapBeep).toHaveBeenCalledWith(0.8, 'faster', { hz: 600, ms: 300 }, undefined);
+  });
+
+  it('words the stop and resume lines as the club has', () => {
+    const club = { ...settings, wording: { stop: 'Red flag.', resume: 'Green flag.' } } as AudioSettingsDto;
+    const { rerender } = renderHook(
+      ({ raceState }: { raceState: string }) => useAnnouncements({ raceId: 5, settings: club, raceState }),
+      { initialProps: { raceState: 'RUNNING' } },
+    );
+
+    rerender({ raceState: 'STOPPED' });
+    rerender({ raceState: 'RUNNING' });
+
+    expect(speak.mock.calls.map((c) => c[0].text)).toEqual(['Red flag.', 'Green flag.']);
+  });
+});
+
+describe('carFinishText', () => {
+  const entry: GridEntry = { entryId: 1, carNumber: '12', driverName: 'Alex Rowe' };
+
+  it('says the standard call when the club has not worded one', () => {
+    expect(carFinishText(entry, settings)).toBe('Car 12, Alex Rowe.');
+  });
+
+  it('fills in the clubs wording', () => {
+    const club = { ...settings, wording: { carFinish: '{name} in car {car}, home!' } } as AudioSettingsDto;
+    expect(carFinishText(entry, club)).toBe('Alex Rowe in car 12, home!');
+  });
+
+  it('calls a car with no number by name alone', () => {
+    expect(carFinishText({ ...entry, carNumber: null }, settings)).toBe('Alex Rowe.');
   });
 });

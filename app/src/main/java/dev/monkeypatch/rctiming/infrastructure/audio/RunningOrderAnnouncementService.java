@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.infrastructure.audio;
 
+import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
@@ -10,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -32,14 +34,14 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Broadcasts the current running order to the race audio STOMP topic at regular intervals (AUDIO-06).
  * <p>
- * Interval schedule:
+ * Interval schedule, from the club's {@code audioSettings.tuning} (#299):
  * <ul>
- *   <li>First 10 minutes of a race: every 2 minutes</li>
- *   <li>After 10 minutes: every 5 minutes</li>
+ *   <li>Early in a race (the first 10 minutes unless changed): every 2 minutes unless changed</li>
+ *   <li>After that: every 5 minutes unless changed</li>
  * </ul>
  * Names are spoken as the competitor's spoken name when set (#119).
- * The announcement depth (top N positions) is taken from the club's {@code audioSettings.runningOrderDepth}
- * with a default of 3.
+ * Each call names the top {@code audioSettings.runningOrderPercent} of the drivers (50% by default, rounded up),
+ * or all of them when the race has {@code runningOrderAllUpTo} drivers or fewer (5 by default).
  * <p>
  * The service registers/deregisters races via {@link RaceStatusChangedEvent}:
  * RUNNING → starts tracking; STOPPED/FINISHED → stops tracking.
@@ -48,13 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RunningOrderAnnouncementService {
 
     private static final Logger log = LoggerFactory.getLogger(RunningOrderAnnouncementService.class);
-
-    /** Two-minute interval for the first 10 minutes of a race. */
-    private static final Duration INITIAL_INTERVAL = Duration.ofMinutes(2);
-    /** Five-minute interval after the first 10 minutes. */
-    private static final Duration LATER_INTERVAL = Duration.ofMinutes(5);
-    /** Period during which the shorter interval applies. */
-    private static final Duration INITIAL_PERIOD = Duration.ofMinutes(10);
 
     private final RaceRepository raceRepository;
     private final ClubProfileService clubProfileService;
@@ -88,26 +83,23 @@ public class RunningOrderAnnouncementService {
             List<String> positions
     ) {}
 
-    // -------------------------------------------------------------------------
-    // Race lifecycle tracking via events
-    // -------------------------------------------------------------------------
-
     /**
      * Listens for RUNNING transitions to start tracking; STOPPED/FINISHED to stop.
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        // After the commit, so a command that rolls back does not start or stop announcements for a race whose
+        // state did not change
         if (event.getNewStatus() == RaceStatus.RUNNING) {
-            onRaceStarted(event.getRaceId());
+            AfterCommit.run(() -> onRaceStarted(event.getRaceId()));
         } else if (event.getNewStatus() == RaceStatus.STOPPED
                 || event.getNewStatus() == RaceStatus.FINISHED) {
-            onRaceStopped(event.getRaceId());
+            AfterCommit.run(() -> onRaceStopped(event.getRaceId()));
         }
     }
 
     /**
      * Register a race as started — begins tracking for interval announcements.
-     * Visible for testing.
      */
     public void onRaceStarted(Long raceId) {
         Instant now = Instant.now();
@@ -118,17 +110,12 @@ public class RunningOrderAnnouncementService {
 
     /**
      * Deregister a race — stops interval announcements.
-     * Visible for testing.
      */
     public void onRaceStopped(Long raceId) {
         raceStartTimes.remove(raceId);
         lastAnnouncementTimes.remove(raceId);
         log.info("Race {} stopped — running order announcements disabled", raceId);
     }
-
-    // -------------------------------------------------------------------------
-    // Scheduled announcement check
-    // -------------------------------------------------------------------------
 
     /**
      * Checks every 10 seconds whether any tracked race is due for a running-order announcement.
@@ -140,7 +127,11 @@ public class RunningOrderAnnouncementService {
         }
 
         Instant now = Instant.now();
-        int announcementDepth = resolveAnnouncementDepth();
+        ClubAudioSettings settings = clubProfileService.audioSettings();
+        ClubAudioSettings.Tuning tuning = settings.tuning();
+        Duration initialPeriod = Duration.ofMinutes(tuning.runningOrderEarlyPeriodMinutes());
+        Duration initialInterval = Duration.ofMinutes(tuning.runningOrderEarlyEveryMinutes());
+        Duration laterInterval = Duration.ofMinutes(tuning.runningOrderLaterEveryMinutes());
 
         for (Map.Entry<Long, Instant> entry : raceStartTimes.entrySet()) {
             Long raceId = entry.getKey();
@@ -154,24 +145,20 @@ public class RunningOrderAnnouncementService {
                 continue;
             }
 
-            // Determine which interval applies (first 10 min vs. thereafter)
+            // Determine which interval applies (early period vs. thereafter)
             Duration elapsed = Duration.between(startTime, now);
-            Duration interval = elapsed.compareTo(INITIAL_PERIOD) < 0 ? INITIAL_INTERVAL : LATER_INTERVAL;
+            Duration interval = elapsed.compareTo(initialPeriod) < 0 ? initialInterval : laterInterval;
 
             // Check if enough time has passed since the last announcement
             Duration sinceLast = Duration.between(lastAnnouncement, now);
             if (sinceLast.compareTo(interval) >= 0) {
-                broadcastRunningOrder(raceId, announcementDepth);
+                broadcastRunningOrder(raceId, settings);
                 lastAnnouncementTimes.put(raceId, now);
             }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    private void broadcastRunningOrder(Long raceId, int depth) {
+    private void broadcastRunningOrder(Long raceId, ClubAudioSettings settings) {
         Optional<LiveRaceState> stateOpt = lapTimingService.peek(raceId);
         if (stateOpt.isEmpty()) {
             return;
@@ -182,15 +169,16 @@ public class RunningOrderAnnouncementService {
             return;
         }
 
+        int count = settings.runningOrderCount(rows.size());
         List<String> positions = rows.stream()
                 .sorted(Comparator.comparingInt(LiveTimingRowDto::position))
-                .limit(depth)
+                .limit(count)
                 .map(this::spokenNameOf)
                 .toList();
 
         RunningOrderAnnouncement announcement = new RunningOrderAnnouncement("running-order", positions);
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", announcement);
-        log.debug("Broadcast running order for race {}: top {} — {}", raceId, depth, positions);
+        log.debug("Broadcast running order for race {}: top {} of {} — {}", raceId, count, rows.size(), positions);
     }
 
     /** What to say for a row: the competitor's spoken name (#119), else their tidied name (#120). */
@@ -200,10 +188,6 @@ public class RunningOrderAnnouncementService {
                 .flatMap(competitorRepository::findById)
                 .map(Competitor::speechName)
                 .orElseGet(() -> SpeechName.tidy(row.driverName()));
-    }
-
-    private int resolveAnnouncementDepth() {
-        return clubProfileService.audioSettings().runningOrderDepth();
     }
 
     /**

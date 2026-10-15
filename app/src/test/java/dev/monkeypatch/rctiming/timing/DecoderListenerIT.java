@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,8 @@ class DecoderListenerIT extends AbstractIntegrationTest {
         Race runningRace = mock(Race.class);
         when(runningRace.getId()).thenReturn(RACE_ID);
         when(raceRepository.findFirstByStatus(RaceStatus.RUNNING)).thenReturn(Optional.of(runningRace));
+        // The state is released after each test, as a finish does; starting the race takes passings again
+        lapTimingService.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE_ID, RaceStatus.RUNNING));
     }
 
     @AfterEach

@@ -4,6 +4,7 @@
  */
 export const publicQueryKeys = {
   about: () => ['public', 'about'] as const,
+  privacyNotice: () => ['public', 'privacy-notice'] as const,
   events: () => ['public', 'events'] as const,
   results: (raceId: number) => ['public', 'results', raceId] as const,
   championship: (id: number) => ['public', 'championships', id] as const,
@@ -13,5 +14,6 @@ export const publicQueryKeys = {
     liveTiming: (raceId: number | null) => ['boards', 'live-timing', raceId] as const,
     results: (eventId: number | null) => ['boards', 'results', eventId] as const,
     clock: (raceId: number | null) => ['boards', 'clock', raceId] as const,
+    roundFastest: (raceId: number | null) => ['boards', 'round-fastest', raceId] as const,
   },
 };

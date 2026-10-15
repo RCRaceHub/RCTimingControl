@@ -7,6 +7,10 @@ import java.util.Map;
  * The preview of an RC-Timing CSV import, and its outcome (#39). {@code applied} is false for a
  * dry run and for an import that {@code blocked} (bad rows, unmapped classes, or a selection that
  * no longer matches the file): nothing was saved.
+ *
+ * <p>{@code blocked} is also set on a dry run that a real import would have refused, so the page can show what to fix
+ * before anyone tries. Only new rows are created without being picked: a changed row is updated and a missing entry
+ * withdrawn only when the official picked it.
  */
 public record CsvImportResult(
         boolean dryRun,

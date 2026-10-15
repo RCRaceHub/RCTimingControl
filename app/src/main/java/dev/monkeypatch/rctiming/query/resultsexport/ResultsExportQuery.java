@@ -81,8 +81,6 @@ public class ResultsExportQuery {
                 championships(eventId));
     }
 
-    // ── Races ──────────────────────────────────────────────────────────────────────
-
     private List<ResultsExportV1.Race> races(long eventId, Map<Long, EntryRef> entries) {
         var rows = dsl.select(RACES.ID, RACES.EVENT_CLASS_ID, RACES.HEAT_NUMBER, RACES.FINAL_LETTER, RACES.FINISHED_AT,
                         RACES.STARTED_AT, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.ROUND_NUMBER, RACING_CLASSES.NAME,
@@ -205,8 +203,6 @@ public class ResultsExportQuery {
         return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
     }
 
-    // ── Championships ──────────────────────────────────────────────────────────────
-
     private List<ResultsExportV1.Championship> championships(long eventId) {
         var links = dsl.select(CHAMPIONSHIPS.ID, CHAMPIONSHIPS.NAME, CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER)
                 .from(CHAMPIONSHIP_EVENT_LINKS)
@@ -292,8 +288,6 @@ public class ResultsExportQuery {
                         CompetitorRef.of(c.get(COMPETITORS.EXTERNAL_SOURCE), c.get(COMPETITORS.EXTERNAL_ID))));
         return competitors;
     }
-
-    // ── Entries ────────────────────────────────────────────────────────────────────
 
     private Map<Long, EntryRef> entries(long eventId) {
         Map<Long, EntryRef> entries = new LinkedHashMap<>();

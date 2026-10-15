@@ -19,6 +19,14 @@ export function useRetryResultsExport() {
   });
 }
 
+export function useSetResultsAddress() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.resultsExports.setAddress,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.resultsExports.all() }),
+  });
+}
+
 /** Downloads an event's results file and saves it through the browser. */
 export function useDownloadResultsExport() {
   return useMutation({

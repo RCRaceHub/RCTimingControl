@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,9 +32,9 @@ import java.util.stream.Collectors;
  * standings group by competitor, so a driver who exists twice has their history and points split; a
  * merge moves everything onto one record.
  * <p>
- * Only two tables point at a competitor: {@code entries} (results and championship points are derived
- * from entries) and {@code championship_exclusions}. Both move, along with the duplicate's change history, and the duplicate is then deleted, all
- * in one transaction. Each moved entry gets an audit row.
+ * Only these tables point at a competitor: {@code entries} (results and championship points are derived
+ * from entries), {@code championship_exclusions} and {@code practice_drivers}. They all move, along with the
+ * duplicate's change history, and the duplicate is then deleted, all in one transaction. Each moved entry gets an audit row.
  * <p>
  * What the kept competitor ends up with: its own display name; its BRCA number, home club and spoken
  * name, filled from the duplicate where it has none; and the external identity (the id an import matches
@@ -51,6 +52,7 @@ public class CompetitorMergeService {
     private final CompetitorAuditLogRepository competitorAuditLogRepository;
     private final ChampionshipExclusionRepository exclusionRepository;
     private final EventClassRepository eventClassRepository;
+    private final PracticeDriverRepository practiceDriverRepository;
     private final ObjectMapper objectMapper;
     private final AuditService audit;
 
@@ -60,6 +62,7 @@ public class CompetitorMergeService {
                                   CompetitorAuditLogRepository competitorAuditLogRepository,
                                   ChampionshipExclusionRepository exclusionRepository,
                                   EventClassRepository eventClassRepository,
+                                  PracticeDriverRepository practiceDriverRepository,
                                   ObjectMapper objectMapper,
                                   AuditService audit) {
         this.competitorRepository = competitorRepository;
@@ -68,6 +71,7 @@ public class CompetitorMergeService {
         this.competitorAuditLogRepository = competitorAuditLogRepository;
         this.exclusionRepository = exclusionRepository;
         this.eventClassRepository = eventClassRepository;
+        this.practiceDriverRepository = practiceDriverRepository;
         this.objectMapper = objectMapper;
         this.audit = audit;
     }
@@ -126,6 +130,9 @@ public class CompetitorMergeService {
         // The duplicate's change history goes with the competitor that is kept
         competitorAuditLogRepository.moveCompetitor(duplicateId, keepId);
 
+        // So are the transponders the duplicate was named as in practice sessions
+        practiceDriverRepository.moveCompetitor(duplicateId, keepId);
+
         // The external id is unique, so the duplicate lets go of it before the kept competitor takes it
         boolean takesIdentity = duplicateIdentityWins(keep, duplicate);
         String movedSource = duplicate.getExternalSource();
@@ -146,6 +153,10 @@ public class CompetitorMergeService {
         if (isBlank(keep.getSpokenName())) {
             keep.setSpokenName(duplicate.getSpokenName());
         }
+        // A name hidden on either record stays hidden, whichever is kept (#265)
+        if (duplicate.getNameVisibility().ordinal() > keep.getNameVisibility().ordinal()) {
+            keep.setNameVisibility(duplicate.getNameVisibility());
+        }
         competitorRepository.save(keep);
         competitorRepository.deleteById(duplicateId);
 
@@ -165,8 +176,6 @@ public class CompetitorMergeService {
                 reason, adminUserId, moving.size(), exclusions);
         return new Result(keepId, moving.size(), exclusions);
     }
-
-    // ------------------------------------------------------------------------------------------------
 
     private static void requireDistinct(Long keepId, Long duplicateId) {
         if (Objects.equals(keepId, duplicateId)) {

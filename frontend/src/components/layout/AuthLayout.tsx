@@ -29,6 +29,8 @@ export default function AuthLayout({ title, subtitle, footer, children }: AuthLa
       </Card>
       <div className="mt-6 text-xs text-muted-foreground">
         <Link to="/about" className="hover:underline">About</Link>
+        {' · '}
+        <Link to="/privacy" className="hover:underline">Privacy notice</Link>
       </div>
     </div>
   );

@@ -23,9 +23,10 @@ import java.util.function.Function;
  *   <li>{@code --mode} — {@code playback} or {@code generative} (required)</li>
  *   <li>{@code --port} — TCP port to listen on (default: 5100)</li>
  *   <li>{@code --speed} — playback speed factor (default: 1.0; playback mode only)</li>
+ *   <li>{@code --file} — the {@code .dump} file to replay (default: the bundled sample; playback mode only)</li>
  *   <li>{@code --transponders} — comma-separated transponder IDs (default: 11111,22222; generative mode only)</li>
  *   <li>{@code --interval-ms} — base lap time in milliseconds (default: 12500; generative mode only)</li>
- *   <li>{@code --jitter-ms} — maximum random lap-time deviation; each lap is intervalMs ± rand(0, jitterMs) (default: 2500; generative only)</li>
+ *   <li>{@code --jitter-ms} — maximum random lap-time deviation, either way (default: 2500; generative only)</li>
  * </ul>
  *
  * <p>Invalid or missing required arguments cause usage to be printed to stderr and exit code 2.
@@ -67,10 +68,6 @@ public class SimulatorMain {
         log.info("[SIMULATOR] Running — Ctrl-C to stop");
         Thread.currentThread().join(); // block forever
     }
-
-    // -------------------------------------------------------------------------
-    // CLI parsing helpers
-    // -------------------------------------------------------------------------
 
     private static Map<String, String> parseFlags(String[] args) {
         java.util.HashMap<String, String> map = new java.util.HashMap<>();

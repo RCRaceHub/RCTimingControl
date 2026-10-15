@@ -63,3 +63,14 @@ export async function getRaceClock(raceId: number): Promise<RaceClockDto> {
   const { data } = await api.get<RaceClockDto>(`/api/v1/boards/races/${raceId}/clock`);
   return data;
 }
+
+/** The fastest lap so far in the other finished heats of a race's round and class; both null when there is none. */
+export type RoundFastestLapDto = {
+  lapMs: number | null;
+  driverName: string | null;
+};
+
+export async function getRoundFastestLap(raceId: number): Promise<RoundFastestLapDto> {
+  const { data } = await api.get<RoundFastestLapDto>(`/api/v1/boards/races/${raceId}/round-fastest-lap`);
+  return data;
+}

@@ -72,7 +72,7 @@ On Linux the backup folder must be one the `rctiming` user can write to. For a f
 
 ## Sending results to RaceHub
 
-For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key in `application.properties`:
+For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. The address can be typed into **Results to RaceHub** in the admin panel; the key goes in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
 
 ```properties
 rctiming.racehub.results-url=https://racehub.example/api/results

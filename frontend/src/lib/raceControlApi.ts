@@ -11,8 +11,6 @@ export type GridCallSlotDto = {
   speechName: string;
   carNumber: string | null;
   className: string;
-  /** Checked in at the desk (L11). */
-  checkedIn: boolean;
   /** RaceHub's arrival mark, read-only; null when the entry wasn't imported. */
   racehubArrival: 'ARRIVED' | 'NOT_ARRIVED' | null;
 };
@@ -30,6 +28,8 @@ export type PreRaceReadinessDto = {
   firstRaceOfEvent: boolean;
   gridCall: GridCallSlotDto[];
   marshalDuty: MarshalDutyRowDto[];
+  startType: 'STAGGER' | 'GRID' | 'ROLLING' | null;
+  staggerIntervalSeconds: number;
 };
 
 export type RunOrderItemDto = {
@@ -91,6 +91,8 @@ export type LiveTimingRowDto = {
   intervalLapsDown: number;
   gapToLeaderMs: number | null;
   gapToAheadMs: number | null;
+  /** The car has taken the flag: its time is up and its last lap has counted. */
+  finished?: boolean;
 };
 
 export type RaceStateChangeDto = {
@@ -189,7 +191,7 @@ export async function recordMarshalAbsent(
   await api.post(`/api/v1/race-control/referee/race/${raceId}/marshal-absent`, req);
 }
 
-// ── Phase 5: Unknown Transponder Linking ─────────────────────────────────────
+// ── Unknown transponder linking ──────────────────────────────────────────────
 
 export type RaceEntryDto = {
   entryId: number;
@@ -241,7 +243,6 @@ export type EventScheduleDto = {
   id: number;
   name: string;
   eventDate: string;
-  entryAvailability: 'ENTRY_OPEN' | 'ENTRY_NOT_YET_OPEN' | 'ENTRY_CLOSED';
   finishedRaceIds: number[];
   championshipId: number | null;
 };
@@ -294,12 +295,11 @@ export async function setLiveFeedSetting(eventId: number, enabled: boolean): Pro
   return data;
 }
 
-// ── Check-in desk and transponder swap (L11) ─────────────────────────────────
+// ── Transponder swap (L11) ────────────────────────────────────────────────────
 
-export type CheckInEntry = {
+export type EntrySearchResult = {
   entryId: number;
   competitorName: string;
-  /** For fixing how the name is said at the desk (#119). */
   competitorId: number | null;
   /** The override for how the name is said aloud; null means none. */
   spokenName: string | null;
@@ -308,17 +308,9 @@ export type CheckInEntry = {
   className: string | null;
   transponderNumber: string;
   secondaryTransponderNumber: string | null;
-  checkedIn: boolean;
-  checkedInAt: string | null;
-  racehubArrival: 'ARRIVED' | 'NOT_ARRIVED' | null;
   /** The imported file's numbers where they differ from a transponder swapped on the day (#50) */
   importedTransponderNumber: string | null;
   importedSecondaryTransponderNumber: string | null;
-};
-
-export type CheckInConfirmResponse = {
-  entry: CheckInEntry;
-  alreadyCheckedIn: boolean;
 };
 
 export type TransponderSlot = 'PRIMARY' | 'SECONDARY';
@@ -330,26 +322,11 @@ export type TransponderSwapResponse = {
   newTransponderNumber: string | null;
 };
 
-/** Entries using this transponder number; a 404 means no match. */
-export async function checkInResolve(eventId: number, transponderNumber: string): Promise<CheckInEntry[]> {
-  const { data } = await api.post<CheckInEntry[]>(
-    `/api/v1/race-control/events/${eventId}/check-in/resolve`,
-    { transponderNumber },
-  );
-  return data;
-}
-
-export async function checkInSearch(eventId: number, query: string): Promise<CheckInEntry[]> {
-  const { data } = await api.get<CheckInEntry[]>(
-    `/api/v1/race-control/events/${eventId}/check-in/search`,
+/** Entries in the event whose competitor name contains the query. */
+export async function searchEntries(eventId: number, query: string): Promise<EntrySearchResult[]> {
+  const { data } = await api.get<EntrySearchResult[]>(
+    `/api/v1/race-control/events/${eventId}/entries/search`,
     { params: { query } },
-  );
-  return data;
-}
-
-export async function checkInConfirm(eventId: number, entryId: number): Promise<CheckInConfirmResponse> {
-  const { data } = await api.post<CheckInConfirmResponse>(
-    `/api/v1/race-control/events/${eventId}/check-in/entries/${entryId}/confirm`,
   );
   return data;
 }

@@ -11,9 +11,12 @@ public class PracticeLap implements CreatedAt {
 
     private String transponderNumber;
 
-    private Long userId;  // nullable until linked
+    private Long userId;  // the racer's login, only on laps recorded before L10; newer laps are named by entry
 
     private Integer lapNumber;
+
+    /** The run the lap belongs to, counted from 1 for each transponder in the session. */
+    private Integer runNumber = 1;
 
     private Long lapTimeMs;
 
@@ -36,6 +39,9 @@ public class PracticeLap implements CreatedAt {
 
     public Integer getLapNumber() { return lapNumber; }
     public void setLapNumber(Integer lapNumber) { this.lapNumber = lapNumber; }
+
+    public Integer getRunNumber() { return runNumber; }
+    public void setRunNumber(Integer runNumber) { this.runNumber = runNumber; }
 
     public Long getLapTimeMs() { return lapTimeMs; }
     public void setLapTimeMs(Long lapTimeMs) { this.lapTimeMs = lapTimeMs; }

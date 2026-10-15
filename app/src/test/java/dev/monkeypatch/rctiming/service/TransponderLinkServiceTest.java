@@ -20,6 +20,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -74,6 +76,36 @@ class TransponderLinkServiceTest {
         when(linkAuditRepository.save(any())).thenThrow(new IllegalStateException("disk full"));
 
         assertThatThrownBy(() -> service().link(7L, "1234567", 11L, 3L)).isInstanceOf(IllegalStateException.class);
+
+        verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void link_inATransaction_changesTheLiveTimingOnlyOnceItCommits() {
+        runningRaceWithEntry11(new LiveRaceState());
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service().link(7L, "1234567", 11L, 3L);
+            verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
+
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+            verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void link_inATransactionThatRollsBack_neverChangesTheLiveTiming() {
+        runningRaceWithEntry11(new LiveRaceState());
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service().link(7L, "1234567", 11L, 3L);
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(sync -> sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
     }

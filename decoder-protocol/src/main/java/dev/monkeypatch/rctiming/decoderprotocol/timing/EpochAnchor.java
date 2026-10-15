@@ -4,9 +4,10 @@ import java.time.Instant;
 
 /**
  * Converts RC-4 {@code timeSinceStart_s} (seconds since decoder power-on) to
- * absolute wall-clock UTC microseconds using the D-07 epoch-anchoring strategy.
+ * absolute wall-clock UTC microseconds by anchoring to the server clock, since the protocol
+ * carries no absolute timestamp.
  *
- * <h3>D-07 formula</h3>
+ * <h3>Formula</h3>
  * <pre>
  * rtcTimeMicros = (decoderEpoch.toEpochMilli() + (timeSinceStart_s - firstTimeSinceStart_s) * 1000) * 1000L
  * </pre>

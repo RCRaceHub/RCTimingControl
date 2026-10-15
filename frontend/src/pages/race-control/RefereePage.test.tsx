@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RefereePage from './RefereePage';
@@ -14,6 +14,8 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
 }));
 // Live timing is empty once a race has finished
 vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: [] }) }));
+const mockRaceClock = vi.fn();
+vi.mock('@/hooks/race-control/useRaceClock', () => ({ useRaceClock: () => mockRaceClock() }));
 vi.mock('./referee/useProximityAlerts', () => ({ useProximityAlerts: () => new Set<number>() }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
 vi.mock('./panels/RunOrderPanel', () => ({ RunOrderPanel: () => null }));
@@ -64,6 +66,7 @@ const EXPECTED = [
 
 describe('RefereePage driver list (#107)', () => {
   beforeEach(() => {
+    mockRaceClock.mockReturnValue({ clock: undefined, readAt: 0 });
     penaltyDrivers.mockClear();
     incidentDrivers.mockClear();
     vi.mocked(getRaceEntries).mockClear();
@@ -87,5 +90,19 @@ describe('RefereePage driver list (#107)', () => {
     await waitFor(() => expect(penaltyDrivers).toHaveBeenCalled());
     expect(penaltyDrivers).toHaveBeenLastCalledWith([]);
     expect(getRaceEntries).not.toHaveBeenCalled();
+  });
+
+  it('shows the time left of the race in progress', async () => {
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'RUNNING' }] });
+    mockRaceClock.mockReturnValue({
+      clock: {
+        raceId: 5, status: 'RUNNING', elapsedMs: 60_000, durationMs: 300_000, remainingMs: 240_000, running: false,
+      },
+      readAt: Date.now(),
+    });
+
+    renderReferee();
+
+    expect(await screen.findByRole('timer')).toHaveTextContent('Time left4:00');
   });
 });

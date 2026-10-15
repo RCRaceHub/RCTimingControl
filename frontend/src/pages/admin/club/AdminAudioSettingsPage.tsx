@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -20,13 +21,14 @@ import {
   listVoices,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
+import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
+import { HornSoundsCard } from './HornSoundsCard';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 export default function AdminAudioSettingsPage() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
-  // ── Fetch audio settings ───────────────────────────────────────────────────
   const { data: settings, isLoading: settingsLoading } = useQuery({
     queryKey: adminQueryKeys.audioSettings(),
     queryFn: () => getAdminAudioSettings(),
@@ -41,7 +43,6 @@ export default function AdminAudioSettingsPage() {
     onError: () => toast.error('Failed to save settings.'),
   });
 
-  // ── Fetch voices ───────────────────────────────────────────────────────────
   const { data: voices, isLoading: voicesLoading } = useQuery({
     queryKey: adminQueryKeys.voices(),
     queryFn: () => listVoices(),
@@ -49,9 +50,16 @@ export default function AdminAudioSettingsPage() {
 
   const displaySettings = localSettings ?? settings;
 
+  // The saved voice stays in the list even when Piper no longer offers it, so the picker never looks empty
+  const savedVoiceId = displaySettings?.defaultVoiceId;
+  const voiceOptions =
+    voices && voices.length > 0 && savedVoiceId && !voices.some((v) => v.voiceId === savedVoiceId)
+      ? [{ voiceId: savedVoiceId, label: savedVoiceId, isDefault: false }, ...voices]
+      : (voices ?? []);
+
   const handleToggle = (key: keyof AudioSettingsDto) => {
     if (!displaySettings) return;
-    setLocalSettings({ ...displaySettings, [key]: !displaySettings[key] });
+    setLocalSettings({ ...displaySettings, [key]: displaySettings[key] === false });
   };
 
   const handleVoiceChange = (voiceId: string) => {
@@ -68,7 +76,6 @@ export default function AdminAudioSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-xl font-semibold">Audio Settings</h1>
 
-      {/* Announcement toggles */}
       <Card>
         <CardHeader>
           <CardTitle>Announcement Types</CardTitle>
@@ -86,18 +93,56 @@ export default function AdminAudioSettingsPage() {
                   <Label htmlFor={`admin-toggle-${key}`}>{label}</Label>
                   <Switch
                     id={`admin-toggle-${key}`}
-                    checked={displaySettings[key]}
+                    checked={displaySettings[key] !== false}
                     onCheckedChange={() => handleToggle(key)}
                     aria-label={label}
                   />
                 </div>
               ))}
 
-              {/* Default voice selector */}
+              <div className="flex items-center gap-2 pt-2">
+                <Label htmlFor="admin-start-countdown" className="shrink-0">Start lead-in</Label>
+                <Input
+                  id="admin-start-countdown"
+                  type="number"
+                  min={0}
+                  max={60}
+                  defaultValue={displaySettings.startCountdownSeconds ?? 10}
+                  onBlur={(e) =>
+                    setLocalSettings({
+                      ...displaySettings,
+                      startCountdownSeconds: Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)),
+                    })
+                  }
+                  className="w-20 h-8 text-center"
+                />
+                <span className="text-sm text-muted-foreground">
+                  seconds between pressing Start and the race starting (0 for none)
+                </span>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="admin-time-up-text">When the race time is up, say</Label>
+                <Input
+                  id="admin-time-up-text"
+                  key={displaySettings.timeUpText}
+                  maxLength={200}
+                  defaultValue={displaySettings.timeUpText ?? ''}
+                  onBlur={(e) => setLocalSettings({ ...displaySettings, timeUpText: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
+              </div>
+
+              <AudioDetailFields settings={displaySettings} onChange={setLocalSettings} idPrefix="admin" />
+
               <div className="space-y-2 pt-2">
                 <Label htmlFor="default-voice">Default voice</Label>
                 {voicesLoading ? (
                   <p className="text-sm text-muted-foreground">Loading voices…</p>
+                ) : voiceOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No voices available. Announcer voices (Piper) are switched off.
+                  </p>
                 ) : (
                   <Select
                     value={displaySettings.defaultVoiceId ?? ''}
@@ -107,7 +152,7 @@ export default function AdminAudioSettingsPage() {
                       <SelectValue placeholder="Select default voice" />
                     </SelectTrigger>
                     <SelectContent>
-                      {voices?.map((v) => (
+                      {voiceOptions.map((v) => (
                         <SelectItem key={v.voiceId} value={v.voiceId}>
                           {v.label}
                         </SelectItem>
@@ -136,6 +181,7 @@ export default function AdminAudioSettingsPage() {
         </CardContent>
       </Card>
 
+      <HornSoundsCard sounds={settings?.hornSounds} />
     </div>
   );
 }

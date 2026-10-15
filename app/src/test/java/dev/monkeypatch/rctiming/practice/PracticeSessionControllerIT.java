@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.api.auth.LoginRequest;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import dev.monkeypatch.rctiming.practice.dto.PracticeDayDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().name()).isEqualTo("Morning Practice");
         assertThat(response.getBody().status().name()).isEqualTo("IDLE");
-        assertThat(response.getBody().bestLapN()).isEqualTo(3);
+        assertThat(response.getBody().bestLapN()).isEqualTo(5);
         assertThat(response.getBody().id()).isNotNull();
     }
 
@@ -103,6 +104,32 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
         // Stop to clean up running session for other tests
         restTemplate.exchange("/api/v1/practice-sessions/" + id + "/stop",
                 HttpMethod.POST, new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
+    }
+
+    @Test
+    void day_listsTheSessionsStartedToday() {
+        Long id = createSession("Day View Session");
+        restTemplate.exchange("/api/v1/practice-sessions/" + id + "/start", HttpMethod.POST,
+                new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
+        restTemplate.exchange("/api/v1/practice-sessions/" + id + "/stop", HttpMethod.POST,
+                new HttpEntity<>(rdHeaders()), PracticeSessionDto.class);
+
+        ResponseEntity<PracticeDayDto> response = restTemplate.exchange(
+                "/api/v1/practice-sessions/day", HttpMethod.GET, new HttpEntity<>(rdHeaders()),
+                PracticeDayDto.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().bestLapN()).isEqualTo(5);
+        assertThat(response.getBody().sessions()).extracting(PracticeSessionDto::id).contains(id);
+    }
+
+    @Test
+    void day_withNoLapsToAverage_answers400() {
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/v1/practice-sessions/day?bestLapN=0", HttpMethod.GET, new HttpEntity<>(rdHeaders()),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test

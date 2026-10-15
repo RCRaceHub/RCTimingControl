@@ -1,18 +1,20 @@
 package dev.monkeypatch.rctiming.timing;
 
+import org.springframework.context.ApplicationEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.domain.checkin.SwapResult;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
-import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
-import dev.monkeypatch.rctiming.domain.event.Event;
-import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
+import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +56,7 @@ class LapTimingServiceTransponderTest {
     @Mock CompetitorRepository competitorRepository;
     @Mock EntryAuditLogRepository auditLogRepository;
     @Mock EventRepository eventRepository;
+    @Mock LapThresholdQuery lapThresholdQuery;
 
     private LapTimingService service;
     private final Map<Long, List<RaceEntry>> raceEntriesByRace = new HashMap<>();
@@ -60,7 +64,8 @@ class LapTimingServiceTransponderTest {
 
     @BeforeEach
     void setUp() {
-        service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository);
+        service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository,
+                lapThresholdQuery, mock(RaceClockService.class), mock(ApplicationEventPublisher.class));
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(anyLong()))
                 .thenAnswer(inv -> raceEntriesByRace.getOrDefault(inv.<Long>getArgument(0), List.of()));
         when(entryRepository.findById(anyLong()))

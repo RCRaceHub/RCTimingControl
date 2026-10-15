@@ -12,7 +12,6 @@ export default function MeetingGuidePage() {
         <p className="text-sm text-muted-foreground mt-1">For race officials — RC Timing Club</p>
       </div>
 
-      {/* Section 1: Pre-Meeting Setup */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">1. Pre-Meeting Setup</h2>
         <p className="text-sm mb-3">
@@ -37,11 +36,14 @@ export default function MeetingGuidePage() {
             (see the Admin Configuration Guide, section 5).
           </li>
           <li>
-            <span className="font-semibold">Run the check-in desk:</span> In race control, open
-            <span className="font-semibold"> Check-in</span>. Scan or type each driver's transponder
-            as they arrive and confirm. Swap a transponder there if a driver has changed it on the
-            day; the swap is logged, and a later import of the booking file keeps the swapped
-            number (the entry list notes the number the booking has).
+            <span className="font-semibold">Walk-ins and swaps:</span> RCTC treats every entrant as
+            present, since RaceHub handles check-in. For a driver who did not book, open
+            <span className="font-semibold"> Walk-in</span> in race control, pick their class and
+            enter them. If a driver changes their
+            transponder on the day, open <span className="font-semibold">Transponders</span> in race
+            control, find the entry and enter the new number. The swap is logged, and a later import
+            of the booking file keeps the swapped number (the entry list notes the number the booking
+            has).
           </li>
           <li>
             <span className="font-semibold">Check the decoder connection:</span> RCTC connects
@@ -64,7 +66,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 2: Managing the Run Order */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">2. Managing the Run Order</h2>
         <p className="text-sm mb-3">
@@ -92,7 +93,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 3: Grid Call */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">3. Grid Call</h2>
         <p className="text-sm mb-3">
@@ -124,7 +124,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 4: Starting a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">4. Starting a Race</h2>
         <p className="text-sm mb-3">
@@ -152,7 +151,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 5: Running a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">5. Running a Race</h2>
         <p className="text-sm mb-3">
@@ -193,7 +191,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 6: Stopping and Finishing a Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">6. Stopping and Finishing a Race</h2>
         <p className="text-sm mb-3">
@@ -239,7 +236,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 7: Handling Incidents */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">7. Handling Incidents</h2>
         <p className="text-sm mb-3">
@@ -277,7 +273,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 8: Publishing Results */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">8. Publishing Results</h2>
         <p className="text-sm mb-3">
@@ -308,7 +303,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 9: Moving to the Next Race */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">9. Moving to the Next Race</h2>
         <p className="text-sm mb-3">
@@ -340,7 +334,6 @@ export default function MeetingGuidePage() {
         </ol>
       </section>
 
-      {/* Section 10: Boards */}
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-3">10. Spectator Boards and the Streaming Overlay</h2>
         <p className="text-sm mb-3">
@@ -374,7 +367,10 @@ export default function MeetingGuidePage() {
             <span className="font-mono text-xs"> http://&lt;laptop&gt;:8080/boards/overlay</span>, about
             450 &times; 520 pixels. It shows the race on track over your video on a transparent
             background: the running order, laps, last lap and the race clock (time to go, or time so
-            far when the format sets no length). It shows nothing between races.
+            far when the format sets no length). Rows flash on each lap like the live timing screen
+            (purple race best, blue personal best, green faster, red slower), and a ticker underneath
+            rolls through the laps run in the heat, the heat's fastest lap and the round's fastest.
+            Between races it shows a small "No race on track" panel.
           </li>
           <li>
             <span className="font-semibold">Overlay options</span> go on the end of the address:

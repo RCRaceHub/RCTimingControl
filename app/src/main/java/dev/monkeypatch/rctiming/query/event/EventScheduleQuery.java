@@ -1,13 +1,11 @@
 package dev.monkeypatch.rctiming.query.event;
 
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-import dev.monkeypatch.rctiming.query.event.EventScheduleDto.EntryAvailability;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,10 +28,8 @@ public class EventScheduleQuery {
     }
 
     public List<EventScheduleDto> getPublicSchedule() {
-        Instant now = Instant.now();
         var events = dsl
-                .select(EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE,
-                        EVENTS.STATUS, EVENTS.ENTRY_OPENS_AT, EVENTS.ENTRY_CLOSES_AT)
+                .select(EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE)
                 .from(EVENTS)
                 .where(EVENTS.STATUS.in("PUBLISHED", "OPEN", "ENTRIES_CLOSED", "IN_PROGRESS"))
                 .orderBy(EVENTS.EVENT_DATE.asc(), EVENTS.ID.asc())
@@ -50,28 +46,9 @@ public class EventScheduleQuery {
                 r.get(EVENTS.ID),
                 r.get(EVENTS.NAME),
                 r.get(EVENTS.EVENT_DATE),
-                entryAvailability(r.get(EVENTS.STATUS), r.get(EVENTS.ENTRY_OPENS_AT),
-                        r.get(EVENTS.ENTRY_CLOSES_AT), now),
                 finishedRacesByEvent.getOrDefault(r.get(EVENTS.ID), List.of()),
                 championshipByEvent.get(r.get(EVENTS.ID))
         )).toList();
-    }
-
-    static EntryAvailability entryAvailability(String status, Instant opensAt, Instant closesAt, Instant now) {
-        if ("ENTRIES_CLOSED".equals(status) || "IN_PROGRESS".equals(status)
-                || (closesAt != null && closesAt.isBefore(now))) {
-            return EntryAvailability.ENTRY_CLOSED;
-        }
-        if ("OPEN".equals(status)
-                || ("PUBLISHED".equals(status)
-                    && (opensAt == null || opensAt.isBefore(now))
-                    && (closesAt == null || closesAt.isAfter(now)))) {
-            return EntryAvailability.ENTRY_OPEN;
-        }
-        if (opensAt != null && opensAt.isAfter(now)) {
-            return EntryAvailability.ENTRY_NOT_YET_OPEN;
-        }
-        return EntryAvailability.ENTRY_CLOSED;
     }
 
     private Map<Long, List<Long>> finishedRacesByEvent(List<Long> eventIds) {

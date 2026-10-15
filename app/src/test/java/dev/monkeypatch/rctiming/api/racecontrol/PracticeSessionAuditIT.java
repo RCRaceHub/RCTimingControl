@@ -57,6 +57,9 @@ class PracticeSessionAuditIT extends AbstractIntegrationTest {
     @AfterEach
     void tearDown() {
         jdbc.update("delete from audit_log where actor_user_id = ?", directorId);
+        jdbc.update("delete from practice_drivers where practice_session_id in "
+                + "(select id from practice_sessions where created_by_user_id = ?)", directorId);
+        jdbc.update("delete from competitors where display_name = ?", "Pat Practice " + run);
         jdbc.update("delete from practice_laps where practice_session_id in "
                 + "(select id from practice_sessions where created_by_user_id = ?)", directorId);
         jdbc.update("delete from practice_sessions where created_by_user_id = ?", directorId);
@@ -74,7 +77,7 @@ class PracticeSessionAuditIT extends AbstractIntegrationTest {
         assertThat(send("POST", "/api/v1/practice-sessions/" + id + "/start", null).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(send("POST", "/api/v1/practice-sessions/" + id + "/link-transponder",
-                Map.of("transponderNumber", "T" + run, "racerName", "Pat Practice")).getStatusCode())
+                Map.of("transponderNumber", "T" + run, "newName", "Pat Practice " + run)).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         assertThat(send("POST", "/api/v1/practice-sessions/" + id + "/stop", null).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
@@ -87,7 +90,7 @@ class PracticeSessionAuditIT extends AbstractIntegrationTest {
         assertThat(rows.get(0).get("after_json").toString()).contains("Audit practice " + run);
         assertThat(rows.get(1).get("before_json")).isEqualTo("\"IDLE\"");
         assertThat(rows.get(1).get("after_json")).isEqualTo("\"RUNNING\"");
-        assertThat(rows.get(2).get("summary").toString()).contains("T" + run).contains("Pat Practice");
+        assertThat(rows.get(2).get("summary").toString()).contains("T" + run).contains("Pat Practice " + run);
         assertThat(rows.get(3).get("after_json")).isEqualTo("\"STOPPED\"");
         // Who created the session is kept on it, which was always empty before
         assertThat(jdbc.queryForObject("select created_by_user_id from practice_sessions where id = ?", Long.class, id))

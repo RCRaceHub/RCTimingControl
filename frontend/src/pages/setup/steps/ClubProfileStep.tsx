@@ -83,7 +83,6 @@ export default function ClubProfileStep({ onNext }: Props) {
         latitude: saved?.latitude ?? null,
         longitude: saved?.longitude ?? null,
         timezone: values.timezone,
-        logoType: saved?.logoType ?? null,
       });
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.club.profile() });
       queryClient.invalidateQueries({ queryKey: setupQueryKeys.status() });
@@ -156,7 +155,7 @@ export default function ClubProfileStep({ onNext }: Props) {
           />
 
           <div className="flex justify-end gap-2 pt-4">
-            {/* No Back, no Skip on Step 1 (D-11) */}
+            {/* No Back or Skip: the club profile is the minimum the system needs */}
             <Button type="submit" disabled={form.formState.isSubmitting}>
               Save and Continue
             </Button>

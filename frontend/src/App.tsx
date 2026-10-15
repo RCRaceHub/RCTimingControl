@@ -17,6 +17,7 @@ import OverlayBoard from '@/pages/boards/OverlayBoard';
 // Every page but sign-in and the error pages loads on demand, so a board or the overlay doesn't download
 // the admin panel and the print guides. The layouts wrap their outlets in Suspense to keep their chrome.
 const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
+const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
@@ -33,7 +34,8 @@ const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSett
 const BackupsPage = lazy(() => import('@/pages/admin/backups/BackupsPage'));
 const ResultsExportsPage = lazy(() => import('@/pages/admin/results-exports/ResultsExportsPage'));
 const CompetitorsPage = lazy(() => import('@/pages/admin/competitors/CompetitorsPage'));
-const CheckInPage = lazy(() => import('@/pages/race-control/check-in/CheckInPage'));
+const WalkInPage = lazy(() => import('@/pages/race-control/walk-in/WalkInPage'));
+const TransponderPage = lazy(() => import('@/pages/race-control/transponders/TransponderPage'));
 const RaceControlLayout = lazy(() => import('@/pages/race-control/RaceControlLayout'));
 const CockpitPage = lazy(() => import('@/pages/race-control/CockpitPage'));
 const RefereePage = lazy(() => import('@/pages/race-control/RefereePage'));
@@ -43,6 +45,9 @@ const PracticeSessionPage = lazy(() =>
 );
 const PracticeLandingPage = lazy(() =>
   import('@/pages/race-control/PracticeLandingPage').then(m => ({ default: m.PracticeLandingPage })),
+);
+const PracticeDayPage = lazy(() =>
+  import('@/pages/race-control/PracticeDayPage').then(m => ({ default: m.PracticeDayPage })),
 );
 const PrintPracticeResultsPage = lazy(() => import('@/pages/race-control/PrintPracticeResultsPage'));
 const PublicResultsPage = lazy(() => import('@/pages/results/PublicResultsPage'));
@@ -111,10 +116,21 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <CockpitPage /> },
           { path: 'practice', element: <PracticeLandingPage /> },
-          { path: 'check-in', element: <CheckInPage /> },
+          { path: 'walk-in', element: <WalkInPage /> },
+          { path: 'transponders', element: <TransponderPage /> },
           { path: 'referee', element: <RefereePage /> },
           { path: 'results/:raceId', element: <PrintResultsPage /> },
         ],
+      },
+      {
+        path: '/race-control/practice/day',
+        element: (
+          <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <RaceControlErrorBoundary>
+              <PracticeDayPage />
+            </RaceControlErrorBoundary>
+          </ProtectedRoute>
+        ),
       },
       {
         path: '/race-control/practice/:sessionId',
@@ -141,6 +157,7 @@ const router = createBrowserRouter([
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },
       { path: '/print/admin-guide', element: <AdminGuidePage /> },
       { path: '/about', element: <AboutPage /> },
+      { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },

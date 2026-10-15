@@ -45,6 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -124,12 +125,9 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
 
         // 3 drivers with entries and race entries
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-first-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
-            // L11: driver 1 has checked in; driver 2 is marked arrived in RaceHub only
-            if (i == 1) {
-                entry.setCheckedInAt(now);
-            } else if (i == 2) {
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
+            // Driver 2 is marked arrived in RaceHub
+            if (i == 2) {
                 entry.setRacehubArrival("ARRIVED");
             }
             entryRepository.save(entry);
@@ -144,13 +142,43 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         Map<String, Object> body = resp.getBody();
         assertThat(body).isNotNull();
         assertThat(body.get("firstRaceOfEvent")).isEqualTo(true);
+        assertThat(body.get("startType")).isEqualTo("GRID");
+        assertThat(body.get("staggerIntervalSeconds")).isEqualTo(3);
         assertThat((List<?>) body.get("marshalDuty")).isEmpty();
         List<Map<String, Object>> gridCall = (List<Map<String, Object>>) body.get("gridCall");
         assertThat(gridCall).hasSize(3);
         assertThat(gridCall.get(0).get("gridPosition")).isEqualTo(1);
-        assertThat(gridCall).extracting(slot -> slot.get("checkedIn")).containsExactly(true, false, false);
         assertThat(gridCall).extracting(slot -> slot.get("racehubArrival")).containsExactly(null, "ARRIVED", null);
         assertThat(body.get("raceLabel").toString()).contains("Practice 1");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getPreRaceReadiness_firstRaceOfEventWithTwoHeats_isMarshalledByTheLastHeatOfItsRound() {
+        Instant now = Instant.now();
+        Event event = saveEvent("Two Heat Event " + UUID.randomUUID(), now);
+        RacingClass rc = saveRacingClass("Buggy " + UUID.randomUUID().toString().substring(0, 6), now);
+        EventClass ec = saveEventClass(event.getId(), rc.getId(), now);
+        Round round = saveRound(event.getId(), RoundType.QUALIFIER, 1, 1, now);
+        Race heat1 = saveRace(round.getId(), ec.getId(), 1, 1, now);
+        Race heat2 = saveRace(round.getId(), ec.getId(), 2, 2, now);
+        Set<Long> heat2Entries = new HashSet<>();
+        for (int i = 1; i <= 4; i++) {
+            saveRaceEntry(heat1.getId(), saveEntry(event.getId(), ec.getId(), now).getId(), i);
+            Long id = saveEntry(event.getId(), ec.getId(), now).getId();
+            saveRaceEntry(heat2.getId(), id, i);
+            heat2Entries.add(id);
+        }
+
+        ResponseEntity<Map> resp = restTemplate.exchange(
+                "/api/v1/race-control/race/" + heat1.getId() + "/pre-race-readiness",
+                HttpMethod.GET, new HttpEntity<>(directorHeaders()), Map.class);
+
+        Map<String, Object> body = resp.getBody();
+        assertThat(body).isNotNull();
+        List<Map<String, Object>> marshalDuty = (List<Map<String, Object>>) body.get("marshalDuty");
+        assertThat(marshalDuty).extracting(r -> ((Number) r.get("entryId")).longValue())
+                .containsExactlyInAnyOrderElementsOf(heat2Entries);
     }
 
     @Test
@@ -173,8 +201,7 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         Race race1 = saveRace(round.getId(), ec.getId(), 2, 2, now);
         Long absenceDriverEntryId = null;
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-r1-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
             saveRaceEntry(race1.getId(), entry.getId(), i);
             if (i == 1) {
                 absenceDriverEntryId = entry.getId();
@@ -190,8 +217,7 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         // Race 2 (seq=3, target) — different 3 drivers
         Race race2 = saveRace(round.getId(), ec.getId(), 3, 3, now);
         for (int i = 1; i <= 3; i++) {
-            User driver = saveDriver("driver-r2-" + i + "-" + UUID.randomUUID(), now);
-            Entry entry = saveEntry(driver.getId(), event.getId(), ec.getId(), now);
+            Entry entry = saveEntry(event.getId(), ec.getId(), now);
             saveRaceEntry(race2.getId(), entry.getId(), i);
         }
 
@@ -296,21 +322,8 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
         return raceRepository.save(race);
     }
 
-    private User saveDriver(String emailPrefix, Instant now) {
-        User user = new User();
-        user.setEmail(emailPrefix + "@test.com");
-        user.setPasswordHash(passwordEncoder.encode("pass123"));
-        user.setFirstName("Driver");
-        user.setLastName("Test");
-        user.setRoles(Set.of());
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
-        return userRepository.save(user);
-    }
-
-    private Entry saveEntry(Long userId, Long eventId, Long eventClassId, Instant now) {
+    private Entry saveEntry(Long eventId, Long eventClassId, Instant now) {
         Entry entry = new Entry();
-        entry.setUserId(userId);
         entry.setEventId(eventId);
         entry.setEventClassId(eventClassId);
         entry.setStatus(EntryStatus.CONFIRMED);

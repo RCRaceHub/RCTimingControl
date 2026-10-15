@@ -26,6 +26,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
@@ -40,7 +41,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
-import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UserRoles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 
@@ -162,6 +162,11 @@ public class Tables {
     public static final Penalties PENALTIES = Penalties.PENALTIES;
 
     /**
+     * The table <code>practice_drivers</code>.
+     */
+    public static final PracticeDrivers PRACTICE_DRIVERS = PracticeDrivers.PRACTICE_DRIVERS;
+
+    /**
      * The table <code>practice_laps</code>.
      */
     public static final PracticeLaps PRACTICE_LAPS = PracticeLaps.PRACTICE_LAPS;
@@ -230,11 +235,6 @@ public class Tables {
      * The table <code>unknown_transponder_link</code>.
      */
     public static final UnknownTransponderLink UNKNOWN_TRANSPONDER_LINK = UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
-
-    /**
-     * The table <code>unknown_transponder_links</code>.
-     */
-    public static final UnknownTransponderLinks UNKNOWN_TRANSPONDER_LINKS = UnknownTransponderLinks.UNKNOWN_TRANSPONDER_LINKS;
 
     /**
      * The table <code>user_roles</code>.

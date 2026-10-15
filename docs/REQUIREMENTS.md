@@ -24,10 +24,10 @@
 - ~~**RACER-02**: Racer can add and edit cars (name, primary class, notes); primary class is used for filtering entries and is not a hard constraint~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
 - ~~**RACER-03**: Racer owns transponders independently of cars; transponder is selected at entry time, not permanently assigned to a car~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
 - ~~**RACER-04**: Racer can view their own entry history and past race results~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
-- [x] **RACER-05**: Transponder numbers are unique system-wide; duplicate registration is rejected and flagged for admin resolution **Changed**: transponders belong to an entry, a primary and an optional secondary, and are not unique system-wide. A number already used in the event is accepted with a warning (see RACER-09), check-in refuses a number another competitor holds (#19), and a passing that matches more than one entry goes to the referee (TIMING-08) (#14).
+- [x] **RACER-05**: Transponder numbers are unique system-wide; duplicate registration is rejected and flagged for admin resolution **Changed**: transponders belong to an entry, a primary and an optional secondary, and are not unique system-wide. A number already used in the event is accepted with a warning (see RACER-09), a swap refuses a number another competitor holds (#19), and a passing that matches more than one entry goes to the referee (TIMING-08) (#14).
 - ~~**RACER-06**: Cars are archived not deleted; archived cars preserve race history and cannot be used for new entries~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
 - [x] **RACER-07**: Entry records a transponder snapshot at submission time; subsequent changes to the racer's transponder list do not affect existing entries **Changed**: the snapshot is the transponders in the RaceHub export, or those typed in for a walk-in (#15, #17).
-- [x] **RACER-08**: Race director can update the transponder assignment on an entry before race start (equipment swap); change is audit-logged **Changed**: the check-in desk swaps a transponder on the day, with an audit entry (#19).
+- [x] **RACER-08**: Race director can update the transponder assignment on an entry before race start (equipment swap); change is audit-logged **Changed**: race control's Transponders page swaps a transponder on the day, with an audit entry (#19).
 - [x] **RACER-09**: System warns when the same transponder is used in multiple entries at the same event (potential timing conflict if classes run simultaneously) **Changed**: the warning shows on import and when adding a walk-in (#14).
 - ~~**RACER-10**: Admin can define and manage car tag categories (default set installed: Chassis, ESC, Motor, Servo, Battery, Body, Tyres)~~ **Removed** (#18): car tags went with racer garages; RaceHub owns car details.
 - ~~**RACER-11**: Racer can add free-text values for any tag category to each of their cars~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
@@ -43,8 +43,9 @@
 ### Tracks
 
 - [x] **TRACK-01**: Admin can define and manage tracks (name, venue/location notes, optional track length); a club may have multiple tracks
-- [ ] **TRACK-02**: Each track has a configurable minimum lap time per racing class; passing events with crossings faster than this threshold are ignored (prevents loop double-counting and track-cutting); a track-wide default applies to all classes unless a class-specific override is set. **Not yet**: thresholds can be stored through `POST /admin/tracks/{id}/thresholds`, but nothing in timing applies them and the Tracks page has no fields for them.
-- [ ] **TRACK-03**: Each track has a configurable maximum last lap time per racing class; a race closes automatically if no crossing occurs within this window after the clock expires (prevents infinite wait for broken cars). Not yet applied: see TRACK-02.
+- [x] **TRACK-02**: Each track has a configurable minimum lap time per racing class; passing events with crossings faster than this threshold are ignored (prevents loop double-counting and track-cutting); a track-wide default applies to all classes unless a class-specific override is set. The Tracks page sets the track-wide default; a class-specific one is set through `POST /admin/tracks/{id}/thresholds`. Limits are read when a race's live timing starts.
+- [x] **TRACK-03**: Each track has a configurable maximum last lap time per racing class; a timed race finishes automatically if no lap counts within this window after the clock expires (prevents infinite wait for broken cars). A race with a fixed number of laps is left for the race director.
+- [x] **TRACK-05**: A timed race ends at the flag: once a car's time on the track is up, it finishes on its next lap that counts and later passings are ignored (every car has the race's length from its own start, so in a stagger start the cars leave one after another and the last car's window ends after the first car's; the clock and its "Time" call are the first car's), and the race finishes by itself when every car that has crossed the line has taken the flag. A car that crossed once and then stopped on the track holds the finish up until the last lap timeout (TRACK-03), which stays as the backstop
 - [x] **TRACK-04**: Admin can configure the decoder loops associated with a track; each loop has a decoder-assigned loop ID, a display name, and a type (`FINISH_LINE`, `CHICANE`, `OTHER`); one or more loops are designated as primary scoring loops; crossing events on non-primary loops are recorded but excluded from lap counting; the model accommodates multiple loops and multiple decoders per track (multi-decoder operation is deferred to post-v1)
 
 ### Racing Classes
@@ -111,10 +112,11 @@
 - [x] **CTRL-08**: Race director can abandon a race in progress; results up to the abandonment point are saved and the meeting advances normally
 - [x] **CTRL-09**: Race director can skip to or re-run a specific race and round number
 - [x] **CTRL-10**: Every race lifecycle command (call the grid, start, stop, resume, finish, abandon, restart) is audit-logged with the official who gave it and the status before and after; a restart also records what it discards (the race's times, its stored result and the live timing) (#139)
+- [x] **CTRL-11**: The start order of a heat is the finishing order of the same heat in the round before it, except that the first qualifying round starts in car number order, whatever practice did. Calling the grid takes the heat's start type from its class's format as it is then, so a format change made after the rounds were generated applies, and the cockpit says how the race will start (and whether drivers are called one by one)
 
 ### Audit
 
-- [x] **AUDIT-01**: Every action an official takes that changes data, and the system's own background changes, is written to the audit log with who did it (or `system`, or the command line user), when, what it was done to and, where it applies, the value before and after. The row is written in the same transaction as the change, so a refused change leaves no row, and `AuditCoverageIT` fails when a data-changing endpoint is neither audited nor listed with a reason. Recorded: sign-in, sign-out and refresh (#152); race control (#165); championships, events and their classes, the run order and finals; entry imports and the entry feed; competitor merges and check-ins; club settings, tracks, classes and race formats; manual backups, results-export retries and practice sessions; referee actions and transponder links; bump-ups (as the system) and database restores (as the command line user, written when the app next starts); see #139. Admins read the log through `GET /api/v1/admin/audit` (filter by entity, action, official, event, race and date; paged); there is no screen for it yet. A race's own history (lifecycle, penalties, incidents, marshal laps and links, read from the race tables and the audit log) shows under the referee view (#140). An entry's own history (walk-in, check-in, transponder swaps, withdrawal, merges) shows to admins on the entry list, though changes made by importing an entry file are recorded per import, not per entry (#140). The officials' history pages through everything, newest first, and each competitor's changes are readable on their own page. The command line password reset is in the audit log too, as the operating system user who ran it (#140)
+- [x] **AUDIT-01**: Every action an official takes that changes data, and the system's own background changes, is written to the audit log with who did it (or `system`, or the command line user), when, what it was done to and, where it applies, the value before and after. The row is written in the same transaction as the change, so a refused change leaves no row, and `AuditCoverageIT` fails when a data-changing endpoint is neither audited nor listed with a reason. Recorded: sign-in, sign-out and refresh (#152); race control (#165); championships, events and their classes, the run order and finals; entry imports and the entry feed; competitor merges; club settings, tracks, classes and race formats; manual backups, results-export retries and practice sessions; referee actions and transponder links; bump-ups (as the system) and database restores (as the command line user, written when the app next starts); see #139. Admins read the log through `GET /api/v1/admin/audit` (filter by entity, action, official, event, race and date; paged); there is no screen for it yet. A race's own history (lifecycle, penalties, incidents, marshal laps and links, read from the race tables and the audit log) shows under the referee view (#140). An entry's own history (walk-in, transponder swaps, withdrawal, merges) shows to admins on the entry list, though changes made by importing an entry file are recorded per import, not per entry (#140). The officials' history pages through everything, newest first, and each competitor's changes are readable on their own page. The command line password reset is in the audit log too, as the operating system user who ran it (#140)
 
 ### Audio Announcements
 
@@ -123,7 +125,7 @@
 - [x] **AUDIO-03**: In STAGGER start mode, each competitor on the grid is called by name at the configured stagger interval (entries have no car number); each driver starts when their name is called. The call is one Piper clip per entry, played in turn; the browser voice speaks it if the clip isn't ready in a few seconds
 - [x] **AUDIO-04**: Each lap crossing produces a high-pitched beep if the driver is improving on their best result, low-pitched otherwise
 - [x] **AUDIO-05**: When a race ends, one "Race finished" announcement is made (there is no per-driver finish announcement)
-- [x] **AUDIO-06**: Running order is announced at 2-minute intervals for the first 10 minutes of a race, then at 5-minute intervals
+- [x] **AUDIO-06**: Running order is announced at 2-minute intervals for the first 10 minutes of a race, then at 5-minute intervals. Each call names the top 50% of the drivers (rounded up), or all of them in a race of 5 drivers or fewer; both numbers are set in the audio settings
 - [x] **AUDIO-07**: Admin can enable or disable individual announcement types from the settings panel
 - [x] **AUDIO-08**: When a racer profile is created or updated, the server generates a TTS audio clip for the racer's name using a configured TTS provider (e.g. Google Cloud TTS) and stores it; the clip is regenerated if the display name or phonetic spelling changes **Changed**: there are no racer profiles. Name clips are generated with Piper TTS from the competitor's display name when a race reaches `GRID` (see AUDIO-09).
 - [x] **AUDIO-09**: When a race transitions to `GRID` state, the server pre-generates audio clips for all predictable announcements for that race: a grid call by name for each entry (stagger start), the countdown intervals, and the race-finished announcement; clips are cached and ready before the race starts
@@ -133,8 +135,16 @@
 - ~~**AUDIO-13**: Racer can preview their generated name clip from their profile and select a preferred TTS voice from the voices available for the configured provider; the voice preference is stored per racer and used for all announcements of their name; admin configures the system default voice~~ **Removed** (#18): name clip previews and voice choice were part of racer profiles. Admins still set the voice.
 - ~~**AUDIO-14**: Display name and phonetic spelling fields are screened against a configurable profanity blocklist before saving; if a match is found the save is rejected with a validation error informing the racer their submission contains inappropriate content; admins can extend the blocklist with club-specific terms~~ **Removed** (#30): names were screened as racers typed them into their own profiles. Racer accounts went in #18, so the blocklist and its admin screen were removed; RaceHub, where racers now enter their names, is the place to screen them.
 - ~~**AUDIO-15**: Admin can review any racer's phonetic spelling, override it, or clear the generated clip to force regeneration~~ **Removed** (#18): there are no racer phonetic spellings to review.
-- [x] **AUDIO-16**: A competitor has an optional **spoken name** ("say as"), set by an admin, race director or referee on the Competitors screen or at the check-in desk, with a play button to hear it in the club's voice before saving. When set, it is the speech text for every announcement of that name (grid call, running order and the browser fallback); otherwise the display name is spoken after the tidying in AUDIO-17. It belongs to the competitor, so it carries over to later meetings, and a RaceHub or CSV re-import never changes it. Each change is recorded with who made it and the old and new wording, and admins can see that history. Replaces AUDIO-12 (#119)
+- [x] **AUDIO-16**: A competitor has an optional **spoken name** ("say as"), set by an admin, race director or referee on the Competitors screen, with a play button to hear it in the club's voice before saving. When set, it is the speech text for every announcement of that name (grid call, running order and the browser fallback); otherwise the display name is spoken after the tidying in AUDIO-17. It belongs to the competitor, so it carries over to later meetings, and a RaceHub or CSV re-import never changes it. Each change is recorded with who made it and the old and new wording, and admins can see that history. Replaces AUDIO-12 (#119)
 - [x] **AUDIO-17**: A name with no spoken name is tidied before it is spoken, in one place used by every announcement: text in brackets (a nickname or club tag) is left out, emoji and stray symbols and punctuation are dropped, spacing is collapsed, and names in ALL CAPITALS (and capitalised words of three letters or more in a mixed-case name; initials such as "AJ" stay) are spoken in normal capitalisation. A spoken name is always used exactly as typed. It changes only what is spoken, never what is displayed or exported (#120)
+- [x] **AUDIO-18**: A start horn sounds when a race starts, and a finish horn before the "Race finished" line. Each has its own switch; the sounds are made in the browser. The stagger driver calls follow the start horn (#278, #281)
+- [x] **AUDIO-19**: An optional start lead-in (0 to 60 seconds, 0 for none) runs when the director presses Start from the grid: the lead-in is spoken, the last five seconds tick, then the race starts. It can be cancelled (#279)
+- [x] **AUDIO-20**: Race calls, with one switch: the race and its number of drivers when the grid is called, "Race started" for a grid or rolling start, and "Race stopped", "Race resumed" and "Race abandoned". Spoken by the browser voice (#280, #282)
+- [x] **AUDIO-21**: A call between races, with a switch: after a race finishes, the next race and the drivers who marshal it (#283)
+- [x] **AUDIO-22**: The countdown clips are made for the club's own countdown intervals, and a race on the grid or running whose clips were lost (an app restart) has them made again when race control asks for them (#285)
+- [x] **AUDIO-23**: The club can replace the start and finish horns with its own sound files (mp3, wav or ogg, up to 1 MB and 10 seconds) and go back to the built-in ones; race control's test buttons also try the lap beep and the Piper voice, and say if Piper cannot be reached (#278, #281, #286)
+- [x] **AUDIO-24**: The club words what is said when a timed race's clock reaches zero (empty goes back to the standard wording), and each car's number and name is called as it takes the flag, with a switch for those calls; live timing marks a car that has finished
+- [x] **AUDIO-25**: The club words every spoken line (start lead-in, grid call, race started, stopped, resumed and abandoned, race finished, next race, marshals, running order and each car as it finishes) with placeholders for what changes, an empty box meaning the standard wording; sets the countdown call times, the running order cadence, how many final seconds are counted (the start lead-in's ticks and beeps at the end of a timed race) and the lap beep's pitch and length; switches the lap beep, the ticks and the final-seconds beeps separately; and replaces the tick and lap beep with its own sound files. All are on both the race control and admin audio screens, and clips already made for a race on the grid or running are made again when they change (#299)
 
 ### Race Official Views
 
@@ -148,6 +158,9 @@
 - [x] **PRACTICE-01**: System supports timed open practice sessions using the decoder; live lap times are displayed and results are printable after the session
 - [x] **PRACTICE-02**: Practice display shows each racer's best run of N consecutive laps (configurable) to indicate sustained pace, not just best single lap
 - [x] **PRACTICE-03**: Practice and a live race share the one decoder, so they never run together: a practice session can't be started while a race is running, and a race starting or resuming stops any running practice session (recorded in the audit log as the system)
+- [x] **PRACTICE-04**: Practice laps are grouped into runs: a transponder quiet for longer than the session's pause (default 3 minutes, set when the session is created) starts a new run, and the pause is never counted as a lap. Every lap is kept; the best-N average (N set per session, default 5) is taken within one run (#151)
+- [x] **PRACTICE-05**: An official can name a transponder in a practice session as an existing competitor, or as a new walk-in competitor made on the spot. The name is saved with the session, works with no event, and also names the transponder's earlier laps; the new competitor can be matched to an entry later (#151)
+- [x] **PRACTICE-06**: A day view adds each driver's practice up across every session that started on a date in the club's time zone: sessions, runs, laps, best lap and the best-N average taken within one run. A driver is the competitor the transponder was named as, else the bare transponder (#151)
 
 ### Championship & Scoring
 
@@ -184,9 +197,12 @@
 - [x] **COMPETITOR-01**: A competitor is the person an entry belongs to (display name, RaceHub driver ID, BRCA number, home club) and has no login (#12)
 - [x] **COMPETITOR-02**: Results, live timing and championship standings group by competitor across meetings (#13)
 - [x] **COMPETITOR-03**: An admin can merge a duplicate competitor into the one to keep, after a preview of what moves (entries, events, championship exclusions) and any warnings. Entries and exclusions move in one transaction, each moved entry gets an audit record, and the duplicate is deleted. The kept competitor keeps its own name and fills a missing BRCA number, home club and spoken name from the duplicate. The RaceHub id stays on the kept competitor so the next import still finds it; two different RaceHub drivers, or two active entries in the same class of an event, refuse the merge. The Competitors screen lists possible duplicates (same name or BRCA number) (#123)
+- [x] **COMPETITOR-04**: An admin can download everything RCTC holds about one competitor as JSON, and separately anonymise them: name, BRCA number, RaceHub id, home club and spoken name are removed, including from stored results, queued RaceHub exports and history rows, while laps, results and championship points stay. Both are audited without the removed data; anonymising is refused while the competitor is in a live race (#263)
+- [x] **PRIVACY-01**: The club has a privacy notice at `/privacy`, open to anyone, that an admin can edit and that defaults to standard text with the club's name and contact details. It is linked from the public pages, and the sign-in page (#267)
 - [x] **TRANSPONDER-01**: Each entry has a primary and an optional secondary transponder; a number already used in the event is accepted with a warning, not refused (#14)
-- [x] **CHECKIN-01**: A check-in desk marks competitors present, accepts barcode input and swaps transponders on the day with an audit entry (#19) **Changed**: a later re-import keeps a swapped number and flags the booking's different number without blocking (#50)
-- [x] **CHECKIN-02**: RCTC's check-in is the only record of who has arrived on the day; RaceHub's arrival mark is imported and shown read-only, and never checks anyone in (#92, O2)
+- [x] **CHECKIN-01**: Race control swaps a transponder on the day with an audit entry (#19) **Changed**: a later re-import keeps a swapped number and flags the booking's different number without blocking (#50)
+- ~~**CHECKIN-02**: RCTC's check-in is the only record of who has arrived on the day~~ **Removed**: the check-in desk was removed, and nothing in RCTC records who has arrived. RaceHub's arrival mark is still imported and shown beside each driver on the grid call, read-only (#92)
+- [x] **COMPETITOR-05**: An admin or race director can set a competitor's public name to full, initials only or hidden (the car number stands in). It applies to the results page, boards and overlay, championship standings, live timing and the live feed, is audited, and is not changed by imports. Officials' screens and results sent to RaceHub keep the real name (#265)
 - [x] **BOARDS-01**: Spectator boards show the race on now and next, live timing and results on screens at the venue without signing in (#20)
 - [x] **LOCAL-01**: A full meeting runs with no internet connection at the venue (#21)
 - [x] **DB-01**: The app keeps its data in one SQLite file in a per-machine data folder (#26)
@@ -272,6 +288,7 @@
 | TRACK-02 | Phase 1 | Stored only, not applied |
 | TRACK-03 | Phase 1 | Stored only, not applied |
 | TRACK-04 | Phase 1 | Complete |
+| TRACK-05 | Race end | Complete |
 | RACECLASS-01 | Phase 1 | Complete |
 | EVENT-01 | Phase 3 | Complete |
 | EVENT-02 | Phase 3 | Complete |
@@ -318,6 +335,7 @@
 | CTRL-07 | Phase 4 | Complete |
 | CTRL-08 | Phase 4 | Complete |
 | CTRL-09 | Phase 4 | Complete |
+| CTRL-11 | Race control | Complete |
 | AUDIO-01 | Phase 6 | Complete |
 | AUDIO-02 | Phase 6 | Complete |
 | AUDIO-03 | Phase 6 | Complete |
@@ -335,6 +353,13 @@
 | AUDIO-15 | Phase 6 | Removed (#18) |
 | AUDIO-16 | Local-only plan | Complete (#119) |
 | AUDIO-17 | Local-only plan | Complete (#120) |
+| AUDIO-18 | Audio improvements | Complete (#278, #281) |
+| AUDIO-19 | Audio improvements | Complete (#279) |
+| AUDIO-20 | Audio improvements | Complete (#280, #282) |
+| AUDIO-21 | Audio improvements | Complete (#283) |
+| AUDIO-22 | Audio improvements | Complete (#285) |
+| AUDIO-23 | Audio improvements | Complete (#278, #281, #286) |
+| AUDIO-24 | Audio improvements | Complete |
 | OFFICIAL-01 | Phase 4 | Complete |
 | OFFICIAL-02 | Phase 4 | Complete |
 | OFFICIAL-03 | Phase 4 | Complete |
@@ -368,6 +393,9 @@
 | COMPETITOR-01 | #12 | Complete |
 | COMPETITOR-02 | #13 | Complete |
 | COMPETITOR-03 | #123 | Complete |
+| COMPETITOR-04 | #263 | Complete |
+| PRIVACY-01 | #267 | Complete |
+| COMPETITOR-05 | #265 | Complete |
 | TRANSPONDER-01 | #14 | Complete |
 | CHECKIN-01 | #19 | Complete |
 | CHECKIN-02 | #19, #92 | Complete |
@@ -388,7 +416,7 @@
 
 ---
 *Requirements defined: 2026-04-15*
-*Last updated: 2026-10-06 — CHECKIN-02 records that RCTC's check-in decides who has arrived; RESULT-04 removed, as no results show car tags (#92)*
+*Last updated: 2026-10-15 — CHECKIN-02 removed with the check-in desk; RESULT-04 removed, as no results show car tags (#92)*
 *Previously updated: 2026-10-05 — IMPORT-06 added for the RC-Timing CSV entry import (#39)*
 *Previously updated: 2026-10-05 — AUTH-06 and AUTH-07 added for managing officials and the command-line admin password reset (#61)*
 *Previously updated: 2026-10-05 — AUDIO-14 removed with the profanity blocklist (#30)*

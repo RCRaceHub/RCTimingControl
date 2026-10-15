@@ -104,16 +104,6 @@ public class Events extends TableImpl<EventsRecord> {
     public final TableField<EventsRecord, Instant> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
 
     /**
-     * The column <code>events.entry_opens_at</code>.
-     */
-    public final TableField<EventsRecord, Instant> ENTRY_OPENS_AT = createField(DSL.name("entry_opens_at"), SQLDataType.BIGINT, this, "", new InstantMicrosConverter());
-
-    /**
-     * The column <code>events.entry_closes_at</code>.
-     */
-    public final TableField<EventsRecord, Instant> ENTRY_CLOSES_AT = createField(DSL.name("entry_closes_at"), SQLDataType.BIGINT, this, "", new InstantMicrosConverter());
-
-    /**
      * The column <code>events.track_id</code>.
      */
     public final TableField<EventsRecord, Long> TRACK_ID = createField(DSL.name("track_id"), SQLDataType.BIGINT, this, "");

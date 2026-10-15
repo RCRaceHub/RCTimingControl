@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAboutInfo } from '@/lib/api';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/dates';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 export default function AboutPage() {
@@ -74,6 +75,7 @@ export default function AboutPage() {
             Back to login
           </Link>
         </div>
+        <PrivacyLink className="py-0" />
       </div>
     </div>
   );

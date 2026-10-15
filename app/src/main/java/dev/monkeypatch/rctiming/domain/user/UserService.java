@@ -7,6 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Reads officials' accounts, and creates them for the setup wizard. Changing one (roles, password, enabling
+ * and disabling) goes through {@link OfficialService}, which also audit-logs it and ends the official's open
+ * sessions. There are no racer accounts: competitors never sign in (#18).
+ */
 @Service
 @Transactional
 public class UserService {
@@ -45,7 +50,7 @@ public class UserService {
      */
     @Transactional
     public User createAdmin(String email, String password, String firstName, String lastName) {
-        // T-08-01 server-side replay guard (defence-in-depth — SetupService is the first guard)
+        // A second guard behind SetupService's, so a replayed setup request cannot add another admin
         if (userRepository.count() > 0) {
             throw new StateConflictException("Bootstrap already complete - users exist");
         }

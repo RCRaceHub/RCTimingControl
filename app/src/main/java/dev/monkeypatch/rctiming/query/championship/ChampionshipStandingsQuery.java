@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -33,16 +32,21 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RES
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
 /**
- * CHAMP-01, CHAMP-02, CHAMP-04, CHAMP-07, CHAMP-08, CHAMP-09 read side.
+ * Championship standings (CHAMP-01, CHAMP-02, CHAMP-04, CHAMP-07, CHAMP-08, CHAMP-09), worked out on demand
+ * from the result snapshots of the linked events. Each event linked to the championship is a round.
  *
- * Implements full championship standings computation: best-X-from-Y drop logic,
- * TQ bonus, A-final winner bonus, DNS semantics. The two bonuses are per driver, per class and per
- * round (an event linked to the championship): winning in two classes, or two rounds, earns each.
- * A round a driver is excluded from earns no bonus either.
- * Reads only through the jOOQ DSL, with no repositories.
+ * <p>A driver scores, per class, the points for their best position at each round. Scoring from both qualifying and
+ * finals (CHAMP-06) pays the points of the best qualifying position and of the best final position and sums them;
+ * the round's position is the better of the two. A driver on the grid at a round who has no result in it has a DNS
+ * round worth nothing, which still counts towards Y. The TQ and A-final winner bonuses are per driver, per class
+ * and per round: winning in two classes, or two rounds, earns each. The TQ goes to one driver per class and
+ * round, the one who tops the class's qualifying heats put together (the order finals are seeded in: most laps,
+ * then best lap), not to every heat winner. Both come from every finished race, whatever the scoring source. A
+ * round a driver is excluded from earns them nothing, bonuses included, and a TQ they top is not passed down.
+ * The worst rounds are then dropped to the best X from Y, and each class is ranked.
  *
- * Drivers are competitors (L5, #13): entries map to {@code entries.competitor_id}, so a driver
- * with no login still scores, and exclusions are keyed by competitor id.
+ * <p>Drivers are competitors (L5, #13): entries map to {@code entries.competitor_id}, so a driver with no login
+ * still scores, and exclusions are keyed by competitor id. Reads only through the jOOQ DSL, with no repositories.
  */
 @Service
 @ReadTransaction
@@ -57,62 +61,67 @@ public class ChampionshipStandingsQuery {
     }
 
     public List<StandingsRowDto> computeStandings(Long championshipId) {
-        // Step 1: Existence check
-        if (!dsl.fetchExists(CHAMPIONSHIPS, CHAMPIONSHIPS.ID.eq(championshipId))) {
-            throw new EntityNotFoundException("Championship not found: " + championshipId);
+        Rules rules = rules(championshipId);
+        List<ChampionshipRound> rounds = rounds(championshipId);
+        Map<Long, EventResults> resultsByEvent = results(rounds, rules.scoringSource());
+
+        Tally tally = new Tally();
+        for (ChampionshipRound round : rounds) {
+            score(round, resultsByEvent.getOrDefault(round.eventId(), EventResults.NONE), rules, tally);
+        }
+        return rank(rows(tally, rules));
+    }
+
+    /** How the championship scores: everything but the results themselves. */
+    private record Rules(String scoringSource, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
+                         Map<Integer, Integer> pointsScale, int tqBonus, int aFinalBonus,
+                         Set<DriverEvent> exclusions) {
+
+        int points(int position) {
+            return pointsScale.getOrDefault(position, 0);
         }
 
-        // Step 1b: Load championship header
-        var champRecord = dsl
-                .select(CHAMPIONSHIPS.NAME, CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y,
-                        CHAMPIONSHIPS.SCORING_SOURCE, CHAMPIONSHIPS.TQ_BONUS_POINTS,
-                        CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS)
+        boolean excluded(Long driverId, Long eventId) {
+            return exclusions.contains(new DriverEvent(driverId, eventId));
+        }
+
+        /** The class's own best X from Y, either half falling back to the championship's. */
+        BestXFromY bestXFromY(Long racingClassId) {
+            BestXFromY own = classBestXFromY.get(racingClassId);
+            if (own == null) {
+                return bestXFromY;
+            }
+            return new BestXFromY(own.x() != null ? own.x() : bestXFromY.x(),
+                    own.y() != null ? own.y() : bestXFromY.y());
+        }
+    }
+
+    /** Best X rounds from Y; either is null when not set. */
+    private record BestXFromY(Integer x, Integer y) {}
+
+    /** A driver at one event, the key exclusions are kept by. */
+    private record DriverEvent(Long driverId, Long eventId) {}
+
+    private Rules rules(Long championshipId) {
+        var championship = dsl
+                .select(CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y, CHAMPIONSHIPS.SCORING_SOURCE,
+                        CHAMPIONSHIPS.TQ_BONUS_POINTS, CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS)
                 .from(CHAMPIONSHIPS)
                 .where(CHAMPIONSHIPS.ID.eq(championshipId))
                 .fetchOne();
-
-        if (champRecord == null) {
+        if (championship == null) {
             throw new EntityNotFoundException("Championship not found: " + championshipId);
         }
 
-        Integer champBestX = champRecord.get(CHAMPIONSHIPS.BEST_X_FROM_Y_X);
-        Integer champBestY = champRecord.get(CHAMPIONSHIPS.BEST_X_FROM_Y_Y);
-        String scoringSource = champRecord.get(CHAMPIONSHIPS.SCORING_SOURCE);
-        int tqBonus = champRecord.get(CHAMPIONSHIPS.TQ_BONUS_POINTS);
-        int afinalBonus = champRecord.get(CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS);
-
-        // Step 2: Load per-class best-X-from-Y overrides
-        // Map: racingClassId -> [bestX, bestY] (null = use championship default)
-        var classRows = dsl
-                .select(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID,
-                        CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_X,
+        Map<Long, BestXFromY> classBestXFromY = new HashMap<>();
+        dsl.select(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID, CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_X,
                         CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_Y)
                 .from(CHAMPIONSHIP_CLASSES)
                 .where(CHAMPIONSHIP_CLASSES.CHAMPIONSHIP_ID.eq(championshipId))
-                .fetch();
+                .forEach(r -> classBestXFromY.put(r.get(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID),
+                        new BestXFromY(r.get(CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_X),
+                                r.get(CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_Y))));
 
-        Map<Long, Integer[]> classOverrides = new HashMap<>();
-        for (var row : classRows) {
-            Long rcId = row.get(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID);
-            classOverrides.put(rcId, new Integer[]{
-                    row.get(CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_X),
-                    row.get(CHAMPIONSHIP_CLASSES.BEST_X_FROM_Y_Y)
-            });
-        }
-
-        // Step 3: Load ordered event links
-        var eventLinks = dsl
-                .select(CHAMPIONSHIP_EVENT_LINKS.ID,
-                        CHAMPIONSHIP_EVENT_LINKS.EVENT_ID,
-                        CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER,
-                        EVENTS.NAME)
-                .from(CHAMPIONSHIP_EVENT_LINKS)
-                .join(EVENTS).on(EVENTS.ID.eq(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID))
-                .where(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID.eq(championshipId))
-                .orderBy(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER.asc())
-                .fetch();
-
-        // Step 4: Load points scale
         Map<Integer, Integer> pointsScale = new HashMap<>();
         dsl.select(CHAMPIONSHIP_POINTS_SCALE.POSITION, CHAMPIONSHIP_POINTS_SCALE.POINTS)
                 .from(CHAMPIONSHIP_POINTS_SCALE)
@@ -120,314 +129,351 @@ public class ChampionshipStandingsQuery {
                 .forEach(r -> pointsScale.put(r.get(CHAMPIONSHIP_POINTS_SCALE.POSITION),
                         r.get(CHAMPIONSHIP_POINTS_SCALE.POINTS)));
 
-        // Step 5: Load exclusions
-        Set<String> exclusionKeys = new HashSet<>();
+        Set<DriverEvent> exclusions = new HashSet<>();
         dsl.select(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID, CHAMPIONSHIP_EXCLUSIONS.EVENT_ID)
                 .from(CHAMPIONSHIP_EXCLUSIONS)
                 .where(CHAMPIONSHIP_EXCLUSIONS.CHAMPIONSHIP_ID.eq(championshipId))
-                .forEach(r -> exclusionKeys.add(
-                        r.get(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID) + ":" + r.get(CHAMPIONSHIP_EXCLUSIONS.EVENT_ID)));
+                .forEach(r -> exclusions.add(new DriverEvent(r.get(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID),
+                        r.get(CHAMPIONSHIP_EXCLUSIONS.EVENT_ID))));
 
-        // Per-driver data structures for steps 6-9:
-        // driverKey = "driverId:racingClassId"
-        // Store: Map<driverKey, List<RoundResultDto>> for building standings
-        Map<String, List<RoundResultDto>> driverRounds = new LinkedHashMap<>();
-        // For StandingsRowDto metadata
-        Map<Long, String> driverDisplayName = new HashMap<>();
-        // Map driverKey to racingClassId
-        Map<String, Long> driverKeyToClassId = new HashMap<>();
-        // Map driverKey to driverId
-        Map<String, Long> driverKeyToDriverId = new HashMap<>();
+        return new Rules(championship.get(CHAMPIONSHIPS.SCORING_SOURCE),
+                new BestXFromY(championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_X),
+                        championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_Y)),
+                classBestXFromY, pointsScale,
+                championship.get(CHAMPIONSHIPS.TQ_BONUS_POINTS),
+                championship.get(CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS),
+                exclusions);
+    }
 
-        // TQ and A-final bonus tracking (CHAMP-07, CHAMP-08): one bonus per driver, per class, per round.
-        // A driver who tops qualifying in two classes, or in two rounds, is paid for each.
-        Set<ClassRound> tqBonuses = new HashSet<>();      // position 1 in a QUALIFIER race
-        Set<ClassRound> afinalBonuses = new HashSet<>();  // position 1 in an A final
+    /** An event linked to the championship. */
+    private record ChampionshipRound(Long eventId, int roundNumber, String eventName) {}
 
-        // Step 6: Per event link — find finished races and build RoundResultDtos
-        for (var link : eventLinks) {
-            Long eventId = link.get(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID);
-            int roundNumber = link.get(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER);
-            String eventName = link.get(EVENTS.NAME);
+    /** A finished race at a linked event, with its result rows best first. */
+    private record FinishedRace(Long eventId, String roundType, String finalLetter, Long racingClassId,
+                                boolean scores, boolean abandoned, List<ResultSnapshotDto.ResultRow> positions) {}
 
-            // Build round type filter based on scoringSource
-            var racesQuery = dsl
-                    .select(RACES.ID, RACES.FINAL_LETTER, ROUNDS.TYPE, ROUNDS.ROUND_NUMBER,
-                            EVENT_CLASSES.RACING_CLASS_ID,
-                            RESULT_SNAPSHOTS.POSITIONS_JSON)
-                    .from(RACES)
-                    .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
-                    .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
-                    .leftJoin(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
-                    .where(ROUNDS.EVENT_ID.eq(eventId))
-                    .and(RACES.STATUS.eq("FINISHED"));
+    /** The competitor and racing class of an entry on the grid of a finished race. */
+    private record EntryRef(Long driverId, Long racingClassId) {}
 
-            if ("QUALIFYING".equals(scoringSource)) {
-                racesQuery = racesQuery.and(ROUNDS.TYPE.eq("QUALIFIER"));
-            } else if ("FINALS".equals(scoringSource)) {
-                racesQuery = racesQuery.and(ROUNDS.TYPE.eq("FINAL"));
-            }
-            // BOTH = no additional filter on type
+    /**
+     * One event's finished races, and the entries on their grids by entry id: those of the races that score, and
+     * those of every finished race, which the bonuses are paid from.
+     */
+    private record EventResults(List<FinishedRace> races, Map<Long, EntryRef> scoringEntries,
+                                Map<Long, EntryRef> allEntries, Map<Long, String> displayNames) {
 
-            var finishedRaces = racesQuery.fetch();
+        static final EventResults NONE = new EventResults(List.of(), Map.of(), Map.of(), Map.of());
+    }
 
-            // Collect raceIds for DNS detection
-            List<Long> finishedRaceIds = finishedRaces.map(r -> r.get(RACES.ID));
+    private List<ChampionshipRound> rounds(Long championshipId) {
+        return dsl.select(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID, CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER, EVENTS.NAME)
+                .from(CHAMPIONSHIP_EVENT_LINKS)
+                .join(EVENTS).on(EVENTS.ID.eq(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID))
+                .where(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID.eq(championshipId))
+                .orderBy(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER.asc())
+                .fetch(r -> new ChampionshipRound(r.get(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID),
+                        r.get(CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER), r.get(EVENTS.NAME)));
+    }
 
-            // Per-driver best position at this event, per racing class
-            // Map: racingClassId -> Map<driverId, Integer bestPosition>
-            Map<Long, Map<Long, Integer>> classBestPosition = new HashMap<>();
-            // Per-race: track who scored what for TQ/A-final bonus
-            // positionsJson entryId → driverId (competitor) mapping needed
+    /**
+     * The finished races of every linked event and the entries on their grids, in two queries for the whole
+     * championship. Each race's snapshot is read once, for both the points and the bonuses.
+     */
+    private Map<Long, EventResults> results(List<ChampionshipRound> rounds, String scoringSource) {
+        if (rounds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> eventIds = rounds.stream().map(ChampionshipRound::eventId).toList();
 
-            // Step 6c/6d: For all race_entries for these races, collect each entered driver's competitor id
-            Set<Long> enteredEntryIds = new HashSet<>();
-            // Map entryId -> competitor id and entryId -> racingClassId (via entry -> event_class)
-            Map<Long, Long> entryIdToDriverId = new HashMap<>();
-            Map<Long, Long> entryIdToRacingClassId = new HashMap<>();
+        Map<Long, FinishedRace> races = new HashMap<>();
+        Map<Long, EventResults> results = new HashMap<>();
+        dsl.select(RACES.ID, RACES.FINAL_LETTER, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.EVENT_ID,
+                        EVENT_CLASSES.RACING_CLASS_ID,
+                        RESULT_SNAPSHOTS.POSITIONS_JSON)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
+                .leftJoin(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
+                .where(ROUNDS.EVENT_ID.in(eventIds))
+                .and(RACES.STATUS.eq("FINISHED"))
+                .forEach(r -> {
+                    Long raceId = r.get(RACES.ID);
+                    String roundType = r.get(ROUNDS.TYPE);
+                    FinishedRace race = new FinishedRace(r.get(ROUNDS.EVENT_ID), roundType, r.get(RACES.FINAL_LETTER),
+                            r.get(EVENT_CLASSES.RACING_CLASS_ID), scores(scoringSource, roundType),
+                            r.get(RACES.ABANDONED_AT) != null,
+                            snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)));
+                    races.put(raceId, race);
+                    results.computeIfAbsent(race.eventId(), k -> new EventResults(new ArrayList<>(),
+                            new HashMap<>(), new HashMap<>(), new HashMap<>())).races().add(race);
+                });
 
-            if (!finishedRaceIds.isEmpty()) {
-                var raceEntryRows = dsl
-                        .select(RACE_ENTRIES.ENTRY_ID, ENTRIES.COMPETITOR_ID, ENTRIES.EVENT_CLASS_ID)
-                        .from(RACE_ENTRIES)
-                        .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
-                        .where(RACE_ENTRIES.RACE_ID.in(finishedRaceIds))
-                        .fetch();
-
-                for (var re : raceEntryRows) {
-                    Long entryId = re.get(RACE_ENTRIES.ENTRY_ID);
-                    Long driverId = re.get(ENTRIES.COMPETITOR_ID);
-                    Long ecId = re.get(ENTRIES.EVENT_CLASS_ID);
-                    enteredEntryIds.add(entryId);
-                    entryIdToDriverId.put(entryId, driverId);
-                    entryIdToRacingClassId.put(entryId, ecId);
-                }
-
-                // Resolve event_class_id -> racing_class_id
-                Map<Long, Long> ecToRacingClass = new HashMap<>();
-                Set<Long> ecIds = new HashSet<>(entryIdToRacingClassId.values());
-                if (!ecIds.isEmpty()) {
-                    dsl.select(EVENT_CLASSES.ID, EVENT_CLASSES.RACING_CLASS_ID)
-                            .from(EVENT_CLASSES)
-                            .where(EVENT_CLASSES.ID.in(ecIds))
-                            .forEach(r -> ecToRacingClass.put(r.get(EVENT_CLASSES.ID),
-                                    r.get(EVENT_CLASSES.RACING_CLASS_ID)));
-                }
-                // Update entryIdToRacingClassId to actual racingClassId
-                entryIdToRacingClassId.replaceAll((eid, ecId) ->
-                        ecToRacingClass.getOrDefault(ecId, ecId));
-            }
-
-            // Load competitor names for all entered drivers
-            Set<Long> allDriverIds = new HashSet<>(entryIdToDriverId.values());
-            allDriverIds.remove(null);
-            if (!allDriverIds.isEmpty()) {
-                dsl.select(COMPETITORS.ID, COMPETITORS.DISPLAY_NAME)
-                        .from(COMPETITORS)
-                        .where(COMPETITORS.ID.in(allDriverIds))
-                        .forEach(r -> driverDisplayName.put(r.get(COMPETITORS.ID), r.get(COMPETITORS.DISPLAY_NAME)));
-            }
-
-            // Step 6b/6c: Deserialize positions_json and collect per-driver best position per class
-            for (var race : finishedRaces) {
-                var raceEventClassId = race.get(EVENT_CLASSES.RACING_CLASS_ID);
-                var positions = snapshotJson.positions(race.get(RACES.ID), race.get(RESULT_SNAPSHOTS.POSITIONS_JSON));
-                for (ResultSnapshotDto.ResultRow row : positions) {
-                    Long driverId = entryIdToDriverId.get(row.entryId());
-                    if (driverId == null) continue;
-
-                    // Track best position per driver per racing class at this event
-                    classBestPosition
-                            .computeIfAbsent(raceEventClassId, k -> new HashMap<>())
-                            .merge(driverId, row.position(), Math::min);
-                }
-            }
-
-            // CR-05: Bonus tracking uses ALL finished races at this event regardless of scoringSource.
-            // When scoringSource=FINALS, finishedRaces contains no QUALIFIERs, so TQ bonus was never
-            // awarded. Separate query ensures bonuses are always evaluated from the correct race type.
-            var bonusRaces = dsl
-                    .select(RACES.ID, RACES.FINAL_LETTER, ROUNDS.TYPE, EVENT_CLASSES.RACING_CLASS_ID,
-                            RESULT_SNAPSHOTS.POSITIONS_JSON)
-                    .from(RACES)
-                    .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
-                    .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
-                    .leftJoin(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
-                    .where(ROUNDS.EVENT_ID.eq(eventId))
-                    .and(RACES.STATUS.eq("FINISHED"))
-                    .fetch();
-
-            List<Long> bonusRaceIds = bonusRaces.map(r -> r.get(RACES.ID));
-            Map<Long, Long> bonusEntryToDriver = new HashMap<>();
-            if (!bonusRaceIds.isEmpty()) {
-                dsl.select(RACE_ENTRIES.ENTRY_ID, ENTRIES.COMPETITOR_ID)
-                        .from(RACE_ENTRIES)
-                        .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
-                        .where(RACE_ENTRIES.RACE_ID.in(bonusRaceIds))
-                        .forEach(r -> bonusEntryToDriver.put(r.get(RACE_ENTRIES.ENTRY_ID),
-                                r.get(ENTRIES.COMPETITOR_ID)));
-            }
-
-            for (var race : bonusRaces) {
-                String roundType = race.get(ROUNDS.TYPE);
-                String finalLetter = race.get(RACES.FINAL_LETTER);
-                Long bonusClassId = race.get(EVENT_CLASSES.RACING_CLASS_ID);
-                var positions = snapshotJson.positions(race.get(RACES.ID), race.get(RESULT_SNAPSHOTS.POSITIONS_JSON));
-                for (ResultSnapshotDto.ResultRow row : positions) {
-                    Long driverId = bonusEntryToDriver.get(row.entryId());
-                    if (driverId == null) continue;
-                    // An excluded driver earns nothing from that round, bonuses included (CHAMP-09)
-                    if (exclusionKeys.contains(driverId + ":" + eventId)) continue;
-                    ClassRound won = new ClassRound(driverId, bonusClassId, eventId);
-                    if ("QUALIFIER".equals(roundType) && row.position() == 1) {
-                        tqBonuses.add(won);
+        // The entry's own class, which can differ from the race's, decides which class a DNS is in
+        dsl.select(RACE_ENTRIES.RACE_ID, RACE_ENTRIES.ENTRY_ID, ENTRIES.COMPETITOR_ID, EVENT_CLASSES.RACING_CLASS_ID,
+                        COMPETITORS.DISPLAY_NAME)
+                .from(RACE_ENTRIES)
+                .join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
+                .leftJoin(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(ENTRIES.EVENT_CLASS_ID))
+                .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
+                .where(ROUNDS.EVENT_ID.in(eventIds))
+                .and(RACES.STATUS.eq("FINISHED"))
+                .forEach(r -> {
+                    FinishedRace race = races.get(r.get(RACE_ENTRIES.RACE_ID));
+                    if (race == null) {
+                        return; // a race with no event class, which the first query leaves out
                     }
-                    if ("FINAL".equals(roundType) && "A".equals(finalLetter) && row.position() == 1) {
-                        afinalBonuses.add(won);
+                    EventResults event = results.get(race.eventId());
+                    Long entryId = r.get(RACE_ENTRIES.ENTRY_ID);
+                    EntryRef entry = new EntryRef(r.get(ENTRIES.COMPETITOR_ID), r.get(EVENT_CLASSES.RACING_CLASS_ID));
+                    event.allEntries().put(entryId, entry);
+                    if (race.scores()) {
+                        event.scoringEntries().put(entryId, entry);
                     }
-                }
-            }
-
-            // Step 7: Build RoundResultDto for each driver that appeared in positions OR race_entries
-            // Collect all (driverId, racingClassId) pairs seen at this event
-            // From positions (via classBestPosition)
-            for (var classEntry : classBestPosition.entrySet()) {
-                Long rcId = classEntry.getKey();
-                for (var driverEntry : classEntry.getValue().entrySet()) {
-                    Long driverId = driverEntry.getKey();
-                    int position = driverEntry.getValue();
-                    String exKey = driverId + ":" + eventId;
-                    boolean excluded = exclusionKeys.contains(exKey);
-                    int points = excluded ? 0 : pointsScale.getOrDefault(position, 0);
-
-                    String driverKey = driverId + ":" + rcId;
-                    driverKeyToClassId.put(driverKey, rcId);
-                    driverKeyToDriverId.put(driverKey, driverId);
-                    driverRounds.computeIfAbsent(driverKey, k -> new ArrayList<>())
-                            .add(new RoundResultDto(roundNumber, eventId, eventName,
-                                    excluded ? 0 : position, points, excluded, false));
-                }
-            }
-
-            // DNS drivers: in race_entries but not in positions at this event for their class
-            // WR-03: deduplicate by (driverId, rcId, eventId) — a driver with multiple heats can
-            // appear in entryIdToDriverId multiple times, inflating their DNS round count.
-            Set<String> dnsEmitted = new HashSet<>();
-            for (var entryIdEntry : entryIdToDriverId.entrySet()) {
-                Long entryId = entryIdEntry.getKey();
-                Long driverId = entryIdEntry.getValue();
-                Long rcId = entryIdToRacingClassId.get(entryId);
-                if (driverId == null || rcId == null) continue;
-
-                Long finalRcId = rcId;
-                boolean appearedInPositions = classBestPosition
-                        .getOrDefault(finalRcId, Map.of())
-                        .containsKey(driverId);
-
-                if (!appearedInPositions) {
-                    // ASSUMED: DNS counts toward Y rounds (club confirmation pending — see STATE.md)
-                    String dnsKey = driverId + ":" + rcId + ":" + eventId;
-                    if (dnsEmitted.add(dnsKey)) {
-                        String driverKey = driverId + ":" + rcId;
-                        driverKeyToClassId.put(driverKey, rcId);
-                        driverKeyToDriverId.put(driverKey, driverId);
-                        boolean excluded = exclusionKeys.contains(driverId + ":" + eventId);
-                        driverRounds.computeIfAbsent(driverKey, k -> new ArrayList<>())
-                                .add(new RoundResultDto(roundNumber, eventId, eventName,
-                                        0, 0, excluded, false));
+                    String displayName = r.get(COMPETITORS.DISPLAY_NAME);
+                    if (entry.driverId() != null && displayName != null) {
+                        event.displayNames().put(entry.driverId(), displayName);
                     }
-                }
-            }
+                });
+        return results;
+    }
+
+    /** Whether a race in a round of this type counts for points. */
+    private static boolean scores(String scoringSource, String roundType) {
+        if ("QUALIFYING".equals(scoringSource)) {
+            return "QUALIFIER".equals(roundType);
+        }
+        if ("FINALS".equals(scoringSource)) {
+            return "FINAL".equals(roundType);
+        }
+        return "QUALIFIER".equals(roundType) || "FINAL".equals(roundType); // BOTH; practice never scores
+    }
+
+    /** A driver in one racing class: one row of the standings. */
+    private record DriverClass(Long driverId, Long racingClassId) {}
+
+    /**
+     * A driver's best qualifying and best final position in one class at one event; either is null when they had no
+     * result of that kind.
+     */
+    private record SourcePositions(Integer qualifying, Integer finals) {
+
+        static SourcePositions of(String roundType, int position) {
+            return "QUALIFIER".equals(roundType)
+                    ? new SourcePositions(position, null)
+                    : new SourcePositions(null, position);
         }
 
-        // Step 8: Apply best-X-from-Y drop logic per driver-class group
-        // Collect all distinct (driverId, racingClassId) combinations and build standings
-        Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
-
-        for (var driverKey : driverRounds.keySet()) {
-            Long driverId = driverKeyToDriverId.get(driverKey);
-            Long rcId = driverKeyToClassId.get(driverKey);
-            List<RoundResultDto> rounds = new ArrayList<>(driverRounds.get(driverKey));
-
-            // Determine effective X and Y
-            Integer[] classOvr = classOverrides.get(rcId);
-            Integer effectiveX = classOvr != null && classOvr[0] != null ? classOvr[0] : champBestX;
-            Integer effectiveY = classOvr != null && classOvr[1] != null ? classOvr[1] : champBestY;
-            int totalRounds = rounds.size();
-            int useX = effectiveX != null ? effectiveX : totalRounds;
-            int useY = effectiveY != null ? effectiveY : totalRounds;
-
-            // Sort by points DESC to identify worst rounds to drop
-            List<RoundResultDto> sorted = new ArrayList<>(rounds);
-            sorted.sort(Comparator.comparingInt(RoundResultDto::points).reversed()
-                    .thenComparingInt(RoundResultDto::position)); // worst position (highest) dropped first on tie
-
-            // Mark bottom (Y - X) rounds as dropped, but only if we have >= Y rounds
-            Set<Integer> droppedIndices = new HashSet<>();
-            if (useY > useX && totalRounds >= useY) {
-                int dropCount = useY - useX;
-                // The last dropCount entries in sorted (lowest points) get dropped
-                for (int i = sorted.size() - dropCount; i < sorted.size(); i++) {
-                    if (i >= 0) droppedIndices.add(i);
-                }
-            }
-
-            // Rebuild rounds with dropped flags set; we need to map back to original order
-            // Create a list with dropped flags based on sorted index identity
-            // Use object identity to match sorted back to original
-            List<RoundResultDto> withDropped = new ArrayList<>();
-            for (int si = 0; si < sorted.size(); si++) {
-                RoundResultDto original = sorted.get(si);
-                boolean drop = droppedIndices.contains(si);
-                withDropped.add(new RoundResultDto(
-                        original.roundNumber(), original.eventId(), original.eventName(),
-                        original.position(), original.points(), original.excluded(), drop));
-            }
-
-            // Restore chronological order (sort by roundNumber)
-            withDropped.sort(Comparator.comparingInt(RoundResultDto::roundNumber));
-
-            // Total points = sum of non-dropped, non-excluded rounds
-            int totalPoints = withDropped.stream()
-                    .filter(r -> !r.dropped() && !r.excluded())
-                    .mapToInt(RoundResultDto::points)
-                    .sum();
-
-            // Step 9: Apply TQ and A-final bonuses: one for each round this driver won in this class
-            totalPoints += tqBonus * roundsWon(tqBonuses, driverId, rcId);
-            totalPoints += afinalBonus * roundsWon(afinalBonuses, driverId, rcId);
-
-            String displayName = driverDisplayName.getOrDefault(driverId, "");
-
-            StandingsRowDto row = new StandingsRowDto(driverId, displayName,
-                    rcId, totalPoints, withDropped);
-
-            byClass.computeIfAbsent(rcId, k -> new ArrayList<>()).add(row);
+        SourcePositions better(SourcePositions other) {
+            return new SourcePositions(min(qualifying, other.qualifying), min(finals, other.finals));
         }
 
-        // Step 10: Sort each class by totalPoints DESC, display name as tiebreak. Classes come out in
-        // racing class order: the order the rows were first seen in follows hash-map iteration, which
-        // changes with the ids and made the output order depend on how many classes existed before.
-        List<StandingsRowDto> result = new ArrayList<>();
-        // (nullsLast: a class can have no racing class assigned)
-        Map<Long, List<StandingsRowDto>> inClassOrder = new TreeMap<>(Comparator.nullsLast(Comparator.<Long>naturalOrder()));
-        inClassOrder.putAll(byClass);
-        for (var classRows2 : inClassOrder.values()) {
-            classRows2.sort(Comparator.comparingInt(StandingsRowDto::totalPoints).reversed()
-                    .thenComparing(StandingsRowDto::displayName));
-            result.addAll(classRows2);
+        /** The better of the positions the driver has. */
+        int best() {
+            return min(qualifying, finals);
         }
 
-        return result;
+        /** The points of each position the driver has, summed (CHAMP-06). */
+        int points(Rules rules) {
+            return (qualifying != null ? rules.points(qualifying) : 0) + (finals != null ? rules.points(finals) : 0);
+        }
+
+        private static Integer min(Integer a, Integer b) {
+            if (a == null) {
+                return b;
+            }
+            return b == null ? a : Integer.valueOf(Math.min(a, b));
+        }
     }
 
     /** A driver winning something in one class at one event (a round of the championship). */
-    private record ClassRound(Long driverId, Long racingClassId, Long eventId) {}
+    private record ClassRound(DriverClass driverClass, Long eventId) {}
+
+    /** What the rounds add up to, before drops and ranking. */
+    private static final class Tally {
+        final Map<DriverClass, List<RoundResultDto>> rounds = new LinkedHashMap<>();
+        final Map<Long, String> displayNames = new HashMap<>();
+        final Set<ClassRound> tqWins = new HashSet<>();
+        final Set<ClassRound> aFinalWins = new HashSet<>();
+
+        void add(DriverClass driverClass, RoundResultDto round) {
+            rounds.computeIfAbsent(driverClass, k -> new ArrayList<>()).add(round);
+        }
+    }
+
+    private static void score(ChampionshipRound round, EventResults results, Rules rules, Tally tally) {
+        Long eventId = round.eventId();
+        tally.displayNames.putAll(results.displayNames());
+
+        // Each driver's best qualifying and best final position in each racing class, over every race that scores
+        Map<Long, Map<Long, SourcePositions>> bestPositions = new HashMap<>();
+        for (FinishedRace race : results.races()) {
+            if (!race.scores()) {
+                continue;
+            }
+            for (ResultSnapshotDto.ResultRow row : race.positions()) {
+                EntryRef entry = results.scoringEntries().get(row.entryId());
+                if (entry == null || entry.driverId() == null) {
+                    continue;
+                }
+                bestPositions.computeIfAbsent(race.racingClassId(), k -> new HashMap<>())
+                        .merge(entry.driverId(), SourcePositions.of(race.roundType(), row.position()),
+                                SourcePositions::better);
+            }
+        }
+
+        bonuses(eventId, results, rules, tally);
+
+        bestPositions.forEach((racingClassId, positions) -> positions.forEach((driverId, position) -> {
+            boolean excluded = rules.excluded(driverId, eventId);
+            tally.add(new DriverClass(driverId, racingClassId), new RoundResultDto(round.roundNumber(), eventId,
+                    round.eventName(), excluded ? 0 : position.best(), excluded ? 0 : position.points(rules),
+                    excluded, false));
+        }));
+
+        // On a grid but in no result for their class: a DNS, which counts towards Y. A driver in several heats
+        // is on several grids, and still has one DNS for the round.
+        Set<DriverClass> didNotStart = new HashSet<>();
+        for (EntryRef entry : results.scoringEntries().values()) {
+            if (entry.driverId() == null || entry.racingClassId() == null) {
+                continue;
+            }
+            boolean finished = bestPositions.getOrDefault(entry.racingClassId(), Map.of())
+                    .containsKey(entry.driverId());
+            DriverClass driverClass = new DriverClass(entry.driverId(), entry.racingClassId());
+            if (!finished && didNotStart.add(driverClass)) {
+                tally.add(driverClass, new RoundResultDto(round.roundNumber(), eventId, round.eventName(),
+                        0, 0, rules.excluded(entry.driverId(), eventId), false));
+            }
+        }
+    }
+
+    /** Who topped qualifying (TQ) or won the A final at the round, from every finished race. */
+    private static void bonuses(Long eventId, EventResults results, Rules rules, Tally tally) {
+        topQualifiers(eventId, results, rules, tally);
+        for (FinishedRace race : results.races()) {
+            if (!"FINAL".equals(race.roundType()) || !"A".equals(race.finalLetter())) {
+                continue;
+            }
+            for (ResultSnapshotDto.ResultRow row : race.positions()) {
+                EntryRef entry = results.allEntries().get(row.entryId());
+                if (entry == null || entry.driverId() == null || row.position() != 1
+                        || rules.excluded(entry.driverId(), eventId)) {
+                    continue;
+                }
+                tally.aFinalWins.add(new ClassRound(new DriverClass(entry.driverId(), race.racingClassId()), eventId));
+            }
+        }
+    }
+
+    /** One entry's qualifying heats put together: laps in them all, and the best single lap. */
+    private record QualifyingTotal(long entryId, int laps, long bestLapMs) {
+
+        static final long NO_LAP = Long.MAX_VALUE;
+
+        QualifyingTotal plus(QualifyingTotal other) {
+            return new QualifyingTotal(entryId, laps + other.laps, Math.min(bestLapMs, other.bestLapMs));
+        }
+    }
+
+    /**
+     * The TQ (CHAMP-07): in each class, the entry that tops its qualifying heats put together, in the order the
+     * finals are seeded in: most laps, then the quickest lap, then the lower entry id so a tie comes out the same
+     * every time. An abandoned heat's laps do not count. A driver excluded from the round earns nothing, and the
+     * TQ is not passed to the next car.
+     */
+    private static void topQualifiers(Long eventId, EventResults results, Rules rules, Tally tally) {
+        Map<Long, Map<Long, QualifyingTotal>> totalsByClass = new HashMap<>();
+        for (FinishedRace race : results.races()) {
+            if (!"QUALIFIER".equals(race.roundType()) || race.abandoned()) {
+                continue;
+            }
+            Map<Long, QualifyingTotal> totals = totalsByClass.computeIfAbsent(race.racingClassId(),
+                    k -> new HashMap<>());
+            for (ResultSnapshotDto.ResultRow row : race.positions()) {
+                long bestLapMs = row.bestLapMs() == null ? QualifyingTotal.NO_LAP : row.bestLapMs();
+                totals.merge(row.entryId(), new QualifyingTotal(row.entryId(), row.lapsCompleted(), bestLapMs),
+                        QualifyingTotal::plus);
+            }
+        }
+        totalsByClass.forEach((racingClassId, totals) -> totals.values().stream()
+                .filter(total -> total.laps() > 0)
+                .min(Comparator.comparingInt(QualifyingTotal::laps).reversed()
+                        .thenComparingLong(QualifyingTotal::bestLapMs)
+                        .thenComparingLong(QualifyingTotal::entryId))
+                .ifPresent(top -> {
+                    EntryRef entry = results.allEntries().get(top.entryId());
+                    if (entry != null && entry.driverId() != null && !rules.excluded(entry.driverId(), eventId)) {
+                        tally.tqWins.add(new ClassRound(new DriverClass(entry.driverId(), racingClassId), eventId));
+                    }
+                }));
+    }
+
+    private static List<StandingsRowDto> rows(Tally tally, Rules rules) {
+        List<StandingsRowDto> rows = new ArrayList<>();
+        tally.rounds.forEach((driverClass, rounds) -> {
+            List<RoundResultDto> marked = dropWorst(rounds, rules.bestXFromY(driverClass.racingClassId()));
+            int totalPoints = marked.stream()
+                    .filter(r -> !r.dropped() && !r.excluded())
+                    .mapToInt(RoundResultDto::points)
+                    .sum();
+            totalPoints += rules.tqBonus() * roundsWon(tally.tqWins, driverClass);
+            totalPoints += rules.aFinalBonus() * roundsWon(tally.aFinalWins, driverClass);
+            rows.add(new StandingsRowDto(driverClass.driverId(),
+                    tally.displayNames.getOrDefault(driverClass.driverId(), ""),
+                    driverClass.racingClassId(), totalPoints, marked));
+        });
+        return rows;
+    }
+
+    /**
+     * The rounds in round order, the worst Y minus X marked dropped once the driver has Y rounds. Worst means
+     * fewest points, then the worse (higher-numbered) position. A DNS has position 0, so a finish worth
+     * nothing is dropped before a DNS.
+     */
+    private static List<RoundResultDto> dropWorst(List<RoundResultDto> rounds, BestXFromY rule) {
+        int count = rounds.size();
+        int x = rule.x() != null ? rule.x() : count;
+        int y = rule.y() != null ? rule.y() : count;
+        int dropFrom = y > x && count >= y ? Math.max(0, count - (y - x)) : count;
+
+        List<RoundResultDto> marked = new ArrayList<>(rounds);
+        marked.sort(Comparator.comparingInt(RoundResultDto::points).reversed()
+                .thenComparingInt(RoundResultDto::position));
+        for (int i = dropFrom; i < count; i++) {
+            RoundResultDto r = marked.get(i);
+            marked.set(i, new RoundResultDto(r.roundNumber(), r.eventId(), r.eventName(), r.position(), r.points(),
+                    r.excluded(), true));
+        }
+        marked.sort(Comparator.comparingInt(RoundResultDto::roundNumber));
+        return marked;
+    }
 
     /** How many rounds the driver won in the class: each is paid its bonus once. */
-    private static int roundsWon(Set<ClassRound> wins, Long driverId, Long racingClassId) {
-        return (int) wins.stream()
-                .filter(w -> w.driverId().equals(driverId) && Objects.equals(w.racingClassId(), racingClassId))
-                .count();
+    private static int roundsWon(Set<ClassRound> wins, DriverClass driverClass) {
+        return (int) wins.stream().filter(w -> w.driverClass().equals(driverClass)).count();
+    }
+
+    /**
+     * Each class by points, then display name. Classes come out in racing class order (a class with no racing
+     * class last): the order rows are first seen in follows hash-map order, which changes with the ids.
+     */
+    private static List<StandingsRowDto> rank(List<StandingsRowDto> rows) {
+        Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
+        for (StandingsRowDto row : rows) {
+            byClass.computeIfAbsent(row.racingClassId(), k -> new ArrayList<>()).add(row);
+        }
+        Map<Long, List<StandingsRowDto>> inClassOrder =
+                new TreeMap<>(Comparator.nullsLast(Comparator.<Long>naturalOrder()));
+        inClassOrder.putAll(byClass);
+
+        List<StandingsRowDto> ranked = new ArrayList<>();
+        for (List<StandingsRowDto> classRows : inClassOrder.values()) {
+            classRows.sort(Comparator.comparingInt(StandingsRowDto::totalPoints).reversed()
+                    .thenComparing(StandingsRowDto::displayName));
+            ranked.addAll(classRows);
+        }
+        return ranked;
     }
 }

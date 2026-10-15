@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import org.springframework.context.ApplicationEventPublisher;
+import dev.monkeypatch.rctiming.timing.RaceClockService;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -14,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryAuditLogRecord;
+import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
@@ -93,7 +96,6 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         Entry entry = entryRepository.findById(entryId).orElseThrow();
         assertThat(entry.getStatus()).isEqualTo(EntryStatus.CONFIRMED);
-        assertThat(entry.getUserId()).isNull();
         assertThat(entry.getExternalSource()).isNull();
         assertThat(entry.getEventClassId()).isEqualTo(classId);
         assertThat(entry.getTransponderNumberSnapshot()).isEqualTo("61" + run);
@@ -153,7 +155,7 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         // The round generator puts the walk-in in a qualifying heat
         roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 8,
-                List.of(new RoundGenerationRequest.ClassFinalsConfig(classId, 1, 10, 0))));
+                List.of(new RoundGenerationRequest.ClassFinalsConfig(classId, 1))));
         long raceId = jdbc.queryForObject("""
                 select r.id from race_entries re
                 join races r on r.id = re.race_id join rounds ro on ro.id = r.round_id
@@ -164,7 +166,8 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         // Called directly so the passings are processed synchronously (the bean's listener is @Async)
         LapTimingService timing = new LapTimingService(mock(LiveTimingHub.class), raceEntryRepository,
-                entryRepository, competitorRepository);
+                entryRepository, competitorRepository, mock(LapThresholdQuery.class),
+                mock(RaceClockService.class), mock(ApplicationEventPublisher.class));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 1_000_000L));
         timing.onLapPassing(new LapPassingEvent(raceId, transponder, 31_000_000L));
 

@@ -50,6 +50,13 @@ public class CompetitorRepository extends JooqRepository<Competitor, Competitors
                 .toList();
     }
 
+    /** Every competitor whose public name is initials or hidden, by id (#265). */
+    public Map<Long, NameVisibility> findNameVisibilityNotShow() {
+        return dsl.select(COMPETITORS.ID, COMPETITORS.NAME_VISIBILITY).from(COMPETITORS)
+                .where(COMPETITORS.NAME_VISIBILITY.ne(NameVisibility.SHOW.name()))
+                .fetchMap(COMPETITORS.ID, r -> NameVisibility.valueOf(r.get(COMPETITORS.NAME_VISIBILITY)));
+    }
+
     @Override
     protected Competitor toEntity(CompetitorsRecord r) {
         Competitor c = new Competitor();
@@ -60,6 +67,7 @@ public class CompetitorRepository extends JooqRepository<Competitor, Competitors
         c.setBrcaNumber(r.getBrcaNumber());
         c.setHomeClub(r.getHomeClub());
         c.setSpokenName(r.getSpokenName());
+        c.setNameVisibility(NameVisibility.valueOf(r.getNameVisibility()));
         c.setCreatedAt(r.getCreatedAt());
         c.setUpdatedAt(r.getUpdatedAt());
         return c;
@@ -73,6 +81,7 @@ public class CompetitorRepository extends JooqRepository<Competitor, Competitors
         r.setBrcaNumber(c.getBrcaNumber());
         r.setHomeClub(c.getHomeClub());
         r.setSpokenName(c.getSpokenName());
+        r.setNameVisibility(c.getNameVisibility().name());
         r.setCreatedAt(c.getCreatedAt());
         r.setUpdatedAt(c.getUpdatedAt());
     }

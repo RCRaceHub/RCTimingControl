@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, clearAccessToken, refreshAccessToken } from './auth';
 
+/** The shared axios instance: sends the refresh cookie, adds the bearer token, and renews it once on a 401. */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
   withCredentials: true, // sends HttpOnly refresh cookie
@@ -42,6 +43,19 @@ export interface AboutDto {
   buildTime: string;
   /** URLs other devices on the venue network can open */
   addresses: string[];
+}
+
+export interface PrivacyNoticeDto {
+  clubName: string;
+  email: string | null;
+  phone: string | null;
+  /** Plain text; line breaks matter */
+  text: string;
+}
+
+export async function getPrivacyNotice(): Promise<PrivacyNoticeDto> {
+  const { data } = await api.get<PrivacyNoticeDto>('/api/v1/privacy-notice');
+  return data;
 }
 
 export async function getAboutInfo(): Promise<AboutDto> {

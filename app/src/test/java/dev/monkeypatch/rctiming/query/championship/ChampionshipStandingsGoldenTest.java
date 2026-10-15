@@ -2,6 +2,8 @@ package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.championship.Championship;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClass;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClassRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLink;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLinkRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipPointsScaleEntry;
@@ -61,11 +63,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * standings unchanged. It was updated for #133, when the TQ and A-final bonuses became per class
  * per round (CHAMP-07, CHAMP-08): Alice earns a bonus in both classes, Dan earns the Stock A-final
  * bonus in two rounds, and Bob's excluded round earns no TQ bonus. The base points per round did not change.
+ * Scoring from both sources (CHAMP-06) sums the qualifying and final points of a round, and the TQ goes to one
+ * driver per class and round (CHAMP-07), so the main and heats outputs changed in #248. Each result's best lap is
+ * a little slower for each place, so the fastest qualifier is the one who finished first.
  */
 class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     @Autowired ChampionshipStandingsQuery query;
     @Autowired ChampionshipRepository championshipRepository;
+    @Autowired ChampionshipClassRepository championshipClassRepository;
     @Autowired ChampionshipEventLinkRepository eventLinkRepository;
     @Autowired ChampionshipPointsScaleRepository pointsScaleRepository;
     @Autowired UserRepository userRepository;
@@ -84,6 +90,102 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     @Test
     void standingsMatchGoldenOutput() throws IOException {
+        Fixture f = buildChampionship(ScoringSource.BOTH);
+
+        assertThat(render(query.computeStandings(f.champId()), f.classNames()))
+                .isEqualTo(readGolden("championship-standings.txt"));
+    }
+
+    /**
+     * The same rounds scored from the finals only, with a class override that sets only best X.
+     * The TQ bonus still comes from the qualifiers. Stock keeps its best round from three (Y falls
+     * back to the championship's), and Dan's two equal wins drop the later one.
+     */
+    @Test
+    void finalsOnlyWithAClassOverrideMatchGoldenOutput() throws IOException {
+        Fixture f = buildChampionship(ScoringSource.FINALS);
+        ChampionshipClass stockRule = new ChampionshipClass();
+        stockRule.setChampionshipId(f.champId());
+        stockRule.setRacingClassId(f.stockClass());
+        stockRule.setBestXFromYX(1);
+        stockRule.setCreatedAt(Instant.now());
+        championshipClassRepository.save(stockRule);
+
+        assertThat(render(query.computeStandings(f.champId()), f.classNames()))
+                .isEqualTo(readGolden("championship-standings-finals.txt"));
+    }
+
+    /**
+     * One class scored from two qualifying rounds per event. A driver's best heat counts, and a
+     * driver who misses both heats has one DNS round, not two. Of two rounds worth no points, the
+     * fifth place is dropped before the DNS. Finn races only the last round, fewer than Y, so
+     * nothing is dropped. Bob and Cara tie on points, as do Dan and Finn, and stand by name.
+     */
+    @Test
+    void qualifyingHeatsMatchGoldenOutput() throws IOException {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        Long modClass = makeRacingClass("Golden Heats " + suffix);
+
+        Championship champ = new Championship();
+        champ.setName("Golden Heats Champ " + suffix);
+        champ.setTqBonusPoints(2);
+        champ.setAfinalWinnerBonusPoints(3);
+        champ.setBestXFromYX(2);
+        champ.setBestXFromYY(3);
+        champ.setScoringSource(ScoringSource.QUALIFYING);
+        champ.setCreatedAt(Instant.now());
+        champ.setUpdatedAt(Instant.now());
+        Long champId = championshipRepository.save(champ).getId();
+        Map.of(1, 10, 2, 8, 3, 6, 4, 4).forEach((pos, pts) ->
+                pointsScaleRepository.save(new ChampionshipPointsScaleEntry(champId, pos, pts)));
+
+        Driver alice = makeDriver("Alice", "Smith");
+        Driver bob = makeDriver("Bob", "Jones");
+        Driver cara = makeDriver("Cara", "Lee");
+        Driver dan = makeDriver("Dan", "Moss");
+        Driver eve = makeDriver("Eve", "Hart");
+        Driver finn = makeDriver("Finn", "Reid");
+
+        // Per round: who entered, the first qualifier's order, the second's, and the A final's
+        List<List<List<Driver>>> rounds = List.of(
+                List.of(List.of(alice, bob, cara, dan, eve), List.of(alice, bob, cara, dan, eve),
+                        List.of(bob, alice, cara, dan), List.of(alice, bob, cara)),
+                List.of(List.of(alice, bob, cara, dan, eve), List.of(cara, dan, eve, alice, bob),
+                        List.of(cara, dan), List.of(dan, cara)),
+                List.of(List.of(alice, bob, cara, dan, eve, finn), List.of(finn, alice, bob, cara),
+                        List.of(finn, alice, bob, cara), List.of(finn)));
+
+        for (int rn = 1; rn <= rounds.size(); rn++) {
+            Event event = makeEvent("Golden Heats Round " + rn + " " + suffix);
+            linkEvent(champId, event.getId(), rn);
+            Long modEc = makeEventClass(event.getId(), modClass);
+            List<List<Driver>> round = rounds.get(rn - 1);
+
+            Map<Driver, Entry> entries = new LinkedHashMap<>();
+            for (Driver d : round.get(0)) {
+                entries.put(d, makeEntry(d, event.getId(), modEc));
+            }
+            Map<Driver, Entry> finalists = new LinkedHashMap<>();
+            for (Driver d : round.get(3)) {
+                finalists.put(d, entries.get(d));
+            }
+
+            Round q1 = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+            Round q2 = makeRound(event.getId(), RoundType.QUALIFIER, 2);
+            Round fin = makeRound(event.getId(), RoundType.FINAL, 3);
+            makeRaceWithResult(q1.getId(), modEc, null, entries, round.get(1));
+            makeRaceWithResult(q2.getId(), modEc, null, entries, round.get(2));
+            makeRaceWithResult(fin.getId(), modEc, "A", finalists, round.get(3));
+        }
+
+        assertThat(render(query.computeStandings(champId), Map.of(modClass, "Mod")))
+                .isEqualTo(readGolden("championship-standings-heats.txt"));
+    }
+
+    /** The championship built by {@link #buildChampionship} and its two racing classes. */
+    private record Fixture(Long champId, Long stockClass, Map<Long, String> classNames) {}
+
+    private Fixture buildChampionship(ScoringSource scoringSource) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         Long modClass = makeRacingClass("Golden Mod " + suffix);
         Long stockClass = makeRacingClass("Golden Stock " + suffix);
@@ -94,7 +196,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
         champ.setAfinalWinnerBonusPoints(3);
         champ.setBestXFromYX(2);
         champ.setBestXFromYY(3);
-        champ.setScoringSource(ScoringSource.BOTH);
+        champ.setScoringSource(scoringSource);
         champ.setCreatedAt(Instant.now());
         champ.setUpdatedAt(Instant.now());
         Long champId = championshipRepository.save(champ).getId();
@@ -140,10 +242,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
             }
         }
 
-        Map<Long, String> classNames = Map.of(modClass, "Mod", stockClass, "Stock");
-        String actual = render(query.computeStandings(champId), classNames);
-
-        assertThat(actual).isEqualTo(readGolden());
+        return new Fixture(champId, stockClass, Map.of(modClass, "Mod", stockClass, "Stock"));
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────────
@@ -165,8 +264,8 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
         return row.displayName();
     }
 
-    private String readGolden() throws IOException {
-        try (InputStream in = getClass().getResourceAsStream("/golden/championship-standings.txt")) {
+    private String readGolden(String fileName) throws IOException {
+        try (InputStream in = getClass().getResourceAsStream("/golden/" + fileName)) {
             assertThat(in).as("golden file").isNotNull();
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
@@ -247,7 +346,6 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     private Entry makeEntry(Driver driver, Long eventId, Long eventClassId) {
         Entry e = new Entry();
-        e.setUserId(driver.user().getId());
         e.setCompetitorId(driver.competitor().getId());
         e.setEventId(eventId);
         e.setEventClassId(eventClassId);
@@ -286,9 +384,9 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
             Driver d = finishingOrder.get(i);
             rows.add(String.format(
                     "{\"position\":%d,\"entryId\":%d,\"driverName\":\"%s\",\"carNumber\":\"%d\","
-                    + "\"lapsCompleted\":10,\"totalTimeMs\":%d,\"bestLapMs\":6000,\"gapToLeaderMs\":%d}",
+                    + "\"lapsCompleted\":10,\"totalTimeMs\":%d,\"bestLapMs\":%d,\"gapToLeaderMs\":%d}",
                     i + 1, entries.get(d).getId(), d.user().getFirstName(), i + 1,
-                    60000 + i * 1000, i * 1000));
+                    60000 + i * 1000, 6000 + i * 100, i * 1000));
         }
 
         ResultSnapshot snap = new ResultSnapshot();

@@ -58,8 +58,8 @@ INSERT INTO competitors (display_name)
 SELECT first_name || ' ' || last_name FROM users WHERE email <> 'admin@example.com' ORDER BY id;
 
 -- 10. entries for both events, keyed on competitor
-INSERT INTO entries (user_id, competitor_id, event_id, event_class_id, transponder_number, transponder_label, status)
-SELECT u.id, c.id, e.id, ec.id, t.transponder, u.first_name || ' #' || t.transponder, 'CONFIRMED'
+INSERT INTO entries (competitor_id, event_id, event_class_id, transponder_number, status)
+SELECT c.id, e.id, ec.id, t.transponder, 'CONFIRMED'
 FROM (
     SELECT 'dave.racer@example.com' AS email, '101' AS transponder
     UNION ALL SELECT 'sam.speed@example.com' AS email, '102' AS transponder
@@ -95,8 +95,8 @@ INSERT INTO championship_points_scale (championship_id, position, points) VALUES
 
 -- 12. Round 3 A-final: round, race, grid and result
 INSERT INTO rounds (event_id, type, round_number, sequence_in_event, status) VALUES ((SELECT id FROM events WHERE name = 'Wyvern Winter Series Round 3'), 'FINAL', 1, 1, 'COMPLETED');
-INSERT INTO races (round_id, event_class_id, heat_number, sequence_in_round, final_letter, start_type, format_id, status, started_at, finished_at)
-SELECT r.id, ec.id, 1, 1, 'A', 'GRID', (SELECT id FROM race_format_templates WHERE name = 'Timed 5-min'), 'FINISHED', CAST(unixepoch('2026-05-09 13:00:00') * 1000000 AS INTEGER), CAST(unixepoch('2026-05-09 13:05:30') * 1000000 AS INTEGER)
+INSERT INTO races (round_id, event_class_id, heat_number, sequence_in_round, final_letter, start_type, status, started_at, finished_at)
+SELECT r.id, ec.id, 1, 1, 'A', 'GRID', 'FINISHED', CAST(unixepoch('2026-05-09 13:00:00') * 1000000 AS INTEGER), CAST(unixepoch('2026-05-09 13:05:30') * 1000000 AS INTEGER)
 FROM rounds r JOIN event_classes ec ON ec.event_id = r.event_id WHERE r.event_id = (SELECT id FROM events WHERE name = 'Wyvern Winter Series Round 3');
 INSERT INTO race_entries (race_id, entry_id, grid_position, car_number)
 SELECT ra.id, en.id, CAST(en.transponder_number AS INTEGER) - 100, CAST(en.transponder_number AS INTEGER) - 100

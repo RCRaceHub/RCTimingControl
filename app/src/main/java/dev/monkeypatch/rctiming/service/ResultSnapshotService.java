@@ -20,6 +20,7 @@ import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRacePosition;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
@@ -142,7 +143,8 @@ public class ResultSnapshotService {
         snapshot.setLapHistoryJson(snapshotJson.write(raceId, lapHistory));
 
         resultSnapshotRepository.save(snapshot);
-        lapTimingService.releaseState(raceId);
+        // Kept until the commit: if the finish rolls back, the race is running again and needs its timing
+        AfterCommit.run(() -> lapTimingService.releaseState(raceId));
         log.info("Persisted result snapshot for race {}", raceId);
     }
 

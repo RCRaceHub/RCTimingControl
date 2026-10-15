@@ -1,9 +1,13 @@
+import axios from 'axios';
 import { CloudUpload, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useResultsExports, useRetryResultsExport } from '@/hooks/admin/useResultsExports';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useResultsExports, useRetryResultsExport, useSetResultsAddress } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
 import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus } from '@/lib/adminApi';
@@ -37,6 +41,55 @@ function detail(row: ResultsExportRowDto) {
   return parts.join(' · ');
 }
 
+function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: string | null }) {
+  const setAddress = useSetResultsAddress();
+  const [value, setValue] = useState(savedUrl ?? '');
+
+  function save(address: string) {
+    setAddress.mutate(address, {
+      onSuccess: () => toast.success(address.trim() ? 'RaceHub address saved.' : 'RaceHub address cleared.'),
+      onError: err => {
+        const message = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
+        toast.error(typeof message === 'string' ? message : 'Could not save the RaceHub address.');
+      },
+    });
+  }
+
+  return (
+    <form
+      className="space-y-2"
+      onSubmit={e => {
+        e.preventDefault();
+        save(value);
+      }}
+    >
+      <Label htmlFor="racehub-address">RaceHub address</Label>
+      <div className="flex gap-2">
+        <Input
+          id="racehub-address"
+          type="url"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder="https://racehub.example/api/results"
+        />
+        <Button type="submit" disabled={setAddress.isPending || value.trim() === (savedUrl ?? '')}>
+          Save
+        </Button>
+        {savedUrl && (
+          <Button type="button" variant="outline" disabled={setAddress.isPending} onClick={() => save('')}>
+            Clear
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Where results are sent. It must start with https://, since the club&apos;s key goes with every request.
+        {!savedUrl && inUse && ' This is using the address in the settings file; saving one here replaces it.'}
+        {!savedUrl && !inUse && ' Left empty, the address in the settings file is used, if there is one.'}
+      </p>
+    </form>
+  );
+}
+
 /**
  * Results sent to RaceHub (#27). Results for an event imported from RaceHub are queued when a race
  * finishes, when a finished race is corrected, and when the race day is closed. The app sends them
@@ -65,29 +118,31 @@ export default function ResultsExportsPage() {
         </p>
       </div>
 
-      {data && (
-        data.sendingEnabled ? (
-          <p className="text-sm">
-            Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
+      {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
+
+      {data?.sendingEnabled && (
+        <p className="text-sm">
+          Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
+        </p>
+      )}
+
+      {data && !data.sendingEnabled && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+          <p className="font-medium">
+            {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
           </p>
-        ) : (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
-            <p className="font-medium">
-              {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
-            </p>
-            <p className="text-muted-foreground mt-1">
-              Set{' '}
-              {data.missingSettings.map((setting, i) => (
-                <span key={setting}>
-                  {i > 0 && ' and '}
-                  <code className="rounded bg-muted px-1 py-0.5 text-xs">{setting}</code>
-                </span>
-              ))}{' '}
-              in <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
-              folder, then restart the app. You can still download an event's results from its page.
-            </p>
-          </div>
-        )
+          <p className="text-muted-foreground mt-1">
+            {!data.resultsUrl && 'Enter the address above. '}
+            {data.missingSettings.includes('rctiming.racehub.token') && (
+              <>
+                Set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
+                folder, then restart the app.{' '}
+              </>
+            )}
+            You can still download an event&apos;s results from its page.
+          </p>
+        </div>
       )}
 
       {isLoading && (

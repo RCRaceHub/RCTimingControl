@@ -14,14 +14,14 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     private Double latitude;
     private Double longitude;
     private String timezone = "UTC";
-    private byte[] logo;
-    private String logoType;
     private String logoUrl;
     private ClubAudioSettings audioSettings = ClubAudioSettings.defaults();
     private String defaultVoiceId = "en_GB-alan-medium";
     private String decoderHost;
     private Integer decoderPort;
     private String decoderProtocol;
+    private String privacyNotice;
+    private String racehubResultsUrl;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -52,12 +52,6 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
         this.timezone = timezone;
     }
 
-    public byte[] getLogo() { return logo; }
-    public void setLogo(byte[] logo) { this.logo = logo; }
-
-    public String getLogoType() { return logoType; }
-    public void setLogoType(String logoType) { this.logoType = logoType; }
-
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
 
@@ -81,4 +75,10 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getDecoderProtocol() { return decoderProtocol; }
     public void setDecoderProtocol(String decoderProtocol) { this.decoderProtocol = decoderProtocol; }
+
+    public String getRacehubResultsUrl() { return racehubResultsUrl; }
+    public void setRacehubResultsUrl(String racehubResultsUrl) { this.racehubResultsUrl = racehubResultsUrl; }
+
+    public String getPrivacyNotice() { return privacyNotice; }
+    public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }
 }

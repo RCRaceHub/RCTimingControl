@@ -42,19 +42,13 @@ import { EntryManagementHelp } from '@/help/EntryManagementHelp';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatEventDate } from '@/lib/dates';
 
-// ── Create Event form schema ───────────────────────────────────────────────
-
 const createEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   eventDate: z.string().min(1, 'Date is required'),
 });
 type CreateEventFormValues = z.infer<typeof createEventSchema>;
 
-// ── Column helper ──────────────────────────────────────────────────────────
-
 const columnHelper = createColumnHelper<AdminEventListDto>();
-
-// ── Component ─────────────────────────────────────────────────────────────
 
 export default function EventListPage() {
   const navigate = useNavigate();
@@ -151,6 +145,7 @@ export default function EventListPage() {
       await createEvent.mutateAsync({
         name: values.name,
         eventDate: values.eventDate,
+        // The track is picked on the event's own page
         trackId: null,
       });
       toast.success('Event created');
@@ -163,7 +158,6 @@ export default function EventListPage() {
 
   return (
     <div>
-      {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Events</h1>
         {isAdmin && (
@@ -174,7 +168,6 @@ export default function EventListPage() {
         )}
       </div>
 
-      {/* Error state */}
       {isError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
           <p className="text-sm text-destructive">Failed to load events.</p>
@@ -185,7 +178,6 @@ export default function EventListPage() {
         </div>
       )}
 
-      {/* Table */}
       {isLoading ? (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
@@ -236,7 +228,6 @@ export default function EventListPage() {
         </div>
       )}
 
-      {/* Create Event dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -257,7 +248,6 @@ export default function EventListPage() {
                 <p className="text-xs text-destructive">{errors.eventDate.message}</p>
               )}
             </div>
-            {/* TODO Plan 06: add track select when tracks API is available */}
             <DialogFooter>
               <Button type="submit" disabled={isSubmitting || createEvent.isPending}>
                 {createEvent.isPending ? 'Creating…' : 'Create Event'}

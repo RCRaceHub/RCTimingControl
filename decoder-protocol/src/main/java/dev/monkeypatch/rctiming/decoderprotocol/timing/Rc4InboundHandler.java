@@ -16,7 +16,7 @@ import java.util.function.Consumer;
  * {@link SeqGapDetector}, and passes {@link EpochCorrectedPassing} objects to the callback.
  *
  * <p>On {@code READER_IDLE} (no STATUS or PASSING for 8 s), closes the channel so that
- * the {@link AmbRc4TimingSource} reconnect logic can fire (T-05-04 + TIMING-02).
+ * the {@link AmbRc4TimingSource} reconnect logic can fire (TIMING-02).
  */
 public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
 
@@ -39,7 +39,7 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String line) {
-        // Strip SOH (0x01) byte if present — T-05-03 malformed input also handled by parser
+        // Strip the SOH (0x01) byte if present; the parser rejects any other malformed input
         String stripped = (!line.isEmpty() && line.charAt(0) == 0x01) ? line.substring(1) : line;
         // Gap detection observes both STATUS and PASSING seq_num (shared counter) — must run
         // regardless of record type, or every STATUS heartbeat reads as a false gap.

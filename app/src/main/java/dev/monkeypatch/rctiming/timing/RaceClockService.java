@@ -1,7 +1,9 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -112,6 +114,33 @@ public class RaceClockService {
         }
         Long remaining = durationMs == null ? null : Math.max(0, durationMs - elapsed);
         return new RaceClockDto(raceId, status.name(), elapsed, durationMs, remaining, running);
+    }
+
+    /**
+     * A race's length and, for a stagger start, the gap between cars.
+     *
+     * @param durationMs        each car's time on the track, or null for a race with no length
+     * @param staggerIntervalMs the time between one car's start and the next in grid order, 0 unless the race starts
+     *                          staggered
+     */
+    public record RacePlan(Long durationMs, long staggerIntervalMs) {
+        public static final RacePlan NONE = new RacePlan(null, 0);
+    }
+
+    /** The race's plan from its format, or empty for an unknown race. */
+    @Transactional(readOnly = true)
+    public Optional<RacePlan> planOf(long raceId) {
+        return raceRepository.findById(raceId).map(race -> {
+            EventClass eventClass = race.getEventClassId() == null ? null
+                    : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+            // As the pre-race readiness does: the race's own start, else the format's
+            StartType startType = race.getStartType() != null ? race.getStartType()
+                    : roundRepository.findById(race.getRoundId())
+                            .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
+            long intervalMs = startType == StartType.STAGGER
+                    ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
+            return new RacePlan(durationMs(race), intervalMs);
+        });
     }
 
     private Long durationMs(Race race) {

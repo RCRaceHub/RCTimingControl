@@ -47,7 +47,6 @@ export default function PrintPracticeResultsPage() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto print:p-4">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">{session.name}</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -58,7 +57,6 @@ export default function PrintPracticeResultsPage() {
         </p>
       </div>
 
-      {/* Results table */}
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b-2 border-foreground">
@@ -90,7 +88,6 @@ export default function PrintPracticeResultsPage() {
         </tbody>
       </table>
 
-      {/* Print action */}
       <div className="mt-6 print:hidden">
         <button
           onClick={() => window.print()}

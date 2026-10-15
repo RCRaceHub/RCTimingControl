@@ -23,8 +23,10 @@ export function ResultsExportsHelp() {
         <p className="font-semibold mb-1">Common mistakes</p>
         <p>
           If the page says no RaceHub address or key is set, results wait here and nothing is
-          sent. The address and the club&apos;s key go in the settings file in the data folder, and
-          the service must be restarted afterwards. The installation guide, under &quot;Sending
+          sent. Type the address into the RaceHub address box at the top of the page; it takes
+          effect straight away. If the box is empty, the address in the settings file is used. The
+          club&apos;s key goes in the settings file in the data folder, and the service must be
+          restarted afterwards. The installation guide, under &quot;Sending
           results to RaceHub&quot;, has the steps. An event with no entries imported from RaceHub
           is never sent.
         </p>

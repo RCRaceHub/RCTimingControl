@@ -28,8 +28,6 @@ import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
 
-// ── Nav definition ─────────────────────────────────────────────────────────
-
 interface NavEntry {
   to: string;
   label: string;
@@ -69,8 +67,6 @@ function visibleTo(entries: NavEntry[], isAdmin: boolean): NavEntry[] {
   return entries.filter(entry => isAdmin || !entry.adminOnly);
 }
 
-// ── Shared nav link style ──────────────────────────────────────────────────
-
 function NavItem({
   to,
   label,
@@ -101,23 +97,19 @@ function NavItem({
   );
 }
 
-// ── Sidebar content (reused for desktop + sheet) ───────────────────────────
-
+// Used by both the desktop sidebar and the mobile sheet
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin } = useRoles();
 
   return (
     <div className="flex flex-col h-full">
-      {/* Brand */}
       <div className="px-4 py-5">
         <span className="font-semibold text-base">RC Timing — Admin</span>
       </div>
       <Separator />
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {/* Group 1: Events & Competitions */}
         <p className="px-3 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Events &amp; Competitions
         </p>
@@ -129,7 +121,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <Separator />
         </div>
 
-        {/* Group 2: Operations */}
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Operations
         </p>
@@ -145,7 +136,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <Separator />
         </div>
 
-        {/* Group 3: Configuration */}
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Configuration
         </p>
@@ -160,7 +150,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <HelpSidebarButton onOpen={onNavClick} />
       </div>
 
-      {/* User + logout */}
       <div className="px-4 py-4 flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">
@@ -181,8 +170,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
     </div>
   );
 }
-
-// ── Layout ─────────────────────────────────────────────────────────────────
 
 export default function AdminPanelLayout() {
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -231,7 +218,6 @@ export default function AdminPanelLayout() {
         </SheetContent>
       </Sheet>
 
-      {/* Help Sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent side="right" className="w-96" showCloseButton>
           <SheetHeader>
@@ -244,7 +230,6 @@ export default function AdminPanelLayout() {
         </SheetContent>
       </Sheet>
 
-      {/* Main content */}
       <main className="md:pl-60">
         <div className="px-6 pt-6 pb-10 min-h-screen">
           <Suspense fallback={<PageLoading />}>
@@ -253,7 +238,6 @@ export default function AdminPanelLayout() {
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 flex md:hidden border-t bg-background z-10 h-14">
         {visibleTo([...eventsGroup, ...operationsGroup, ...configGroup], isAdmin).slice(0, 5).map(({ to, label, Icon }) => (
           <NavLink

@@ -30,6 +30,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Turns exceptions from controllers and services into {@link ProblemDetail} JSON. Most 409s carry only a
+ * {@code detail} message for the page to show. Two carry more: {@code POSSIBLE_DUPLICATE_COMPETITOR}, whose
+ * {@code code} the walk-in dialog checks before offering the matching competitors instead of a new one, and
+ * {@code COMPETITOR_MERGE_REFUSED}, whose {@code blockers} the merge dialog shows.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -136,6 +142,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(ex.getBody());
     }
 
+    /**
+     * A {@code @PreAuthorize} refusal, thrown inside Spring MVC after the security filters let the request in.
+     * Handled here so it gets a ProblemDetail body like every other error. It is also always a 403: left to the
+     * filter chain, an anonymous caller refused on an open route (some of the results and championship reads)
+     * would get a 401, as if signing in were the way through.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {

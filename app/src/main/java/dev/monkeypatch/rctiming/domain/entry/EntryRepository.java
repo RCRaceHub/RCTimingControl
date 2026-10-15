@@ -37,9 +37,8 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
     }
 
     /**
-     * Loads an entry for check-in's read-then-write (L11). Write transactions already run one at a
-     * time on the single write connection, so no row lock is needed; call this inside the
-     * transaction that makes the change.
+     * Loads an entry for the transponder swap's read-then-write (L11). Call it inside the transaction that makes
+     * the change; {@link JooqRepository} says why no row lock is needed.
      */
     public Optional<Entry> findByIdForUpdate(Long id) {
         return findById(id);
@@ -49,12 +48,10 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
     protected Entry toEntity(EntriesRecord r) {
         Entry e = new Entry();
         e.setId(r.getId());
-        e.setUserId(r.getUserId());
         e.setCompetitorId(r.getCompetitorId());
         e.setEventId(r.getEventId());
         e.setEventClassId(r.getEventClassId());
         e.setTransponderNumberSnapshot(r.getTransponderNumber());
-        e.setTransponderLabelSnapshot(r.getTransponderLabel());
         e.setSecondaryTransponderNumber(r.getSecondaryTransponderNumber());
         e.setImportedTransponderNumber(r.getImportedTransponderNumber());
         e.setImportedSecondaryTransponderNumber(r.getImportedSecondaryTransponderNumber());
@@ -68,19 +65,15 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         e.setExternalEntryVersion(r.getExternalEntryVersion());
         e.setRacehubArrival(r.getRacehubArrival());
         e.setRacehubEventClassId(r.getRacehubEventClassId());
-        e.setCheckedInAt(r.getCheckedInAt());
-        e.setCheckedInByUserId(r.getCheckedInByUserId());
         return e;
     }
 
     @Override
     protected void toRecord(Entry e, EntriesRecord r) {
-        r.setUserId(e.getUserId());
         r.setCompetitorId(e.getCompetitorId());
         r.setEventId(e.getEventId());
         r.setEventClassId(e.getEventClassId());
         r.setTransponderNumber(e.getTransponderNumberSnapshot());
-        r.setTransponderLabel(e.getTransponderLabelSnapshot());
         r.setSecondaryTransponderNumber(e.getSecondaryTransponderNumber());
         r.setImportedTransponderNumber(e.getImportedTransponderNumber());
         r.setImportedSecondaryTransponderNumber(e.getImportedSecondaryTransponderNumber());
@@ -94,8 +87,6 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         r.setExternalEntryVersion(e.getExternalEntryVersion());
         r.setRacehubArrival(e.getRacehubArrival());
         r.setRacehubEventClassId(e.getRacehubEventClassId());
-        r.setCheckedInAt(e.getCheckedInAt());
-        r.setCheckedInByUserId(e.getCheckedInByUserId());
     }
 
     @Override

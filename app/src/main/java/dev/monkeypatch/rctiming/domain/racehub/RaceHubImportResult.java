@@ -5,6 +5,10 @@ import java.util.List;
 /**
  * The preview of an import, and its outcome. {@code applied} is false for a dry run and for an
  * import that {@code blocked} (unmapped classes or invalid rows): nothing was saved.
+ *
+ * <p>{@code blocked} is also set on a dry run that a real import would have refused, so the page can show what to fix
+ * before anyone tries. {@code revision} is the export's own revision number. {@code rows} says what happens to each
+ * export entry; {@code summary} counts them by action.
  */
 public record RaceHubImportResult(
         boolean dryRun,

@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.ChampionshipExclusionsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.CompetitorAuditLogPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.EntryAuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog.OfficialAuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PracticeLapsPath;
@@ -227,32 +226,6 @@ public class Users extends TableImpl<UsersRecord> {
             _competitorAuditLog = new CompetitorAuditLogPath(this, null, Keys.COMPETITOR_AUDIT_LOG__COMPETITOR_AUDIT_LOG_ACTOR_USER_ID_FKEY.getInverseKey());
 
         return _competitorAuditLog;
-    }
-
-    private transient EntriesPath _entriesCheckedInByUserIdFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>entries</code> table, via
-     * the <code>entries_checked_in_by_user_id_fkey</code> key
-     */
-    public EntriesPath entriesCheckedInByUserIdFkey() {
-        if (_entriesCheckedInByUserIdFkey == null)
-            _entriesCheckedInByUserIdFkey = new EntriesPath(this, null, Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY.getInverseKey());
-
-        return _entriesCheckedInByUserIdFkey;
-    }
-
-    private transient EntriesPath _entriesUserIdFkey;
-
-    /**
-     * Get the implicit to-many join path to the <code>entries</code> table, via
-     * the <code>entries_user_id_fkey</code> key
-     */
-    public EntriesPath entriesUserIdFkey() {
-        if (_entriesUserIdFkey == null)
-            _entriesUserIdFkey = new EntriesPath(this, null, Keys.ENTRIES__ENTRIES_USER_ID_FKEY.getInverseKey());
-
-        return _entriesUserIdFkey;
     }
 
     private transient EntryAuditLogPath _entryAuditLog;

@@ -2,25 +2,34 @@ package dev.monkeypatch.rctiming.domain.club;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * The club's own details: its name and contact details, where its decoder is, and how the announcer sounds.
+ *
+ * <p>There is only ever one profile, since RCTC runs for one club at one venue. Reads take whichever row
+ * exists, and {@link #getSingletonProfileId} creates a blank one when there is none, so settings can be saved
+ * against it before the setup wizard has been through.
+ */
 @Service
 @Transactional
 public class ClubProfileService {
 
     /** The club's details as the setup wizard and the club page edit them. */
     public record ClubDetails(String name, String email, String phone, String websiteUrl, Double latitude,
-                              Double longitude, String timezone, String logoType) {}
+                              Double longitude, String timezone) {}
 
     private final ClubProfileRepository clubProfileRepository;
     private final GoverningBodyAffiliationRepository affiliationRepository;
@@ -100,9 +109,7 @@ public class ClubProfileService {
         profile.setWebsiteUrl(details.websiteUrl());
         profile.setLatitude(details.latitude());
         profile.setLongitude(details.longitude());
-        // Use the raw field setter to avoid double-validation
         profile.setTimezone(details.timezone());
-        profile.setLogoType(details.logoType());
 
         ClubProfile saved = clubProfileRepository.save(profile);
         audit.entry(actor, isNew ? "CLUB_PROFILE_CREATED" : "CLUB_PROFILE_UPDATED")
@@ -110,6 +117,34 @@ public class ClubProfileService {
                 .summary("Saved the club details for " + saved.getName())
                 .before(before).after(profileValues(saved)).record();
         return saved;
+    }
+
+    /** The privacy notice people see: {@code text} is the club's own, or the default if it has not written one. */
+    public record PrivacyNotice(String clubName, String email, String phone, String text, boolean customised) {}
+
+    /** The privacy notice with the club's name and contact details, for the public page and the editor. */
+    @Transactional(readOnly = true)
+    public PrivacyNotice privacyNotice() {
+        ClubProfile p = clubProfileRepository.findCurrent().orElseGet(ClubProfile::new);
+        String own = p.getPrivacyNotice();
+        boolean customised = own != null && !own.isBlank();
+        String text = customised ? own : PrivacyNoticeDefaults.text(p.getName(), p.getEmail(), p.getPhone());
+        return new PrivacyNotice(p.getName() == null ? "" : p.getName(), p.getEmail(), p.getPhone(), text, customised);
+    }
+
+    /** Saves the club's own notice; a blank {@code text} goes back to the default. */
+    public PrivacyNotice changePrivacyNotice(Actor actor, String text) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        boolean wasCustom = profile.getPrivacyNotice() != null;
+        String cleaned = text == null || text.isBlank() ? null : text.strip();
+        profile.setPrivacyNotice(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        audit.entry(actor, "PRIVACY_NOTICE_CHANGED").entity("club_profile", saved.getId())
+                .summary(cleaned == null ? "Went back to the default privacy notice" : "Changed the privacy notice")
+                .before(Map.of("customised", wasCustom))
+                .after(Map.of("customised", cleaned != null, "length", cleaned == null ? 0 : cleaned.length()))
+                .record();
+        return privacyNotice();
     }
 
     @Transactional(readOnly = true)
@@ -159,11 +194,19 @@ public class ClubProfileService {
     public ClubProfile changeAudioSettings(Actor actor, Consumer<ClubProfile> change) {
         ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
         Map<String, Object> before = audioValues(profile);
+        ClubAudioSettings settingsBefore = profile.getAudioSettings();
+        String voiceBefore = profile.getDefaultVoiceId();
         change.accept(profile);
         ClubProfile saved = clubProfileRepository.save(profile);
         audit.entry(actor, "AUDIO_SETTINGS_CHANGED").entity("club_profile", saved.getId())
                 .summary("Changed the announcer settings")
                 .before(before).after(audioValues(saved)).record();
+        // Only a change the clips are made from, and after the commit, so they are made from the settings as saved
+        boolean clipsChange = settingsBefore.clipsDifferFrom(saved.getAudioSettings())
+                || !java.util.Objects.equals(voiceBefore, saved.getDefaultVoiceId());
+        if (clipsChange) {
+            AfterCommit.run(() -> eventPublisher.publishEvent(new AudioSettingsChangedEvent()));
+        }
         return saved;
     }
 
@@ -184,6 +227,35 @@ public class ClubProfileService {
         return saved;
     }
 
+    /** The RaceHub address set in the admin panel, or empty when the club has not set one. */
+    @Transactional(readOnly = true)
+    public Optional<String> getRaceHubResultsUrl() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getRacehubResultsUrl)
+                .filter(url -> !url.isBlank());
+    }
+
+    /** Sets the RaceHub address results are sent to; null or blank clears it, so the settings file's applies. */
+    public void updateRaceHubResultsUrl(Actor actor, String url) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        // The address may carry a query string with a secret, so the audit row names only where it points
+        String before = profile.getRacehubResultsUrl() == null ? null : hostOf(profile.getRacehubResultsUrl());
+        String cleaned = url == null || url.isBlank() ? null : url.strip();
+        profile.setRacehubResultsUrl(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        String after = cleaned == null ? null : hostOf(cleaned);
+        audit.entry(actor, "RACEHUB_RESULTS_URL_CHANGED").entity("club_profile", saved.getId())
+                .summary(after == null ? "Cleared the RaceHub results address"
+                        : "Changed the RaceHub results address to " + after)
+                .before(Collections.singletonMap("resultsHost", before))
+                .after(Collections.singletonMap("resultsHost", after)).record();
+    }
+
+    private static String hostOf(String url) {
+        java.net.URI uri = java.net.URI.create(url);
+        return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() >= 0 ? ":" + uri.getPort() : "");
+    }
+
     private static Map<String, Object> profileValues(ClubProfile p) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name", p.getName());
@@ -193,7 +265,6 @@ public class ClubProfileService {
         m.put("latitude", p.getLatitude());
         m.put("longitude", p.getLongitude());
         m.put("timezone", p.getTimezone());
-        m.put("logoType", p.getLogoType());
         return m;
     }
 

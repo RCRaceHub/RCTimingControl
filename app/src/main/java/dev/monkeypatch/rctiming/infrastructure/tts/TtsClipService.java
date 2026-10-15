@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
  *   <li>{@code audio/race/{raceId}/countdown-{seconds}-{voiceId}.wav} — countdown clip</li>
  *   <li>{@code audio/race/{raceId}/grid-{entryId}-{voiceId}.wav} — grid call (stagger) clip for one entry</li>
  *   <li>{@code audio/race/{raceId}/finish-{voiceId}.wav} — race-finished clip</li>
+ *   <li>{@code audio/race/{raceId}/car-finish-{entryId}-{voiceId}.wav} — one car taking the flag</li>
  * </ul>
  * When Piper is unavailable, methods log a warning and return {@code null} (graceful degradation).
  */
@@ -37,8 +38,8 @@ public class TtsClipService {
      * Generate and store a countdown interval clip.
      *
      * @param raceId   database ID of the race
-     * @param seconds  seconds remaining to announce (e.g. 300, 120, 60, 30)
-     * @param text     full announcement text (e.g. "Race Finals, 5 minutes")
+     * @param seconds  seconds remaining to announce (e.g. 600, 300, 120, 60, 30)
+     * @param text     full announcement text (e.g. "5 minutes remaining.")
      * @param voiceId  Piper voice model name, or null to use default
      * @return storage public URL, or null if Piper was unavailable
      */
@@ -80,9 +81,17 @@ public class TtsClipService {
                 "race {} finished clip", raceId);
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
+    /**
+     * Generate and store the clip called as one car takes the flag, worded by the club.
+     *
+     * @param text announcement text (e.g. "Car 12, Alan Smith.")
+     */
+    public String generateCarFinishClip(Long raceId, Long entryId, String text, String voiceId) {
+        String effectiveVoice = resolve(voiceId);
+        String key = String.format("audio/race/%d/car-finish-%d-%s.wav", raceId, entryId, effectiveVoice);
+        return synthesizeAndUpload(key, text, effectiveVoice,
+                "race {} car finish entry {} clip", raceId, entryId);
+    }
 
     private String resolve(String voiceId) {
         return (voiceId != null && !voiceId.isBlank()) ? voiceId : properties.defaultVoice();

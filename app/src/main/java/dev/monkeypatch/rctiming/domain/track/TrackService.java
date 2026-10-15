@@ -11,6 +11,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The club's tracks, the decoder loops on them and their per-class lap thresholds. Every change is
+ * audit-logged. Deleting a track takes its loops and thresholds with it, and leaves any meeting that used it
+ * with no track.
+ */
 @Service
 @Transactional
 public class TrackService {

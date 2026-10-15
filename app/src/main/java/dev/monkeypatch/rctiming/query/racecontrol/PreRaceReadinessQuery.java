@@ -22,8 +22,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /**
  * jOOQ read-side query for the pre-race readiness view (CTRL-02, CTRL-07).
  * Produces a PreRaceReadinessDto for a given raceId, containing:
- * - gridCall: drivers due on track in grid order for the target race, with whether each has
- *   checked in (L11) and RaceHub's arrival mark
+ * - gridCall: drivers due on track in grid order for the target race, with RaceHub's arrival mark
  * - marshalDuty: drivers from the immediately preceding race with per-event absence counts
  *
  * All reads go through DSLContext.
@@ -46,7 +45,7 @@ public class PreRaceReadinessQuery {
      * @throws EntityNotFoundException if no race with this ID exists
      */
     public PreRaceReadinessDto load(long raceId) {
-        // Step 1: Fetch target race row with round and class info
+        // Fetch target race row with round and class info
         var targetRow = dsl
                 .select(
                         RACES.ID,
@@ -80,10 +79,10 @@ public class PreRaceReadinessQuery {
         String roundType = targetRow.get(ROUNDS.TYPE);
         String className = targetRow.get("className", String.class);
 
-        // Step 2: Build raceLabel from round type
+        // Build raceLabel from round type
         String raceLabel = RaceLabel.of(roundType, roundNumber, className, heatNumber, finalLetter);
 
-        // Step 3: Resolve the previous race in the event run order
+        // Resolve the previous race in the event run order
         // "Previous" = highest (sequence_in_event, sequence_in_round) tuple strictly less than target
         var previousRaceRow = dsl
                 .select(RACES.ID, ROUNDS.EVENT_ID)
@@ -100,11 +99,28 @@ public class PreRaceReadinessQuery {
                 .fetchOne();
 
         boolean firstRaceOfEvent = (previousRaceRow == null);
+
+        // The first race of the event has no race before it, so the last race of its own round
+        // marshals it, the way the last heat of a round marshals the first heat of the next.
+        Long marshalRaceId = previousRaceRow != null ? previousRaceRow.get(RACES.ID) : null;
+        if (marshalRaceId == null) {
+            var lastInRound = dsl
+                    .select(RACES.ID)
+                    .from(RACES)
+                    .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                    .where(ROUNDS.EVENT_ID.eq(eventId))
+                    .and(ROUNDS.SEQUENCE_IN_EVENT.eq(sequenceInEvent))
+                    .orderBy(RACES.SEQUENCE_IN_ROUND.desc())
+                    .limit(1)
+                    .fetchOne();
+            if (lastInRound != null && lastInRound.get(RACES.ID) != raceId) {
+                marshalRaceId = lastInRound.get(RACES.ID);
+            }
+        }
         List<MarshalDutyRowDto> marshalDuty;
 
-        if (previousRaceRow != null) {
-            // Step 4: Build marshalDuty from previous race's entries + absence counts
-            long previousRaceId = previousRaceRow.get(RACES.ID);
+        if (marshalRaceId != null) {
+            // Build marshalDuty from the marshalling race's entries + absence counts
 
             // Correlated subquery alias for absence count
             var absenceCount = DSL.select(DSL.count())
@@ -121,19 +137,19 @@ public class PreRaceReadinessQuery {
                     .from(RACE_ENTRIES)
                     .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                     .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
-                    .where(RACE_ENTRIES.RACE_ID.eq(previousRaceId))
+                    .where(RACE_ENTRIES.RACE_ID.eq(marshalRaceId))
                     .orderBy(RACE_ENTRIES.GRID_POSITION.asc().nullsLast(), ENTRIES.ID.asc())
                     .fetch(r -> new MarshalDutyRowDto(
                             r.get(RACE_ENTRIES.ENTRY_ID),
                             r.get("driverName", String.class),
-                            null, // car_number column does not exist in the entries table
+                            null, // not read yet, though race_entries.car_number holds it (ENTRY-03)
                             r.get("missedThisEvent", Long.class)
                     ));
         } else {
             marshalDuty = List.of();
         }
 
-        // Step 5: Build gridCall for the target race
+        // Build gridCall for the target race
         List<GridCallSlotDto> gridCall = dsl
                 .select(
                         RACE_ENTRIES.ID,
@@ -142,7 +158,6 @@ public class PreRaceReadinessQuery {
                         DSL.coalesce(COMPETITORS.DISPLAY_NAME, DSL.val("Unknown")).as("driverName"),
                         COMPETITORS.SPOKEN_NAME,
                         RACING_CLASSES.NAME.as("className"),
-                        ENTRIES.CHECKED_IN_AT,
                         ENTRIES.RACEHUB_ARRIVAL)
                 .from(RACE_ENTRIES)
                 .join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
@@ -159,12 +174,11 @@ public class PreRaceReadinessQuery {
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
                         SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get("driverName", String.class)),
-                        null, // car_number not yet on Entry — tracked as gap, see REQUIREMENTS.md ENTRY-03
+                        null, // not read yet, though race_entries.car_number holds it (ENTRY-03)
                         r.get("className", String.class),
-                        r.get(ENTRIES.CHECKED_IN_AT) != null,
                         r.get(ENTRIES.RACEHUB_ARRIVAL)
                 ));
 
-        return new PreRaceReadinessDto(raceId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty);
+        return new PreRaceReadinessDto(raceId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, null, 0);
     }
 }

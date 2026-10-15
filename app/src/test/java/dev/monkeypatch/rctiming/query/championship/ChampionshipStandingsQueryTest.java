@@ -50,7 +50,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for ChampionshipStandingsQuery (Phase 7, Plan 03).
+ * Integration tests for ChampionshipStandingsQuery.
  * Tests: best-X-from-Y marks correct rounds as dropped (CHAMP-05);
  *        TQ bonus and A-final winner bonus applied correctly (CHAMP-07/08);
  *        DNS driver (entered but absent from positions_json) scores 0 and round counts toward Y.
@@ -215,7 +215,6 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
     private Entry makeEntry(Long userId, Long eventId, Long eventClassId) {
         Entry e = makeCompetitorEntry(competitorIdFor(userId), eventId, eventClassId);
-        e.setUserId(userId);
         return entryRepository.save(e);
     }
 
@@ -367,6 +366,75 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         StandingsRowDto row = standings.get(0);
         // 10 (1st place) + 2 (TQ bonus) = 12
         assertThat(row.totalPoints()).isEqualTo(12);
+    }
+
+    /** One result row, as the snapshot stores it. */
+    private static String resultRow(Long entryId, int position, int laps, long bestLapMs) {
+        return String.format(
+                "{\"position\":%d,\"entryId\":%d,\"driverName\":\"X\",\"carNumber\":\"%d\","
+                + "\"lapsCompleted\":%d,\"totalTimeMs\":60000,\"bestLapMs\":%d,\"gapToLeaderMs\":0}",
+                position, entryId, position, laps, bestLapMs);
+    }
+
+    @Test
+    void onlyTheTopQualifierOfTheClassGetsTheTqBonusWhenTwoDriversWinOneHeatEach() throws Exception {
+        // CHAMP-07: one TQ per class and round, not one per heat winner (#248)
+        Championship champ = makeChampionship(2, 0, null, null, ScoringSource.QUALIFYING);
+        User first = makeUser("Fast", "Driver");
+        User second = makeUser("Other", "Driver");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Two-winners-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Entry a = makeEntry(first.getId(), event.getId(), ecId);
+        Entry b = makeEntry(second.getId(), event.getId(), ecId);
+        Race heat1 = makeRace(qualRound.getId(), ecId, null, 1);
+        Race heat2 = makeRace(qualRound.getId(), ecId, null, 2);
+        for (Race heat : List.of(heat1, heat2)) {
+            makeRaceEntry(heat.getId(), a.getId());
+            makeRaceEntry(heat.getId(), b.getId());
+        }
+        // Both have 23 laps over the two heats; A has the quicker single lap
+        makeSnapshot(heat1.getId(),
+                "[" + resultRow(a.getId(), 1, 12, 5000) + "," + resultRow(b.getId(), 2, 11, 5400) + "]");
+        makeSnapshot(heat2.getId(),
+                "[" + resultRow(b.getId(), 1, 12, 5200) + "," + resultRow(a.getId(), 2, 11, 5600) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Both win a heat for 10; only A tops the class, so only A has the 2 point bonus
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsExactlyInAnyOrder(12, 10);
+    }
+
+    @Test
+    void scoringFromBothSumsTheQualifyingAndTheFinalPointsOfARound() throws Exception {
+        // CHAMP-06: both sources are summed per round, not the better of the two (#248)
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.BOTH);
+        User driver = makeUser("Both", "Driver");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Both-sources-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 2);
+        Entry entry = makeEntry(driver.getId(), event.getId(), ecId);
+        Race qual = makeRace(qualRound.getId(), ecId, null, 1);
+        Race fin = makeRace(finalRound.getId(), ecId, "A", 1);
+        makeRaceEntry(qual.getId(), entry.getId());
+        makeRaceEntry(fin.getId(), entry.getId());
+        makeSnapshot(qual.getId(), "[" + resultRow(entry.getId(), 2, 10, 6000) + "]");
+        makeSnapshot(fin.getId(), "[" + resultRow(entry.getId(), 1, 10, 6000) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        assertThat(standings).hasSize(1);
+        // 8 for second in qualifying and 10 for winning the final; the round's position is the better one
+        assertThat(standings.get(0).totalPoints()).isEqualTo(18);
+        assertThat(standings.get(0).rounds().get(0).position()).isEqualTo(1);
+        assertThat(standings.get(0).rounds().get(0).points()).isEqualTo(18);
     }
 
     @Test
@@ -521,6 +589,50 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
         // Total = best 1 from 2 = 8 pts (DNS round with 0 pts is dropped since 0 < 8)
         assertThat(dnsDriverRow.totalPoints()).isEqualTo(8);
+    }
+
+    /**
+     * A competitor with two entries in one class at one event, both on the grid, who starts neither has
+     * one DNS round, not two. Only one live entry per class is allowed, so the second was withdrawn after
+     * the grid was set.
+     */
+    @Test
+    void twoEntriesInOneClassThatDoNotStartGiveOneDnsRound() {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Two-Entry-DNS-Event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round round = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race race = makeRace(round.getId(), ecId, "A", 1);
+
+        Long competitorId = competitorService.createWalkIn("Twice Entered").getId();
+        Entry first = makeCompetitorEntry(competitorId, event.getId(), ecId);
+        first.setStatus(EntryStatus.WITHDRAWN);
+        first.setWithdrawnAt(Instant.now());
+        entryRepository.save(first);
+        Entry second = makeCompetitorEntry(competitorId, event.getId(), ecId);
+        makeRaceEntry(race.getId(), first.getId());
+        makeRaceEntry(race.getId(), second.getId());
+
+        User winner = makeUser("Race", "Winner");
+        Entry winnerEntry = makeEntry(winner.getId(), event.getId(), ecId);
+        makeRaceEntry(race.getId(), winnerEntry.getId());
+        makeSnapshot(race.getId(), String.format(
+                "[{\"position\":1,\"entryId\":%d,\"driverName\":\"Race\",\"carNumber\":\"1\","
+                + "\"lapsCompleted\":11,\"totalTimeMs\":65000,\"bestLapMs\":5900,\"gapToLeaderMs\":0}]",
+                winnerEntry.getId()));
+
+        StandingsRowDto row = query.computeStandings(champ.getId()).stream()
+                .filter(r -> r.driverId().equals(competitorId))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Twice-entered competitor not found in standings"));
+
+        assertThat(row.rounds()).hasSize(1);
+        assertThat(row.rounds().getFirst().position()).isZero();
+        assertThat(row.rounds().getFirst().points()).isZero();
+        assertThat(row.totalPoints()).isZero();
     }
 
     @Test

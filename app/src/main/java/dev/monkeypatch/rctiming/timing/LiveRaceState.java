@@ -8,19 +8,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Per-race in-memory position model (Pattern 4 from RESEARCH.md).
+ * Per-race in-memory position model. Live positions are never written to the database during a race.
  * NOT a Spring bean — one instance per raceId, held in LapTimingService.states ConcurrentHashMap.
  *
- * <p>All mutating methods are synchronized on {@code this} (intrinsic lock, Pitfall 3).
+ * <p>All mutating methods are synchronized on {@code this}: the timing thread changes the state while
+ * request threads read it and link transponders.
  * Position recalculation is O(n log n) over typically ≤40 entries — negligible latency.
  *
- * <p>Gap calculation note: gapToLeader = leaderLastPassingTimeMs - myLastPassingTimeMs.
- * This is a simplified same-logical-clock calculation that works well for races where all
- * entries are on the same lap. Multi-lap gap calculation (position by laps then time) is
- * deferred to Phase 7 results refinement.
+ * <p>Gaps are the difference between last passing times, and are given only between cars on the same lap.
+ *
+ * <p><strong>Units.</strong> Every time here is in milliseconds, from the passing's
+ * {@code rtcTimeMicros / 1000}. {@code lastPassingTimeMs} is a wall-clock time, not a lap time, and
+ * {@code 0} means the car has not passed yet: {@link #creditLap} uses that to tell a first passing, which
+ * has no lap time, from a later one. So a car whose first passing landed exactly on the epoch would lose
+ * that one lap time, which cannot happen with a decoder clock.
  */
 public class LiveRaceState {
 
@@ -31,12 +36,51 @@ public class LiveRaceState {
     final Map<String, Long> runtimeLinks = new HashMap<>();
     /** Entry display names: entryId → "First Last", populated by LapTimingService on state creation. */
     final Map<Long, String> entryNames = new HashMap<>();
-    /** Fastest lap recorded across ALL entries this race session. */
+    /**
+     * Fastest lap recorded across ALL entries this race session. It is never cleared: a lap removed by a
+     * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
+     */
     Long overallBestLapMs = null;
+    /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has none. Set once, at state creation. */
+    final Map<Long, Long> minLapMs = new HashMap<>();
+    /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
+    Long lastLapCreditedAtMs = null;
+    /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
+    final Set<Long> flagged = new HashSet<>();
+    /**
+     * When each entry's own time on the track starts, in milliseconds after the race clock starts: a stagger start
+     * sends the cars off one at a time, so each has its own window. An entry not listed starts at 0.
+     */
+    final Map<Long, Long> startOffsetMs = new HashMap<>();
+    /** Whether the finish has been asked for, so it is asked for once. */
+    boolean finishRequested = false;
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
         return runtimeLinks.get(transponderNumber);
+    }
+
+    /** Sets when each entry starts, in milliseconds after the race clock starts. Called at state creation time. */
+    public synchronized void putStartOffsets(Map<Long, Long> offsets) {
+        startOffsetMs.putAll(offsets);
+    }
+
+    /**
+     * When the entry's own time on the track starts, in milliseconds after the race clock starts. An entry added to
+     * the race after the offsets were set is taken as the last to start, so it is never flagged before its time.
+     */
+    public synchronized long startOffsetMs(long entryId) {
+        return startOffsetMs.getOrDefault(entryId, lastStartOffsetMs());
+    }
+
+    /** When the last car starts, in milliseconds after the race clock starts; 0 when they all start together. */
+    public synchronized long lastStartOffsetMs() {
+        return startOffsetMs.values().stream().mapToLong(Long::longValue).max().orElse(0L);
+    }
+
+    /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */
+    public synchronized void putMinLaps(Map<Long, Long> minimums) {
+        minLapMs.putAll(minimums);
     }
 
     /** Stores a display name for an entry. Called by LapTimingService at state creation time. */
@@ -44,12 +88,29 @@ public class LiveRaceState {
         entryNames.put(entryId, displayName);
     }
 
+    /** As {@link #applyLapPassing(LapPassingEvent, Long, long)}, at the server's current time. */
+    public boolean applyLapPassing(LapPassingEvent event, Long entryId) {
+        return applyLapPassing(event, entryId, System.currentTimeMillis());
+    }
+
     /**
      * Apply a lap passing event. Returns true if this is the first sighting of an unknown transponder.
      * If entryId is null, the transponder is unknown — tracked in seenUnknownTransponders.
-     * All mutations are synchronized.
+     * All mutations are synchronized. {@code nowMs} is the server's clock when the passing arrived; it is kept when
+     * the passing counts a lap, for the last lap timeout.
      */
-    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId) {
+    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs) {
+        return applyLapPassing(event, entryId, nowMs, false);
+    }
+
+    /**
+     * As {@link #applyLapPassing(LapPassingEvent, Long, long)}, for a race with a length, where the car's time on
+     * the track may have run out. When {@code windowEnded}, the passing that counts a lap is the car's last: it has
+     * taken the flag, and its later passings are kept in the history but not counted. A passing too soon to count
+     * (TRACK-02) does not flag the car.
+     */
+    public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
+                                                boolean windowEnded) {
         lapHistory.add(event);
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
@@ -64,13 +125,59 @@ public class LiveRaceState {
             return p;
         });
 
-        creditLap(pos, passingTimeMs);
+        if (flagged.contains(entryId)) {
+            return false;
+        }
+        if (creditLap(pos, passingTimeMs)) {
+            lastLapCreditedAtMs = nowMs;
+            if (windowEnded) {
+                flagged.add(entryId);
+            }
+        }
 
         return false;
     }
 
     /**
+     * Whether every car that has passed the line has taken the flag, so the race is over. False until at least one
+     * car has passed. A car that never crossed is not waited for; the last lap timeout covers a car that stops.
+     * Returns true once only, so the caller finishes the race once.
+     */
+    public synchronized boolean takeFinishRequest() {
+        if (finishRequested || !allFlagged()) {
+            return false;
+        }
+        finishRequested = true;
+        return true;
+    }
+
+    /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */
+    public synchronized boolean allFlagged() {
+        boolean any = false;
+        for (LiveRacePosition pos : positions.values()) {
+            if (pos.getLastPassingTimeMs() == 0) {
+                continue;
+            }
+            any = true;
+            if (!flagged.contains(pos.getEntryId())) {
+                return false;
+            }
+        }
+        return any;
+    }
+
+    /** Server time of the last passing that counted a lap, or empty if none has yet. */
+    public synchronized Optional<Long> lastLapCreditedAtMs() {
+        return Optional.ofNullable(lastLapCreditedAtMs);
+    }
+
+    /**
      * Apply a marshal lap delta (±1). Synchronized.
+     *
+     * <p>It moves {@code lapsCompleted}, the laps the car is credited with, and never
+     * {@code LiveRacePosition.lapCount}, which counts the laps that were actually timed and divides the
+     * average lap time. An entry with no passings yet gets a position so a +1 can be given before its first
+     * lap; a −1 never takes it below zero.
      */
     public synchronized void applyLapDelta(long entryId, int lapDelta) {
         LiveRacePosition pos = positions.computeIfAbsent(entryId, id -> {
@@ -126,7 +233,8 @@ public class LiveRaceState {
                     lapsDown,
                     intervalLapsDown,
                     gapToLeader,
-                    gapToAhead
+                    gapToAhead,
+                    flagged.contains(pos.getEntryId())
             ));
             prevLastPassing = pos.getLastPassingTimeMs();
             prevLaps = pos.getLapsCompleted();
@@ -139,7 +247,7 @@ public class LiveRaceState {
     }
 
     /**
-     * Phase 5 / D-12: retroactively credit all lapHistory entries for an unknown transponder
+     * Retroactively credit all lapHistory entries for an unknown transponder
      * to the now-identified entry. Removes the transponder from the unknown set and recalculates
      * positions. Idempotent — if the transponder is already linked to the same entry, returns
      * current positions without replaying history (prevents lap doubling on re-submit).
@@ -147,6 +255,10 @@ public class LiveRaceState {
      * <p>Uses {@link #applyPositionUpdate} (not {@link #applyLapPassing}) to avoid
      * re-adding events to lapHistory during iteration, which would cause
      * ConcurrentModificationException and duplicate history entries.
+     *
+     * <p>It assumes the target entry has no passings of its own: the replayed laps are credited on top of
+     * whatever it already has, and lap times are worked out from the replay's own order, so linking a
+     * transponder to an entry that is already being timed on another number double-counts.
      *
      * @return recalculated position list; empty list if no matching lapHistory entries.
      */
@@ -168,7 +280,7 @@ public class LiveRaceState {
     }
 
     /**
-     * Phase 5: counts lapHistory entries for a given transponder number.
+     * Counts lapHistory entries for a given transponder number.
      * Used by TransponderLinkService to report lapsCredited before linking.
      */
     public synchronized int countPassingsForTransponder(String transponderNumber) {
@@ -198,10 +310,20 @@ public class LiveRaceState {
      * Records a passing for a position. A car's first passing after the start is not a lap: it only
      * starts the timing of the first lap. Every later passing counts one more lap and works out its lap
      * time from the previous passing: last, best and average lap, and the race's overall best. A gap of 0
-     * or less (a repeat or out-of-order passing) still counts the lap but gives no lap time.
+     * or less (a repeat or out-of-order passing) still counts the lap but gives no lap time, unless the
+     * entry has a minimum lap: then it is ignored.
+     *
+     * <p>A passing sooner after the car's last counted one than its minimum lap (TRACK-02) is ignored: a double
+     * read of the loop or a cut. It leaves the car's last passing alone, so the next real crossing is timed from
+     * the last lap that counted. A car's first passing has no lap to measure and is never ignored. Returns whether
+     * the passing counted.
      */
-    private void creditLap(LiveRacePosition pos, long passingTimeMs) {
+    private boolean creditLap(LiveRacePosition pos, long passingTimeMs) {
         long prevPassingTime = pos.getLastPassingTimeMs();
+        Long minimum = minLapMs.get(pos.getEntryId());
+        if (minimum != null && prevPassingTime > 0 && passingTimeMs - prevPassingTime < minimum) {
+            return false;
+        }
         pos.setLastPassingTimeMs(passingTimeMs);
         if (prevPassingTime > 0) {
             pos.setLapsCompleted(pos.getLapsCompleted() + 1);
@@ -219,11 +341,12 @@ public class LiveRaceState {
                 }
             }
         }
+        return true;
     }
 
     /**
-     * Returns a read-only snapshot of a single entry's position for use by ResultSnapshotService.
-     * Called when the race is FINISHED and no further lap events are processed.
+     * Returns a single entry's live position for ResultSnapshotService. It is the live object, not a copy:
+     * safe only because it is called once the race is FINISHED and no more passings change it.
      */
     public synchronized LiveRacePosition getPositionSnapshot(long entryId) {
         return positions.get(entryId);

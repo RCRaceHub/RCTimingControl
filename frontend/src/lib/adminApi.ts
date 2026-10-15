@@ -205,7 +205,6 @@ export interface EntryHistoryItem {
 
 export interface AdminEntryDto {
   id: number;
-  userId: number | null;
   competitorId: number | null;
   displayName: string | null;
   transponderNumber: string | null;
@@ -237,14 +236,13 @@ export interface TransitionEventRequest {
 export interface ClassFinalsConfigDto {
   eventClassId: number;
   finalsCount: number | null;
-  carsPerFinal: number | null;
-  bumpCount: number | null;
 }
 
 export interface GenerateRoundsRequest {
   practiceRoundsCount: number;
   qualifyingRoundsCount: number;
   maxCarsPerHeat: number;
+  minCarsPerHeat: number;
   classFinalsConfigs: ClassFinalsConfigDto[];
 }
 
@@ -277,11 +275,30 @@ export interface RaceFormatTemplateDto {
   config: RaceFormatConfig;
 }
 
+export interface TrackLapThresholdDto {
+  id: number;
+  /** Null for the track's default, which applies to every class without its own. */
+  racingClassId: number | null;
+  racingClassName: string | null;
+  minLapMs: number;
+  maxLastLapMs: number | null;
+}
+
 export interface TrackDto {
   id: number;
   name: string;
   venueNotes: string | null;
   trackLength: number | null;
+  lapThresholds?: TrackLapThresholdDto[];
+}
+
+/** What is sent to create or change a track; its lap limits are saved separately. */
+export type TrackInput = Pick<TrackDto, 'name' | 'venueNotes' | 'trackLength'>;
+
+/** The track-wide lap limits in seconds, or null for none. The longest wait needs a shortest lap as well. */
+export interface DefaultLapLimits {
+  minLapSeconds: number | null;
+  maxLastLapSeconds: number | null;
 }
 
 export type ScoringSource = 'QUALIFYING' | 'FINALS' | 'BOTH';
@@ -384,6 +401,8 @@ export interface CompetitorSummaryDto {
   spokenName: string | null;
   /** What the announcer says: the spoken name, else the display name tidied for speech (#120). */
   speechName: string;
+  /** How the name is shown on public screens and in the live feed (#265). */
+  nameVisibility: NameVisibility;
 }
 
 /** One recorded change to a competitor: when, who, and the spoken name before and after (null means none). */
@@ -400,6 +419,9 @@ export interface CompetitorDuplicateGroupDto {
   reason: string;
   competitors: CompetitorSummaryDto[];
 }
+
+/** SHOW the full name, INITIALS only, or HIDE it (#265). */
+export type NameVisibility = 'SHOW' | 'INITIALS' | 'HIDE';
 
 export interface CompetitorMergeSide {
   id: number;
@@ -432,6 +454,17 @@ export interface CompetitorMergeResult {
   exclusionsMoved: number;
 }
 
+/** Counts of what anonymising a competitor changed (#263). */
+export interface CompetitorAnonymiseResult {
+  competitorId: number;
+  entries: number;
+  resultSnapshots: number;
+  exportPayloads: number;
+  competitorHistoryRows: number;
+  entryHistoryRows: number;
+  auditRows: number;
+}
+
 export interface ClubProfileDto {
   id: number;
   name: string;
@@ -441,7 +474,6 @@ export interface ClubProfileDto {
   latitude: number | null;
   longitude: number | null;
   timezone: string;
-  logoType: string | null;
   logoUrl: string | null;
 }
 
@@ -453,10 +485,7 @@ export interface UpdateClubProfileRequest {
   latitude: number | null;
   longitude: number | null;
   timezone: string;
-  logoType: string | null;
 }
-
-// ── API client ─────────────────────────────────────────────────────────────
 
 export interface BackupFileDto {
   name: string;
@@ -529,11 +558,22 @@ export interface ResultsExportRowDto {
 export interface ResultsExportsDto {
   /** Whether the RaceHub address and key are both set; without them, exports wait in the queue */
   sendingEnabled: boolean;
+  /** The address in use: the one set here, else the settings file's */
   resultsUrl: string | null;
-  /** The settings still needed before anything is sent */
+  /** The address set here, or null when the settings file's is in use */
+  savedUrl: string | null;
+  /** What is still needed before anything is sent */
   missingSettings: string[];
   /** Newest first */
   exports: ResultsExportRowDto[];
+}
+
+// ── API client ─────────────────────────────────────────────────────────────
+
+/** {@code customised}: whether {@code text} is the club's own, or the default */
+export interface PrivacyNoticeEditDto {
+  text: string;
+  customised: boolean;
 }
 
 export const adminApi = {
@@ -704,6 +744,11 @@ export const adminApi = {
       api.get<ClubProfileDto>('/api/v1/admin/club/profile').then(r => r.data),
     updateProfile: (body: UpdateClubProfileRequest) =>
       api.put<ClubProfileDto>('/api/v1/admin/club/profile', body).then(r => r.data),
+    getPrivacyNotice: () =>
+      api.get<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice').then(r => r.data),
+    /** A blank text goes back to the default notice */
+    setPrivacyNotice: (text: string) =>
+      api.put<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice', { text }).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);
@@ -719,10 +764,27 @@ export const adminApi = {
       api.get<TrackDto[]>('/api/v1/admin/tracks').then(r => r.data),
     get: (id: number) =>
       api.get<TrackDto>(`/api/v1/admin/tracks/${id}`).then(r => r.data),
-    create: (body: Omit<TrackDto, 'id'>) =>
+    create: (body: TrackInput) =>
       api.post<TrackDto>('/api/v1/admin/tracks', body).then(r => r.data),
-    update: (id: number, body: Omit<TrackDto, 'id'>) =>
+    update: (id: number, body: TrackInput) =>
       api.put<TrackDto>(`/api/v1/admin/tracks/${id}`, body).then(r => r.data),
+    /**
+     * Sets the track's default lap limits (the ones for every class without its own), or takes them away when
+     * no shortest lap is given. {@code existingId} is the default's id if the track already has one.
+     */
+    saveDefaultLimits: async (trackId: number, limits: DefaultLapLimits, existingId: number | undefined) => {
+      if (limits.minLapSeconds === null) {
+        if (existingId !== undefined) {
+          await api.delete(`/api/v1/admin/tracks/thresholds/${existingId}`);
+        }
+        return;
+      }
+      await api.post(`/api/v1/admin/tracks/${trackId}/thresholds`, {
+        racingClassId: null,
+        minLapMs: Math.round(limits.minLapSeconds * 1000),
+        maxLastLapMs: limits.maxLastLapSeconds === null ? null : Math.round(limits.maxLastLapSeconds * 1000),
+      });
+    },
     delete: (id: number) =>
       api.delete(`/api/v1/admin/tracks/${id}`),
   },
@@ -741,7 +803,7 @@ export const adminApi = {
       api.delete(`/api/v1/admin/formats/${id}`),
   },
 
-  // Competitors (drivers, with or without a login — for driver search in exclusions)
+  // Competitors, also used for the driver search in championship exclusions
   competitors: {
     list: () =>
       api.get<CompetitorSummaryDto[]>('/api/v1/admin/competitors').then(r => r.data),
@@ -752,6 +814,10 @@ export const adminApi = {
     /** Who changed how a competitor's name is said, newest first. Admin only. */
     changes: (id: number) =>
       api.get<CompetitorChangeDto[]>(`/api/v1/admin/competitors/${id}/changes`).then(r => r.data),
+    /** Sets how the name is shown on public screens and in the live feed (#265). */
+    setNameVisibility: (id: number, nameVisibility: NameVisibility) =>
+      api.put<CompetitorSummaryDto>(`/api/v1/admin/competitors/${id}/name-visibility`, { nameVisibility })
+        .then(r => r.data),
     possibleDuplicates: () =>
       api.get<CompetitorDuplicateGroupDto[]>('/api/v1/admin/competitors/possible-duplicates').then(r => r.data),
     mergePreview: (keepId: number, duplicateId: number) =>
@@ -760,6 +826,13 @@ export const adminApi = {
     /** Moves the duplicate's entries onto the competitor to keep and deletes the duplicate. */
     merge: (keepId: number, duplicateId: number) =>
       api.post<CompetitorMergeResult>('/api/v1/admin/competitors/merge', { keepId, duplicateId }).then(r => r.data),
+    /** Everything held about one competitor, as a JSON file to save. Admin only; audited (#263). */
+    exportPersonalData: (id: number) =>
+      api.get<Blob>(`/api/v1/admin/competitors/${id}/personal-data`, { responseType: 'blob' })
+        .then(r => ({ blob: r.data, filename: `competitor-${id}.json` })),
+    /** Removes the name and identifiers, keeping results and standings. Cannot be undone (#263). */
+    anonymise: (id: number) =>
+      api.post<CompetitorAnonymiseResult>(`/api/v1/admin/competitors/${id}/anonymise`).then(r => r.data),
     /** The text spoken in the club's Piper voice, as audio. Rejects with a 503 when Piper is down. */
     previewSpeech: (text: string) =>
       api.post<Blob>('/api/v1/admin/competitors/spoken-name/preview', { text }, { responseType: 'blob' })
@@ -801,6 +874,9 @@ export const adminApi = {
       api.get<ResultsExportsDto>('/api/v1/admin/results-exports').then(r => r.data),
     retry: (id: number) =>
       api.post(`/api/v1/admin/results-exports/${id}/retry`).then(() => undefined),
+    /** Blank clears it, so the settings file's address applies */
+    setAddress: (resultsUrl: string) =>
+      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api

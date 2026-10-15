@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.pub;
 
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,13 +20,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicResultsController {
 
     private final ResultSnapshotQuery query;
+    private final PublicNames publicNames;
 
-    public PublicResultsController(ResultSnapshotQuery query) {
+    public PublicResultsController(ResultSnapshotQuery query, PublicNames publicNames) {
         this.query = query;
+        this.publicNames = publicNames;
     }
 
     @GetMapping("/{raceId}")
     public ResultSnapshotDto get(@PathVariable Long raceId) {
-        return query.load(raceId);
+        ResultSnapshotDto snapshot = query.load(raceId);
+        return new ResultSnapshotDto(snapshot.raceId(), snapshot.raceLabel(), snapshot.finishedAt(),
+                publicNames.rows(snapshot.positions()), snapshot.lapHistory(), snapshot.clubBranding());
     }
 }

@@ -2,7 +2,7 @@
 
 > **Early pre-release — v0.1**
 
-RC club race timing and race control, replacing RCResults. It runs on a laptop at the track, reads the AMB/MyLaps decoder directly, and serves race control, check-in, the announcer and the spectator boards to browsers on the venue network. It is the timing side of the RaceHub suite: entries come from a RaceHub export or are added as walk-ins, and only officials sign in.
+RC club race timing and race control, replacing RCResults. It runs on a laptop at the track, reads the AMB/MyLaps decoder directly, and serves race control, the announcer and the spectator boards to browsers on the venue network. It is the timing side of the RaceHub suite: entries come from a RaceHub export or are added as walk-ins, and only officials sign in.
 
 ## Install on a venue laptop
 
@@ -35,7 +35,7 @@ Then open **http://localhost:8080** and sign in as `admin@example.com` / `trial1
 | Component | Description |
 |-----------|-------------|
 | `app/` | Spring Boot 3.4 backend — REST API, officials' JWT auth, WebSocket timing hub, direct AMB decoder listener, RaceHub import, events, championships, backups; serves the built frontend |
-| `frontend/` | React 18 + Vite + Tailwind + shadcn/ui — admin panel, check-in, race control, spectator boards and public results |
+| `frontend/` | React 18 + Vite + Tailwind + shadcn/ui — admin panel, race control, spectator boards and public results |
 | `decoder-simulator/` | Fake AMB decoder over TCP for development and trying the app out (generative and playback modes); the app runs it with `simulate` |
 | `decoder-protocol/` | Shared AMB/MyLaps decoder protocol parsing (RC-4 text; P3 binary is deferred) — used by `app/` and `decoder-simulator/` |
 | `docker-compose.yml` | Piper (TTS), optional, for announcer voices in development. The database is a SQLite file and club logos and TTS clips are stored on local disk, so nothing else needs Docker. |
@@ -109,7 +109,7 @@ See [docs/testing.md](docs/testing.md) for the full test matrix, including `deco
 |------|-------------|
 | Club setup | First-run wizard, club profile, tracks and decoder loops, racing classes, race formats, officials and their roles |
 | Entries | RaceHub Entry Export v1 import with class mapping, walk-ins added by hand, competitors with no login, a primary and secondary transponder per entry |
-| Race day | Check-in desk with barcode input and transponder swaps, round generator, race control (grid, start/stop, marshal laps), referee tools, unknown-transponder linking, open practice |
+| Race day | Transponder swaps on the day, round generator, race control (grid, start/stop, marshal laps), referee tools, unknown-transponder linking, open practice |
 | Live timing | Direct AMB RC-4 decoder listener, WebSocket live display, voice announcements (Piper TTS or the browser's voice), spectator boards, a streaming overlay for OBS, a live feed to a relay for remote viewers |
 | Results | Result snapshots, best-X-from-Y championship standings, public results pages, printable results, results sent back to RaceHub through a queue that waits for the network |
 | Running it | One installer per system that runs as a background service, scheduled backups and a restore command, a command-line admin password reset, in-app help and printable guides |

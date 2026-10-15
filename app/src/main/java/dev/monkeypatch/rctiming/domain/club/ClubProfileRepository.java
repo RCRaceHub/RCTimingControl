@@ -35,14 +35,14 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         p.setLatitude(r.getLatitude());
         p.setLongitude(r.getLongitude());
         p.setTimezone(r.getTimezone());
-        p.setLogo(r.getLogo());
-        p.setLogoType(r.getLogoType());
         p.setLogoUrl(r.getLogoUrl());
         p.setAudioSettings(AUDIO_SETTINGS.convertToEntityAttribute(r.getAudioSettings()));
         p.setDefaultVoiceId(r.getDefaultVoiceId());
         p.setDecoderHost(r.getDecoderHost());
         p.setDecoderPort(r.getDecoderPort());
         p.setDecoderProtocol(r.getDecoderProtocol());
+        p.setPrivacyNotice(r.getPrivacyNotice());
+        p.setRacehubResultsUrl(r.getRacehubResultsUrl());
         p.setCreatedAt(r.getCreatedAt());
         p.setUpdatedAt(r.getUpdatedAt());
         return p;
@@ -57,14 +57,14 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         r.setLatitude(p.getLatitude());
         r.setLongitude(p.getLongitude());
         r.setTimezone(p.getTimezone());
-        r.setLogo(p.getLogo());
-        r.setLogoType(p.getLogoType());
         r.setLogoUrl(p.getLogoUrl());
         r.setAudioSettings(AUDIO_SETTINGS.convertToDatabaseColumn(p.getAudioSettings()));
         r.setDefaultVoiceId(p.getDefaultVoiceId());
         r.setDecoderHost(p.getDecoderHost());
         r.setDecoderPort(p.getDecoderPort());
         r.setDecoderProtocol(p.getDecoderProtocol());
+        r.setPrivacyNotice(p.getPrivacyNotice());
+        r.setRacehubResultsUrl(p.getRacehubResultsUrl());
         r.setCreatedAt(p.getCreatedAt());
         r.setUpdatedAt(p.getUpdatedAt());
     }

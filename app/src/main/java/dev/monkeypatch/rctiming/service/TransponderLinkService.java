@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAuditRepository;
@@ -18,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Links an unknown transponder to an entry during a live race (TIMING-08, D-12), crediting every passing it has
+ * Links an unknown transponder to an entry during a live race (TIMING-08), crediting every passing it has
  * made since the start.
  */
 @Service
@@ -51,8 +52,10 @@ public class TransponderLinkService {
      * Linking it again to the same entry credits nothing more; linking it to a different one is refused, since
      * its laps are already credited to the first.
      *
-     * <p>The audit rows and the link are one transaction, with the link last, so a link that fails records
-     * nothing. The live timing is changed before the commit (see #217).
+     * <p>The audit rows are written first and the live timing is changed only once they commit, so a link is
+     * never live without its record (#217). The laps credited are counted before the commit; a passing from
+     * this transponder that arrives in between is credited too, but is not in that count. With one write
+     * connection, the next link request starts only after this one is live, so its checks see it.
      *
      * @return how many laps the link credited
      */
@@ -89,7 +92,7 @@ public class TransponderLinkService {
                         + labels.race(raceId) + ", crediting " + lapsCredited + " laps")
                 .after(after).record();
 
-        lapTimingService.linkTransponder(raceId, transponderNumber, entryId);
+        AfterCommit.run(() -> lapTimingService.linkTransponder(raceId, transponderNumber, entryId));
         return lapsCredited;
     }
 }

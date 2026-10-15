@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useClubProfile, useUpdateClubProfile, useUploadClubLogo } from '@/hooks/admin/useAdminClub';
 import type { UpdateClubProfileRequest } from '@/lib/adminApi';
 import axios from 'axios';
+import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 
 const schema = z.object({
   name: z.string().min(1, 'Club name is required'),
@@ -20,7 +21,6 @@ const schema = z.object({
   latitude: z.coerce.number().nullable(),
   longitude: z.coerce.number().nullable(),
   timezone: z.string().min(1, 'Timezone is required'),
-  logoType: z.string().nullable().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -34,7 +34,6 @@ function toRequest(values: FormValues): UpdateClubProfileRequest {
     latitude: values.latitude,
     longitude: values.longitude,
     timezone: values.timezone,
-    logoType: values.logoType || null,
   };
 }
 
@@ -60,7 +59,6 @@ export default function ClubProfilePage() {
           latitude: data.latitude ?? null,
           longitude: data.longitude ?? null,
           timezone: data.timezone ?? '',
-          logoType: data.logoType ?? '',
         }
       : undefined,
   });
@@ -112,7 +110,6 @@ export default function ClubProfilePage() {
     <div className="max-w-xl space-y-8">
       <h1 className="text-2xl font-semibold">Club Profile</h1>
 
-      {/* Logo card */}
       <div className="rounded-lg border p-4 space-y-3">
         <h2 className="text-sm font-semibold">Club Logo</h2>
         {data?.logoUrl ? (
@@ -151,7 +148,6 @@ export default function ClubProfilePage() {
         </div>
       </div>
 
-      {/* Profile form */}
       <form onSubmit={handleSubmit(onSave)} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="club-name">Club Name</Label>
@@ -193,6 +189,8 @@ export default function ClubProfilePage() {
           {updateMutation.isPending ? 'Saving…' : 'Save Profile'}
         </Button>
       </form>
+
+      <PrivacyNoticeEditor />
     </div>
   );
 }

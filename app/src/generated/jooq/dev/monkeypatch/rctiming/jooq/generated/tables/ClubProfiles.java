@@ -97,16 +97,6 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
     public final TableField<ClubProfilesRecord, String> TIMEZONE = createField(DSL.name("timezone"), SQLDataType.VARCHAR(100).nullable(false).defaultValue(DSL.field(DSL.raw("'UTC'"), SQLDataType.VARCHAR)), this, "");
 
     /**
-     * The column <code>club_profiles.logo</code>.
-     */
-    public final TableField<ClubProfilesRecord, byte[]> LOGO = createField(DSL.name("logo"), SQLDataType.BLOB, this, "");
-
-    /**
-     * The column <code>club_profiles.logo_type</code>.
-     */
-    public final TableField<ClubProfilesRecord, String> LOGO_TYPE = createField(DSL.name("logo_type"), SQLDataType.VARCHAR(10), this, "");
-
-    /**
      * The column <code>club_profiles.created_at</code>.
      */
     public final TableField<ClubProfilesRecord, Instant> CREATED_AT = createField(DSL.name("created_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
@@ -145,6 +135,16 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      * The column <code>club_profiles.decoder_protocol</code>.
      */
     public final TableField<ClubProfilesRecord, String> DECODER_PROTOCOL = createField(DSL.name("decoder_protocol"), SQLDataType.VARCHAR(10), this, "");
+
+    /**
+     * The column <code>club_profiles.privacy_notice</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> PRIVACY_NOTICE = createField(DSL.name("privacy_notice"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>club_profiles.racehub_results_url</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> RACEHUB_RESULTS_URL = createField(DSL.name("racehub_results_url"), SQLDataType.CLOB, this, "");
 
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

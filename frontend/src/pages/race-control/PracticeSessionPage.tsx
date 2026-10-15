@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PracticeLiveTable } from './panels/PracticeLiveTable';
 import { PracticeCreateDialog } from './dialogs/PracticeCreateDialog';
+import { PracticeNameDialog } from './dialogs/PracticeNameDialog';
 import { usePracticeTiming } from '@/hooks/race-control/usePracticeTiming';
 import {
   getSession,
@@ -26,12 +27,18 @@ function statusBadgeVariant(
   return 'outline';
 }
 
+function formatPause(seconds: number): string {
+  return seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds} s`;
+}
+
 export function PracticeSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const id = parseInt(sessionId!, 10);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  // The transponder being named, or null when the dialog is closed
+  const [naming, setNaming] = useState<string | null>(null);
 
   const {
     data: session,
@@ -96,7 +103,6 @@ export function PracticeSessionPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Page header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
         <Link
           to="/admin/race-control"
@@ -108,7 +114,7 @@ export function PracticeSessionPage() {
         <h1 className="text-base font-semibold truncate">{session.name}</h1>
         <Badge variant={statusBadgeVariant(session.status)}>{session.status}</Badge>
         <p className="text-xs text-muted-foreground hidden sm:block">
-          Best {session.bestLapN} consecutive laps
+          Average of {session.bestLapN} laps, new run after a {formatPause(session.pauseSeconds)} pause
         </p>
         {session.eventName && (
           <p className="text-xs text-muted-foreground hidden sm:block">
@@ -162,7 +168,6 @@ export function PracticeSessionPage() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         {session.status === 'IDLE' && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20">
@@ -198,11 +203,20 @@ export function PracticeSessionPage() {
             )}
 
             <div className="mt-2">
-              <PracticeLiveTable rows={rows} bestLapN={session.bestLapN} />
+              <PracticeLiveTable rows={rows} bestLapN={session.bestLapN} onName={setNaming} />
             </div>
           </>
         )}
       </main>
+
+      <PracticeNameDialog
+        sessionId={id}
+        transponderNumber={naming ?? ''}
+        open={naming !== null}
+        onOpenChange={open => {
+          if (!open) setNaming(null);
+        }}
+      />
 
       <PracticeCreateDialog
         open={createOpen}

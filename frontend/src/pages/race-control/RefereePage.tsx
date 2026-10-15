@@ -7,11 +7,13 @@ import { RefereeHelp } from '@/help/RefereeHelp';
 import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
+import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { IncidentDialog } from './dialogs/IncidentDialog';
 import { PenaltyDialog } from './dialogs/PenaltyDialog';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { RaceHistoryPanel } from './panels/RaceHistoryPanel';
+import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useProximityAlerts } from './referee/useProximityAlerts';
@@ -60,6 +62,7 @@ export default function RefereePage() {
 
   const selectedRace = runOrder.find((r) => r.raceId === selectedRaceId);
   const mutations = useRaceStateMutations(selectedRaceId ?? 0, eventId);
+  const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
 
   function onIncident(req: IncidentReportRequest) {
     mutations.incident.mutate(req, {
@@ -84,7 +87,6 @@ export default function RefereePage() {
 
   return (
     <div className="flex h-full">
-      {/* Run order sidebar */}
       <aside className="w-56 shrink-0 border-r overflow-y-auto">
         <div className="px-4 py-3 border-b">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -108,10 +110,10 @@ export default function RefereePage() {
 
       <Separator orientation="vertical" />
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold">Referee View</h1>
+          <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
           <div className="ml-auto flex gap-2">
             <Button
               variant="outline"

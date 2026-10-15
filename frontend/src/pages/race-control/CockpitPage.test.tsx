@@ -11,18 +11,20 @@ vi.mock('@/context/HelpContext', () => ({ useHelpContent: vi.fn() }));
 
 const mockRunOrder = vi.fn();
 vi.mock('@/hooks/race-control/useRunOrder', () => ({ useRunOrder: () => mockRunOrder() }));
+const mockMutate = vi.fn();
 vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
   useRaceStateMutations: () =>
-    new Proxy({}, { get: () => ({ mutate: vi.fn(), isPending: false }) }),
+    new Proxy({}, { get: () => ({ mutate: mockMutate, isPending: false }) }),
 }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
 const mockUseStomp = vi.fn<(topic: string | null) => { data: unknown; status: string }>(() => ({ data: null, status: 'connected' }));
 vi.mock('@/hooks/race-control/useStomp', () => ({ useStomp: (topic: string | null) => mockUseStomp(topic) }));
 vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: [] }) }));
 vi.mock('@/hooks/race-control/useAnnouncements', () => ({
-  useAnnouncements: () => ({ playBeep: vi.fn(), setClipMap: vi.fn() }),
+  useAnnouncements: () => ({ playBeep: vi.fn(), setClipMap: vi.fn(), markAbandoned: vi.fn(), clearAbandoned: vi.fn() }),
 }));
-vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({ usePreRaceReadiness: () => ({ data: undefined }) }));
+const mockReadiness = vi.fn<() => unknown>(() => undefined);
+vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({ usePreRaceReadiness: () => ({ data: mockReadiness() }) }));
 vi.mock('@/hooks/race-control/usePregeneratedClips', () => ({ usePregeneratedClips: () => undefined }));
 vi.mock('@/lib/audioApi', () => ({ getAudioSettings: vi.fn().mockResolvedValue(null) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -100,9 +102,34 @@ describe('CockpitPage with no races', () => {
   });
 });
 
+describe('CockpitPage with the grid called', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    mockRunOrder.mockReturnValue({
+      data: [{ raceId: 3, status: 'GRID', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 }],
+      isLoading: false,
+      isError: false,
+    });
+  });
+
+  it('says drivers are called by name every interval for a staggered start', () => {
+    mockReadiness.mockReturnValue({ startType: 'STAGGER', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [] });
+    renderCockpit();
+    expect(screen.getByTestId('start-type-note')).toHaveTextContent(/called by name every 4 seconds in grid order/i);
+  });
+
+  it('says drivers are not called one by one for a rolling start', () => {
+    mockReadiness.mockReturnValue({ startType: 'ROLLING', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [] });
+    renderCockpit();
+    expect(screen.getByTestId('start-type-note')).toHaveTextContent(/not called one by one/i);
+  });
+});
+
 describe('CockpitPage with a running race', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockReadiness.mockReturnValue(undefined);
     mockRunOrder.mockReturnValue({
       data: [{ raceId: 3, status: 'RUNNING', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 }],
       isLoading: false,
@@ -120,6 +147,64 @@ describe('CockpitPage with a running race', () => {
     mockUser.mockReturnValue({ roles: ['REFEREE'] });
     renderCockpit();
     expect(screen.queryByRole('button', { name: 'Finish Race' })).not.toBeInTheDocument();
+  });
+});
+
+describe('CockpitPage jump to a race', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    mockRunOrder.mockReturnValue({
+      data: [
+        { raceId: 3, status: 'RUNNING', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 4, status: 'PENDING', roundType: 'PRACTICE', roundNumber: 1, className: '13.5 Touring', heatNumber: 2 },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+  });
+
+  it('shows the reason when the server refuses the jump', () => {
+    mockMutate.mockImplementationOnce((_vars, options?: { onError?: (err: unknown) => void }) =>
+      options?.onError?.({
+        isAxiosError: true,
+        response: { status: 409, data: { detail: 'Race 3 is still running' } },
+      }),
+    );
+    renderCockpit();
+
+    fireEvent.click(screen.getByText('Heat 2'));
+    fireEvent.click(screen.getByRole('button', { name: 'Jump to this race' }));
+
+    expect(mockMutate).toHaveBeenCalledWith({ sourceRaceId: 3, targetRaceId: 4 }, expect.anything());
+    expect(toast.error).toHaveBeenCalledWith('Jump to race failed: Race 3 is still running');
+  });
+});
+
+describe('CockpitPage final guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    mockUseStomp.mockImplementation(() => ({ data: null, status: 'connected' }));
+  });
+
+  function runOrderWith(qualifierStatus: string) {
+    mockRunOrder.mockReturnValue({
+      data: [
+        { raceId: 4, status: qualifierStatus, roundType: 'QUALIFIER', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+        { raceId: 5, status: 'PENDING', roundType: 'FINAL', roundNumber: 1, className: '13.5 Touring', heatNumber: 1 },
+      ],
+      isLoading: false,
+      isError: false,
+    });
+  }
+
+  it('blocks Call Grid on a final while a qualifying heat is unfinished', () => {
+    runOrderWith('PENDING');
+    renderCockpit();
+    fireEvent.click(screen.getByText(/Final/));
+    expect(screen.getByRole('button', { name: 'Call Grid' })).toBeDisabled();
+    expect(screen.getByText(/1 qualifying heat for 13.5 Touring still to finish/)).toBeInTheDocument();
   });
 });
 

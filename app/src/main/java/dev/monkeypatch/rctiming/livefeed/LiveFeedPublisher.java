@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
@@ -44,6 +45,17 @@ import java.util.concurrent.atomic.AtomicLong;
  * besides so viewers joining late catch up. The feed only ever reads timing state, and a slow or missing relay
  * only delays this thread, so it can never hold up timing or race control. A dropped connection is reopened
  * with a growing wait.
+ *
+ * <p><strong>The feed is lossy by design.</strong> Each message is the race's state as it stands, not a log of
+ * what happened, so a viewer that misses one loses nothing but a moment: the next message replaces it. The
+ * {@code sequence} number is the only ordering guarantee, and is for the viewer to drop a message that arrives
+ * out of order; it is not a count, and it starts from the clock, so it jumps on every restart.
+ *
+ * <p><strong>Threads.</strong> Everything but {@code state} is touched only on the {@code live-feed} thread
+ * this class starts. {@code state} is set from race control's threads when the switch is turned on or off, so
+ * it is volatile. {@link #start} and {@link #stop} are synchronized against each other but do not wait for the
+ * thread to finish: {@code shutdownNow} interrupts a tick in flight and closes the connection under it, so a
+ * stop immediately followed by a start can leave the old tick closing the new connection.
  */
 @Component
 @EnableConfigurationProperties(LiveFeedProperties.class)
@@ -105,8 +117,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         this.sequence = new AtomicLong(clock.millis());
     }
 
-    // ── Status ─────────────────────────────────────────────────────────────────────
-
     public LiveFeedStatusDto status() {
         return new LiveFeedStatusDto(state.name(),
                 properties.relayUrl() == null ? null : properties.relayUrl().getHost(),
@@ -128,8 +138,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         }
     }
 
-    // ── Race lifecycle ─────────────────────────────────────────────────────────────
-
     /** Follows races from the grid to the finish; the race clock itself is kept by {@link RaceClockService}. */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
@@ -139,13 +147,16 @@ public class LiveFeedPublisher implements SmartLifecycle {
             case RUNNING, STOPPED -> races.computeIfAbsent(raceId, id -> new Followed());
             // Keep the final running order: finishing stores the result and lets the live state go straight
             // after this event, before the feed's next pass
-            case FINISHED -> races.computeIfAbsent(raceId, id -> new Followed())
-                    .freeze(lapTimingService.peek(raceId).map(LiveRaceState::calculatePositions).orElse(List.of()));
+            case FINISHED -> {
+                // The order is read now, while the live state is still there, but only frozen once the finish
+                // commits: a finish that rolls back leaves the race running and the feed following it
+                List<LiveTimingRowDto> finalRows =
+                        lapTimingService.peek(raceId).map(LiveRaceState::calculatePositions).orElse(List.of());
+                AfterCommit.run(() -> races.computeIfAbsent(raceId, id -> new Followed()).freeze(finalRows));
+            }
             default -> { }
         }
     }
-
-    // ── The feed's thread ──────────────────────────────────────────────────────────
 
     /** One pass: work out what to send, connect if needed, and send it. Never throws. */
     void tick() {
@@ -313,8 +324,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
         return cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
     }
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────────────
-
     @Override
     public synchronized void start() {
         if (executor != null) {
@@ -341,8 +350,6 @@ public class LiveFeedPublisher implements SmartLifecycle {
     public synchronized boolean isRunning() {
         return executor != null;
     }
-
-    // ── State ──────────────────────────────────────────────────────────────────────
 
     /** A race the feed follows, with its running order kept from the finish. */
     private static final class Followed {

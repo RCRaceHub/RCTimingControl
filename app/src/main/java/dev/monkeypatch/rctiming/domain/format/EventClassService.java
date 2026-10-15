@@ -97,7 +97,8 @@ public class EventClassService {
         if (eventClassIds == null || eventClassIds.size() < 2) {
             throw new IllegalArgumentException("At least 2 event class ids required to combine");
         }
-        // Generate a shared group id — uses current time ms for monotonic uniqueness per JVM run
+        // The current time in milliseconds is the shared group id. Two combines would collide only if they
+        // landed in the same millisecond, which officials clicking a button do not manage.
         long groupId = Instant.now().toEpochMilli();
 
         List<EventClass> result = new ArrayList<>();

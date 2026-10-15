@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -8,19 +9,18 @@ import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceStateChangeDto;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * STOMP broadcast hub (Pattern 5 from RESEARCH.md).
- * Broadcasts on three topics per CLAUDE.md:
+ * STOMP broadcast hub. Broadcasts on these topics:
  * - /topic/race/{raceId}/timing — live position updates
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
+ * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
+ * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
 @Component
 public class LiveTimingHub {
@@ -61,7 +61,7 @@ public class LiveTimingHub {
     }
 
     /**
-     * Phase 4: broadcasts bump-up promotion alert when a lower final finishes.
+     * Broadcasts a bump-up promotion alert when a lower final finishes.
      * Race director UI subscribes to be notified before starting the next final.
      */
     public void broadcastBumpUpAlert(long finishedRaceId, List<Long> promotedEntryIds) {
@@ -76,18 +76,9 @@ public class LiveTimingHub {
 
     /**
      * Sends when the current transaction commits, or now outside one. Callers are race-control commands in a
-     * write transaction; called from another transaction's after-commit callback the message would be lost.
+     * write transaction.
      */
     private void sendAfterCommit(String destination, Object payload) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            messagingTemplate.convertAndSend(destination, payload);
-            return;
-        }
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                messagingTemplate.convertAndSend(destination, payload);
-            }
-        });
+        AfterCommit.run(() -> messagingTemplate.convertAndSend(destination, payload));
     }
 }

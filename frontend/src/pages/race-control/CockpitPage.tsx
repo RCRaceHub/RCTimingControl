@@ -8,17 +8,20 @@ import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
-import { useAnnouncements } from '@/hooks/race-control/useAnnouncements';
+import { useAudioAllowed } from '@/hooks/race-control/useAudioAllowed';
+import { useRaceClock } from '@/hooks/race-control/useRaceClock';
+import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
+import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { usePregeneratedClips } from '@/hooks/race-control/usePregeneratedClips';
-import { isImprovingLap, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
-import { getRaceClock } from '@/lib/boardsApi';
+import { lapPace, raceEndsAt } from '@/hooks/race-control/raceAudioCues';
 import { getAudioSettings } from '@/lib/audioApi';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { AudioSettingsPanel } from './panels/AudioSettingsPanel';
+import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
@@ -34,6 +37,21 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 function raceTitle(item: RunOrderItemDto | undefined) {
   if (!item) return 'No race selected';
   return `${roundName(item)} — ${item.className} — Heat ${item.heatNumber}`;
+}
+
+/** How the race will start, so the director can see whether the drivers will be called one by one. */
+function describeStart(startType: string, staggerIntervalSeconds: number | undefined) {
+  switch (startType) {
+    case 'STAGGER': {
+      const seconds = Math.max(staggerIntervalSeconds ?? 1, 1);
+      return `Staggered start: the start horn, then each driver is called by name every ${seconds} ` +
+        `${seconds === 1 ? 'second' : 'seconds'} in grid order.`;
+    }
+    case 'ROLLING':
+      return 'Rolling start: the clock starts when the first car crosses the line. Drivers are not called one by one.';
+    default:
+      return 'Grid start: every car goes together on the start horn. Drivers are not called one by one.';
+  }
 }
 
 /** A toast for a race command the server refused, with its reason (such as a race already running). */
@@ -76,8 +94,8 @@ export default function CockpitPage() {
   // Live timing rows (for AUDIO-04 beep detection)
   const { rows: liveRows } = useLiveTiming(selectedRaceId);
 
-  // Audio announcements hook (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
   const [volumePercent] = useAudioVolume();
+  const audio = useAudioAllowed();
 
   // Fetch audio settings — shared query key with AudioSettingsPanel so only one request fires
   const { data: audioSettings } = useQuery({
@@ -85,27 +103,39 @@ export default function CockpitPage() {
     queryFn: () => getAudioSettings(),
   });
 
-  // Fetch grid entries for stagger sequencer when race is at GRID state
+  // Fetch grid entries for the stagger sequencer at GRID, and keep them once the race starts: the calls play then
   const { data: preRaceReadiness } = usePreRaceReadiness(
-    selectedRace?.status === 'GRID' ? selectedRaceId : null,
+    selectedRace?.status === 'GRID' || selectedRace?.status === 'RUNNING' ? selectedRaceId : null,
   );
   const gridEntries = preRaceReadiness?.gridCall;
 
-  // The race clock tells the countdown announcements when the race ends. It is read again when the race
-  // starts or resumes (the status is part of the key), since a stoppage moves the end.
-  const { data: raceClock, dataUpdatedAt: raceClockReadAt } = useQuery({
-    queryKey: raceControlQueryKeys.raceClock(selectedRaceId, selectedRace?.status),
-    queryFn: () => getRaceClock(selectedRaceId!),
-    enabled: selectedRaceId != null && selectedRace?.status === 'RUNNING',
-  });
+  // The race after a finished one, with the marshals it will have (the drivers of the race just finished), for the
+  // call between races
+  const selectedIndex = runOrder.findIndex((r) => r.raceId === selectedRaceId);
+  const nextItem =
+    selectedRace?.status === 'FINISHED'
+      ? runOrder.slice(selectedIndex + 1).find((r) => r.status === 'PENDING')
+      : undefined;
+  const { data: nextReadiness } = usePreRaceReadiness(nextItem ? nextItem.raceId : null);
+  const nextRace: NextRaceCall | null = nextReadiness
+    ? { label: nextReadiness.raceLabel, marshals: nextReadiness.marshalDuty.map((m) => m.driverName) }
+    : null;
 
-  const { playBeep, setClipMap } = useAnnouncements({
+  // The race clock shows the time left, and tells the countdown announcements when the race ends
+  const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
+
+  // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
+  const { playBeep, announceCarFinish, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
     raceId: selectedRaceId,
     settings: audioSettings ?? null,
     volume: volumePercent / 100,
     raceState: selectedRace?.status,
     raceEndsAt: raceEndsAt(raceClock, raceClockReadAt),
     gridEntries,
+    startType: preRaceReadiness?.startType,
+    staggerIntervalSeconds: preRaceReadiness?.staggerIntervalSeconds,
+    raceLabel: preRaceReadiness?.raceLabel,
+    nextRace,
   });
 
   // Fetch and cache pre-generated clips when race enters GRID (AUDIO-10)
@@ -113,12 +143,22 @@ export default function CockpitPage() {
     raceId: selectedRaceId,
     raceState: selectedRace?.status,
     setClipMap,
+    settingsKey: audioSettings
+      ? JSON.stringify([audioSettings.countdownIntervals, audioSettings.wording, audioSettings.announceCarFinish])
+      : undefined,
   });
 
   // Track previous last-lap timestamps to detect new laps (AUDIO-04 beep wiring)
   const prevPassingRef = useRef<Map<number, number>>(new Map());
   // Each driver's best lap before the latest passing, to tell whether a lap improved on it
   const prevBestRef = useRef<Map<number, number>>(new Map());
+  // Whether each car had finished when last seen, for the race on screen (an entry can be in several races): a
+  // car is called when it is seen going from not finished to finished, so a page opened mid-race, or a race
+  // reselected, stays quiet about the cars already home
+  const finishSeenRef = useRef<{ raceId: number | null; finished: Map<number, boolean> }>({
+    raceId: null,
+    finished: new Map(),
+  });
 
   useEffect(() => {
     if (selectedRace?.status !== 'RUNNING') return;
@@ -130,7 +170,7 @@ export default function CockpitPage() {
         row.lastPassingTimeMs &&
         row.lastPassingTimeMs !== prevTime
       ) {
-        playBeep(isImprovingLap(prevBest.get(row.entryId), row));
+        playBeep(lapPace(prevBest.get(row.entryId), row));
       }
       if (row.lastPassingTimeMs) {
         prev.set(row.entryId, row.lastPassingTimeMs);
@@ -140,6 +180,21 @@ export default function CockpitPage() {
       }
     });
   }, [liveRows, playBeep, selectedRace?.status]);
+
+  // The call is not tied to the race still running: the last car's row can arrive in the same render as the finish
+  useEffect(() => {
+    if (finishSeenRef.current.raceId !== selectedRaceId) {
+      finishSeenRef.current = { raceId: selectedRaceId, finished: new Map() };
+    }
+    const seen = finishSeenRef.current.finished;
+    liveRows.forEach((row) => {
+      const finished = row.finished === true;
+      if (finished && seen.get(row.entryId) === false && announceCarFinish(row.entryId) === false) {
+        return; // the grid is not loaded yet: try again on the next frame
+      }
+      seen.set(row.entryId, finished);
+    });
+  }, [liveRows, announceCarFinish, selectedRaceId]);
 
   // Subscribe to unknown transponder events when a race is running
   const unknownTopic =
@@ -193,6 +248,18 @@ export default function CockpitPage() {
     setLinkTransponderNumber('');
   }
 
+  // A final can't be called or started until every qualifying heat for its class is finished
+  const unfinishedQualifiers =
+    selectedRace?.roundType === 'FINAL'
+      ? runOrder.filter(
+          (r) =>
+            r.roundType === 'QUALIFIER' &&
+            r.className === selectedRace.className &&
+            r.status !== 'FINISHED',
+        ).length
+      : 0;
+  const finalBlocked = unfinishedQualifiers > 0;
+
   function onCallGrid() {
     mutations.callGrid.mutate(undefined, {
       onError: commandFailed('Call grid'),
@@ -204,6 +271,15 @@ export default function CockpitPage() {
       onError: commandFailed('Start'),
     });
   }
+
+  // From the grid, Start first runs the club's lead-in (if it has one), then starts the race
+  const startCountdown = useStartCountdown({
+    seconds: audioSettings?.startCountdownSeconds ?? 10,
+    volume: volumePercent / 100,
+    onDone: onStart,
+    settings: audioSettings,
+    watch: `${selectedRaceId}:${selectedRace?.status}`,
+  });
 
   function onStop() {
     mutations.stop.mutate(undefined, {
@@ -231,8 +307,12 @@ export default function CockpitPage() {
       destructive: true,
     });
     if (!confirmed) return;
+    if (selectedRaceId != null) markAbandoned(selectedRaceId);
     mutations.abandon.mutate(undefined, {
-      onError: commandFailed('Abandon'),
+      onError: (err) => {
+        clearAbandoned();
+        commandFailed('Abandon')(err);
+      },
     });
   }
 
@@ -292,21 +372,59 @@ export default function CockpitPage() {
             <p className="text-sm text-muted-foreground">Race is pending. Call the grid when ready.</p>
             <Button
               onClick={onCallGrid}
-              disabled={mutations.callGrid.isPending}
+              disabled={mutations.callGrid.isPending || finalBlocked}
               className="w-fit"
             >
               {mutations.callGrid.isPending ? 'Calling grid…' : 'Call Grid'}
             </Button>
+            {canControlRace && (
+              <Button
+                variant="outline"
+                onClick={onAbandon}
+                disabled={mutations.abandon.isPending}
+                className="w-fit"
+                title="For a heat that will never run, such as one with no one in it"
+              >
+                Abandon heat
+              </Button>
+            )}
+            {finalBlocked && (
+              <p className="text-sm text-destructive">
+                {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
+                {selectedRace.className} still to finish before this final can run.
+              </p>
+            )}
           </div>
         );
 
       case 'GRID':
         return (
-          <GridEditorPanel
-            raceId={selectedRace.raceId}
-            onStart={onStart}
-            isStarting={mutations.start.isPending}
-          />
+          <div className="flex flex-col gap-3">
+            {preRaceReadiness?.startType && (
+              <p className="text-sm text-muted-foreground" data-testid="start-type-note">
+                {describeStart(preRaceReadiness.startType, preRaceReadiness.staggerIntervalSeconds)}
+              </p>
+            )}
+            <GridEditorPanel
+              raceId={selectedRace.raceId}
+              onStart={startCountdown.begin}
+              isStarting={mutations.start.isPending || startCountdown.remaining != null || finalBlocked}
+            />
+            {finalBlocked && (
+              <p className="text-sm text-destructive">
+                {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
+                {selectedRace.className} still to finish before this final can start.
+              </p>
+            )}
+            {startCountdown.remaining != null && (
+              <div className="flex items-center gap-3" role="status">
+                <span className="text-lg font-semibold">Starting in {startCountdown.remaining}…</span>
+                <Button variant="outline" size="sm" onClick={startCountdown.cancel}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </div>
         );
 
       case 'RUNNING':
@@ -314,6 +432,7 @@ export default function CockpitPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
                   <Button onClick={onFinish} disabled={mutations.finish.isPending}>
@@ -363,6 +482,7 @@ export default function CockpitPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 <Button onClick={onStart} disabled={mutations.start.isPending}>
                   {mutations.start.isPending ? 'Resuming…' : 'Resume Race'}
@@ -397,7 +517,6 @@ export default function CockpitPage() {
 
   return (
     <div className="flex h-full gap-0">
-      {/* Run order sidebar */}
       <aside className="w-56 shrink-0 border-r overflow-y-auto">
         <div className="px-4 py-3 border-b">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -428,10 +547,13 @@ export default function CockpitPage() {
                 variant="outline"
                 className="w-full text-xs"
                 onClick={() =>
-                  mutations.skipTo.mutate({
-                    sourceRaceId: activeRace.raceId,
-                    targetRaceId: selectedRace.raceId,
-                  })
+                  mutations.skipTo.mutate(
+                    {
+                      sourceRaceId: activeRace.raceId,
+                      targetRaceId: selectedRace.raceId,
+                    },
+                    { onError: commandFailed('Jump to race') },
+                  )
                 }
                 disabled={mutations.skipTo.isPending}
               >
@@ -440,20 +562,29 @@ export default function CockpitPage() {
             </div>
           )}
 
-        {/* Audio settings collapsible panel */}
+        {audio.blocked && (
+          <div
+            role="status"
+            className="m-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+          >
+            <p>This browser is blocking sound until you click on the page.</p>
+            <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={audio.unlock}>
+              Enable sound
+            </Button>
+          </div>
+        )}
+
         <AudioSettingsPanel />
       </aside>
 
       <Separator orientation="vertical" />
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-6">
         {renderMainPanel()}
       </main>
 
       <RoundGeneratorWizard open={generatorOpen} onOpenChange={setGeneratorOpen} eventId={eventId} />
 
-      {/* Unknown transponder link dialog */}
       <UnknownTransponderLinkDialog
         transponderNumber={linkTransponderNumber}
         raceId={selectedRace?.raceId ?? 0}

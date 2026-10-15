@@ -11,8 +11,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The one outbound WebSocket to the relay (#28). Used only from the live feed's own thread, so sends never
- * overlap. Any failure closes it; the caller decides when to open it again.
+ * The one outbound WebSocket to the relay (#28). Opened and sent on only from the live feed's own thread, so
+ * sends never overlap. Any failure closes it; the caller decides when to open it again.
+ *
+ * <p>{@link #close} is the exception: {@code LiveFeedPublisher.stop} calls it from whichever thread stops the
+ * app, which is why the socket itself is volatile.
  */
 class LiveFeedConnection {
 

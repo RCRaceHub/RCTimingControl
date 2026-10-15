@@ -2,7 +2,9 @@ package dev.monkeypatch.rctiming.api.boards;
 
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
+import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
@@ -33,15 +35,18 @@ public class BoardController {
     private final ResultSnapshotQuery resultSnapshotQuery;
     private final LapTimingService lapTimingService;
     private final RaceClockService raceClockService;
+    private final PublicNames publicNames;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
-                           RaceClockService raceClockService) {
+                           RaceClockService raceClockService,
+                           PublicNames publicNames) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
         this.raceClockService = raceClockService;
+        this.publicNames = publicNames;
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
@@ -83,12 +88,33 @@ public class BoardController {
                 .orElseThrow(() -> new EntityNotFoundException("Race not found: " + raceId));
     }
 
-    private List<ResultSnapshotDto.ResultRow> resultRows(BoardRaceDto race) {
-        if (race == null) {
-            return List.of();
+    /**
+     * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the
+     * running heat's own best comes from its live timing).
+     */
+    @GetMapping("/races/{raceId}/round-fastest-lap")
+    public RoundFastestLapDto roundFastestLap(@PathVariable long raceId) {
+        ResultSnapshotDto.ResultRow fastest = null;
+        for (long finishedId : boardQuery.finishedRaceIdsInRound(raceId)) {
+            for (ResultSnapshotDto.ResultRow row : resultRows(finishedId)) {
+                if (row.bestLapMs() != null && row.bestLapMs() > 0
+                        && (fastest == null || row.bestLapMs() < fastest.bestLapMs())) {
+                    fastest = row;
+                }
+            }
         }
+        return fastest == null
+                ? new RoundFastestLapDto(null, null)
+                : new RoundFastestLapDto(fastest.bestLapMs(), fastest.driverName());
+    }
+
+    private List<ResultSnapshotDto.ResultRow> resultRows(BoardRaceDto race) {
+        return race == null ? List.of() : resultRows(race.raceId());
+    }
+
+    private List<ResultSnapshotDto.ResultRow> resultRows(long raceId) {
         try {
-            return resultSnapshotQuery.load(race.raceId()).positions();
+            return publicNames.rows(resultSnapshotQuery.load(raceId).positions());
         } catch (EntityNotFoundException e) {
             // Finished but not yet snapshotted
             return List.of();

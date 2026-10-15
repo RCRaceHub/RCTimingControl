@@ -3,8 +3,6 @@ package dev.monkeypatch.rctiming.domain.racehub;
 import dev.monkeypatch.rctiming.domain.ExternalSources;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
@@ -15,12 +13,14 @@ import dev.monkeypatch.rctiming.domain.entryimport.EventClasses;
 import dev.monkeypatch.rctiming.domain.entryimport.FinalState;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
-import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository.EventClassRef;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport.ExportEntry;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.Action;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.Row;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.UnmappedClass;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -209,8 +209,6 @@ public class RaceHubImportService {
                 .after(after).record();
     }
 
-    // ── Class mappings ─────────────────────────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public List<RaceHubClassMapping> listMappings(Long eventId) {
         eventRepository.requireExists(eventId);
@@ -249,8 +247,6 @@ public class RaceHubImportService {
                 .before(before).after(new TreeMap<>(mappings)).record();
         return saved;
     }
-
-    // ── Planning ───────────────────────────────────────────────────────────────────
 
     /** The file's {@code source}, RACEHUB when it has none. */
     static String sourceOf(RaceHubEntryExport export) {
@@ -399,8 +395,6 @@ public class RaceHubImportService {
         }
         state.check(errors, warnings);
     }
-
-    // ── Applying ───────────────────────────────────────────────────────────────────
 
     private Long applyRow(Long eventId, Planned p, Map<String, Competitor> competitors, String source) {
         ExportEntry row = p.row;

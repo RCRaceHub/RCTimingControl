@@ -11,6 +11,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETI
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 
+/** The grid for one race: who is in it, in grid order, with their competitor names and transponders. */
 @Component
 @ReadTransaction
 public class RaceEntriesQuery {
@@ -34,7 +35,7 @@ public class RaceEntriesQuery {
                 .fetch(r -> new RaceEntryDto(
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
-                        null // cars went with racer accounts (L10, #18)
+                        null // not read yet, though race_entries.car_number holds it (ENTRY-03)
                 ));
     }
 }

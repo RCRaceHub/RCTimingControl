@@ -4,7 +4,8 @@ import { BackupsHelp } from './BackupsHelp';
 import { ResultsExportsHelp } from './ResultsExportsHelp';
 import { DecoderHelp } from './DecoderHelp';
 import { EventManagementHelp } from './EventManagementHelp';
-import { CheckInHelp } from './CheckInHelp';
+import { TransponderHelp } from './TransponderHelp';
+import { WalkInHelp } from './WalkInHelp';
 import { RaceControlHelp } from './RaceControlHelp';
 import { ChampionshipHelp } from './ChampionshipHelp';
 import { PracticeHelp } from './PracticeHelp';
@@ -31,7 +32,7 @@ describe('help panels', () => {
     expect(screen.getByText('Import from a CSV file:')).toBeTruthy();
     expect(screen.getByText('Entry feed:')).toBeTruthy();
     first.unmount();
-    const second = render(<CheckInHelp />);
+    const second = render(<TransponderHelp />);
     expect(screen.getByText('After a re-import:')).toBeTruthy();
     second.unmount();
     render(<RaceControlHelp />);
@@ -53,7 +54,7 @@ describe('help panels', () => {
   });
 
   it('never mention racer accounts, portals or self-service', () => {
-    for (const Panel of [ChampionshipHelp, PracticeHelp, RefereeHelp, EventManagementHelp, CheckInHelp, RaceControlHelp]) {
+    for (const Panel of [ChampionshipHelp, PracticeHelp, RefereeHelp, EventManagementHelp, TransponderHelp, RaceControlHelp]) {
       const { container, unmount } = render(<Panel />);
       expect(container.textContent).not.toMatch(/portal|self-service|racer account|log ?in as a racer/i);
       unmount();
@@ -62,7 +63,7 @@ describe('help panels', () => {
 
   it('link to the printable guides that cover the screen', () => {
     const adminOnly = [BackupsHelp, ResultsExportsHelp, DecoderHelp, OfficialsHelp, SetupWizardHelp];
-    const meetingOnly = [CheckInHelp, RaceControlHelp, PracticeHelp, RefereeHelp];
+    const meetingOnly = [TransponderHelp, WalkInHelp, RaceControlHelp, PracticeHelp, RefereeHelp];
     const both = [EntryManagementHelp, EventManagementHelp, ChampionshipHelp];
     const hrefs = (Panel: () => React.ReactElement) => {
       const { container, unmount } = render(<Panel />);

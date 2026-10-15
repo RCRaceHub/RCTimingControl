@@ -150,7 +150,7 @@ public class ChampionshipController {
         championshipService.deleteExclusion(CurrentOfficial.actor(auth), id, exclusionId);
     }
 
-    /** Phase 3 returns a scaffold (empty rows). Phase 7 implements race_results aggregation. */
+    /** The championship's standings, worked out from the result snapshots each time. */
     @GetMapping("/{id}/standings")
     public List<StandingsRowDto> getStandings(@PathVariable Long id) {
         return standingsQuery.computeStandings(id);

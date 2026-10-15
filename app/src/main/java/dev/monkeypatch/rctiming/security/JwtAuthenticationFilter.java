@@ -13,6 +13,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Signs a REST request in from its {@code Authorization: Bearer} access token. A missing or bad token leaves
+ * the request anonymous, and {@link SecurityConfig}'s rules then decide whether that is enough.
+ *
+ * <p>It skips everything under {@code /api/v1/auth/}, since sign-in and refresh carry no access token. A new
+ * endpoint there that needs a signed-in official would never see one; put it elsewhere.
+ *
+ * <p>The token alone is trusted: the account is not read again on each request. A disabled official keeps
+ * REST access until their access token expires ({@code app.jwt.access-token-ttl-ms}, 15 minutes by default),
+ * though their refresh tokens are revoked at once. An official whose roles change keeps the old ones for as
+ * long, since the roles are in the token. WebSocket sessions are cut off sooner
+ * ({@link StompSessionRegistry}).
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 

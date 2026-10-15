@@ -19,6 +19,10 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
+/**
+ * Reads competitors for the admin pages: the list, one competitor's history of changes, and the groups of
+ * competitors whose names are close enough that they may be the same person and worth merging (#123).
+ */
 @Service
 @ReadTransaction
 public class CompetitorQueryService {
@@ -31,7 +35,7 @@ public class CompetitorQueryService {
 
     public List<CompetitorSummaryDto> listAll() {
         return dsl.select(COMPETITORS.ID, COMPETITORS.DISPLAY_NAME, COMPETITORS.BRCA_NUMBER, COMPETITORS.HOME_CLUB,
-                        COMPETITORS.SPOKEN_NAME)
+                        COMPETITORS.SPOKEN_NAME, COMPETITORS.NAME_VISIBILITY)
                 .from(COMPETITORS)
                 .orderBy(COMPETITORS.DISPLAY_NAME.asc(), COMPETITORS.ID.asc())
                 .fetch(r -> new CompetitorSummaryDto(
@@ -40,7 +44,8 @@ public class CompetitorQueryService {
                         r.get(COMPETITORS.BRCA_NUMBER),
                         r.get(COMPETITORS.HOME_CLUB),
                         r.get(COMPETITORS.SPOKEN_NAME),
-                        SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME))));
+                        SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME)),
+                        r.get(COMPETITORS.NAME_VISIBILITY)));
     }
 
     /** A competitor's recorded changes, newest first, with the name of the official who made each. */

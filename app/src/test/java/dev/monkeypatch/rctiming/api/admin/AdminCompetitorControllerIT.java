@@ -129,6 +129,31 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void onlyAnAdminCanExportOrAnonymiseACompetitor() {
+        Competitor c = competitorService.createWalkIn("Private Person " + UUID.randomUUID());
+        String director = loginAs(Set.of(Role.RACE_DIRECTOR));
+        String admin = loginAs(Set.of(Role.ADMIN));
+        String url = "/api/v1/admin/competitors/" + c.getId();
+
+        assertThat(restTemplate.exchange(url + "/personal-data", HttpMethod.GET,
+                new HttpEntity<>(headers(director)), JsonNode.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(restTemplate.exchange(url + "/anonymise", HttpMethod.POST,
+                new HttpEntity<>(headers(director)), JsonNode.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(competitorRepository.findById(c.getId()).orElseThrow().getDisplayName()).isEqualTo(c.getDisplayName());
+
+        ResponseEntity<JsonNode> export = restTemplate.exchange(url + "/personal-data", HttpMethod.GET,
+                new HttpEntity<>(headers(admin)), JsonNode.class);
+        assertThat(export.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(export.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)).contains("competitor-" + c.getId());
+        assertThat(export.getBody().get("competitor").get("display_name").asText()).isEqualTo(c.getDisplayName());
+
+        assertThat(restTemplate.exchange(url + "/anonymise", HttpMethod.POST,
+                new HttpEntity<>(headers(admin)), JsonNode.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(competitorRepository.findById(c.getId()).orElseThrow().getDisplayName())
+                .isEqualTo("Anonymised competitor #" + c.getId());
+    }
+
+    @Test
     void onlyAnAdminSeesTheChangeHistory() {
         Competitor c = competitorService.createWalkIn("History Private " + UUID.randomUUID());
 

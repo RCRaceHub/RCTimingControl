@@ -17,6 +17,7 @@ public class Competitor implements CreatedAt, UpdatedAt {
     private String brcaNumber;
     private String homeClub;
     private String spokenName;
+    private NameVisibility nameVisibility = NameVisibility.SHOW;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -52,6 +53,10 @@ public class Competitor implements CreatedAt, UpdatedAt {
     public String speechName() {
         return SpeechName.of(spokenName, displayName);
     }
+
+    /** How the name is shown on public screens (#265); officials' own screens always show it in full. */
+    public NameVisibility getNameVisibility() { return nameVisibility; }
+    public void setNameVisibility(NameVisibility nameVisibility) { this.nameVisibility = nameVisibility; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

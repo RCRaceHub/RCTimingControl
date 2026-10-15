@@ -18,8 +18,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Validates JWT on STOMP CONNECT frames (Pattern 3 from RESEARCH.md).
- * HTTP upgrade itself is permitAll (Pitfall 1 — JWT at CONNECT, not at HTTP level).
+ * Validates JWT on STOMP CONNECT frames. The HTTP upgrade itself is permitAll, since a browser
+ * cannot set an Authorization header on it.
  *
  * <p>A CONNECT with no token (or an empty bearer) is accepted as an anonymous
  * spectator session (L12 spectator boards). Anonymous sessions may only
@@ -35,7 +35,12 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketJwtChannelInterceptor.class);
 
-    /** Topics an anonymous spectator may subscribe to. */
+    /**
+     * Topics an anonymous spectator may subscribe to: the public boards need only live timing and the race's
+     * state. The other race topics carry referee prompts (unknown transponders), announcer audio, bump-up
+     * alerts and marshal adjustments, which are for officials. A signed-in official may subscribe to any
+     * topic, whatever their role, as every official screen may show any of them.
+     */
     static final Pattern ANONYMOUS_TOPICS = Pattern.compile("^/topic/race/\\d+/(timing|state)$");
 
     private final JwtTokenService jwtTokenService;

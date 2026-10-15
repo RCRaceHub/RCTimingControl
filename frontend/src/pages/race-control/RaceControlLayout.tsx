@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Outlet, Link, useParams, useMatches } from 'react-router-dom';
-import { Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ScanLine } from 'lucide-react';
+import { Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -26,7 +26,8 @@ export default function RaceControlLayout() {
   const base = `/race-control/event/${eventId}`;
   const isPractice = matches.some((m) => m.pathname.includes('/practice'));
   const isReferee = matches.some((m) => m.pathname.endsWith('/referee'));
-  const isCheckIn = matches.some((m) => m.pathname.endsWith('/check-in'));
+  const isWalkIn = matches.some((m) => m.pathname.endsWith('/walk-in'));
+  const isTransponders = matches.some((m) => m.pathname.endsWith('/transponders'));
 
   function navClass(active: boolean) {
     return `flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
@@ -38,7 +39,6 @@ export default function RaceControlLayout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Top header */}
       <header className="flex items-center h-12 px-4 border-b bg-card shrink-0 gap-4">
         <Link
           to="/admin/race-control"
@@ -50,7 +50,7 @@ export default function RaceControlLayout() {
         </Link>
 
         <nav className="flex items-center gap-1 ml-4">
-          <Link to={base} className={navClass(!isReferee && !isPractice && !isCheckIn)}>
+          <Link to={base} className={navClass(!isReferee && !isPractice && !isTransponders && !isWalkIn)}>
             <Flag className="h-3.5 w-3.5" />
             Cockpit
           </Link>
@@ -58,9 +58,13 @@ export default function RaceControlLayout() {
             <Dumbbell className="h-3.5 w-3.5" />
             Practice
           </Link>
-          <Link to={`${base}/check-in`} className={navClass(isCheckIn)}>
-            <ScanLine className="h-3.5 w-3.5" />
-            Check-in
+          <Link to={`${base}/walk-in`} className={navClass(isWalkIn)}>
+            <UserPlus className="h-3.5 w-3.5" />
+            Walk-in
+          </Link>
+          <Link to={`${base}/transponders`} className={navClass(isTransponders)}>
+            <ArrowLeftRight className="h-3.5 w-3.5" />
+            Transponders
           </Link>
           <Link to={`${base}/referee`} className={navClass(isReferee)}>
             <Shield className="h-3.5 w-3.5" />

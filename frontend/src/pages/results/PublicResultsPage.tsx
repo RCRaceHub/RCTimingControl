@@ -5,6 +5,7 @@ import type { PositionAtLap } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 import { getApiErrorStatus } from '@/lib/errors';
+import PrivacyLink from '@/components/layout/PrivacyLink';
 
 function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: PositionAtLap[] }) {
   const laps = lapHistory.filter(l => l.entryId === entryId);
@@ -80,7 +81,6 @@ export default function PublicResultsPage() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto print:p-4">
-      {/* Header */}
       <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
@@ -100,7 +100,6 @@ export default function PublicResultsPage() {
         </div>
       </div>
 
-      {/* Results table */}
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="border-b-2 border-foreground">
@@ -145,7 +144,6 @@ export default function PublicResultsPage() {
         </tbody>
       </table>
 
-      {/* Print action */}
       <div className="mt-6 print:hidden">
         <button
           onClick={() => window.print()}
@@ -154,6 +152,7 @@ export default function PublicResultsPage() {
           Print Results
         </button>
       </div>
+      <PrivacyLink />
     </div>
   );
 }

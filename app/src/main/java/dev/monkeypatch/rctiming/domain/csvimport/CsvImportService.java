@@ -87,6 +87,11 @@ public class CsvImportService {
         }
     }
 
+    /**
+     * Imports the file, or with {@code dryRun} only previews it. A real import creates the new rows and applies just the
+     * {@code selection}; entries that came from elsewhere, such as walk-ins, are never withdrawn. Nothing is saved when
+     * the result is blocked. {@code actor} is who is importing.
+     */
     @Transactional
     public CsvImportResult importCsv(Actor actor, Long eventId, String content, boolean dryRun, Selection selection) {
         Event event = eventRepository.getOrThrow(eventId);
@@ -181,8 +186,6 @@ public class CsvImportService {
                         + " new, " + summary.updated() + " updated, " + summary.withdrawn() + " withdrawn")
                 .after(after).record();
     }
-
-    // ── Planning ───────────────────────────────────────────────────────────────────
 
     /**
      * One planned entry per booked row. {@code update} rows go to {@code skipped}, a row booked twice
@@ -316,8 +319,6 @@ public class CsvImportService {
         state.check(errors, warnings);
     }
 
-    // ── Applying ───────────────────────────────────────────────────────────────────
-
     private Entry save(Long eventId, Planned p, Map<String, Competitor> competitors, Instant now) {
         Competitor competitor = competitors.get(p.competitorKey);
         if (competitor == null) {
@@ -353,8 +354,6 @@ public class CsvImportService {
         }
         return entryRepository.save(e);
     }
-
-    // ── Helpers ────────────────────────────────────────────────────────────────────
 
     /** The entry's primary number. With only {@code PT No 2} given, that becomes the primary. */
     private static String primaryOf(RcTimingCsvParser.Row row) {

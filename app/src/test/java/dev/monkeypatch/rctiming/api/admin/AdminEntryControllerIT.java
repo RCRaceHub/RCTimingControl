@@ -137,13 +137,10 @@ class AdminEntryControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void history_putsTheCheckInAndTheTransponderSwapBetweenTheWalkInAndTheWithdrawal() {
+    void history_putsTheTransponderSwapBetweenTheWalkInAndTheWithdrawal() {
         String oldNumber = uniqueNumber();
         String newNumber = uniqueNumber();
-        Long entryId = createWalkIn("History Check-in " + UUID.randomUUID(), oldNumber);
-        String checkIn = "/api/v1/race-control/events/" + OPEN_EVENT_ID + "/check-in/entries/" + entryId;
-        assertThat(restTemplate.exchange(checkIn + "/confirm", HttpMethod.POST,
-                new HttpEntity<>(adminHeaders()), Map.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        Long entryId = createWalkIn("History Swap " + UUID.randomUUID(), oldNumber);
         assertThat(restTemplate.exchange(
                 "/api/v1/race-control/events/" + OPEN_EVENT_ID + "/entries/" + entryId + "/transponder-swap",
                 HttpMethod.POST,
@@ -154,10 +151,9 @@ class AdminEntryControllerIT extends AbstractIntegrationTest {
                 HttpMethod.GET, new HttpEntity<>(adminHeaders()),
                 new ParameterizedTypeReference<List<Map<String, Object>>>() {});
 
-        assertThat(resp.getBody()).extracting(r -> r.get("summary").toString()).hasSize(3);
+        assertThat(resp.getBody()).extracting(r -> r.get("summary").toString()).hasSize(2);
         assertThat(resp.getBody().get(0).get("summary")).isEqualTo("Added by hand as a walk-in");
-        assertThat(resp.getBody().get(1).get("summary").toString()).startsWith("Checked in History Check-in");
-        assertThat(resp.getBody().get(2).get("summary"))
+        assertThat(resp.getBody().get(1).get("summary"))
                 .isEqualTo("Changed the primary transponder from " + oldNumber + " to " + newNumber);
         // The audit log keeps the sign-in label with the email; the history shows the name only
         assertThat(resp.getBody().get(1).get("actor").toString()).doesNotContain("@");

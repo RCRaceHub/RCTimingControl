@@ -7,18 +7,16 @@ public class Entry implements UpdatedAt {
 
     private Long id;
 
-    /** The racer's login, when the entry came from the racer portal. Null for competitor-only entries. */
-    private Long userId;
-
     /** The driver this entry is for. Required on every new entry (L4, #12). */
     private Long competitorId;
     private Long eventId;
     private Long eventClassId;
 
-    // Snapshot columns — captured at submit time (RACER-07)
-    // V13 names these transponder_number and transponder_label (no _snapshot suffix)
+    /**
+     * The entry's primary transponder, as imported or typed in for a walk-in; a swap on the day replaces it.
+     * Maps to the transponder_number column.
+     */
     private String transponderNumberSnapshot;
-    private String transponderLabelSnapshot;
 
     /** Optional second transponder for this entry (L6). Laps from either number count. */
     private String secondaryTransponderNumber;
@@ -48,17 +46,8 @@ public class Entry implements UpdatedAt {
     /** The RaceHub event_class_id this entry was booked in (#27). Null for walk-ins. */
     private String racehubEventClassId;
 
-    /** When the competitor checked in at the desk (L11). Null until they do. */
-    private Instant checkedInAt;
-
-    /** The official who checked them in. */
-    private Long checkedInByUserId;
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
 
     public Long getCompetitorId() { return competitorId; }
     public void setCompetitorId(Long competitorId) { this.competitorId = competitorId; }
@@ -74,9 +63,6 @@ public class Entry implements UpdatedAt {
 
     public String getSecondaryTransponderNumber() { return secondaryTransponderNumber; }
     public void setSecondaryTransponderNumber(String secondaryTransponderNumber) { this.secondaryTransponderNumber = secondaryTransponderNumber; }
-
-    public String getTransponderLabelSnapshot() { return transponderLabelSnapshot; }
-    public void setTransponderLabelSnapshot(String transponderLabelSnapshot) { this.transponderLabelSnapshot = transponderLabelSnapshot; }
 
     public EntryStatus getStatus() { return status; }
     public void setStatus(EntryStatus status) { this.status = status; }
@@ -116,9 +102,4 @@ public class Entry implements UpdatedAt {
     public String getRacehubEventClassId() { return racehubEventClassId; }
     public void setRacehubEventClassId(String racehubEventClassId) { this.racehubEventClassId = racehubEventClassId; }
 
-    public Instant getCheckedInAt() { return checkedInAt; }
-    public void setCheckedInAt(Instant checkedInAt) { this.checkedInAt = checkedInAt; }
-
-    public Long getCheckedInByUserId() { return checkedInByUserId; }
-    public void setCheckedInByUserId(Long checkedInByUserId) { this.checkedInByUserId = checkedInByUserId; }
 }

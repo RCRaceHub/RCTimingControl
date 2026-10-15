@@ -20,6 +20,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Entries added by hand at the venue: a walk-in for someone who did not book through RaceHub, and withdrawing
+ * an entry. Entries imported from RaceHub go through {@code domain/racehub} instead.
+ *
+ * <p>A walk-in is accepted with warnings rather than refused, since the race director is standing at the desk:
+ * a transponder another entry in the meeting already uses is allowed, because one competitor may run in
+ * several classes. A name close to an existing competitor's stops the entry once, so the official can pick the
+ * competitor instead of making a second one (#123).
+ */
 @Service
 @Transactional
 public class EntryService {

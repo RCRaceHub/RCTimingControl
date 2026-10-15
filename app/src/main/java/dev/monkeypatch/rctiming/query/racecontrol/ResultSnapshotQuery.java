@@ -18,6 +18,11 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
+/**
+ * Reads a finished race's stored result. The positions are the corrected ones, as
+ * {@code ResultSnapshotService} last wrote them: the timed result plus every penalty and lap adjustment given
+ * since.
+ */
 @Component
 @ReadTransaction
 public class ResultSnapshotQuery {

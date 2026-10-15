@@ -133,142 +133,142 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     }
 
     /**
-     * Setter for <code>club_profiles.logo</code>.
-     */
-    public void setLogo(byte[] value) {
-        set(8, value);
-    }
-
-    /**
-     * Getter for <code>club_profiles.logo</code>.
-     */
-    public byte[] getLogo() {
-        return (byte[]) get(8);
-    }
-
-    /**
-     * Setter for <code>club_profiles.logo_type</code>.
-     */
-    public void setLogoType(String value) {
-        set(9, value);
-    }
-
-    /**
-     * Getter for <code>club_profiles.logo_type</code>.
-     */
-    public String getLogoType() {
-        return (String) get(9);
-    }
-
-    /**
      * Setter for <code>club_profiles.created_at</code>.
      */
     public void setCreatedAt(Instant value) {
-        set(10, value);
+        set(8, value);
     }
 
     /**
      * Getter for <code>club_profiles.created_at</code>.
      */
     public Instant getCreatedAt() {
-        return (Instant) get(10);
+        return (Instant) get(8);
     }
 
     /**
      * Setter for <code>club_profiles.updated_at</code>.
      */
     public void setUpdatedAt(Instant value) {
-        set(11, value);
+        set(9, value);
     }
 
     /**
      * Getter for <code>club_profiles.updated_at</code>.
      */
     public Instant getUpdatedAt() {
-        return (Instant) get(11);
+        return (Instant) get(9);
     }
 
     /**
      * Setter for <code>club_profiles.logo_url</code>.
      */
     public void setLogoUrl(String value) {
-        set(12, value);
+        set(10, value);
     }
 
     /**
      * Getter for <code>club_profiles.logo_url</code>.
      */
     public String getLogoUrl() {
-        return (String) get(12);
+        return (String) get(10);
     }
 
     /**
      * Setter for <code>club_profiles.audio_settings</code>.
      */
     public void setAudioSettings(String value) {
-        set(13, value);
+        set(11, value);
     }
 
     /**
      * Getter for <code>club_profiles.audio_settings</code>.
      */
     public String getAudioSettings() {
-        return (String) get(13);
+        return (String) get(11);
     }
 
     /**
      * Setter for <code>club_profiles.default_voice_id</code>.
      */
     public void setDefaultVoiceId(String value) {
-        set(14, value);
+        set(12, value);
     }
 
     /**
      * Getter for <code>club_profiles.default_voice_id</code>.
      */
     public String getDefaultVoiceId() {
-        return (String) get(14);
+        return (String) get(12);
     }
 
     /**
      * Setter for <code>club_profiles.decoder_host</code>.
      */
     public void setDecoderHost(String value) {
-        set(15, value);
+        set(13, value);
     }
 
     /**
      * Getter for <code>club_profiles.decoder_host</code>.
      */
     public String getDecoderHost() {
-        return (String) get(15);
+        return (String) get(13);
     }
 
     /**
      * Setter for <code>club_profiles.decoder_port</code>.
      */
     public void setDecoderPort(Integer value) {
-        set(16, value);
+        set(14, value);
     }
 
     /**
      * Getter for <code>club_profiles.decoder_port</code>.
      */
     public Integer getDecoderPort() {
-        return (Integer) get(16);
+        return (Integer) get(14);
     }
 
     /**
      * Setter for <code>club_profiles.decoder_protocol</code>.
      */
     public void setDecoderProtocol(String value) {
-        set(17, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>club_profiles.decoder_protocol</code>.
      */
     public String getDecoderProtocol() {
+        return (String) get(15);
+    }
+
+    /**
+     * Setter for <code>club_profiles.privacy_notice</code>.
+     */
+    public void setPrivacyNotice(String value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.privacy_notice</code>.
+     */
+    public String getPrivacyNotice() {
+        return (String) get(16);
+    }
+
+    /**
+     * Setter for <code>club_profiles.racehub_results_url</code>.
+     */
+    public void setRacehubResultsUrl(String value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.racehub_results_url</code>.
+     */
+    public String getRacehubResultsUrl() {
         return (String) get(17);
     }
 
@@ -295,7 +295,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, byte[] logo, String logoType, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -306,8 +306,6 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setLatitude(latitude);
         setLongitude(longitude);
         setTimezone(timezone);
-        setLogo(logo);
-        setLogoType(logoType);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setLogoUrl(logoUrl);
@@ -316,6 +314,8 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setDecoderHost(decoderHost);
         setDecoderPort(decoderPort);
         setDecoderProtocol(decoderProtocol);
+        setPrivacyNotice(privacyNotice);
+        setRacehubResultsUrl(racehubResultsUrl);
         resetChangedOnNotNull();
     }
 }
