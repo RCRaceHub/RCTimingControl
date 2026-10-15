@@ -7,7 +7,7 @@ package dev.monkeypatch.rctiming.domain.club;
  * lead-in between pressing Start and the race starting, 0 for none.
  *
  * <p>Settings saved before these were added have none of them, so a missing switch is on and a missing lead-in
- * is none.
+ * is none. {@code hornSounds} holds the club's own start and finish sound files, none until the club uploads one.
  */
 public record ClubAudioSettings(
         boolean announceCountdown,
@@ -21,8 +21,25 @@ public record ClubAudioSettings(
         Boolean finishHorn,
         Boolean announceRaceCalls,
         Boolean announceNextRace,
-        Integer startCountdownSeconds
+        Integer startCountdownSeconds,
+        HornSounds hornSounds
 ) {
+    /**
+     * The club's own horn sound files: where each is served from and how long it plays, in milliseconds, so a
+     * spoken line can follow it. A horn with no file uses the built-in one.
+     */
+    public record HornSounds(String startUrl, Integer startMs, String finishUrl, Integer finishMs) {
+        public static final HornSounds NONE = new HornSounds(null, null, null, null);
+
+        public HornSounds withStart(String url, Integer ms) {
+            return new HornSounds(url, ms, finishUrl, finishMs);
+        }
+
+        public HornSounds withFinish(String url, Integer ms) {
+            return new HornSounds(startUrl, startMs, url, ms);
+        }
+    }
+
     /**
      * Compact constructor — ensures countdownIntervals is never null.
      * Default sequence: 10 min, 5 min, 2 min, 1 min, 30 sec (in seconds).
@@ -36,6 +53,17 @@ public record ClubAudioSettings(
         announceRaceCalls = announceRaceCalls == null || announceRaceCalls;
         announceNextRace = announceNextRace == null || announceNextRace;
         startCountdownSeconds = startCountdownSeconds == null ? 0 : startCountdownSeconds;
+        hornSounds = hornSounds == null ? HornSounds.NONE : hornSounds;
+    }
+
+    /** The settings from before the club's own horn sounds, which have none. */
+    public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
+                             boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
+                             int[] countdownIntervals, Boolean startHorn, Boolean finishHorn,
+                             Boolean announceRaceCalls, Boolean announceNextRace, Integer startCountdownSeconds) {
+        this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
+                runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
+                startCountdownSeconds, null);
     }
 
     /** The settings from before the horns and race calls, which take their defaults. */
