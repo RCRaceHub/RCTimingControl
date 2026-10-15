@@ -13,6 +13,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { fmtMs } from '@/lib/format';
+import { FinishedFlag } from '@/components/FinishedFlag';
 
 type Props = {
   raceId: number;
@@ -79,6 +80,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                 <TableCell className="font-mono font-semibold">{row.position}</TableCell>
                 <TableCell>
                   <span>{row.driverName}</span>
+                  {row.finished && <FinishedFlag />}
                   {lappedEntryIds.has(row.entryId) && (
                     <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-3 text-chart-3">
                       LAPPED

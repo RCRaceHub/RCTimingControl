@@ -12,6 +12,7 @@ import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { FinishedFlag } from '@/components/FinishedFlag';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const THEMES = {
@@ -211,7 +212,7 @@ export default function OverlayBoard() {
                         {row.position}
                       </span>
                     </td>
-                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}</td>
+                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}{row.finished && <FinishedFlag className="ml-1" />}</td>
                     <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
                       {fmtMs(row.lastLapMs)}

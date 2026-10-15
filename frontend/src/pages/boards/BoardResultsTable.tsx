@@ -1,5 +1,6 @@
 import type { ResultRow } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
+import { FinishedFlag } from '@/components/FinishedFlag';
 
 function gap(row: ResultRow, leaderLaps: number): string {
   if (row.position === 1) return '—';
@@ -29,7 +30,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
         {results.map((row) => (
           <tr key={row.entryId} className="border-b border-slate-800">
             <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
-            <td className="py-3 pr-4 font-semibold">{row.driverName}</td>
+            <td className="py-3 pr-4 font-semibold">{row.driverName}<FinishedFlag /></td>
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
