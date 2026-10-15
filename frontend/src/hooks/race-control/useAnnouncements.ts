@@ -52,7 +52,7 @@ interface UseAnnouncementsOptions {
  *
  * Subscribes to the race audio STOMP topic for running-order events and
  * provides utilities for Web Speech API fallback, beep sounds, clip playback,
- * countdown timer, stagger sequencer, and finish announcement.
+ * countdown timer, stagger sequencer (driver calls from the start of a stagger race), and finish announcement.
  */
 export function useAnnouncements({
   raceId,
@@ -186,18 +186,22 @@ export function useAnnouncements({
     staggerTimeoutsRef.current = [];
   }, []);
 
-  // A different race starts afresh
+  // Cleanup only: a different race, or leaving the page, drops the calls and starts afresh
   useEffect(() => clearStagger, [raceId, clearStagger]);
 
   // No cleanup in this effect: a refetch of gridEntries must not cancel calls already scheduled.
   useEffect(() => {
-    if (raceState === 'GRID') {
+    // Not yet known (the run order is reloading): leave things as they are
+    if (!raceState) return;
+    // Armed before the start, whether or not the grid was called first
+    if (raceState === 'GRID' || raceState === 'PENDING') {
       staggerArmedRef.current = true;
       staggerFiredRef.current = false;
       return;
     }
+    // A stop keeps the armed state: the race resumes without calling the drivers again
     if (raceState !== 'RUNNING') {
-      clearStagger();
+      if (raceState !== 'STOPPED') clearStagger();
       return;
     }
     if (!staggerArmedRef.current || staggerFiredRef.current) return;

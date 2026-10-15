@@ -120,10 +120,26 @@ describe('useAnnouncements stagger start', () => {
   it('does not call a grid start or a race that was already running', () => {
     const grid1 = setup('GRID', { startType: 'GRID' });
     grid1.rerender({ raceState: 'RUNNING', startType: 'GRID', interval: 2 });
-    const running = setup('RUNNING');
+    setup('RUNNING');
     act(() => { vi.advanceTimersByTime(10_000); });
     expect(speak).not.toHaveBeenCalled();
-    expect(running.result.current).toBeDefined();
+  });
+
+  it('calls the drivers when the start comes without the grid being seen', () => {
+    const { rerender } = setup('PENDING');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(speak).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not call the drivers again when a stopped race resumes', () => {
+    const { rerender } = setup('GRID');
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(2000); });
+    rerender({ raceState: 'STOPPED', startType: 'STAGGER', interval: 2 });
+    rerender({ raceState: 'RUNNING', startType: 'STAGGER', interval: 2 });
+    act(() => { vi.advanceTimersByTime(10_000); });
+    expect(speak).toHaveBeenCalledTimes(2);
   });
 
   it('stops calling when the race is stopped', () => {

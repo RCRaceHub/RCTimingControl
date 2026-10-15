@@ -1,6 +1,9 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.StartType;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
@@ -24,14 +27,16 @@ public class PreRaceReadinessController {
     private final PreRaceReadinessQuery query;
     private final RaceRepository raceRepository;
     private final EventClassRepository eventClassRepository;
+    private final RoundRepository roundRepository;
     private final RaceFormatService raceFormatService;
 
     public PreRaceReadinessController(PreRaceReadinessQuery query, RaceRepository raceRepository,
-                                      EventClassRepository eventClassRepository,
+                                      EventClassRepository eventClassRepository, RoundRepository roundRepository,
                                       RaceFormatService raceFormatService) {
         this.query = query;
         this.raceRepository = raceRepository;
         this.eventClassRepository = eventClassRepository;
+        this.roundRepository = roundRepository;
         this.raceFormatService = raceFormatService;
     }
 
@@ -40,8 +45,10 @@ public class PreRaceReadinessController {
     public PreRaceReadinessDto get(@PathVariable long raceId) {
         PreRaceReadinessDto readiness = query.load(raceId);
         Race race = raceRepository.getOrThrow(raceId);
-        int interval = raceFormatService.staggerIntervalSeconds(
-                eventClassRepository.findById(race.getEventClassId()).orElse(null));
-        return readiness.withStart(race.getStartType() == null ? null : race.getStartType().name(), interval);
+        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        // A race made before it kept its start type takes the format's start, as the round generator would
+        StartType startType = race.getStartType() != null ? race.getStartType()
+                : raceFormatService.startType(eventClass, roundRepository.getOrThrow(race.getRoundId()).getType());
+        return readiness.withStart(startType.name(), raceFormatService.staggerIntervalSeconds(eventClass));
     }
 }
