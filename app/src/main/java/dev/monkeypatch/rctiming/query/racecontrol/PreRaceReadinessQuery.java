@@ -122,7 +122,6 @@ public class PreRaceReadinessQuery {
 
         if (marshalRaceId != null) {
             // Build marshalDuty from the marshalling race's entries + absence counts
-            long previousRaceId = marshalRaceId;
 
             // Correlated subquery alias for absence count
             var absenceCount = DSL.select(DSL.count())
@@ -139,7 +138,7 @@ public class PreRaceReadinessQuery {
                     .from(RACE_ENTRIES)
                     .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                     .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
-                    .where(RACE_ENTRIES.RACE_ID.eq(previousRaceId))
+                    .where(RACE_ENTRIES.RACE_ID.eq(marshalRaceId))
                     .orderBy(RACE_ENTRIES.GRID_POSITION.asc().nullsLast(), ENTRIES.ID.asc())
                     .fetch(r -> new MarshalDutyRowDto(
                             r.get(RACE_ENTRIES.ENTRY_ID),

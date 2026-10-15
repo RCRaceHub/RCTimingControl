@@ -26,13 +26,18 @@ public record RoundGenerationRequest(
         @NotNull List<ClassFinalsConfig> classFinalsConfigs
 ) {
 
+    /** A minimum above the maximum could never be met, so it is brought down to the maximum. */
+    public RoundGenerationRequest {
+        minCarsPerHeat = Math.min(minCarsPerHeat, maxCarsPerHeat);
+    }
+
     /** The fewest cars in a heat when the caller gives none. */
     public static final int DEFAULT_MIN_CARS_PER_HEAT = 2;
 
     public RoundGenerationRequest(Long eventId, int practiceRoundsCount, int qualifyingRoundsCount,
                                   int maxCarsPerHeat, List<ClassFinalsConfig> classFinalsConfigs) {
         this(eventId, practiceRoundsCount, qualifyingRoundsCount, maxCarsPerHeat,
-                Math.min(DEFAULT_MIN_CARS_PER_HEAT, maxCarsPerHeat), classFinalsConfigs);
+                DEFAULT_MIN_CARS_PER_HEAT, classFinalsConfigs);
     }
 
     /**

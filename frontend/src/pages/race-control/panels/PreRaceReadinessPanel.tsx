@@ -54,7 +54,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
           <h3 className="text-sm font-semibold mb-2">Marshal Duty</h3>
           {data.marshalDuty.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No marshals — no other race in this round to marshal it.
+              No marshals to list for this race.
             </p>
           ) : (
             <Table>

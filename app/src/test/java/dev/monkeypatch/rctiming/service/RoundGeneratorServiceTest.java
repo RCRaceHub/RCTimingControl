@@ -135,5 +135,7 @@ class RoundGeneratorServiceTest {
         assertThat(RoundGeneratorService.heatCount(7, 8, 4)).isEqualTo(1);
         assertThat(RoundGeneratorService.heatCount(11, 10, 2)).isEqualTo(2);
         assertThat(RoundGeneratorService.heatCount(21, 10, 2)).isEqualTo(3);
+        assertThat(RoundGeneratorService.heatCount(2, 10, 1)).isEqualTo(2);
+        assertThat(new RoundGenerationRequest(1L, 0, 1, 4, 10, List.of()).minCarsPerHeat()).isEqualTo(4);
     }
 }
