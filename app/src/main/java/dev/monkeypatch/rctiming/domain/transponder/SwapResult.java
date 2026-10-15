@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.domain.checkin;
+package dev.monkeypatch.rctiming.domain.transponder;
 
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 

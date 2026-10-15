@@ -26,7 +26,7 @@ import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import type { AdminEntryDto, EventClassDto } from '@/lib/adminApi';
 import AddWalkInEntryDialog from './AddWalkInEntryDialog';
 import EntryHistoryDialog from './EntryHistoryDialog';
-import { ImportedTransponderDifference } from '@/pages/race-control/check-in/CheckInStatus';
+import { ImportedTransponderDifference } from '@/pages/race-control/transponders/ImportedTransponderDifference';
 import { useRoles } from '@/hooks/useRoles';
 import { formatDateTime } from '@/lib/dates';
 

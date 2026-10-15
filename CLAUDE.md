@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 RC club race timing and race control, replacing RCResults. It is part of the RaceHub suite: RaceHub (a separate cloud app) owns booking, racer accounts and event entry, and RCTimingControl (RCTC) is the timing side, run only at the venue (local-only plan, tracking issue #8).
 
-RCTC is one program on a laptop at the track. It installs as a background service, reads the AMB/MyLaps decoder directly over TCP, and serves race control, the announcer, check-in and the spectator boards to browsers on the venue network. It keeps the club's results and championships. Only **officials** sign in. Racers never log in to RCTC: their entries arrive in a RaceHub export file, or officials add them as walk-ins.
+RCTC is one program on a laptop at the track. It installs as a background service, reads the AMB/MyLaps decoder directly over TCP, and serves race control, the announcer and the spectator boards to browsers on the venue network. It keeps the club's results and championships. Only **officials** sign in. Racers never log in to RCTC: their entries arrive in a RaceHub export file, or officials add them as walk-ins.
 
 See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for the full requirement list (current, planned and removed), and `docs/architecture.md`.
 
@@ -73,7 +73,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 |-----------|---------------|
 | **Admin Panel API** | Club, tracks, classes, formats, events, championships, officials, backups |
 | **Entries** | RaceHub import (upsert by `entry_id`, higher `entry_version` wins, withdraw never delete, class mapping), RC-Timing CSV import (preview new/changed/missing, apply only what the official picks, never withdraw walk-ins), walk-ins, competitors |
-| **Check-in** | Check-in desk (barcode or keyboard-wedge input) and on-the-day transponder swap, audit-logged |
+| **Transponder swap** | On-the-day transponder swap from race control's Transponders page, audit-logged |
 | **Race Control API** | Race lifecycle commands, marshal laps, grid calls, referee tools |
 | **Boards** | Spectator "now and next" and results boards, and the streaming overlay for OBS (`/boards/overlay`), all anonymous (`/api/v1/boards`); the race clock comes from `timing/RaceClockService` |
 | **Backups** | Scheduled and on-demand SQLite backups, and the `restore` command |
@@ -116,7 +116,7 @@ Staff roles are **stackable** — a single user account can hold any combination
 | `ADMIN` | Everything the other roles can do, plus club config, tracks, formats and classes, decoder, backups, results exports, officials and the audit log, the RaceHub, CSV and feed imports, creating and editing events and championships, and competitor merges |
 | `RACE_DIRECTOR` | Runs the day: moves an event through its states, generates rounds and seeds finals, adds walk-ins and withdraws entries, race control commands (call grid, start, stop, finish, abandon, restart, skip), marshal laps, links unknown transponders, audio settings, the live feed switch and open practice |
 | `REFEREE` | Raises incident reports, applies lap and time penalties, records marshal absences and penalties |
-| Any official | Check-in desk, the run order, and read-only views of events, entries and race history |
+| Any official | Transponder swap, the run order, and read-only views of events, entries and race history |
 | Competitors | No account (L10, #18): entries come from the RaceHub import or are added as walk-ins |
 | Anonymous | Event schedule, live timing, results, championship standings |
 
@@ -126,7 +126,7 @@ Staff roles are **stackable** — a single user account can hold any combination
 - **Do not store live race positions in the database during a race** — calculate in memory, broadcast over WebSocket, persist only the final result snapshot on `FINISHED`.
 - Protocol parsing (`Rc4TextParser` in `decoder-protocol/`) must stay pure, with no Spring dependencies. Protocol I/O is separate from domain logic.
 - Championship points: calculate on demand from result snapshots; do not increment incrementally.
-- Transponders belong to an entry, not a racer: a primary and an optional secondary number per entry, not unique system-wide. A number already used in the event is accepted with a warning on import or walk-in (one competitor may use it in several classes); check-in refuses to swap in a number another competitor holds. RaceHub's export snapshots them at booking; check-in swaps are audit-logged. At race time a number matching more than one entry in the running race goes to the referee.
+- Transponders belong to an entry, not a racer: a primary and an optional secondary number per entry, not unique system-wide. A number already used in the event is accepted with a warning on import or walk-in (one competitor may use it in several classes); a swap refuses a number another competitor holds. RaceHub's export snapshots them at booking; swaps on the day are audit-logged. At race time a number matching more than one entry in the running race goes to the referee.
 - Competitors have no login. Results, live timing and championship standings group by competitor. RCTC stores no contact, date of birth, guardian or payment data.
 - Race format config is snapshot-at-assignment — template edits do not affect existing events (FORMAT-06).
 
@@ -169,7 +169,7 @@ The ten original phases are complete. Some of what they built has since been rem
 9. User manual & in-app documentation
 10. Docker trial environment (replaced by the installers in #23 and #24)
 
-A later initiative extracted the shared decoder-protocol parser (`decoder-protocol/`) and built a separate offline race-day app, which was retired in #21; its plans are archived under `docs/plans/archive/`. The local-only plan then added competitors, per-event transponders, the RaceHub import and walk-ins, officials-only login, the check-in desk, spectator boards, the SQLite database, backups and the installers. It also sends results back to RaceHub (#27) and a live feed to a relay for remote viewers (#28), and has a streaming overlay page for OBS (#29).
+A later initiative extracted the shared decoder-protocol parser (`decoder-protocol/`) and built a separate offline race-day app, which was retired in #21; its plans are archived under `docs/plans/archive/`. The local-only plan then added competitors, per-event transponders, the RaceHub import and walk-ins, officials-only login, spectator boards, the SQLite database, backups and the installers. It also sends results back to RaceHub (#27) and a live feed to a relay for remote viewers (#28), and has a streaming overlay page for OBS (#29).
 
 ## General Good Developer Rules
 

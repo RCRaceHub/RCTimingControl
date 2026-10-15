@@ -154,8 +154,6 @@ class CompetitorAndEntryRepositoriesIT extends AbstractIntegrationTest {
         e.setExternalEntryVersion(3L);
         e.setRacehubArrival("ARRIVED");
         e.setRacehubEventClassId("rh-class-1");
-        e.setCheckedInAt(T1);
-        e.setCheckedInByUserId(official.getId());
 
         Entry saved = assertSavedAndReloaded(entries, e, c -> {
             c.setEventClassId(null);
@@ -169,8 +167,6 @@ class CompetitorAndEntryRepositoriesIT extends AbstractIntegrationTest {
             c.setExternalEntryVersion(4L);
             c.setRacehubArrival(null);
             c.setRacehubEventClassId(null);
-            c.setCheckedInAt(null);
-            c.setCheckedInByUserId(null);
             return c;
         }, Entry::getId);
         cleanup.add(() -> entries.deleteById(saved.getId()));

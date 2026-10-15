@@ -1,25 +1,20 @@
-// Manual roster search (L11), shared by CheckInDesk (fallback for
-// unmatched scans, and a lookup path of its own) and TransponderSwap (finding the entry).
+// Search the event's entries by competitor name (L11), to find the entry whose transponder is being swapped.
 import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { checkInSearch, type CheckInEntry } from '@/lib/raceControlApi';
-import { CheckInBadge } from './CheckInStatus';
+import { searchEntries, type EntrySearchResult } from '@/lib/raceControlApi';
 import { transponderLabel } from './transponderLabel';
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 300;
 
-export interface RosterSearchProps {
+export interface EntrySearchProps {
   eventId: number;
-  initialQuery?: string;
-  onSelect: (entry: CheckInEntry) => void;
+  onSelect: (entry: EntrySearchResult) => void;
 }
 
-export default function RosterSearch({ eventId, initialQuery = '', onSelect }: RosterSearchProps) {
-  // `initialQuery` only seeds the field on mount. CheckInDesk remounts this component (via a
-  // `key`) when it wants to hand it a fresh query, e.g. after an unmatched scan.
-  const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<CheckInEntry[]>([]);
+export default function EntrySearch({ eventId, onSelect }: EntrySearchProps) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<EntrySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState(false);
 
@@ -37,7 +32,7 @@ export default function RosterSearch({ eventId, initialQuery = '', onSelect }: R
       if (cancelled) return;
       setSearching(true);
       setError(false);
-      checkInSearch(eventId, trimmedQuery)
+      searchEntries(eventId, trimmedQuery)
         .then((data) => {
           if (!cancelled) setResults(data);
         })
@@ -84,7 +79,6 @@ export default function RosterSearch({ eventId, initialQuery = '', onSelect }: R
                 <span>
                   {entry.competitorName} ({entry.className ?? 'no class'}) {transponderLabel(entry)}
                 </span>
-                <CheckInBadge checkedIn={entry.checkedIn} />
               </button>
             </li>
           ))}

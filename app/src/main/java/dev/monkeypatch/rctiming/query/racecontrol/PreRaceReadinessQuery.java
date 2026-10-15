@@ -22,8 +22,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /**
  * jOOQ read-side query for the pre-race readiness view (CTRL-02, CTRL-07).
  * Produces a PreRaceReadinessDto for a given raceId, containing:
- * - gridCall: drivers due on track in grid order for the target race, with whether each has
- *   checked in (L11) and RaceHub's arrival mark
+ * - gridCall: drivers due on track in grid order for the target race, with RaceHub's arrival mark
  * - marshalDuty: drivers from the immediately preceding race with per-event absence counts
  *
  * All reads go through DSLContext.
@@ -159,7 +158,6 @@ public class PreRaceReadinessQuery {
                         DSL.coalesce(COMPETITORS.DISPLAY_NAME, DSL.val("Unknown")).as("driverName"),
                         COMPETITORS.SPOKEN_NAME,
                         RACING_CLASSES.NAME.as("className"),
-                        ENTRIES.CHECKED_IN_AT,
                         ENTRIES.RACEHUB_ARRIVAL)
                 .from(RACE_ENTRIES)
                 .join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
@@ -178,7 +176,6 @@ public class PreRaceReadinessQuery {
                         SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get("driverName", String.class)),
                         null, // not read yet, though race_entries.car_number holds it (ENTRY-03)
                         r.get("className", String.class),
-                        r.get(ENTRIES.CHECKED_IN_AT) != null,
                         r.get(ENTRIES.RACEHUB_ARRIVAL)
                 ));
 

@@ -9,7 +9,6 @@ package dev.monkeypatch.rctiming.query.racecontrol;
  * @param speechName   what the announcer says for this driver: their spoken name, else the display name tidied for speech (#119, #120)
  * @param carNumber    the car number/label (null if not recorded in the system)
  * @param className    the racing class name for this event class
- * @param checkedIn      whether the competitor has checked in at the desk (L11)
  * @param racehubArrival RaceHub's arrival mark (NOT_ARRIVED / ARRIVED), read-only; null if not imported
  */
 public record GridCallSlotDto(
@@ -19,6 +18,5 @@ public record GridCallSlotDto(
         String speechName,
         String carNumber,
         String className,
-        boolean checkedIn,
         String racehubArrival
 ) {}

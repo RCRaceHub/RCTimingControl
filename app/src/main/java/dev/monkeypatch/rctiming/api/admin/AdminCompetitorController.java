@@ -145,7 +145,7 @@ public class AdminCompetitorController {
 
     /**
      * Set, change or clear how a competitor's name is said aloud (#119). Any official may, since it is
-     * often noticed on the day at the check-in desk; each change is recorded with who made it.
+     * often noticed on the day; each change is recorded with who made it.
      */
     @Audited("competitor_audit_log")
     @PutMapping("/{id}/spoken-name")

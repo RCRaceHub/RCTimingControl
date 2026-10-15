@@ -8,9 +8,7 @@ import org.jooq.Record;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
@@ -18,33 +16,23 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 
 /**
- * jOOQ read side of the check-in desk (L11): look entries up by a scanned transponder number
- * or by the competitor's name. Withdrawn entries are never returned.
+ * jOOQ read side of the transponder swap tool (L11): look entries up by the competitor's name. Withdrawn entries are
+ * never returned.
  */
 @Component
 @ReadTransaction
-public class CheckInQuery {
+public class EntrySearchQuery {
 
     static final int SEARCH_LIMIT = 25;
 
     private final DSLContext dsl;
 
-    public CheckInQuery(DSLContext dsl) {
+    public EntrySearchQuery(DSLContext dsl) {
         this.dsl = dsl;
     }
 
-    /**
-     * Entries in the event that use this number as primary or secondary transponder. More than
-     * one comes back when a competitor shares a transponder across classes.
-     */
-    public List<CheckInEntryDto> findByTransponder(long eventId, String transponderNumber) {
-        String number = transponderNumber.trim();
-        return select(ENTRIES.TRANSPONDER_NUMBER.eq(number)
-                .or(ENTRIES.SECONDARY_TRANSPONDER_NUMBER.eq(number)), eventId);
-    }
-
     /** Case-insensitive substring match on the competitor's name. A blank query finds nothing. */
-    public List<CheckInEntryDto> searchByName(long eventId, String query) {
+    public List<EntrySearchDto> searchByName(long eventId, String query) {
         if (query == null || query.isBlank()) {
             return List.of();
         }
@@ -52,11 +40,7 @@ public class CheckInQuery {
         return select(COMPETITORS.DISPLAY_NAME.likeIgnoreCase(pattern, '\\'), eventId);
     }
 
-    public Optional<CheckInEntryDto> findEntry(long eventId, long entryId) {
-        return select(ENTRIES.ID.eq(entryId), eventId).stream().findFirst();
-    }
-
-    private List<CheckInEntryDto> select(Condition match, long eventId) {
+    private List<EntrySearchDto> select(Condition match, long eventId) {
         return dsl
                 .select(
                         ENTRIES.ID,
@@ -66,8 +50,6 @@ public class CheckInQuery {
                         RACING_CLASSES.NAME.as("className"),
                         ENTRIES.TRANSPONDER_NUMBER,
                         ENTRIES.SECONDARY_TRANSPONDER_NUMBER,
-                        ENTRIES.CHECKED_IN_AT,
-                        ENTRIES.RACEHUB_ARRIVAL,
                         ENTRIES.IMPORTED_TRANSPONDER_NUMBER,
                         ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER)
                 .from(ENTRIES)
@@ -79,12 +61,11 @@ public class CheckInQuery {
                 .and(match)
                 .orderBy(COMPETITORS.DISPLAY_NAME.asc().nullsLast(), RACING_CLASSES.NAME.asc(), ENTRIES.ID.asc())
                 .limit(SEARCH_LIMIT)
-                .fetch(CheckInQuery::toDto);
+                .fetch(EntrySearchQuery::toDto);
     }
 
-    private static CheckInEntryDto toDto(Record r) {
-        Instant checkedInAt = r.get(ENTRIES.CHECKED_IN_AT);
-        return new CheckInEntryDto(
+    private static EntrySearchDto toDto(Record r) {
+        return new EntrySearchDto(
                 r.get(ENTRIES.ID),
                 r.get("competitorName", String.class),
                 r.get(ENTRIES.COMPETITOR_ID),
@@ -93,9 +74,6 @@ public class CheckInQuery {
                 r.get("className", String.class),
                 r.get(ENTRIES.TRANSPONDER_NUMBER),
                 r.get(ENTRIES.SECONDARY_TRANSPONDER_NUMBER),
-                checkedInAt != null,
-                checkedInAt,
-                r.get(ENTRIES.RACEHUB_ARRIVAL),
                 r.get(ENTRIES.IMPORTED_TRANSPONDER_NUMBER),
                 r.get(ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER));
     }

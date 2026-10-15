@@ -37,7 +37,7 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
     }
 
     /**
-     * Loads an entry for check-in's read-then-write (L11). Call it inside the transaction that makes
+     * Loads an entry for the transponder swap's read-then-write (L11). Call it inside the transaction that makes
      * the change; {@link JooqRepository} says why no row lock is needed.
      */
     public Optional<Entry> findByIdForUpdate(Long id) {
@@ -65,8 +65,6 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         e.setExternalEntryVersion(r.getExternalEntryVersion());
         e.setRacehubArrival(r.getRacehubArrival());
         e.setRacehubEventClassId(r.getRacehubEventClassId());
-        e.setCheckedInAt(r.getCheckedInAt());
-        e.setCheckedInByUserId(r.getCheckedInByUserId());
         return e;
     }
 
@@ -89,8 +87,6 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         r.setExternalEntryVersion(e.getExternalEntryVersion());
         r.setRacehubArrival(e.getRacehubArrival());
         r.setRacehubEventClassId(e.getRacehubEventClassId());
-        r.setCheckedInAt(e.getCheckedInAt());
-        r.setCheckedInByUserId(e.getCheckedInByUserId());
     }
 
     @Override

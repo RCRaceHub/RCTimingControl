@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * The name to show the public for a competitor (#265): the full name, initials only, or a stand-in, as an official
  * has set it. Every public screen and the live feed go through here, so there is one rule. Officials' own screens
- * (race control, check-in, the competitor lists) keep the full name.
+ * (race control, the competitor lists) keep the full name.
  *
  * <p>A {@link Snapshot} reads the restricted competitors once, for code that names many drivers.
  */

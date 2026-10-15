@@ -36,11 +36,11 @@ export default function MeetingGuidePage() {
             (see the Admin Configuration Guide, section 5).
           </li>
           <li>
-            <span className="font-semibold">Run the check-in desk:</span> In race control, open
-            <span className="font-semibold"> Check-in</span>. Scan or type each driver's transponder
-            as they arrive and confirm. Swap a transponder there if a driver has changed it on the
-            day; the swap is logged, and a later import of the booking file keeps the swapped
-            number (the entry list notes the number the booking has).
+            <span className="font-semibold">Swap a transponder:</span> If a driver changes their
+            transponder on the day, open <span className="font-semibold">Transponders</span> in race
+            control, find the entry and enter the new number. The swap is logged, and a later import
+            of the booking file keeps the swapped number (the entry list notes the number the booking
+            has).
           </li>
           <li>
             <span className="font-semibold">Check the decoder connection:</span> RCTC connects

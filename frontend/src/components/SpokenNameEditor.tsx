@@ -44,7 +44,7 @@ interface SpokenNameEditorProps {
 
 /**
  * Type how a name should sound, hear it in the club's voice, then save or clear it (#119). Used on the
- * Competitors screen and at the check-in desk, where a wrong name is often noticed on the day.
+ * Competitors screen, where a wrong name is often noticed on the day.
  */
 export default function SpokenNameEditor({
   competitorId, displayName, spokenName, speechName, showHistory = false, onSaved, onCancel,

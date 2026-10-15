@@ -1,18 +1,18 @@
 package dev.monkeypatch.rctiming.timing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.domain.checkin.SwapResult;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
-import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
-import dev.monkeypatch.rctiming.domain.event.Event;
-import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;

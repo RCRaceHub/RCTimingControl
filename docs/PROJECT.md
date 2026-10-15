@@ -4,7 +4,7 @@
 
 RC club race timing and race control, built to replace RCResults. RCTC is the timing side of the RaceHub suite. RaceHub is a separate cloud app that owns booking, racer accounts and event entry. RCTC runs only at the venue (the local-only timing plan, tracking issue #8).
 
-It is one program on a laptop at the track. It installs as a background service, reads the AMB/MyLaps decoder directly over TCP, and serves race control, check-in, the announcer and the spectator boards to browsers on the venue network. It keeps the club's results and championships. Only officials sign in. Entries arrive in a RaceHub export file or are added as walk-ins.
+It is one program on a laptop at the track. It installs as a background service, reads the AMB/MyLaps decoder directly over TCP, and serves race control, the announcer and the spectator boards to browsers on the venue network. It keeps the club's results and championships. Only officials sign in. Entries arrive in a RaceHub export file or are added as walk-ins.
 
 ## Core Value
 
@@ -25,7 +25,7 @@ Officials run a full race meeting from a laptop at the track, on Windows, macOS 
 - [x] Competitors with no login; results, live timing and standings group by competitor — #12, #13
 - [x] A primary and an optional secondary transponder per entry; a number already used in the event is warned about, not refused — #14
 - [x] Only officials sign in — #18
-- [x] Check-in desk with barcode input and on-the-day transponder swaps; spectator boards — #19, #20
+- [x] On-the-day transponder swaps; spectator boards — #19, #20 (the check-in desk was removed)
 - [x] A full meeting runs with no internet connection at the venue — #8, #21
 - [x] One SQLite file, behind a seam that lets the database be swapped later — #26
 - [x] Scheduled backups and a restore command — #22

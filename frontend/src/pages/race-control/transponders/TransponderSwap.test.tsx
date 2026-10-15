@@ -6,11 +6,11 @@ import TransponderSwap from './TransponderSwap';
 // Transponder swap tests (L11), for the primary and secondary slots.
 
 vi.mock('@/lib/raceControlApi', () => ({
-  checkInSearch: vi.fn(),
+  searchEntries: vi.fn(),
   swapTransponder: vi.fn(),
 }));
 
-import { checkInSearch, swapTransponder } from '@/lib/raceControlApi';
+import { searchEntries, swapTransponder } from '@/lib/raceControlApi';
 
 const EVENT_ID = 7;
 
@@ -23,15 +23,12 @@ const sampleEntry = {
   className: 'Touring Stock',
   transponderNumber: '1234567',
   secondaryTransponderNumber: '2222',
-  checkedIn: false,
-  checkedInAt: null,
-  racehubArrival: null,
   importedTransponderNumber: null,
   importedSecondaryTransponderNumber: null,
 };
 
 beforeEach(() => {
-  vi.mocked(checkInSearch).mockReset();
+  vi.mocked(searchEntries).mockReset();
   vi.mocked(swapTransponder).mockReset();
 });
 
@@ -45,7 +42,7 @@ function renderSwap() {
 }
 
 async function selectSampleEntry() {
-  vi.mocked(checkInSearch).mockResolvedValue([sampleEntry]);
+  vi.mocked(searchEntries).mockResolvedValue([sampleEntry]);
   fireEvent.change(screen.getByPlaceholderText('Competitor name…'), { target: { value: 'doe' } });
   fireEvent.click(await screen.findByRole('button', { name: /jane doe/i }));
 }

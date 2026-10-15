@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol.dto;
 
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 

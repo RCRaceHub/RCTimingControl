@@ -46,7 +46,7 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 ## Privacy notice (#267)
 
-The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, the sign-in page and the check-in desk (where an official can point a driver at it; it opens in a new tab so the desk keeps its place). The boards and the OBS overlay carry no link, since they are screens and not pages people read.
+The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, and the sign-in page. The boards and the OBS overlay carry no link, since they are screens and not pages people read.
 
 Until the club writes its own, the page shows a standard notice with the club's name, email and phone filled in from the club profile. It says what RCTC holds, why, who sees it (including the junior display setting), how long results are kept, and how to ask for a copy or removal. An admin edits it under Club, "Privacy notice"; saving a blank text goes back to the standard one. Saving the standard text after editing it makes it the club's own text, so its name and contact details stop following the club profile; use "Use the standard text" to go back. Changes are audited as `PRIVACY_NOTICE_CHANGED` with whether it is the club's own text and its length, not the text. The standard text is a starting point, not legal advice: the club should read it and change what does not fit.
 
@@ -56,7 +56,7 @@ RaceHub holds the booking, contact and payment details and has its own notice; t
 
 An admin or race director can set any competitor to show as **Full name**, **Initials only** (`A. L.`) or **Hidden** (`Driver 12`, from the car number) on the Competitors screen. The choice is stored on the competitor, is audited (`COMPETITOR_NAME_VISIBILITY_CHANGED`, with the competitor id and the two settings, not the name), and a RaceHub or CSV import never changes it. It applies to the public results page, the boards and overlay, championship standings, live timing sent to browsers and the live feed. The stored results keep the real name, so setting it back to Full name changes the screens straight away.
 
-A change made during a race reaches the live timing at once. Race control's live timing panel shows the public name too, as it shares the stream the public screens use; the other official screens (check-in, the competitor lists, the grid) and the announcer use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
+A change made during a race reaches the live timing at once. Race control's live timing panel shows the public name too, as it shares the stream the public screens use; the other official screens (the competitor lists, the grid) and the announcer use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
 
 ## Proposed child tickets
 
@@ -65,6 +65,6 @@ A change made during a race reaches the live timing at once. Race control's live
 3. Failed sign-in: stop storing the typed email, or store a hash.
 4. Junior display: initials-only or hidden on every public surface and the live feed.
 5. Check the log for personal data and keep it out.
-6. Privacy notices: officials at sign-in, drivers at entry (RaceHub terms or the check-in desk), a footer link on public pages, and an admin-editable notice page holding the club's own name and contact.
+6. Privacy notices: officials at sign-in, drivers at entry (RaceHub terms), a footer link on public pages, and an admin-editable notice page holding the club's own name and contact.
 
 Open for the club: lawful basis for showing names to remote viewers, whether a record of processing or ICO registration applies, and who answers access and erasure requests.

@@ -75,7 +75,7 @@ class DropUnusedColumnsMigrationTest {
                 values (1, 'Club', x'01', 'png', '/l.png')""");
         jdbc.execute("PRAGMA foreign_keys = ON");
 
-        migrate(null);
+        migrate("21");
 
         assertThat(count("select count(*) from race_entries where race_id = 7 and entry_id = 5")).isEqualTo(1);
         assertThat(count("select count(*) from result_snapshots where race_id = 7")).isEqualTo(1);

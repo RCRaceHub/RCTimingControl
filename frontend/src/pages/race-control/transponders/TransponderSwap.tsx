@@ -1,6 +1,6 @@
-// Transponder swap for an existing entry (L11): find the entry with the shared search, pick
-// its primary or secondary transponder, then enter the new number. Each refusal (entry gone, number in use by another
-// competitor, and so on) gets its own message rather than one generic error.
+// Transponder swap for an existing entry: find the entry with the search, pick its primary or secondary transponder,
+// then enter the new number. Each refusal (entry gone, number in use by another competitor, and so on) gets its own
+// message rather than one generic error.
 import { useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import {
   swapTransponder,
-  type CheckInEntry,
+  type EntrySearchResult,
   type TransponderSlot,
   type TransponderSwapResponse,
 } from '@/lib/raceControlApi';
-import RosterSearch from './RosterSearch';
+import EntrySearch from './EntrySearch';
 import { transponderLabel } from './transponderLabel';
 
 type SwapResult =
@@ -35,13 +35,13 @@ function errorMessageFrom(err: unknown): string {
 
 export default function TransponderSwap({ eventId }: { eventId: number }) {
   const queryClient = useQueryClient();
-  const [selectedEntry, setSelectedEntry] = useState<CheckInEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<EntrySearchResult | null>(null);
   const [slot, setSlot] = useState<TransponderSlot>('PRIMARY');
   const [newTransponderNumber, setNewTransponderNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<SwapResult | null>(null);
 
-  function handleSelect(entry: CheckInEntry) {
+  function handleSelect(entry: EntrySearchResult) {
     setSelectedEntry(entry);
     setSlot('PRIMARY');
     setResult(null);
@@ -70,6 +70,10 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
               transponderNumber: response.newTransponderNumber ?? selectedEntry.transponderNumber,
             }
           : { secondaryTransponderNumber: response.newTransponderNumber }),
+        // A swap to the booking's number settles the difference the import flagged
+        ...(response.newTransponderNumber === (slot === 'PRIMARY' ? selectedEntry.importedTransponderNumber : selectedEntry.importedSecondaryTransponderNumber)
+          ? (slot === 'PRIMARY' ? { importedTransponderNumber: null } : { importedSecondaryTransponderNumber: null })
+          : {}),
       });
       setNewTransponderNumber('');
       void queryClient.invalidateQueries({
@@ -85,7 +89,7 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
   return (
     <div className="flex flex-col gap-4">
       {!selectedEntry ? (
-        <RosterSearch eventId={eventId} onSelect={handleSelect} />
+        <EntrySearch eventId={eventId} onSelect={handleSelect} />
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
