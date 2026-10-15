@@ -38,7 +38,8 @@ class ClubAudioSettingsTest {
 
     @Test
     void settingsSavedBeforeTheFinishCallsCallEachCarAndUseTheStandardTimeWording() throws Exception {
-        ClubAudioSettings settings = new ObjectMapper().readValue("{\"announceFinish\": true}", ClubAudioSettings.class);
+        ClubAudioSettings settings = new ObjectMapper()
+                .readValue("{\"announceFinish\": true}", ClubAudioSettings.class);
 
         assertThat(settings.announceCarFinish()).isTrue();
         assertThat(settings.timeUpText()).isEqualTo(ClubAudioSettings.DEFAULT_TIME_UP_TEXT);

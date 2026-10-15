@@ -359,6 +359,28 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
     expect(speak.mock.calls[0][0].text).toBe('Car 7, Alex Rowe.');
   });
 
+  it('says it could not call a car whose driver is not in the grid yet, so it can be tried again', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'RUNNING', gridEntries: [] }),
+    );
+
+    let handled = true;
+    act(() => { handled = result.current.announceCarFinish(11); });
+
+    expect(handled).toBe(false);
+    expect(speak).not.toHaveBeenCalled();
+  });
+
+  it('still calls the last car if the race has just finished', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({ raceId: 5, settings, raceState: 'FINISHED', gridEntries: grid }),
+    );
+
+    act(() => { result.current.announceCarFinish(11); });
+
+    expect(speak.mock.calls[0][0].text).toBe('Alex Rowe.');
+  });
+
   it('stays quiet when the car calls are switched off', () => {
     const { result } = renderHook(() =>
       useAnnouncements({

@@ -370,11 +370,15 @@ export function useAnnouncements({
   // A car has taken the flag: its number and name, as the grid call said them
   const gridEntriesRef = useRef(gridEntries);
   useEffect(() => { gridEntriesRef.current = gridEntries; }, [gridEntries]);
-  const announceCarFinish = useCallback((entryId: number) => {
-    if (settingsRef.current?.announceCarFinish === false) return;
-    if (raceStateRef.current !== 'RUNNING') return;
+  /** Returns false when the call could not be made yet because the grid is not loaded, so it can be tried again. */
+  const announceCarFinish = useCallback((entryId: number): boolean => {
+    if (settingsRef.current?.announceCarFinish === false) return true;
+    const state = raceStateRef.current;
+    if (state !== 'RUNNING' && state !== 'FINISHED') return true;
     const entry = gridEntriesRef.current?.find((e) => e.entryId === entryId);
-    if (entry) playClip(gridClipKey(entry), gridFallbackText(entry));
+    if (!entry) return false;
+    playClip(gridClipKey(entry), gridFallbackText(entry));
+    return true;
   }, [playClip]);
 
   return {

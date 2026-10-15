@@ -4,8 +4,8 @@ package dev.monkeypatch.rctiming.domain.club;
  * The club's audio switches. {@code startHorn} and {@code finishHorn} play a horn at the start and the finish,
  * {@code announceRaceCalls} the spoken grid call, "go" and stop, resume and abandon lines, and
  * {@code announceNextRace} the next race and marshals call after a finish, and {@code announceCarFinish} the car
- * number and driver name as each car takes the flag. {@code timeUpText} is what is said when the clock reaches zero. {@code startCountdownSeconds} is the
- * lead-in between pressing Start and the race starting, 0 for none.
+ * number and driver name as each car takes the flag. {@code timeUpText} is what is said when the clock reaches
+ * zero. {@code startCountdownSeconds} is the lead-in between pressing Start and the race starting, 0 for none.
  *
  * <p>Settings saved before these were added have none of them, so a missing switch is on and a missing lead-in
  * is 10 seconds (0 means none). {@code hornSounds} holds the club's own start and finish sound files, none until

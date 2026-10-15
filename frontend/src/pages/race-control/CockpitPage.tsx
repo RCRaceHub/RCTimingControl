@@ -134,17 +134,18 @@ export default function CockpitPage() {
   const prevPassingRef = useRef<Map<number, number>>(new Map());
   // Each driver's best lap before the latest passing, to tell whether a lap improved on it
   const prevBestRef = useRef<Map<number, number>>(new Map());
-  // The cars already called as they finished, for the race on screen: an entry can be in several races
-  const calledFinishRef = useRef<{ raceId: number | null; ids: Set<number> }>({ raceId: null, ids: new Set() });
+  // Whether each car had finished when last seen, for the race on screen (an entry can be in several races): a
+  // car is called when it is seen going from not finished to finished, so a page opened mid-race, or a race
+  // reselected, stays quiet about the cars already home
+  const finishSeenRef = useRef<{ raceId: number | null; finished: Map<number, boolean> }>({
+    raceId: null,
+    finished: new Map(),
+  });
 
   useEffect(() => {
     if (selectedRace?.status !== 'RUNNING') return;
     const prev = prevPassingRef.current;
     const prevBest = prevBestRef.current;
-    if (calledFinishRef.current.raceId !== selectedRaceId) {
-      calledFinishRef.current = { raceId: selectedRaceId, ids: new Set() };
-    }
-    const called = calledFinishRef.current;
     liveRows.forEach((row) => {
       const prevTime = prev.get(row.entryId);
       if (
@@ -153,10 +154,6 @@ export default function CockpitPage() {
       ) {
         playBeep(isImprovingLap(prevBest.get(row.entryId), row));
       }
-      if (row.finished && !called.ids.has(row.entryId)) {
-        called.ids.add(row.entryId);
-        announceCarFinish(row.entryId);
-      }
       if (row.lastPassingTimeMs) {
         prev.set(row.entryId, row.lastPassingTimeMs);
       }
@@ -164,7 +161,22 @@ export default function CockpitPage() {
         prevBest.set(row.entryId, row.bestLapMs);
       }
     });
-  }, [liveRows, playBeep, announceCarFinish, selectedRaceId, selectedRace?.status]);
+  }, [liveRows, playBeep, selectedRace?.status]);
+
+  // The call is not tied to the race still running: the last car's row can arrive in the same render as the finish
+  useEffect(() => {
+    if (finishSeenRef.current.raceId !== selectedRaceId) {
+      finishSeenRef.current = { raceId: selectedRaceId, finished: new Map() };
+    }
+    const seen = finishSeenRef.current.finished;
+    liveRows.forEach((row) => {
+      const finished = row.finished === true;
+      if (finished && seen.get(row.entryId) === false && announceCarFinish(row.entryId) === false) {
+        return; // the grid is not loaded yet: try again on the next frame
+      }
+      seen.set(row.entryId, finished);
+    });
+  }, [liveRows, announceCarFinish, selectedRaceId]);
 
   // Subscribe to unknown transponder events when a race is running
   const unknownTopic =
