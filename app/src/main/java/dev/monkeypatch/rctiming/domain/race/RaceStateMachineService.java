@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -47,6 +48,7 @@ public class RaceStateMachineService {
     private final ResultSnapshotService resultSnapshotService;
     private final ApplicationEventPublisher eventPublisher;
     private final BumpUpSeedingService bumpUpSeedingService;
+    private final AutoFinalsSeedingService autoFinalsSeedingService;
 
     public RaceStateMachineService(LiveTimingHub liveTimingHub,
                                    RoundGeneratorService roundGeneratorService,
@@ -55,7 +57,8 @@ public class RaceStateMachineService {
                                    RoundRepository roundRepository,
                                    ResultSnapshotService resultSnapshotService,
                                    ApplicationEventPublisher eventPublisher,
-                                   BumpUpSeedingService bumpUpSeedingService) {
+                                   BumpUpSeedingService bumpUpSeedingService,
+                                   AutoFinalsSeedingService autoFinalsSeedingService) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -64,6 +67,7 @@ public class RaceStateMachineService {
         this.resultSnapshotService = resultSnapshotService;
         this.eventPublisher = eventPublisher;
         this.bumpUpSeedingService = bumpUpSeedingService;
+        this.autoFinalsSeedingService = autoFinalsSeedingService;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every
@@ -149,6 +153,8 @@ public class RaceStateMachineService {
         if (target == RaceStatus.FINISHED) {
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
+            // After the snapshot, since the finals are seeded from the qualifying results stored with it
+            seedFinalsAfterQualifying(race);
         }
     }
 
@@ -167,6 +173,14 @@ public class RaceStateMachineService {
             throw new IllegalStateTransitionException(
                 "Cannot start a final until all qualifying heats for its class are finished ("
                 + unfinished + " still to run)");
+        }
+    }
+
+    /** When the last qualifying heat of a class finishes, its finals are seeded from the qualifying results. */
+    private void seedFinalsAfterQualifying(Race finishedRace) {
+        Round round = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
+        if (round != null && round.getType() == RoundType.QUALIFIER) {
+            autoFinalsSeedingService.seedIfQualifyingComplete(finishedRace.getEventClassId());
         }
     }
 

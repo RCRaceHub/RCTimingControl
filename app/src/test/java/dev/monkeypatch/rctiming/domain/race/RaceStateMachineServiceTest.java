@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.race;
 
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -37,6 +38,7 @@ class RaceStateMachineServiceTest {
     private final ResultSnapshotService resultSnapshotService = mock(ResultSnapshotService.class);
     private final LiveTimingHub liveTimingHub = mock(LiveTimingHub.class);
     private final LapTimingService lapTimingService = mock(LapTimingService.class);
+    private final AutoFinalsSeedingService autoFinalsSeedingService = mock(AutoFinalsSeedingService.class);
     private RaceStateMachineService service;
 
     /** The race as each status event's listeners would read it from the database. */
@@ -47,7 +49,7 @@ class RaceStateMachineServiceTest {
     void setUp() {
         service = new RaceStateMachineService(liveTimingHub, mock(RoundGeneratorService.class), raceRepository,
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
-                mock(BumpUpSeedingService.class));
+                mock(BumpUpSeedingService.class), autoFinalsSeedingService);
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);
@@ -121,6 +123,30 @@ class RaceStateMachineServiceTest {
         service.start(finalRace);
 
         assertThat(finalRace.getStatus()).isEqualTo(RaceStatus.RUNNING);
+    }
+
+    @Test
+    void finishingAQualifier_seedsTheClassFinalsAfterTheSnapshot() {
+        Round qualifierRound = new Round();
+        qualifierRound.setType(RoundType.QUALIFIER);
+        when(roundRepository.findById(3L)).thenReturn(Optional.of(qualifierRound));
+        Race race = race(RaceStatus.RUNNING);
+        race.setEventClassId(5L);
+
+        service.finish(race);
+
+        var order = org.mockito.Mockito.inOrder(resultSnapshotService, autoFinalsSeedingService);
+        order.verify(resultSnapshotService).snapshot(7L);
+        order.verify(autoFinalsSeedingService).seedIfQualifyingComplete(5L);
+    }
+
+    @Test
+    void finishingAFinal_doesNotSeedFinals() {
+        Race race = finalRace(RaceStatus.RUNNING);
+
+        service.finish(race);
+
+        verify(autoFinalsSeedingService, never()).seedIfQualifyingComplete(any());
     }
 
     @Test
