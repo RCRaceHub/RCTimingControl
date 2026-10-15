@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.ChampionshipExclusionsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.CompetitorAuditLogPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.EntryAuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog.OfficialAuditLogPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PracticeLapsPath;
@@ -227,18 +226,6 @@ public class Users extends TableImpl<UsersRecord> {
             _competitorAuditLog = new CompetitorAuditLogPath(this, null, Keys.COMPETITOR_AUDIT_LOG__COMPETITOR_AUDIT_LOG_ACTOR_USER_ID_FKEY.getInverseKey());
 
         return _competitorAuditLog;
-    }
-
-    private transient EntriesPath _entries;
-
-    /**
-     * Get the implicit to-many join path to the <code>entries</code> table
-     */
-    public EntriesPath entries() {
-        if (_entries == null)
-            _entries = new EntriesPath(this, null, Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY.getInverseKey());
-
-        return _entries;
     }
 
     private transient EntryAuditLogPath _entryAuditLog;

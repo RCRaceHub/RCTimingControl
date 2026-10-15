@@ -1,11 +1,9 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
-import dev.monkeypatch.rctiming.domain.checkin.CheckInResult;
-import dev.monkeypatch.rctiming.domain.checkin.CheckInService;
-import dev.monkeypatch.rctiming.domain.checkin.SwapResult;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
@@ -52,8 +50,8 @@ import java.util.stream.IntStream;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Check-in desk and transponder swap end to end (L11). */
-class CheckInControllerIT extends AbstractIntegrationTest {
+/** Entry search and transponder swap end to end (L11). */
+class TransponderSwapControllerIT extends AbstractIntegrationTest {
 
     @Autowired TestRestTemplate restTemplate;
     @Autowired UserRepository userRepository;
@@ -64,7 +62,6 @@ class CheckInControllerIT extends AbstractIntegrationTest {
     @Autowired EntryRepository entryRepository;
     @Autowired DSLContext dsl;
     @Autowired CompetitorService competitorService;
-    @Autowired CheckInService checkInService;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired TransponderSwapService transponderSwapService;
 
@@ -94,99 +91,17 @@ class CheckInControllerIT extends AbstractIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void resolve_matchesPrimaryOrSecondary_andShowsRaceHubArrival() {
-        Entry entry = saveEntry("Jane Doe", "P" + suffix, "S" + suffix, EntryStatus.CONFIRMED);
-        entry.setRacehubArrival("ARRIVED");
-        entryRepository.save(entry);
-
-        for (String number : List.of("P" + suffix, "S" + suffix)) {
-            ResponseEntity<List> resp = post(directorToken, checkIn("/resolve"),
-                    Map.of("transponderNumber", number), List.class);
-            assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-            assertThat(resp.getBody()).hasSize(1);
-            Map<String, Object> dto = (Map<String, Object>) resp.getBody().get(0);
-            assertThat(((Number) dto.get("entryId")).longValue()).isEqualTo(entry.getId());
-            assertThat(dto.get("competitorName")).isEqualTo("Jane Doe " + suffix);
-            assertThat(dto.get("className")).isEqualTo(className);
-            assertThat(dto.get("checkedIn")).isEqualTo(false);
-            assertThat(dto.get("racehubArrival")).isEqualTo("ARRIVED");
-            // So the desk can fix how the name is said (#119)
-            assertThat(dto.get("competitorId")).isNotNull();
-            assertThat(dto.get("spokenName")).isNull();
-            assertThat((String) dto.get("speechName")).startsWith("Jane Doe");
-        }
-    }
-
-    @Test
-    void resolve_unknownOrWithdrawnNumber_is404() {
-        saveEntry("Gone Driver", "W" + suffix, null, EntryStatus.WITHDRAWN);
-
-        for (String number : List.of("NOPE" + suffix, "W" + suffix)) {
-            ResponseEntity<Map> resp = post(directorToken, checkIn("/resolve"),
-                    Map.of("transponderNumber", number), Map.class);
-            assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-            assertThat(resp.getBody())
-                    .containsEntry("error", "not_found")
-                    .containsEntry("status", 404)
-                    .containsEntry("detail", "No entry in this event has that transponder");
-        }
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
     void search_isCaseInsensitiveAndScopedToTheEvent() {
         saveEntry("Jane Doe", "A" + suffix, null, EntryStatus.CONFIRMED);
         saveEntry("John Smith", "B" + suffix, null, EntryStatus.CONFIRMED);
 
-        ResponseEntity<List> resp = get(directorToken, checkIn("/search?query=jane doe " + suffix), List.class);
+        ResponseEntity<List> resp = get(directorToken, search("jane doe " + suffix), List.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody()).hasSize(1);
         assertThat(((Map<String, Object>) resp.getBody().get(0)).get("competitorName"))
                 .isEqualTo("Jane Doe " + suffix);
 
-        assertThat(get(directorToken, checkIn("/search?query="), List.class).getBody()).isEmpty();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    void confirm_checksInOnce_andRecordsTheOfficial() {
-        Entry entry = saveEntry("Jane Doe", "C" + suffix, null, EntryStatus.CONFIRMED);
-
-        ResponseEntity<Map> first = post(directorToken, checkIn("/entries/" + entry.getId() + "/confirm"), null, Map.class);
-        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(first.getBody()).containsEntry("alreadyCheckedIn", false);
-        Map<String, Object> dto = (Map<String, Object>) first.getBody().get("entry");
-        assertThat(dto.get("checkedIn")).isEqualTo(true);
-        Object checkedInAt = dto.get("checkedInAt");
-        assertThat(checkedInAt).isNotNull();
-
-        ResponseEntity<Map> again = post(refereeToken, checkIn("/entries/" + entry.getId() + "/confirm"), null, Map.class);
-        assertThat(again.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(again.getBody()).containsEntry("alreadyCheckedIn", true);
-        assertThat(((Map<String, Object>) again.getBody().get("entry")).get("checkedInAt")).isEqualTo(checkedInAt);
-
-        Entry saved = entryRepository.findById(entry.getId()).orElseThrow();
-        assertThat(saved.getCheckedInByUserId()).isEqualTo(directorId);
-
-        // The first check-in is in the audit log with who did it; the repeat by the referee is not
-        List<Map<String, Object>> rows = jdbc.queryForList(
-                "select * from audit_log where entity_type = 'entry' and entity_id = ? and action = 'ENTRY_CHECKED_IN'",
-                String.valueOf(entry.getId()));
-        assertThat(rows).hasSize(1);
-        assertThat(((Number) rows.get(0).get("actor_user_id")).longValue()).isEqualTo(directorId);
-        assertThat(((Number) rows.get(0).get("event_id")).longValue()).isEqualTo(event.getId());
-    }
-
-    @Test
-    void confirm_withdrawnOrOtherEventEntry_isRefused() {
-        Entry withdrawn = saveEntry("Gone Driver", "D" + suffix, null, EntryStatus.WITHDRAWN);
-        assertThat(post(directorToken, checkIn("/entries/" + withdrawn.getId() + "/confirm"), null, Map.class)
-                .getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-
-        Entry live = saveEntry("Jane Doe", "E" + suffix, null, EntryStatus.CONFIRMED);
-        String otherEvent = "/api/v1/race-control/events/" + (event.getId() + 100_000) + "/check-in";
-        assertThat(post(directorToken, otherEvent + "/entries/" + live.getId() + "/confirm", null, Map.class)
-                .getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(get(directorToken, search(""), List.class).getBody()).isEmpty();
     }
 
     @Test
@@ -206,9 +121,9 @@ class CheckInControllerIT extends AbstractIntegrationTest {
         List<EntryAuditLogRecord> audit = entryLog(entry.getId());
         assertThat(audit).extracting(EntryAuditLogRecord::getAction).containsExactly("TRANSPONDER_SWAP");
 
-        // The new number now resolves at the desk
-        assertThat(post(directorToken, checkIn("/resolve"),
-                Map.of("transponderNumber", "G" + suffix), List.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+        // The search shows the new number
+        assertThat(((Map<?, ?>) get(directorToken, search("Jane Doe " + suffix), List.class).getBody().get(0))
+                .get("transponderNumber")).isEqualTo("G" + suffix);
     }
 
     @Test
@@ -239,24 +154,11 @@ class CheckInControllerIT extends AbstractIntegrationTest {
     void accountsWithoutAnOfficialRole_areTurnedAway() {
         Entry entry = saveEntry("Jane Doe", "K" + suffix, null, EntryStatus.CONFIRMED);
 
-        assertThat(post(noRoleToken, checkIn("/entries/" + entry.getId() + "/confirm"), null, String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(get(noRoleToken, search("Jane"), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(post(noRoleToken, swapUrl(entry),
                 Map.of("slot", "PRIMARY", "newTransponderNumber", "L" + suffix), String.class)
                 .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-        assertThat(post(null, checkIn("/resolve"), Map.of("transponderNumber", "K" + suffix), String.class)
-                .getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Test
-    void concurrentConfirms_recordExactlyOneFirstCheckIn() throws Exception {
-        Entry entry = saveEntry("Jane Doe", "M" + suffix, null, EntryStatus.CONFIRMED);
-
-        List<CheckInResult> results = runConcurrently(6,
-                i -> () -> checkInService.confirm(event.getId(), entry.getId(), directorId));
-
-        assertThat(results).filteredOn(r -> r instanceof CheckInResult.Success s && !s.alreadyCheckedIn())
-                .hasSize(1);
+        assertThat(get(null, search("Jane"), String.class).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
@@ -299,8 +201,8 @@ class CheckInControllerIT extends AbstractIntegrationTest {
         }
     }
 
-    private String checkIn(String path) {
-        return "/api/v1/race-control/events/" + event.getId() + "/check-in" + path;
+    private String search(String query) {
+        return "/api/v1/race-control/events/" + event.getId() + "/entries/search?query=" + query;
     }
 
     private String swapUrl(Entry entry) {
@@ -339,7 +241,7 @@ class CheckInControllerIT extends AbstractIntegrationTest {
 
     private Event saveEvent(Instant now) {
         Event e = new Event();
-        e.setName("Check-in Event " + suffix);
+        e.setName("Swap Event " + suffix);
         e.setEventDate(LocalDate.now());
         e.setStatus(EventStatus.IN_PROGRESS);
         e.setCreatedAt(now);

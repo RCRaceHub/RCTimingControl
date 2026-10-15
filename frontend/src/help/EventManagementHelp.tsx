@@ -30,7 +30,7 @@ export function EventManagementHelp() {
           (except Draft ↔ Published): you cannot revert from Entries Closed back to Open.
           Map every class in the file to one of the event's classes before importing: an import
           with an unmapped class saves nothing (the dialog lists the classes to map). Importing a
-          newer RaceHub file never overwrites a transponder swapped at the check-in desk; the entry
+          newer RaceHub file never overwrites a transponder swapped on the day; the entry
           list shows the number the booking has so you can compare.
         </p>
       </div>

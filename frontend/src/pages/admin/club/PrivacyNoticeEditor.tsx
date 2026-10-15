@@ -41,7 +41,7 @@ export default function PrivacyNoticeEditor() {
             ? 'This is your own text.'
             : 'This is the standard text, with your club name and contact details filled in.'}{' '}
           It is shown to everyone at <Link to="/privacy" className="underline underline-offset-4">/privacy</Link>, and
-          linked from the public pages, the sign-in page and the check-in desk. If you edit the standard text and
+          linked from the public pages and the sign-in page. If you edit the standard text and
           save it, it becomes your own text and its club name and contact details stop following the club profile.
         </p>
       </div>

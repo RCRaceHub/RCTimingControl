@@ -18,7 +18,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties.MarshalPe
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RaceEntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UnknownTransponderLinkPath;
-import dev.monkeypatch.rctiming.jooq.generated.tables.Users.UsersPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
@@ -148,16 +147,6 @@ public class Entries extends TableImpl<EntriesRecord> {
     public final TableField<EntriesRecord, String> RACEHUB_ARRIVAL = createField(DSL.name("racehub_arrival"), SQLDataType.VARCHAR(20), this, "");
 
     /**
-     * The column <code>entries.checked_in_at</code>.
-     */
-    public final TableField<EntriesRecord, Instant> CHECKED_IN_AT = createField(DSL.name("checked_in_at"), SQLDataType.BIGINT, this, "", new InstantMicrosConverter());
-
-    /**
-     * The column <code>entries.checked_in_by_user_id</code>.
-     */
-    public final TableField<EntriesRecord, Long> CHECKED_IN_BY_USER_ID = createField(DSL.name("checked_in_by_user_id"), SQLDataType.BIGINT, this, "");
-
-    /**
      * The column <code>entries.racehub_event_class_id</code>.
      */
     public final TableField<EntriesRecord, String> RACEHUB_EVENT_CLASS_ID = createField(DSL.name("racehub_event_class_id"), SQLDataType.VARCHAR(100), this, "");
@@ -256,19 +245,7 @@ public class Entries extends TableImpl<EntriesRecord> {
 
     @Override
     public List<ForeignKey<EntriesRecord, ?>> getReferences() {
-        return Arrays.asList(Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, Keys.ENTRIES__ENTRIES_COMPETITOR_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_CLASS_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_ID_FKEY);
-    }
-
-    private transient UsersPath _users;
-
-    /**
-     * Get the implicit join path to the <code>users</code> table.
-     */
-    public UsersPath users() {
-        if (_users == null)
-            _users = new UsersPath(this, Keys.ENTRIES__ENTRIES_CHECKED_IN_BY_USER_ID_FKEY, null);
-
-        return _users;
+        return Arrays.asList(Keys.ENTRIES__ENTRIES_COMPETITOR_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_CLASS_ID_FKEY, Keys.ENTRIES__ENTRIES_EVENT_ID_FKEY);
     }
 
     private transient CompetitorsPath _competitors;

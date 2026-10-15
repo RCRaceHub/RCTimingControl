@@ -1,6 +1,5 @@
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { Card } from '@/components/ui/card';
-import { CheckInBadge, RaceHubArrival } from '@/pages/race-control/check-in/CheckInStatus';
 import {
   Table,
   TableBody,
@@ -43,8 +42,6 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
   }
 
   if (!data) return null;
-
-  const notCheckedIn = data.gridCall.filter((row) => !row.checkedIn).length;
 
   return (
     <Card className="p-6">
@@ -91,11 +88,6 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
 
         <div>
           <h3 className="text-sm font-semibold mb-2">Grid Call</h3>
-          {notCheckedIn > 0 && (
-            <p className="text-sm text-destructive mb-2">
-              {notCheckedIn} not checked in
-            </p>
-          )}
           <Table>
             <TableHeader>
               <TableRow>
@@ -103,7 +95,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                 <TableHead>Driver</TableHead>
                 <TableHead>Car</TableHead>
                 <TableHead>Class</TableHead>
-                <TableHead>Check-in</TableHead>
+                <TableHead>RaceHub</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -114,10 +106,9 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                   <TableCell>{row.carNumber ?? '—'}</TableCell>
                   <TableCell>{row.className}</TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <CheckInBadge checkedIn={row.checkedIn} />
-                      <RaceHubArrival arrival={row.racehubArrival} />
-                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {row.racehubArrival === 'ARRIVED' ? 'arrived' : row.racehubArrival === 'NOT_ARRIVED' ? 'not arrived' : '—'}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}

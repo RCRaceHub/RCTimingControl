@@ -1,16 +1,12 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
-import dev.monkeypatch.rctiming.api.racecontrol.dto.CheckInConfirmResponse;
-import dev.monkeypatch.rctiming.api.racecontrol.dto.CheckInResolveRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.TransponderSwapRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.TransponderSwapResponse;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.checkin.CheckInResult;
-import dev.monkeypatch.rctiming.domain.checkin.CheckInService;
-import dev.monkeypatch.rctiming.domain.checkin.SwapResult;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
-import dev.monkeypatch.rctiming.query.racecontrol.CheckInEntryDto;
-import dev.monkeypatch.rctiming.query.racecontrol.CheckInQuery;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
+import dev.monkeypatch.rctiming.query.racecontrol.EntrySearchDto;
+import dev.monkeypatch.rctiming.query.racecontrol.EntrySearchQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,64 +25,36 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Check-in desk and transponder swap for race control (L11). Open to every
+ * Entry search and transponder swap for race control (L11). Open to every
  * official.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/events/{eventId}")
 @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
-public class CheckInController {
+public class TransponderSwapController {
 
     /** What each refusal code means, for the error's detail. */
     private static final Map<String, String> MESSAGES = Map.of(
-            "not_found", "No entry in this event has that transponder",
             "entry_not_found", "No such entry in this event",
             "entry_withdrawn", "The entry has been withdrawn",
             "transponder_already_assigned", "Another competitor already has that transponder in this event",
             "same_as_other_transponder", "The transponder is already this entry's other transponder",
             "primary_required", "An entry must keep a primary transponder");
 
-    private final CheckInQuery checkInQuery;
-    private final CheckInService checkInService;
+    private final EntrySearchQuery entrySearchQuery;
     private final TransponderSwapService transponderSwapService;
 
-    public CheckInController(CheckInQuery checkInQuery,
-                             CheckInService checkInService,
-                             TransponderSwapService transponderSwapService) {
-        this.checkInQuery = checkInQuery;
-        this.checkInService = checkInService;
+    public TransponderSwapController(EntrySearchQuery entrySearchQuery,
+                                     TransponderSwapService transponderSwapService) {
+        this.entrySearchQuery = entrySearchQuery;
         this.transponderSwapService = transponderSwapService;
     }
 
-    /** Entries matching a scanned or typed transponder number; 404 when none match. */
-    @PostMapping("/check-in/resolve")
-    public ResponseEntity<?> resolve(@PathVariable long eventId,
-                                     @Valid @RequestBody CheckInResolveRequest request) {
-        List<CheckInEntryDto> matches = checkInQuery.findByTransponder(eventId, request.transponderNumber());
-        if (matches.isEmpty()) {
-            return error(HttpStatus.NOT_FOUND, "not_found");
-        }
-        return ResponseEntity.ok(matches);
-    }
-
-    @GetMapping("/check-in/search")
-    public List<CheckInEntryDto> search(@PathVariable long eventId,
+    /** Entries whose competitor name contains the query, to find the entry to swap. */
+    @GetMapping("/entries/search")
+    public List<EntrySearchDto> search(@PathVariable long eventId,
                                         @RequestParam(defaultValue = "") String query) {
-        return checkInQuery.searchByName(eventId, query);
-    }
-
-    @Audited("audit_log")
-    @PostMapping("/check-in/entries/{entryId}/confirm")
-    public ResponseEntity<?> confirm(@PathVariable long eventId, @PathVariable long entryId) {
-        CheckInResult result = checkInService.confirm(eventId, entryId, CurrentOfficial.id());
-        return switch (result) {
-            case CheckInResult.Success success -> checkInQuery.findEntry(eventId, entryId)
-                    .<ResponseEntity<?>>map(dto -> ResponseEntity.ok(
-                            new CheckInConfirmResponse(dto, success.alreadyCheckedIn())))
-                    .orElseGet(() -> error(HttpStatus.NOT_FOUND, "entry_not_found"));
-            case CheckInResult.NotFound ignored -> error(HttpStatus.NOT_FOUND, "entry_not_found");
-            case CheckInResult.Withdrawn ignored -> error(HttpStatus.CONFLICT, "entry_withdrawn");
-        };
+        return entrySearchQuery.searchByName(eventId, query);
     }
 
     @Audited("entry_audit_log")
@@ -111,7 +79,7 @@ public class CheckInController {
 
     /**
      * A refusal as a ProblemDetail, like every other error the API gives, keeping the {@code error} code the
-     * check-in desk has always had.
+     * transponder swap has always had.
      */
     private static ResponseEntity<?> error(HttpStatus status, String code) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(status, MESSAGES.getOrDefault(code, code));

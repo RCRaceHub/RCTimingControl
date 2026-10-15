@@ -227,7 +227,7 @@ export default function AdminGuidePage() {
           </li>
           <li>
             <span className="font-semibold">Swaps survive a re-import:</span> If an official swapped
-            a driver&apos;s transponder at the check-in desk, importing a newer file later keeps the
+            a driver&apos;s transponder on the day, importing a newer file later keeps the
             swapped number. The entry list then shows &quot;Booking has transponder &hellip;. Keeping
             the number swapped on the day.&quot; under the entry so you can see the booking differs.
             Nothing is blocked, and swapping to the booking&apos;s number clears the note.

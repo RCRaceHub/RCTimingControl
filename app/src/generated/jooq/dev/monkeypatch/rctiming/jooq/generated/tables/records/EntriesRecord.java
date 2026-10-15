@@ -231,73 +231,45 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     }
 
     /**
-     * Setter for <code>entries.checked_in_at</code>.
-     */
-    public void setCheckedInAt(Instant value) {
-        set(15, value);
-    }
-
-    /**
-     * Getter for <code>entries.checked_in_at</code>.
-     */
-    public Instant getCheckedInAt() {
-        return (Instant) get(15);
-    }
-
-    /**
-     * Setter for <code>entries.checked_in_by_user_id</code>.
-     */
-    public void setCheckedInByUserId(Long value) {
-        set(16, value);
-    }
-
-    /**
-     * Getter for <code>entries.checked_in_by_user_id</code>.
-     */
-    public Long getCheckedInByUserId() {
-        return (Long) get(16);
-    }
-
-    /**
      * Setter for <code>entries.racehub_event_class_id</code>.
      */
     public void setRacehubEventClassId(String value) {
-        set(17, value);
+        set(15, value);
     }
 
     /**
      * Getter for <code>entries.racehub_event_class_id</code>.
      */
     public String getRacehubEventClassId() {
-        return (String) get(17);
+        return (String) get(15);
     }
 
     /**
      * Setter for <code>entries.imported_transponder_number</code>.
      */
     public void setImportedTransponderNumber(String value) {
-        set(18, value);
+        set(16, value);
     }
 
     /**
      * Getter for <code>entries.imported_transponder_number</code>.
      */
     public String getImportedTransponderNumber() {
-        return (String) get(18);
+        return (String) get(16);
     }
 
     /**
      * Setter for <code>entries.imported_secondary_transponder_number</code>.
      */
     public void setImportedSecondaryTransponderNumber(String value) {
-        set(19, value);
+        set(17, value);
     }
 
     /**
      * Getter for <code>entries.imported_secondary_transponder_number</code>.
      */
     public String getImportedSecondaryTransponderNumber() {
-        return (String) get(19);
+        return (String) get(17);
     }
 
     // -------------------------------------------------------------------------
@@ -323,7 +295,7 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     /**
      * Create a detached, initialised EntriesRecord
      */
-    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, Instant checkedInAt, Long checkedInByUserId, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber) {
+    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber) {
         super(Entries.ENTRIES);
 
         setId(id);
@@ -341,8 +313,6 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
         setExternalEntryId(externalEntryId);
         setExternalEntryVersion(externalEntryVersion);
         setRacehubArrival(racehubArrival);
-        setCheckedInAt(checkedInAt);
-        setCheckedInByUserId(checkedInByUserId);
         setRacehubEventClassId(racehubEventClassId);
         setImportedTransponderNumber(importedTransponderNumber);
         setImportedSecondaryTransponderNumber(importedSecondaryTransponderNumber);

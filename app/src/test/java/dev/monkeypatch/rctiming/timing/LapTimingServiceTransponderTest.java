@@ -1,9 +1,9 @@
 package dev.monkeypatch.rctiming.timing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.domain.checkin.SwapResult;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSlot;
-import dev.monkeypatch.rctiming.domain.checkin.TransponderSwapService;
+import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
+import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.event.Event;

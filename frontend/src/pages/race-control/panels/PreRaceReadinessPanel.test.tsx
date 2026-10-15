@@ -18,7 +18,6 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
           driverName: 'Jane Doe',
           carNumber: null,
           className: 'Stock',
-          checkedIn: true,
           racehubArrival: null,
         },
         {
@@ -27,7 +26,6 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
           driverName: 'John Smith',
           carNumber: null,
           className: 'Stock',
-          checkedIn: false,
           racehubArrival: 'ARRIVED',
         },
       ],
@@ -36,12 +34,11 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
 }));
 
 describe('PreRaceReadinessPanel', () => {
-  it('shows who has not checked in, with the RaceHub arrival mark beside it', () => {
+  it('shows the grid call with the RaceHub arrival mark beside each driver', () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
-    expect(screen.getByText('1 not checked in')).toBeInTheDocument();
-    expect(screen.getByText('Checked in')).toBeInTheDocument();
-    expect(screen.getByText('Not checked in')).toBeInTheDocument();
-    expect(screen.getByText('RaceHub: arrived')).toBeInTheDocument();
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    expect(screen.getByText('arrived')).toBeInTheDocument();
+    expect(screen.queryByText(/checked in/i)).not.toBeInTheDocument();
   });
 });

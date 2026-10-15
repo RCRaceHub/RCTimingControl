@@ -19,7 +19,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
 /**
  * What has happened to one entry (#140), oldest first: the entry log (added by hand, withdrawn, transponder
- * swapped, moved by a competitor merge) together with the audit log's rows about the entry (checked in).
+ * swapped, moved by a competitor merge) together with the audit log's rows about the entry.
  * The older entry log keeps its own table, so the two are read side by side rather than copied.
  */
 @Component
