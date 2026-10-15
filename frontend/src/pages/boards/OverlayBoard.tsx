@@ -1,6 +1,6 @@
 // Streaming overlay for an OBS browser source (#29): the race in progress on a transparent page, with its
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
-// timing and state topics (useBoardRace), and shows nothing while no race is on track so the stream stays clear.
+// timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page never looks like a broken overlay.
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -58,7 +58,7 @@ export default function OverlayBoard() {
   const colours = THEMES[theme];
   useTransparentPage();
 
-  const { currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
+  const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
     queryFn: () => getRaceClock(raceId!),
@@ -69,7 +69,25 @@ export default function OverlayBoard() {
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
 
-  if (!race) return null;
+  if (!race) {
+    const upcoming = nowNext?.nextRace?.label;
+    const message = nowNext?.eventName
+      ? 'No race on track'
+      : isError
+        ? 'Waiting for the timing server'
+        : 'No event in progress';
+    return (
+      <div className="p-4">
+        <section
+          className={cn('inline-block max-w-[26rem] rounded-lg px-4 py-2 font-sans shadow-lg', colours.panel)}
+          aria-label="Live timing overlay"
+        >
+          <p className="text-sm font-semibold">{message}</p>
+          {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
+        </section>
+      </div>
+    );
+  }
 
   const elapsed = clock ? clock.elapsedMs + (clock.running ? Math.max(0, now - clockReadAt) : 0) : null;
   const clockText =

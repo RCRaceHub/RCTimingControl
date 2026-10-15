@@ -96,12 +96,11 @@ afterEach(() => {
 });
 
 describe('OverlayBoard', () => {
-  it('shows nothing on a transparent page while no race is on track', async () => {
+  it('shows a small idle panel on a transparent page while no race is on track', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(null));
-    const { container } = renderOverlay();
+    renderOverlay();
 
-    await waitFor(() => expect(getNowNext).toHaveBeenCalled());
-    expect(container).toBeEmptyDOMElement();
+    expect(await screen.findByText('No race on track')).toBeInTheDocument();
     expect(document.body.style.background).toBe('transparent');
     expect(document.documentElement.style.background).toBe('transparent');
   });
