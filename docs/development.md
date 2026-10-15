@@ -166,14 +166,14 @@ app/src/main/java/dev/monkeypatch/rctiming/
 │   ├── audio/           # Announcer voices and clips
 │   ├── boards/          # Anonymous spectator boards and the overlay's race clock
 │   ├── pub/             # Anonymous event schedule, results, championships, about
-│   ├── racecontrol/     # Race lifecycle, marshal, referee, check-in, practice, live feed switch
+│   ├── racecontrol/     # Race lifecycle, marshal, referee, transponder swap, practice, live feed switch
 │   └── setup/           # First-run setup wizard
 ├── domain/              # Entities, jOOQ repositories and write-side services
 │   ├── club/ track/ raceclass/ format/ event/ race/ championship/ practice/
 │   ├── competitor/      # Competitors (display name, RaceHub driver ID, BRCA number, club)
 │   ├── entry/           # Entries with primary and secondary transponders, audit log
 │   ├── racehub/         # Entry Export v1 import and class mapping
-│   ├── checkin/         # Check-in desk and transponder swaps
+│   ├── transponder/     # Transponder swaps
 │   └── user/ auth/      # Officials and refresh tokens
 ├── query/               # jOOQ read side: boards, championship standings,
 │                        #   competitors, entries, events, race control, results export
@@ -218,7 +218,7 @@ None of them needs Docker. Each backend test run creates a temporary SQLite data
 | `/admin/*` | ADMIN / RACE_DIRECTOR / REFEREE | Admin panel. ADMIN only: club profile, tracks, formats, decoder, backups, results exports and officials (#132). Events and championships open to every official, but only an admin edits one (any official can still record a championship exclusion, a referee's disqualification); a race director also moves it through its day |
 | `/admin/race-control` | ADMIN / RACE_DIRECTOR / REFEREE | Pick an in-progress event for race control |
 | `/race-control/event/:id` | ADMIN / RACE_DIRECTOR / REFEREE | Race control cockpit |
-| `/race-control/event/:id/check-in` | ADMIN / RACE_DIRECTOR / REFEREE | Check-in desk |
+| `/race-control/event/:id/transponders` | ADMIN / RACE_DIRECTOR / REFEREE | Transponder swap |
 | `/race-control/event/:id/referee` | ADMIN / RACE_DIRECTOR / REFEREE | Referee timing view |
 | `/race-control/event/:id/practice` | ADMIN / RACE_DIRECTOR / REFEREE | Open practice |
 | `/print/meeting-guide`, `/print/admin-guide` | Public | Printable guides |

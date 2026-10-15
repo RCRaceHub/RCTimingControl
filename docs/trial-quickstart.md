@@ -73,8 +73,6 @@ The demo event, **Wyvern Winter Series Round 4**, is still open for entries, so 
 5. Click **Call Grid**, then **Start Race**. Laps from the simulated decoder appear within about 15 seconds and the running order updates as you watch.
 6. When you have seen enough, click **Finish Race** and confirm. The result is saved and shown. Pick the next race in the run order to carry on.
 
-The demo racers aren't checked in, so the grid shows them as not checked in. That doesn't stop the race. Try **Check-in** in the top bar to check some in.
-
 While a race is running, open these in other tabs or on a phone (see the About page for the address to use):
 
 - [/boards/now-next](http://localhost:8080/boards/now-next): the spectator board with the race on track and what's next.
