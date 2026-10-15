@@ -459,9 +459,9 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
       }),
     );
 
-    act(() => { result.current.playBeep(true); });
+    act(() => { result.current.playBeep('faster'); });
 
-    expect(playLapBeep).toHaveBeenCalledWith(0.8, true, { hz: 600, ms: 300 }, undefined);
+    expect(playLapBeep).toHaveBeenCalledWith(0.8, 'faster', { hz: 600, ms: 300 }, undefined);
   });
 
   it('words the stop and resume lines as the club has', () => {

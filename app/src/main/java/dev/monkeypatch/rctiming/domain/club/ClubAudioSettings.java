@@ -49,28 +49,55 @@ public record ClubAudioSettings(
      * line can follow a horn. A sound with no file uses the built-in one.
      */
     public record HornSounds(String startUrl, Integer startMs, String finishUrl, Integer finishMs,
-                             String tickUrl, Integer tickMs, String lapBeepUrl, Integer lapBeepMs) {
-        public static final HornSounds NONE = new HornSounds(null, null, null, null, null, null, null, null);
+                             String tickUrl, Integer tickMs, String lapBeepUrl, Integer lapBeepMs,
+                             String fasterBeepUrl, Integer fasterBeepMs, String slowerBeepUrl,
+                             Integer slowerBeepMs) {
+        public static final HornSounds NONE = new HornSounds(null, null, null, null, null, null, null, null,
+                null, null, null, null);
 
         /** The sounds from before the tick and the lap beep could be replaced. */
         public HornSounds(String startUrl, Integer startMs, String finishUrl, Integer finishMs) {
-            this(startUrl, startMs, finishUrl, finishMs, null, null, null, null);
+            this(startUrl, startMs, finishUrl, finishMs, null, null, null, null, null, null, null, null);
+        }
+
+        /** The sounds from before the faster and slower lap beeps could be replaced. */
+        public HornSounds(String startUrl, Integer startMs, String finishUrl, Integer finishMs,
+                          String tickUrl, Integer tickMs, String lapBeepUrl, Integer lapBeepMs) {
+            this(startUrl, startMs, finishUrl, finishMs, tickUrl, tickMs, lapBeepUrl, lapBeepMs,
+                    null, null, null, null);
         }
 
         public HornSounds withStart(String url, Integer ms) {
-            return new HornSounds(url, ms, finishUrl, finishMs, tickUrl, tickMs, lapBeepUrl, lapBeepMs);
+            return new HornSounds(url, ms, finishUrl, finishMs, tickUrl, tickMs, lapBeepUrl, lapBeepMs,
+                    fasterBeepUrl, fasterBeepMs, slowerBeepUrl, slowerBeepMs);
         }
 
         public HornSounds withFinish(String url, Integer ms) {
-            return new HornSounds(startUrl, startMs, url, ms, tickUrl, tickMs, lapBeepUrl, lapBeepMs);
+            return new HornSounds(startUrl, startMs, url, ms, tickUrl, tickMs, lapBeepUrl, lapBeepMs,
+                    fasterBeepUrl, fasterBeepMs, slowerBeepUrl, slowerBeepMs);
         }
 
         public HornSounds withTick(String url, Integer ms) {
-            return new HornSounds(startUrl, startMs, finishUrl, finishMs, url, ms, lapBeepUrl, lapBeepMs);
+            return new HornSounds(startUrl, startMs, finishUrl, finishMs, url, ms, lapBeepUrl, lapBeepMs,
+                    fasterBeepUrl, fasterBeepMs, slowerBeepUrl, slowerBeepMs);
         }
 
+        /** The beep for a lap on pace with the driver's best. */
         public HornSounds withLapBeep(String url, Integer ms) {
-            return new HornSounds(startUrl, startMs, finishUrl, finishMs, tickUrl, tickMs, url, ms);
+            return new HornSounds(startUrl, startMs, finishUrl, finishMs, tickUrl, tickMs, url, ms,
+                    fasterBeepUrl, fasterBeepMs, slowerBeepUrl, slowerBeepMs);
+        }
+
+        /** The beep for a lap faster than the driver's best. */
+        public HornSounds withFasterBeep(String url, Integer ms) {
+            return new HornSounds(startUrl, startMs, finishUrl, finishMs, tickUrl, tickMs, lapBeepUrl, lapBeepMs,
+                    url, ms, slowerBeepUrl, slowerBeepMs);
+        }
+
+        /** The beep for a lap slower than the driver's best. */
+        public HornSounds withSlowerBeep(String url, Integer ms) {
+            return new HornSounds(startUrl, startMs, finishUrl, finishMs, tickUrl, tickMs, lapBeepUrl, lapBeepMs,
+                    fasterBeepUrl, fasterBeepMs, url, ms);
         }
     }
 

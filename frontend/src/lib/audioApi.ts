@@ -150,7 +150,7 @@ export const saveAdminAudioSettings = (settings: AudioSettingsDto) =>
   api.put<AudioSettingsDto>('/api/v1/admin/audio/settings', settings).then(r => r.data);
 
 /** Replace the start or finish horn, the tick or the lap beep with the club's own sound file; `durationMs` is how long it plays. */
-export type SoundName = 'start' | 'finish' | 'tick' | 'lap-beep';
+export type SoundName = 'start' | 'finish' | 'tick' | 'lap-beep' | 'faster-beep' | 'slower-beep';
 
 export const uploadHornSound = (horn: SoundName, file: File, durationMs: number) => {
   const form = new FormData();

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isImprovingLap, raceEndsAt } from './raceAudioCues';
+import { isImprovingLap, lapPace, raceEndsAt } from './raceAudioCues';
 
 describe('raceEndsAt', () => {
   it('counts the remaining time from when the clock was read', () => {
@@ -23,5 +23,20 @@ describe('isImprovingLap', () => {
     expect(isImprovingLap(21_100, { bestLapMs: 22_000 })).toBe(false);
     expect(isImprovingLap(undefined, { bestLapMs: 21_100 })).toBe(false);
     expect(isImprovingLap(21_100, { bestLapMs: null })).toBe(false);
+  });
+});
+
+describe('lapPace', () => {
+  it('is faster for a new best', () => {
+    expect(lapPace(21_500, { bestLapMs: 21_100, lastLapMs: 21_100 })).toBe('faster');
+  });
+
+  it('is on pace within 2% of the best, and when there is nothing to compare with', () => {
+    expect(lapPace(21_000, { bestLapMs: 21_000, lastLapMs: 21_400 })).toBe('onPace');
+    expect(lapPace(undefined, { bestLapMs: 21_000, lastLapMs: 21_000 })).toBe('onPace');
+  });
+
+  it('is slower beyond that', () => {
+    expect(lapPace(21_000, { bestLapMs: 21_000, lastLapMs: 22_000 })).toBe('slower');
   });
 });

@@ -14,7 +14,15 @@ export interface HornSounds {
   tickMs?: number | null;
   lapBeepUrl?: string | null;
   lapBeepMs?: number | null;
+  /** Own files for a lap faster or slower than the driver's best; the lap beep above is for one on pace. */
+  fasterBeepUrl?: string | null;
+  fasterBeepMs?: number | null;
+  slowerBeepUrl?: string | null;
+  slowerBeepMs?: number | null;
 }
+
+/** How a lap compares with the driver's best before it. */
+export type LapPace = 'faster' | 'onPace' | 'slower';
 
 /** How long the start horn sounds. */
 export const START_HORN_MS = 1200;
@@ -145,13 +153,19 @@ export interface BeepTone {
   ms?: number;
 }
 
-/** The beep for a lap: an octave higher when the driver improved; the club's own sound if it has one. */
-export function playLapBeep(volume: number, improving: boolean, tone?: BeepTone, sounds?: HornSounds | null) {
+/** The beep for a lap: an octave higher when faster than the driver's best; the club's own sound for that pace if it has one. */
+export function playLapBeep(volume: number, pace: LapPace, tone?: BeepTone, sounds?: HornSounds | null) {
   const builtIn = () => {
     const hz = tone?.hz ?? 440;
-    play([{ at: 0, length: (tone?.ms ?? 200) / 1000, hz: improving ? hz * 2 : hz }], volume, 'sine');
+    play([{ at: 0, length: (tone?.ms ?? 200) / 1000, hz: pace === 'faster' ? hz * 2 : hz }], volume, 'sine');
   };
-  if (sounds?.lapBeepUrl && sounds.lapBeepMs) playFile(sounds.lapBeepUrl, volume, builtIn);
+  const own =
+    pace === 'faster'
+      ? [sounds?.fasterBeepUrl, sounds?.fasterBeepMs]
+      : pace === 'slower'
+        ? [sounds?.slowerBeepUrl, sounds?.slowerBeepMs]
+        : [sounds?.lapBeepUrl, sounds?.lapBeepMs];
+  if (own[0] && own[1]) playFile(own[0] as string, volume, builtIn);
   else builtIn();
 }
 

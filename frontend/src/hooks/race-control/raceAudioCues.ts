@@ -1,4 +1,5 @@
 import type { RaceClockDto } from '@/lib/boardsApi';
+import type { LapPace } from '@/lib/sounds';
 
 /**
  * When the race clock reaches zero, as epoch milliseconds, or null when the race has no set length or is not
@@ -20,4 +21,20 @@ export function raceEndsAt(
  */
 export function isImprovingLap(previousBestMs: number | undefined, row: { bestLapMs: number | null }): boolean {
   return previousBestMs !== undefined && row.bestLapMs !== null && row.bestLapMs < previousBestMs;
+}
+
+/** A lap within this share of the driver's best counts as on pace. */
+export const ON_PACE_TOLERANCE = 0.02;
+
+/**
+ * How the lap just counted compares with the driver's best before it: faster when it is a new best, on pace when
+ * it is within {@link ON_PACE_TOLERANCE} of that best (or there is nothing to compare with), slower otherwise.
+ */
+export function lapPace(
+  previousBestMs: number | undefined,
+  row: { bestLapMs: number | null; lastLapMs?: number | null },
+): LapPace {
+  if (isImprovingLap(previousBestMs, row)) return 'faster';
+  if (previousBestMs === undefined || row.lastLapMs == null) return 'onPace';
+  return row.lastLapMs <= previousBestMs * (1 + ON_PACE_TOLERANCE) ? 'onPace' : 'slower';
 }

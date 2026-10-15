@@ -240,10 +240,13 @@ export function AudioSettingsPanel() {
                 <Button variant="outline" size="sm" onClick={() => playTick(volume / 100, false, settings.hornSounds)}>
                   ▶ Tick
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, true, {
-                  hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs }, settings.hornSounds)}>
-                  ▶ Lap beep
-                </Button>
+                {([['faster', 'Faster lap'], ['onPace', 'On-pace lap'], ['slower', 'Slower lap']] as const).map(
+                  ([pace, label]) => (
+                    <Button key={pace} variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, pace, {
+                      hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs }, settings.hornSounds)}>
+                      ▶ {label}
+                    </Button>
+                  ))}
                 <Button variant="outline" size="sm" onClick={testPiper} disabled={piperTesting}>
                   {piperTesting ? 'Asking Piper…' : '▶ Piper voice'}
                 </Button>

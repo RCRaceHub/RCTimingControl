@@ -307,6 +307,12 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         assertThat(lap.get("tickUrl").asText()).contains("horns/tick-");
         assertThat(lap.get("startMs").asInt()).isEqualTo(1500);
 
+        JsonNode faster = uploadHorn("faster-beep", "audio/ogg", new byte[]{4}, 200).getBody();
+        JsonNode slower = uploadHorn("slower-beep", "audio/wav", new byte[]{5}, 220).getBody();
+        assertThat(faster.get("fasterBeepUrl").asText()).contains("horns/faster-beep-").endsWith(".ogg");
+        assertThat(slower.get("slowerBeepUrl").asText()).contains("horns/slower-beep-").endsWith(".wav");
+        assertThat(slower.get("fasterBeepMs").asInt()).isEqualTo(200);
+        assertThat(slower.get("lapBeepUrl").asText()).contains("horns/lap-beep-");
         JsonNode removed = call(HttpMethod.DELETE, "/api/v1/admin/audio/horns/lap-beep", null).getBody();
         assertThat(removed.get("lapBeepUrl").isNull()).isTrue();
         assertThat(removed.get("tickUrl").isNull()).isFalse();

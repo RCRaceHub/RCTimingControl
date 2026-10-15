@@ -29,7 +29,7 @@ describe('HornSoundsCard', () => {
   it('says built-in for a horn with no file and offers no way back', () => {
     renderCard();
 
-    expect(screen.getAllByText('Built-in')).toHaveLength(4);
+    expect(screen.getAllByText('Built-in')).toHaveLength(6);
     expect(screen.queryByRole('button', { name: 'Use built-in' })).not.toBeInTheDocument();
   });
 
