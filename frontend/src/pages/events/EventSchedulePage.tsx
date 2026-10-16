@@ -61,6 +61,13 @@ export default function EventSchedulePage() {
                     </Link>
                   </Button>
                 ))}
+                {event.finishedRaceIds.length > 0 && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/qualifying?event=${event.id}`}>
+                      Qualifying Standings
+                    </Link>
+                  </Button>
+                )}
                 {event.championshipId !== null && (
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/championships/${event.championshipId}`}>

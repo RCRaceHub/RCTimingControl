@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.api.boards;
 
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
+import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
@@ -9,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
+import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.RaceClockService;
@@ -36,17 +38,20 @@ public class BoardController {
     private final LapTimingService lapTimingService;
     private final RaceClockService raceClockService;
     private final PublicNames publicNames;
+    private final QualifyingTableService qualifyingTableService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
                            RaceClockService raceClockService,
-                           PublicNames publicNames) {
+                           PublicNames publicNames,
+                           QualifyingTableService qualifyingTableService) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
         this.raceClockService = raceClockService;
         this.publicNames = publicNames;
+        this.qualifyingTableService = qualifyingTableService;
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
@@ -71,6 +76,15 @@ public class BoardController {
                     return new ResultsBoardDto(event.id(), event.name(), race, resultRows(race));
                 })
                 .orElse(new ResultsBoardDto(null, null, null, List.of()));
+    }
+
+    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
+    @GetMapping("/qualifying")
+    public QualifyingBoardDto qualifying(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId)
+                .map(event -> new QualifyingBoardDto(event.id(), event.name(),
+                        qualifyingTableService.forEventPublic(event.id())))
+                .orElse(new QualifyingBoardDto(null, null, List.of()));
     }
 
     /** Seeds a board's live table before the first STOMP frame arrives. */
