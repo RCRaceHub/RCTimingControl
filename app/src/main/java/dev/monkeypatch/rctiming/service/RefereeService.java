@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.IncidentReport;
 import dev.monkeypatch.rctiming.domain.race.IncidentReportRepository;
@@ -166,8 +167,16 @@ public class RefereeService {
      */
     public MarshalPenalty applyMarshalPenalty(long raceId, long entryId, long eventId, MarshalPenaltyKind kind,
                                               Long absenceId, String notes, long userId) {
+        Entry entry = entryRepository.getOrThrow(entryId);
+        if (!Long.valueOf(eventId).equals(entry.getEventId())) {
+            throw new StateConflictException("That entry is not in the event the penalty was given for");
+        }
+        Long forAbsence = absenceFor(entryId, eventId, absenceId);
+        if (forAbsence != null && marshalPenaltyRepository.existsByAbsenceId(forAbsence)) {
+            throw new StateConflictException("That missed marshal duty has a penalty already");
+        }
         MarshalPenalty penalty = new MarshalPenalty();
-        penalty.setAbsenceId(absenceFor(entryId, eventId, absenceId));
+        penalty.setAbsenceId(forAbsence);
         penalty.setEntryId(entryId);
         penalty.setEventId(eventId);
         penalty.setAppliedBy(userId);
@@ -183,12 +192,12 @@ public class RefereeService {
         audit.entry(Actor.official(userId), "MARSHAL_PENALTY_APPLIED").entity("marshal_penalty", saved.getId())
                 .race(raceId).event(eventId)
                 .summary("Gave " + labels.driver(entryId) + " a marshal penalty ("
-                        + (kind == MarshalPenaltyKind.FINALS_LAP ? "a lap in the finals" : "best qualifying round") + ")")
+                        + (kind == MarshalPenaltyKind.FINALS_LAP ? "lap in the finals" : "best qualifying round")
+                        + ")")
                 .after(after).record();
         if (kind == MarshalPenaltyKind.FINALS_LAP) {
-            // If their first final has finished already, its stored result takes the lap off now (#27 sends it again)
-            entryRepository.findById(entryId)
-                    .flatMap(e -> finalsMarshalPenalties.firstFinalOf(entryId, e.getEventClassId()))
+            // A final that has finished already has its stored result worked out again, and sent again (#27)
+            finalsMarshalPenalties.firstFinalOf(entryId, entry.getEventClassId())
                     .filter(f -> f.getStatus() == RaceStatus.FINISHED)
                     .ifPresent(f -> eventPublisher.publishEvent(new FinishedRaceCorrected(f.getId())));
         }

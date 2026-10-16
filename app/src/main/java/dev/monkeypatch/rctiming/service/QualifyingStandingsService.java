@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -101,7 +102,8 @@ public class QualifyingStandingsService {
     public List<QualifyingResult> rankedResultsFor(Long eventClassId) {
         Optional<Integer> bestRounds = roundByRoundBestCount(eventClassId);
         if (bestRounds.isPresent()) {
-            List<QualifyingResult> byPoints = roundByRound(eventClassId, bestRounds.get(), lostBestRounds(eventClassId));
+            List<QualifyingResult> byPoints =
+                    roundByRound(eventClassId, bestRounds.get(), lostBestRounds(eventClassId));
             if (!byPoints.isEmpty()) {
                 return byPoints;
             }
@@ -233,7 +235,7 @@ public class QualifyingStandingsService {
         if (eventClass == null) {
             return Map.of();
         }
-        Map<Long, Integer> lost = new java.util.HashMap<>();
+        Map<Long, Integer> lost = new HashMap<>();
         for (MarshalPenalty penalty : marshalPenaltyRepository
                 .findByEventIdAndKind(eventClass.getEventId(), MarshalPenaltyKind.QUALIFYING_SCORE)) {
             lost.merge(penalty.getEntryId(), 1, Integer::sum);

@@ -41,6 +41,10 @@ public class MarshalPenaltyRepository extends JooqRepository<MarshalPenalty, Mar
         r.setKind(m.getKind().name());
     }
 
+    public boolean existsByAbsenceId(Long absenceId) {
+        return !findWhere(MARSHAL_PENALTIES.ABSENCE_ID.eq(absenceId)).isEmpty();
+    }
+
     public List<MarshalPenalty> findByEventIdAndKind(Long eventId, MarshalPenaltyKind kind) {
         return findWhere(MARSHAL_PENALTIES.EVENT_ID.eq(eventId).and(MARSHAL_PENALTIES.KIND.eq(kind.name())));
     }

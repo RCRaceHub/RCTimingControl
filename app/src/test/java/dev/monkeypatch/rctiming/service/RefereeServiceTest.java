@@ -95,15 +95,18 @@ class RefereeServiceTest {
 
     @Test
     void aMarshalPenalty_forAnAbsenceOfAnotherEntry_isAConflict() {
+        entryInEvent(1L);
         when(marshalAbsenceRepository.getOrThrow(5L)).thenReturn(absence(5L, 99L, 1L));
 
-        assertThatThrownBy(() -> service().applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, 5L, null, 3L))
+        assertThatThrownBy(() -> service()
+                .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, 5L, null, 3L))
                 .isInstanceOf(StateConflictException.class);
         verifyNoInteractions(marshalPenaltyRepository);
     }
 
     @Test
     void aMarshalPenalty_namingNoAbsence_isForTheEntrysLatestInTheEvent() {
+        entryInEvent(1L);
         when(marshalAbsenceRepository.findByEventId(1L))
                 .thenReturn(List.of(absence(4L, 11L, 1L), absence(6L, 11L, 1L), absence(8L, 99L, 1L)));
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
@@ -118,10 +121,8 @@ class RefereeServiceTest {
 
     @Test
     void aFinalsLapMarshalPenalty_correctsTheDriversFirstFinalWhenItHasFinished() {
+        entryInEvent(1L);
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
-        Entry entry = new Entry();
-        entry.setEventClassId(4L);
-        when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
         when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.FINISHED)));
 
         MarshalPenalty penalty = service().applyMarshalPenalty(8L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null,
@@ -133,15 +134,43 @@ class RefereeServiceTest {
 
     @Test
     void aFinalsLapMarshalPenalty_leavesAFinalThatHasNotFinishedToBeCorrectedAtItsFinish() {
+        entryInEvent(1L);
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
-        Entry entry = new Entry();
-        entry.setEventClassId(4L);
-        when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
         when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.PENDING)));
 
         service().applyMarshalPenalty(8L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null, null, 3L);
 
         verify(eventPublisher, never()).publishEvent(any(FinishedRaceCorrected.class));
+    }
+
+    @Test
+    void aMarshalPenalty_forAnEntryOfAnotherEvent_isAConflict() {
+        entryInEvent(2L);
+
+        assertThatThrownBy(() -> service()
+                .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.QUALIFYING_SCORE, null, null, 3L))
+                .isInstanceOf(StateConflictException.class);
+        verifyNoInteractions(marshalPenaltyRepository);
+    }
+
+    @Test
+    void aSecondMarshalPenalty_forTheSameAbsence_isAConflict() {
+        entryInEvent(1L);
+        when(marshalAbsenceRepository.getOrThrow(5L)).thenReturn(absence(5L, 11L, 1L));
+        when(marshalPenaltyRepository.existsByAbsenceId(5L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service()
+                .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, 5L, null, 3L))
+                .isInstanceOf(StateConflictException.class);
+        verify(marshalPenaltyRepository, never()).save(any());
+    }
+
+    private Entry entryInEvent(long eventId) {
+        Entry entry = new Entry();
+        entry.setEventId(eventId);
+        entry.setEventClassId(4L);
+        when(entryRepository.getOrThrow(11L)).thenReturn(entry);
+        return entry;
     }
 
     private static Race race(RaceStatus status) {

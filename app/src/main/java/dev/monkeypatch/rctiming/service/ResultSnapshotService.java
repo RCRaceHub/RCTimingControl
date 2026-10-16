@@ -212,7 +212,8 @@ public class ResultSnapshotService {
         }
 
         // A marshal penalty for a final costs a lap in the driver's first final, whenever it was given
-        finalsMarshalPenalties.lapsOffIn(race).forEach((entryId, laps) -> lapDeltas.merge(entryId, -laps, Integer::sum));
+        finalsMarshalPenalties.lapsOffIn(race)
+                .forEach((entryId, laps) -> lapDeltas.merge(entryId, -laps, Integer::sum));
 
         // A marshal can credit laps to a car the decoder never saw, which has no row in the timed result
         List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(timed);

@@ -356,10 +356,11 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
                         "absenceId", absenceId), refereeHeaders()), Map.class);
 
         assertThat(byDefault.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(byName.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // One missed duty is penalised once
+        assertThat(byName.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         assertThat(marshalPenalties(re.entry().getId(), eventId))
-                .hasSize(2).allSatisfy(p -> assertThat(p.getAbsenceId()).isEqualTo(absenceId));
+                .hasSize(1).allSatisfy(p -> assertThat(p.getAbsenceId()).isEqualTo(absenceId));
     }
 
     @Test

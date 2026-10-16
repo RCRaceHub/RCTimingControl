@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.springframework.stereotype.Service;
 
@@ -33,15 +34,18 @@ public class FinalsMarshalPenalties {
     private final RaceEntryRepository raceEntryRepository;
     private final MarshalPenaltyRepository marshalPenaltyRepository;
     private final EventClassRepository eventClassRepository;
+    private final RoundRepository roundRepository;
 
     public FinalsMarshalPenalties(RaceRepository raceRepository,
                                   RaceEntryRepository raceEntryRepository,
                                   MarshalPenaltyRepository marshalPenaltyRepository,
-                                  EventClassRepository eventClassRepository) {
+                                  EventClassRepository eventClassRepository,
+                                  RoundRepository roundRepository) {
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.marshalPenaltyRepository = marshalPenaltyRepository;
         this.eventClassRepository = eventClassRepository;
+        this.roundRepository = roundRepository;
     }
 
     /** The laps to take off each driver in this race, by entry id: empty unless the race is a final. */
@@ -81,9 +85,19 @@ public class FinalsMarshalPenalties {
         return finalsOf(eventClassId).stream().filter(f -> entriesOn(f).contains(entryId)).findFirst();
     }
 
+    /** The class's finals in the order they run: by their round's place in the event, then within the round. */
     private List<Race> finalsOf(Long eventClassId) {
-        return raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL).stream()
-                .sorted(Comparator.comparing(Race::getId)).toList();
+        Map<Long, Integer> roundOrder = new HashMap<>();
+        List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
+        for (Race race : finals) {
+            roundOrder.computeIfAbsent(race.getRoundId(),
+                    id -> roundRepository.getOrThrow(id).getSequenceInEvent());
+        }
+        return finals.stream()
+                .sorted(Comparator.comparing((Race r) -> roundOrder.get(r.getRoundId()))
+                        .thenComparingInt(Race::getSequenceInRound)
+                        .thenComparing(Race::getId))
+                .toList();
     }
 
     private Set<Long> entriesOn(Race race) {

@@ -42,7 +42,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
       title: `Penalise ${driverName} for missing marshal duty?`,
       description:
         kind === 'QUALIFYING_SCORE'
-          ? 'Their best qualifying round will not count. If the finals are already seeded, seed them again from the qualifying table.'
+          ? 'Their best qualifying round will not count (round by round qualifying only). If the finals are already seeded, seed them again from the qualifying table.'
           : 'A lap comes off their result in the first final they race. This cannot be taken back.',
       confirmLabel: 'Penalise',
       destructive: true,
@@ -127,6 +127,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                         <Button
                           size="sm"
                           variant="outline"
+                          disabled={mutations.marshalAbsent.isPending}
                           onClick={() => markMissed(row.entryId, row.driverName)}
                         >
                           Missed duty
@@ -136,6 +137,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={mutations.marshalPenalty.isPending}
                               onClick={() => penalise(row.entryId, row.driverName, 'QUALIFYING_SCORE')}
                             >
                               Lose best qualifying round
@@ -143,6 +145,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={mutations.marshalPenalty.isPending}
                               onClick={() => penalise(row.entryId, row.driverName, 'FINALS_LAP')}
                             >
                               Lap off in finals
