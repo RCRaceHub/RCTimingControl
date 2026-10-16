@@ -34,6 +34,7 @@ class QualifyingStandingsServiceTest {
         QualifyingResult total = new QualifyingResult(7L, 55_000, 10).plus(new QualifyingResult(7L, 52_000, 11));
 
         assertThat(total).isEqualTo(new QualifyingResult(7L, 52_000, 21));
+        assertThat(total.points()).isNull();
     }
 
     @Test

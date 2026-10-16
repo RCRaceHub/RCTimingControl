@@ -252,6 +252,87 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 buggyClass)).isInstanceOf(EntityNotFoundException.class);
     }
 
+    @Test
+    void roundByRoundQualifyingRanksByLowPointsOverTheBestRoundsAndBreaksTiesOnLapsThenQuickestLap() {
+        long buggyClass = addClass("Buggy", """
+                {"type":"BUMP_UP","qualifyingHeats":2,"heatDurationMinutes":5,"bestHeatsCount":1,"gridSize":10,
+                 "bumpSpots":2,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+                 "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5}""");
+        List<Long> drivers = addEntries(buggyClass, 4);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 1))));
+        // Round 1 places: a, b, c, d. Round 2 places: b, c, d, a. With the best round counting, a and b both have
+        // 1 point; each has 10 laps in the counting round, so the quicker best lap (a's) decides
+        int[][] laps = {{10, 9, 8, 7}, {7, 10, 9, 8}};
+        long[][] bestLap = {{60_000, 61_000, 62_000, 63_000}, {63_000, 61_500, 62_500, 64_000}};
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                    heat.getRoundId()) - 1;
+            List<long[]> rows = new ArrayList<>();
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                int d = drivers.indexOf(onGrid.getEntryId());
+                rows.add(new long[] {onGrid.getEntryId(), laps[round][d], bestLap[round][d]});
+            }
+            storeResult(heat, rows, false);
+        }
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        assertThat(ranked).extracting(r -> r.entryId())
+                .containsExactly(drivers.get(0), drivers.get(1), drivers.get(2), drivers.get(3));
+        // a: best round 1 point; b: 1 point; c: round 2 place 2; d: round 2 place 3
+        assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 1, 2, 3);
+    }
+
+    private static final String ROUND_BY_ROUND_ALL = """
+            {"type":"BUMP_UP","qualifyingHeats":2,"heatDurationMinutes":5,"bestHeatsCount":0,"gridSize":10,
+             "bumpSpots":2,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+             "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5}""";
+
+    @Test
+    void roundByRoundQualifyingFallsBackToLapsWhileARoundIsHalfFinished() {
+        long buggyClass = addClass("Buggy", ROUND_BY_ROUND_ALL);
+        List<Long> drivers = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        Race first = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER).get(0);
+        List<long[]> rows = new ArrayList<>();
+        for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(first.getId())) {
+            rows.add(new long[] {onGrid.getEntryId(), 10, 60_000});
+        }
+        storeResult(first, rows, false);
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        assertThat(ranked).hasSize(rows.size());
+        assertThat(ranked).extracting(r -> r.points()).containsOnlyNulls();
+        assertThat(drivers).containsAll(ranked.stream().map(r -> r.entryId()).toList());
+    }
+
+    @Test
+    void roundByRoundQualifyingSharesAPlaceOnAnExactTieAndSkipsARoundWhoseHeatsWereAllAbandoned() {
+        long buggyClass = addClass("Buggy", ROUND_BY_ROUND_ALL);
+        List<Long> drivers = addEntries(buggyClass, 3);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 1))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                    heat.getRoundId());
+            List<long[]> rows = new ArrayList<>();
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                // Round 1: drivers 0 and 1 tie on laps and time, driver 2 is behind. Round 2 is abandoned
+                int laps = drivers.indexOf(onGrid.getEntryId()) == 2 ? 8 : 10;
+                rows.add(new long[] {onGrid.getEntryId(), laps, 60_000});
+            }
+            storeResult(heat, rows, round == 2);
+        }
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 1, 3);
+        assertThat(ranked.get(2).entryId()).isEqualTo(drivers.get(2));
+    }
+
     /** Marks the heat finished (as the race control does) and stores its result; each row is entry, laps, best lap. */
     private void finishWithResult(Race heat, List<Long> buggies, int round) {
         List<long[]> rows = new ArrayList<>();
@@ -344,12 +425,16 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     }
 
     private long addClass(String name) {
+        return addClass(name, "{\"type\":\"TIMED\"}");
+    }
+
+    private long addClass(String name, String configSnapshot) {
         long racingClassId = jdbc.queryForObject(
                 "insert into racing_classes (name) values (?) returning id", Long.class, name + " " + run);
         racingClassIds.add(racingClassId);
         return jdbc.queryForObject("""
                 insert into event_classes (event_id, racing_class_id, config_snapshot)
-                values (?, ?, '{"type":"TIMED"}') returning id""", Long.class, eventId, racingClassId);
+                values (?, ?, ?) returning id""", Long.class, eventId, racingClassId, configSnapshot);
     }
 
     private List<Long> addEntries(long eventClassId, int count) {
