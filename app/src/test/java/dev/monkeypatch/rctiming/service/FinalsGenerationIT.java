@@ -63,6 +63,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @AfterEach
     void tearDown() {
         jdbc.update("delete from audit_log where event_id = ?", eventId);
+        jdbc.update("delete from marshal_penalties where event_id = ?", eventId);
         jdbc.update("delete from rounds where event_id = ?", eventId); // races and race_entries cascade
         jdbc.update("delete from entries where event_id = ?", eventId);
         jdbc.update("delete from event_classes where event_id = ?", eventId);
@@ -282,6 +283,40 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 .containsExactly(drivers.get(0), drivers.get(1), drivers.get(2), drivers.get(3));
         // a: best round 1 point; b: 1 point; c: round 2 place 2; d: round 2 place 3
         assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 1, 2, 3);
+    }
+
+    @Test
+    void aQualifyingMarshalPenaltyDropsTheDriversBestRoundSoTheNextBestCounts() {
+        long buggyClass = addClass("Buggy", """
+                {"type":"BUMP_UP","qualifyingHeats":2,"heatDurationMinutes":5,"bestHeatsCount":1,"gridSize":10,
+                 "bumpSpots":2,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+                 "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5}""");
+        List<Long> drivers = addEntries(buggyClass, 4);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 2, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 1))));
+        // Round 1 places: a, b, c, d. Round 2 places: b, c, d, a
+        int[][] laps = {{10, 9, 8, 7}, {7, 10, 9, 8}};
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            int round = jdbc.queryForObject("select round_number from rounds where id = ?", Integer.class,
+                    heat.getRoundId()) - 1;
+            List<long[]> rows = new ArrayList<>();
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                rows.add(new long[] {onGrid.getEntryId(), laps[round][drivers.indexOf(onGrid.getEntryId())], 60_000});
+            }
+            storeResult(heat, rows, false);
+        }
+        jdbc.update("insert into marshal_penalties (entry_id, event_id, applied_by, kind)"
+                + " values (?, ?, 1, 'QUALIFYING_SCORE')", drivers.get(0), eventId);
+        // A lap-in-the-finals penalty does not touch the qualifying order
+        jdbc.update("insert into marshal_penalties (entry_id, event_id, applied_by, kind)"
+                + " values (?, ?, 1, 'FINALS_LAP')", drivers.get(1), eventId);
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        // a loses round 1 (1 point) and keeps round 2 (4 points), so goes from first to last
+        assertThat(ranked).extracting(r -> r.entryId())
+                .containsExactly(drivers.get(1), drivers.get(2), drivers.get(3), drivers.get(0));
+        assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 2, 3, 4);
     }
 
     private static final String ROUND_BY_ROUND_ALL = """

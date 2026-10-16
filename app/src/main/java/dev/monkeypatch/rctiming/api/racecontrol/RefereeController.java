@@ -74,6 +74,6 @@ public class RefereeController {
     public ResponseEntity<MarshalPenaltyDto> applyMarshalPenalty(@PathVariable long raceId,
                                                                  @Valid @RequestBody MarshalPenaltyRequest req) {
         return ResponseEntity.ok(MarshalPenaltyDto.from(refereeService.applyMarshalPenalty(
-                raceId, req.entryId(), req.eventId(), req.absenceId(), req.notes(), CurrentOfficial.id())));
+                raceId, req.entryId(), req.eventId(), req.kind(), req.absenceId(), req.notes(), CurrentOfficial.id())));
     }
 }

@@ -11,6 +11,9 @@ import dev.monkeypatch.rctiming.domain.format.QualifyingType;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.TimedRaceConfig;
+import dev.monkeypatch.rctiming.domain.race.MarshalPenalty;
+import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyKind;
+import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -63,6 +67,7 @@ public class QualifyingStandingsService {
     private final ResultSnapshotJson snapshotJson;
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
+    private final MarshalPenaltyRepository marshalPenaltyRepository;
 
     public QualifyingStandingsService(RaceRepository raceRepository,
                                       RaceEntryRepository raceEntryRepository,
@@ -70,7 +75,8 @@ public class QualifyingStandingsService {
                                       EntryRepository entryRepository,
                                       ResultSnapshotJson snapshotJson,
                                       EventClassRepository eventClassRepository,
-                                      RaceFormatService raceFormatService) {
+                                      RaceFormatService raceFormatService,
+                                      MarshalPenaltyRepository marshalPenaltyRepository) {
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.resultSnapshotRepository = resultSnapshotRepository;
@@ -78,6 +84,7 @@ public class QualifyingStandingsService {
         this.snapshotJson = snapshotJson;
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
+        this.marshalPenaltyRepository = marshalPenaltyRepository;
     }
 
     /**
@@ -95,7 +102,8 @@ public class QualifyingStandingsService {
     public List<QualifyingResult> rankedResultsFor(Long eventClassId) {
         Optional<Integer> bestRounds = roundByRoundBestCount(eventClassId);
         if (bestRounds.isPresent()) {
-            List<QualifyingResult> byPoints = roundByRound(eventClassId, bestRounds.get());
+            List<QualifyingResult> byPoints =
+                    roundByRound(eventClassId, bestRounds.get(), lostBestRounds(eventClassId));
             if (!byPoints.isEmpty()) {
                 return byPoints;
             }
@@ -143,7 +151,7 @@ public class QualifyingStandingsService {
      * rounds. A round with a heat still to run, or whose heats were all abandoned, is left out, since its places
      * are not settled. Empty when no round qualifies.
      */
-    private List<QualifyingResult> roundByRound(Long eventClassId, int bestRounds) {
+    private List<QualifyingResult> roundByRound(Long eventClassId, int bestRounds, Map<Long, Integer> lostBest) {
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
                 .stream().map(Entry::getId).collect(Collectors.toSet());
         Map<Long, List<Race>> heatsByRound = new LinkedHashMap<>();
@@ -168,7 +176,7 @@ public class QualifyingStandingsService {
         rounds.forEach(r -> drivers.addAll(r.keySet()));
         List<QualifyingResult> results = new ArrayList<>();
         for (Long entryId : drivers) {
-            results.add(totalFor(entryId, rounds, missingPoints, bestRounds));
+            results.add(totalFor(entryId, rounds, missingPoints, bestRounds, lostBest.getOrDefault(entryId, 0)));
         }
         results.sort(Comparator
                 .comparingInt(QualifyingResult::points)
@@ -221,9 +229,27 @@ public class QualifyingStandingsService {
         return scored;
     }
 
-    /** One driver's points, laps and best lap over their best {@code bestRounds} rounds (all when 0). */
+    /** How many of their best rounds each driver has lost to marshal penalties, by entry id. */
+    private Map<Long, Integer> lostBestRounds(Long eventClassId) {
+        EventClass eventClass = eventClassRepository.findById(eventClassId).orElse(null);
+        if (eventClass == null) {
+            return Map.of();
+        }
+        Map<Long, Integer> lost = new HashMap<>();
+        for (MarshalPenalty penalty : marshalPenaltyRepository
+                .findByEventIdAndKind(eventClass.getEventId(), MarshalPenaltyKind.QUALIFYING_SCORE)) {
+            lost.merge(penalty.getEntryId(), 1, Integer::sum);
+        }
+        return lost;
+    }
+
+    /**
+     * One driver's points, laps and best lap over their best {@code bestRounds} rounds (all when 0), after the
+     * {@code lostBest} best rounds a marshal penalty took away. The rounds that would then be missing from the
+     * count are made up with the worst place scored in a round, so a penalty can never help a driver.
+     */
     private static QualifyingResult totalFor(Long entryId, List<Map<Long, RoundScore>> rounds,
-                                             List<Integer> missingPoints, int bestRounds) {
+                                             List<Integer> missingPoints, int bestRounds, int lostBest) {
         List<RoundScore> scores = new ArrayList<>();
         for (int i = 0; i < rounds.size(); i++) {
             scores.add(rounds.get(i).getOrDefault(entryId,
@@ -231,7 +257,13 @@ public class QualifyingStandingsService {
         }
         scores.sort(Comparator.comparingInt(RoundScore::points)
                 .thenComparing(Comparator.comparingInt(RoundScore::laps).reversed()));
-        List<RoundScore> counting = bestRounds > 0 ? scores.subList(0, Math.min(bestRounds, scores.size())) : scores;
+        int counted = bestRounds > 0 ? Math.min(bestRounds, scores.size()) : scores.size();
+        int lost = Math.min(lostBest, scores.size());
+        List<RoundScore> counting = new ArrayList<>(scores.subList(lost, Math.min(lost + counted, scores.size())));
+        int worst = missingPoints.stream().mapToInt(Integer::intValue).max().orElse(0);
+        while (counting.size() < counted) {
+            counting.add(new RoundScore(worst, 0, Long.MAX_VALUE, NO_LAP));
+        }
         return new QualifyingResult(entryId,
                 counting.stream().mapToLong(RoundScore::bestLapMs).min().orElse(NO_LAP),
                 counting.stream().mapToInt(RoundScore::laps).sum(),

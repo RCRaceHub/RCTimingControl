@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreRaceReadinessPanel } from './PreRaceReadinessPanel';
+
+const marshalAbsent = vi.fn();
+const marshalPenalty = vi.fn();
+vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
+  useRaceStateMutations: () => ({ marshalAbsent: { mutate: marshalAbsent }, marshalPenalty: { mutate: marshalPenalty } }),
+}));
 
 vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
   usePreRaceReadiness: () => ({
@@ -8,9 +14,13 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
     error: null,
     data: {
       raceId: 1,
+      eventId: 5,
       raceLabel: 'Qualifying 1 — Stock — Heat 1',
       firstRaceOfEvent: true,
-      marshalDuty: [],
+      marshalDuty: [
+        { entryId: 20, driverName: 'Max Marshal', carNumber: null, missedThisEvent: 0 },
+        { entryId: 21, driverName: 'Lazy Larry', carNumber: null, missedThisEvent: 1 },
+      ],
       gridCall: [
         {
           gridPosition: 1,
@@ -40,5 +50,29 @@ describe('PreRaceReadinessPanel', () => {
     expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     expect(screen.getByText('arrived')).toBeInTheDocument();
     expect(screen.queryByText(/checked in/i)).not.toBeInTheDocument();
+  });
+
+  it('records a missed marshal duty against the event', () => {
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Missed duty' })[0]);
+
+    expect(marshalAbsent).toHaveBeenCalledWith({ entryId: 20, eventId: 5 }, expect.anything());
+  });
+
+  it('offers a penalty only to a driver who has missed duty, and asks before applying it', async () => {
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    expect(screen.getAllByRole('button', { name: 'Lap off in finals' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Lap off in finals' }));
+    expect(marshalPenalty).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', { name: 'Penalise' }));
+
+    await waitFor(() =>
+      expect(marshalPenalty).toHaveBeenCalledWith(
+        { entryId: 21, eventId: 5, kind: 'FINALS_LAP' },
+        expect.anything(),
+      ),
+    );
   });
 });

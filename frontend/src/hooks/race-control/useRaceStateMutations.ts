@@ -11,10 +11,12 @@ import {
   raiseIncident,
   applyPenalty,
   recordMarshalAbsent,
+  applyMarshalPenalty,
   type MarshalAdjustmentRequest,
   type IncidentReportRequest,
   type PenaltyRequest,
   type MarshalAbsenceRequest,
+  type MarshalPenaltyRequest,
 } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from './raceControlQueryKeys';
 
@@ -31,6 +33,9 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
   // Calling the grid fixes how the race starts, so the start type and call order are read afresh
   const invalidateReadiness = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.preRaceReadiness(raceId) });
+
+  const invalidateQualifying = () =>
+    queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.qualifying(eventId) });
 
   const invalidateSnapshot = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.resultSnapshot(raceId) });
@@ -75,7 +80,12 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
     }),
     marshalAbsent: useMutation({
       mutationFn: (req: MarshalAbsenceRequest) => recordMarshalAbsent(raceId, req),
-      onSuccess: invalidateHistory,
+      onSuccess: () => { invalidateHistory(); invalidateReadiness(); },
+    }),
+    // A penalty changes the qualifying order or a final's result, so cached copies of both are stale
+    marshalPenalty: useMutation({
+      mutationFn: (req: MarshalPenaltyRequest) => applyMarshalPenalty(raceId, req),
+      onSuccess: () => { invalidateSnapshot(); invalidateHistory(); invalidateQualifying(); },
     }),
     skipTo: useMutation({
       mutationFn: ({ sourceRaceId, targetRaceId }: { sourceRaceId: number; targetRaceId: number }) =>

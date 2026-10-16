@@ -58,6 +58,7 @@ public class ResultSnapshotService {
     private final CompetitorRepository competitorRepository;
     private final PenaltyRepository penaltyRepository;
     private final MarshalAdjustmentRepository marshalAdjustmentRepository;
+    private final FinalsMarshalPenalties finalsMarshalPenalties;
 
     public ResultSnapshotService(RaceRepository raceRepository,
                                   RoundRepository roundRepository,
@@ -68,7 +69,8 @@ public class ResultSnapshotService {
                                   EntryRepository entryRepository,
                                   CompetitorRepository competitorRepository,
                                   PenaltyRepository penaltyRepository,
-                                  MarshalAdjustmentRepository marshalAdjustmentRepository) {
+                                  MarshalAdjustmentRepository marshalAdjustmentRepository,
+                                  FinalsMarshalPenalties finalsMarshalPenalties) {
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.lapTimingService = lapTimingService;
@@ -79,6 +81,7 @@ public class ResultSnapshotService {
         this.competitorRepository = competitorRepository;
         this.penaltyRepository = penaltyRepository;
         this.marshalAdjustmentRepository = marshalAdjustmentRepository;
+        this.finalsMarshalPenalties = finalsMarshalPenalties;
     }
 
     /**
@@ -180,7 +183,8 @@ public class ResultSnapshotService {
      * The timed result with corrections applied. Time penalties always add time: nothing applies them
      * during the race. Lap penalties and marshal lap adjustments count only when given after the finish,
      * since those given during the race changed the live laps the timed result came from. Corrections from
-     * before the race last started belong to a run that was restarted, and are left out.
+     * before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
+     * finals takes its lap here whenever it was given, since nothing applies it during the race.
      */
     private List<ResultSnapshotDto.ResultRow> corrected(Race race, Instant finishedAt,
                                                         List<ResultSnapshotDto.ResultRow> timed) {
@@ -206,6 +210,10 @@ public class ResultSnapshotService {
                 lapDeltas.merge(adjustment.getEntryId(), adjustment.getLapDelta(), Integer::sum);
             }
         }
+
+        // A marshal penalty for a final costs a lap in the driver's first final, whenever it was given
+        finalsMarshalPenalties.lapsOffIn(race)
+                .forEach((entryId, laps) -> lapDeltas.merge(entryId, -laps, Integer::sum));
 
         // A marshal can credit laps to a car the decoder never saw, which has no row in the timed result
         List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(timed);

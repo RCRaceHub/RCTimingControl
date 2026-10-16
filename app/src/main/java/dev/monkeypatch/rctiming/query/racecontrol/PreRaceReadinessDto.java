@@ -8,6 +8,7 @@ import java.util.List;
  * the grid call list and the marshal duty list.
  *
  * @param raceId           the target race ID
+ * @param eventId          the event the race belongs to, which absences and marshal penalties are recorded against
  * @param raceLabel        human-readable label, e.g. "Qualifying 2 — Modified Touring — Heat 2"
  * @param firstRaceOfEvent true when no race comes before this one in the event; marshalDuty then holds the last
  *                         race of its own round, if that is another race
@@ -18,6 +19,7 @@ import java.util.List;
  */
 public record PreRaceReadinessDto(
         long raceId,
+        long eventId,
         String raceLabel,
         boolean firstRaceOfEvent,
         List<GridCallSlotDto> gridCall,
@@ -27,7 +29,7 @@ public record PreRaceReadinessDto(
 ) {
     /** The same view with the race's start details, which come from the race and its format, not from SQL. */
     public PreRaceReadinessDto withStart(String startType, int staggerIntervalSeconds) {
-        return new PreRaceReadinessDto(raceId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
+        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
                 startType, staggerIntervalSeconds);
     }
 }

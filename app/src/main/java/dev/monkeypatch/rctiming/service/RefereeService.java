@@ -3,11 +3,14 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.IncidentReport;
 import dev.monkeypatch.rctiming.domain.race.IncidentReportRepository;
 import dev.monkeypatch.rctiming.domain.race.MarshalAbsence;
 import dev.monkeypatch.rctiming.domain.race.MarshalAbsenceRepository;
 import dev.monkeypatch.rctiming.domain.race.MarshalPenalty;
+import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyKind;
 import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Penalty;
 import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
@@ -48,6 +51,8 @@ public class RefereeService {
     private final ApplicationEventPublisher eventPublisher;
     private final AuditService audit;
     private final RaceAuditLabels labels;
+    private final FinalsMarshalPenalties finalsMarshalPenalties;
+    private final EntryRepository entryRepository;
 
     public RefereeService(IncidentReportRepository incidentReportRepository,
                           PenaltyRepository penaltyRepository,
@@ -57,7 +62,9 @@ public class RefereeService {
                           LapTimingService lapTimingService,
                           ApplicationEventPublisher eventPublisher,
                           AuditService audit,
-                          RaceAuditLabels labels) {
+                          RaceAuditLabels labels,
+                          FinalsMarshalPenalties finalsMarshalPenalties,
+                          EntryRepository entryRepository) {
         this.incidentReportRepository = incidentReportRepository;
         this.penaltyRepository = penaltyRepository;
         this.marshalAbsenceRepository = marshalAbsenceRepository;
@@ -67,6 +74,8 @@ public class RefereeService {
         this.eventPublisher = eventPublisher;
         this.audit = audit;
         this.labels = labels;
+        this.finalsMarshalPenalties = finalsMarshalPenalties;
+        this.entryRepository = entryRepository;
     }
 
     public IncidentReport raiseIncident(long raceId, long entryId, String incidentType, String description,
@@ -152,26 +161,46 @@ public class RefereeService {
 
     /**
      * Gives a marshal penalty for a recorded absence. The absence can be named (its id comes back from
-     * recording it); otherwise the entry's most recent absence in the event is used, if there is one.
+     * recording it); otherwise the entry's most recent absence in the event is used, if there is one. The
+     * {@code kind} says what it costs: the driver's best qualifying round (taken into account the next time the
+     * qualifying order is worked out, so finals already seeded need seeding again) or a lap in their first final.
      */
-    public MarshalPenalty applyMarshalPenalty(long raceId, long entryId, long eventId, Long absenceId, String notes,
-                                              long userId) {
+    public MarshalPenalty applyMarshalPenalty(long raceId, long entryId, long eventId, MarshalPenaltyKind kind,
+                                              Long absenceId, String notes, long userId) {
+        Entry entry = entryRepository.getOrThrow(entryId);
+        if (!Long.valueOf(eventId).equals(entry.getEventId())) {
+            throw new StateConflictException("That entry is not in the event the penalty was given for");
+        }
+        Long forAbsence = absenceFor(entryId, eventId, absenceId);
+        if (forAbsence != null && marshalPenaltyRepository.existsByAbsenceId(forAbsence)) {
+            throw new StateConflictException("That missed marshal duty has a penalty already");
+        }
         MarshalPenalty penalty = new MarshalPenalty();
-        penalty.setAbsenceId(absenceFor(entryId, eventId, absenceId));
+        penalty.setAbsenceId(forAbsence);
         penalty.setEntryId(entryId);
         penalty.setEventId(eventId);
         penalty.setAppliedBy(userId);
         penalty.setAppliedAt(Instant.now());
         penalty.setNotes(notes);
+        penalty.setKind(kind);
         MarshalPenalty saved = marshalPenaltyRepository.save(penalty);
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("entryId", saved.getEntryId());
         after.put("absenceId", saved.getAbsenceId());
+        after.put("kind", saved.getKind());
         after.put("notes", saved.getNotes());
         audit.entry(Actor.official(userId), "MARSHAL_PENALTY_APPLIED").entity("marshal_penalty", saved.getId())
                 .race(raceId).event(eventId)
-                .summary("Gave " + labels.driver(entryId) + " a marshal penalty")
+                .summary("Gave " + labels.driver(entryId) + " a marshal penalty ("
+                        + (kind == MarshalPenaltyKind.FINALS_LAP ? "lap in the finals" : "best qualifying round")
+                        + ")")
                 .after(after).record();
+        if (kind == MarshalPenaltyKind.FINALS_LAP) {
+            // A final that has finished already has its stored result worked out again, and sent again (#27)
+            finalsMarshalPenalties.firstFinalOf(entryId, entry.getEventClassId())
+                    .filter(f -> f.getStatus() == RaceStatus.FINISHED)
+                    .ifPresent(f -> eventPublisher.publishEvent(new FinishedRaceCorrected(f.getId())));
+        }
         return saved;
     }
 

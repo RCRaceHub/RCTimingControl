@@ -118,6 +118,20 @@ public class MarshalPenaltiesRecord extends UpdatableRecordImpl<MarshalPenalties
         return (String) get(6);
     }
 
+    /**
+     * Setter for <code>marshal_penalties.kind</code>.
+     */
+    public void setKind(String value) {
+        set(7, value);
+    }
+
+    /**
+     * Getter for <code>marshal_penalties.kind</code>.
+     */
+    public String getKind() {
+        return (String) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -141,7 +155,7 @@ public class MarshalPenaltiesRecord extends UpdatableRecordImpl<MarshalPenalties
     /**
      * Create a detached, initialised MarshalPenaltiesRecord
      */
-    public MarshalPenaltiesRecord(Long id, Long absenceId, Long entryId, Long eventId, Long appliedBy, Instant appliedAt, String notes) {
+    public MarshalPenaltiesRecord(Long id, Long absenceId, Long entryId, Long eventId, Long appliedBy, Instant appliedAt, String notes, String kind) {
         super(MarshalPenalties.MARSHAL_PENALTIES);
 
         setId(id);
@@ -151,6 +165,7 @@ public class MarshalPenaltiesRecord extends UpdatableRecordImpl<MarshalPenalties
         setAppliedBy(appliedBy);
         setAppliedAt(appliedAt);
         setNotes(notes);
+        setKind(kind);
         resetChangedOnNotNull();
     }
 }

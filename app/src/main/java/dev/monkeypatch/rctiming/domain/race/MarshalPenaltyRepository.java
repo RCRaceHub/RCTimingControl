@@ -5,6 +5,8 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties.MARSHAL_PENALTIES;
 
 @Repository
@@ -24,6 +26,7 @@ public class MarshalPenaltyRepository extends JooqRepository<MarshalPenalty, Mar
         m.setAppliedBy(r.getAppliedBy());
         m.setAppliedAt(r.getAppliedAt());
         m.setNotes(r.getNotes());
+        m.setKind(MarshalPenaltyKind.valueOf(r.getKind()));
         return m;
     }
 
@@ -35,6 +38,15 @@ public class MarshalPenaltyRepository extends JooqRepository<MarshalPenalty, Mar
         r.setAppliedBy(m.getAppliedBy());
         r.setAppliedAt(m.getAppliedAt());
         r.setNotes(m.getNotes());
+        r.setKind(m.getKind().name());
+    }
+
+    public boolean existsByAbsenceId(Long absenceId) {
+        return !findWhere(MARSHAL_PENALTIES.ABSENCE_ID.eq(absenceId)).isEmpty();
+    }
+
+    public List<MarshalPenalty> findByEventIdAndKind(Long eventId, MarshalPenaltyKind kind) {
+        return findWhere(MARSHAL_PENALTIES.EVENT_ID.eq(eventId).and(MARSHAL_PENALTIES.KIND.eq(kind.name())));
     }
 
     @Override

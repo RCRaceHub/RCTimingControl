@@ -287,7 +287,8 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
 
         Map<String, Object> absentBody = Map.of(
                 "entryId", re.entry().getId(),
-                "eventId", eventId
+                "eventId", eventId,
+                "kind", "QUALIFYING_SCORE"
         );
 
         ResponseEntity<Void> absentResp = restTemplate.exchange(
@@ -338,7 +339,8 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
     void marshalPenalty_isLinkedToTheNamedAbsenceOrElseTheLatestOne() {
         RaceAndEntry re = seedRaceAndEntry(RaceStatus.RUNNING);
         Long eventId = resolveEventId(re.race());
-        Map<String, Object> body = Map.of("entryId", re.entry().getId(), "eventId", eventId);
+        Map<String, Object> body = Map.of("entryId", re.entry().getId(), "eventId", eventId,
+                "kind", "QUALIFYING_SCORE");
         ResponseEntity<Map> absent = restTemplate.exchange(
                 "/api/v1/race-control/referee/race/" + re.race().getId() + "/marshal-absent",
                 org.springframework.http.HttpMethod.POST, new HttpEntity<>(body, refereeHeaders()), Map.class);
@@ -350,14 +352,15 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
         ResponseEntity<Map> byName = restTemplate.exchange(
                 "/api/v1/race-control/referee/race/" + re.race().getId() + "/apply-marshal-penalty",
                 org.springframework.http.HttpMethod.POST,
-                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId, "absenceId", absenceId),
-                        refereeHeaders()), Map.class);
+                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId, "kind", "FINALS_LAP",
+                        "absenceId", absenceId), refereeHeaders()), Map.class);
 
         assertThat(byDefault.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(byName.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // One missed duty is penalised once
+        assertThat(byName.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         assertThat(marshalPenalties(re.entry().getId(), eventId))
-                .hasSize(2).allSatisfy(p -> assertThat(p.getAbsenceId()).isEqualTo(absenceId));
+                .hasSize(1).allSatisfy(p -> assertThat(p.getAbsenceId()).isEqualTo(absenceId));
     }
 
     @Test
@@ -372,10 +375,12 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
         String url = "/api/v1/race-control/referee/race/" + re.race().getId() + "/apply-marshal-penalty";
 
         ResponseEntity<Map> otherEvent = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST,
-                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId + 1, "absenceId", absenceId),
+                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId + 1, "kind", "FINALS_LAP",
+                        "absenceId", absenceId),
                         refereeHeaders()), Map.class);
         ResponseEntity<Map> missing = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST,
-                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId, "absenceId", 999_999_999L),
+                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", eventId, "kind", "FINALS_LAP",
+                        "absenceId", 999_999_999L),
                         refereeHeaders()), Map.class);
 
         assertThat(otherEvent.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -436,7 +441,8 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
         long raceId = re.race().getId();
         restTemplate.exchange("/api/v1/race-control/referee/race/" + raceId + "/apply-marshal-penalty",
                 org.springframework.http.HttpMethod.POST,
-                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", resolveEventId(re.race())),
+                new HttpEntity<>(Map.of("entryId", re.entry().getId(), "eventId", resolveEventId(re.race()),
+                        "kind", "QUALIFYING_SCORE"),
                         refereeHeaders()), Map.class);
 
         ResponseEntity<List<Map<String, Object>>> resp = restTemplate.exchange(
