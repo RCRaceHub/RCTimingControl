@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.service;
 
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
-import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
@@ -13,6 +13,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.QualifyingResult;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds each class's overall qualifying table for race control from {@link QualifyingStandingsService}, so
- * officials see the order the finals are (or will be) seeded from, with driver names.
+ * Builds each class's overall qualifying table from {@link QualifyingStandingsService}, so officials see the
+ * order the finals are (or will be) seeded from, with driver names, and the public page shows the same table
+ * with names as each competitor allows.
  */
 @Service
 @Transactional(readOnly = true)
@@ -59,12 +61,13 @@ public class QualifyingTableService {
     }
 
     /** The same tables for the public, each name shown as the competitor allows (#265). */
+    @ReadTransaction
     public List<QualifyingTableDto> forEventPublic(Long eventId) {
         return tables(eventId, true);
     }
 
-    private List<QualifyingTableDto> tables(Long eventId, boolean publicNames) {
-        PublicNames.Snapshot restricted = publicNames ? this.publicNames.snapshot() : null;
+    private List<QualifyingTableDto> tables(Long eventId, boolean forPublic) {
+        PublicNames.Snapshot restricted = forPublic ? this.publicNames.snapshot() : null;
         List<QualifyingTableDto> tables = new ArrayList<>();
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
             List<Race> heats = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.QUALIFIER);
@@ -88,13 +91,13 @@ public class QualifyingTableService {
         return tables;
     }
 
-    /** The driver's name; with a snapshot, as the public may see it. */
+    /** The driver's name; with a snapshot, as the public may see it (the entry id tells hidden drivers apart). */
     private String driverName(Long entryId, PublicNames.Snapshot restricted) {
         return entryRepository.findById(entryId)
                 .flatMap(e -> competitorRepository.findById(e.getCompetitorId()))
                 .map(c -> restricted == null
                         ? c.getDisplayName()
-                        : restricted.of(c.getId(), c.getDisplayName(), null))
+                        : restricted.of(c.getId(), c.getDisplayName(), entryId))
                 .orElse("Entry " + entryId);
     }
 }

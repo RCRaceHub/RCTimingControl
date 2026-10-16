@@ -5,12 +5,11 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getQualifyingBoard, type QualifyingBoardTable } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
-import { parseEventParam } from '@/pages/boards/boardFormat';
+import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
 import PrivacyLink from '@/components/layout/PrivacyLink';
 
-const POLL_MS = 10_000;
 
 function ClassTable({ table }: { table: QualifyingBoardTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
@@ -67,11 +66,15 @@ export default function QualifyingStandingsPage() {
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.qualifying(eventId),
     queryFn: () => getQualifyingBoard(eventId),
-    refetchInterval: POLL_MS,
+    refetchInterval: BOARD_POLL_MS,
   });
 
   useEffect(() => {
+    const previous = document.title;
     document.title = data?.eventName ? `Qualifying — ${data.eventName}` : 'Qualifying standings';
+    return () => {
+      document.title = previous;
+    };
   }, [data?.eventName]);
 
   if (isPending) {
