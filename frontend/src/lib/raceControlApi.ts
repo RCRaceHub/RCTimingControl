@@ -376,6 +376,7 @@ export type QualifyingTableRow = {
   driverName: string;
   lapsCompleted: number;
   bestLapMs: number | null;
+  points: number | null;
 };
 
 export type QualifyingTable = {

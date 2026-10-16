@@ -28,8 +28,8 @@ const table = (finalsStarted = false, heatsFinished = 3) => [
     heatsTotal: 3,
     finalsStarted,
     rows: [
-      { position: 1, entryId: 11, driverName: 'Ann Racer', lapsCompleted: 21, bestLapMs: 12345 },
-      { position: 2, entryId: 12, driverName: 'Bob Racer', lapsCompleted: 20, bestLapMs: null },
+      { position: 1, entryId: 11, driverName: 'Ann Racer', lapsCompleted: 21, bestLapMs: 12345, points: null },
+      { position: 2, entryId: 12, driverName: 'Bob Racer', lapsCompleted: 20, bestLapMs: null, points: null },
     ],
   },
 ];

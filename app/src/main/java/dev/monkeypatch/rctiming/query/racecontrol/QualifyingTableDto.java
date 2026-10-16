@@ -18,6 +18,10 @@ public record QualifyingTableDto(
         boolean finalsStarted,
         List<Row> rows
 ) {
-    /** {@code bestLapMs} is null for a driver with no timed lap. */
-    public record Row(int position, long entryId, String driverName, int lapsCompleted, Long bestLapMs) {}
+    /**
+     * {@code bestLapMs} is null for a driver with no timed lap. {@code points} is the low-points total when the
+     * class ranks qualifying round by round, else null.
+     */
+    public record Row(int position, long entryId, String driverName, int lapsCompleted, Long bestLapMs,
+                      Integer points) {}
 }

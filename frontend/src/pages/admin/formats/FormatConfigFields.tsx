@@ -9,7 +9,7 @@ const QUALIFYING_TYPES: QualifyingType[] = ['FTQ', 'ROUND_BY_ROUND', 'FASTEST_LA
 const TIMED_DEFAULTS: Omit<import('@/lib/adminApi').TimedRaceConfig, 'type'> = {
   durationMinutes: 5,
   startType: 'STAGGER',
-  qualifyingType: 'FTQ',
+  qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
 };
@@ -22,7 +22,7 @@ const BUMP_UP_DEFAULTS: Omit<import('@/lib/adminApi').BumpUpConfig, 'type'> = {
   bumpSpots: 3,
   qualifyingStartType: 'STAGGER',
   finalsStartType: 'GRID',
-  qualifyingType: 'FTQ',
+  qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
 };
@@ -34,7 +34,7 @@ const POINTS_FINALS_DEFAULTS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 
   heatDurationMinutes: 5,
   qualifyingStartType: 'STAGGER',
   finalsStartType: 'GRID',
-  qualifyingType: 'FTQ',
+  qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
 };

@@ -26,6 +26,7 @@ export function QualifyingTablePanel({
     queryFn: () => getQualifying(eventId),
   });
   const table = data?.find((t) => t.eventClassId === eventClassId);
+  const hasPoints = table?.rows.some((r) => r.points != null) ?? false;
 
   const seed = useMutation({
     mutationFn: () => seedFinalsFromQualifying(eventId, eventClassId),
@@ -52,7 +53,10 @@ export function QualifyingTablePanel({
         <>
           <p className="text-sm text-muted-foreground">
             {table.heatsFinished} of {table.heatsTotal} qualifying{' '}
-            {table.heatsTotal === 1 ? 'heat' : 'heats'} finished. Ranked by total laps over all heats, then best lap.
+            {table.heatsTotal === 1 ? 'heat' : 'heats'} finished.{' '}
+            {hasPoints
+              ? 'Ranked by low points over the best rounds, then laps, then best lap.'
+              : 'Ranked by total laps over all heats, then best lap.'}
           </p>
           {table.rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">No qualifying results yet.</p>
@@ -62,6 +66,7 @@ export function QualifyingTablePanel({
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="w-12 py-1">Pos</th>
                   <th className="py-1">Driver</th>
+                  {hasPoints && <th className="w-16 py-1 text-right">Points</th>}
                   <th className="w-16 py-1 text-right">Laps</th>
                   <th className="w-24 py-1 text-right">Best lap</th>
                 </tr>
@@ -71,6 +76,7 @@ export function QualifyingTablePanel({
                   <tr key={row.entryId} className="border-b last:border-0">
                     <td className="py-1 tabular-nums">{row.position}</td>
                     <td className="py-1">{row.driverName}</td>
+                    {hasPoints && <td className="py-1 text-right tabular-nums">{row.points}</td>}
                     <td className="py-1 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className="py-1 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
                   </tr>
