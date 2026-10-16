@@ -387,6 +387,12 @@ export async function getRaceHistory(raceId: number): Promise<RaceHistoryItem[]>
   return data;
 }
 
+/** A driver's place in one finished qualifying round; `counted` is false for a round that was dropped. */
+export type QualifyingRoundPlace = {
+  place: number;
+  counted: boolean;
+};
+
 export type QualifyingTableRow = {
   position: number;
   entryId: number;
@@ -394,6 +400,8 @@ export type QualifyingTableRow = {
   lapsCompleted: number;
   bestLapMs: number | null;
   points: number | null;
+  /** The place in each finished round, in round order; empty unless the class ranks round by round. */
+  rounds: QualifyingRoundPlace[];
 };
 
 export type QualifyingTable = {

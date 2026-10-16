@@ -20,8 +20,12 @@ public record QualifyingTableDto(
 ) {
     /**
      * {@code bestLapMs} is null for a driver with no timed lap. {@code points} is the low-points total when the
-     * class ranks qualifying round by round, else null.
+     * class ranks qualifying round by round, else null. {@code rounds} is then the driver's place in each finished
+     * round, in round order, with whether that round counts towards the total (empty otherwise).
      */
     public record Row(int position, long entryId, String driverName, int lapsCompleted, Long bestLapMs,
-                      Integer points) {}
+                      Integer points, List<RoundPlace> rounds) {}
+
+    /** A driver's place in one finished round; {@code counted} is false for a round that was dropped. */
+    public record RoundPlace(int place, boolean counted) {}
 }

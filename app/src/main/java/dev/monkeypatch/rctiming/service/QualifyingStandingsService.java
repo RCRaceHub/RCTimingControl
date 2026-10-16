@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -250,25 +251,43 @@ public class QualifyingStandingsService {
      */
     private static QualifyingResult totalFor(Long entryId, List<Map<Long, RoundScore>> rounds,
                                              List<Integer> missingPoints, int bestRounds, int lostBest) {
-        List<RoundScore> scores = new ArrayList<>();
+        List<RoundScore> byRound = new ArrayList<>();
         for (int i = 0; i < rounds.size(); i++) {
-            scores.add(rounds.get(i).getOrDefault(entryId,
+            byRound.add(rounds.get(i).getOrDefault(entryId,
                     new RoundScore(missingPoints.get(i), 0, Long.MAX_VALUE, NO_LAP)));
         }
-        scores.sort(Comparator.comparingInt(RoundScore::points)
-                .thenComparing(Comparator.comparingInt(RoundScore::laps).reversed()));
-        int counted = bestRounds > 0 ? Math.min(bestRounds, scores.size()) : scores.size();
-        int lost = Math.min(lostBest, scores.size());
-        List<RoundScore> counting = new ArrayList<>(scores.subList(lost, Math.min(lost + counted, scores.size())));
+        // Best rounds first; the sort is stable, so the round numbers of equal scores keep their order
+        List<Integer> bestFirst = new ArrayList<>();
+        for (int i = 0; i < byRound.size(); i++) {
+            bestFirst.add(i);
+        }
+        bestFirst.sort(Comparator.<Integer>comparingInt(i -> byRound.get(i).points())
+                .thenComparing(Comparator.<Integer>comparingInt(i -> byRound.get(i).laps()).reversed()));
+        int counted = bestRounds > 0 ? Math.min(bestRounds, byRound.size()) : byRound.size();
+        int lost = Math.min(lostBest, byRound.size());
+        List<Integer> countingRounds = bestFirst.subList(lost, Math.min(lost + counted, byRound.size()));
+        List<RoundScore> counting = new ArrayList<>();
+        Set<Integer> countingSet = new HashSet<>(countingRounds);
+        for (int i : countingRounds) {
+            counting.add(byRound.get(i));
+        }
         int worst = missingPoints.stream().mapToInt(Integer::intValue).max().orElse(0);
         while (counting.size() < counted) {
             counting.add(new RoundScore(worst, 0, Long.MAX_VALUE, NO_LAP));
         }
+        List<RoundPlace> places = new ArrayList<>();
+        for (int i = 0; i < byRound.size(); i++) {
+            places.add(new RoundPlace(byRound.get(i).points(), countingSet.contains(i)));
+        }
         return new QualifyingResult(entryId,
                 counting.stream().mapToLong(RoundScore::bestLapMs).min().orElse(NO_LAP),
                 counting.stream().mapToInt(RoundScore::laps).sum(),
-                counting.stream().mapToInt(RoundScore::points).sum());
+                counting.stream().mapToInt(RoundScore::points).sum(),
+                places);
     }
+
+    /** A driver's place in one finished round, and whether that round counts towards their total. */
+    public record RoundPlace(int place, boolean counted) {}
 
     /** One driver's place in one round: {@code points} is the place, 0 before the round is ranked. */
     private record RoundScore(int points, int laps, long totalTimeMs, long bestLapMs) {}
@@ -322,12 +341,20 @@ public class QualifyingStandingsService {
      * @param bestLapMs     best single lap in milliseconds across all heats; {@code Long.MAX_VALUE} for none
      * @param lapsCompleted total laps across all heats (the counting rounds, when ranked by points)
      * @param points        the low-points total when ranked round by round, else null
+     * @param rounds        the driver's place in each finished round, in round order, when ranked round by round
+     *                      (empty otherwise)
      */
-    public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points) {
+    public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points,
+                                   List<RoundPlace> rounds) {
 
         /** A result ranked by laps, which has no points. */
         public QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted) {
-            this(entryId, bestLapMs, lapsCompleted, null);
+            this(entryId, bestLapMs, lapsCompleted, null, List.of());
+        }
+
+        /** A result with a points total and no per-round breakdown. */
+        public QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points) {
+            this(entryId, bestLapMs, lapsCompleted, points, List.of());
         }
 
         /** Whether the driver set a timed lap in any heat. */
@@ -337,7 +364,7 @@ public class QualifyingStandingsService {
 
         QualifyingResult plus(QualifyingResult other) {
             return new QualifyingResult(entryId, Math.min(bestLapMs, other.bestLapMs),
-                    lapsCompleted + other.lapsCompleted, null);
+                    lapsCompleted + other.lapsCompleted, null, List.of());
         }
     }
 }
