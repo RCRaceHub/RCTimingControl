@@ -57,7 +57,7 @@ export function QualifyingTablePanel({
             {table.heatsFinished} of {table.heatsTotal} qualifying{' '}
             {table.heatsTotal === 1 ? 'heat' : 'heats'} finished.{' '}
             {hasPoints
-              ? 'Ranked by low points over the best rounds, then laps, then best lap.'
+              ? 'Ranked by low points over the best rounds, then laps, then best lap. A struck-through round was dropped; one lost to a marshal penalty counts as the worst place.'
               : 'Ranked by total laps over all heats, then best lap.'}
           </p>
           {table.rows.length === 0 ? (

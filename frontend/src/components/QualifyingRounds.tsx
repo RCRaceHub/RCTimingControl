@@ -34,8 +34,9 @@ export function RoundPlaceCells({
         {round.counted ? (
           round.place
         ) : (
-          <del aria-label={`${round.place}, dropped`} className="text-muted-foreground">
+          <del className="text-muted-foreground">
             {round.place}
+            <span className="sr-only"> (dropped)</span>
           </del>
         )}
       </td>

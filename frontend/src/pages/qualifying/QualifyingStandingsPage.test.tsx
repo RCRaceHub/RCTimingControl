@@ -55,7 +55,9 @@ describe('QualifyingStandingsPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Points' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'R3' })).toBeInTheDocument();
     // Round 3 doesn't count for Freddie, so its place is struck through
-    expect(screen.getByLabelText('4, dropped').tagName).toBe('DEL');
+    const dropped = screen.getAllByText('(dropped)', { exact: false });
+    expect(dropped).toHaveLength(2);
+    expect(dropped[0].closest('del')).toHaveTextContent('4');
     expect(getQualifyingBoard).toHaveBeenCalledWith(7);
   });
 

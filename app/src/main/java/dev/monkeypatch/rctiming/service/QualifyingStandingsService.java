@@ -256,7 +256,7 @@ public class QualifyingStandingsService {
             byRound.add(rounds.get(i).getOrDefault(entryId,
                     new RoundScore(missingPoints.get(i), 0, Long.MAX_VALUE, NO_LAP)));
         }
-        // Best rounds first; the sort is stable, so the round numbers of equal scores keep their order
+        // Best rounds first; the sort is stable, so equal rounds keep their original round order
         List<Integer> bestFirst = new ArrayList<>();
         for (int i = 0; i < byRound.size(); i++) {
             bestFirst.add(i);
@@ -267,7 +267,6 @@ public class QualifyingStandingsService {
         int lost = Math.min(lostBest, byRound.size());
         List<Integer> countingRounds = bestFirst.subList(lost, Math.min(lost + counted, byRound.size()));
         List<RoundScore> counting = new ArrayList<>();
-        Set<Integer> countingSet = new HashSet<>(countingRounds);
         for (int i : countingRounds) {
             counting.add(byRound.get(i));
         }
@@ -275,6 +274,7 @@ public class QualifyingStandingsService {
         while (counting.size() < counted) {
             counting.add(new RoundScore(worst, 0, Long.MAX_VALUE, NO_LAP));
         }
+        Set<Integer> countingSet = new HashSet<>(countingRounds);
         List<RoundPlace> places = new ArrayList<>();
         for (int i = 0; i < byRound.size(); i++) {
             places.add(new RoundPlace(byRound.get(i).points(), countingSet.contains(i)));
