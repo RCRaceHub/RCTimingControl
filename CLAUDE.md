@@ -8,7 +8,7 @@ RC club race timing and race control, replacing RCResults. It is part of the Rac
 
 RCTC is one program on a laptop at the track. It installs as a background service, reads the AMB/MyLaps decoder directly over TCP, and serves race control, the announcer and the spectator boards to browsers on the venue network. It keeps the club's results and championships. Only **officials** sign in. Racers never log in to RCTC: their entries arrive in a RaceHub export file, or officials add them as walk-ins.
 
-See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for the full requirement list (current, planned and removed), and `docs/architecture.md`.
+See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for the full requirement list (current, planned and removed), and `docs/architecture.md`; the scoring rules and what each setting changes are in `docs/scoring.md`.
 
 ## Stack
 
