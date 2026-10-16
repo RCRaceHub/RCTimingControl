@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
@@ -36,6 +37,7 @@ import org.jooq.TableField;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -95,6 +97,11 @@ public class MarshalPenalties extends TableImpl<MarshalPenaltiesRecord> {
      * The column <code>marshal_penalties.notes</code>.
      */
     public final TableField<MarshalPenaltiesRecord, String> NOTES = createField(DSL.name("notes"), SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>marshal_penalties.kind</code>.
+     */
+    public final TableField<MarshalPenaltiesRecord, String> KIND = createField(DSL.name("kind"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("'QUALIFYING_SCORE'"), SQLDataType.CLOB)), this, "");
 
     private MarshalPenalties(Name alias, Table<MarshalPenaltiesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -212,6 +219,13 @@ public class MarshalPenalties extends TableImpl<MarshalPenaltiesRecord> {
             _events = new EventsPath(this, Keys.MARSHAL_PENALTIES__MARSHAL_PENALTIES_EVENT_ID_FKEY, null);
 
         return _events;
+    }
+
+    @Override
+    public List<Check<MarshalPenaltiesRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name("marshal_penalties_kind_check"), "kind in ('QUALIFYING_SCORE', 'FINALS_LAP')", true)
+        );
     }
 
     @Override
