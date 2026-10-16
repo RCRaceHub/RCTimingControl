@@ -63,6 +63,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @AfterEach
     void tearDown() {
         jdbc.update("delete from audit_log where event_id = ?", eventId);
+        jdbc.update("delete from marshal_penalties where event_id = ?", eventId);
         jdbc.update("delete from rounds where event_id = ?", eventId); // races and race_entries cascade
         jdbc.update("delete from entries where event_id = ?", eventId);
         jdbc.update("delete from event_classes where event_id = ?", eventId);
