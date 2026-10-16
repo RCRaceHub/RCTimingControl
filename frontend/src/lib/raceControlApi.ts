@@ -24,6 +24,7 @@ export type MarshalDutyRowDto = {
 
 export type PreRaceReadinessDto = {
   raceId: number;
+  eventId: number;
   raceLabel: string;
   firstRaceOfEvent: boolean;
   gridCall: GridCallSlotDto[];
@@ -126,6 +127,15 @@ export type MarshalAbsenceRequest = {
   notes?: string;
 };
 
+export type MarshalPenaltyKind = 'QUALIFYING_SCORE' | 'FINALS_LAP';
+
+export type MarshalPenaltyRequest = {
+  entryId: number;
+  eventId: number;
+  kind: MarshalPenaltyKind;
+  notes?: string;
+};
+
 // ── API client ─────────────────────────────────────────────────────────────
 
 export async function getPreRaceReadiness(raceId: number): Promise<PreRaceReadinessDto> {
@@ -190,6 +200,13 @@ export async function recordMarshalAbsent(
   req: MarshalAbsenceRequest,
 ): Promise<void> {
   await api.post(`/api/v1/race-control/referee/race/${raceId}/marshal-absent`, req);
+}
+
+export async function applyMarshalPenalty(
+  raceId: number,
+  req: MarshalPenaltyRequest,
+): Promise<void> {
+  await api.post(`/api/v1/race-control/referee/race/${raceId}/apply-marshal-penalty`, req);
 }
 
 // ── Unknown transponder linking ──────────────────────────────────────────────

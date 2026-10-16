@@ -40,7 +40,8 @@ class ResultSnapshotServiceTest {
         service = new ResultSnapshotService(raceRepository, mock(RoundRepository.class), lapTimingService,
                 mock(ResultSnapshotRepository.class), mock(ResultSnapshotJson.class),
                 mock(RaceEntryRepository.class), mock(EntryRepository.class), mock(CompetitorRepository.class),
-                mock(PenaltyRepository.class), mock(MarshalAdjustmentRepository.class));
+                mock(PenaltyRepository.class), mock(MarshalAdjustmentRepository.class),
+                mock(FinalsMarshalPenalties.class));
         Race race = new Race();
         race.setId(7L);
         race.setRoundId(3L);

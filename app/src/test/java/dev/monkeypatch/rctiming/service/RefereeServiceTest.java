@@ -2,10 +2,13 @@ package dev.monkeypatch.rctiming.service;
 
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.IncidentReportRepository;
 import dev.monkeypatch.rctiming.domain.race.MarshalAbsence;
 import dev.monkeypatch.rctiming.domain.race.MarshalAbsenceRepository;
 import dev.monkeypatch.rctiming.domain.race.MarshalPenalty;
+import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyKind;
 import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Penalty;
 import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
@@ -49,10 +52,13 @@ class RefereeServiceTest {
     @Mock ApplicationEventPublisher eventPublisher;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS) AuditService audit;
     @Mock RaceAuditLabels labels;
+    @Mock FinalsMarshalPenalties finalsMarshalPenalties;
+    @Mock EntryRepository entryRepository;
 
     private RefereeService service() {
         return new RefereeService(incidentReportRepository, penaltyRepository, marshalAbsenceRepository,
-                marshalPenaltyRepository, raceRepository, lapTimingService, eventPublisher, audit, labels);
+                marshalPenaltyRepository, raceRepository, lapTimingService, eventPublisher, audit, labels,
+                finalsMarshalPenalties, entryRepository);
     }
 
     @Test
@@ -91,7 +97,7 @@ class RefereeServiceTest {
     void aMarshalPenalty_forAnAbsenceOfAnotherEntry_isAConflict() {
         when(marshalAbsenceRepository.getOrThrow(5L)).thenReturn(absence(5L, 99L, 1L));
 
-        assertThatThrownBy(() -> service().applyMarshalPenalty(7L, 11L, 1L, 5L, null, 3L))
+        assertThatThrownBy(() -> service().applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, 5L, null, 3L))
                 .isInstanceOf(StateConflictException.class);
         verifyNoInteractions(marshalPenaltyRepository);
     }
@@ -102,9 +108,40 @@ class RefereeServiceTest {
                 .thenReturn(List.of(absence(4L, 11L, 1L), absence(6L, 11L, 1L), absence(8L, 99L, 1L)));
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        MarshalPenalty penalty = service().applyMarshalPenalty(7L, 11L, 1L, null, "Missed turn 3", 3L);
+        MarshalPenalty penalty = service().applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.QUALIFYING_SCORE, null,
+                "Missed turn 3", 3L);
 
         assertThat(penalty.getAbsenceId()).isEqualTo(6L);
+        assertThat(penalty.getKind()).isEqualTo(MarshalPenaltyKind.QUALIFYING_SCORE);
+        verify(eventPublisher, never()).publishEvent(any(FinishedRaceCorrected.class));
+    }
+
+    @Test
+    void aFinalsLapMarshalPenalty_correctsTheDriversFirstFinalWhenItHasFinished() {
+        when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        Entry entry = new Entry();
+        entry.setEventClassId(4L);
+        when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
+        when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.FINISHED)));
+
+        MarshalPenalty penalty = service().applyMarshalPenalty(8L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null,
+                null, 3L);
+
+        assertThat(penalty.getKind()).isEqualTo(MarshalPenaltyKind.FINALS_LAP);
+        verify(eventPublisher).publishEvent(new FinishedRaceCorrected(7L));
+    }
+
+    @Test
+    void aFinalsLapMarshalPenalty_leavesAFinalThatHasNotFinishedToBeCorrectedAtItsFinish() {
+        when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        Entry entry = new Entry();
+        entry.setEventClassId(4L);
+        when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
+        when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.PENDING)));
+
+        service().applyMarshalPenalty(8L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null, null, 3L);
+
+        verify(eventPublisher, never()).publishEvent(any(FinishedRaceCorrected.class));
     }
 
     private static Race race(RaceStatus status) {

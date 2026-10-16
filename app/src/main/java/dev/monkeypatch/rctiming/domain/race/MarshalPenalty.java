@@ -19,6 +19,8 @@ public class MarshalPenalty {
 
     private String notes;
 
+    private MarshalPenaltyKind kind = MarshalPenaltyKind.QUALIFYING_SCORE;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -36,6 +38,9 @@ public class MarshalPenalty {
 
     public Instant getAppliedAt() { return appliedAt; }
     public void setAppliedAt(Instant appliedAt) { this.appliedAt = appliedAt; }
+
+    public MarshalPenaltyKind getKind() { return kind; }
+    public void setKind(MarshalPenaltyKind kind) { this.kind = kind; }
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }

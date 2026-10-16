@@ -179,6 +179,6 @@ public class PreRaceReadinessQuery {
                         r.get(ENTRIES.RACEHUB_ARRIVAL)
                 ));
 
-        return new PreRaceReadinessDto(raceId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, null, 0);
+        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, null, 0);
     }
 }
