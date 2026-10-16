@@ -283,6 +283,11 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 .containsExactly(drivers.get(0), drivers.get(1), drivers.get(2), drivers.get(3));
         // a: best round 1 point; b: 1 point; c: round 2 place 2; d: round 2 place 3
         assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 1, 2, 3);
+        // a counts round 1 and drops round 2 (place 4); b drops round 1 (place 2) and counts round 2
+        assertThat(ranked.get(0).rounds()).containsExactly(
+                new QualifyingStandingsService.RoundPlace(1, true), new QualifyingStandingsService.RoundPlace(4, false));
+        assertThat(ranked.get(1).rounds()).containsExactly(
+                new QualifyingStandingsService.RoundPlace(2, false), new QualifyingStandingsService.RoundPlace(1, true));
     }
 
     @Test
@@ -317,6 +322,9 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(ranked).extracting(r -> r.entryId())
                 .containsExactly(drivers.get(1), drivers.get(2), drivers.get(3), drivers.get(0));
         assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 2, 3, 4);
+        // a's round 1 (place 1) was taken away, so it shows as dropped and round 2 (place 4) counts
+        assertThat(ranked.get(3).rounds()).containsExactly(
+                new QualifyingStandingsService.RoundPlace(1, false), new QualifyingStandingsService.RoundPlace(4, true));
     }
 
     private static final String ROUND_BY_ROUND_ALL = """

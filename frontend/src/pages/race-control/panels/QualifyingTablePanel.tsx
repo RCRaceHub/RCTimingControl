@@ -5,6 +5,7 @@ import { getQualifying, seedFinalsFromQualifying } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
+import { RoundHeaderCells, RoundPlaceCells, roundCount } from '@/components/QualifyingRounds';
 
 /**
  * A class's overall qualifying table, the order its finals are seeded from, with a button to seed the finals
@@ -27,6 +28,7 @@ export function QualifyingTablePanel({
   });
   const table = data?.find((t) => t.eventClassId === eventClassId);
   const hasPoints = table?.rows.some((r) => r.points != null) ?? false;
+  const rounds = table ? roundCount(table.rows) : 0;
 
   const seed = useMutation({
     mutationFn: () => seedFinalsFromQualifying(eventId, eventClassId),
@@ -55,7 +57,7 @@ export function QualifyingTablePanel({
             {table.heatsFinished} of {table.heatsTotal} qualifying{' '}
             {table.heatsTotal === 1 ? 'heat' : 'heats'} finished.{' '}
             {hasPoints
-              ? 'Ranked by low points over the best rounds, then laps, then best lap.'
+              ? 'Ranked by low points over the best rounds, then laps, then best lap. A struck-through round was dropped; one lost to a marshal penalty counts as the worst place.'
               : 'Ranked by total laps over all heats, then best lap.'}
           </p>
           {table.rows.length === 0 ? (
@@ -66,6 +68,7 @@ export function QualifyingTablePanel({
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="w-12 py-1">Pos</th>
                   <th className="py-1">Driver</th>
+                  <RoundHeaderCells count={rounds} className="w-10 py-1 text-right" />
                   {hasPoints && <th className="w-16 py-1 text-right">Points</th>}
                   <th className="w-16 py-1 text-right">Laps</th>
                   <th className="w-24 py-1 text-right">Best lap</th>
@@ -76,6 +79,7 @@ export function QualifyingTablePanel({
                   <tr key={row.entryId} className="border-b last:border-0">
                     <td className="py-1 tabular-nums">{row.position}</td>
                     <td className="py-1">{row.driverName}</td>
+                    <RoundPlaceCells rounds={row.rounds} count={rounds} className="py-1 text-right tabular-nums" />
                     {hasPoints && <td className="py-1 text-right tabular-nums">{row.points}</td>}
                     <td className="py-1 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className="py-1 text-right font-mono">{fmtMs(row.bestLapMs)}</td>

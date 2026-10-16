@@ -82,7 +82,9 @@ public class QualifyingTableService {
             for (QualifyingResult result : qualifyingStandingsService.rankedResultsFor(eventClass.getId())) {
                 rows.add(new QualifyingTableDto.Row(position++, result.entryId(),
                         driverName(result.entryId(), restricted), result.lapsCompleted(),
-                        result.hasBestLap() ? result.bestLapMs() : null, result.points()));
+                        result.hasBestLap() ? result.bestLapMs() : null, result.points(),
+                        result.rounds().stream()
+                                .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList()));
             }
             tables.add(new QualifyingTableDto(eventClass.getId(), className,
                     (int) heats.stream().filter(h -> h.getStatus() == RaceStatus.FINISHED).count(), heats.size(),

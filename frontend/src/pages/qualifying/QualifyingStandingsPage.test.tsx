@@ -38,8 +38,10 @@ describe('QualifyingStandingsPage', () => {
           heatsTotal: 4,
           finalsStarted: false,
           rows: [
-            { position: 1, entryId: 10, driverName: 'Fast Freddie', lapsCompleted: 12, bestLapMs: 19_000, points: 1 },
-            { position: 2, entryId: 11, driverName: 'A. L.', lapsCompleted: 10, bestLapMs: null, points: 3 },
+            { position: 1, entryId: 10, driverName: 'Fast Freddie', lapsCompleted: 12, bestLapMs: 19_000, points: 3,
+              rounds: [{ place: 1, counted: true }, { place: 2, counted: true }, { place: 4, counted: false }] },
+            { position: 2, entryId: 11, driverName: 'A. L.', lapsCompleted: 10, bestLapMs: null, points: 7,
+              rounds: [{ place: 3, counted: true }, { place: 4, counted: true }, { place: 5, counted: false }] },
           ],
         },
       ],
@@ -51,6 +53,11 @@ describe('QualifyingStandingsPage', () => {
     expect(screen.getByText('A. L.')).toBeInTheDocument();
     expect(screen.getByText('2 of 4 heats finished')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Points' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'R3' })).toBeInTheDocument();
+    // Round 3 doesn't count for Freddie, so its place is struck through
+    const dropped = screen.getAllByText('(dropped)', { exact: false });
+    expect(dropped).toHaveLength(2);
+    expect(dropped[0].closest('del')).toHaveTextContent('4');
     expect(getQualifyingBoard).toHaveBeenCalledWith(7);
   });
 
@@ -65,7 +72,7 @@ describe('QualifyingStandingsPage', () => {
           heatsFinished: 1,
           heatsTotal: 1,
           finalsStarted: false,
-          rows: [{ position: 1, entryId: 10, driverName: 'Solo', lapsCompleted: 9, bestLapMs: 20_000, points: null }],
+          rows: [{ position: 1, entryId: 10, driverName: 'Solo', lapsCompleted: 9, bestLapMs: 20_000, points: null, rounds: [] }],
         },
       ],
     });
@@ -74,6 +81,7 @@ describe('QualifyingStandingsPage', () => {
 
     expect(await screen.findByText('Solo')).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Points' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'R1' })).not.toBeInTheDocument();
     expect(getQualifyingBoard).toHaveBeenCalledWith(null);
   });
 

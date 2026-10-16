@@ -1,20 +1,24 @@
 // Public overall qualifying standings, for a phone or a printout (opened from a QR code on the boards).
 // Polls so the order moves as heats finish.
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Printer } from 'lucide-react';
 import { getQualifyingBoard, type QualifyingBoardTable } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
+import { RoundHeaderCells, RoundPlaceCells, roundCount } from '@/components/QualifyingRounds';
 import PrivacyLink from '@/components/layout/PrivacyLink';
+import { Button } from '@/components/ui/button';
 
 
 function ClassTable({ table }: { table: QualifyingBoardTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
+  const rounds = roundCount(table.rows);
   return (
-    <section className="space-y-2">
+    <section className="space-y-2 break-inside-avoid print:break-after-page print:last:break-after-auto">
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="text-lg font-semibold">{table.className}</h2>
         <p className="text-xs text-muted-foreground">
@@ -30,6 +34,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
                 <th className="px-3 py-2">Pos</th>
                 <th className="px-3 py-2">Driver</th>
+                <RoundHeaderCells count={rounds} className="px-3 py-2 text-right" />
                 {byPoints && <th className="px-3 py-2 text-right">Points</th>}
                 <th className="px-3 py-2 text-right">Laps</th>
                 <th className="px-3 py-2 text-right">Best lap</th>
@@ -40,6 +45,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
                 <tr key={row.entryId} className="border-b last:border-0">
                   <td className="px-3 py-2 font-semibold tabular-nums">{row.position}</td>
                   <td className="px-3 py-2">{row.driverName}</td>
+                  <RoundPlaceCells rounds={row.rounds} count={rounds} className="px-3 py-2 text-right tabular-nums" />
                   {byPoints && <td className="px-3 py-2 text-right tabular-nums">{row.points}</td>}
                   <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.bestLapMs)}</td>
@@ -52,7 +58,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
       {byPoints && (
         <p className="text-xs text-muted-foreground">
           Ranked by low points: the lowest total over a driver's best rounds wins, and a tie goes to the most laps,
-          then the quickest lap.
+          then the quickest lap. R1, R2 and so on are the place in each round; a struck-through round was dropped, and a round lost to a marshal penalty counts as the worst place.
         </p>
       )}
     </section>
@@ -62,6 +68,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
 export default function QualifyingStandingsPage() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
+  const printedAt = useMemo(() => new Date().toLocaleString(), []);
 
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.qualifying(eventId),
@@ -92,17 +99,28 @@ export default function QualifyingStandingsPage() {
   const path = data?.eventId ? `/qualifying?event=${data.eventId}` : '/qualifying';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:p-8">
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:p-8 print:p-4">
       <header className="space-y-1">
         <h1 className="text-2xl font-bold">Qualifying standings</h1>
         {data?.eventName && <p className="text-muted-foreground">{data.eventName}</p>}
-        <p className="text-xs text-muted-foreground">Updates by itself as heats finish.</p>
+        <p className="text-xs text-muted-foreground print:hidden">Updates by itself as heats finish.</p>
+        <p className="hidden text-xs text-muted-foreground print:block">
+          Printed {printedAt}. For the live standings, scan the code.
+        </p>
+        <div className="print:hidden">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            Print
+          </Button>
+        </div>
       </header>
 
       {!data || data.tables.length === 0 ? (
         <p className="text-sm text-muted-foreground">No qualifying results yet.</p>
       ) : (
-        data.tables.map((table) => <ClassTable key={table.eventClassId} table={table} />)
+        <div className="space-y-6">
+          {data.tables.map((table) => <ClassTable key={table.eventClassId} table={table} />)}
+        </div>
       )}
 
       <div className="flex justify-center pt-4">

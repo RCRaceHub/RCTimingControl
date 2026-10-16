@@ -684,7 +684,7 @@ GET /boards/results?eventId=7
 ```http
 GET /boards/qualifying?eventId=7
 ```
-**200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "tables": [QualifyingTable] }`: the qualifying standings per class, in the same shape as the race control qualifying table, for the public page at `/qualifying`. Event resolution is the same as the other boards. Names follow the public name rule. `tables` is empty when no event is found.
+**200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "tables": [QualifyingTable] }`: the qualifying standings per class, in the same shape as the race control qualifying table, for the public page at `/qualifying`. Event resolution is the same as the other boards. Names follow the public name rule. `tables` is empty when no event is found. Each row has `rounds`, the driver's place in each finished round in round order as `{ "place": 2, "counted": false }` (`counted` is false for a dropped round), and is empty unless the class ranks round by round.
 
 ```http
 GET /boards/races/{raceId}/live-timing

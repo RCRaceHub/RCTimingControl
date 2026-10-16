@@ -1,5 +1,5 @@
 import api from './api';
-import type { LiveTimingRowDto, ResultRow } from './raceControlApi';
+import type { LiveTimingRowDto, QualifyingRoundPlace, ResultRow } from './raceControlApi';
 
 // Anonymous spectator board endpoints (L12). Every call here is public, so a board never
 // trips the 401 → /login redirect in the shared axios client.
@@ -38,6 +38,8 @@ export type QualifyingBoardRow = {
   bestLapMs: number | null;
   /** The low-points total when the class ranks qualifying round by round, else null. */
   points: number | null;
+  /** The place in each finished round, in round order; empty unless the class ranks round by round. */
+  rounds: QualifyingRoundPlace[];
 };
 
 export type QualifyingBoardTable = {
