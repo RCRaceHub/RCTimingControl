@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.api.boards;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -49,6 +51,7 @@ class BoardControllerIT extends AbstractIntegrationTest {
     @Autowired CompetitorService competitorService;
     @Autowired ResultSnapshotRepository resultSnapshotRepository;
     @Autowired LapTimingService lapTimingService;
+    @Autowired JdbcTemplate jdbc;
 
     private BoardFixtures fx;
 
@@ -202,6 +205,39 @@ class BoardControllerIT extends AbstractIntegrationTest {
         assertThat(raceId(body, "race")).isEqualTo(heat1.getId());
         List<Map> rows = (List<Map>) body.get("results");
         assertThat(rows).extracting(r -> r.get("driverName")).containsExactly("Jane Doe", "Sam Second");
+    }
+
+    @Test
+    void qualifyingBoard_ranksTheClassAndShowsEachNameAsTheCompetitorAllows() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
+        Entry slow = fx.gridEntry(heat1, "Ada Lovelace", "T-2", 2);
+        Entry fast = fx.gridEntry(heat1, "Fast Freddie", "T-1", 1);
+        jdbc.update("update competitors set name_visibility = 'INITIALS' where id = ?", slow.getCompetitorId());
+        saveSnapshot(heat1, String.format("""
+                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Fast Freddie","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null},
+                 {"position":2,"entryId":%d,"competitorId":null,"driverName":"Ada Lovelace","carNumber":null,
+                  "lapsCompleted":10,"totalTimeMs":301000,"bestLapMs":19500,"gapToLeaderMs":1000}]
+                """, fast.getId(), slow.getId()));
+
+        Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
+
+        assertThat(body.get("eventName")).isEqualTo(fx.event.getName());
+        List<Map> tables = (List<Map>) body.get("tables");
+        assertThat(tables).singleElement().satisfies(table -> {
+            assertThat(table.get("className")).isEqualTo(fx.className);
+            List<Map> rows = (List<Map>) table.get("rows");
+            assertThat(rows).extracting(r -> r.get("driverName")).containsExactly("Fast Freddie", "A. L.");
+            assertThat(rows).extracting(r -> r.get("lapsCompleted")).containsExactly(12, 10);
+        });
+    }
+
+    @Test
+    void qualifyingBoard_withNoQualifyingHeatsHasNoTables() {
+        Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
+
+        assertThat((List) body.get("tables")).isEmpty();
     }
 
     @Test

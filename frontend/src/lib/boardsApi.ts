@@ -30,6 +30,31 @@ export type ResultsBoardDto = {
   results: ResultRow[];
 };
 
+export type QualifyingBoardRow = {
+  position: number;
+  entryId: number;
+  driverName: string;
+  lapsCompleted: number;
+  bestLapMs: number | null;
+  /** The low-points total when the class ranks qualifying round by round, else null. */
+  points: number | null;
+};
+
+export type QualifyingBoardTable = {
+  eventClassId: number;
+  className: string;
+  heatsFinished: number;
+  heatsTotal: number;
+  finalsStarted: boolean;
+  rows: QualifyingBoardRow[];
+};
+
+export type QualifyingBoardDto = {
+  eventId: number | null;
+  eventName: string | null;
+  tables: QualifyingBoardTable[];
+};
+
 function eventParams(eventId: number | null | undefined) {
   return eventId ? { params: { eventId } } : undefined;
 }
@@ -41,6 +66,11 @@ export async function getNowNext(eventId?: number | null): Promise<NowNextDto> {
 
 export async function getResultsBoard(eventId?: number | null): Promise<ResultsBoardDto> {
   const { data } = await api.get<ResultsBoardDto>('/api/v1/boards/results', eventParams(eventId));
+  return data;
+}
+
+export async function getQualifyingBoard(eventId?: number | null): Promise<QualifyingBoardDto> {
+  const { data } = await api.get<QualifyingBoardDto>('/api/v1/boards/qualifying', eventParams(eventId));
   return data;
 }
 

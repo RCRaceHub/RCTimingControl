@@ -39,7 +39,7 @@ export default function ResultsBoard() {
   }
 
   return (
-    <BoardShell eventName={data.eventName}>
+    <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
       <h1 className="text-4xl font-bold lg:text-6xl">{data.race.label}</h1>
       <BoardResultsTable results={data.results} />
     </BoardShell>

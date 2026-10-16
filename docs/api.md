@@ -682,6 +682,11 @@ GET /boards/results?eventId=7
 **200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "race": {...} | null, "results": [ResultRow] }`: the last finished race and its result snapshot rows (the same rows as `GET /results/{raceId}`). `results` is empty until the snapshot is written.
 
 ```http
+GET /boards/qualifying?eventId=7
+```
+**200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "tables": [QualifyingTable] }`: the qualifying standings per class, in the same shape as the race control qualifying table, for the public page at `/qualifying`. Event resolution is the same as the other boards. Names follow the public name rule. `tables` is empty when no event is found.
+
+```http
 GET /boards/races/{raceId}/live-timing
 ```
 **200 OK** — the race's current live timing rows (the same shape as the `/topic/race/{raceId}/timing` frames), or `[]` before the first passing. Boards, and the race control and referee live timing panels, use it once to fill the table, then follow STOMP.

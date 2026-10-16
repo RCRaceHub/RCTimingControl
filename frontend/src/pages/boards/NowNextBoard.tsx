@@ -39,7 +39,7 @@ export default function NowNextBoard() {
 
   if (currentRace) {
     return (
-      <BoardShell eventName={nowNext?.eventName}>
+      <BoardShell eventName={nowNext?.eventName} eventId={nowNext?.eventId} showQr>
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <h1 className="text-4xl font-bold lg:text-6xl">{currentRace.label}</h1>
           <span
@@ -76,7 +76,7 @@ export default function NowNextBoard() {
   }
 
   return (
-    <BoardShell eventName={nowNext?.eventName}>
+    <BoardShell eventName={nowNext?.eventName} eventId={nowNext?.eventId} showQr>
       {nextRace && (
         <div>
           <h2 className="text-xl text-slate-400 lg:text-2xl">Next up</h2>

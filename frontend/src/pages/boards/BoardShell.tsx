@@ -1,11 +1,17 @@
 import type { ReactNode } from 'react';
+import { QrLink } from '@/components/QrLink';
 
 // Full-screen dark frame for a venue TV: large type, high contrast, no app chrome.
 export function BoardShell({
   eventName,
+  eventId,
+  showQr = false,
   children,
 }: {
   eventName?: string | null;
+  eventId?: number | null;
+  /** A QR code to the qualifying standings, for people to open on their phones. */
+  showQr?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -16,6 +22,16 @@ export function BoardShell({
         </p>
       )}
       {children}
+      {showQr && (
+        <div className="mt-auto flex justify-end">
+          <QrLink
+            path={eventId ? `/qualifying?event=${eventId}` : '/qualifying'}
+            caption="Scan for qualifying standings"
+            size={112}
+            onDark
+          />
+        </div>
+      )}
     </div>
   );
 }
