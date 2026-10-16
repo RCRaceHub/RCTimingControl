@@ -20,6 +20,8 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -39,14 +41,17 @@ import java.util.stream.Collectors;
  * results already have lap penalties and marshal laps applied; time penalties change only the total time,
  * which the order does not use.
  *
- * <p>The rule is the one the finals seeding has always used: total laps over all the class's qualifying
- * heats, most first, then the best single lap, quickest first, then the entry id so that exact ties come out
- * the same every time. It does not look at the class's configured qualifying type (FORMAT-09). Only finished
- * heats count, an abandoned heat's laps do not, and everyone who was on the grid of a finished heat is ranked,
- * with no laps if they never crossed the line. Withdrawn entries are left out.
+ * <p>A class whose format has the round by round qualifying type is ranked by low points over its best rounds
+ * (FORMAT-09, see {@code roundByRound}). Any other class, and a round by round class before its first round has
+ * finished, is ranked by total laps over all the class's qualifying heats, most first, then the best single lap,
+ * quickest first, then the entry id so that exact ties come out the same every time. Only finished heats count,
+ * an abandoned heat's laps do not, and everyone who was on the grid of a finished heat is ranked, with no laps if
+ * they never crossed the line. Withdrawn entries are left out.
  */
 @Service
 public class QualifyingStandingsService {
+
+    private static final Logger log = LoggerFactory.getLogger(QualifyingStandingsService.class);
 
     /** The best lap of a driver with no timed lap, which sorts behind every real one. */
     private static final long NO_LAP = Long.MAX_VALUE;
@@ -83,22 +88,41 @@ public class QualifyingStandingsService {
         return rankedResultsFor(eventClassId).stream().map(QualifyingResult::entryId).toList();
     }
 
-    /** The same order with each driver's total laps and best lap, for showing the overall qualifying table. */
+    /**
+     * The same order with each driver's laps and best lap (and, when ranked by low points, their points), for
+     * showing the overall qualifying table.
+     */
     public List<QualifyingResult> rankedResultsFor(Long eventClassId) {
         Optional<Integer> bestRounds = roundByRoundBestCount(eventClassId);
-        return bestRounds.isPresent() ? roundByRound(eventClassId, bestRounds.get()) : totalLaps(eventClassId);
+        if (bestRounds.isPresent()) {
+            List<QualifyingResult> byPoints = roundByRound(eventClassId, bestRounds.get());
+            if (!byPoints.isEmpty()) {
+                return byPoints;
+            }
+        }
+        // Not ranked by points, or no round has finished yet: order by laps so the table is never blank mid-round
+        return totalLaps(eventClassId);
     }
 
     /**
      * The number of rounds that count when the class's format ranks qualifying round by round (low points), 0 for
-     * all of them; empty for any other qualifying type, which uses the total laps order.
+     * all of them (also for a count of 0 or less); empty for any other qualifying type, which uses the total laps
+     * order. A format whose settings cannot be read is treated as not round by round, so that the table and the
+     * seeding still work.
      */
     private Optional<Integer> roundByRoundBestCount(Long eventClassId) {
         EventClass eventClass = eventClassRepository.findById(eventClassId).orElse(null);
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
             return Optional.empty();
         }
-        RaceFormatConfig config = raceFormatService.getEffectiveConfig(eventClass);
+        RaceFormatConfig config;
+        try {
+            config = raceFormatService.getEffectiveConfig(eventClass);
+        } catch (RuntimeException e) {
+            log.warn("Could not read the format of class {}, ranking its qualifying by laps: {}", eventClassId,
+                    e.getMessage());
+            return Optional.empty();
+        }
         QualifyingType type = switch (config) {
             case TimedRaceConfig timed -> timed.qualifyingType();
             case BumpUpConfig bumpUp -> bumpUp.qualifyingType();
@@ -113,10 +137,11 @@ public class QualifyingStandingsService {
     /**
      * Low-points qualifying ("X from Y"): in each round that is fully finished, drivers are ranked by laps, then
      * total time, over all the class's heats in the round, and score their place (1 for the round's top qualifier,
-     * then 2, 3 and so on). A driver missing from a round scores one more than the last place. Each driver's best
-     * {@code bestRounds} rounds count (all of them when 0) and the lowest total wins; a tie goes to the most laps
-     * and then the quickest lap in the counting rounds. A round with a heat still to run is left out, since its
-     * places are not settled.
+     * then 2, 3 and so on; an exact tie on laps and time shares the place). A driver missing from a round scores
+     * one more than the number of drivers in it. Each driver's best {@code bestRounds} rounds count (all of them
+     * when 0) and the lowest total wins; a tie goes to the most laps and then the quickest lap in the counting
+     * rounds. A round with a heat still to run, or whose heats were all abandoned, is left out, since its places
+     * are not settled. Empty when no round qualifies.
      */
     private List<QualifyingResult> roundByRound(Long eventClassId, int bestRounds) {
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
@@ -129,63 +154,88 @@ public class QualifyingStandingsService {
         List<Map<Long, RoundScore>> rounds = new ArrayList<>();
         List<Integer> missingPoints = new ArrayList<>();
         for (List<Race> heats : heatsByRound.values()) {
-            if (heats.stream().anyMatch(h -> h.getStatus() != RaceStatus.FINISHED)) {
+            boolean finished = heats.stream().allMatch(h -> h.getStatus() == RaceStatus.FINISHED);
+            boolean anyRun = heats.stream().anyMatch(h -> h.getAbandonedAt() == null);
+            if (!finished || !anyRun) {
                 continue;
             }
-            Map<Long, RoundScore> inRound = new LinkedHashMap<>();
-            for (Race heat : heats) {
-                // A driver who never crossed the line, or whose heat was abandoned, is last in the round
-                for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
-                    inRound.putIfAbsent(onGrid.getEntryId(), new RoundScore(0, 0, Long.MAX_VALUE, NO_LAP));
-                }
-                if (heat.getAbandonedAt() == null) {
-                    resultSnapshotRepository.findByRaceId(heat.getId()).ifPresent(snapshot -> {
-                        for (ResultSnapshotDto.ResultRow row : snapshotJson.positions(heat.getId(),
-                                snapshot.getPositionsJson())) {
-                            inRound.put(row.entryId(), new RoundScore(0, row.lapsCompleted(), row.totalTimeMs(),
-                                    row.bestLapMs() == null ? NO_LAP : row.bestLapMs()));
-                        }
-                    });
-                }
-            }
-            inRound.keySet().removeAll(withdrawn);
-            List<Map.Entry<Long, RoundScore>> placed = inRound.entrySet().stream()
-                    .sorted(Comparator
-                            .comparingInt((Map.Entry<Long, RoundScore> e) -> e.getValue().laps()).reversed()
-                            .thenComparingLong(e -> e.getValue().totalTimeMs())
-                            .thenComparing(Map.Entry::getKey))
-                    .toList();
-            Map<Long, RoundScore> scored = new LinkedHashMap<>();
-            for (int i = 0; i < placed.size(); i++) {
-                RoundScore raw = placed.get(i).getValue();
-                scored.put(placed.get(i).getKey(), new RoundScore(i + 1, raw.laps(), raw.totalTimeMs(), raw.bestLapMs()));
-            }
+            Map<Long, RoundScore> scored = scoreRound(heats, withdrawn);
             rounds.add(scored);
-            missingPoints.add(placed.size() + 1);
+            missingPoints.add(scored.size() + 1);
         }
 
         Set<Long> drivers = new LinkedHashSet<>();
         rounds.forEach(r -> drivers.addAll(r.keySet()));
         List<QualifyingResult> results = new ArrayList<>();
         for (Long entryId : drivers) {
-            List<RoundScore> scores = new ArrayList<>();
-            for (int i = 0; i < rounds.size(); i++) {
-                scores.add(rounds.get(i).getOrDefault(entryId,
-                        new RoundScore(missingPoints.get(i), 0, Long.MAX_VALUE, NO_LAP)));
-            }
-            scores.sort(Comparator.comparingInt(RoundScore::points).thenComparing(Comparator.comparingInt(RoundScore::laps).reversed()));
-            List<RoundScore> counting = bestRounds > 0 ? scores.subList(0, Math.min(bestRounds, scores.size())) : scores;
-            results.add(new QualifyingResult(entryId,
-                    counting.stream().mapToLong(RoundScore::bestLapMs).min().orElse(NO_LAP),
-                    counting.stream().mapToInt(RoundScore::laps).sum(),
-                    counting.stream().mapToInt(RoundScore::points).sum()));
+            results.add(totalFor(entryId, rounds, missingPoints, bestRounds));
         }
         results.sort(Comparator
-                .comparingInt((QualifyingResult r) -> r.points())
+                .comparingInt(QualifyingResult::points)
                 .thenComparing(Comparator.comparingInt(QualifyingResult::lapsCompleted).reversed())
                 .thenComparingLong(QualifyingResult::bestLapMs)
                 .thenComparing(QualifyingResult::entryId));
         return results;
+    }
+
+    /** Each driver's laps, time and place in one finished round, withdrawn entries left out. */
+    private Map<Long, RoundScore> scoreRound(List<Race> heats, Set<Long> withdrawn) {
+        Map<Long, RoundScore> inRound = new LinkedHashMap<>();
+        for (Race heat : heats) {
+            // A driver who never crossed the line, or whose heat was abandoned, is last in the round. They sort
+            // behind a driver with a zero-lap result row only through the entry id, since both have no laps.
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                inRound.putIfAbsent(onGrid.getEntryId(), new RoundScore(0, 0, Long.MAX_VALUE, NO_LAP));
+            }
+            if (heat.getAbandonedAt() == null) {
+                resultSnapshotRepository.findByRaceId(heat.getId()).ifPresent(snapshot -> {
+                    for (ResultSnapshotDto.ResultRow row : snapshotJson.positions(heat.getId(),
+                            snapshot.getPositionsJson())) {
+                        inRound.put(row.entryId(), new RoundScore(0, row.lapsCompleted(), row.totalTimeMs(),
+                                row.bestLapMs() == null ? NO_LAP : row.bestLapMs()));
+                    }
+                });
+            }
+        }
+        inRound.keySet().removeAll(withdrawn);
+        List<Map.Entry<Long, RoundScore>> ordered = inRound.entrySet().stream()
+                .sorted(Comparator
+                        .comparingInt((Map.Entry<Long, RoundScore> e) -> e.getValue().laps()).reversed()
+                        .thenComparingLong(e -> e.getValue().totalTimeMs())
+                        .thenComparing(Map.Entry::getKey))
+                .toList();
+        Map<Long, RoundScore> scored = new LinkedHashMap<>();
+        int place = 0;
+        RoundScore previous = null;
+        for (int i = 0; i < ordered.size(); i++) {
+            Map.Entry<Long, RoundScore> entry = ordered.get(i);
+            RoundScore raw = entry.getValue();
+            boolean tied = previous != null && previous.laps() == raw.laps()
+                    && previous.totalTimeMs() == raw.totalTimeMs();
+            if (!tied) {
+                place = i + 1;
+            }
+            previous = raw;
+            scored.put(entry.getKey(), new RoundScore(place, raw.laps(), raw.totalTimeMs(), raw.bestLapMs()));
+        }
+        return scored;
+    }
+
+    /** One driver's points, laps and best lap over their best {@code bestRounds} rounds (all when 0). */
+    private static QualifyingResult totalFor(Long entryId, List<Map<Long, RoundScore>> rounds,
+                                             List<Integer> missingPoints, int bestRounds) {
+        List<RoundScore> scores = new ArrayList<>();
+        for (int i = 0; i < rounds.size(); i++) {
+            scores.add(rounds.get(i).getOrDefault(entryId,
+                    new RoundScore(missingPoints.get(i), 0, Long.MAX_VALUE, NO_LAP)));
+        }
+        scores.sort(Comparator.comparingInt(RoundScore::points)
+                .thenComparing(Comparator.comparingInt(RoundScore::laps).reversed()));
+        List<RoundScore> counting = bestRounds > 0 ? scores.subList(0, Math.min(bestRounds, scores.size())) : scores;
+        return new QualifyingResult(entryId,
+                counting.stream().mapToLong(RoundScore::bestLapMs).min().orElse(NO_LAP),
+                counting.stream().mapToInt(RoundScore::laps).sum(),
+                counting.stream().mapToInt(RoundScore::points).sum());
     }
 
     /** One driver's place in one round: {@code points} is the place, 0 before the round is ranked. */
@@ -239,13 +289,13 @@ public class QualifyingStandingsService {
      *
      * @param bestLapMs     best single lap in milliseconds across all heats; {@code Long.MAX_VALUE} for none
      * @param lapsCompleted total laps across all heats (the counting rounds, when ranked by points)
-     * @param points        the low-points total when ranked round by round, else 0
+     * @param points        the low-points total when ranked round by round, else null
      */
-    public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, int points) {
+    public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points) {
 
         /** A result ranked by laps, which has no points. */
         public QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted) {
-            this(entryId, bestLapMs, lapsCompleted, 0);
+            this(entryId, bestLapMs, lapsCompleted, null);
         }
 
         /** Whether the driver set a timed lap in any heat. */
@@ -255,7 +305,7 @@ public class QualifyingStandingsService {
 
         QualifyingResult plus(QualifyingResult other) {
             return new QualifyingResult(entryId, Math.min(bestLapMs, other.bestLapMs),
-                    lapsCompleted + other.lapsCompleted, 0);
+                    lapsCompleted + other.lapsCompleted, null);
         }
     }
 }
