@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 
-/** Reads the audit log (#138). Admin only, since it shows who did what, including sign-in attempts. */
+/**
+ * Reads the audit log (#138), under {@code /api/v1/admin/audit}. Admin only, since it shows who did what, including
+ * sign-in attempts.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/audit")
 @PreAuthorize("hasRole('ADMIN')")
@@ -24,7 +27,11 @@ public class AdminAuditController {
         this.auditQueryService = auditQueryService;
     }
 
-    /** Newest first. Every filter is optional; the ones given must all match. */
+    /**
+     * Searches the audit log, newest first. {@code GET}; ADMIN. Every filter is optional; the ones given must all
+     * match. {@code from} and {@code to} are ISO date-times; {@code page} counts from 0 and {@code size} (default 50)
+     * is capped by the query service. Read only.
+     */
     @GetMapping
     public AuditPageDto search(
             @RequestParam(required = false) String entityType,

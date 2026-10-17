@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * Serves pre-generated audio clip URLs for a race to the race control client (AUDIO-10).
+ * Serves pre-generated audio clip URLs for a race to the race control client (AUDIO-10), under
+ * {@code /api/v1/race/{raceId}/audio-clips}. Any official may call it ({@code SecurityConfig}'s last rule; there is
+ * no {@code @PreAuthorize}).
  * <p>
  * The race control browser calls {@code GET /api/v1/race/{raceId}/audio-clips} during grid
  * preparation to pre-fetch and locally cache all clip URLs before the race starts.

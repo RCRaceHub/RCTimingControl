@@ -5,6 +5,10 @@ import dev.monkeypatch.rctiming.domain.championship.ScoringSource;
 
 import java.util.List;
 
+/**
+ * A championship with its classes, linked events in round order and points scale, the answer of
+ * {@code GET /api/v1/admin/championships/{id}}. The scalar fields are those of {@link ChampionshipDto}.
+ */
 public record ChampionshipDetailDto(
         Long id,
         String name,

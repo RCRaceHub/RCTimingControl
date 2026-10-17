@@ -20,11 +20,16 @@ public class PrivacyNoticeController {
         this.clubProfileService = clubProfileService;
     }
 
+    /**
+     * {@code GET /api/v1/privacy-notice}, anonymous: the club's own notice text, or the default if it has not
+     * written one.
+     */
     @GetMapping
     public PrivacyNoticeDto get() {
         ClubProfileService.PrivacyNotice n = clubProfileService.privacyNotice();
         return new PrivacyNoticeDto(n.clubName(), n.email(), n.phone(), n.text());
     }
 
+    /** The privacy notice page's data: the club's name, contact {@code email} and {@code phone}, and the notice text. */
     public record PrivacyNoticeDto(String clubName, String email, String phone, String text) {}
 }

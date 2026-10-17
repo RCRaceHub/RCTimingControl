@@ -8,6 +8,11 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
+/**
+ * The body of {@code POST /api/v1/admin/events/{id}/generate-rounds} and {@code .../regenerate-rounds}: how many
+ * practice and qualifying rounds to run and how big the heats are. {@code minCarsPerHeat} is optional and takes a
+ * default when null; {@code classFinalsConfigs} lists the classes to generate for.
+ */
 public record GenerateRoundsRequest(
         @Min(0) @Max(10) int practiceRoundsCount,
         @Min(1) @Max(10) int qualifyingRoundsCount,
@@ -24,6 +29,7 @@ public record GenerateRoundsRequest(
             @Min(1) @Max(26) Integer finalsCount
     ) {}
 
+    /** The same request as the service takes it, for the event in the path. */
     public RoundGenerationRequest toServiceRequest(long eventId) {
         int min = minCarsPerHeat != null ? minCarsPerHeat : RoundGenerationRequest.DEFAULT_MIN_CARS_PER_HEAT;
         return new RoundGenerationRequest(eventId, practiceRoundsCount, qualifyingRoundsCount, maxCarsPerHeat, min,

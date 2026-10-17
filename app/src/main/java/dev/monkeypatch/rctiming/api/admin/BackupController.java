@@ -16,7 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Database backups for the admin page (#22): list them, and take one now. */
+/**
+ * Database backups for the admin page (#22): list them, and take one now. Under {@code /api/v1/admin/backups};
+ * ADMIN only.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/backups")
 @PreAuthorize("hasRole('ADMIN')")
@@ -30,9 +33,11 @@ public class BackupController {
         this.audit = audit;
     }
 
+    /** The backups answer: the absolute path of the backup directory and the backup files in it. */
     public record BackupsDto(String directory, List<BackupFile> backups) {
     }
 
+    /** The backups on disk and where they are kept. {@code GET}; read only. */
     @GetMapping
     public BackupsDto list() {
         return new BackupsDto(backupService.directory().toAbsolutePath().toString(), backupService.list());
@@ -40,7 +45,8 @@ public class BackupController {
 
     /**
      * A backup changes no data, so its row is written on its own after the file exists. Only the ones an official
-     * asks for are recorded; the nightly and end-of-day backups name nobody.
+     * asks for are recorded; the nightly and end-of-day backups name nobody. {@code POST}; answers 201 with the
+     * file; 500 if the backup fails.
      */
     @Audited("audit_log")
     @PostMapping

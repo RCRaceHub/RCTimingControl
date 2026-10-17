@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Racing classes under {@code /api/v1/admin/classes}. Reads are open to ADMIN, RACE_DIRECTOR and REFEREE; creating,
+ * changing and deleting are ADMIN only and audited.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/classes")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -32,16 +36,19 @@ public class RacingClassController {
         this.racingClassService = racingClassService;
     }
 
+    /** Every racing class. {@code GET}; read only. */
     @GetMapping
     public List<RacingClassDto> listRacingClasses() {
         return racingClassService.findAll().stream().map(RacingClassDto::from).toList();
     }
 
+    /** One racing class. {@code GET /{id}}; 404 if it does not exist. */
     @GetMapping("/{id}")
     public RacingClassDto getRacingClass(@PathVariable Long id) {
         return RacingClassDto.from(racingClassService.findById(id));
     }
 
+    /** Creates a class. {@code POST}; ADMIN; answers 201; 409 if the name is taken. Audited. */
     @Audited("audit_log")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -51,6 +58,7 @@ public class RacingClassController {
                 racingClassService.create(CurrentOfficial.actor(auth), request.name(), request.description()));
     }
 
+    /** Changes a class's name and description. {@code PUT /{id}}; ADMIN; 409 if the name is taken. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -60,6 +68,10 @@ public class RacingClassController {
                 racingClassService.update(CurrentOfficial.actor(auth), id, request.name(), request.description()));
     }
 
+    /**
+     * Deletes a class. {@code DELETE /{id}}; ADMIN; 204; 409 if the database refuses because something still uses it.
+     * Audited.
+     */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

@@ -7,6 +7,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * An event with its classes, the answer of {@code GET /api/v1/admin/events/{id}}. {@code racehubLastImportAt} and
+ * {@code racehubLastRevision} say when and at which revision RaceHub entries were last imported; both are null until the
+ * first import.
+ */
 public record EventDetailDto(
         Long id,
         String name,

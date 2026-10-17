@@ -26,6 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Entries under {@code /api/v1/admin/entries}: the list for an event's class, an entry's history, walk-ins and
+ * withdrawals. The reads are open to ADMIN, RACE_DIRECTOR and REFEREE; adding a walk-in and withdrawing need
+ * RACE_DIRECTOR or ADMIN, and the history is ADMIN only. Racers do not enter here: entries arrive from the RaceHub
+ * import or as walk-ins. Changes are recorded in the entry audit log.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/entries")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -46,13 +52,17 @@ public class AdminEntryController {
         this.entryRepository = entryRepository;
     }
 
+    /** The entries in one class of an event. {@code GET /events/{eventId}/classes/{classId}}; read only. */
     @GetMapping("/events/{eventId}/classes/{classId}")
     public List<AdminEntryDto> listEntriesForClass(@PathVariable Long eventId,
                                                     @PathVariable Long classId) {
         return adminEntryQueryService.listEntriesForClass(eventId, classId);
     }
 
-    /** What has happened to one entry, oldest first (#140). Admins only: it names the officials who acted. */
+    /**
+     * What has happened to one entry, oldest first (#140). Admins only: it names the officials who acted.
+     * {@code GET /{id}/history}; 404 if the entry does not exist.
+     */
     @GetMapping("/{id}/history")
     @PreAuthorize("hasRole('ADMIN')")
     public List<EntryHistoryDto> getHistory(@PathVariable long id) {
@@ -60,7 +70,14 @@ public class AdminEntryController {
         return entryHistoryQuery.forEntry(id);
     }
 
-    /** Adds a walk-in entry by hand (L9, #17). */
+    /**
+     * Adds a walk-in entry by hand (L9, #17). {@code POST}; RACE_DIRECTOR or ADMIN; answers 201 with the entry and
+     * any warnings, such as a transponder another entry in the event already uses. Name an existing competitor or a
+     * new one, not both. 409 if the event is completed, or the new name matches someone already there and the
+     * request does not confirm it is a different person; 404 for an unknown event, class or competitor; 400 for a
+     * class not in the event or a secondary transponder equal to the primary. Class membership rules are not
+     * checked. Recorded in the entry audit log.
+     */
     @Audited("entry_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -72,6 +89,10 @@ public class AdminEntryController {
         return new EntryResult(EntryDto.from(result.entry()), result.warnings());
     }
 
+    /**
+     * Withdraws an entry; it is kept, never deleted. {@code POST /{id}/withdraw}; RACE_DIRECTOR or ADMIN. 404 if the
+     * entry does not exist; 409 if it is already withdrawn. The reason is stored on the entry audit row.
+     */
     @Audited("entry_audit_log")
     @PostMapping("/{id}/withdraw")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")

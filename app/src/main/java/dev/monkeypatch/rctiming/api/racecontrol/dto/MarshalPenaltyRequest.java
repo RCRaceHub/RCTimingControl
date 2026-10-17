@@ -4,6 +4,8 @@ import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyKind;
 import jakarta.validation.constraints.NotNull;
 
 /**
+ * The body of {@code POST /referee/race/{raceId}/apply-marshal-penalty}.
+ *
  * @param kind      what the penalty costs the driver: their best qualifying round, or a lap in their first final
  * @param absenceId the recorded absence the penalty is for; when left out, the entry's most recent absence in
  *                  the event is used, or none if the entry has not been recorded absent

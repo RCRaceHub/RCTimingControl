@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Public (no-auth) endpoint for race result snapshots.
+ * Public (no-auth) endpoint for race result snapshots, under {@code /api/v1/results}.
  * RESULT-01, RESULT-05.
  *
  * No @PreAuthorize — permitted via SecurityConfig.requestMatchers().permitAll().
@@ -27,6 +27,11 @@ public class PublicResultsController {
         this.publicNames = publicNames;
     }
 
+    /**
+     * The stored result snapshot of a finished race: positions, lap history and club branding.
+     * {@code GET /api/v1/results/{raceId}}, anonymous. Driver names in the positions are replaced by the public
+     * form ({@link PublicNames}, #265). 404 if the race has no snapshot.
+     */
     @GetMapping("/{raceId}")
     public ResultSnapshotDto get(@PathVariable Long raceId) {
         ResultSnapshotDto snapshot = query.load(raceId);

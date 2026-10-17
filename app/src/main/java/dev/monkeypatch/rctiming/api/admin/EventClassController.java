@@ -21,6 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * An event's classes under {@code /api/v1/admin/events/{eventId}/classes}: adding a racing class with a format,
+ * overriding the format for the event, and combining classes to race together. The class is open to ADMIN,
+ * RACE_DIRECTOR and REFEREE but every endpoint is narrowed to ADMIN. Changes are audited.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}/classes")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -32,6 +37,11 @@ public class EventClassController {
         this.eventClassService = eventClassService;
     }
 
+    /**
+     * Adds a racing class to the event with a snapshot of a race format template (FORMAT-06), so later template edits
+     * do not change this event. {@code POST}; ADMIN; answers 201. 404 for an unknown event, class or template.
+     * Audited.
+     */
     @Audited("audit_log")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -42,6 +52,10 @@ public class EventClassController {
                 request.racingClassId(), request.templateId()));
     }
 
+    /**
+     * Sets the event class's format override, a patch laid over its snapshot (FORMAT-07); an empty override clears
+     * it. {@code PUT /{classId}/overrides}; ADMIN. 400 if the override does not fit the format. Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/{classId}/overrides")
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,6 +66,10 @@ public class EventClassController {
                 request.override()));
     }
 
+    /**
+     * Makes the given event classes race together but score separately (EVENT-06). {@code POST /combine}; ADMIN.
+     * 400 for fewer than two classes or one that is not in the event. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/combine")
     @PreAuthorize("hasRole('ADMIN')")

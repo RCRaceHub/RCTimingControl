@@ -28,7 +28,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Club-wide announcer settings (AUDIO-07), for admins and race directors. The PUT here replaces the toggles and
- * the default voice; the countdown intervals, wording and tuning are kept when it leaves them out.
+ * the default voice; the countdown intervals, wording and tuning are kept when it leaves them out. Under
+ * {@code /api/v1/admin/audio}; every endpoint needs the ADMIN or RACE_DIRECTOR role. Changes are recorded in the
+ * audit log. Race control has a smaller patch-style endpoint for the same settings
+ * ({@code AudioSettingsController}).
  */
 @RestController
 @RequestMapping("/api/v1/admin/audio")
@@ -42,7 +45,16 @@ public class AdminAudioController {
         this.hornSoundService = hornSoundService;
     }
 
-    /** DTO for club-wide audio toggle settings */
+    /**
+     * The club-wide audio settings: the body of {@code PUT /settings} and its answer, and the answer of
+     * {@code GET /settings}. It mirrors {@link ClubAudioSettings}, which says what each switch does, plus the club's
+     * default Piper voice. {@code defaultVoiceId} is an empty string on a read until a voice is chosen, and on a
+     * write a null or blank one keeps the stored voice. On a write, a null optional field keeps its saved value;
+     * {@code hornSounds} is ignored on a write, since the sound files change only by upload or removal. Limits
+     * checked on the way in (400 if broken): {@code runningOrderPercent} 1 to 100, {@code runningOrderAllUpTo} 0 to
+     * 100, {@code startCountdownSeconds} 0 to 60, {@code countdownIntervals} at most 10 times of 1 to 3600 seconds,
+     * {@code timeUpText} at most 200 characters.
+     */
     public record AudioSettingsDto(
             boolean announceCountdown,
             boolean announceStagger,
@@ -83,6 +95,7 @@ public class AdminAudioController {
         }
     }
 
+    /** The club's audio settings and default voice. {@code GET /settings}; ADMIN or RACE_DIRECTOR. */
     @GetMapping("/settings")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     public ResponseEntity<AudioSettingsDto> getAudioSettings() {
@@ -91,6 +104,11 @@ public class AdminAudioController {
                 clubProfileService.audioSettings(), clubProfileService.defaultVoiceId().orElse("")));
     }
 
+    /**
+     * Saves the toggles and the default voice. {@code PUT /settings}; ADMIN or RACE_DIRECTOR; 400 if a value is out
+     * of range. Answers with the body as sent, not re-read. Recorded in the audit log with the values before and
+     * after.
+     */
     @Audited("audit_log")
     @PutMapping("/settings")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
@@ -130,7 +148,14 @@ public class AdminAudioController {
         return ResponseEntity.ok(dto);
     }
 
-    /** Replaces a horn, the tick or a lap beep with the club's own sound file (#278, #281, #299). */
+    /**
+     * Replaces a horn, the tick or a lap beep with the club's own sound file (#278, #281, #299).
+     * {@code PUT /horns/{horn}} as multipart form data; ADMIN or RACE_DIRECTOR. {@code horn} names the sound
+     * ({@code start}, {@code finish}, {@code tick}, {@code lap-beep}, {@code faster-beep} or
+     * {@code slower-beep}); {@code file} is the sound (at most 1 MB) and {@code durationMs} how long it plays, so
+     * race control can wait that long before a spoken line. 400 for a missing, oversized or unsupported file or a
+     * duration outside 100 to 10000 ms. Answers with the club's sounds as saved.
+     */
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
@@ -141,7 +166,10 @@ public class AdminAudioController {
                 .hornSounds();
     }
 
-    /** Goes back to the built-in sound. */
+    /**
+     * Goes back to the built-in sound. {@code DELETE /horns/{horn}}, named as for the upload; ADMIN or
+     * RACE_DIRECTOR. Answers with the club's sounds as saved.
+     */
     @Audited("audit_log")
     @DeleteMapping("/horns/{horn}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")

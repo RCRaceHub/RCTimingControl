@@ -25,7 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Race control–facing audio settings endpoint (AUDIO-07).
+ * Race control–facing audio settings endpoint (AUDIO-07), under {@code /api/v1/race-control/settings/audio}.
+ * Needs the RACE_DIRECTOR or ADMIN role. Every change is recorded in the audit log.
  * <p>
  * Allows race directors to view and update audio toggle settings during a race day
  * without navigating to the admin panel. Settings are persisted to the club profile
@@ -44,7 +45,13 @@ public class AudioSettingsController {
         this.piperClient = piperClient;
     }
 
-    /** The settings as they are now. */
+    /**
+     * The settings as they are now: the answer of both {@code GET} and {@code PATCH}. It mirrors
+     * {@link ClubAudioSettings}, which says what each switch does; the count of seconds is in
+     * {@code startCountdownSeconds} (0 for no lead-in) and {@code countdownIntervals} are in seconds.
+     * {@code hornSounds} is read only here: the club's own sound files are changed by uploading or removing them,
+     * not by this patch.
+     */
     public record AudioSettingsDto(
             boolean announceCountdown,
             boolean announceStagger,
@@ -81,6 +88,11 @@ public class AudioSettingsController {
      * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
      * toggle it changed. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
      * the full object (a line left empty has the standard wording).
+     *
+     * <p>The limits below are checked on the way in and a breach is a 400. {@code runningOrderPercent} is the share
+     * of the field the running order names (1 to 100) and {@code runningOrderAllUpTo} the field size up to which
+     * every driver is named; {@code startCountdownSeconds} is 0 to 60; {@code countdownIntervals} holds at most 10
+     * times, each 1 to 3600 seconds.
      */
     public record AudioSettingsPatch(
             Boolean announceCountdown,
@@ -112,7 +124,7 @@ public class AudioSettingsController {
     }
 
     /**
-     * Returns the current audio settings from the club profile.
+     * Returns the current audio settings from the club profile. {@code GET /api/v1/race-control/settings/audio}.
      */
     @GetMapping
     public ResponseEntity<AudioSettingsDto> getSettings() {
@@ -122,6 +134,9 @@ public class AudioSettingsController {
     /**
      * Updates and persists audio settings to the club profile.
      * Only fields included in the request body are applied; the answer is the settings as saved.
+     * {@code PATCH /api/v1/race-control/settings/audio}; 400 if a value is out of range. Recorded in the audit log
+     * with the values before and after; when a change alters what the pre-generated clips say, an
+     * {@code AudioSettingsChangedEvent} is published after the commit.
      */
     @Audited("audit_log")
     @PatchMapping
@@ -163,6 +178,7 @@ public class AudioSettingsController {
      * A short spoken sample from the club's Piper voice, for the test button (#286): the audio if Piper answered,
      * 503 if it is switched off or cannot be reached, so the official learns whether the race calls will be
      * spoken by Piper or fall back to the browser voice.
+     * {@code GET /api/v1/race-control/settings/audio/piper-test}, answered as {@code audio/wav}. Changes nothing.
      */
     @GetMapping(value = "/piper-test", produces = "audio/wav")
     public ResponseEntity<byte[]> piperTest() {

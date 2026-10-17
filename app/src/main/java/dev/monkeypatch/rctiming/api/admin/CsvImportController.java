@@ -20,7 +20,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-/** Imports an RC-Timing style driver CSV into an event (#39). */
+/**
+ * Imports an RC-Timing style driver CSV into an event (#39), under {@code /api/v1/admin/events/{eventId}}. ADMIN
+ * only. The RaceHub import and the entry feed are the other ways entries arrive.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}")
 @PreAuthorize("hasRole('ADMIN')")
@@ -36,6 +39,9 @@ public class CsvImportController {
      * Previews the file with {@code dryRun=true}, saving nothing. Without it, creates the new rows
      * and applies only the picks: {@code update} names changed rows by key, {@code withdraw} names
      * missing entries by id. A blocked import returns 422 with the preview.
+     *
+     * <p>{@code POST /csv-import} as multipart form data with a {@code file} part. 404 for an unknown event. Walk-ins
+     * are never withdrawn. Audited.
      */
     @Audited("audit_log")
     @PostMapping(value = "/csv-import", consumes = "multipart/form-data")

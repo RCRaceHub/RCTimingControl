@@ -52,6 +52,7 @@ public class OfficialController {
         this.officialQueryService = officialQueryService;
     }
 
+    /** The body of {@code POST}: a new official's email, name, password (8 or more characters) and roles. */
     public record AddOfficialRequest(
             @NotBlank @Email String email,
             @NotBlank @Size(max = 100) String firstName,
@@ -60,22 +61,32 @@ public class OfficialController {
             @NotEmpty Set<Role> roles
     ) {}
 
+    /** The body of {@code PUT /{id}/roles}: the official's full set of roles, which replaces the old one. */
     public record RolesRequest(@NotEmpty Set<Role> roles) {}
 
+    /** The body of {@code PUT /{id}/password}: the new password, 8 or more characters. */
     public record PasswordRequest(@NotNull @Size(min = OfficialService.MIN_PASSWORD_LENGTH) String password) {}
 
+    /** Every official. {@code GET}; ADMIN; read only. */
     @GetMapping
     public List<OfficialDto> list() {
         return officialQueryService.listAll();
     }
 
-    /** Newest first. Pass the id of the oldest change shown as {@code before} to get the page after it. */
+    /**
+     * The history of changes to officials, newest first. Pass the id of the oldest change shown as {@code before} to
+     * get the page after it. {@code GET /changes}; ADMIN; {@code size} is kept between 1 and 200.
+     */
     @GetMapping("/changes")
     public List<OfficialChangeDto> changes(@RequestParam(required = false) Long before,
                                            @RequestParam(defaultValue = "" + CHANGES_PAGE) int size) {
         return officialQueryService.changes(before, Math.min(Math.max(size, 1), CHANGES_PAGE_MAX));
     }
 
+    /**
+     * Adds an official. {@code POST}; ADMIN; answers 201. 400 for a bad body; 409 if the change is refused (such as
+     * an email already in use). Recorded in the officials audit log.
+     */
     @Audited("official_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -85,12 +96,20 @@ public class OfficialController {
         return toDto(user);
     }
 
+    /**
+     * Replaces an official's roles. {@code PUT /{id}/roles}; ADMIN. 409 if it would leave the club without an
+     * enabled admin. Recorded in the officials audit log.
+     */
     @Audited("official_audit_log")
     @PutMapping("/{id}/roles")
     public OfficialDto changeRoles(@PathVariable long id, @RequestBody @Valid RolesRequest request, Authentication auth) {
         return toDto(officialService.changeRoles(id, request.roles(), CurrentOfficial.id(auth)));
     }
 
+    /**
+     * Sets a new password. {@code PUT /{id}/password}; ADMIN; 204. The official's refresh tokens are revoked, so
+     * they are signed out when their access token runs out. Recorded in the officials audit log.
+     */
     @Audited("official_audit_log")
     @PutMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -98,12 +117,17 @@ public class OfficialController {
         officialService.setPassword(id, request.password(), CurrentOfficial.id(auth));
     }
 
+    /**
+     * Disables an official, who can no longer sign in. {@code POST /{id}/disable}; ADMIN. 409 for the last enabled
+     * admin or for an admin disabling themselves. Their sessions are ended. Recorded in the officials audit log.
+     */
     @Audited("official_audit_log")
     @PostMapping("/{id}/disable")
     public OfficialDto disable(@PathVariable long id, Authentication auth) {
         return toDto(officialService.disable(id, CurrentOfficial.id(auth)));
     }
 
+    /** Enables a disabled official again. {@code POST /{id}/enable}; ADMIN. Recorded in the officials audit log. */
     @Audited("official_audit_log")
     @PostMapping("/{id}/enable")
     public OfficialDto enable(@PathVariable long id, Authentication auth) {

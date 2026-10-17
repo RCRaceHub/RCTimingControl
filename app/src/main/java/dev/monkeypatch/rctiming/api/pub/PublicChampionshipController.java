@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Public (no-auth) endpoint for championship standings.
+ * Public (no-auth) endpoint for championship standings, under {@code /api/v1/championships}.
  * CHAMP-05.
  *
  * No @PreAuthorize — permitted via SecurityConfig.requestMatchers().permitAll().
@@ -31,6 +31,11 @@ public class PublicChampionshipController {
         this.publicNames = publicNames;
     }
 
+    /**
+     * Standings for one championship, worked out on demand from the result snapshots, ranked.
+     * {@code GET /api/v1/championships/{id}}, anonymous. Driver names are replaced by the public form
+     * ({@link PublicNames}, #265). 404 if the championship does not exist.
+     */
     @GetMapping("/{id}")
     public List<StandingsRowDto> getStandings(@PathVariable Long id) {
         PublicNames.Snapshot names = publicNames.snapshot();

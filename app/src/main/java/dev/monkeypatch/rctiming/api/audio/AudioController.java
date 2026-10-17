@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Audio REST API — voice listing.
+ * Audio REST API — voice listing. Any official may call it ({@code SecurityConfig}'s last rule; there is no
+ * {@code @PreAuthorize}).
  * <p>
  * Endpoints:
  * <ul>
@@ -26,7 +27,8 @@ public class AudioController {
     }
 
     /**
-     * List available Piper TTS voices (AUDIO-13).
+     * List available Piper TTS voices (AUDIO-13): {@code GET /api/v1/audio/voices}, any official. Asked of the
+     * Piper client, so what comes back depends on the voice models it finds.
      */
     @GetMapping("/api/v1/audio/voices")
     public List<VoiceInfo> listVoices() {

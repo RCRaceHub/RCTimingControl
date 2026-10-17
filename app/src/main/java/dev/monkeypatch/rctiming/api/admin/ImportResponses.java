@@ -15,10 +15,12 @@ final class ImportResponses {
     private ImportResponses() {
     }
 
+    /** The answer for a RaceHub or feed import: 422 only for a real import that was blocked, else 200. */
     static ResponseEntity<RaceHubImportResult> of(RaceHubImportResult result) {
         return answer(result, result.blocked() && !result.dryRun());
     }
 
+    /** The answer for a CSV import: 422 only for a real import that was blocked, else 200. */
     static ResponseEntity<CsvImportResult> of(CsvImportResult result) {
         return answer(result, result.blocked() && !result.dryRun());
     }

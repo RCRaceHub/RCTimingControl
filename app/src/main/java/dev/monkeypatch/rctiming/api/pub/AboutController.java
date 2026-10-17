@@ -28,11 +28,15 @@ public class AboutController {
         this.lanAddresses = lanAddresses;
     }
 
+    /** {@code GET /api/v1/about}, anonymous: the build's version and time and the venue-network addresses. */
     @GetMapping
     public AboutDto get() {
         return new AboutDto(version, buildTime, lanAddresses.urls());
     }
 
-    /** {@code addresses}: the URLs other devices on the venue network can open (#23). */
+    /**
+     * The About page's data. {@code version} and {@code buildTime} come from the build's properties;
+     * {@code addresses}: the URLs other devices on the venue network can open (#23).
+     */
     public record AboutDto(String version, Instant buildTime, List<String> addresses) {}
 }

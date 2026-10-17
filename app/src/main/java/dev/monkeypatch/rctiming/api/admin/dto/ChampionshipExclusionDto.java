@@ -5,6 +5,11 @@ import dev.monkeypatch.rctiming.domain.championship.ChampionshipService;
 
 import java.time.Instant;
 
+/**
+ * A driver excluded from one event of a championship, the answer of the exclusion endpoints under
+ * {@code /api/v1/admin/championships/{id}/exclusions}. {@code driverId} is the competitor's id and {@code createdBy}
+ * the id of the official who recorded it.
+ */
 public record ChampionshipExclusionDto(
         Long id,
         Long championshipId,

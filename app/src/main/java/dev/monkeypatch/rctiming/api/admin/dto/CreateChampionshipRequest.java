@@ -6,6 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+/**
+ * The body of {@code POST /api/v1/admin/championships}. A null {@code bestXFromYX} or {@code bestXFromYY} means every
+ * round counts; the bonus points are 0 or more.
+ */
 public record CreateChampionshipRequest(
         @NotBlank @Size(max = 255) String name,
         @Min(1) Integer bestXFromYX,          // nullable — championship-wide default

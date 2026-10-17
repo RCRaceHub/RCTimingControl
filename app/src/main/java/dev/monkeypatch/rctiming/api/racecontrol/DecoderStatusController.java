@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Returns the current decoder connection state, so the race-control status bar can show the
- * right state on page load rather than waiting for the next STOMP push.
+ * right state on page load rather than waiting for the next STOMP push. {@code GET
+ * /api/v1/race-control/decoder/status}; any official may call it ({@code SecurityConfig}'s last rule; there is no
+ * {@code @PreAuthorize}). Read only.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/decoder/status")
@@ -20,6 +22,7 @@ public class DecoderStatusController {
         this.statusPublisher = statusPublisher;
     }
 
+    /** The last status the decoder listener published, the same as the {@code /topic/system/decoder-status} feed. */
     @GetMapping
     public DecoderStatusDto getStatus() {
         return statusPublisher.getLastKnownStatus();

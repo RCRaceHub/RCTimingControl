@@ -25,6 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Tracks under {@code /api/v1/admin/tracks}: the track, its decoder loops and its lap time thresholds. Reads are open
+ * to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN only and audited. A missing track, loop or threshold is a
+ * 404.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/tracks")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -36,16 +41,19 @@ public class TrackController {
         this.trackService = trackService;
     }
 
+    /** Every track with its loops and thresholds. {@code GET}; read only. */
     @GetMapping
     public List<TrackDto> listTracks() {
         return trackService.findAll().stream().map(TrackDto::from).toList();
     }
 
+    /** One track. {@code GET /{id}}; 404 if it does not exist. */
     @GetMapping("/{id}")
     public TrackDto getTrack(@PathVariable Long id) {
         return TrackDto.from(trackService.findById(id));
     }
 
+    /** Creates a track. {@code POST}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -55,6 +63,7 @@ public class TrackController {
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
+    /** Changes a track's name, notes and length. {@code PUT /{id}}; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -63,6 +72,10 @@ public class TrackController {
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
+    /**
+     * Deletes a track with its decoder loops and lap thresholds. {@code DELETE /{id}}; ADMIN; 204. 409 if the
+     * database refuses because something else still refers to it. Audited.
+     */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -71,6 +84,7 @@ public class TrackController {
         trackService.delete(CurrentOfficial.actor(auth), id);
     }
 
+    /** Adds a decoder loop to a track. {@code POST /{trackId}/loops}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping("/{trackId}/loops")
     @PreAuthorize("hasRole('ADMIN')")
@@ -81,6 +95,7 @@ public class TrackController {
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
+    /** Changes a decoder loop. {@code PUT /loops/{loopId}}, by the loop's own database id; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/loops/{loopId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -90,6 +105,7 @@ public class TrackController {
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
+    /** Deletes a decoder loop. {@code DELETE /loops/{loopId}}, by the loop's database id; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/loops/{loopId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -98,6 +114,10 @@ public class TrackController {
         trackService.deleteDecoderLoop(CurrentOfficial.actor(auth), loopId);
     }
 
+    /**
+     * Sets the lap time limits for a class on the track, or for every class without its own when no class is given.
+     * {@code POST /{trackId}/thresholds}; ADMIN; answers 201. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/{trackId}/thresholds")
     @PreAuthorize("hasRole('ADMIN')")
@@ -108,6 +128,7 @@ public class TrackController {
                 request.racingClassId(), request.minLapMs(), request.maxLastLapMs()));
     }
 
+    /** Deletes a lap threshold. {@code DELETE /thresholds/{thresholdId}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/thresholds/{thresholdId}")
     @PreAuthorize("hasRole('ADMIN')")

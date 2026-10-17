@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Read-only account of what happened in a race (#140): lifecycle, penalties, incidents, marshal laps and links. */
+/**
+ * Read-only account of what happened in a race (#140): lifecycle, penalties, incidents, marshal laps and links.
+ * Under {@code /api/v1/race-control/race/{raceId}/history}; ADMIN, RACE_DIRECTOR or REFEREE.
+ */
 @RestController
 @RequestMapping("/api/v1/race-control/race/{raceId}/history")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -25,6 +28,7 @@ public class RaceHistoryController {
         this.raceRepository = raceRepository;
     }
 
+    /** The race's history entries, as {@link RaceHistoryDto} rows. {@code GET}; 404 if the race does not exist. */
     @GetMapping
     public List<RaceHistoryDto> getHistory(@PathVariable long raceId) {
         raceRepository.requireExists(raceId);
