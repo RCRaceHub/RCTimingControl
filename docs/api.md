@@ -819,6 +819,21 @@ PUT /api/v1/race-control/events/{eventId}/live-feed   { "enabled": true }
 
 ---
 
+## Race control — Auto run
+
+Runs an event's races one after another (#338). Any official may read; only `RACE_DIRECTOR` or `ADMIN` may change it. Every call answers with the state: `{ "eventId": 1, "armed": true, "phase": "WAITING", "nextRaceId": 12, "nextRaceLabel": "Qualifying 2 — Buggy — Heat 1", "startAt": "2026-10-17T10:03:00Z", "heldReason": null, "heldMessage": null, "gapSeconds": 180, "holdBeforeFinals": true }`. `phase` is `WAITING` (counting to the start), `RACING` (waiting for a race under way) or `HELD` (`heldReason` is `FINALS`, `NO_DRIVERS` or `REFUSED`), and null when auto run is off.
+
+```http
+GET  /api/v1/race-control/events/{eventId}/auto-run
+POST /api/v1/race-control/events/{eventId}/auto-run/go          (switches on, or resumes after a hold)
+POST /api/v1/race-control/events/{eventId}/auto-run/stop
+POST /api/v1/race-control/events/{eventId}/auto-run/skip-to     { "seconds": 30 }
+PUT  /api/v1/race-control/events/{eventId}/auto-run/settings    { "gapSeconds": 180, "holdBeforeFinals": true }
+```
+**404** for an unknown event; **403** for a change by a referee; **400** for a gap outside 0 to 3600 seconds. The state is pushed to `/topic/event/{eventId}/auto-run` whenever it changes. The announcements go out on the next race's `/topic/race/{raceId}/audio` as `{ "type": "next-race-warning", "text": "…" }`, `{ "type": "auto-run-held", "text": "…" }` and `{ "type": "start-countdown", "seconds": 10 }`.
+
+---
+
 ## Error responses
 
 All errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457):

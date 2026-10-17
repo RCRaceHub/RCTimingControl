@@ -13,6 +13,7 @@ export const raceControlQueryKeys = {
   audioSettings: () => ['race-control', 'audio-settings'] as const,
   decoderStatus: () => ['race-control', 'decoder-status'] as const,
   liveFeedStatus: () => ['race-control', 'live-feed-status'] as const,
+  autoRun: (eventId: number) => ['race-control', 'auto-run', eventId] as const,
   liveFeedSetting: (eventId: number) => ['race-control', 'live-feed-setting', eventId] as const,
   practice: {
     sessions: () => ['race-control', 'practice', 'sessions'] as const,

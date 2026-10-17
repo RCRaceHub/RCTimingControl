@@ -313,6 +313,55 @@ export async function setLiveFeedSetting(eventId: number, enabled: boolean): Pro
   return data;
 }
 
+// ── Auto run (#338) ──────────────────────────────────────────────────────────
+
+export type AutoRunPhase = 'WAITING' | 'RACING' | 'HELD';
+export type AutoRunHeldReason = 'FINALS' | 'NO_DRIVERS' | 'REFUSED';
+
+export type AutoRunStateDto = {
+  eventId: number;
+  armed: boolean;
+  phase: AutoRunPhase | null;
+  nextRaceId: number | null;
+  nextRaceLabel: string | null;
+  /** When the next race starts, while waiting. */
+  startAt: string | null;
+  heldReason: AutoRunHeldReason | null;
+  heldMessage: string | null;
+  gapSeconds: number;
+  holdBeforeFinals: boolean;
+};
+
+const autoRunUrl = (eventId: number) => `/api/v1/race-control/events/${eventId}/auto-run`;
+
+export async function getAutoRun(eventId: number): Promise<AutoRunStateDto> {
+  const { data } = await api.get<AutoRunStateDto>(autoRunUrl(eventId));
+  return data;
+}
+
+export async function autoRunGo(eventId: number): Promise<AutoRunStateDto> {
+  const { data } = await api.post<AutoRunStateDto>(`${autoRunUrl(eventId)}/go`);
+  return data;
+}
+
+export async function autoRunStop(eventId: number): Promise<AutoRunStateDto> {
+  const { data } = await api.post<AutoRunStateDto>(`${autoRunUrl(eventId)}/stop`);
+  return data;
+}
+
+export async function autoRunSkipTo(eventId: number, seconds: number): Promise<AutoRunStateDto> {
+  const { data } = await api.post<AutoRunStateDto>(`${autoRunUrl(eventId)}/skip-to`, { seconds });
+  return data;
+}
+
+export async function setAutoRunSettings(
+  eventId: number,
+  settings: { gapSeconds: number; holdBeforeFinals: boolean },
+): Promise<AutoRunStateDto> {
+  const { data } = await api.put<AutoRunStateDto>(`${autoRunUrl(eventId)}/settings`, settings);
+  return data;
+}
+
 // ── Transponder swap (L11) ────────────────────────────────────────────────────
 
 export type EntrySearchResult = {

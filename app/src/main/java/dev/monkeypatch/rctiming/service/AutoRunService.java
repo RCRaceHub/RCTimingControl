@@ -253,6 +253,8 @@ public class AutoRunService {
         if (left <= GRID_CALL_SECONDS && !plan.gridCalled && race.getStatus() == RaceStatus.PENDING) {
             plan.gridCalled = true;
             command(event, race, "RACE_GRID_CALLED", "Called the grid for", stateMachine::callGrid);
+            // Nothing in the plan changed, but race control should show the race on the grid
+            publish(event);
         }
         int leadIn = leadInSeconds();
         if (leadIn > 0 && left <= leadIn && !plan.leadInSent) {

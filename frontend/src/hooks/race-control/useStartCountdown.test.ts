@@ -46,6 +46,18 @@ describe('useStartCountdown', () => {
     expect(result.current.remaining).toBeNull();
   });
 
+  it('plays the lead-in for auto run without sending the start', () => {
+    const onDone = vi.fn();
+    const { result } = renderHook(() => useStartCountdown({ seconds: 10, volume: 1, onDone, watch: 'a' }));
+    act(() => result.current.leadIn(3));
+    expect(speak).toHaveBeenCalledWith('Starting in 3 seconds.', 1);
+    expect(result.current.remaining).toBe(3);
+
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(result.current.remaining).toBeNull();
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
   it('does not start when cancelled', () => {
     const onDone = vi.fn();
     const { result } = renderHook(() => useStartCountdown({ seconds: 3, volume: 1, onDone, watch: 'a' }));

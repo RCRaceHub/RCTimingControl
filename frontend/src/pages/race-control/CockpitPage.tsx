@@ -11,6 +11,8 @@ import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useAudioAllowed } from '@/hooks/race-control/useAudioAllowed';
 import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
+import { useAutoRun } from '@/hooks/race-control/useAutoRun';
+import { AutoRunPanel } from './panels/AutoRunPanel';
 import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { usePregeneratedClips } from '@/hooks/race-control/usePregeneratedClips';
@@ -73,8 +75,18 @@ export default function CockpitPage() {
 
   useHelpContent(RaceControlHelp);
 
-  const { data: runOrder = [], isLoading, isError } = useRunOrder(eventId || null);
+  const autoRun = useAutoRun(eventId || null);
+  const autoRunArmed = autoRun.state?.armed === true;
+  const { data: runOrder = [], isLoading, isError } = useRunOrder(eventId || null, autoRunArmed);
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
+
+  // While auto run is on the page follows the race it is on, so its announcements and clock are the ones heard
+  const autoRunRaceId = autoRunArmed ? autoRun.state?.nextRaceId ?? null : null;
+  const [followedRaceId, setFollowedRaceId] = useState<number | null>(null);
+  if (autoRunRaceId !== followedRaceId) {
+    setFollowedRaceId(autoRunRaceId);
+    if (autoRunRaceId !== null) setSelectedRaceId(autoRunRaceId);
+  }
 
   // Generating rounds and finishing races are race director commands; referees also see the cockpit
   const { canRunEvent: canControlRace } = useRoles();
@@ -132,8 +144,11 @@ export default function CockpitPage() {
   const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
 
   // Audio announcements (AUDIO-02, AUDIO-03, AUDIO-04, AUDIO-05, AUDIO-06, AUDIO-11)
+  // Auto run's lead-in cue arrives through the announcements, but the count itself is below
+  const leadInRef = useRef<(seconds: number) => void>(() => undefined);
   const { playBeep, announceCarFinish, setClipMap, markAbandoned, clearAbandoned } = useAnnouncements({
     raceId: selectedRaceId,
+    onStartCountdown: (seconds) => leadInRef.current(seconds),
     settings: audioSettings ?? null,
     volume: volumePercent / 100,
     raceState: selectedRace?.status,
@@ -287,6 +302,10 @@ export default function CockpitPage() {
     settings: audioSettings,
     watch: `${selectedRaceId}:${selectedRace?.status}`,
   });
+
+  useEffect(() => {
+    leadInRef.current = startCountdown.leadIn;
+  }, [startCountdown.leadIn]);
 
   function onStop() {
     mutations.stop.mutate(undefined, {
@@ -560,6 +579,7 @@ export default function CockpitPage() {
             <PanelLeftClose className="h-4 w-4" />
           </Button>
         </div>
+        <AutoRunPanel autoRun={autoRun} canControl={canControlRace} />
         {isLoading ? (
           <div className="p-4 space-y-2">
             {[...Array(6)].map((_, i) => (
