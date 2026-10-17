@@ -112,8 +112,8 @@ public class EventService {
     }
 
     /** Sets how auto run (#338) paces the event, recording the change only when something differs. */
-    public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds, boolean holdBeforeFinals,
-                                 boolean autoStart) {
+    public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds,
+                                 boolean holdBeforeFinals, boolean autoStart) {
         Event event = getEventOrThrow(id);
         if (event.getAutoRunGapSeconds() == gapSeconds && event.isAutoRunHoldBeforeFinals() == holdBeforeFinals
                 && event.isAutoRunAutoStart() == autoStart) {

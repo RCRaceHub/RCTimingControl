@@ -365,6 +365,7 @@ class AutoRunServiceTest {
         service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1, RaceStatus.RUNNING));
         service.tick();
         assertThat(service.state(EVENT_ID).armed()).isTrue();
+        assertThat(service.state(EVENT_ID).autoStart()).isTrue();
 
         finish(running, RoundType.QUALIFIER);
         service.tick();

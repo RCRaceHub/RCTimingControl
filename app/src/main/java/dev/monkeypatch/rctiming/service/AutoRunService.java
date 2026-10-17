@@ -89,7 +89,7 @@ public class AutoRunService {
      */
     public record AutoRunState(long eventId, boolean armed, Phase phase, Long nextRaceId, String nextRaceLabel,
                                Instant startAt, HeldReason heldReason, String heldMessage,
-                               int gapSeconds, boolean holdBeforeFinals, Instant serverTime) {
+                               int gapSeconds, boolean holdBeforeFinals, boolean autoStart, Instant serverTime) {
     }
 
     /**
@@ -283,6 +283,11 @@ public class AutoRunService {
             plan.release = false;
             plan.replan = true;
             if (plans.putIfAbsent(event.getId(), plan) == null) {
+                // A stop that landed between the check above and the put has found nothing to remove
+                if (stoppedEvents.contains(event.getId())) {
+                    plans.remove(event.getId(), plan);
+                    return;
+                }
                 log.info("Auto run switched on for event {} by the start of race {}", event.getId(), raceId);
             }
         }
@@ -498,10 +503,11 @@ public class AutoRunService {
     private AutoRunState stateOf(Event event, Plan plan) {
         if (plan == null) {
             return new AutoRunState(event.getId(), false, null, null, null, null, null, null,
-                    event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals(), clock.instant());
+                    event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals(), event.isAutoRunAutoStart(),
+                    clock.instant());
         }
         return new AutoRunState(event.getId(), true, plan.phase, plan.raceId, plan.label, plan.startAt,
                 plan.heldReason, plan.heldMessage, event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals(),
-                clock.instant());
+                event.isAutoRunAutoStart(), clock.instant());
     }
 }
