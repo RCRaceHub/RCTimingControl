@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
+import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
@@ -39,22 +40,29 @@ public class BoardController {
     private final RaceClockService raceClockService;
     private final PublicNames publicNames;
     private final QualifyingTableService qualifyingTableService;
+    private final AutoRunService autoRunService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
                            RaceClockService raceClockService,
                            PublicNames publicNames,
-                           QualifyingTableService qualifyingTableService) {
+                           QualifyingTableService qualifyingTableService,
+                           AutoRunService autoRunService) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
         this.raceClockService = raceClockService;
         this.publicNames = publicNames;
         this.qualifyingTableService = qualifyingTableService;
+        this.autoRunService = autoRunService;
     }
 
-    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
+    /**
+     * The race on track, the next and the last finished, plus auto run's countdown when it is on.
+     *
+     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     */
     @GetMapping("/now-next")
     public NowNextDto nowNext(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
@@ -63,8 +71,9 @@ public class BoardController {
                         event.name(),
                         boardQuery.currentRace(event.id()).orElse(null),
                         boardQuery.nextRace(event.id()).orElse(null),
-                        boardQuery.lastCompletedRace(event.id()).orElse(null)))
-                .orElse(new NowNextDto(null, null, null, null, null));
+                        boardQuery.lastCompletedRace(event.id()).orElse(null),
+                        autoRunService.boardView(event.id()).orElse(null)))
+                .orElse(new NowNextDto(null, null, null, null, null, null));
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */

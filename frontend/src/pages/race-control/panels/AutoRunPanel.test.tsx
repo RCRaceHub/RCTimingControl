@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AutoRunPanel } from './AutoRunPanel';
 import type { AutoRunStateDto } from '@/lib/raceControlApi';
 import type { useAutoRun } from '@/hooks/race-control/useAutoRun';
@@ -42,14 +42,14 @@ describe('AutoRunPanel', () => {
     expect(screen.queryByRole('button', { name: 'Stop' })).not.toBeInTheDocument();
   });
 
-  it('counts down to the next race and brings it forward', () => {
+  it('counts down to the next race and brings it forward', async () => {
     const startAt = new Date(Date.now() + 95_000).toISOString();
     const autoRun = autoRunOf(stateOf({
       armed: true, phase: 'WAITING', nextRaceId: 4, nextRaceLabel: 'Qualifying 2 — Buggy — Heat 1', startAt,
     }));
     render(<AutoRunPanel autoRun={autoRun} canControl />);
 
-    expect(screen.getByTestId('auto-run-countdown')).toHaveTextContent(/^1:3\d$/);
+    await waitFor(() => expect(screen.getByTestId('auto-run-countdown')).toHaveTextContent(/^1:3\d$/));
     fireEvent.click(screen.getByRole('button', { name: '30s' }));
     expect(autoRun.skipTo.mutate).toHaveBeenCalledWith(30);
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }));

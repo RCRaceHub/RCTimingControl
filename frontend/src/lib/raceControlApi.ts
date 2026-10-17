@@ -337,6 +337,8 @@ export type AutoRunStateDto = {
   heldMessage: string | null;
   gapSeconds: number;
   holdBeforeFinals: boolean;
+  /** The server's clock when this was built, for counting down without trusting this browser's clock. */
+  serverTime?: string;
 };
 
 const autoRunUrl = (eventId: number) => `/api/v1/race-control/events/${eventId}/auto-run`;

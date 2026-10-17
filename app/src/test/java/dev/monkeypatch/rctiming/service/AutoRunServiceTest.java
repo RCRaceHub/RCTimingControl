@@ -139,6 +139,32 @@ class AutoRunServiceTest {
     }
 
     @Test
+    void boardViewCountsDownWhileWaitingAndIsEmptyWhenOff() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        assertThat(service.boardView(EVENT_ID)).isEmpty();
+
+        service.go(Actor.system("test"), EVENT_ID);
+
+        var view = service.boardView(EVENT_ID).orElseThrow();
+        assertThat(view.phase()).isEqualTo(AutoRunService.Phase.WAITING);
+        assertThat(view.startAt()).isEqualTo(clock.instant().plusSeconds(180));
+        assertThat(view.serverTime()).isEqualTo(clock.instant());
+    }
+
+    @Test
+    void boardViewSaysWhyItIsHoldingBeforeTheFinals() {
+        Race qualifier = addRace(1, RoundType.QUALIFIER, RaceStatus.RUNNING);
+        addRace(2, RoundType.FINAL, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        finish(qualifier, RoundType.QUALIFIER);
+        service.tick();
+
+        var view = service.boardView(EVENT_ID).orElseThrow();
+        assertThat(view.phase()).isEqualTo(AutoRunService.Phase.HELD);
+        assertThat(view.heldReason()).isEqualTo(AutoRunService.HeldReason.FINALS);
+    }
+
+    @Test
     void callsTheGridAt30SecondsAndStartsAtZero() {
         Race race = addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
         service.go(Actor.system("test"), EVENT_ID);

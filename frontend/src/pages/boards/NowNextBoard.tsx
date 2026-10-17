@@ -3,13 +3,39 @@
 // Polls the public board endpoints and, while a race is on track, follows it live (useBoardRace).
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getResultsBoard } from '@/lib/boardsApi';
+import { getResultsBoard, type AutoRunBoardDto } from '@/lib/boardsApi';
+import { formatCountdown, useCountdown } from '@/lib/useCountdown';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { BOARD_POLL_MS, parseEventParam } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+
+/**
+ * Auto run's countdown to the next start, large enough to read from the pits. While it is holding (before the
+ * finals, or for a problem) it says the start is waiting for race control instead of counting.
+ */
+function NextStart({ autoRun }: { autoRun: AutoRunBoardDto | null | undefined }) {
+  const left = useCountdown(autoRun?.phase === 'WAITING' ? autoRun.startAt : null, autoRun?.serverTime);
+  if (!autoRun) return null;
+  if (autoRun.phase === 'HELD') {
+    return (
+      <p className="text-3xl font-semibold text-amber-400 lg:text-5xl" data-testid="board-next-start-held">
+        {autoRun.heldReason === 'FINALS' ? 'Waiting for the finals to be released' : 'Waiting for race control'}
+      </p>
+    );
+  }
+  if (left == null) return null;
+  return (
+    <p className="text-3xl text-slate-300 lg:text-5xl">
+      Starts in{' '}
+      <span className="font-mono text-6xl font-bold tabular-nums text-white lg:text-8xl" data-testid="board-next-start">
+        {formatCountdown(left)}
+      </span>
+    </p>
+  );
+}
 
 export default function NowNextBoard() {
   const [searchParams] = useSearchParams();
@@ -61,6 +87,7 @@ export default function NowNextBoard() {
           <div className="mt-auto border-t border-slate-800 pt-6">
             <h2 className="text-xl text-slate-400 lg:text-2xl">Next up</h2>
             <p className="text-3xl font-semibold lg:text-4xl">{nextRace.label}</p>
+            <NextStart autoRun={nowNext?.autoRun} />
           </div>
         )}
       </BoardShell>
@@ -81,6 +108,7 @@ export default function NowNextBoard() {
         <div>
           <h2 className="text-xl text-slate-400 lg:text-2xl">Next up</h2>
           <h1 className="text-4xl font-bold lg:text-6xl">{nextRace.label}</h1>
+          <NextStart autoRun={nowNext?.autoRun} />
         </div>
       )}
       {lastCompletedRace && (
