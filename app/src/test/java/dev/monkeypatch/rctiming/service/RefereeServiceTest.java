@@ -159,17 +159,17 @@ class RefereeServiceTest {
     }
 
     @Test
-    void aMarshalPenalty_whenTheLatestAbsenceHasOne_recordsAFreshMiss() {
+    void aMarshalPenalty_whenTheDriverIsPenalisedForThisRaceAlready_isAConflict() {
         entryInEvent(1L);
-        recordingAbsencesSucceeds();
-        when(marshalAbsenceRepository.findByEventId(1L)).thenReturn(List.of(absence(6L, 11L, 1L)));
+        MarshalAbsence missed = absence(6L, 11L, 1L);
+        missed.setRaceId(7L);
+        when(marshalAbsenceRepository.findByEventId(1L)).thenReturn(List.of(missed));
         when(marshalPenaltyRepository.existsByAbsenceId(6L)).thenReturn(true);
-        when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
 
-        MarshalPenalty penalty = service().applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null,
-                null, 3L);
-
-        assertThat(penalty.getAbsenceId()).isEqualTo(21L);
+        assertThatThrownBy(() -> service()
+                .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null, null, 3L))
+                .isInstanceOf(StateConflictException.class);
+        verify(marshalAbsenceRepository, never()).save(any());
     }
 
     @Test

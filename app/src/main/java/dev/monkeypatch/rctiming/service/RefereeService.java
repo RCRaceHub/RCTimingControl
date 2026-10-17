@@ -150,7 +150,7 @@ public class RefereeService {
     }
 
     /**
-     * Records that an entry missed their marshal duty. Marshals are assumed present, so this is the only way a miss
+     * Records that an entry missed their marshal duty. Marshals are assumed present, so this is the explicit way a miss
      * is recorded. It gives no penalty by itself: the referee can apply one afterwards, or skip this and apply the
      * penalty directly, which records the miss for them ({@link #applyMarshalPenalty}).
      */
@@ -189,7 +189,7 @@ public class RefereeService {
         Long forAbsence = absenceId != null
                 ? namedAbsence(entryId, eventId, absenceId)
                 : unpenalisedAbsence(entryId, eventId)
-                        .orElseGet(() -> recordMarshalAbsence(raceId, entryId, eventId, userId).getId());
+                        .orElseGet(() -> recordMissFor(raceId, entryId, eventId, userId));
         if (marshalPenaltyRepository.existsByAbsenceId(forAbsence)) {
             throw new StateConflictException("That missed marshal duty has a penalty already");
         }
@@ -229,6 +229,19 @@ public class RefereeService {
             throw new StateConflictException("That absence was recorded for a different entry or event");
         }
         return named.getId();
+    }
+
+    /**
+     * Records the miss a penalty is for when none is waiting. An entry can miss a given race once (one absence per
+     * race and entry), so a driver already penalised for missing {@code raceId} is refused, not penalised twice.
+     */
+    private long recordMissFor(long raceId, long entryId, long eventId, long userId) {
+        boolean missedThisRace = marshalAbsenceRepository.findByEventId(eventId).stream()
+                .anyMatch(a -> a.getEntryId() == entryId && a.getRaceId() == raceId);
+        if (missedThisRace) {
+            throw new StateConflictException("That missed marshal duty has a penalty already");
+        }
+        return recordMarshalAbsence(raceId, entryId, eventId, userId).getId();
     }
 
     /** The entry's latest absence in the event that has no penalty yet, if any. */
