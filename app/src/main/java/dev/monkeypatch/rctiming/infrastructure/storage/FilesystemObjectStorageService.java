@@ -32,6 +32,13 @@ public class FilesystemObjectStorageService implements ObjectStorageService {
         }
     }
 
+    /**
+     * Writes the bytes under the storage folder, replacing any file at that key, and returns
+     * {@code storage.public-base-url} plus the key. Blocks on disk I/O on the calling thread.
+     *
+     * @throws IllegalArgumentException if the key would leave the storage folder
+     * @throws java.io.UncheckedIOException if the file cannot be written
+     */
     @Override
     public String upload(String key, byte[] content) {
         Path target = rootDir.resolve(key).normalize();

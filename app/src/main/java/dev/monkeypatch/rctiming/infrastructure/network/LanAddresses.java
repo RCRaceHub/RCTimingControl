@@ -52,6 +52,7 @@ public class LanAddresses {
                         .map(String::trim).filter(a -> !a.isEmpty()).toList();
     }
 
+    /** Learns the port the web server really bound to, which differs from the setting when it is 0 (random). */
     @EventListener
     public void onWebServerStarted(WebServerInitializedEvent event) {
         // A separate actuator port would start a second server; the app's own is the one to share
@@ -60,6 +61,7 @@ public class LanAddresses {
         }
     }
 
+    /** Writes the addresses to the log once the app is ready, so an installer or tester can find them. */
     @EventListener(ApplicationReadyEvent.class)
     public void logAddresses() {
         List<String> urls = urls();
@@ -70,7 +72,12 @@ public class LanAddresses {
         }
     }
 
-    /** The URLs to open from other devices, IP addresses first; empty before the server starts. */
+    /**
+     * The URLs to open from other devices, IP addresses first; empty before the server starts. Configured addresses
+     * win over anything found. A specific {@code server.address} is used as given; a wildcard bind lists the IPv4
+     * address of each real network interface and then the machine's hostname. Looks at the network each time it is
+     * called, so it follows a laptop moving between networks.
+     */
     public List<String> urls() {
         if (port <= 0) {
             return List.of();

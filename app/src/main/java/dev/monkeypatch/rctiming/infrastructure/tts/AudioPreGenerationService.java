@@ -90,7 +90,9 @@ public class AudioPreGenerationService {
 
     /**
      * React to race GRID transition and pre-generate all predictable clips.
-     * Runs asynchronously so it does not block the race transition itself.
+     * Runs asynchronously (on the {@code @Async} pool) so it does not block the race transition itself. A race
+     * finishing evicts its clips instead. The clips are held only in memory, so a restart loses them until
+     * {@link #getClipMap(Long)} makes them again.
      */
     @Async
     @EventListener
@@ -174,6 +176,7 @@ public class AudioPreGenerationService {
         });
     }
 
+    /** Makes the race's clips, unless they are being made already, then any remake a settings change asked for. */
     private void generateClips(Long raceId) {
         if (!generating.add(raceId)) {
             return;
@@ -186,6 +189,7 @@ public class AudioPreGenerationService {
         remakeIfAsked(raceId);
     }
 
+    /** Builds the clips and logs a failure rather than throwing; a try that made none is not repeated for 30 seconds. */
     private void makeClips(Long raceId) {
         try {
             buildClips(raceId);
@@ -197,6 +201,11 @@ public class AudioPreGenerationService {
         }
     }
 
+    /**
+     * Synthesises every clip for the race and caches the set in one step. A clip Piper could not make is simply
+     * missing from the set, and the browser falls back to its own speech. Blocks for as long as Piper takes, which
+     * is why callers run it off request threads. The result is dropped if the race finished meanwhile.
+     */
     private void buildClips(Long raceId) {
         Race race = raceRepository.findById(raceId).orElse(null);
         if (race == null) {
@@ -268,7 +277,9 @@ public class AudioPreGenerationService {
 
     /**
      * Returns pre-generated clip URL map for the given race. Empty map if not yet generated.
-     * Called by {@code AudioClipController} (AUDIO-10).
+     * Called by {@code AudioClipController} (AUDIO-10) on a request thread. If the app no longer holds the clips for
+     * a race on the grid or running, this also starts making them again in the background, so the first answer
+     * can be empty.
      */
     public Map<String, String> getClipMap(Long raceId) {
         regenerateIfLost(raceId);

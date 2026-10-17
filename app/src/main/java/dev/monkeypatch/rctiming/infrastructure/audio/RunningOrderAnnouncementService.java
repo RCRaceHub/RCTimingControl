@@ -77,14 +77,15 @@ public class RunningOrderAnnouncementService {
         this.competitorRepository = competitorRepository;
     }
 
-    /** Outbound STOMP message payload for running-order announcements. */
+    /** Outbound STOMP message payload for running-order announcements: {@code positions} are spoken names, best first. */
     public record RunningOrderAnnouncement(
             String type,
             List<String> positions
     ) {}
 
     /**
-     * Listens for RUNNING transitions to start tracking; STOPPED/FINISHED to stop.
+     * Listens for RUNNING transitions to start tracking; STOPPED/FINISHED to stop. Runs synchronously in the race
+     * command's transaction, but only registers the change after it commits.
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
@@ -118,7 +119,10 @@ public class RunningOrderAnnouncementService {
     }
 
     /**
-     * Checks every 10 seconds whether any tracked race is due for a running-order announcement.
+     * Checks every 10 seconds whether any tracked race is due for a running-order announcement. Runs on a scheduler
+     * thread. A tracked race that is no longer running in the database is dropped here, which also covers a stop the
+     * event listener missed. The intervals are measured in server time ({@link Instant#now()}) from the moment the
+     * race started running, not from the race clock.
      */
     @Scheduled(fixedRate = 10_000)
     public void checkAndAnnounce() {
@@ -158,6 +162,10 @@ public class RunningOrderAnnouncementService {
         }
     }
 
+    /**
+     * Sends the top of the live running order to {@code /topic/race/{id}/audio} for the browsers running race control
+     * to speak; the server makes no sound itself. Sends nothing for a race with no live timing yet.
+     */
     private void broadcastRunningOrder(Long raceId, ClubAudioSettings settings) {
         Optional<LiveRaceState> stateOpt = lapTimingService.peek(raceId);
         if (stateOpt.isEmpty()) {
