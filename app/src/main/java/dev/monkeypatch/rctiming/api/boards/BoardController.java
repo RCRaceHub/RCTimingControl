@@ -25,10 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Anonymous read API for the spectator boards on a venue TV (L12), under {@code /api/v1/boards}. No
- * @PreAuthorize: GET /api/v1/boards/** is permitAll in SecurityConfig.
+ * Anonymous read API for the spectator boards on a venue TV (L12). It has no {@code @PreAuthorize}:
+ * GET /api/v1/boards/** is permitAll in SecurityConfig.
  * Live updates come from the race's STOMP topics, which anonymous clients may subscribe to.
- * Every endpoint is read only, and driver names are given in the form the public may see (#265).
  */
 @RestController
 @RequestMapping("/api/v1/boards")
@@ -55,12 +54,7 @@ public class BoardController {
         this.qualifyingTableService = qualifyingTableService;
     }
 
-    /**
-     * The now/next board: the event's current, next and last completed race. An unknown event, or no event in
-     * progress, gives an empty {@link NowNextDto} rather than a 404.
-     *
-     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
-     */
+    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
     @GetMapping("/now-next")
     public NowNextDto nowNext(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
@@ -73,12 +67,7 @@ public class BoardController {
                 .orElse(new NowNextDto(null, null, null, null, null));
     }
 
-    /**
-     * The results board: the event's last finished race with its result rows. The rows are empty if that race has
-     * no snapshot yet, and the whole board is empty when no event is found, never a 404.
-     *
-     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
-     */
+    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
     @GetMapping("/results")
     public ResultsBoardDto results(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
@@ -89,12 +78,7 @@ public class BoardController {
                 .orElse(new ResultsBoardDto(null, null, null, List.of()));
     }
 
-    /**
-     * The qualifying board: the public qualifying table of each class of the event. Empty when no event is found,
-     * never a 404.
-     *
-     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
-     */
+    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
     @GetMapping("/qualifying")
     public QualifyingBoardDto qualifying(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
@@ -103,10 +87,7 @@ public class BoardController {
                 .orElse(new QualifyingBoardDto(null, null, List.of()));
     }
 
-    /**
-     * Seeds a board's live table before the first STOMP frame arrives: the current positions of the race, worked
-     * out from its in-memory state. Empty if the race is not being timed (not loaded in memory), not a 404.
-     */
+    /** Seeds a board's live table before the first STOMP frame arrives. */
     @GetMapping("/races/{raceId}/live-timing")
     public List<LiveTimingRowDto> liveTiming(@PathVariable long raceId) {
         return lapTimingService.peek(raceId)
@@ -114,10 +95,7 @@ public class BoardController {
                 .orElse(List.of());
     }
 
-    /**
-     * The race clock, for the streaming overlay (#29); a viewer counts on locally while it is running. 404 if the
-     * race does not exist.
-     */
+    /** The race clock, for the streaming overlay (#29); a viewer counts on locally while it is running. */
     @GetMapping("/races/{raceId}/clock")
     public RaceClockDto clock(@PathVariable long raceId) {
         return raceClockService.clock(raceId)
@@ -126,8 +104,7 @@ public class BoardController {
 
     /**
      * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the
-     * running heat's own best comes from its live timing). Finished heats with no snapshot yet count for nothing,
-     * and the answer has null fields when there is no lap to show.
+     * running heat's own best comes from its live timing).
      */
     @GetMapping("/races/{raceId}/round-fastest-lap")
     public RoundFastestLapDto roundFastestLap(@PathVariable long raceId) {

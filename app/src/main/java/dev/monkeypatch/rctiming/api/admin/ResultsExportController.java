@@ -6,6 +6,8 @@ import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
+import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
+import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -24,11 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. Under
- * {@code /api/v1/admin}; ADMIN only. Exports are queued by finishing a race, correcting a result and closing the day,
- * and sent in the background with retries ({@code docs/results-export-v1.md}).
- */
+/** Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. */
 @RestController
 @RequestMapping("/api/v1/admin")
 @PreAuthorize("hasRole('ADMIN')")
@@ -40,32 +38,33 @@ public class ResultsExportController {
     private final ResultsOutboxQuery outboxQuery;
     private final RaceHubResultsEndpoint endpoint;
     private final ClubProfileService clubProfileService;
+    private final ResultsPublishSettings publishSettings;
 
     public ResultsExportController(ResultsExportService exportService, ResultsOutboxQuery outboxQuery,
-                                   RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService) {
+                                   RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService,
+                                   ResultsPublishSettings publishSettings) {
         this.exportService = exportService;
         this.outboxQuery = outboxQuery;
         this.endpoint = endpoint;
         this.clubProfileService = clubProfileService;
+        this.publishSettings = publishSettings;
     }
 
     /**
-     * The results export page's data.
-     *
      * @param sendingEnabled  whether the RaceHub address and key are both set; without them, exports wait
      * @param resultsUrl      the address in use, or null
      * @param savedUrl        the address set here, or null when the settings file's is in use
      * @param missingSettings what is still needed before anything is sent
+     * @param publishTarget   where results are published now: the club's choice, else the default
+     * @param chosenTarget    the club's choice, or null when it has not made one
      * @param exports         the newest exports first
      */
     public record ResultsExportsDto(boolean sendingEnabled, String resultsUrl, String savedUrl,
-                                    List<String> missingSettings,
+                                    List<String> missingSettings, ResultsPublishTarget publishTarget,
+                                    ResultsPublishTarget chosenTarget,
                                     List<ResultsOutboxQuery.OutboxRow> exports) {
     }
 
-    /**
-     * The export settings and the newest 100 exports. {@code GET /results-exports}; read only.
-     */
     @GetMapping("/results-exports")
     public ResultsExportsDto list() {
         var settings = endpoint.snapshot();
@@ -73,21 +72,15 @@ public class ResultsExportController {
                 settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
                 settings.savedUrl(),
                 settings.missingSettings(),
+                publishSettings.effective(),
+                publishSettings.chosen(),
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 
-    /**
-     * The body of {@code PUT /results-exports/address}.
-     *
-     * @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies
-     */
+    /** @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies */
     public record ResultsUrlRequest(@Size(max = 500) String resultsUrl) {
     }
 
-    /**
-     * Saves the RaceHub address results are sent to and answers with the page's data. {@code PUT
-     * /results-exports/address}; 400 if the address is not valid. Audited.
-     */
     @Audited("audit_log")
     @PutMapping("/results-exports/address")
     public ResultsExportsDto setAddress(Authentication auth, @RequestBody @Valid ResultsUrlRequest request) {
@@ -98,7 +91,18 @@ public class ResultsExportController {
         return list();
     }
 
-    /** Tries a queued export again now instead of waiting. {@code POST /results-exports/{id}/retry}; 204. Audited. */
+    /** @param target where to publish results; null clears the choice, so the default applies */
+    public record PublishTargetRequest(ResultsPublishTarget target) {
+    }
+
+    @Audited("audit_log")
+    @PutMapping("/results-exports/target")
+    public ResultsExportsDto setTarget(Authentication auth, @RequestBody PublishTargetRequest request) {
+        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(auth),
+                request.target() == null ? null : request.target().name());
+        return list();
+    }
+
     @Audited("audit_log")
     @PostMapping("/results-exports/{id}/retry")
     public ResponseEntity<Void> retry(Authentication auth, @PathVariable long id) {
@@ -106,10 +110,7 @@ public class ResultsExportController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * The event's results as they stand now, as a Results Export v1 file sent as an attachment.
-     * {@code GET /events/{eventId}/results-export}; read only.
-     */
+    /** The event's results as they stand now, as a Results Export v1 file. */
     @GetMapping("/events/{eventId}/results-export")
     public ResponseEntity<ResultsExportV1> download(@PathVariable long eventId) {
         ResultsExportV1 export = exportService.current(eventId);
