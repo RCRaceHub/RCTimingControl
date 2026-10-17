@@ -53,7 +53,7 @@ Start the event, generate the rounds, then for each race call the grid, start, a
 
 ### 9. Show it on screens
 
-Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/results` and `/boards/overlay` on the laptop's address. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay.
+Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/results` and `/boards/overlay` on the laptop's address. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.
 
 ---
 
