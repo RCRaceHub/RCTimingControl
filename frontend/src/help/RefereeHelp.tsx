@@ -29,7 +29,7 @@ export function RefereeHelp() {
         </p>
       </div>
 
-      <GuideLinks meeting />
+      <GuideLinks meeting doc="user-manual" />
     </div>
   );
 }

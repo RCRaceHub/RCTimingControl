@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/dates';
 import PrivacyLink from '@/components/layout/PrivacyLink';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { QrLink } from '@/components/QrLink';
 
 export default function AboutPage() {
   const { data, isLoading, isError } = useQuery({
@@ -69,6 +70,32 @@ export default function AboutPage() {
             </ul>
           </div>
         )}
+
+        <div className="rounded-lg border bg-card p-6 space-y-3 text-sm">
+          <div>
+            <h2 className="font-medium">Docs</h2>
+            <p className="text-muted-foreground">
+              The user guides, with search, on this server. They work without the internet.
+            </p>
+          </div>
+          {data && data.addresses.length > 0 && (
+            <ul className="space-y-1" aria-label="Docs addresses">
+              {data.addresses.map((address) => {
+                const docs = `${address.replace(/\/+$/, '')}/docs`;
+                return (
+                  <li key={address}>
+                    <a href={docs} className="font-mono text-primary underline underline-offset-4 break-all">
+                      {docs}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className="flex justify-center pt-2">
+            <QrLink path="/docs" caption="Scan to open the docs on a phone" />
+          </div>
+        </div>
 
         <div className="text-center">
           <Link to="/login" className="text-sm text-primary underline underline-offset-4">

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 export default function AdminGuidePage() {
   useEffect(() => {
@@ -10,6 +11,10 @@ export default function AdminGuidePage() {
       <div className="mb-8">
         <h1 className="text-2xl font-semibold">Admin Configuration Guide</h1>
         <p className="text-sm text-muted-foreground mt-1">For administrators — RC Timing Club</p>
+        <p className="text-sm mt-2">
+          This is the short version. The full guides are at <span className="font-mono text-xs">/docs</span> on
+          the timing laptop's address (<Link to="/docs" className="text-primary underline print:no-underline">open the docs</Link>).
+        </p>
       </div>
 
       <section className="mb-8">

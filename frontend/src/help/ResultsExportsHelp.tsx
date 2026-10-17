@@ -32,7 +32,7 @@ export function ResultsExportsHelp() {
         </p>
       </div>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="results-export" />
     </div>
   );
 }

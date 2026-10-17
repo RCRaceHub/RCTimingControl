@@ -22,7 +22,7 @@ export function CompetitorsHelp() {
         <li><span className="font-semibold">When it takes effect:</span> The grid-call audio for a race is made when the race reaches the grid, so a change shows from the next race to get there; a race already on the grid keeps its old clips. The running order is read out from the current spelling, so a correction is heard at its next announcement.</li>
       </ul>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="data-protection" />
     </div>
   );
 }

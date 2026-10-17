@@ -26,7 +26,7 @@ export function OfficialsHelp() {
         </p>
       </div>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="user-manual" />
     </div>
   );
 }

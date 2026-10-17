@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Outlet, Link, useParams, useMatches } from 'react-router-dom';
-import { Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus } from 'lucide-react';
+import { BookOpen, Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -76,6 +76,11 @@ export default function RaceControlLayout() {
           <span className="text-xs text-muted-foreground hidden sm:block">
             {user ? `${user.firstName} ${user.lastName}` : ''}
           </span>
+          <Button variant="ghost" size="icon-sm" asChild>
+            <a href="/docs" target="_blank" rel="noopener noreferrer" aria-label="Open the docs" title="Open the docs">
+              <BookOpen className="h-4 w-4" />
+            </a>
+          </Button>
           {helpContent && (
             <Button
               variant="ghost"

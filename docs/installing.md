@@ -35,6 +35,8 @@ The service starts as soon as the install finishes.
 2. Open **http://localhost:8080/about** to see the addresses other devices should use, for example `http://192.168.1.50:8080/`. The same addresses are written to the log each time the app starts.
 3. On a phone connected to the same Wi-Fi or network, open one of those addresses and sign in.
 
+These guides are also served by the app at `/docs` on the same address (for example `http://localhost:8080/docs`), with a menu and search, so they can be read on the laptop or a phone without the internet.
+
 The address by the laptop's name, such as `http://timing-laptop:8080/`, works on most phones and keeps working if the laptop gets a different IP address. If it does not work on a phone, use the IP address instead.
 
 If a phone cannot connect, check that it is on the same network as the laptop and not on mobile data. Then check the laptop's firewall. On Windows, check the venue network is set to Private. On macOS with the firewall turned on, allow incoming connections for RC Timing Control in **System Settings → Network → Firewall → Options**. On Linux with `ufw` enabled, run `sudo ufw allow 8080/tcp`.

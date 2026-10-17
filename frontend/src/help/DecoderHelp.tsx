@@ -25,7 +25,7 @@ export function DecoderHelp() {
         </p>
       </div>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="decoder" />
     </div>
   );
 }

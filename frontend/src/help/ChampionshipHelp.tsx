@@ -30,7 +30,7 @@ export function ChampionshipHelp() {
         </p>
       </div>
 
-      <GuideLinks admin meeting />
+      <GuideLinks admin meeting doc="scoring" />
     </div>
   );
 }

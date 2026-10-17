@@ -67,9 +67,11 @@ describe('help panels', () => {
     const both = [EntryManagementHelp, EventManagementHelp, ChampionshipHelp];
     const hrefs = (Panel: () => React.ReactElement) => {
       const { container, unmount } = render(<Panel />);
-      const found = [...container.querySelectorAll('a')].map(a => a.getAttribute('href'));
+      const found = [...container.querySelectorAll('a')].map(a => a.getAttribute('href')!);
       unmount();
-      return found;
+      // Every panel also links to its page of the docs site first
+      expect(found[0]).toMatch(/^\/docs\//);
+      return found.slice(1);
     };
     for (const Panel of adminOnly) expect(hrefs(Panel)).toEqual(['/print/admin-guide']);
     for (const Panel of meetingOnly) expect(hrefs(Panel)).toEqual(['/print/meeting-guide']);
