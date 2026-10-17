@@ -8,18 +8,17 @@ on:
     branches: ['**']
     paths:
       - 'app/src/main/java/**'
-      - 'decoder-protocol/src/main/**'
-      - 'decoder-simulator/src/main/**'
       - 'app/build.gradle.kts'
       - '.github/workflows/javadoc.yml'
   pull_request:
     paths:
       - 'app/src/main/java/**'
-      - 'decoder-protocol/src/main/**'
-      - 'decoder-simulator/src/main/**'
       - 'app/build.gradle.kts'
       - '.github/workflows/javadoc.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   javadoc:

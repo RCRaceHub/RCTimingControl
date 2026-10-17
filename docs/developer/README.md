@@ -14,8 +14,8 @@ The reference for the code itself is the Javadoc (tracker #346); see [Javadoc](#
 ## Javadoc
 
 - Build it with `./gradlew :app:javadoc -x generateJooq`; it lands in `app/build/docs/javadoc`. The generated jOOQ code is left out.
-- The build uses doclint, so a malformed comment or a broken `{@link}` fails it. A GitHub workflow (`javadoc.yml`) runs this on every push and pull request, and on `main` keeps the result as a downloadable build artifact named `javadoc`.
-- To read it in the app, build the jar with `-PbundleJavadoc` and set `rctiming.docs.javadoc.enabled=true`; it is then served at `/javadoc`, signed in or not. The flag is off by default and on in the demo (the Docker image is built with the Javadoc inside).
+- The build uses doclint, so a malformed comment or a broken `{@link}` fails it. A GitHub workflow (`javadoc.yml`) runs this on pushes and pull requests that touch the app's code or its build file, and on `main` keeps the result as a downloadable build artifact named `javadoc`.
+- To read it in the app, build the jar with `-PbundleJavadoc` and set `rctiming.docs.javadoc.enabled=true`; it is then served at `/javadoc`, signed in or not. The flag is off by default and on in the demo. The Docker image is always built with the Javadoc inside, so it ships in every image, but nothing serves it unless the flag is on. Leave it off on a club install: the pages are public to the whole venue network and show the code's structure.
 
 ## Keeping them true
 

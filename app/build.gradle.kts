@@ -202,7 +202,7 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     if (providers.gradleProperty("bundleJavadoc").isPresent) {
         dependsOn(tasks.javadoc)
         bootInf {
-            from(layout.buildDirectory.dir("docs/javadoc")) { into("classes/javadoc") }
+            from(tasks.javadoc.map { it.destinationDir!! }) { into("classes/javadoc") }
         }
     }
     if (providers.gradleProperty("bundleFrontend").isPresent) {

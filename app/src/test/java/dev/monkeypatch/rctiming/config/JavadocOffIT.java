@@ -16,6 +16,7 @@ class JavadocOffIT extends AbstractIntegrationTest {
     @Test
     void doesNotServeTheJavadocByDefault() {
         ResponseEntity<String> page = restTemplate.getForEntity("/javadoc/index.html", String.class);
-        assertThat(page.getBody()).doesNotContain("API docs");
+        // The frontend stand-in answers instead, as it does for any page that is not the server's
+        assertThat(page.getBody()).doesNotContain("API docs").contains("<div id=\"root\">");
     }
 }
