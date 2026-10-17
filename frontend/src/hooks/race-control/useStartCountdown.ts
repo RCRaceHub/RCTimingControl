@@ -32,6 +32,8 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
   }, [onDone, volume, settings]);
 
   const runningRef = useRef(false);
+  // A count that only plays the lead-in (auto run starts the race itself) must not send the start command
+  const leadInOnlyRef = useRef(false);
 
   const cancel = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -40,7 +42,10 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
   }, []);
 
   // Selecting another race, or the race moving on, drops the count rather than starting the wrong race
-  useEffect(() => cancel, [watch, cancel]);
+  // A lead-in played for auto run is left to finish: the server's own grid call and start move the status
+  useEffect(() => () => {
+    if (!leadInOnlyRef.current) cancel();
+  }, [watch, cancel]);
 
   // The count calls itself a second later, so it lives in a ref
   const stepRef = useRef<(left: number) => void>(() => undefined);
@@ -49,7 +54,7 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
       if (left <= 0) {
         runningRef.current = false;
         setRemaining(null);
-        onDoneRef.current();
+        if (!leadInOnlyRef.current) onDoneRef.current();
         return;
       }
       setRemaining(left);
@@ -63,6 +68,7 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
 
   const begin = useCallback(() => {
     if (runningRef.current) return;
+    leadInOnlyRef.current = false;
     if (seconds <= 0) {
       onDoneRef.current();
       return;
@@ -72,5 +78,14 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
     stepRef.current(seconds);
   }, [seconds]);
 
-  return { remaining, begin, cancel };
+  /** Plays the lead-in from {@code from} seconds without starting the race, for auto run, which does that. */
+  const leadIn = useCallback((from: number) => {
+    if (runningRef.current || from <= 0) return;
+    leadInOnlyRef.current = true;
+    runningRef.current = true;
+    speakWithBrowser(fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds: from }), volumeRef.current);
+    stepRef.current(from);
+  }, []);
+
+  return { remaining, begin, leadIn, cancel };
 }

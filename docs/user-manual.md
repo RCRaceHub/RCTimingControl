@@ -51,6 +51,8 @@ RCTC treats every entrant as present; check-in is RaceHub's. For a driver who di
 
 Start the event, generate the rounds, then for each race call the grid, start, and finish it. Race control shows live timing, links unknown transponders and handles stops, restarts and bump-ups, and the Referee View raises incidents and applies penalties. Sections 2 to 7 and 9 of the Race Meeting Guide take you through a race from grid to result. Open practice, run when no race is on, is in the help panel on the Practice page.
 
+To run the races without pressing anything between them, use **Auto run** at the top of the run order in race control. Press **Go** and, each time a race finishes, the next one waits the gap you set (3 minutes unless changed), is called to the grid 30 seconds before it starts, gets the usual start lead-in, and starts. The announcer says the time to the next race at 10, 5, 2 and 1 minutes when the gap is long enough. **30s** and **10s** bring the next start forward and **Stop** switches auto run off. By default it holds after the last qualifier so you can check the finals, which are seeded for you, and re-seed them if a result changed; press **Resume** to carry on, or untick the hold to run straight into the finals. It also holds if the next race has no drivers or a command is refused, and says why. Auto run is switched off when the app restarts.
+
 ### 9. Show it on screens
 
 Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/results` and `/boards/overlay` on the laptop's address. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.

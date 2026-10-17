@@ -6,10 +6,12 @@ import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs, type
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
-interface RunningOrderEvent {
-  type: 'running-order';
-  positions: string[];
-}
+type AudioEvent =
+  | { type: 'running-order'; positions: string[] }
+  /** Auto run (#338): the time to the next race, or that it is holding for the finals. */
+  | { type: 'next-race-warning' | 'auto-run-held'; text: string }
+  /** Auto run is about to start the race: the lead-in count. */
+  | { type: 'start-countdown'; seconds: number };
 
 export interface GridEntry {
   entryId: number;
@@ -72,6 +74,8 @@ interface UseAnnouncementsOptions {
   raceLabel?: string;
   /** The race after this one, once this one has finished. */
   nextRace?: NextRaceCall | null;
+  /** Called when auto run sends the start lead-in, with the seconds left before the race starts. */
+  onStartCountdown?: (seconds: number) => void;
 }
 
 /**
@@ -92,6 +96,7 @@ export function useAnnouncements({
   staggerIntervalSeconds = 1,
   raceLabel,
   nextRace,
+  onStartCountdown,
 }: UseAnnouncementsOptions) {
   // Refs so closures inside timeouts always read latest values without stale captures
   const volumeRef = useRef(volume);
@@ -111,7 +116,7 @@ export function useAnnouncements({
   const staggerTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Subscribe to race audio events (AUDIO-06 running-order trigger)
-  const { data: audioEvent } = useStomp<RunningOrderEvent>(
+  const { data: audioEvent } = useStomp<AudioEvent>(
     raceId ? `/topic/race/${raceId}/audio` : null,
   );
 
@@ -141,6 +146,19 @@ export function useAnnouncements({
   useEffect(() => {
     clipMapRef.current = {};
   }, [raceId]);
+
+  const onStartCountdownRef = useRef(onStartCountdown);
+  useEffect(() => { onStartCountdownRef.current = onStartCountdown; }, [onStartCountdown]);
+
+  // Handle auto run's cues (#338): the time to the next race, the hold for the finals, and the start lead-in
+  useEffect(() => {
+    if (!audioEvent) return;
+    if (audioEvent.type === 'start-countdown') {
+      onStartCountdownRef.current?.(audioEvent.seconds);
+    } else if (audioEvent.type === 'next-race-warning' || audioEvent.type === 'auto-run-held') {
+      if (settingsRef.current?.announceNextRace !== false) fallbackSpeak(audioEvent.text);
+    }
+  }, [audioEvent, fallbackSpeak]);
 
   // Handle running-order announcements (AUDIO-06)
   useEffect(() => {

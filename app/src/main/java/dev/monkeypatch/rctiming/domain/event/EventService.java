@@ -99,6 +99,24 @@ public class EventService {
         return enabled;
     }
 
+    /** Sets how auto run (#338) paces the event, recording the change only when something differs. */
+    public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds, boolean holdBeforeFinals) {
+        Event event = getEventOrThrow(id);
+        if (event.getAutoRunGapSeconds() == gapSeconds && event.isAutoRunHoldBeforeFinals() == holdBeforeFinals) {
+            return event;
+        }
+        Map<String, Object> before = Map.of("gapSeconds", event.getAutoRunGapSeconds(),
+                "holdBeforeFinals", event.isAutoRunHoldBeforeFinals());
+        event.setAutoRunGapSeconds(gapSeconds);
+        event.setAutoRunHoldBeforeFinals(holdBeforeFinals);
+        Event saved = eventRepository.save(event);
+        audit.entry(actor, "AUTO_RUN_SETTINGS_CHANGED").entity("event", id).event(id)
+                .summary("Changed the auto run settings for " + event.getName())
+                .before(before).after(Map.of("gapSeconds", gapSeconds, "holdBeforeFinals", holdBeforeFinals))
+                .record();
+        return saved;
+    }
+
     @Transactional(readOnly = true)
     public Event findByIdOrThrow(Long id) {
         return getEventOrThrow(id);
