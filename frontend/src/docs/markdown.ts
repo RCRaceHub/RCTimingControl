@@ -4,6 +4,8 @@ export interface DocHeading {
   level: number;
   text: string;
   id: string;
+  /** Zero-based line of the heading in the source */
+  line: number;
 }
 
 export function plainHeadingText(raw: string): string {
@@ -37,7 +39,7 @@ export function extractHeadings(markdown: string): DocHeading[] {
   const next = slugger();
   const headings: DocHeading[] = [];
   let fence: string | null = null;
-  for (const line of markdown.split('\n')) {
+  for (const [lineNo, line] of markdown.split('\n').entries()) {
     const fenceMatch = /^\s*(`{3,}|~{3,})/.exec(line);
     if (fenceMatch) {
       if (fence === null) fence = fenceMatch[1][0];
@@ -48,7 +50,7 @@ export function extractHeadings(markdown: string): DocHeading[] {
     const m = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
     if (m) {
       const text = plainHeadingText(m[2]);
-      headings.push({ level: m[1].length, text, id: next(text) });
+      headings.push({ level: m[1].length, text, id: next(text), line: lineNo });
     }
   }
   return headings;

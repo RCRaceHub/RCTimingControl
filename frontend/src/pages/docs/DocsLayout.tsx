@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { DOC_MANIFEST } from '@/docs/manifest';
+import { DocSearch } from '@/docs/DocSearch';
 
 const SECTIONS = DOC_MANIFEST.reduce<{ name: string; entries: typeof DOC_MANIFEST }[]>((acc, entry) => {
   const last = acc[acc.length - 1];
@@ -27,6 +28,7 @@ export default function DocsLayout() {
           {open ? <X className="size-4" /> : <Menu className="size-4" />}
         </button>
         <Link to="/docs" className="font-display text-xl font-bold tracking-wide">RCTC Docs</Link>
+        <DocSearch />
       </header>
       <div className="mx-auto flex max-w-7xl">
         <nav
