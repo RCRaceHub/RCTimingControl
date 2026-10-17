@@ -26,7 +26,6 @@ import java.util.Arrays;
 @EnableAsync
 @EnableScheduling
 public class RcTimingApplication {
-
     /**
      * Picks a command-line tool by the first argument, or starts the server. When the installer has set the
      * machine-wide data scope, the data folder is wired in first so every mode finds the same database and log.
