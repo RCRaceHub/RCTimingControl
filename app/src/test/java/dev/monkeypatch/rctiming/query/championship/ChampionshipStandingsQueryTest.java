@@ -789,4 +789,26 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
                         org.assertj.core.groups.Tuple.tuple("Steady Points", 12),
                         org.assertj.core.groups.Tuple.tuple("Gap Filler", 8));
     }
+
+    @Test
+    void aBFinalIsNotPlacedWhileTheAFinalIsStillToRun() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        Event event = makeEvent("Open-a-final-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        aFinal.setStatus(RaceStatus.PENDING);
+        raceRepository.save(aFinal);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry cat = makeEntry(makeUser("Cat", "Open").getId(), event.getId(), ecId);
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeSnapshot(bFinal.getId(), "[" + resultRow(cat.getId(), 1, 9, 5200) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // The B winner may still bump up, so the B final scores nothing until the A final has finished
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsOnly(0);
+    }
 }

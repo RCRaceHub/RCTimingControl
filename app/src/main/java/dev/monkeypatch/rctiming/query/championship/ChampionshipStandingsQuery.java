@@ -6,6 +6,8 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -54,6 +56,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 @Service
 @ReadTransaction
 public class ChampionshipStandingsQuery {
+
+    private static final Logger log = LoggerFactory.getLogger(ChampionshipStandingsQuery.class);
 
     private final DSLContext dsl;
     private final ResultSnapshotJson snapshotJson;
@@ -157,7 +161,10 @@ public class ChampionshipStandingsQuery {
     /** A finished race at a linked event, with its result rows best first. */
     private record FinishedRace(Long raceId, Long roundId, Long eventId, String roundType, String finalLetter,
                                 Long racingClassId, boolean scores, boolean abandoned,
-                                List<ResultSnapshotDto.ResultRow> positions) {}
+                                List<ResultSnapshotDto.ResultRow> positions, Set<Long> grid) {}
+
+    /** The finals of one class in one round of finals, which are placed together. */
+    private record RoundClass(Long roundId, Long racingClassId) {}
 
     /** The competitor and racing class of an entry on the grid of a finished race. */
     private record EntryRef(Long driverId, Long racingClassId) {}
@@ -168,9 +175,10 @@ public class ChampionshipStandingsQuery {
      */
     private record EventResults(List<FinishedRace> races, Map<Long, EntryRef> scoringEntries,
                                 Map<Long, EntryRef> allEntries, Map<Long, String> displayNames,
-                                Map<Long, Long> topQualifiers) {
+                                Map<Long, Long> topQualifiers, Map<RoundClass, String> firstOpenFinal) {
 
-        static final EventResults NONE = new EventResults(List.of(), Map.of(), Map.of(), Map.of(), Map.of());
+        static final EventResults NONE =
+                new EventResults(List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     private List<ChampionshipRound> rounds(Long championshipId) {
@@ -211,10 +219,11 @@ public class ChampionshipStandingsQuery {
                             roundType, r.get(RACES.FINAL_LETTER),
                             r.get(EVENT_CLASSES.RACING_CLASS_ID), scores(scoringSource, roundType),
                             r.get(RACES.ABANDONED_AT) != null,
-                            snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)));
+                            snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)), new HashSet<>());
                     races.put(raceId, race);
                     results.computeIfAbsent(race.eventId(), k -> new EventResults(new ArrayList<>(),
-                            new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>())).races().add(race);
+                            new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(),
+                            new HashMap<>())).races().add(race);
                 });
 
         // The entry's own class, which can differ from the race's, decides which class a DNS is in
@@ -237,6 +246,7 @@ public class ChampionshipStandingsQuery {
                     Long entryId = r.get(RACE_ENTRIES.ENTRY_ID);
                     EntryRef entry = new EntryRef(r.get(ENTRIES.COMPETITOR_ID), r.get(EVENT_CLASSES.RACING_CLASS_ID));
                     event.allEntries().put(entryId, entry);
+                    race.grid().add(entryId);
                     if (race.scores()) {
                         event.scoringEntries().put(entryId, entry);
                     }
@@ -246,7 +256,31 @@ public class ChampionshipStandingsQuery {
                     }
                 });
         loadTopQualifiers(eventIds, results);
+        loadOpenFinals(eventIds, results);
         return results;
+    }
+
+    /**
+     * For each round of finals still to be finished, its first unfinished final by letter: the finals below it are
+     * not placed until it is done, since a driver may yet bump up out of them.
+     */
+    private void loadOpenFinals(List<Long> eventIds, Map<Long, EventResults> results) {
+        dsl.select(ROUNDS.EVENT_ID, RACES.ROUND_ID, EVENT_CLASSES.RACING_CLASS_ID, RACES.FINAL_LETTER)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
+                .where(ROUNDS.EVENT_ID.in(eventIds))
+                .and(ROUNDS.TYPE.eq("FINAL"))
+                .and(RACES.STATUS.ne("FINISHED"))
+                .forEach(r -> {
+                    EventResults event = results.get(r.get(ROUNDS.EVENT_ID));
+                    String letter = r.get(RACES.FINAL_LETTER);
+                    if (event != null && letter != null) {
+                        event.firstOpenFinal().merge(
+                                new RoundClass(r.get(RACES.ROUND_ID), r.get(EVENT_CLASSES.RACING_CLASS_ID)), letter,
+                                (a, b) -> a.compareTo(b) <= 0 ? a : b);
+                    }
+                });
     }
 
     /**
@@ -273,10 +307,15 @@ public class ChampionshipStandingsQuery {
             if (!complete || event == null) {
                 return;
             }
-            qualifyingStandings.rankedResultsFor(eventClassId).stream()
-                    .findFirst()
-                    .filter(top -> top.lapsCompleted() > 0)
-                    .ifPresent(top -> event.topQualifiers().put(heats.get(0).racingClassId(), top.entryId()));
+            try {
+                qualifyingStandings.rankedResultsFor(eventClassId).stream()
+                        .findFirst()
+                        .filter(top -> top.lapsCompleted() > 0)
+                        .ifPresent(top -> event.topQualifiers().put(heats.get(0).racingClassId(), top.entryId()));
+            } catch (RuntimeException e) {
+                log.warn("No TQ for event class {}: its qualifying could not be ranked: {}", eventClassId,
+                        e.getMessage());
+            }
         });
     }
 
@@ -351,7 +390,7 @@ public class ChampionshipStandingsQuery {
         tally.displayNames.putAll(results.displayNames());
 
         // Each driver's best qualifying and best final position in each racing class, over every race that scores
-        Map<Long, Map<Long, Integer>> overallInFinals = overallFinalPositions(results.races());
+        Map<Long, Map<Long, Integer>> overallInFinals = overallFinalPositions(results.races(), results.firstOpenFinal());
         Map<Long, Map<Long, SourcePositions>> bestPositions = new HashMap<>();
         for (FinishedRace race : results.races()) {
             if (!race.scores()) {
@@ -407,10 +446,11 @@ public class ChampionshipStandingsQuery {
      * Each driver's place across a round of finals, by race and entry: the A final's order, then the B final's
      * without those who bumped up into the A, and so on down the letters, so that the winner of the B final is
      * placed after everyone in the A. A driver who raced two finals of the round has the place from the higher
-     * one only. Rounds and classes are kept apart; a race with no letter comes first.
+     * one only, including one who bumped up and then did not start it. Rounds and classes are kept apart; a race with
+     * no letter comes first. A final is not placed until every final above it has finished.
      */
-    private static Map<Long, Map<Long, Integer>> overallFinalPositions(List<FinishedRace> races) {
-        record RoundClass(Long roundId, Long racingClassId) {}
+    private static Map<Long, Map<Long, Integer>> overallFinalPositions(List<FinishedRace> races,
+                                                                       Map<RoundClass, String> firstOpenFinal) {
         Map<RoundClass, List<FinishedRace>> finalsByRound = new LinkedHashMap<>();
         for (FinishedRace race : races) {
             if ("FINAL".equals(race.roundType())) {
@@ -419,22 +459,29 @@ public class ChampionshipStandingsQuery {
             }
         }
         Map<Long, Map<Long, Integer>> overall = new HashMap<>();
-        for (List<FinishedRace> finals : finalsByRound.values()) {
-            finals.sort(Comparator.comparing(FinishedRace::finalLetter, Comparator.nullsFirst(Comparator.naturalOrder())));
+        finalsByRound.forEach((roundClass, finals) -> {
+            finals.sort(Comparator.comparing(FinishedRace::finalLetter,
+                    Comparator.nullsFirst(Comparator.naturalOrder())));
+            String open = firstOpenFinal.get(roundClass);
             Set<Long> placed = new HashSet<>();
+            Set<Long> onHigherGrid = new HashSet<>();
             int next = 1;
             for (FinishedRace race : finals) {
                 Map<Long, Integer> positions = new HashMap<>();
+                overall.put(race.raceId(), positions);
+                if (open != null && race.finalLetter() != null && race.finalLetter().compareTo(open) > 0) {
+                    continue; // a final above this one is still to run
+                }
                 List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(race.positions());
                 rows.sort(Comparator.comparingInt(ResultSnapshotDto.ResultRow::position));
                 for (ResultSnapshotDto.ResultRow row : rows) {
-                    if (placed.add(row.entryId())) {
+                    if (!onHigherGrid.contains(row.entryId()) && placed.add(row.entryId())) {
                         positions.put(row.entryId(), next++);
                     }
                 }
-                overall.put(race.raceId(), positions);
+                onHigherGrid.addAll(race.grid());
             }
-        }
+        });
         return overall;
     }
 
