@@ -82,7 +82,7 @@ The address must be `https`, since the club's key goes with every request; plain
 
 ## Seeing and downloading exports
 
-Admins see every export, its status (waiting, failed, sent or superseded), the attempts and the last error under **Results to RaceHub** in the admin panel, and can send a waiting one at once. An event's page has a **Download results** button that saves the file as it stands now, for any event, imported from RaceHub or not. See [api.md](api.md#admin--results-to-racehub) for the endpoints.
+Admins see every export, its status (waiting, failed, sent or superseded), the attempts and the last error under **Results to RaceHub** in the admin panel, and can send a waiting one at once. An event's page has a **Download results** button that saves the file as it stands now, for any event, imported from RaceHub or not. See `docs/api.md` in the source repository for the endpoints.
 
 ## Changing the format
 
