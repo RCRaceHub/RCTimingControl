@@ -125,3 +125,7 @@ The SQLite file lives in a per-machine data folder outside the install folder, s
 ## What's built
 
 See the [README](../README.md#whats-implemented) for the current feature areas.
+
+## Diagrams
+
+Sequence, state, class and table diagrams (Mermaid) are in [developer/](developer/README.md).
