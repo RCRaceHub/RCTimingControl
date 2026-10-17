@@ -190,7 +190,14 @@ A later initiative extracted the shared decoder-protocol parser (`decoder-protoc
 
    Examples that are safe to commit: architecture decisions, API contracts, user-facing feature docs, contribution guidelines (no internal URLs), quickstart guides for end users.
 
-5. **Every PR follows the same workflow:**
+5. **Every code change carries its own documentation.** In the same PR as the change:
+   - Write Javadoc for every new or changed class, interface, record and enum, and for every public or protected method that does real work. Say what it is for and why, who calls it, which thread it runs on, its transaction boundary, what it throws (and the HTTP status), and units (timestamps are UTC microseconds). Don't restate the name; trivial getters, setters and overrides need nothing. Don't document `app/src/generated/jooq`.
+   - Update the Mermaid diagrams in `docs/developer/` when the change alters a flow, the race or event state machine, a component boundary or the domain model (see `docs/developer/README.md`). They are developer docs: never add them to the docs site manifest.
+   - Update the user-facing guide in `docs/` when what a user sees or does changes.
+   - Check with `./gradlew :app:javadoc -x generateJooq`. The Javadoc CI job runs doclint and fails on malformed comments and broken `{@link}`s.
+   A PR that adds code without this is not ready for review.
+
+6. **Every PR follows the same workflow:**
    1. Open it as a draft early, linked to its issue: first thing, or straight after the first change.
    2. Commit and push small changes often, so progress shows on the PR.
    3. Mark it ready for review only when the issue's acceptance is met and CI is green.
