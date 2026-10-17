@@ -33,6 +33,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * The first-run setup wizard under {@code /api/v1/setup}. {@code GET /status} and {@code POST /bootstrap} are open
+ * to anyone ({@code SecurityConfig}) so a fresh install can create its first admin; every other route needs the
+ * {@code ADMIN} role.
+ */
 @RestController
 @RequestMapping("/api/v1/setup")
 public class SetupController {
@@ -55,11 +60,21 @@ public class SetupController {
         this.jwtTokenService = jwtTokenService;
     }
 
+    /**
+     * Whether the install has an account yet and whether the club step is done, so the page knows whether to show
+     * the wizard. {@code GET /api/v1/setup/status}, anonymous.
+     */
     @GetMapping("/status")
     public SetupStatusDto getStatus() {
         return SetupStatusDto.from(setupService.getStatus());
     }
 
+    /**
+     * Creates the first admin account and signs it in: {@code POST /api/v1/setup/bootstrap}, anonymous. The only
+     * guard is that no account exists yet, so the first caller on the venue network becomes admin. Answers 201 with
+     * an {@link AuthResponse}; 409 once anyone has an account; 400 for a bad body. Recorded in the officials audit
+     * log with no actor. Unlike sign-in, it sets no refresh cookie.
+     */
     @Audited("official_audit_log")
     @PostMapping("/bootstrap")
     public ResponseEntity<AuthResponse> bootstrap(@RequestBody @Valid BootstrapRequest req) {
@@ -69,12 +84,17 @@ public class SetupController {
                 .body(AuthResponse.of(admin, jwtTokenService.generateAccessToken(admin)));
     }
 
+    /**
+     * Which wizard steps are done (club, track, format, staff, decoder). {@code GET /api/v1/setup/progress},
+     * {@code ADMIN}.
+     */
     @GetMapping("/progress")
     @PreAuthorize("hasRole('ADMIN')")
     public SetupProgressDto getProgress() {
         return SetupProgressDto.from(setupService.getProgress());
     }
 
+    /** The decoder address saved in the club profile. {@code GET /api/v1/setup/decoder-config}, {@code ADMIN}. */
     @GetMapping("/decoder-config")
     @PreAuthorize("hasRole('ADMIN')")
     public DecoderConfigDto getDecoderConfig() {
@@ -82,13 +102,22 @@ public class SetupController {
         return new DecoderConfigDto(settings.host(), settings.port(), settings.protocol());
     }
 
-    /** Tests the decoder address on the form. Does not save it or change the live listener. */
+    /**
+     * Tests the decoder address on the form. Does not save it or change the live listener.
+     * {@code POST /api/v1/setup/decoder-config/test}, {@code ADMIN}; 400 for a bad body.
+     */
     @PostMapping("/decoder-config/test")
     @PreAuthorize("hasRole('ADMIN')")
     public DecoderProbe.Result testDecoderConfig(@RequestBody @Valid DecoderConfigUpdateRequest req) {
         return decoderProbe.probe(req.decoderHost(), req.decoderPort(), req.decoderProtocol());
     }
 
+    /**
+     * Saves the decoder address in the club profile and returns the wizard's progress.
+     * {@code PATCH /api/v1/setup/decoder-config}, {@code ADMIN}; 400 for a bad body. Recorded in the audit log with
+     * the old and new values, and announces the change so the decoder listener can pick up the new address. The
+     * club step has to be done first, since the address lives in the club profile.
+     */
     @Audited("audit_log")
     @PatchMapping("/decoder-config")
     @PreAuthorize("hasRole('ADMIN')")
@@ -98,6 +127,11 @@ public class SetupController {
         return SetupProgressDto.from(setupService.getProgress());
     }
 
+    /**
+     * Adds an official during setup: {@code POST /api/v1/setup/staff}, {@code ADMIN}. Answers 201 with no body.
+     * Recorded in the officials audit log with the signed-in admin as the actor, and given the same checks as the
+     * Officials screen. 400 for a bad body or a role name that does not exist.
+     */
     @Audited("official_audit_log")
     @PostMapping("/staff")
     @PreAuthorize("hasRole('ADMIN')")

@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Entry search and transponder swap for race control. Open to every official.
+ * Entry search and transponder swap for race control, under {@code /api/v1/race-control/events/{eventId}}. Open to
+ * every official (RACE_DIRECTOR, REFEREE and ADMIN).
  */
 @RestController
 @RequestMapping("/api/v1/race-control/events/{eventId}")
@@ -49,13 +50,23 @@ public class TransponderSwapController {
         this.transponderSwapService = transponderSwapService;
     }
 
-    /** Entries whose competitor name contains the query, to find the entry to swap. */
+    /**
+     * Entries whose competitor name contains the query, to find the entry to swap.
+     * {@code GET /entries/search?query=}; read only.
+     */
     @GetMapping("/entries/search")
     public List<EntrySearchDto> search(@PathVariable long eventId,
                                         @RequestParam(defaultValue = "") String query) {
         return entrySearchQuery.searchByName(eventId, query);
     }
 
+    /**
+     * Swaps (or, for the secondary slot, removes) a transponder on an entry on the day.
+     * {@code POST /entries/{entryId}/transponder-swap}. Answers 200 with a {@link TransponderSwapResponse}, or a
+     * problem with an {@code error} code: {@code entry_not_found} (404), {@code entry_withdrawn} and
+     * {@code transponder_already_assigned} (409, another competitor holds the number in the event),
+     * {@code same_as_other_transponder} and {@code primary_required} (400). Recorded in the entry audit log.
+     */
     @Audited("entry_audit_log")
     @PostMapping("/entries/{entryId}/transponder-swap")
     public ResponseEntity<?> swapTransponder(@PathVariable long eventId,

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The live feed for remote viewers (#28): its connection to the relay, and whether an event's races are sent.
+ * Under {@code /api/v1/race-control}. The reads are open to the RACE_DIRECTOR, REFEREE and ADMIN roles; switching
+ * an event's feed on or off needs RACE_DIRECTOR or ADMIN.
  */
 @RestController
 @RequestMapping("/api/v1/race-control")
@@ -32,20 +34,31 @@ public class LiveFeedController {
         this.eventService = eventService;
     }
 
-    /** @param enabled whether the event's races are sent to the relay while they run */
+    /**
+     * An event's live feed switch: the body of {@code PUT /events/{eventId}/live-feed} and its answer.
+     *
+     * @param enabled whether the event's races are sent to the relay while they run
+     */
     public record LiveFeedSettingDto(@NotNull Boolean enabled) {
     }
 
+    /** Whether the live feed is connected to its relay. {@code GET /live-feed/status}; read only. */
     @GetMapping("/live-feed/status")
     public LiveFeedStatusDto status() {
         return publisher.status();
     }
 
+    /** Whether the event's races are sent. {@code GET /events/{eventId}/live-feed}; 404 if the event does not exist. */
     @GetMapping("/events/{eventId}/live-feed")
     public LiveFeedSettingDto setting(@PathVariable long eventId) {
         return new LiveFeedSettingDto(eventService.findByIdOrThrow(eventId).isLiveFeedEnabled());
     }
 
+    /**
+     * Turns the feed on or off for the event and answers with whether it is now on.
+     * {@code PUT /events/{eventId}/live-feed}; RACE_DIRECTOR or ADMIN; 404 if the event does not exist. The switch is
+     * recorded in the audit log only when it changes.
+     */
     @Audited("audit_log")
     @PutMapping("/events/{eventId}/live-feed")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")

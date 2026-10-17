@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST endpoints for referee actions: incident reports, penalties and marshal absences (OFFICIAL-03, OFFICIAL-04).
- * All endpoints require the REFEREE or ADMIN role. {@link RefereeService} does the work and writes the audit rows.
+ * All endpoints require the REFEREE or ADMIN role (a race director does not get them unless also a referee).
+ * {@link RefereeService} does the work and writes the audit rows. Under {@code /api/v1/race-control/referee}; each
+ * answers 200 with the record it saved.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/referee")
@@ -35,6 +37,10 @@ public class RefereeController {
         this.refereeService = refereeService;
     }
 
+    /**
+     * Raises an incident report against an entry in the race. {@code POST /race/{raceId}/incident-report}; REFEREE
+     * or ADMIN; 400 for a bad body. Audited as {@code INCIDENT_RAISED}.
+     */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/incident-report")
     public ResponseEntity<IncidentReportDto> raiseIncident(@PathVariable long raceId,
@@ -43,7 +49,10 @@ public class RefereeController {
                 raceId, req.entryId(), req.incidentType(), req.description(), CurrentOfficial.id())));
     }
 
-    /** A LAP penalty comes off live timing straight away; a TIME penalty is added when the result is worked out. */
+    /** A LAP penalty comes off live timing straight away; a TIME penalty is added when the result is worked out.
+     * {@code POST /race/{raceId}/penalty}; REFEREE or ADMIN. 400 for a bad body, or a LAP penalty that is not a whole
+     * number of laps within the limit. Audited as {@code PENALTY_APPLIED}; on a finished race its results are sent
+     * again (#27). */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/penalty")
     public ResponseEntity<PenaltyDto> applyPenalty(@PathVariable long raceId,
@@ -55,6 +64,7 @@ public class RefereeController {
     /**
      * Record that an entry missed their marshal duty.
      * Does NOT auto-create a penalty — use /apply-marshal-penalty for that.
+     * {@code POST /race/{raceId}/marshal-absent}; REFEREE or ADMIN. Audited.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/marshal-absent")
@@ -67,7 +77,9 @@ public class RefereeController {
     /**
      * Apply a marshal penalty for a recorded absence, a separate action from recording it. The request can
      * name the absence (its id comes back from {@code marshal-absent}); otherwise the entry's most recent
-     * absence in the event is used, if there is one.
+     * absence in the event is used, if there is one. {@code POST /race/{raceId}/apply-marshal-penalty}; REFEREE or
+     * ADMIN. 409 if the entry is not in the event, or the absence already has a penalty. Audited as
+     * {@code MARSHAL_PENALTY_APPLIED}.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/apply-marshal-penalty")

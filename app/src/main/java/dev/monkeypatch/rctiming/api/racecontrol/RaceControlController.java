@@ -38,8 +38,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Race control REST API (CTRL-01, CTRL-03, CTRL-08, CTRL-09) and the run order. Endpoints require the
- * RACE_DIRECTOR or ADMIN role; the run order also allows REFEREE.
+ * Race control REST API (CTRL-01, CTRL-03, CTRL-08, CTRL-09) and the run order, under
+ * {@code /api/v1/race-control}. Endpoints require the RACE_DIRECTOR or ADMIN role; the run order also allows
+ * REFEREE.
+ *
+ * <p>The lifecycle commands each call one method of {@link RaceStateMachineService}, which checks the move against
+ * its table of allowed transitions: a command the race's current state does not allow is a 409 (via
+ * {@code IllegalStateTransitionException}), and an unknown race id is a 404. The state machine broadcasts the new
+ * state to {@code /topic/race/{raceId}/state} and publishes a {@code RaceStatusChangedEvent}.
  *
  * <p>Every change to a race's lifecycle (call grid, start, stop, finish, abandon, restart) is recorded in the audit
  * log with who did it, in the same transaction as the change (#139).
@@ -85,14 +91,21 @@ public class RaceControlController {
         this.heatMoveService = heatMoveService;
     }
 
-    /** The referee also reads the run order: it is how the Referee View picks a race (#107). */
+    /**
+     * The event's races in the order they will be run, with their status.
+     * {@code GET /event/{eventId}/run-order}. The referee also reads the run order: it is how the Referee View
+     * picks a race (#107). Read only.
+     */
     @GetMapping("/event/{eventId}/run-order")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
     }
 
-    /** Each class's overall qualifying table: the order its finals are seeded from. */
+    /**
+     * Each class's overall qualifying table: the order its finals are seeded from.
+     * {@code GET /event/{eventId}/qualifying}, race director or admin. Read only.
+     */
     @GetMapping("/event/{eventId}/qualifying")
     public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
         return qualifyingTableService.forEvent(eventId);
@@ -101,6 +114,10 @@ public class RaceControlController {
     /**
      * Seeds the class's finals again from the qualifying results so far, for after a heat was re-run or corrected.
      * Refused once a final has started.
+     *
+     * <p>{@code POST /event/{eventId}/qualifying/{eventClassId}/seed-finals}; 204 on success. 404 if the class is
+     * not in that event; 409 if a qualifying heat is unfinished (or all were abandoned), the class has no finals
+     * yet, or a final has started. Recorded in the audit log.
      */
     @Audited("audit_log")
     @PostMapping("/event/{eventId}/qualifying/{eventClassId}/seed-finals")
@@ -113,6 +130,10 @@ public class RaceControlController {
     /**
      * Moves a driver out of a pending heat into another pending heat of the same class, in the same round or, with
      * {@code allRounds}, in every practice and qualifying round that still has both heats pending.
+     *
+     * <p>{@code POST /race/{raceId}/move-entry}; 204 on success. 400 if the heats are the same, in different
+     * classes or events, finals, or (without {@code allRounds}) in different rounds; 409 if either heat has been
+     * called or started. Recorded in the audit log.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/move-entry")
@@ -122,6 +143,9 @@ public class RaceControlController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Calls the grid: PENDING to GRID. {@code POST /race/{raceId}/call-grid}; 409 from any other state. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/call-grid")
     @Transactional
@@ -133,6 +157,10 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Starts the race, or resumes it when it was stopped. {@code POST /race/{raceId}/start}; 409 from any state
+     * but GRID and STOPPED. Audited, as {@code RACE_STARTED} or {@code RACE_RESUMED}.
+     */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/start")
     @Transactional
@@ -146,6 +174,10 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Stops a running race (a red flag): RUNNING to STOPPED. {@code POST /race/{raceId}/stop}; 409 from any other
+     * state. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/stop")
     @Transactional
@@ -161,6 +193,9 @@ public class RaceControlController {
      * Resets the race to PENDING from any state, FINISHED included. It clears the race's start, finish and
      * abandoned times and throws away its result snapshot and live timing, so what is lost is recorded in the audit
      * row first. Use it for a false start, not to correct a result.
+     *
+     * <p>{@code POST /race/{raceId}/restart}; the state machine does not refuse it, so only a missing race (404)
+     * fails it. Only broadcasts the new state. Audited as {@code RACE_RESTARTED}.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/restart")
@@ -178,6 +213,10 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Finishes the race: RUNNING or STOPPED to FINISHED. {@code POST /race/{raceId}/finish}; 409 from any other
+     * state. Audited as {@code RACE_FINISHED}.
+     */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/finish")
     @Transactional
@@ -192,7 +231,7 @@ public class RaceControlController {
     /**
      * Finishes the race and marks it abandoned. Unlike a restart it keeps the laps so far: the race goes to
      * FINISHED with a result snapshot. It is allowed from any state but FINISHED, so a heat that will never run can be
-     * abandoned before it starts.
+     * abandoned before it starts. {@code POST /race/{raceId}/abandon}; 409 once the race is FINISHED. Audited.
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/abandon")
@@ -205,6 +244,12 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Adds or takes off one lap for a driver by hand (a marshal lap). {@code POST /race/{raceId}/marshal-adjustment};
+     * 200 on success. 400 for a lap delta other than +1 or -1. The adjustment is stored with who made it and the
+     * race's state at the time; while the race is not finished the live positions are recalculated and rebroadcast,
+     * and once it has finished its corrected results are sent again instead. Marshal laps are not state transitions.
+     */
     @Audited("marshal_adjustments")
     @PostMapping("/race/{raceId}/marshal-adjustment")
     public ResponseEntity<Void> marshalAdjustment(@PathVariable long raceId,
@@ -213,7 +258,12 @@ public class RaceControlController {
         return ResponseEntity.ok().build();
     }
 
-    /** Checks the target race is in the same event and answers with it; the client keeps the active-race pointer. */
+    /**
+     * Checks the target race is in the same event and answers with it; the client keeps the active-race pointer.
+     * {@code POST /race/{raceId}/skip-to}. Changes nothing on the server, so it is not audited. 404 if either race
+     * does not exist; 400 if the target is in a different event. The answer holds {@code eventId} and
+     * {@code activeRaceId}.
+     */
     @PostMapping("/race/{raceId}/skip-to")
     @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Long>> skipTo(@PathVariable long raceId,

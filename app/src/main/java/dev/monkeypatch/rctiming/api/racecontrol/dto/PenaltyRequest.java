@@ -7,6 +7,10 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
+/**
+ * The body of {@code POST /referee/race/{raceId}/penalty}. {@code value} must be positive: whole laps (at most 100)
+ * for a LAP penalty, seconds for a TIME penalty. {@code reason} is required.
+ */
 public record PenaltyRequest(
         @NotNull Long entryId,
         @NotNull PenaltyType penaltyType,
