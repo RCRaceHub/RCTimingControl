@@ -183,9 +183,28 @@ val buildFrontend by tasks.registering(Exec::class) {
     outputs.dir(frontendDir.dir("dist"))
 }
 
+// Developer docs (#352): the Javadoc of the hand-written code. doclint fails the build on a malformed comment or a
+// broken {@link}; "missing" is left out until every public type has a comment (then drop "-missing").
+// `-PbundleJavadoc` puts the result in the jar, served at /javadoc when rctiming.docs.javadoc.enabled is on.
+tasks.javadoc {
+    // The jOOQ code is generated from the schema, so there is nothing to document
+    exclude("**/jooq/generated/**")
+    (options as StandardJavadocDocletOptions).apply {
+        encoding = "UTF-8"
+        addBooleanOption("Xdoclint:all,-missing", true)
+        addStringOption("Xmaxwarns", "1000")
+    }
+}
+
 // jOOQ generated sources are committed at app/src/generated/jooq (Docker builds skip codegen with -x generateJooq)
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("app.jar")
+    if (providers.gradleProperty("bundleJavadoc").isPresent) {
+        dependsOn(tasks.javadoc)
+        bootInf {
+            from(tasks.javadoc.map { it.destinationDir!! }) { into("classes/javadoc") }
+        }
+    }
     if (providers.gradleProperty("bundleFrontend").isPresent) {
         dependsOn(buildFrontend)
         bootInf {
