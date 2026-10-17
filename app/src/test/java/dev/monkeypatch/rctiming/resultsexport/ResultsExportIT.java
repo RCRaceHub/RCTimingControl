@@ -72,6 +72,9 @@ class ResultsExportIT extends AbstractIntegrationTest {
     void setUp() {
         run = String.valueOf(ThreadLocalRandom.current().nextInt(10_000_000, 99_999_999));
         token = loginAs(Set.of(Role.ADMIN, Role.RACE_DIRECTOR, Role.REFEREE));
+        // The club publishes to RaceHub; without a choice or an address, nothing would be queued
+        clubProfileService.getSingletonProfileId();
+        jdbc.update("update club_profiles set results_publish_target = 'RACEHUB'");
         eventId = jdbc.queryForObject("""
                 insert into events (name, event_date, status)
                 values (?, '2026-10-18', 'IN_PROGRESS') returning id""",
@@ -85,6 +88,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
     @AfterEach
     void stopRaceHub() {
+        jdbc.update("update club_profiles set results_publish_target = null");
         if (raceHub != null) {
             raceHub.stop(0);
         }
@@ -438,6 +442,46 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(cleared.getBody().get("savedUrl").isNull()).isTrue();
         assertThat(clubProfileService.getRaceHubResultsUrl()).isEmpty();
+    }
+
+    @Test
+    void adminsCanChooseWhereResultsArePublished() {
+        ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/results-exports/target", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("target", "SITE"), headers()), JsonNode.class);
+        assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(set.getBody().get("publishTarget").asText()).isEqualTo("SITE");
+        assertThat(set.getBody().get("chosenTarget").asText()).isEqualTo("SITE");
+        assertThat(jdbc.queryForList("select * from audit_log where action = 'RESULTS_PUBLISH_TARGET_CHANGED'"))
+                .isNotEmpty();
+
+        ResponseEntity<String> refused = restTemplate.exchange("/api/v1/admin/results-exports/target", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("target", "FACEBOOK"), headers()), String.class);
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        // No choice and no RaceHub address: nothing is published
+        Map<String, Object> clear = new java.util.HashMap<>();
+        clear.put("target", null);
+        ResponseEntity<JsonNode> cleared = restTemplate.exchange("/api/v1/admin/results-exports/target",
+                HttpMethod.PUT, new HttpEntity<>(clear, headers()), JsonNode.class);
+        assertThat(cleared.getBody().get("chosenTarget").isNull()).isTrue();
+        assertThat(cleared.getBody().get("publishTarget").asText()).isEqualTo("NONE");
+    }
+
+    @Test
+    void nothingIsRequestedWhenTheClubDoesNotPublishToRaceHub() {
+        importEntries();
+        jdbc.update("update club_profiles set results_publish_target = 'SITE'");
+
+        exportService.request(eventId, ExportReason.DAY_CLOSE);
+
+        assertThat(jdbc.queryForObject("select results_export_pending from events where id = ?", String.class, eventId))
+                .isNull();
+
+        jdbc.update("update club_profiles set results_publish_target = 'BOTH'");
+        exportService.request(eventId, ExportReason.DAY_CLOSE);
+
+        assertThat(jdbc.queryForObject("select results_export_pending from events where id = ?", String.class, eventId))
+                .isNotNull();
     }
 
     @Test

@@ -43,6 +43,7 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         p.setDecoderProtocol(r.getDecoderProtocol());
         p.setPrivacyNotice(r.getPrivacyNotice());
         p.setRacehubResultsUrl(r.getRacehubResultsUrl());
+        p.setResultsPublishTarget(r.getResultsPublishTarget());
         p.setCreatedAt(r.getCreatedAt());
         p.setUpdatedAt(r.getUpdatedAt());
         return p;
@@ -65,6 +66,7 @@ public class ClubProfileRepository extends JooqRepository<ClubProfile, ClubProfi
         r.setDecoderProtocol(p.getDecoderProtocol());
         r.setPrivacyNotice(p.getPrivacyNotice());
         r.setRacehubResultsUrl(p.getRacehubResultsUrl());
+        r.setResultsPublishTarget(p.getResultsPublishTarget());
         r.setCreatedAt(p.getCreatedAt());
         r.setUpdatedAt(p.getUpdatedAt());
     }
