@@ -1,5 +1,5 @@
 import type { Options } from 'minisearch';
-import { extractHeadings, plainHeadingText } from './markdown';
+import { extractHeadings } from './markdown';
 
 // One searchable part of a doc: the text under a heading
 export interface DocSection {
@@ -38,35 +38,21 @@ function plainText(markdown: string): string {
 
 /** Splits a doc at its headings so a result can open the page at the right section. */
 export function sectionsOf(slug: string, docTitle: string, source: string): DocSection[] {
-  const headings = extractHeadings(source);
   const lines = source.split('\n');
-  const sections: DocSection[] = [];
-  let current: { heading: string; anchor: string; body: string[] } = { heading: docTitle, anchor: '', body: [] };
-  let h = 0;
-  let fence = false;
-  const flush = () => {
-    const text = plainText(current.body.join('\n'));
-    sections.push({
-      id: `${slug}#${current.anchor}`,
-      slug,
-      docTitle,
-      heading: current.heading,
-      anchor: current.anchor,
-      text,
-    });
-  };
-  for (const line of lines) {
-    if (/^\s*(`{3,}|~{3,})/.test(line)) fence = !fence;
-    const m = !fence && /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
-    if (m) {
-      flush();
-      const heading = headings[h++];
-      current = { heading: heading?.text ?? plainHeadingText(m[2]), anchor: heading?.id ?? '', body: [] };
-    } else {
-      current.body.push(line);
-    }
-  }
-  flush();
+  const headings = extractHeadings(source);
+  const section = (heading: string, anchor: string, from: number, to: number): DocSection => ({
+    id: `${slug}#${anchor}`,
+    slug,
+    docTitle,
+    heading,
+    anchor,
+    text: plainText(lines.slice(from, to).join('\n')),
+  });
+  // Text before the first heading belongs to the doc itself
+  const sections = [section(docTitle, '', 0, headings[0]?.line ?? lines.length)];
+  headings.forEach((h, i) => {
+    sections.push(section(h.text, h.id, h.line + 1, headings[i + 1]?.line ?? lines.length));
+  });
   return sections.filter(s => s.text !== '' || s.anchor !== '');
 }
 

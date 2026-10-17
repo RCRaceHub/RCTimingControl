@@ -30,12 +30,14 @@ export function DocSearch() {
   const [index, setIndex] = useState<MiniSearch<DocSection> | null>(null);
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const ensureIndex = () => {
     if (!indexRef.current) {
       indexRef.current = loadIndex();
       indexRef.current.then(setIndex).catch(() => {
         indexRef.current = null;
+        setFailed(true);
       });
     }
   };
@@ -45,7 +47,7 @@ export function DocSearch() {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const typing = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
-      if ((e.key === '/' && !typing) || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
+      if ((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
         inputRef.current?.focus();
       }
@@ -64,7 +66,8 @@ export function DocSearch() {
       docTitle: r.docTitle as string,
       heading: r.heading as string,
       anchor: r.anchor as string,
-      snippet: snippetFor(r.text as string, terms),
+      // r.terms are the indexed words that matched, so a typo or plural still finds its place in the text
+      snippet: snippetFor(r.text as string, r.terms.length > 0 ? r.terms : terms),
     }));
   }, [index, query]);
 
@@ -86,6 +89,8 @@ export function DocSearch() {
         role="combobox"
         aria-expanded={showPanel}
         aria-controls="docs-search-results"
+        aria-autocomplete="list"
+        aria-activedescendant={showPanel && hits[active] ? `docs-hit-${active}` : undefined}
         aria-label="Search the docs"
         placeholder="Search the docs  ( / )"
         value={query}
@@ -94,7 +99,7 @@ export function DocSearch() {
           ensureIndex();
           setOpen(true);
         }}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onBlur={() => setOpen(false)}
         onChange={e => {
           setQuery(e.target.value);
           setActive(0);
@@ -103,11 +108,11 @@ export function DocSearch() {
         onKeyDown={e => {
           if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActive(a => Math.min(a + 1, hits.length - 1));
+            setActive(a => Math.max(0, Math.min(a + 1, hits.length - 1)));
           } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActive(a => Math.max(a - 1, 0));
-          } else if (e.key === 'Enter' && hits[active]) {
+          } else if (e.key === 'Enter' && !e.nativeEvent.isComposing && hits[active]) {
             choose(hits[active]);
           } else if (e.key === 'Escape') {
             setOpen(false);
@@ -121,11 +126,12 @@ export function DocSearch() {
           role="listbox"
           className="absolute right-0 top-full z-30 mt-1 max-h-[70vh] w-full min-w-72 overflow-y-auto rounded-md border bg-background shadow-lg sm:w-[28rem]"
         >
-          {!index && <li className="px-3 py-2 text-sm text-muted-foreground">Loading…</li>}
+          {!index && <li className="px-3 py-2 text-sm text-muted-foreground">{failed ? 'Search is unavailable.' : 'Loading…'}</li>}
           {index && hits.length === 0 && <li className="px-3 py-2 text-sm text-muted-foreground">Nothing found for “{query.trim()}”.</li>}
           {hits.map((hit, i) => (
             <li
               key={hit.id}
+              id={`docs-hit-${i}`}
               role="option"
               aria-selected={i === active}
               className={`cursor-pointer border-b px-3 py-2 last:border-b-0 ${i === active ? 'bg-accent' : ''}`}

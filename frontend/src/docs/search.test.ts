@@ -35,6 +35,11 @@ describe('docs search', () => {
     expect(sections.map(s => s.anchor)).toEqual(['installing', 'first-run', 'transponders']);
   });
 
+  it('keeps anchors right with mixed fences and repeated headings', () => {
+    const source = '# T\n\n## Same\n\n```\n~~~\n# no\n```\n\n## Same\n\ntext\n';
+    expect(sectionsOf('t', 'T', source).map(s => s.anchor)).toEqual(['t', 'same', 'same-1']);
+  });
+
   it('ranks a heading match above a body match', () => {
     const hits = index().search('transponders');
     expect(hits[0].anchor).toBe('transponders');
