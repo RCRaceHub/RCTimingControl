@@ -66,11 +66,16 @@ public final class ResetAdminPasswordCommand {
     static class Settings {
     }
 
-    /** Returns the process exit code. */
+    /**
+     * Returns the process exit code: 0 after a reset, 1 for a failure or an unknown email, 2 when no email is given
+     * (the admins are listed). Runs with the app stopped, straight against the database file, so it cannot use
+     * the app's services.
+     */
     public static int run(String[] args) {
         return run(args, ResetAdminPasswordCommand::readFromTerminal);
     }
 
+    /** As {@link #run(String[])}, with the password source replaceable for tests. */
     static int run(String[] args, PasswordSource passwords) {
         String email = args.length > 0 && !args[0].startsWith("--") ? args[0].trim() : null;
         String[] settings = email == null ? args : Arrays.copyOfRange(args, 1, args.length);
@@ -209,6 +214,7 @@ public final class ResetAdminPasswordCommand {
                 .execute();
     }
 
+    /** Asks twice; returns null, after saying why on standard error, if it is missing, mismatched or too short. */
     private static String readNewPassword(PasswordSource passwords) throws IOException {
         char[] first = passwords.read("New password: ");
         char[] second = passwords.read("Type it again: ");

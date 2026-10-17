@@ -54,6 +54,10 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
         this.sessionRegistry = sessionRegistry;
     }
 
+    /**
+     * Checks inbound STOMP frames on the client inbound channel thread. Returning null drops the frame, which for a
+     * CONNECT closes the connection. Frames other than CONNECT, SUBSCRIBE and SEND pass through.
+     */
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
@@ -105,6 +109,7 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
         return message;
     }
 
+    /** Whether the account behind the token still exists and may sign in (not disabled). */
     private boolean maySignIn(String officialId) {
         Optional<User> user;
         try {

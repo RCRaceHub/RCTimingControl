@@ -53,6 +53,11 @@ public class TokenCipher {
         }
     }
 
+    /**
+     * The token as {@link #encrypt} wrote it.
+     *
+     * @throws UnreadableTokenException if it is malformed, was altered, or was encrypted with another key
+     */
     public String decrypt(String encrypted) {
         try {
             byte[] bytes = Base64.getDecoder().decode(encrypted);
@@ -67,6 +72,7 @@ public class TokenCipher {
         }
     }
 
+    /** The key, read (or made) on first use and then kept; double-checked so concurrent first calls agree. */
     private SecretKey key() {
         SecretKey current = key;
         if (current == null) {

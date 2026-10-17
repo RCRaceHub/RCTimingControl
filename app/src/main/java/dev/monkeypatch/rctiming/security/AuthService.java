@@ -57,6 +57,7 @@ public class AuthService {
             }
         }
 
+        /** Refused; the controller picks the status, saying no more than it must about which check failed. */
         record Refused(Refusal refusal) implements Outcome {}
     }
 
@@ -88,7 +89,11 @@ public class AuthService {
         this.unknownEmailHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
-    /** Signs in. Every attempt is recorded in the audit log, wrong passwords included. */
+    /**
+     * Signs in. Every attempt is recorded in the audit log, wrong passwords included. A wrong email and a wrong
+     * password give the same outcome and take about the same time. Runs on a request thread.
+     * A success writes the first refresh token of a new family and its audit row in one transaction.
+     */
     public Outcome login(String email, String password) {
         Optional<User> userOpt = userService.findByEmail(email);
         String passwordHash = userOpt.map(User::getPasswordHash).orElse(unknownEmailHash);

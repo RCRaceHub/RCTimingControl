@@ -48,6 +48,11 @@ public class JwtTokenService {
         this.refreshTokenTtlMs = refreshTokenTtlMs;
     }
 
+    /**
+     * A signed JWT for the official, valid for {@code app.jwt.access-token-ttl-ms} from now. The subject is the user
+     * id; {@code email}, {@code firstName}, {@code lastName} and {@code roles} are claims, so changes to them reach
+     * a request only with the next token.
+     */
     public String generateAccessToken(User user) {
         return Jwts.builder()
                 .subject(user.getId().toString())
@@ -61,12 +66,18 @@ public class JwtTokenService {
                 .compact();
     }
 
+    /** A new random refresh token value (256 bits, hex). Store only its hash; see {@code AuthService}. */
     public String generateRefreshTokenValue() {
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
         return HexFormat.of().formatHex(bytes);
     }
 
+    /**
+     * Verifies the signature and expiry and returns the claims.
+     *
+     * @throws io.jsonwebtoken.JwtException if the token is malformed, forged or expired
+     */
     public Claims parseToken(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
@@ -89,6 +100,7 @@ public class JwtTokenService {
                 .toList();
     }
 
+    /** How long a refresh token lives, in milliseconds, from the setting {@code app.jwt.refresh-token-ttl-ms}. */
     public long getRefreshTokenTtlMs() {
         return refreshTokenTtlMs;
     }

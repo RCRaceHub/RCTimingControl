@@ -28,6 +28,10 @@ public class SpaConfig implements WebMvcConfigurer {
     /** Paths owned by the server, with everything under them; an unknown one is a real 404, not a page. */
     private static final List<String> SERVER_ROOTS = List.of("api", "ws", "storage", "actuator", "error");
 
+    /**
+     * Static assets are cached for a year because their names carry a hash; everything else, including
+     * {@code index.html}, is revalidated each time so a new install's pages show at once.
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Vite fingerprints everything under assets/, so it can be cached for good
@@ -47,6 +51,7 @@ public class SpaConfig implements WebMvcConfigurer {
         return SERVER_ROOTS.stream().anyMatch(root -> relative.equals(root) || relative.startsWith(root + "/"));
     }
 
+    /** Resolves a real file first, then falls back to {@code index.html} for a path that is a page route. */
     private static final class IndexFallbackResolver extends PathResourceResolver {
         @Override
         protected Resource getResource(String resourcePath, Resource location) throws IOException {

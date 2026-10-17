@@ -18,6 +18,12 @@ public final class CurrentOfficial {
     private CurrentOfficial() {
     }
 
+    /**
+     * The id of the official behind the request's {@link Authentication}.
+     *
+     * @throws AuthenticationCredentialsNotFoundException if nobody is signed in
+     * @throws BadCredentialsException                    if the subject is not a user id
+     */
     public static long id(Authentication auth) {
         if (auth == null || auth.getName() == null) {
             throw new AuthenticationCredentialsNotFoundException("No official is signed in");
@@ -34,10 +40,12 @@ public final class CurrentOfficial {
         return id(SecurityContextHolder.getContext().getAuthentication());
     }
 
+    /** The official as the actor to record in the audit log. */
     public static Actor actor(Authentication auth) {
         return Actor.official(id(auth));
     }
 
+    /** As {@link #actor(Authentication)}, for code that is not handed the request's {@link Authentication}. */
     public static Actor actor() {
         return Actor.official(id());
     }
