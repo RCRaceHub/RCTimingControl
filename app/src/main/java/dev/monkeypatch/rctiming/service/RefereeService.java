@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Referee actions (OFFICIAL-03, OFFICIAL-04): incident reports, lap and time penalties, and marshal absences
@@ -148,7 +149,11 @@ public class RefereeService {
         return saved;
     }
 
-    /** Records that an entry missed their marshal duty. It gives no penalty: that is a separate action. */
+    /**
+     * Records that an entry missed their marshal duty. Marshals are assumed present, so this is the explicit way a miss
+     * is recorded. It gives no penalty by itself: the referee can apply one afterwards, or skip this and apply the
+     * penalty directly, which records the miss for them ({@link #applyMarshalPenalty}).
+     */
     public MarshalAbsence recordMarshalAbsence(long raceId, long entryId, long eventId, long userId) {
         MarshalAbsence absence = new MarshalAbsence();
         absence.setRaceId(raceId);
@@ -165,8 +170,10 @@ public class RefereeService {
     }
 
     /**
-     * Gives a marshal penalty for a recorded absence. The absence can be named (its id comes back from
-     * recording it); otherwise the entry's most recent absence in the event is used, if there is one. The
+     * Gives a marshal penalty for a missed marshal duty. Marshals are assumed present, so the referee need not record
+     * the miss first. The absence can be named (its id comes back from recording it); otherwise the entry's most
+     * recent absence in the event that has no penalty yet is used, and when there is none the miss is recorded
+     * here, against {@code raceId}, in the same transaction. The
      * {@code kind} says what it costs: the driver's best qualifying round (taken into account the next time the
      * qualifying order is worked out, so finals already seeded need seeding again) or a lap in their first final.
      *
@@ -179,8 +186,11 @@ public class RefereeService {
         if (!Long.valueOf(eventId).equals(entry.getEventId())) {
             throw new StateConflictException("That entry is not in the event the penalty was given for");
         }
-        Long forAbsence = absenceFor(entryId, eventId, absenceId);
-        if (forAbsence != null && marshalPenaltyRepository.existsByAbsenceId(forAbsence)) {
+        Long forAbsence = absenceId != null
+                ? namedAbsence(entryId, eventId, absenceId)
+                : unpenalisedAbsence(entryId, eventId)
+                        .orElseGet(() -> recordMissFor(raceId, entryId, eventId, userId));
+        if (marshalPenaltyRepository.existsByAbsenceId(forAbsence)) {
             throw new StateConflictException("That missed marshal duty has a penalty already");
         }
         MarshalPenalty penalty = new MarshalPenalty();
@@ -212,19 +222,34 @@ public class RefereeService {
         return saved;
     }
 
-    /** The absence a marshal penalty is for: the one named, which must be this entry's in this event, or the latest. */
-    private Long absenceFor(long entryId, long eventId, Long absenceId) {
-        if (absenceId != null) {
-            MarshalAbsence named = marshalAbsenceRepository.getOrThrow(absenceId);
-            if (named.getEntryId() != entryId || named.getEventId() != eventId) {
-                throw new StateConflictException("That absence was recorded for a different entry or event");
-            }
-            return named.getId();
+    /** The absence a marshal penalty is for, when the request names it: it must be this entry's in this event. */
+    private Long namedAbsence(long entryId, long eventId, long absenceId) {
+        MarshalAbsence named = marshalAbsenceRepository.getOrThrow(absenceId);
+        if (named.getEntryId() != entryId || named.getEventId() != eventId) {
+            throw new StateConflictException("That absence was recorded for a different entry or event");
         }
+        return named.getId();
+    }
+
+    /**
+     * Records the miss a penalty is for when none is waiting. An entry can miss a given race once (one absence per
+     * race and entry), so a driver already penalised for missing {@code raceId} is refused, not penalised twice.
+     */
+    private long recordMissFor(long raceId, long entryId, long eventId, long userId) {
+        boolean missedThisRace = marshalAbsenceRepository.findByEventId(eventId).stream()
+                .anyMatch(a -> a.getEntryId() == entryId && a.getRaceId() == raceId);
+        if (missedThisRace) {
+            throw new StateConflictException("That missed marshal duty has a penalty already");
+        }
+        return recordMarshalAbsence(raceId, entryId, eventId, userId).getId();
+    }
+
+    /** The entry's latest absence in the event that has no penalty yet, if any. */
+    private Optional<Long> unpenalisedAbsence(long entryId, long eventId) {
         return marshalAbsenceRepository.findByEventId(eventId).stream()
                 .filter(a -> a.getEntryId() == entryId)
+                .filter(a -> !marshalPenaltyRepository.existsByAbsenceId(a.getId()))
                 .max(Comparator.comparing(MarshalAbsence::getId))
-                .map(MarshalAbsence::getId)
-                .orElse(null);
+                .map(MarshalAbsence::getId);
     }
 }

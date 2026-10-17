@@ -85,7 +85,7 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
     // A penalty changes the qualifying order or a final's result, so cached copies of both are stale
     marshalPenalty: useMutation({
       mutationFn: (req: MarshalPenaltyRequest) => applyMarshalPenalty(raceId, req),
-      onSuccess: () => { invalidateSnapshot(); invalidateHistory(); invalidateQualifying(); },
+      onSuccess: () => { invalidateSnapshot(); invalidateHistory(); invalidateQualifying(); invalidateReadiness(); },
     }),
     skipTo: useMutation({
       mutationFn: ({ sourceRaceId, targetRaceId }: { sourceRaceId: number; targetRaceId: number }) =>

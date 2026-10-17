@@ -122,6 +122,7 @@ class RefereeServiceTest {
     @Test
     void aFinalsLapMarshalPenalty_correctsTheDriversFirstFinalWhenItHasFinished() {
         entryInEvent(1L);
+        recordingAbsencesSucceeds();
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.FINISHED)));
 
@@ -135,12 +136,40 @@ class RefereeServiceTest {
     @Test
     void aFinalsLapMarshalPenalty_leavesAFinalThatHasNotFinishedToBeCorrectedAtItsFinish() {
         entryInEvent(1L);
+        recordingAbsencesSucceeds();
         when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
         when(finalsMarshalPenalties.firstFinalOf(11L, 4L)).thenReturn(Optional.of(race(RaceStatus.PENDING)));
 
         service().applyMarshalPenalty(8L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null, null, 3L);
 
         verify(eventPublisher, never()).publishEvent(any(FinishedRaceCorrected.class));
+    }
+
+    @Test
+    void aMarshalPenalty_withNoAbsenceRecorded_recordsTheMissItself() {
+        entryInEvent(1L);
+        recordingAbsencesSucceeds();
+        when(marshalPenaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        MarshalPenalty penalty = service().applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.QUALIFYING_SCORE, null,
+                null, 3L);
+
+        verify(marshalAbsenceRepository).save(any(MarshalAbsence.class));
+        assertThat(penalty.getAbsenceId()).isEqualTo(21L);
+    }
+
+    @Test
+    void aMarshalPenalty_whenTheDriverIsPenalisedForThisRaceAlready_isAConflict() {
+        entryInEvent(1L);
+        MarshalAbsence missed = absence(6L, 11L, 1L);
+        missed.setRaceId(7L);
+        when(marshalAbsenceRepository.findByEventId(1L)).thenReturn(List.of(missed));
+        when(marshalPenaltyRepository.existsByAbsenceId(6L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service()
+                .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, null, null, 3L))
+                .isInstanceOf(StateConflictException.class);
+        verify(marshalAbsenceRepository, never()).save(any());
     }
 
     @Test
@@ -163,6 +192,14 @@ class RefereeServiceTest {
                 .applyMarshalPenalty(7L, 11L, 1L, MarshalPenaltyKind.FINALS_LAP, 5L, null, 3L))
                 .isInstanceOf(StateConflictException.class);
         verify(marshalPenaltyRepository, never()).save(any());
+    }
+
+    private void recordingAbsencesSucceeds() {
+        when(marshalAbsenceRepository.save(any())).thenAnswer(call -> {
+            MarshalAbsence saved = call.getArgument(0);
+            saved.setId(21L);
+            return saved;
+        });
     }
 
     private Entry entryInEvent(long eventId) {
