@@ -67,6 +67,7 @@ export function QualifyingTablePanel({
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="w-12 py-1">Pos</th>
+                  <th className="w-12 py-1">Car</th>
                   <th className="py-1">Driver</th>
                   <RoundHeaderCells count={rounds} className="w-10 py-1 text-right" />
                   {hasPoints && <th className="w-16 py-1 text-right">Points</th>}
@@ -78,6 +79,7 @@ export function QualifyingTablePanel({
                 {table.rows.map((row) => (
                   <tr key={row.entryId} className="border-b last:border-0">
                     <td className="py-1 tabular-nums">{row.position}</td>
+                    <td className="py-1 tabular-nums">{row.carNumber ?? '—'}</td>
                     <td className="py-1">{row.driverName}</td>
                     <RoundPlaceCells rounds={row.rounds} count={rounds} className="py-1 text-right tabular-nums" />
                     {hasPoints && <td className="py-1 text-right tabular-nums">{row.points}</td>}

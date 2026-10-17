@@ -6,6 +6,7 @@ import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
@@ -27,6 +28,7 @@ public class RaceEntriesQuery {
         return dsl
                 .select(
                         RACE_ENTRIES.ENTRY_ID,
+                        RACE_ENTRIES.CAR_NUMBER,
                         DSL.coalesce(COMPETITORS.DISPLAY_NAME, DSL.val("Unknown")).as("driverName"))
                 .from(RACE_ENTRIES)
                 .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
@@ -36,7 +38,7 @@ public class RaceEntriesQuery {
                 .fetch(r -> new RaceEntryDto(
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
-                        null // not read yet, though race_entries.car_number holds it (ENTRY-03)
+                        Objects.toString(r.get(RACE_ENTRIES.CAR_NUMBER), null)
                 ));
     }
 }

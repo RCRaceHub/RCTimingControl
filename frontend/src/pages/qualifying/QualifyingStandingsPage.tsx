@@ -33,6 +33,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
             <thead>
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
                 <th className="px-3 py-2">Pos</th>
+                <th className="px-3 py-2">Car</th>
                 <th className="px-3 py-2">Driver</th>
                 <RoundHeaderCells count={rounds} className="px-3 py-2 text-right" />
                 {byPoints && <th className="px-3 py-2 text-right">Points</th>}
@@ -44,6 +45,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
               {table.rows.map((row) => (
                 <tr key={row.entryId} className="border-b last:border-0">
                   <td className="px-3 py-2 font-semibold tabular-nums">{row.position}</td>
+                  <td className="px-3 py-2 tabular-nums">{row.carNumber ?? '—'}</td>
                   <td className="px-3 py-2">{row.driverName}</td>
                   <RoundPlaceCells rounds={row.rounds} count={rounds} className="px-3 py-2 text-right tabular-nums" />
                   {byPoints && <td className="px-3 py-2 text-right tabular-nums">{row.points}</td>}

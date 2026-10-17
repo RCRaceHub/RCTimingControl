@@ -55,7 +55,7 @@ export default function RefereePage() {
     queryFn: () => getRaceEntries(selectedRaceId!),
     enabled: selectedRaceId !== null,
   });
-  const drivers = raceEntries.map((e) => ({ entryId: e.entryId, driverName: e.racerName }));
+  const drivers = raceEntries.map((e) => ({ entryId: e.entryId, driverName: e.racerName, carNumber: e.carNumber }));
 
   // Cars closing on the one ahead between timing updates
   const highlightEntryIds = useProximityAlerts(selectedRaceId, current);

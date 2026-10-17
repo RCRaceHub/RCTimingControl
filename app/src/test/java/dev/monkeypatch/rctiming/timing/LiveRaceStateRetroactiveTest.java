@@ -86,5 +86,15 @@ class LiveRaceStateRetroactiveTest {
         assertThat(state.countPassingsForTransponder("T2")).isEqualTo(1);
         assertThat(state.countPassingsForTransponder("NONEXISTENT")).isZero();
     }
-}
 
+    @Test
+    void positionsCarryTheEntrysCarNumberOrNullWhenNoneIsRecorded() {
+        state.putEntryCarNumber(1L, "7");
+        state.applyLapPassing(new LapPassingEvent(1L, "T1", 1_000_000L), 1L);
+        state.applyLapPassing(new LapPassingEvent(1L, "T2", 1_100_000L), 2L);
+
+        List<LiveTimingRowDto> positions = state.calculatePositions();
+
+        assertThat(positions).extracting(LiveTimingRowDto::carNumber).containsExactly("7", null);
+    }
+}

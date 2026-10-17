@@ -182,6 +182,7 @@ export default function OverlayBoard() {
             <thead className="sr-only">
               <tr>
                 <th>Position</th>
+                <th>Car</th>
                 <th>Driver</th>
                 <th>Laps</th>
                 <th>Last lap</th>
@@ -212,6 +213,7 @@ export default function OverlayBoard() {
                         {row.position}
                       </span>
                     </td>
+                    <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
                     <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}{row.finished && <FinishedFlag className="ml-1" />}</td>
                     <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>

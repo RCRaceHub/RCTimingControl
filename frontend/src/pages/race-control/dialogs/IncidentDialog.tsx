@@ -43,7 +43,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   onSubmit: (req: IncidentReportRequest) => void;
   isPending: boolean;
-  drivers: { entryId: number; driverName: string }[];
+  drivers: { entryId: number; driverName: string; carNumber?: string | null }[];
 };
 
 export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, drivers }: Props) {
@@ -89,7 +89,7 @@ export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, driver
                     <SelectContent>
                       {drivers.map((d) => (
                         <SelectItem key={d.entryId} value={String(d.entryId)}>
-                          {d.driverName}
+                          {d.carNumber ? `#${d.carNumber} ` : ''}{d.driverName}
                         </SelectItem>
                       ))}
                     </SelectContent>

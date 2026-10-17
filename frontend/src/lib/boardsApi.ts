@@ -46,6 +46,7 @@ export type QualifyingBoardRow = {
   position: number;
   entryId: number;
   driverName: string;
+  carNumber: string | null;
   lapsCompleted: number;
   bestLapMs: number | null;
   /** The low-points total when the class ranks qualifying round by round, else null. */

@@ -60,8 +60,8 @@ function renderReferee() {
 }
 
 const EXPECTED = [
-  { entryId: 11, driverName: 'Alex Rowe' },
-  { entryId: 12, driverName: 'Sam Ito' },
+  { entryId: 11, driverName: 'Alex Rowe', carNumber: null },
+  { entryId: 12, driverName: 'Sam Ito', carNumber: null },
 ];
 
 describe('RefereePage driver list (#107)', () => {

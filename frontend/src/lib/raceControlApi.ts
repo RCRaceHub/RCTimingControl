@@ -82,6 +82,7 @@ export type ResultSnapshotDto = {
 export type LiveTimingRowDto = {
   entryId: number;
   driverName: string;
+  carNumber: string | null;
   position: number;
   lapsCompleted: number;
   lastPassingTimeMs: number;
@@ -455,6 +456,7 @@ export type QualifyingTableRow = {
   position: number;
   entryId: number;
   driverName: string;
+  carNumber: string | null;
   lapsCompleted: number;
   bestLapMs: number | null;
   points: number | null;
