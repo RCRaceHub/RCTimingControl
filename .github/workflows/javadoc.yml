@@ -1,7 +1,7 @@
 name: Javadoc
 
 # Builds the developer Javadoc on every change to the code and fails on a malformed comment or a broken {@link}
-# (doclint, set up in app/build.gradle.kts). On main it also keeps the result as a downloadable build artifact.
+# (doclint, set up in app/build.gradle.kts). On a pull request it also fails when a class it adds or changes has no class comment. On main it also keeps the result as a downloadable build artifact.
 
 on:
   push:
@@ -10,11 +10,13 @@ on:
       - 'app/src/main/java/**'
       - 'app/build.gradle.kts'
       - '.github/workflows/javadoc.yml'
+      - '.github/scripts/check-class-javadoc.py'
   pull_request:
     paths:
       - 'app/src/main/java/**'
       - 'app/build.gradle.kts'
       - '.github/workflows/javadoc.yml'
+      - '.github/scripts/check-class-javadoc.py'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +28,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A class a pull request adds or changes must have a class comment (CLAUDE.md rule 5). Only the touched
+      # files are checked, so the rest of the code base can be documented over time.
+      - name: Check changed classes have Javadoc
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'app/src/main/java/**/*.java' \
+            | xargs -r python3 .github/scripts/check-class-javadoc.py
 
       - uses: actions/setup-java@v4
         with:
