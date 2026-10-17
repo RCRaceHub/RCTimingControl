@@ -11,19 +11,26 @@ export function DocsIndexRedirect() {
 
 export default function DocPage() {
   const { slug } = useParams();
-  const { hash } = useLocation();
+  const { hash, key } = useLocation();
   const entry = DOC_MANIFEST.find(e => e.slug === slug);
   const [loaded, setLoaded] = useState<{ slug: string; source: string } | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     if (!entry) return;
     let cancelled = false;
-    loadDocSource(entry.file)?.then(source => {
-      if (!cancelled) setLoaded({ slug: entry.slug, source });
-    });
+    const previous = document.title;
     document.title = `${entry.title} · RCTC Docs`;
+    (loadDocSource(entry.file) ?? Promise.reject(new Error('not bundled')))
+      .then(source => {
+        if (!cancelled) setLoaded({ slug: entry.slug, source });
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(entry.slug);
+      });
     return () => {
       cancelled = true;
+      document.title = previous;
     };
   }, [entry]);
 
@@ -36,10 +43,17 @@ export default function DocPage() {
   // Open at the section named in the address, or at the top of a page reached from the menu
   useEffect(() => {
     if (!source) return;
-    const target = hash ? document.getElementById(decodeURIComponent(hash.slice(1))) : null;
+    let id = hash.slice(1);
+    try {
+      id = decodeURIComponent(id);
+    } catch {
+      // A malformed address just opens the page at the top
+    }
+    const target = id ? document.getElementById(id) : null;
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [source, slug, hash]);
+    // key changes on every navigation, so choosing the section you are already on scrolls again
+  }, [source, hash, key]);
 
   if (!entry) {
     return (
@@ -49,6 +63,7 @@ export default function DocPage() {
       </div>
     );
   }
+  if (failed === slug) return <p className="text-sm">This page could not be loaded.</p>;
   if (!source) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   return (

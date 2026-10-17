@@ -45,7 +45,8 @@ export function DocMarkdown({ source, slug }: { source: string; slug: string }) 
             if (link.kind === 'external') {
               return <a href={link.href} target="_blank" rel="noopener noreferrer">{children}</a>;
             }
-            return <a href={link.href}>{children}</a>;
+            // Not a page of the site (a developer doc or a file), so there is nothing to open
+            return <span>{children}</span>;
           },
           // No external images: the site works offline
           img: ({ alt }) => (alt ? <span>{alt}</span> : null),

@@ -4,7 +4,7 @@ export type ResolvedDocLink = { kind: 'internal'; to: string } | { kind: 'extern
 
 /** Turns a link written in docs/*.md into a site link: `installing.md#first-run` becomes `/docs/installing#first-run`. */
 export function resolveDocLink(href: string, currentSlug: string): ResolvedDocLink {
-  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return { kind: 'external', href };
+  if (/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(href)) return { kind: 'external', href };
   const [path, hash] = href.split('#');
   const suffix = hash ? `#${hash}` : '';
   if (path === '') return { kind: 'internal', to: `/docs/${currentSlug}${suffix}` };
