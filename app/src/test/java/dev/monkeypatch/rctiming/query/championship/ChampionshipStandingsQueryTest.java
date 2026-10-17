@@ -811,4 +811,68 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         // The B winner may still bump up, so the B final scores nothing until the A final has finished
         assertThat(standings).extracting(StandingsRowDto::totalPoints).containsOnly(0);
     }
+
+    @Test
+    void aDriverBumpedUpWhoDoesNotStartTheAFinalIsClassedLastInIt() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6, 4, 4));
+        Event event = makeEvent("Bumped-no-start-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry ann = makeEntry(makeUser("Ann", "NoStart").getId(), event.getId(), ecId);
+        Entry bob = makeEntry(makeUser("Bob", "NoStart").getId(), event.getId(), ecId);
+        Entry cat = makeEntry(makeUser("Cat", "NoStart").getId(), event.getId(), ecId);
+        Entry dan = makeEntry(makeUser("Dan", "NoStart").getId(), event.getId(), ecId);
+        makeRaceEntry(aFinal.getId(), ann.getId());
+        makeRaceEntry(aFinal.getId(), bob.getId());
+        makeRaceEntry(aFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), dan.getId());
+        makeSnapshot(aFinal.getId(),
+                "[" + resultRow(ann.getId(), 1, 10, 5000) + "," + resultRow(bob.getId(), 2, 10, 5100) + "]");
+        makeSnapshot(bFinal.getId(),
+                "[" + resultRow(cat.getId(), 1, 9, 5200) + "," + resultRow(dan.getId(), 2, 9, 5300) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Cat did not start the A final: last in it (3rd), ahead of Dan from the B final
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Ann NoStart", 10),
+                        org.assertj.core.groups.Tuple.tuple("Bob NoStart", 8),
+                        org.assertj.core.groups.Tuple.tuple("Cat NoStart", 6),
+                        org.assertj.core.groups.Tuple.tuple("Dan NoStart", 4));
+    }
+
+    @Test
+    void aHigherFinalNobodyRacedTakesNoOneFromTheFinalBelow() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        Event event = makeEvent("Empty-a-final-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry cat = makeEntry(makeUser("Cat", "Empty").getId(), event.getId(), ecId);
+        Entry dan = makeEntry(makeUser("Dan", "Empty").getId(), event.getId(), ecId);
+        makeRaceEntry(aFinal.getId(), cat.getId());
+        makeRaceEntry(aFinal.getId(), dan.getId());
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), dan.getId());
+        makeSnapshot(aFinal.getId(), "[]");
+        makeSnapshot(bFinal.getId(),
+                "[" + resultRow(cat.getId(), 1, 9, 5200) + "," + resultRow(dan.getId(), 2, 9, 5300) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Nobody raced the A final, so the B final places stand
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Cat Empty", 10),
+                        org.assertj.core.groups.Tuple.tuple("Dan Empty", 8));
+    }
 }

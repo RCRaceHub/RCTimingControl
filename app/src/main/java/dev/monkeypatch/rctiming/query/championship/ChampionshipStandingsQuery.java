@@ -396,24 +396,22 @@ public class ChampionshipStandingsQuery {
             if (!race.scores()) {
                 continue;
             }
-            for (ResultSnapshotDto.ResultRow row : race.positions()) {
-                EntryRef entry = results.scoringEntries().get(row.entryId());
+            // A final is placed across the round (see overallFinalPositions); other races by their own places
+            Map<Long, Integer> places = new LinkedHashMap<>();
+            if ("FINAL".equals(race.roundType())) {
+                places.putAll(overallInFinals.getOrDefault(race.raceId(), Map.of()));
+            } else {
+                race.positions().forEach(row -> places.put(row.entryId(), row.position()));
+            }
+            places.forEach((entryId, position) -> {
+                EntryRef entry = results.scoringEntries().get(entryId);
                 if (entry == null || entry.driverId() == null) {
-                    continue;
-                }
-                int position = row.position();
-                if ("FINAL".equals(race.roundType())) {
-                    // A driver bumped up has the place from the higher final, so their lower row is skipped
-                    Integer overall = overallInFinals.getOrDefault(race.raceId(), Map.of()).get(row.entryId());
-                    if (overall == null) {
-                        continue;
-                    }
-                    position = overall;
+                    return;
                 }
                 bestPositions.computeIfAbsent(race.racingClassId(), k -> new HashMap<>())
                         .merge(entry.driverId(), SourcePositions.of(race.roundType(), position),
                                 SourcePositions::better);
-            }
+            });
         }
 
         bonuses(eventId, results, rules, tally);
@@ -446,9 +444,9 @@ public class ChampionshipStandingsQuery {
      * Each driver's place across a round of finals, by race and entry: the A final's order, then the B final's
      * without those who bumped up into the A, and so on down the letters, so that the winner of the B final is
      * placed after everyone in the A. A final's own places are kept, so a lone finisher's 4th stays 4th. A driver who
-     * raced two finals of the round has the place from the higher one only, including one who bumped up and then
-     * did not start it. Rounds and classes are kept apart; a race with no letter comes first. A final is not placed
-     * until every final above it has finished.
+     * raced two finals of the round has the place from the higher one only, and one who bumped up and then did not
+     * start it is classed last in the higher final. Rounds and classes are kept apart; a race with no letter comes
+     * first. A final is not placed until every final above it has finished.
      */
     private static Map<Long, Map<Long, Integer>> overallFinalPositions(List<FinishedRace> races,
                                                                        Map<RoundClass, String> firstOpenFinal) {
@@ -467,7 +465,8 @@ public class ChampionshipStandingsQuery {
             Set<Long> placed = new HashSet<>();
             Set<Long> onHigherGrid = new HashSet<>();
             int placesAbove = 0;
-            for (FinishedRace race : finals) {
+            for (int i = 0; i < finals.size(); i++) {
+                FinishedRace race = finals.get(i);
                 Map<Long, Integer> positions = new HashMap<>();
                 overall.put(race.raceId(), positions);
                 if (open != null && race.finalLetter() != null && race.finalLetter().compareTo(open) > 0) {
@@ -483,9 +482,36 @@ public class ChampionshipStandingsQuery {
                     }
                     positions.put(row.entryId(), placesAbove + row.position() - bumped);
                 }
-                placesAbove = Math.max(placesAbove, positions.values().stream().mapToInt(Integer::intValue).max()
-                        .orElse(0));
-                onHigherGrid.addAll(race.grid());
+                int lastPlace = Math.max(placesAbove,
+                        positions.values().stream().mapToInt(Integer::intValue).max().orElse(0));
+                // A driver bumped up who did not start this final is classed last in it, in the order they
+                // finished the final below. Nobody is classed if no one raced this final.
+                if (!rows.isEmpty()) {
+                    Set<Long> started = new HashSet<>();
+                    rows.forEach(row -> started.add(row.entryId()));
+                    Map<Long, Integer> belowPlace = new HashMap<>();
+                    for (FinishedRace lower : finals.subList(i + 1, finals.size())) {
+                        lower.positions().forEach(row -> belowPlace.putIfAbsent(row.entryId(), row.position()));
+                    }
+                    List<Long> noStart = new ArrayList<>();
+                    for (Long entryId : race.grid()) {
+                        if (!started.contains(entryId) && !onHigherGrid.contains(entryId)
+                                && belowPlace.containsKey(entryId) && placed.add(entryId)) {
+                            noStart.add(entryId);
+                        }
+                    }
+                    noStart.sort((a, b) -> {
+                        int byPlace = Integer.compare(belowPlace.get(a), belowPlace.get(b));
+                        return byPlace != 0 ? byPlace : Long.compare(a, b);
+                    });
+                    for (Long entryId : noStart) {
+                        positions.put(entryId, ++lastPlace);
+                    }
+                }
+                placesAbove = lastPlace;
+                if (!rows.isEmpty()) {
+                    onHigherGrid.addAll(race.grid()); // a final nobody raced takes no one from the final below
+                }
             }
         });
         return overall;
