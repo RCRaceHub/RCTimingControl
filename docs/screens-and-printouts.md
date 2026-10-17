@@ -8,7 +8,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 
 | Screen | Address | What it shows | Good for |
 |--------|---------|---------------|----------|
-| Now and next | `/boards/now-next` | The race on track with live timing and its status (Racing or Stopped), then the next race. Between races it shows the next race and the last finished race's results. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
+| Now and next | `/boards/now-next` | The race on track with live timing and its status (Racing or Stopped), then the next race. Between races it shows the next race and the last finished race's results. When auto run is on it also shows a large countdown to the next start, or "Waiting for the finals to be released" while it is holding. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
 | Event schedule | `/events` | The events, with links to each finished race's results and the championship standings | Phones |

@@ -1,29 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { AutoRunStateDto } from '@/lib/raceControlApi';
+import { formatCountdown, useCountdown } from '@/lib/useCountdown';
 import type { useAutoRun } from '@/hooks/race-control/useAutoRun';
 
 type AutoRun = ReturnType<typeof useAutoRun>;
-
-/** Whole seconds until {@code startAt}, ticking once a second; null when nothing is scheduled. */
-function useSecondsUntil(startAt: string | null | undefined): number | null {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!startAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [startAt]);
-  return startAt ? Math.max(0, Math.ceil((new Date(startAt).getTime() - now) / 1000)) : null;
-}
-
-function formatCountdown(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 function heldText(state: AutoRunStateDto): string {
   switch (state.heldReason) {
@@ -43,7 +27,7 @@ function heldText(state: AutoRunStateDto): string {
  */
 export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canControl: boolean }) {
   const { state } = autoRun;
-  const left = useSecondsUntil(state?.phase === 'WAITING' ? state.startAt : null);
+  const left = useCountdown(state?.phase === 'WAITING' ? state.startAt : null, state?.serverTime);
   const [gap, setGap] = useState<string | null>(null);
   const [hold, setHold] = useState<boolean | null>(null);
 
@@ -61,10 +45,12 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
 
       {!state.armed && <p className="text-sm text-muted-foreground">Off. Races are started by hand.</p>}
       {state.phase === 'WAITING' && left != null && (
-        <p className="text-sm" role="status">
-          <span className="font-semibold">{state.nextRaceLabel}</span> starts in{' '}
-          <span className="font-mono font-semibold" data-testid="auto-run-countdown">{formatCountdown(left)}</span>
-        </p>
+        <div role="status">
+          <p className="text-sm font-semibold">{state.nextRaceLabel} starts in</p>
+          <p className="font-mono text-4xl font-bold tabular-nums" data-testid="auto-run-countdown">
+            {formatCountdown(left)}
+          </p>
+        </div>
       )}
       {state.phase === 'RACING' && (
         <p className="text-sm text-muted-foreground" role="status">

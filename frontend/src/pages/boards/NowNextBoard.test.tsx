@@ -205,4 +205,34 @@ describe('NowNextBoard', () => {
 
     expect(await screen.findByText('Can’t reach the timing system. Trying again…')).toBeInTheDocument();
   });
+
+  it('counts down to the next start when auto run is waiting', async () => {
+    const serverTime = '2026-10-17T12:00:00Z';
+    vi.mocked(getNowNext).mockResolvedValue(
+      nowNext({
+        nextRace: race({ raceId: 12, status: 'PENDING' }),
+        autoRun: { phase: 'WAITING', heldReason: null, startAt: '2026-10-17T12:02:05Z', serverTime },
+      }),
+    );
+    vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-10-17T12:00:00Z').getTime());
+
+    renderBoard();
+
+    expect(await screen.findByTestId('board-next-start')).toHaveTextContent('2:05');
+    vi.restoreAllMocks();
+  });
+
+  it('shows a waiting message, not a count, while auto run holds before the finals', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(
+      nowNext({
+        nextRace: race({ raceId: 12, status: 'PENDING' }),
+        autoRun: { phase: 'HELD', heldReason: 'FINALS', startAt: null, serverTime: '2026-10-17T12:00:00Z' },
+      }),
+    );
+
+    renderBoard();
+
+    expect(await screen.findByText('Waiting for the finals to be released')).toBeInTheDocument();
+    expect(screen.queryByTestId('board-next-start')).not.toBeInTheDocument();
+  });
 });

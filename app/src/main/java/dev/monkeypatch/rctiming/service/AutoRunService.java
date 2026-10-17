@@ -83,10 +83,24 @@ public class AutoRunService {
      * @param heldMessage   the detail, for a refused command
      * @param gapSeconds    the event's gap between races
      * @param holdBeforeFinals whether the event holds before the finals
+     * @param serverTime    the app's clock when this was built, so a browser whose own clock is out can still count
+     *                      down to {@code startAt} correctly
      */
     public record AutoRunState(long eventId, boolean armed, Phase phase, Long nextRaceId, String nextRaceLabel,
                                Instant startAt, HeldReason heldReason, String heldMessage,
-                               int gapSeconds, boolean holdBeforeFinals) {
+                               int gapSeconds, boolean holdBeforeFinals, Instant serverTime) {
+    }
+
+    /**
+     * What the spectator boards show of auto run: no race names beyond the next race's, no refusal detail. The
+     * countdown is {@code startAt} less {@code serverTime}, so it does not depend on the viewer's clock.
+     *
+     * @param phase      waiting to start the next race, waiting for a race under way, or holding
+     * @param heldReason why it is holding, so a board can say "waiting for the finals" instead of counting
+     * @param startAt    when the next race starts, while {@code phase} is WAITING
+     * @param serverTime the app's clock when this was built
+     */
+    public record BoardView(Phase phase, HeldReason heldReason, Instant startAt, Instant serverTime) {
     }
 
     /**
@@ -212,6 +226,16 @@ public class AutoRunService {
     /** The event's current auto run state, for race control to load; off when the event has no plan. */
     public AutoRunState state(long eventId) {
         return stateOf(eventRepository.getOrThrow(eventId), plans.get(eventId));
+    }
+
+    /**
+     * What the boards show for the event, or empty when auto run is off. Called on request threads by the anonymous
+     * now-and-next board; reads the volatile plan fields without the service's monitor.
+     */
+    public Optional<BoardView> boardView(long eventId) {
+        Plan plan = plans.get(eventId);
+        return plan == null ? Optional.empty()
+                : Optional.of(new BoardView(plan.phase, plan.heldReason, plan.startAt, clock.instant()));
     }
 
     /** A race of an armed event finished: the next tick plans what follows. */
@@ -443,9 +467,10 @@ public class AutoRunService {
     private AutoRunState stateOf(Event event, Plan plan) {
         if (plan == null) {
             return new AutoRunState(event.getId(), false, null, null, null, null, null, null,
-                    event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals());
+                    event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals(), clock.instant());
         }
         return new AutoRunState(event.getId(), true, plan.phase, plan.raceId, plan.label, plan.startAt,
-                plan.heldReason, plan.heldMessage, event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals());
+                plan.heldReason, plan.heldMessage, event.getAutoRunGapSeconds(), event.isAutoRunHoldBeforeFinals(),
+                clock.instant());
     }
 }

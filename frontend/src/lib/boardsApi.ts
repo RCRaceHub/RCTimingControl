@@ -15,12 +15,24 @@ export type BoardRaceDto = {
   status: 'PENDING' | 'GRID' | 'RUNNING' | 'STOPPED' | 'FINISHED';
 };
 
+/** Auto run as a board shows it: a count to the next start, or why it is waiting. */
+export type AutoRunBoardDto = {
+  phase: 'WAITING' | 'RACING' | 'HELD';
+  heldReason: 'FINALS' | 'NO_DRIVERS' | 'REFUSED' | null;
+  /** When the next race starts, while waiting. */
+  startAt: string | null;
+  /** The server's clock when this was built. */
+  serverTime: string;
+};
+
 export type NowNextDto = {
   eventId: number | null;
   eventName: string | null;
   currentRace: BoardRaceDto | null;
   nextRace: BoardRaceDto | null;
   lastCompletedRace: BoardRaceDto | null;
+  /** Null unless automatic race progression is on for the event. */
+  autoRun?: AutoRunBoardDto | null;
 };
 
 export type ResultsBoardDto = {
