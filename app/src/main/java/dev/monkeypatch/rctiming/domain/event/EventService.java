@@ -112,19 +112,23 @@ public class EventService {
     }
 
     /** Sets how auto run (#338) paces the event, recording the change only when something differs. */
-    public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds, boolean holdBeforeFinals) {
+    public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds,
+                                 boolean holdBeforeFinals, boolean autoStart) {
         Event event = getEventOrThrow(id);
-        if (event.getAutoRunGapSeconds() == gapSeconds && event.isAutoRunHoldBeforeFinals() == holdBeforeFinals) {
+        if (event.getAutoRunGapSeconds() == gapSeconds && event.isAutoRunHoldBeforeFinals() == holdBeforeFinals
+                && event.isAutoRunAutoStart() == autoStart) {
             return event;
         }
         Map<String, Object> before = Map.of("gapSeconds", event.getAutoRunGapSeconds(),
-                "holdBeforeFinals", event.isAutoRunHoldBeforeFinals());
+                "holdBeforeFinals", event.isAutoRunHoldBeforeFinals(), "autoStart", event.isAutoRunAutoStart());
         event.setAutoRunGapSeconds(gapSeconds);
         event.setAutoRunHoldBeforeFinals(holdBeforeFinals);
+        event.setAutoRunAutoStart(autoStart);
         Event saved = eventRepository.save(event);
         audit.entry(actor, "AUTO_RUN_SETTINGS_CHANGED").entity("event", id).event(id)
                 .summary("Changed the auto run settings for " + event.getName())
-                .before(before).after(Map.of("gapSeconds", gapSeconds, "holdBeforeFinals", holdBeforeFinals))
+                .before(before).after(Map.of("gapSeconds", gapSeconds, "holdBeforeFinals", holdBeforeFinals,
+                        "autoStart", autoStart))
                 .record();
         return saved;
     }

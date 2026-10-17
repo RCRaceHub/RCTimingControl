@@ -231,6 +231,20 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (Boolean) get(14);
     }
 
+    /**
+     * Setter for <code>events.auto_run_auto_start</code>.
+     */
+    public void setAutoRunAutoStart(Boolean value) {
+        set(15, value);
+    }
+
+    /**
+     * Getter for <code>events.auto_run_auto_start</code>.
+     */
+    public Boolean getAutoRunAutoStart() {
+        return (Boolean) get(15);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -254,7 +268,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart) {
         super(Events.EVENTS);
 
         setId(id);
@@ -272,6 +286,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setLiveFeedEnabled(liveFeedEnabled);
         setAutoRunGapSeconds(autoRunGapSeconds);
         setAutoRunHoldBeforeFinals(autoRunHoldBeforeFinals);
+        setAutoRunAutoStart(autoRunAutoStart);
         resetChangedOnNotNull();
     }
 }

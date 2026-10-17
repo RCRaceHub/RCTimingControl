@@ -52,9 +52,11 @@ public class AutoRunController {
      *
      * @param gapSeconds       the time between a race finishing and the next starting, 0 to 3600
      * @param holdBeforeFinals whether auto run stops after the last qualifier
+     * @param autoStart        whether auto run switches itself on when a race is started by hand
      */
     public record AutoRunSettingsRequest(@NotNull @Min(0) @Max(3600) Integer gapSeconds,
-                                         @NotNull Boolean holdBeforeFinals) {
+                                         @NotNull Boolean holdBeforeFinals,
+                                         @NotNull Boolean autoStart) {
     }
 
     /** Whether auto run is on for the event and what it will do next. {@code GET}; read only. */
@@ -105,7 +107,7 @@ public class AutoRunController {
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
     public AutoRunState settings(@PathVariable long eventId, @Valid @RequestBody AutoRunSettingsRequest request) {
         eventService.setAutoRunSettings(CurrentOfficial.actor(), eventId, request.gapSeconds(),
-                request.holdBeforeFinals());
+                request.holdBeforeFinals(), request.autoStart());
         return autoRunService.refresh(eventId);
     }
 }

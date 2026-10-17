@@ -353,6 +353,56 @@ class AutoRunServiceTest {
         verify(stateMachine, never()).start(any());
     }
 
+    @Test
+    void aRaceStartedByHandSwitchesAutoRunOn() {
+        Race running = addRace(1, RoundType.QUALIFIER, RaceStatus.RUNNING);
+        addRace(2, RoundType.QUALIFIER, RaceStatus.PENDING);
+        Round round = new Round();
+        round.setEventId(EVENT_ID);
+        round.setType(RoundType.QUALIFIER);
+        when(roundRepository.findById(running.getRoundId())).thenReturn(Optional.of(round));
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1, RaceStatus.RUNNING));
+        service.tick();
+        assertThat(service.state(EVENT_ID).armed()).isTrue();
+        assertThat(service.state(EVENT_ID).autoStart()).isTrue();
+
+        finish(running, RoundType.QUALIFIER);
+        service.tick();
+        var state = service.state(EVENT_ID);
+        assertThat(state.phase()).isEqualTo(AutoRunService.Phase.WAITING);
+        assertThat(state.nextRaceId()).isEqualTo(2L);
+    }
+
+    @Test
+    void aRaceStartedByHandDoesNotSwitchItOnWhenTheEventAsksNot() {
+        event.setAutoRunAutoStart(false);
+        Race running = addRace(1, RoundType.QUALIFIER, RaceStatus.RUNNING);
+        Round round = new Round();
+        round.setEventId(EVENT_ID);
+        when(roundRepository.findById(running.getRoundId())).thenReturn(Optional.of(round));
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1, RaceStatus.RUNNING));
+
+        assertThat(service.state(EVENT_ID).armed()).isFalse();
+    }
+
+    @Test
+    void aStoppedAutoRunStaysOffWhenARaceIsStartedByHand() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        service.stop(Actor.system("test"), EVENT_ID);
+        Race running = races.get(0);
+        running.setStatus(RaceStatus.RUNNING);
+        Round round = new Round();
+        round.setEventId(EVENT_ID);
+        when(roundRepository.findById(running.getRoundId())).thenReturn(Optional.of(round));
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, 1, RaceStatus.RUNNING));
+
+        assertThat(service.state(EVENT_ID).armed()).isFalse();
+    }
+
     private static Map<String, Object> argThatText(String text) {
         return org.mockito.ArgumentMatchers.argThat(m -> m instanceof Map<?, ?> map && text.equals(map.get("text")));
     }

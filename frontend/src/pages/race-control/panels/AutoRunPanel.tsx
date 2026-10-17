@@ -30,14 +30,17 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
   const left = useCountdown(state?.phase === 'WAITING' ? state.startAt : null, state?.serverTime);
   const [gap, setGap] = useState<string | null>(null);
   const [hold, setHold] = useState<boolean | null>(null);
+  const [autoStart, setAutoStart] = useState<boolean | null>(null);
 
   if (!state) return null;
   const gapValue = gap ?? String(state.gapSeconds);
   const holdValue = hold ?? state.holdBeforeFinals;
+  const autoStartValue = autoStart ?? state.autoStart;
   const busy = autoRun.go.isPending || autoRun.stop.isPending;
   const gapSeconds = Number(gapValue);
   const gapValid = gapValue !== '' && Number.isInteger(gapSeconds) && gapSeconds >= 0 && gapSeconds <= 3600;
-  const settingsChanged = gapSeconds !== state.gapSeconds || holdValue !== state.holdBeforeFinals;
+  const settingsChanged = gapSeconds !== state.gapSeconds || holdValue !== state.holdBeforeFinals
+    || autoStartValue !== state.autoStart;
 
   return (
     <section className="border-b px-3 py-3 flex flex-col gap-2" aria-label="Auto run" data-testid="auto-run-panel">
@@ -110,6 +113,14 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
             />
             <Label htmlFor="auto-run-hold" className="text-xs">Hold after qualifying, before the finals</Label>
           </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="auto-run-auto-start"
+              checked={autoStartValue}
+              onCheckedChange={(checked) => setAutoStart(checked === true)}
+            />
+            <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on when a race is started by hand</Label>
+          </div>
           {settingsChanged && (
             <Button
               size="sm"
@@ -118,8 +129,8 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
               disabled={!gapValid || autoRun.settings.isPending}
               onClick={() =>
                 autoRun.settings.mutate(
-                  { gapSeconds, holdBeforeFinals: holdValue },
-                  { onSuccess: () => { setGap(null); setHold(null); } },
+                  { gapSeconds, holdBeforeFinals: holdValue, autoStart: autoStartValue },
+                  { onSuccess: () => { setGap(null); setHold(null); setAutoStart(null); } },
                 )
               }
             >

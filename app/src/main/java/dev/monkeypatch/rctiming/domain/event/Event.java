@@ -50,6 +50,9 @@ public class Event implements CreatedAt, UpdatedAt {
     /** Whether auto run stops after the last qualifier so the finals can be checked first (#338). */
     private boolean autoRunHoldBeforeFinals = true;
 
+    /** Whether auto run switches itself on when a race of the event is started by hand (#338). */
+    private boolean autoRunAutoStart = true;
+
     public int getAutoRunGapSeconds() { return autoRunGapSeconds; }
     public void setAutoRunGapSeconds(int autoRunGapSeconds) { this.autoRunGapSeconds = autoRunGapSeconds; }
 
@@ -57,6 +60,9 @@ public class Event implements CreatedAt, UpdatedAt {
     public void setAutoRunHoldBeforeFinals(boolean autoRunHoldBeforeFinals) {
         this.autoRunHoldBeforeFinals = autoRunHoldBeforeFinals;
     }
+
+    public boolean isAutoRunAutoStart() { return autoRunAutoStart; }
+    public void setAutoRunAutoStart(boolean autoRunAutoStart) { this.autoRunAutoStart = autoRunAutoStart; }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
