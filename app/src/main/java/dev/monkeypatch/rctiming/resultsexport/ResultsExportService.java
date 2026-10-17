@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Builds results exports and queues them for RaceHub (#27). Only events whose entries came from a RaceHub
- * import are queued, since RaceHub needs its own event id to place them; any event can be downloaded.
+ * Builds results exports and queues them for RaceHub (#27) when the club publishes there (#319). Only events
+ * whose entries came from a RaceHub import are queued, since RaceHub needs its own event id to place them; any
+ * event can be downloaded.
  */
 @Service
 public class ResultsExportService {
@@ -37,11 +38,12 @@ public class ResultsExportService {
     private final ObjectMapper objectMapper;
 
     private final AuditService audit;
+    private final ResultsPublishSettings publishSettings;
 
     public ResultsExportService(EventRepository eventRepository, RaceRepository raceRepository,
                                 RoundRepository roundRepository, ResultsOutboxRepository outboxRepository,
                                 ResultsExportQuery exportQuery, ObjectMapper objectMapper,
-                                AuditService audit) {
+                                AuditService audit, ResultsPublishSettings publishSettings) {
         this.eventRepository = eventRepository;
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
@@ -49,6 +51,7 @@ public class ResultsExportService {
         this.exportQuery = exportQuery;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.publishSettings = publishSettings;
     }
 
     /**
@@ -67,9 +70,16 @@ public class ResultsExportService {
                         () -> log.warn("No event found for race {}; no results export requested", raceId));
     }
 
-    /** Marks an event as needing an export, in the caller's transaction. Events not from RaceHub are skipped. */
+    /**
+     * Marks an event as needing an export, in the caller's transaction. Events not from RaceHub are skipped,
+     * and so is everything when the club's publishing choice (#319) leaves RaceHub out.
+     */
     @Transactional(noRollbackFor = RuntimeException.class)
     public void request(long eventId, ExportReason reason) {
+        if (!publishSettings.effective().includesRaceHub()) {
+            log.debug("Results are not published to RaceHub; export of event {} not requested", eventId);
+            return;
+        }
         eventRepository.findById(eventId)
                 .filter(event -> event.getRacehubEventId() != null)
                 .ifPresent(event -> {

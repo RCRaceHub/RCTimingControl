@@ -22,6 +22,7 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     private String decoderProtocol;
     private String privacyNotice;
     private String racehubResultsUrl;
+    private String resultsPublishTarget;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -78,6 +79,9 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getRacehubResultsUrl() { return racehubResultsUrl; }
     public void setRacehubResultsUrl(String racehubResultsUrl) { this.racehubResultsUrl = racehubResultsUrl; }
+
+    public String getResultsPublishTarget() { return resultsPublishTarget; }
+    public void setResultsPublishTarget(String resultsPublishTarget) { this.resultsPublishTarget = resultsPublishTarget; }
 
     public String getPrivacyNotice() { return privacyNotice; }
     public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }

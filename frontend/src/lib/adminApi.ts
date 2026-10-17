@@ -539,6 +539,8 @@ export interface AddOfficialRequest {
 
 // Results sent to RaceHub (#27)
 export type ResultsExportStatus = 'QUEUED' | 'FAILED' | 'SENT' | 'SUPERSEDED';
+/** Where the club publishes results (#319); SITE is the results site, not built yet */
+export type ResultsPublishTarget = 'NONE' | 'RACEHUB' | 'SITE' | 'BOTH';
 export type ResultsExportReason = 'RACE_FINISHED' | 'CORRECTION' | 'DAY_CLOSE';
 
 export interface ResultsExportRowDto {
@@ -564,6 +566,10 @@ export interface ResultsExportsDto {
   savedUrl: string | null;
   /** What is still needed before anything is sent */
   missingSettings: string[];
+  /** Where results are published now: the club's choice, else the default */
+  publishTarget: ResultsPublishTarget;
+  /** The club's choice, or null when it has not made one */
+  chosenTarget: ResultsPublishTarget | null;
   /** Newest first */
   exports: ResultsExportRowDto[];
 }
@@ -882,6 +888,9 @@ export const adminApi = {
     /** Blank clears it, so the settings file's address applies */
     setAddress: (resultsUrl: string) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
+    /** Null clears the choice, so the default applies */
+    setTarget: (target: ResultsPublishTarget | null) =>
+      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/target', { target }).then(r => r.data),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api
