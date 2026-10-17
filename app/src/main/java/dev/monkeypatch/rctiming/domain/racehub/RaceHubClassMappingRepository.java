@@ -10,6 +10,10 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings.RACEHUB_CLASS_MAPPINGS;
 
+/**
+ * Repository for {@link RaceHubClassMapping} ({@code racehub_class_mappings}); the CSV import uses it too, keyed {@code
+ * CSV:<class name>}.
+ */
 @Repository
 public class RaceHubClassMappingRepository extends JooqRepository<RaceHubClassMapping, RacehubClassMappingsRecord> {
 

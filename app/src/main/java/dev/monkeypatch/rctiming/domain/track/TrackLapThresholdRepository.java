@@ -16,6 +16,10 @@ import java.util.Optional;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds.TRACK_LAP_THRESHOLDS;
 
+/**
+ * Repository for {@link TrackLapThreshold} ({@code track_lap_thresholds}); {@link TrackRepository} saves them with
+ * their track.
+ */
 @Repository
 public class TrackLapThresholdRepository extends JooqRepository<TrackLapThreshold, TrackLapThresholdsRecord> {
 
@@ -32,6 +36,7 @@ public class TrackLapThresholdRepository extends JooqRepository<TrackLapThreshol
                 .and(TRACK_LAP_THRESHOLDS.RACING_CLASS_ID.eq(racingClassId)));
     }
 
+    /** The track's default threshold, the one with no class. */
     public Optional<TrackLapThreshold> findByTrackIdAndRacingClassIsNull(Long trackId) {
         return findOne(TRACK_LAP_THRESHOLDS.TRACK_ID.eq(trackId)
                 .and(TRACK_LAP_THRESHOLDS.RACING_CLASS_ID.isNull()));

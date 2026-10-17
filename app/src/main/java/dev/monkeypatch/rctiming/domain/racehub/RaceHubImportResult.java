@@ -22,9 +22,14 @@ public record RaceHubImportResult(
         List<String> warnings,
         List<Row> rows) {
 
+    /** How many export entries fall under each {@link Action}. */
     public record Summary(int created, int updated, int withdrawn, int unchanged, int stale, int skipped) {
     }
 
+    /**
+     * A class in the file that matches no event class here, and how many entries are in it. Mapping it unblocks the
+     * import.
+     */
     public record UnmappedClass(String racehubEventClassId, String rcClassName, String className, int entryCount) {
     }
 

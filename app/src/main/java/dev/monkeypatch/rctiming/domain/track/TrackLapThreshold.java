@@ -3,6 +3,13 @@ package dev.monkeypatch.rctiming.domain.track;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * Lap time limits for a track, for one class or, with no class, for every class without its own (table {@code
+ * track_lap_thresholds}, TRACK-02, TRACK-03). {@code minLapMs} is the shortest lap that counts: a passing sooner than
+ * that after the car's last counted one is ignored as a double read or a cut. {@code maxLastLapMs} is the longest a
+ * timed race waits for a quiet car once its clock has expired before it is finished automatically. Both are in
+ * milliseconds.
+ */
 public class TrackLapThreshold implements CreatedAt {
 
     private Long id;

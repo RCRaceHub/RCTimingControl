@@ -121,6 +121,10 @@ public class TrackService {
                 .before(loopValues(loop)).record();
     }
 
+    /**
+     * Sets the lap thresholds for a class on a track, or for every class when {@code racingClassId} is null, replacing
+     * any already set for that combination. Records {@code LAP_THRESHOLD_ADDED} or {@code LAP_THRESHOLD_CHANGED}.
+     */
     public TrackLapThreshold setLapThreshold(Actor actor, Long trackId, Long racingClassId, Integer minLapMs,
                                              Integer maxLastLapMs) {
         Track track = getTrackOrThrow(trackId);

@@ -89,7 +89,10 @@ public class RaceHubImportService {
         this.audit = audit;
     }
 
-    /** What importing the file would do, saving nothing. */
+    /**
+     * What importing the file would do, saving nothing. It is {@link #importEntries} as a dry run, so it fails the same
+     * way for an unsupported file.
+     */
     @Transactional
     public RaceHubImportResult preview(Long eventId, RaceHubEntryExport export) {
         return importEntries(null, eventId, export, true);
@@ -98,6 +101,14 @@ public class RaceHubImportService {
     /**
      * Imports the file, or with {@code dryRun} only previews it. {@code actor} is who is importing (an official,
      * or the system for the automatic fetch); it is not needed, and may be null, for a dry run.
+     *
+     * <p>Runs in one write transaction, a dry run included. Nothing is saved when the result is blocked (unmapped
+     * classes, invalid rows, or a driver who would have two entries in a class). Withdrawals are applied before the
+     * other rows so a replacement entry does not meet the old one in the one-active-entry index. A real import that
+     * changes entries writes one audit row.
+     *
+     * @throws IllegalArgumentException if the file's schema version is not supported or it has no revision
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such event (HTTP 404)
      */
     @Transactional
     public RaceHubImportResult importEntries(Actor actor, Long eventId, RaceHubEntryExport export, boolean dryRun) {
@@ -209,13 +220,19 @@ public class RaceHubImportService {
                 .after(after).record();
     }
 
+    /** The event's class mappings, ordered by RaceHub class id; a 404 if there is no such event. */
     @Transactional(readOnly = true)
     public List<RaceHubClassMapping> listMappings(Long eventId) {
         eventRepository.requireExists(eventId);
         return mappingRepository.findByEventIdOrderByRacehubEventClassId(eventId);
     }
 
-    /** Replaces the event's class mappings with {@code mappings} (RaceHub event_class_id → event class id). */
+    /**
+     * Replaces the event's class mappings with {@code mappings} (RaceHub event_class_id → event class id) and records
+     * {@code CLASS_MAPPINGS_REPLACED}.
+     *
+     * @throws IllegalArgumentException if a key is blank or an event class is not one of this event's
+     */
     @Transactional
     public List<RaceHubClassMapping> replaceMappings(Actor actor, Long eventId, Map<String, Long> mappings) {
         Event event = eventRepository.getOrThrow(eventId);

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 
+/** Repository for {@link RacingClass} ({@code racing_classes}). */
 @Repository
 public class RacingClassRepository extends JooqRepository<RacingClass, RacingClassesRecord> {
 

@@ -3,6 +3,10 @@ package dev.monkeypatch.rctiming.domain.track;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * A timing loop on a track (table {@code decoder_loops}), as the decoder names it in {@code loopId}, with the {@code
+ * loopType} saying where it sits. {@code isScoringLoop} flags the loop whose crossings score laps.
+ */
 public class DecoderLoop implements CreatedAt {
 
     private Long id;
