@@ -32,7 +32,7 @@ To delete the demo's data and start with a fresh demo club:
 docker compose -f docker-compose.demo.yml down -v
 ```
 
-After pulling a newer version of the repository, add `--build` to the `up` command so Docker rebuilds the app.
+After pulling a newer version of the repository, add `--build` to the `up` command so Docker rebuilds the app. The demo data is loaded only into a new database, so a demo volume from an older version keeps its old data, and if you can't sign in with `admin@example.com` / `trial123` after an update, run the `down -v` command above and start again.
 
 ### Opening it on other devices
 
