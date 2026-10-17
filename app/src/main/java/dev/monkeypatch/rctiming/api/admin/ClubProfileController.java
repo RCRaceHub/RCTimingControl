@@ -29,6 +29,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * The club's profile under {@code /api/v1/admin/club}: its details and logo, the privacy notice and the governing
+ * body affiliations. Reads are open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN only and recorded in
+ * the audit log.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/club")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -43,6 +48,10 @@ public class ClubProfileController {
         this.logoUploadService = logoUploadService;
     }
 
+    /**
+     * The club profile, or a blank one (empty name, UTC) before the club step of setup is done.
+     * {@code GET /profile}; read only.
+     */
     @GetMapping("/profile")
     public ClubProfileDto getProfile() {
         return clubProfileService.getProfile()
@@ -50,6 +59,10 @@ public class ClubProfileController {
                 .orElseGet(() -> new ClubProfileDto(null, "", null, null, null, null, null, "UTC", null));
     }
 
+    /**
+     * Creates the club profile, or replaces its details. {@code PUT /profile}; ADMIN. 400 for a bad body or a time
+     * zone that is not valid. Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/profile")
     @PreAuthorize("hasRole('ADMIN')")
@@ -59,11 +72,16 @@ public class ClubProfileController {
                         request.websiteUrl(), request.latitude(), request.longitude(), request.timezone())));
     }
 
+    /** The privacy notice text as the editor needs it. {@code GET /privacy-notice}; read only. */
     @GetMapping("/privacy-notice")
     public PrivacyNoticeEditDto getPrivacyNotice() {
         return PrivacyNoticeEditDto.from(clubProfileService.privacyNotice());
     }
 
+    /**
+     * Saves the club's own privacy notice; a blank text goes back to the default. {@code PUT /privacy-notice};
+     * ADMIN; 400 over 20000 characters. Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/privacy-notice")
     @PreAuthorize("hasRole('ADMIN')")
@@ -73,11 +91,13 @@ public class ClubProfileController {
                 clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
     }
 
+    /** The governing bodies the club is affiliated to. {@code GET /affiliations}; read only. */
     @GetMapping("/affiliations")
     public List<GoverningBodyAffiliationDto> listAffiliations() {
         return clubProfileService.listAffiliations().stream().map(GoverningBodyAffiliationDto::from).toList();
     }
 
+    /** Adds a governing body. {@code POST /affiliations}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping("/affiliations")
     @PreAuthorize("hasRole('ADMIN')")
@@ -88,6 +108,7 @@ public class ClubProfileController {
                 request.code(), request.displayName(), request.membershipRequired()));
     }
 
+    /** Changes a governing body. {@code PUT /affiliations/{id}}; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/affiliations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -97,6 +118,7 @@ public class ClubProfileController {
                 request.code(), request.displayName(), request.membershipRequired()));
     }
 
+    /** Removes a governing body. {@code DELETE /affiliations/{id}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/affiliations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -105,6 +127,11 @@ public class ClubProfileController {
         clubProfileService.deleteAffiliation(CurrentOfficial.actor(auth), id);
     }
 
+    /**
+     * Replaces the club logo with the uploaded image. {@code PUT /logo} as multipart form data with a {@code file}
+     * part; ADMIN. 400 for a missing, oversized or unsupported file. Answers with the URL the logo is served from.
+     * Audited.
+     */
     @Audited("audit_log")
     @PutMapping(value = "/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
@@ -114,10 +141,13 @@ public class ClubProfileController {
         return new LogoUploadResponse(url);
     }
 
-    /** {@code text} blank means go back to the default notice. */
+    /** The body of {@code PUT /privacy-notice}. {@code text} blank means go back to the default notice. */
     public record PrivacyNoticeRequest(@Size(max = 20000) String text) {}
 
-    /** {@code customised}: whether {@code text} is the club's own, or the default. */
+    /**
+     * The privacy notice as the editor shows it. {@code customised}: whether {@code text} is the club's own, or the
+     * default.
+     */
     public record PrivacyNoticeEditDto(String text, boolean customised) {
         static PrivacyNoticeEditDto from(ClubProfileService.PrivacyNotice n) {
             return new PrivacyNoticeEditDto(n.text(), n.customised());

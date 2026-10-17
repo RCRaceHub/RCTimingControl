@@ -22,7 +22,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Imports RaceHub Entry Export v1 into an event, and manages its class mappings (L7, #15). */
+/**
+ * Imports RaceHub Entry Export v1 into an event, and manages its class mappings (L7, #15), under
+ * {@code /api/v1/admin/events/{eventId}}. ADMIN only. Entries are upserted by entry id with the higher entry version
+ * winning, and a withdrawn entry is kept, never deleted.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}")
 @PreAuthorize("hasRole('ADMIN')")
@@ -47,12 +51,16 @@ public class RaceHubImportController {
         return ImportResponses.of(result);
     }
 
+    /** How RaceHub's event classes map to this event's classes. {@code GET /racehub-class-mappings}; read only. */
     @GetMapping("/racehub-class-mappings")
     public List<ClassMappingDto> listMappings(@PathVariable Long eventId) {
         return importService.listMappings(eventId).stream().map(ClassMappingDto::of).toList();
     }
 
-    /** Replaces all of the event's class mappings. */
+    /**
+     * Replaces all of the event's class mappings. {@code PUT /racehub-class-mappings}; 400 if a RaceHub class is
+     * mapped twice. Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/racehub-class-mappings")
     public List<ClassMappingDto> replaceMappings(Authentication auth, @PathVariable Long eventId,
@@ -67,6 +75,7 @@ public class RaceHubImportController {
                 .map(ClassMappingDto::of).toList();
     }
 
+    /** One mapping, as sent and returned: a RaceHub event class id and the event class it lands in. */
     public record ClassMappingDto(String racehubEventClassId, Long eventClassId) {
         static ClassMappingDto of(RaceHubClassMapping m) {
             return new ClassMappingDto(m.getRacehubEventClassId(), m.getEventClassId());

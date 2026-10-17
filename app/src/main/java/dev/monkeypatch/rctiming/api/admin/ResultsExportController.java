@@ -24,7 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. */
+/**
+ * Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. Under
+ * {@code /api/v1/admin}; ADMIN only. Exports are queued by finishing a race, correcting a result and closing the day,
+ * and sent in the background with retries ({@code docs/results-export-v1.md}).
+ */
 @RestController
 @RequestMapping("/api/v1/admin")
 @PreAuthorize("hasRole('ADMIN')")
@@ -46,6 +50,8 @@ public class ResultsExportController {
     }
 
     /**
+     * The results export page's data.
+     *
      * @param sendingEnabled  whether the RaceHub address and key are both set; without them, exports wait
      * @param resultsUrl      the address in use, or null
      * @param savedUrl        the address set here, or null when the settings file's is in use
@@ -57,6 +63,9 @@ public class ResultsExportController {
                                     List<ResultsOutboxQuery.OutboxRow> exports) {
     }
 
+    /**
+     * The export settings and the newest 100 exports. {@code GET /results-exports}; read only.
+     */
     @GetMapping("/results-exports")
     public ResultsExportsDto list() {
         var settings = endpoint.snapshot();
@@ -67,10 +76,18 @@ public class ResultsExportController {
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 
-    /** @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies */
+    /**
+     * The body of {@code PUT /results-exports/address}.
+     *
+     * @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies
+     */
     public record ResultsUrlRequest(@Size(max = 500) String resultsUrl) {
     }
 
+    /**
+     * Saves the RaceHub address results are sent to and answers with the page's data. {@code PUT
+     * /results-exports/address}; 400 if the address is not valid. Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/results-exports/address")
     public ResultsExportsDto setAddress(Authentication auth, @RequestBody @Valid ResultsUrlRequest request) {
@@ -81,6 +98,7 @@ public class ResultsExportController {
         return list();
     }
 
+    /** Tries a queued export again now instead of waiting. {@code POST /results-exports/{id}/retry}; 204. Audited. */
     @Audited("audit_log")
     @PostMapping("/results-exports/{id}/retry")
     public ResponseEntity<Void> retry(Authentication auth, @PathVariable long id) {
@@ -88,7 +106,10 @@ public class ResultsExportController {
         return ResponseEntity.noContent().build();
     }
 
-    /** The event's results as they stand now, as a Results Export v1 file. */
+    /**
+     * The event's results as they stand now, as a Results Export v1 file sent as an attachment.
+     * {@code GET /events/{eventId}/results-export}; read only.
+     */
     @GetMapping("/events/{eventId}/results-export")
     public ResponseEntity<ResultsExportV1> download(@PathVariable long eventId) {
         ResultsExportV1 export = exportService.current(eventId);

@@ -5,6 +5,10 @@ import dev.monkeypatch.rctiming.domain.event.EventStatus;
 
 import java.time.LocalDate;
 
+/**
+ * An event's own fields, the answer of the create, update and transition endpoints under
+ * {@code /api/v1/admin/events}. {@code trackId} is null when no track is set.
+ */
 public record EventDto(
         Long id,
         String name,

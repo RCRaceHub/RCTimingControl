@@ -4,6 +4,10 @@ import dev.monkeypatch.rctiming.domain.track.Track;
 
 import java.util.List;
 
+/**
+ * A track with its decoder loops and lap thresholds, the answer of the track endpoints under
+ * {@code /api/v1/admin/tracks}. {@code trackLength} is null if not set.
+ */
 public record TrackDto(
         Long id,
         String name,

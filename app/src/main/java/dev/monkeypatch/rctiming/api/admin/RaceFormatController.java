@@ -27,6 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Race format templates under {@code /api/v1/admin/formats}: list, create, change, delete, and export or import as
+ * JSON or YAML (FORMAT-14). Reads and export are open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN only
+ * and audited. A template edit does not touch events that already use it, because each event class keeps its own
+ * snapshot (FORMAT-06).
+ */
 @RestController
 @RequestMapping("/api/v1/admin/formats")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -40,6 +46,7 @@ public class RaceFormatController {
         this.codec = codec;
     }
 
+    /** Every template. {@code GET}; read only. */
     @GetMapping
     public List<RaceFormatTemplateDto> listFormats() {
         return raceFormatService.findAll().stream()
@@ -47,11 +54,13 @@ public class RaceFormatController {
                 .toList();
     }
 
+    /** One template. {@code GET /{id}}; 404 if it does not exist. */
     @GetMapping("/{id}")
     public RaceFormatTemplateDto getFormat(@PathVariable Long id) {
         return RaceFormatTemplateDto.from(raceFormatService.findById(id));
     }
 
+    /** Creates a template. {@code POST}; ADMIN; answers 201; 400 if the config is not valid. Audited. */
     @Audited("audit_log")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -61,6 +70,7 @@ public class RaceFormatController {
                 raceFormatService.create(CurrentOfficial.actor(auth), request.name(), request.config()));
     }
 
+    /** Changes a template. {@code PUT /{id}}; ADMIN; 400 if the config is not valid. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -70,6 +80,10 @@ public class RaceFormatController {
                 raceFormatService.update(CurrentOfficial.actor(auth), id, request.name(), request.config()));
     }
 
+    /**
+     * Deletes a template. {@code DELETE /{id}}; ADMIN; 204; 409 if the database refuses because something still uses
+     * it. Audited.
+     */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -78,6 +92,10 @@ public class RaceFormatController {
         raceFormatService.delete(CurrentOfficial.actor(auth), id);
     }
 
+    /**
+     * The template's config as a file, in the type the {@code Accept} header asks for: JSON (the default) or YAML.
+     * {@code GET /{id}/export}; read only.
+     */
     @GetMapping(value = "/{id}/export",
                 produces = {MediaType.APPLICATION_JSON_VALUE, "application/yaml"})
     public ResponseEntity<String> exportFormat(
@@ -89,6 +107,10 @@ public class RaceFormatController {
                 .body(codec.write(raceFormatService.exportConfig(id), fileType));
     }
 
+    /**
+     * Creates a template from a JSON or YAML config in the body, named by {@code name}. {@code POST /import}; ADMIN;
+     * answers 201; 400 if the body cannot be read or is not a valid config. Audited.
+     */
     @Audited("audit_log")
     @PostMapping(value = "/import",
                  consumes = {MediaType.APPLICATION_JSON_VALUE, "application/yaml"})

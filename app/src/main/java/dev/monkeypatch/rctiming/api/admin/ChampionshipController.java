@@ -33,6 +33,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Championship setup and standings under {@code /api/v1/admin/championships}: the championship's settings, its
+ * classes, the events linked as rounds, the points scale and driver exclusions. Reads and the standings are open to
+ * ADMIN, RACE_DIRECTOR and REFEREE; creating and changing a championship is ADMIN only. The exception is
+ * exclusions, which any of the three may add or remove (#132). Changes are recorded in the audit log. Spectators
+ * read standings from {@code PublicChampionshipController}. A missing championship, class, event or exclusion is a
+ * 404. How points are scored is in {@code docs/scoring.md}.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/championships")
 @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
@@ -47,11 +55,16 @@ public class ChampionshipController {
         this.standingsQuery = standingsQuery;
     }
 
+    /** Every championship. {@code GET}; read only. */
     @GetMapping
     public List<ChampionshipDto> list() {
         return championshipService.listAll().stream().map(ChampionshipDto::from).toList();
     }
 
+    /**
+     * One championship with its classes, its events in round order and its points scale.
+     * {@code GET /{id}}; 404 if it does not exist.
+     */
     @GetMapping("/{id}")
     public ChampionshipDetailDto getDetail(@PathVariable Long id) {
         ChampionshipService.Detail detail = championshipService.getDetail(id);
@@ -61,6 +74,7 @@ public class ChampionshipController {
                 detail.pointsScale().stream().map(PointsScaleEntryDto::from).toList());
     }
 
+    /** Creates a championship. {@code POST}; ADMIN; answers 201; 400 for a bad body. Audited. */
     @Audited("audit_log")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -69,6 +83,10 @@ public class ChampionshipController {
         return ChampionshipDto.from(championshipService.create(CurrentOfficial.actor(auth), settings(request)));
     }
 
+    /**
+     * Replaces the championship's own settings (name, best X from Y, scoring source and bonuses).
+     * {@code PUT /{id}}; ADMIN. Audited with the settings before and after.
+     */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -77,6 +95,10 @@ public class ChampionshipController {
         return ChampionshipDto.from(championshipService.update(CurrentOfficial.actor(auth), id, settings(request)));
     }
 
+    /**
+     * Adds a racing class to the championship; a null best X from Y inherits the championship's.
+     * {@code POST /{id}/classes}; ADMIN; answers 201. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/{id}/classes")
     @PreAuthorize("hasRole('ADMIN')")
@@ -87,6 +109,10 @@ public class ChampionshipController {
                 request.racingClassId(), request.bestXFromYX(), request.bestXFromYY()));
     }
 
+    /**
+     * Removes a racing class from the championship. {@code DELETE /{id}/classes/{racingClassId}}; ADMIN; 204.
+     * Audited.
+     */
     @Audited("audit_log")
     @DeleteMapping("/{id}/classes/{racingClassId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -95,6 +121,10 @@ public class ChampionshipController {
         championshipService.removeClass(CurrentOfficial.actor(auth), id, racingClassId);
     }
 
+    /**
+     * Links an event to the championship as a numbered round. {@code POST /{id}/events}; ADMIN; answers 201.
+     * Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/{id}/events")
     @PreAuthorize("hasRole('ADMIN')")
@@ -105,6 +135,7 @@ public class ChampionshipController {
                 request.eventId(), request.roundNumber()));
     }
 
+    /** Unlinks an event from the championship. {@code DELETE /{id}/events/{eventId}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}/events/{eventId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -113,6 +144,11 @@ public class ChampionshipController {
         championshipService.unlinkEvent(CurrentOfficial.actor(auth), id, eventId);
     }
 
+    /**
+     * Replaces the whole points scale (points by finishing position) in one transaction (CHAMP-04).
+     * {@code PUT /{id}/points-scale}; ADMIN; answers with the scale as saved. 400 for an empty list or a bad entry.
+     * Audited.
+     */
     @Audited("audit_log")
     @PutMapping("/{id}/points-scale")
     @PreAuthorize("hasRole('ADMIN')")
@@ -126,6 +162,7 @@ public class ChampionshipController {
                 .toList();
     }
 
+    /** The drivers excluded from events of the championship. {@code GET /{id}/exclusions}; read only. */
     @GetMapping("/{id}/exclusions")
     public List<ChampionshipExclusionDto> listExclusions(@PathVariable Long id) {
         return championshipService.listExclusions(id).stream().map(ChampionshipExclusionDto::from).toList();
@@ -133,6 +170,11 @@ public class ChampionshipController {
 
     // Not admin-only, unlike the rest of championship setup: a referee records a disqualification (DQ), so
     // every official may add or remove an exclusion (#132). The flow is to be revisited after user testing.
+    /**
+     * Excludes a driver from one event of the championship, with a reason (CHAMP-02, CHAMP-09). That round is then
+     * worth nothing to them, bonuses included. {@code POST /{id}/exclusions}; ADMIN, RACE_DIRECTOR or REFEREE;
+     * answers 201. The recording official is the signed-in one, never taken from the body. Audited.
+     */
     @Audited("audit_log")
     @PostMapping("/{id}/exclusions")
     @ResponseStatus(HttpStatus.CREATED)
@@ -143,6 +185,10 @@ public class ChampionshipController {
                 request.driverId(), request.eventId(), request.reason()));
     }
 
+    /**
+     * Removes an exclusion. {@code DELETE /{id}/exclusions/{exclusionId}}; ADMIN, RACE_DIRECTOR or REFEREE; 204.
+     * Audited.
+     */
     @Audited("audit_log")
     @DeleteMapping("/{id}/exclusions/{exclusionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -150,7 +196,10 @@ public class ChampionshipController {
         championshipService.deleteExclusion(CurrentOfficial.actor(auth), id, exclusionId);
     }
 
-    /** The championship's standings, worked out from the result snapshots each time. */
+    /**
+     * The championship's standings, worked out from the result snapshots each time. {@code GET /{id}/standings};
+     * read only. Unlike the public standings, driver names are the full display names.
+     */
     @GetMapping("/{id}/standings")
     public List<StandingsRowDto> getStandings(@PathVariable Long id) {
         return standingsQuery.computeStandings(id);

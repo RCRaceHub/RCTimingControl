@@ -6,6 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+/**
+ * The body of {@code PUT /api/v1/admin/championships/{id}}; the fields mean the same as in
+ * {@link CreateChampionshipRequest}.
+ */
 public record UpdateChampionshipRequest(
         @NotBlank @Size(max = 255) String name,
         @Min(1) Integer bestXFromYX,

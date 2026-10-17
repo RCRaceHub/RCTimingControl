@@ -4,6 +4,11 @@ import dev.monkeypatch.rctiming.domain.entry.Entry;
 
 import java.time.Instant;
 
+/**
+ * An entry as the admin entry endpoints return it. {@code status} is {@code PENDING}, {@code CONFIRMED} or
+ * {@code WITHDRAWN}; {@code transponderNumberSnapshot} is the primary transponder number saved on the entry. The
+ * timestamps are null until that step happens.
+ */
 public record EntryDto(
         Long id,
         Long eventId,
