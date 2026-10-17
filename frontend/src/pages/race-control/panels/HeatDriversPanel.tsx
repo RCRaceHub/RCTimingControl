@@ -17,7 +17,7 @@ type Props = {
  */
 export function HeatDriversPanel({ race, runOrder }: Props) {
   const queryClient = useQueryClient();
-  const [allRounds, setAllRounds] = useState(true);
+  const [allRounds, setAllRounds] = useState(false);
 
   const { data: entries = [] } = useQuery({
     queryKey: raceControlQueryKeys.raceEntries(race.raceId),

@@ -33,10 +33,20 @@ describe('HeatDriversPanel', () => {
     mockMove.mockResolvedValue(undefined);
   });
 
-  it('moves a driver to another pending heat, in all rounds by default', async () => {
+  it('moves a driver to another pending heat in this round by default', async () => {
     renderPanel([heat(1, 1), heat(2, 2)]);
     const select = await screen.findByLabelText('Move Ann Racer to');
 
+    fireEvent.change(select, { target: { value: '2' } });
+
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 11, targetRaceId: 2, allRounds: false }));
+  });
+
+  it('moves them in the other rounds too when asked', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)]);
+    const select = await screen.findByLabelText('Move Ann Racer to');
+
+    fireEvent.click(screen.getByRole('checkbox'));
     fireEvent.change(select, { target: { value: '2' } });
 
     await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 11, targetRaceId: 2, allRounds: true }));

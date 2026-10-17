@@ -73,17 +73,25 @@ public class HeatMoveService {
         requirePending(target);
         raceEntryRepository.findByRaceIdAndEntryId(source.getId(), entryId)
                 .orElseThrow(() -> new EntityNotFoundException("Entry " + entryId + " is not in race " + raceId));
+        if (raceEntryRepository.findByRaceIdOrderByGridPosition(source.getId()).size() == 1) {
+            throw new IllegalArgumentException(
+                    "That is the only driver in the heat; abandon the heat instead of emptying it");
+        }
 
         List<Race[]> pairs = new ArrayList<>();
         pairs.add(new Race[] {source, target});
         if (allRounds) {
             for (Round round : roundRepository.findByEventIdOrderBySequenceInEvent(sourceRound.getEventId())) {
-                if (round.getId().equals(source.getRoundId())) continue;
+                if (round.getId().equals(source.getRoundId())) {
+                    continue;
+                }
                 Race from = heatOf(round, source);
                 Race to = heatOf(round, target);
                 if (from != null && to != null && from.getStatus() == RaceStatus.PENDING
                         && to.getStatus() == RaceStatus.PENDING
-                        && raceEntryRepository.findByRaceIdAndEntryId(from.getId(), entryId).isPresent()) {
+                        && raceEntryRepository.findByRaceIdAndEntryId(from.getId(), entryId).isPresent()
+                        && raceEntryRepository.findByRaceIdAndEntryId(to.getId(), entryId).isEmpty()
+                        && raceEntryRepository.findByRaceIdOrderByGridPosition(from.getId()).size() > 1) {
                     pairs.add(new Race[] {from, to});
                 }
             }
@@ -120,7 +128,10 @@ public class HeatMoveService {
                 .findFirst().orElse(null);
     }
 
-    /** Takes the driver out of {@code from}, closing the gap in its grid and car numbers, and adds them to the end of {@code to}. */
+    /**
+     * Takes the driver out of {@code from}, closing the gap in its grid and car numbers, and adds them to the end of
+     * {@code to}, whose grid positions are then 1 to N again.
+     */
     private void move(Long entryId, Race from, Race to) {
         RaceEntry moving = raceEntryRepository.findByRaceIdAndEntryId(from.getId(), entryId)
                 .orElseThrow(() -> new EntityNotFoundException("Entry " + entryId + " is not in race " + from.getId()));
@@ -138,18 +149,26 @@ public class HeatMoveService {
         moving.setCarNumber(nextCar);
         raceEntryRepository.save(moving);
 
-        List<RaceEntry> rest = raceEntryRepository.findByRaceIdOrderByGridPosition(from.getId());
+        List<RaceEntry> joined = new ArrayList<>(raceEntryRepository.findByRaceIdOrderByGridPosition(to.getId()));
+        renumberGrid(joined);
+        raceEntryRepository.saveAll(joined);
+
+        List<RaceEntry> rest = new ArrayList<>(raceEntryRepository.findByRaceIdOrderByGridPosition(from.getId()));
         rest.sort(Comparator.comparing(RaceEntry::getCarNumber, Comparator.nullsLast(Comparator.naturalOrder())));
         int car = 1;
         for (RaceEntry entry : rest) {
             entry.setCarNumber(car++);
         }
-        List<RaceEntry> gridded = rest.stream().filter(e -> e.getGridPosition() != null)
-                .sorted(Comparator.comparing(RaceEntry::getGridPosition)).toList();
+        renumberGrid(rest);
+        raceEntryRepository.saveAll(rest);
+    }
+
+    /** Makes the grid positions that are set run 1 to N in their present order, so a move leaves no gap or repeat. */
+    private static void renumberGrid(List<RaceEntry> entries) {
         int grid = 1;
-        for (RaceEntry entry : gridded) {
+        for (RaceEntry entry : entries.stream().filter(e -> e.getGridPosition() != null)
+                .sorted(Comparator.comparing(RaceEntry::getGridPosition)).toList()) {
             entry.setGridPosition(grid++);
         }
-        raceEntryRepository.saveAll(rest);
     }
 }

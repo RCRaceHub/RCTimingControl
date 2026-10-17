@@ -96,6 +96,17 @@ class HeatMoveServiceTest {
     }
 
     @Test
+    void theOnlyDriverInAHeatIsNotMovedOut() {
+        inHeat1.remove(2);
+        inHeat1.remove(1);
+
+        assertThatThrownBy(() -> service.moveEntry(Actor.system("test"), 1L, 11L, 2L, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("abandon");
+        verify(raceEntryRepository, never()).save(any());
+    }
+
+    @Test
     void aDriverNotInTheHeatIsNotFound() {
         assertThatThrownBy(() -> service.moveEntry(Actor.system("test"), 1L, 21L, 2L, false))
                 .hasMessageContaining("not in race");
