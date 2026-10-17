@@ -445,9 +445,10 @@ public class ChampionshipStandingsQuery {
     /**
      * Each driver's place across a round of finals, by race and entry: the A final's order, then the B final's
      * without those who bumped up into the A, and so on down the letters, so that the winner of the B final is
-     * placed after everyone in the A. A driver who raced two finals of the round has the place from the higher
-     * one only, including one who bumped up and then did not start it. Rounds and classes are kept apart; a race with
-     * no letter comes first. A final is not placed until every final above it has finished.
+     * placed after everyone in the A. A final's own places are kept, so a lone finisher's 4th stays 4th. A driver who
+     * raced two finals of the round has the place from the higher one only, including one who bumped up and then
+     * did not start it. Rounds and classes are kept apart; a race with no letter comes first. A final is not placed
+     * until every final above it has finished.
      */
     private static Map<Long, Map<Long, Integer>> overallFinalPositions(List<FinishedRace> races,
                                                                        Map<RoundClass, String> firstOpenFinal) {
@@ -465,7 +466,7 @@ public class ChampionshipStandingsQuery {
             String open = firstOpenFinal.get(roundClass);
             Set<Long> placed = new HashSet<>();
             Set<Long> onHigherGrid = new HashSet<>();
-            int next = 1;
+            int placesAbove = 0;
             for (FinishedRace race : finals) {
                 Map<Long, Integer> positions = new HashMap<>();
                 overall.put(race.raceId(), positions);
@@ -474,11 +475,16 @@ public class ChampionshipStandingsQuery {
                 }
                 List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(race.positions());
                 rows.sort(Comparator.comparingInt(ResultSnapshotDto.ResultRow::position));
+                int bumped = 0;
                 for (ResultSnapshotDto.ResultRow row : rows) {
-                    if (!onHigherGrid.contains(row.entryId()) && placed.add(row.entryId())) {
-                        positions.put(row.entryId(), next++);
+                    if (onHigherGrid.contains(row.entryId()) || !placed.add(row.entryId())) {
+                        bumped++; // placed in a final above, so not here
+                        continue;
                     }
+                    positions.put(row.entryId(), placesAbove + row.position() - bumped);
                 }
+                placesAbove = Math.max(placesAbove, positions.values().stream().mapToInt(Integer::intValue).max()
+                        .orElse(0));
                 onHigherGrid.addAll(race.grid());
             }
         });
