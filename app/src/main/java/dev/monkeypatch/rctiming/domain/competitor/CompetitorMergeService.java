@@ -93,8 +93,10 @@ public class CompetitorMergeService {
         }
     }
 
+    /** What a merge moved. */
     public record Result(Long keptCompetitorId, int entriesMoved, int exclusionsMoved) {}
 
+    /** What {@link #merge} would do, without changing anything. Runs as a read-only transaction. */
     @Transactional(readOnly = true)
     public Preview preview(Long keepId, Long duplicateId) {
         requireDistinct(keepId, duplicateId);
@@ -104,6 +106,14 @@ public class CompetitorMergeService {
                 entryRepository.findByCompetitorId(keepId));
     }
 
+    /**
+     * Moves the duplicate's entries, exclusions, practice drivers and change history onto the competitor to keep and
+     * deletes the duplicate, in one write transaction. Records {@code COMPETITOR_MERGED}, and an entry audit row for
+     * each moved entry.
+     *
+     * @throws CompetitorMergeRefusedException if the preview lists blockers, such as both holding an active entry in
+     * the same class of the same event (HTTP 409)
+     */
     @Transactional
     public Result merge(Long keepId, Long duplicateId, Long adminUserId) {
         requireDistinct(keepId, duplicateId);

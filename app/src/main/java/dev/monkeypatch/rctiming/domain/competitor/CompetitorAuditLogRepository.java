@@ -11,6 +11,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
 
+/** Repository for {@link CompetitorAuditLog} ({@code competitor_audit_log}). */
 @Repository
 public class CompetitorAuditLogRepository extends JooqRepository<CompetitorAuditLog, CompetitorAuditLogRecord> {
 

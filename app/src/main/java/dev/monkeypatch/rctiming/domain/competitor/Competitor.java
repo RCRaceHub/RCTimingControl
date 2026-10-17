@@ -7,6 +7,11 @@ import java.time.Instant;
 /**
  * A driver who races, independent of any login. Entries point at a competitor, so a racing
  * history can outlive a single meeting and does not depend on an account (L4, #12).
+ *
+ * <p>Table {@code competitors}. {@code externalSource} and {@code externalId} are the identity an import matches by
+ * (for example {@link dev.monkeypatch.rctiming.domain.ExternalSources#RACEHUB} and RaceHub's driver id); both are null
+ * for a walk-in. Competitors hold no contact, date of birth or payment data. The transponder numbers belong to the
+ * entry, not here.
  */
 public class Competitor implements CreatedAt, UpdatedAt {
 
