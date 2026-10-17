@@ -80,6 +80,22 @@ class RoundGeneratorServiceTest {
     }
 
     @Test
+    void regenerate_whenARaceHasPenaltiesOrIncidentsRecorded_isAConflictAndKeepsTheRunOrder() {
+        Round round = new Round();
+        round.setId(5L);
+        Race pending = new Race();
+        pending.setStatus(RaceStatus.PENDING);
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(5L)).thenReturn(List.of(pending));
+        when(raceRepository.hasRecordsAgainstEventRaces(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.regenerate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("penalties");
+        verify(roundRepository, never()).delete(any(Round.class));
+    }
+
+    @Test
     void heatSplit_fifteenDriversMaxEightPerHeat_createsTwoHeats() {
         // Arrange: one EventClass for event 1
         Long eventId = 1L;

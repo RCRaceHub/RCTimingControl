@@ -4,6 +4,10 @@ import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Record1;
+import org.jooq.Select;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +26,24 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
 
     public List<Race> findByRoundIdOrderBySequenceInRound(Long roundId) {
         return findWhere(RACES.ROUND_ID.eq(roundId), RACES.SEQUENCE_IN_ROUND.asc(), RACES.ID.asc());
+    }
+
+    /** Tables with a foreign key to a race and no cascade, which a delete of the race can't pass. */
+    private static final List<String> RACE_RECORD_TABLES = List.of(
+            "marshal_adjustments", "marshal_absences", "incident_reports", "penalties", "unknown_transponder_link");
+
+    /**
+     * Whether any race of the event has marshal laps, absences, incidents, penalties or transponder links against
+     * it, as a race put back to pending by a restart or one with a penalty raised early can: records that
+     * deleting the event's run order would destroy, or fail on.
+     */
+    public boolean hasRecordsAgainstEventRaces(Long eventId) {
+        Field<Long> raceId = DSL.field(DSL.name("race_id"), Long.class);
+        Select<Record1<Long>> eventRaces = dsl.select(RACES.ID).from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .where(ROUNDS.EVENT_ID.eq(eventId));
+        return RACE_RECORD_TABLES.stream().anyMatch(table ->
+                dsl.fetchExists(DSL.table(DSL.name(table)), raceId.in(eventRaces)));
     }
 
     /** For BumpUpSeedingService: a class's races in rounds of the given type, such as its finals. */

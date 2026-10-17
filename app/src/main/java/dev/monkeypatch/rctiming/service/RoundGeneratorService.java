@@ -81,7 +81,8 @@ public class RoundGeneratorService {
     /**
      * Throws away the event's run order and generates it again from the current entries and the request. Refused
      * once any race has left PENDING, since a started race has laps and results the new heats would orphan.
-     * The rounds go with their races, grids and finals; the foreign keys cascade.
+     * The rounds go with their races, grids and result snapshots; the foreign keys cascade.
+     * Refused as well when a race has penalties, incidents or marshal records, which don't cascade.
      *
      * @throws StateConflictException if a race of the event has been called, started or finished
      */
@@ -94,6 +95,11 @@ public class RoundGeneratorService {
                             "The run order can't be regenerated once a race has been called or started");
                 }
             }
+        }
+        if (raceRepository.hasRecordsAgainstEventRaces(request.eventId())) {
+            throw new StateConflictException(
+                    "The run order can't be regenerated while its races have penalties, incidents, marshal laps "
+                            + "or transponder links recorded against them");
         }
         rounds.forEach(roundRepository::delete);
         GenerationPlan plan = buildPlan(request);

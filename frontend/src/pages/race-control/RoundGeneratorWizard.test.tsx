@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
 import { adminApi, type EventDetailDto, type RacingClassDto } from '@/lib/adminApi';
 
+const roles = vi.hoisted(() => ({ current: ['ADMIN'] as string[] }));
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { roles: roles.current } }) }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/lib/adminApi', () => ({
   adminApi: { getEvent: vi.fn(), listRacingClasses: vi.fn(), generateRounds: vi.fn(),
@@ -23,6 +25,7 @@ function wizard(open: boolean, regenerate = false) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  roles.current = ['ADMIN'];
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   vi.mocked(adminApi.getEvent).mockResolvedValue({
     id: 5,
@@ -107,5 +110,13 @@ describe('RoundGeneratorWizard', () => {
 
     await waitFor(() => expect(adminApi.generateRounds).toHaveBeenCalledTimes(1));
     expect(adminApi.updateOverrides).toHaveBeenCalledWith(5, 11, { staggerIntervalSeconds: 8 });
+  });
+
+  it('leaves the stagger gap to an admin, as the server does', async () => {
+    roles.current = ['RACE_DIRECTOR'];
+    render(wizard(true));
+    await screen.findByText('Mod Buggy');
+
+    expect(screen.getByLabelText('Stagger gap (s)')).toBeDisabled();
   });
 });

@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/lib/errors';
 import { adminApi } from '@/lib/adminApi';
+import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 import {
@@ -59,6 +60,8 @@ const DEFAULT_STAGGER_SECONDS = 1;
 
 export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate = false }: Props) {
   const queryClient = useQueryClient();
+  // The gap is a format override, which only an admin may change
+  const { isAdmin } = useRoles();
   const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { ...GLOBAL_DEFAULTS, classes: [] },
@@ -140,7 +143,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
     onError: (err) => toast.error(getApiErrorMessage(err, regenerate ? 'Failed to regenerate rounds' : 'Failed to generate rounds')),
   });
 
-  function numberField(name: FieldPath<FormInput>, label: string, min: number, max: number) {
+  function numberField(name: FieldPath<FormInput>, label: string, min: number, max: number, disabled = false) {
     const id = `round-gen-${name.replaceAll('.', '-')}`;
     const error: FieldError | undefined = get(form.formState.errors, name);
     const errorId = `${id}-error`;
@@ -152,6 +155,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
           type="number"
           min={min}
           max={max}
+          disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           {...form.register(name)}
@@ -198,7 +202,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
                   <legend className="px-1 text-sm font-medium">{row.label}</legend>
                   <div className="grid grid-cols-3 gap-2">
                     {numberField(`classes.${idx}.finalsCount`, 'Finals', 1, 3)}
-                    {numberField(`classes.${idx}.staggerSeconds`, 'Stagger gap (s)', 1, 120)}
+                    {numberField(`classes.${idx}.staggerSeconds`, 'Stagger gap (s)', 1, 120, !isAdmin)}
                   </div>
                 </fieldset>
               ))}
