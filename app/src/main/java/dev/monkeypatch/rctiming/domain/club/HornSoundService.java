@@ -16,6 +16,7 @@ import java.util.Set;
 @Service
 public class HornSoundService {
 
+    /** The sounds a club can replace, as in {@link ClubAudioSettings.HornSounds}. */
     public enum Horn {
         START, FINISH, TICK, LAP_BEEP, FASTER_BEEP, SLOWER_BEEP;
 
@@ -53,7 +54,13 @@ public class HornSoundService {
         this.clubProfileService = clubProfileService;
     }
 
-    /** Stores the file as the club's {@code horn} sound and returns the settings as saved. */
+    /**
+     * Stores the file as the club's {@code horn} sound and returns the settings as saved. {@code durationMs} is how
+     * long the browser measured the sound to play, from 100 to 10000.
+     *
+     * @throws IllegalArgumentException if the file is missing, not MP3, WAV or Ogg, over 1 MB, or the duration is
+     *                                  out of range
+     */
     public ClubAudioSettings upload(Actor actor, Horn horn, MultipartFile file, int durationMs) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file part is required");

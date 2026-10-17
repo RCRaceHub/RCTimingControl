@@ -4,6 +4,14 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * The club's own details (table {@code club_profiles}): name and contact, time zone, logo, the announcer settings,
+ * where its decoder is, its privacy notice and the RaceHub results address. RCTC runs for one club at one venue, so
+ * there is at most one row; {@link ClubProfileService} keeps it that way.
+ *
+ * The decoder host, port and protocol are null until the setup wizard has set them, and the decoder listener reads them
+ * from here. {@code audioSettings} is stored as JSON text (see {@link ClubAudioSettingsConverter}).
+ */
 public class ClubProfile implements CreatedAt, UpdatedAt {
 
     private Long id;
@@ -13,14 +21,20 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     private String websiteUrl;
     private Double latitude;
     private Double longitude;
+    /** An IANA zone id such as {@code Europe/London}; {@link #setTimezone} rejects an invalid one. */
     private String timezone = "UTC";
     private String logoUrl;
     private ClubAudioSettings audioSettings = ClubAudioSettings.defaults();
+    /** The Piper voice the announcer uses unless a clip asks for another. */
     private String defaultVoiceId = "en_GB-alan-medium";
     private String decoderHost;
     private Integer decoderPort;
     private String decoderProtocol;
+    /** The club's own notice text, or null to show the default from {@code PrivacyNoticeDefaults} (#267). */
     private String privacyNotice;
+    /**
+     * Where results are sent to RaceHub; may carry a secret in its query string, so keep it out of logs and audit rows.
+     */
     private String racehubResultsUrl;
     private Instant createdAt;
     private Instant updatedAt;

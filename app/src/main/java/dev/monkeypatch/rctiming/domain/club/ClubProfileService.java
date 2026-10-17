@@ -46,6 +46,7 @@ public class ClubProfileService {
         this.audit = audit;
     }
 
+    /** The decoder address from the profile; all fields null before a profile exists or the wizard has set them. */
     @Transactional(readOnly = true)
     public DecoderSettings getDecoderSettings() {
         return clubProfileRepository.findCurrent()
@@ -91,6 +92,12 @@ public class ClubProfileService {
                 });
     }
 
+    /**
+     * Saves the club's details to the one profile, creating it the first time, and records {@code CLUB_PROFILE_CREATED}
+     * or {@code CLUB_PROFILE_UPDATED}.
+     *
+     * @throws IllegalArgumentException if the time zone is not a valid zone id
+     */
     public ClubProfile createOrUpdateProfile(Actor actor, ClubDetails details) {
         try {
             ZoneId.of(details.timezone());
@@ -147,11 +154,13 @@ public class ClubProfileService {
         return privacyNotice();
     }
 
+    /** Every governing body the club has added. */
     @Transactional(readOnly = true)
     public List<GoverningBodyAffiliation> listAffiliations() {
         return affiliationRepository.findAll();
     }
 
+    /** Adds a governing body and records {@code AFFILIATION_CREATED}. */
     public GoverningBodyAffiliation createAffiliation(Actor actor, String code, String displayName,
                                                       boolean membershipRequired) {
         GoverningBodyAffiliation affiliation = new GoverningBodyAffiliation();
@@ -165,6 +174,7 @@ public class ClubProfileService {
         return saved;
     }
 
+    /** Changes a governing body and records {@code AFFILIATION_UPDATED}; a 404 if there is no such one. */
     public GoverningBodyAffiliation updateAffiliation(Actor actor, Long id, String code, String displayName,
                                                       boolean membershipRequired) {
         GoverningBodyAffiliation affiliation = affiliationRepository.getOrThrow(id);
@@ -179,6 +189,7 @@ public class ClubProfileService {
         return saved;
     }
 
+    /** Removes a governing body and records {@code AFFILIATION_DELETED}; a 404 if there is no such one. */
     public void deleteAffiliation(Actor actor, Long id) {
         GoverningBodyAffiliation affiliation = affiliationRepository.getOrThrow(id);
         affiliationRepository.deleteById(id);
@@ -190,6 +201,9 @@ public class ClubProfileService {
     /**
      * Changes the announcer settings with {@code change}, which edits the profile it is given, and records the
      * settings and default voice before and after. Both audio endpoints go through here.
+     *
+     * <p>When the change affects the clips the server makes (see {@link ClubAudioSettings#clipsDifferFrom}, or a new
+     * default voice) an {@link AudioSettingsChangedEvent} is published after the transaction commits.
      */
     public ClubProfile changeAudioSettings(Actor actor, Consumer<ClubProfile> change) {
         ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
@@ -210,6 +224,13 @@ public class ClubProfileService {
         return saved;
     }
 
+    /**
+     * Sets where the decoder is and records {@code DECODER_CONFIG_CHANGED}. A {@link DecoderSettingsChangedEvent} is
+     * published so the decoder listener reconnects; the listener handles it after this transaction commits, so it never
+     * reconnects to an address that was rolled back.
+     *
+     * @throws IllegalStateException if the club details have not been saved yet
+     */
     @Transactional
     public ClubProfile updateDecoderConfig(Actor actor, String host, Integer port, String protocol) {
         ClubProfile profile = clubProfileRepository.findCurrent()

@@ -10,6 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Set;
 
+/**
+ * Stores the club's logo image in object storage and points the club profile at it. It accepts PNG, JPEG, WebP or SVG
+ * up to 2 MB and records {@code CLUB_LOGO_CHANGED}. The previous file stays in storage.
+ */
 @Service
 @Transactional
 public class LogoUploadService {
@@ -31,6 +35,13 @@ public class LogoUploadService {
         this.audit = audit;
     }
 
+    /**
+     * Saves the image and sets it as the profile's logo, in the caller's write transaction.
+     *
+     * @return the URL the logo is served from @throws IllegalArgumentException if the file is missing, not an allowed
+     * image type, over 2 MB or unreadable @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is
+     * no such club profile
+     */
     public String uploadLogo(Actor actor, Long clubProfileId, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file part is required");

@@ -300,6 +300,7 @@ public record ClubAudioSettings(
                 runningOrderDepth, countdownIntervals, null, null, null, null, null);
     }
 
+    /** Every switch on and the standard timings: used before a club profile exists or has saved any. */
     public static ClubAudioSettings defaults() {
         return new ClubAudioSettings(true, true, true, true, true, 3, new int[]{600, 300, 120, 60, 30});
     }
