@@ -61,6 +61,16 @@ class TtsClipServiceTest {
     }
 
     @Test
+    void generateClip_ttsDisabled_returnsNullWithoutCallingPiper() {
+        TtsClipService disabled = new TtsClipService(piperClient, storageService,
+                new TtsProperties("piper:10200", "en_GB-alan-medium", false, null));
+
+        assertNull(disabled.generateCountdownClip(1L, 60, "Race, 1 minute", null));
+        verify(piperClient, never()).synthesize(any(), any());
+        verify(storageService, never()).upload(any(), any());
+    }
+
+    @Test
     void generateCountdownClip_storesWithCorrectKey() {
         when(piperClient.synthesize(eq("Race Finals, 5 minutes"), anyString())).thenReturn(FAKE_WAV);
         when(storageService.upload(

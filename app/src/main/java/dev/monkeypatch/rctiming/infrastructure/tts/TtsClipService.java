@@ -14,7 +14,8 @@ import org.springframework.stereotype.Service;
  *   <li>{@code audio/race/{raceId}/grid-{entryId}-{voiceId}.wav} — grid call (stagger) clip for one entry</li>
  *   <li>{@code audio/race/{raceId}/finish-{voiceId}.wav} — race-finished clip</li>
  * </ul>
- * When Piper is unavailable, methods log a warning and return {@code null} (graceful degradation).
+ * When Piper is unavailable, methods log a warning and return {@code null} (graceful degradation). When TTS is
+ * switched off ({@code tts.enabled=false}) they return {@code null} without logging: that is a choice, not a fault.
  */
 @Service
 public class TtsClipService {
@@ -90,6 +91,9 @@ public class TtsClipService {
 
     private String synthesizeAndUpload(String key, String text, String voice,
                                         String logPattern, Object... logArgs) {
+        if (!properties.enabled()) {
+            return null;
+        }
         try {
             byte[] wavData = piperClient.synthesize(text, voice);
             return storageService.upload(key, wavData);
