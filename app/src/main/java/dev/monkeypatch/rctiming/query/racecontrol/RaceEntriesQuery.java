@@ -22,6 +22,7 @@ public class RaceEntriesQuery {
         this.dsl = dsl;
     }
 
+    /** The race's drivers in grid position order, with entries that have no grid position last. */
     public List<RaceEntryDto> findForRace(long raceId) {
         return dsl
                 .select(

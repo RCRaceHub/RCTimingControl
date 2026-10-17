@@ -48,6 +48,7 @@ public class DatabaseConfig {
     private final String jdbcUrl;
     private LazyConnectionDataSourceProxy readTransactionDataSource;
 
+    /** Creates the data directory if it is missing and works out the JDBC URL both pools share. */
     public DatabaseConfig(DatabaseProperties properties) {
         this.properties = properties;
         this.vendor = properties.vendor();
@@ -60,6 +61,7 @@ public class DatabaseConfig {
         this.jdbcUrl = vendor.jdbcUrl(dataDirectory);
     }
 
+    /** The write pool, the primary data source: Flyway and every write transaction use it. */
     @Bean
     @Primary
     DataSource dataSource() {
@@ -67,6 +69,7 @@ public class DatabaseConfig {
         return new HikariDataSource(config);
     }
 
+    /** The read pool: {@code rctiming.database.read-connections} connections, each set to refuse writes. */
     @Bean
     @Qualifier("read")
     DataSource readDataSource() {
@@ -90,6 +93,7 @@ public class DatabaseConfig {
         return new JdbcTransactionManager(readTransactionDataSource(readDataSource));
     }
 
+    /** Lets jOOQ pick the write or read connection per call; see {@link TransactionRoutingConnectionProvider}. */
     @Bean
     ConnectionProvider jooqConnectionProvider(DataSource dataSource, @Qualifier("read") DataSource readDataSource) {
         return new TransactionRoutingConnectionProvider(
@@ -108,6 +112,7 @@ public class DatabaseConfig {
         return readTransactionDataSource;
     }
 
+    /** Points Flyway at each configured migration location's sub-folder for the chosen vendor. */
     @Bean
     FlywayConfigurationCustomizer vendorMigrationLocations() {
         String[] locations = properties.migrationLocations().stream()
@@ -116,6 +121,7 @@ public class DatabaseConfig {
         return configuration -> configuration.locations(locations);
     }
 
+    /** Sets the vendor's SQL dialect on jOOQ. */
     @Bean
     DefaultConfigurationCustomizer vendorJooqDialect() {
         return configuration -> configuration.set(vendor.jooqDialect());

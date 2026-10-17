@@ -20,12 +20,16 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /**
  * jOOQ read side of the spectator boards (L12).
  * Everything is scoped to one event, which is the one asked for or, by default, the event
- * that is racing now.
+ * that is racing now. Called anonymously from the board endpoints, so it returns display data only. Each method is its
+ * own read snapshot, so a board that calls several can see a race move between them. "Run order" below is the
+ * round's sequence in the event, then the race's sequence in the round, then
+ * heat number, then id.
  */
 @Component
 @ReadTransaction
 public class BoardQuery {
 
+    /** The event a board is showing. */
     public record BoardEvent(long id, String name) {}
 
     private final DSLContext dsl;

@@ -59,8 +59,10 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
     /** Copies every column except the id from the entity into the record. */
     protected abstract void toRecord(E entity, R record);
 
+    /** The entity's id, or null while it is new and unsaved. */
     protected abstract Long idOf(E entity);
 
+    /** Sets the id the database gave a newly inserted entity. */
     protected abstract void setId(E entity, Long id);
 
     /** Columns written on insert and never changed by an update, such as a creation time. */
@@ -68,6 +70,7 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         return List.of();
     }
 
+    /** The entity with this id, or empty. Reads on the read pool unless called inside a transaction. */
     public Optional<E> findById(Long entityId) {
         return findOne(id.eq(entityId));
     }
@@ -104,10 +107,12 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         return new EntityNotFoundException(entityName() + " not found: " + entityId);
     }
 
+    /** Every entity, in id order. */
     public List<E> findAll() {
         return findWhere(null);
     }
 
+    /** The entities with these ids, in id order; ids with no row are skipped. */
     public List<E> findAllById(Iterable<Long> ids) {
         List<Long> wanted = new ArrayList<>();
         ids.forEach(wanted::add);
@@ -159,6 +164,7 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         }
     }
 
+    /** Saves each entity as {@link #save} does, in one transaction. */
     @Transactional
     public List<E> saveAll(Iterable<E> entities) {
         List<E> saved = new ArrayList<>();
@@ -166,6 +172,7 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         return saved;
     }
 
+    /** Deletes the row; no error when there is none. A foreign key still pointing at it fails the delete. */
     @Transactional
     public void deleteById(Long entityId) {
         dsl.deleteFrom(table).where(id.eq(entityId)).execute();
@@ -196,6 +203,7 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         return findWhere(condition, id.asc());
     }
 
+    /** Every entity matching the condition (all of them when it is null), in the given order. */
     protected List<E> findWhere(Condition condition, SortField<?>... order) {
         return dsl.selectFrom(table)
                 .where(condition == null ? DSL.noCondition() : condition)

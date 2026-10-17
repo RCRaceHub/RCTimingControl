@@ -21,6 +21,17 @@ public class ResultsOutboxQuery {
         this.dsl = dsl;
     }
 
+    /**
+     * One queued or sent export.
+     *
+     * @param revision      the export revision number for the event
+     * @param reason        why it was queued, such as a race finishing or a correction
+     * @param status        the delivery state, as the sender records it
+     * @param attempts      how many times sending has been tried
+     * @param nextAttemptAt when the sender will try next, if it is waiting to retry
+     * @param lastError     the last failure message, or null
+     * @param sentAt        when delivery succeeded, or null while unsent
+     */
     public record OutboxRow(
             long id,
             long eventId,
@@ -35,6 +46,7 @@ public class ResultsOutboxQuery {
             Instant sentAt) {
     }
 
+    /** The most recent {@code limit} outbox rows across all events, newest first (by id). */
     public List<OutboxRow> latest(int limit) {
         return dsl.select(RESULTS_OUTBOX.ID, RESULTS_OUTBOX.EVENT_ID, EVENTS.NAME, RESULTS_OUTBOX.REVISION,
                         RESULTS_OUTBOX.REASON, RESULTS_OUTBOX.STATUS, RESULTS_OUTBOX.ATTEMPTS,

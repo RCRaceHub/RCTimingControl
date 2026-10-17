@@ -21,6 +21,7 @@ public class AdminEventQueryService {
         this.dsl = dsl;
     }
 
+    /** Every meeting in any state, newest meeting date first. A meeting without a track is listed with a null track name. */
     public List<AdminEventListDto> listEvents() {
         return dsl.select(
                     EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE, EVENTS.STATUS,

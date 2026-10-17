@@ -45,6 +45,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RES
 @Service
 public class CompetitorDataExportService {
 
+    /** The audit log action recorded for each export. */
     public static final String AUDIT_ACTION = "COMPETITOR_EXPORTED";
 
     private final DSLContext dsl;
@@ -60,7 +61,14 @@ public class CompetitorDataExportService {
         this.audit = audit;
     }
 
-    /** Runs on the write connection, so the audit row is committed with the read that produced the export. */
+    /**
+     * Builds the export: a map of section name to rows (each row a column-name map straight from the table), plus a {@code note} explaining what is and is not included. Timestamps are the stored
+     * values, so UTC microseconds. Runs on the write connection, so the audit row is committed with the read that
+     * produced the export.
+     *
+     * @param adminUserId the admin who asked, recorded in the audit row
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such competitor
+     */
     @Transactional
     public Map<String, Object> export(Long competitorId, Long adminUserId) {
         competitors.requireExists(competitorId);

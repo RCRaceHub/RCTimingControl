@@ -30,7 +30,11 @@ public class LapThresholdQuery {
         this.dsl = dsl;
     }
 
-    /** The shortest lap that counts, in milliseconds, by entry id, for the entries of one race that have one. */
+    /**
+     * The shortest lap that counts, in milliseconds, by entry id, for the entries of one race that have one. An
+     * entry's class limit is used when it has a minimum set, else the track default's minimum; an entry with neither
+     * is left out of the map. Judged by the entry's own class, not the race's.
+     */
     public Map<Long, Long> minimumLapsForRace(long raceId) {
         TrackLapThresholds classRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("class_rule");
         TrackLapThresholds trackRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("track_rule");
@@ -54,7 +58,11 @@ public class LapThresholdQuery {
         return minimums;
     }
 
-    /** How long after the clock runs out the race waits for another crossing, in milliseconds, if its track says. */
+    /**
+     * How long after the clock runs out the race waits for another crossing, in milliseconds, if its track says.
+     * If the race's class has limits of its own they decide, and a class with no wait set has none; otherwise the
+     * track default applies. Empty when no limit applies or the race has no track.
+     */
     public Optional<Long> maxLastLapMsForRace(long raceId) {
         TrackLapThresholds classRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("class_rule");
         TrackLapThresholds trackRule = TrackLapThresholds.TRACK_LAP_THRESHOLDS.as("track_rule");

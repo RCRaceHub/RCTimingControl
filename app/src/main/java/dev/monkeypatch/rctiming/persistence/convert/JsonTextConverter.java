@@ -7,7 +7,12 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 
 /**
  * Turns a value into JSON text for a column and back. Subclass it per value type; the jOOQ
- * repositories use the subclass to map that column.
+ * repositories use the subclass to map that column. The columns hold JSON text guarded by
+ * {@code CHECK (json_valid(...))}, so reading and writing is done here in Java, not by the database.
+ * A null maps to a null column in both directions, and a value that cannot be written or a stored
+ * text that cannot be read raises an {@link IllegalArgumentException}.
+ *
+ * @param <T> the Java type held in the column
  */
 public abstract class JsonTextConverter<T> {
 

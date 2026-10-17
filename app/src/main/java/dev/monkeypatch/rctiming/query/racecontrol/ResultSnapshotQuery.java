@@ -35,6 +35,12 @@ public class ResultSnapshotQuery {
         this.snapshotJson = snapshotJson;
     }
 
+    /**
+     * The stored result of a race with its label, lap-by-lap position history and the club's name and logo for
+     * printing. Times in the rows are milliseconds; {@code finishedAt} is the snapshot's own finish time.
+     *
+     * @throws EntityNotFoundException if the race has no stored result (not finished yet, or no such race)
+     */
     public ResultSnapshotDto load(long raceId) {
         var row = dsl
                 .select(

@@ -24,6 +24,10 @@ public final class AfterCommit {
     private AfterCommit() {
     }
 
+    /**
+     * Runs {@code work} once the current transaction has committed, or at once when there is none. If the
+     * transaction rolls back the work never runs. A {@link RuntimeException} it throws is logged and swallowed.
+     */
     public static void run(Runnable work) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             work.run();

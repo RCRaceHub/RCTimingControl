@@ -70,6 +70,15 @@ public class ChampionshipStandingsQuery {
         this.qualifyingStandings = qualifyingStandings;
     }
 
+    /**
+     * The standings of every class in the championship, computed afresh from the stored results (nothing is saved).
+     * Rows come grouped by racing class in class id order, and within a class by total points highest first, then
+     * by display name; the position is the row's place in its class, so equal points are not given a shared rank
+     * here. A driver appears once per class they scored or were on a grid in. Runs in one read snapshot, so the
+     * rounds, rules and results agree with each other.
+     *
+     * @throws EntityNotFoundException if there is no such championship
+     */
     public List<StandingsRowDto> computeStandings(Long championshipId) {
         Rules rules = rules(championshipId);
         List<ChampionshipRound> rounds = rounds(championshipId);
@@ -112,6 +121,7 @@ public class ChampionshipStandingsQuery {
     /** A driver at one event, the key exclusions are kept by. */
     private record DriverEvent(Long driverId, Long eventId) {}
 
+    /** Loads the championship's scoring settings, per-class overrides, points scale and exclusions. */
     private Rules rules(Long championshipId) {
         var championship = dsl
                 .select(CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y, CHAMPIONSHIPS.SCORING_SOURCE,
@@ -181,6 +191,7 @@ public class ChampionshipStandingsQuery {
                 new EventResults(List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     }
 
+    /** The linked events in round number order. */
     private List<ChampionshipRound> rounds(Long championshipId) {
         return dsl.select(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID, CHAMPIONSHIP_EVENT_LINKS.ROUND_NUMBER, EVENTS.NAME)
                 .from(CHAMPIONSHIP_EVENT_LINKS)
@@ -385,6 +396,12 @@ public class ChampionshipStandingsQuery {
         }
     }
 
+    /**
+     * Adds one round's results to the tally: a result per driver and class who has a placed result, scored from the
+     * better of their qualifying and final positions (or the sum of both points, see {@link SourcePositions}), and a
+     * DNS result for each driver on a scoring grid who has none in their class. An excluded driver's round is kept,
+     * flagged excluded and worth nothing.
+     */
     private static void score(ChampionshipRound round, EventResults results, Rules rules, Tally tally) {
         Long eventId = round.eventId();
         tally.displayNames.putAll(results.displayNames());
@@ -549,6 +566,7 @@ public class ChampionshipStandingsQuery {
         });
     }
 
+    /** One unranked row per driver and class: rounds marked with their drops, and the total with the bonuses added. */
     private static List<StandingsRowDto> rows(Tally tally, Rules rules) {
         List<StandingsRowDto> rows = new ArrayList<>();
         tally.rounds.forEach((driverClass, rounds) -> {

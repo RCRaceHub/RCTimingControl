@@ -34,6 +34,10 @@ public class EntryHistoryQuery {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * The entry's history, oldest first by time. The two sources are merged in memory with a stable sort, so rows
+     * with the same time keep entry-log rows ahead of audit rows. An unknown entry id gives an empty list.
+     */
     public List<EntryHistoryDto> forEntry(long entryId) {
         List<EntryHistoryDto> all = new ArrayList<>(entryLog(entryId));
         all.addAll(auditRows(entryId));

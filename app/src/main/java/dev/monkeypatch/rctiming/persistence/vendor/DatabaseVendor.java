@@ -95,6 +95,10 @@ public enum DatabaseVendor {
             }
         }
 
+        /**
+         * Opens the file read-only and runs {@code PRAGMA integrity_check}, then looks for Flyway's history
+         * table, so a damaged file or some other SQLite database is refused before a restore replaces anything.
+         */
         @Override
         public void checkBackup(Path backup) throws SQLException {
             SQLiteConfig config = new SQLiteConfig();
@@ -116,6 +120,11 @@ public enum DatabaseVendor {
             }
         }
 
+        /**
+         * Checks the backup, refuses if another process holds the database, moves the database and its
+         * {@code -wal} and {@code -shm} files aside with a {@code .before-restore-} timestamp suffix, then copies the
+         * backup in under a temporary name and renames it into place atomically so a crash never leaves half a file.
+         */
         @Override
         public void restore(Path backup, Path dataDirectory) throws SQLException, IOException {
             checkBackup(backup);
@@ -225,6 +234,7 @@ public enum DatabaseVendor {
         return migrationFolder;
     }
 
+    /** The jOOQ dialect {@code DatabaseConfig} sets on the shared jOOQ configuration. */
     public SQLDialect jooqDialect() {
         return jooqDialect;
     }

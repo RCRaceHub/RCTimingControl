@@ -15,6 +15,11 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
+/**
+ * The schedule anonymous visitors see: meetings that are published, open for entries, closed for entries or in
+ * progress, with which of their races have finished (so results can be linked) and the championship they count
+ * towards. Meetings in any other state are not listed. Runs as one read snapshot, so the three queries agree.
+ */
 @Service
 @ReadTransaction
 public class EventScheduleQuery {
@@ -27,6 +32,7 @@ public class EventScheduleQuery {
         this.dsl = dsl;
     }
 
+    /** The listed meetings, soonest date first (ties by id), each with its finished races and championship. */
     public List<EventScheduleDto> getPublicSchedule() {
         var events = dsl
                 .select(EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE)

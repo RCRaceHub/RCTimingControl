@@ -45,6 +45,11 @@ public class RaceHistoryQuery {
         this.dsl = dsl;
     }
 
+    /**
+     * The race's history, oldest first by time. Each source is read oldest first and the merge is a stable sort, so
+     * events with the same time keep penalties, then incidents, marshal laps, absences, transponder links and
+     * audit rows in that order. Empty for a race with no history or one that does not exist.
+     */
     public List<RaceHistoryDto> forRace(long raceId) {
         List<RaceHistoryDto> all = new ArrayList<>();
         all.addAll(penalties(raceId));
