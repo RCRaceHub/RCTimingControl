@@ -436,7 +436,7 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void history_showsAMarshalPenaltyGivenWithoutAnAbsenceOnTheRaceItWasGivenIn() {
+    void history_showsTheMissAMarshalPenaltyRecordedForItself() {
         RaceAndEntry re = seedRaceAndEntry(RaceStatus.RUNNING);
         long raceId = re.race().getId();
         restTemplate.exchange("/api/v1/race-control/referee/race/" + raceId + "/apply-marshal-penalty",
@@ -451,8 +451,27 @@ public class RefereeControllerIT extends AbstractIntegrationTest {
                 new HttpEntity<>(refereeHeaders()),
                 new org.springframework.core.ParameterizedTypeReference<>() {});
 
-        assertThat(resp.getBody()).extracting(r -> r.get("kind")).containsExactly("MARSHAL_PENALTY");
-        assertThat(resp.getBody().get(0).get("actor")).isEqualTo("Race Referee");
+        assertThat(resp.getBody()).extracting(r -> r.get("kind"))
+                .containsExactly("MARSHAL_ABSENCE", "MARSHAL_PENALTY");
+        assertThat(resp.getBody().get(1).get("actor")).isEqualTo("Race Referee");
+    }
+
+    @Test
+    void aSecondMarshalPenaltyOnTheSameRace_isAConflictNotADuplicateKeyError() {
+        RaceAndEntry re = seedRaceAndEntry(RaceStatus.RUNNING);
+        long raceId = re.race().getId();
+        Map<String, Object> body = Map.of("entryId", re.entry().getId(), "eventId", resolveEventId(re.race()),
+                "kind", "QUALIFYING_SCORE");
+        String url = "/api/v1/race-control/referee/race/" + raceId + "/apply-marshal-penalty";
+
+        ResponseEntity<Map> first = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST,
+                new HttpEntity<>(body, refereeHeaders()), Map.class);
+        ResponseEntity<Map> second = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST,
+                new HttpEntity<>(body, refereeHeaders()), Map.class);
+
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(second.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(second.getBody().toString()).contains("penalty already");
     }
 
     // --- Helpers ---
