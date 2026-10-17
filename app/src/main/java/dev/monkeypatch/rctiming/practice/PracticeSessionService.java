@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * CRUD and state-machine service for practice sessions.
- * Delegates to PracticeTimingService for live timing start/stop lifecycle.
+ * CRUD and state-machine service for practice sessions ({@code IDLE -> RUNNING -> STOPPED}).
+ * Delegates to PracticeTimingService for live timing start/stop lifecycle. Commands run on request threads in a
+ * write transaction, each with an audit row. A session stops by an official's command or when a race starts
+ * ({@link #onRaceStatusChanged}), because practice and racing share the one decoder.
  */
 @Service
 public class PracticeSessionService {
@@ -52,6 +54,12 @@ public class PracticeSessionService {
         this.raceRepository = raceRepository;
     }
 
+    /**
+     * Creates an idle session, optionally tied to an event. {@code bestLapN} and {@code pauseSeconds} fall back to
+     * the session defaults when not given.
+     *
+     * @throws IllegalArgumentException for an unknown event, or a lap count or pause below 1
+     */
     @Transactional
     public PracticeSessionDto create(Actor actor, CreateRequest request) {
         PracticeSession session = new PracticeSession();
@@ -90,6 +98,7 @@ public class PracticeSessionService {
         return sessionRepository.findById(id).map(this::toDto);
     }
 
+    /** The newest sessions, by creation time, up to {@code limit}. */
     public List<PracticeSessionDto> findRecent(int limit) {
         return sessionRepository.findAll().stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
@@ -98,6 +107,11 @@ public class PracticeSessionService {
                 .toList();
     }
 
+    /**
+     * Starts an idle session and begins live timing for it.
+     *
+     * @throws StateConflictException (409) if the session is not idle, or a race is running
+     */
     @Transactional
     public PracticeSessionDto start(Actor actor, Long sessionId) {
         PracticeSession session = sessionRepository.getOrThrow(sessionId);
@@ -121,6 +135,11 @@ public class PracticeSessionService {
         return toDto(session);
     }
 
+    /**
+     * Stops a running session and ends its live timing; the laps already saved stay.
+     *
+     * @throws StateConflictException (409) if the session is not running
+     */
     @Transactional
     public PracticeSessionDto stop(Actor actor, Long sessionId) {
         return stop(actor, sessionId, null);
@@ -172,6 +191,7 @@ public class PracticeSessionService {
         }
     }
 
+    /** The session as sent to the screens, with its event's name looked up. */
     public PracticeSessionDto toDto(PracticeSession session) {
         return new PracticeSessionDto(
                 session.getId(),

@@ -32,6 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Practice session lap processing service.
  *
+ * Unlike race timing, each practice lap is saved as it happens: the live table is built in memory
+ * ({@link LivePracticeState}) and the lap row is written in the same transaction.
+ *
  * Listens to the same LapPassingEvent as LapTimingService, but only acts when a practice session is
  * RUNNING. Practice is meant for the time between races: LapTimingService ignores a passing with no running
  * race ({@link LapPassingEvent#NO_RACE}), so then only practice counts it. A running race stops practice
@@ -96,6 +99,10 @@ public class PracticeTimingService {
     /**
      * Handle LapPassingEvent. Processes only when a practice session is RUNNING and no race is: a passing
      * with a race id belongs to the race and LapTimingService.
+     *
+     * <p>Runs on the timing thread, in its own write transaction per passing. The lap row is saved and the table
+     * broadcast inside it. A failure rolls that passing's lap back and, being an event listener, reaches
+     * {@code DecoderListener}, which logs it and carries on.
      */
     @EventListener
     @Transactional
@@ -169,7 +176,8 @@ public class PracticeTimingService {
     }
 
     /**
-     * Get current timing snapshot.
+     * Get current timing snapshot. Called from a request thread when a screen loads, before the live broadcasts
+     * take over.
      * Returns in-memory state if session is active, else rebuilds from DB (for stopped sessions).
      */
     public List<PracticeTimingRowDto> getSnapshot(Long sessionId) {

@@ -28,6 +28,10 @@ final class PracticeDayAggregator {
 
     private PracticeDayAggregator() {}
 
+    /**
+     * One row per driver, best first: by best N-lap run (a driver without one last), then best lap, then name.
+     * {@code drivers} is asked for each lap, so it should cache; {@code n} is the number of laps to average.
+     */
     static List<PracticeDayRowDto> aggregate(List<Lap> laps, DriverLookup drivers, int n) {
         Map<String, Totals> byDriver = new LinkedHashMap<>();
         for (Lap lap : laps) {
@@ -45,6 +49,7 @@ final class PracticeDayAggregator {
         return rows;
     }
 
+    /** Names the driver behind a transponder in a session; supplied by {@link PracticeDayService}. */
     @FunctionalInterface
     interface DriverLookup {
         Driver find(long sessionId, String transponder);

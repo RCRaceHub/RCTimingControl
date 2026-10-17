@@ -9,7 +9,8 @@ import java.util.Set;
 
 /**
  * STOMP broadcast hub for practice sessions.
- * Mirrors LiveTimingHub but uses /topic/practice/{sessionId}/ topics.
+ * Mirrors LiveTimingHub but uses /topic/practice/{sessionId}/ topics. Messages go out at once, from the timing
+ * thread for a passing or a request thread for a link; nothing waits for a commit.
  */
 @Component
 public class PracticeTimingHub {

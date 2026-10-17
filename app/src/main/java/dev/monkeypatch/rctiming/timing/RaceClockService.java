@@ -55,6 +55,11 @@ public class RaceClockService {
         this.clock = clock;
     }
 
+    /**
+     * Starts, pauses or resets the race's clock to match its new status. Runs synchronously on the thread that
+     * published the event, a request thread running the race command. A restart publishes no event, which is why
+     * {@link #clockOf} treats {@code PENDING} separately.
+     */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         Instant now = clock.instant();
@@ -124,10 +129,14 @@ public class RaceClockService {
      *                          staggered
      */
     public record RacePlan(Long durationMs, long staggerIntervalMs) {
+        /** For a race with no length and no stagger, or one that cannot be found. */
         public static final RacePlan NONE = new RacePlan(null, 0);
     }
 
-    /** The race's plan from its format, or empty for an unknown race. */
+    /**
+     * The race's plan from its format, or empty for an unknown race. On the write connection, like {@link #clock}.
+     * {@code LapTimingService} reads it once per race on the timing thread and keeps it, so a passing never queries.
+     */
     @Transactional(readOnly = true)
     public Optional<RacePlan> planOf(long raceId) {
         return raceRepository.findById(raceId).map(race -> {

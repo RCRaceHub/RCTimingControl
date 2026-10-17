@@ -62,6 +62,11 @@ public class PracticeDayService {
      * The practice of the day in the club's time zone (today when no date is given), averaging {@code bestLapN} laps;
      * 5 when not given. Practice laps recorded before racers lost their logins carry only a user id and show as
      * unknown here.
+     *
+     * <p>A transponder is named by the session's own driver list first, else by the one entry in the session's event
+     * that holds the number (withdrawn entries are skipped). Runs on a request thread in a read transaction.
+     *
+     * @throws IllegalArgumentException if {@code bestLapN} is below 1
      */
     public PracticeDayDto day(LocalDate requested, Integer bestLapN) {
         ZoneId zone = clubProfileService.getProfile().map(ClubProfile::getTimezone).map(ZoneId::of)

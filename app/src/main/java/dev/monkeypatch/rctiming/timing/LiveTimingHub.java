@@ -31,6 +31,11 @@ public class LiveTimingHub {
         this.messagingTemplate = messagingTemplate;
     }
 
+    /**
+     * Sends the race's whole position table, not a delta, so a client that misses one message is right again at
+     * the next. Sent at once, not after a commit: live positions live in memory and nothing is stored. Called from
+     * the timing thread for each passing and from request threads for marshal laps, penalties and transponder links.
+     */
     public void broadcastTimingUpdate(long raceId, List<LiveTimingRowDto> rows) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/timing", rows);
     }
@@ -43,10 +48,15 @@ public class LiveTimingHub {
         sendAfterCommit("/topic/race/" + raceId + "/state", new RaceStateChangeDto(raceId, newStatus.name()));
     }
 
+    /** Tells the race director's screens a marshal lap was given or taken away. Sent at once. */
     public void broadcastMarshalAdjustment(long raceId, MarshalAdjustmentDto dto) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/marshal", dto);
     }
 
+    /**
+     * Prompts the referee to link a transponder that matched no entry, or more than one, in the running race.
+     * Sent once per number per race, from the timing thread.
+     */
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
                 Map.of("raceId", raceId, "transponderNumber", transponderNumber));

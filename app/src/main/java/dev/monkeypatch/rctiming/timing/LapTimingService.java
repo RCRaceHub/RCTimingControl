@@ -258,7 +258,11 @@ public class LapTimingService {
     /**
      * Links an unknown transponder to an entry for the given race.
      * Retroactively credits all passings from that transponder since race start and
-     * broadcasts updated positions via STOMP.
+     * broadcasts updated positions via STOMP. Called from a request thread (the referee's
+     * unknown-transponder flow) by {@code TransponderLinkService}; the link lives in memory only and
+     * takes priority over the entries' own transponder numbers for the rest of the race.
+     *
+     * @return the positions after the credit, as broadcast
      */
     public List<dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto> linkTransponder(
             long raceId, String transponderNumber, long entryId) {

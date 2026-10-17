@@ -55,6 +55,12 @@ public class PracticeDriverService {
      * Names a transponder in a session, replacing any name it already had there. Give {@code competitorId} for an
      * existing competitor, or {@code newName} to make a walk-in: a name that matches someone who already exists is
      * refused (409 with the matches) unless {@code confirmNewCompetitor} says it is a different person.
+     *
+     * <p>The match and its audit row are saved in one transaction. The running session's live table is told only
+     * after the commit, so it never shows a name that was rolled back.
+     *
+     * @throws IllegalArgumentException if the transponder number is blank or too long, or neither a competitor nor
+     *                                  a usable new name is given
      */
     @Transactional
     public PracticeDriverDto link(Actor actor, Long sessionId, LinkRequest request) {
@@ -93,6 +99,7 @@ public class PracticeDriverService {
         return new PracticeDriverDto(transponder, competitor.getId(), name);
     }
 
+    /** The transponders named in the session, with the competitor each was matched to. */
     @Transactional(readOnly = true)
     public List<PracticeDriverDto> list(Long sessionId) {
         return driverRepository.findByPracticeSessionId(sessionId).stream()

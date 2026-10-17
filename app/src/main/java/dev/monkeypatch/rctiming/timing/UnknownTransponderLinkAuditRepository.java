@@ -8,7 +8,8 @@ import org.springframework.stereotype.Repository;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
 
 /**
- * Repository for retroactive transponder link audit records.
+ * Repository for retroactive transponder link audit records. Rows are only ever added, by
+ * {@code TransponderLinkService}, in the same transaction as the link request that caused them.
  */
 @Repository
 public class UnknownTransponderLinkAuditRepository
