@@ -6,6 +6,9 @@ spring:
     # The demo data is versioned 2000+, so a demo database has a higher version than new
     # migrations. Out-of-order lets migrations added after it still apply.
     out-of-order: true
+    # The demo seed is edited as the demo grows, and a kept demo volume has the old checksum. Validating
+    # it would stop the app starting; a demo database is disposable (`down -v` gives the new data).
+    validate-on-migrate: false
 
 rctiming:
   database:
