@@ -54,6 +54,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">Pos</TableHead>
+              <TableHead>Car</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead className="text-right">Laps</TableHead>
               <TableHead className="text-right">Last Lap</TableHead>
@@ -78,6 +79,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                 )}
               >
                 <TableCell className="font-mono font-semibold">{row.position}</TableCell>
+                <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
                   <span>{row.driverName}</span>
                   {row.finished && <FinishedFlag />}

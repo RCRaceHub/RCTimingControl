@@ -14,6 +14,7 @@ export function BoardLiveTable({ rows }: { rows: LiveTimingRowDto[] }) {
       <thead>
         <tr className="border-b border-slate-700 text-left text-lg text-slate-400 lg:text-2xl">
           <th className="py-2 pr-4">Pos</th>
+          <th className="py-2 pr-4">Car</th>
           <th className="py-2 pr-4">Driver</th>
           <th className="py-2 pr-4 text-right">Laps</th>
           <th className="py-2 pr-4 text-right">Last</th>
@@ -25,6 +26,7 @@ export function BoardLiveTable({ rows }: { rows: LiveTimingRowDto[] }) {
         {rows.map((row) => (
           <tr key={row.entryId} className="border-b border-slate-800">
             <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
+            <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 font-semibold">{row.driverName}{row.finished && <FinishedFlag />}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>

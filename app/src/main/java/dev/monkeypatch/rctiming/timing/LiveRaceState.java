@@ -36,6 +36,8 @@ public class LiveRaceState {
     final Map<String, Long> runtimeLinks = new HashMap<>();
     /** Entry display names: entryId → "First Last", populated by LapTimingService on state creation. */
     final Map<Long, String> entryNames = new HashMap<>();
+    /** Entry car numbers for this race: entryId → car number; an entry with none recorded has no key. */
+    final Map<Long, String> entryCarNumbers = new HashMap<>();
     /**
      * Fastest lap recorded across ALL entries this race session. It is never cleared: a lap removed by a
      * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
@@ -86,6 +88,13 @@ public class LiveRaceState {
     /** Stores a display name for an entry. Called by LapTimingService at state creation time. */
     public void putEntryName(long entryId, String displayName) {
         entryNames.put(entryId, displayName);
+    }
+
+    /** Stores an entry's car number for this race, shown beside its position. A null number is ignored. */
+    public void putEntryCarNumber(long entryId, String carNumber) {
+        if (carNumber != null) {
+            entryCarNumbers.put(entryId, carNumber);
+        }
     }
 
     /** As {@link #applyLapPassing(LapPassingEvent, Long, long)}, at the server's current time. */
@@ -223,6 +232,7 @@ public class LiveRaceState {
             result.add(new LiveTimingRowDto(
                     pos.getEntryId(),
                     entryNames.getOrDefault(pos.getEntryId(), "Entry " + pos.getEntryId()),
+                    entryCarNumbers.get(pos.getEntryId()),
                     position,
                     pos.getLapsCompleted(),
                     pos.getLastPassingTimeMs(),

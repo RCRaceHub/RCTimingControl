@@ -38,9 +38,9 @@ describe('QualifyingStandingsPage', () => {
           heatsTotal: 4,
           finalsStarted: false,
           rows: [
-            { position: 1, entryId: 10, driverName: 'Fast Freddie', lapsCompleted: 12, bestLapMs: 19_000, points: 3,
+            { position: 1, entryId: 10, driverName: 'Fast Freddie', carNumber: '4', lapsCompleted: 12, bestLapMs: 19_000, points: 3,
               rounds: [{ place: 1, counted: true }, { place: 2, counted: true }, { place: 4, counted: false }] },
-            { position: 2, entryId: 11, driverName: 'A. L.', lapsCompleted: 10, bestLapMs: null, points: 7,
+            { position: 2, entryId: 11, driverName: 'A. L.', carNumber: null, lapsCompleted: 10, bestLapMs: null, points: 7,
               rounds: [{ place: 3, counted: true }, { place: 4, counted: true }, { place: 5, counted: false }] },
           ],
         },
@@ -72,7 +72,7 @@ describe('QualifyingStandingsPage', () => {
           heatsFinished: 1,
           heatsTotal: 1,
           finalsStarted: false,
-          rows: [{ position: 1, entryId: 10, driverName: 'Solo', lapsCompleted: 9, bestLapMs: 20_000, points: null, rounds: [] }],
+          rows: [{ position: 1, entryId: 10, driverName: 'Solo', carNumber: '9', lapsCompleted: 9, bestLapMs: 20_000, points: null, rounds: [] }],
         },
       ],
     });

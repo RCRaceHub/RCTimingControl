@@ -28,6 +28,7 @@ A few things help at the track:
 
 - Use the laptop's network address from the About page. `localhost` only works on the laptop itself.
 - The QR codes on the boards and printouts hold the same address, so a phone on the venue wifi opens the live page. A phone that is not on the venue wifi can't reach it.
+- Every screen that shows a position also shows the car number beside it: live timing and the pit boards, the overlay, the qualifying tables, the race control, referee and cockpit screens, and the driver pickers for incidents and penalties. A car with no number recorded shows a dash.
 - Names on every public screen follow each competitor's public name setting (full name, initials only, or hidden with the car number standing in), so a junior's name can be kept off the screens.
 
 ## The streaming overlay for OBS

@@ -56,6 +56,7 @@ function row(position: number, driverName: string, lastLapMs: number): LiveTimin
   return {
     entryId: position,
     driverName,
+    carNumber: String(position),
     position,
     lapsCompleted: 10 - position,
     lastPassingTimeMs: 0,

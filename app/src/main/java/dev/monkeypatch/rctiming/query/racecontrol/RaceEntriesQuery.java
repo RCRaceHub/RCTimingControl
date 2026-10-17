@@ -27,6 +27,7 @@ public class RaceEntriesQuery {
         return dsl
                 .select(
                         RACE_ENTRIES.ENTRY_ID,
+                        RACE_ENTRIES.CAR_NUMBER,
                         DSL.coalesce(COMPETITORS.DISPLAY_NAME, DSL.val("Unknown")).as("driverName"))
                 .from(RACE_ENTRIES)
                 .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
@@ -36,7 +37,7 @@ public class RaceEntriesQuery {
                 .fetch(r -> new RaceEntryDto(
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
-                        null // not read yet, though race_entries.car_number holds it (ENTRY-03)
+                        r.get(RACE_ENTRIES.CAR_NUMBER) == null ? null : r.get(RACE_ENTRIES.CAR_NUMBER).toString()
                 ));
     }
 }

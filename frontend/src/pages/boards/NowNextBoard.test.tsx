@@ -53,6 +53,7 @@ function liveRow(overrides: Partial<LiveTimingRowDto>): LiveTimingRowDto {
   return {
     entryId: 1,
     driverName: 'Jane Doe',
+    carNumber: '7',
     position: 1,
     lapsCompleted: 5,
     lastPassingTimeMs: 0,

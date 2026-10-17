@@ -290,6 +290,8 @@ public class LapTimingService {
     private void loadEntryNames(long raceId, LiveRaceState state) {
         PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
+            state.putEntryCarNumber(raceEntry.getEntryId(),
+                    raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)

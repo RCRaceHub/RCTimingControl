@@ -8,6 +8,8 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Builds each class's overall qualifying table from {@link QualifyingStandingsService}, so officials see the
@@ -34,6 +38,7 @@ public class QualifyingTableService {
     private final EventClassRepository eventClassRepository;
     private final RacingClassRepository racingClassRepository;
     private final RaceRepository raceRepository;
+    private final RaceEntryRepository raceEntryRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final QualifyingStandingsService qualifyingStandingsService;
@@ -42,6 +47,7 @@ public class QualifyingTableService {
     public QualifyingTableService(EventClassRepository eventClassRepository,
                                   RacingClassRepository racingClassRepository,
                                   RaceRepository raceRepository,
+                                  RaceEntryRepository raceEntryRepository,
                                   EntryRepository entryRepository,
                                   CompetitorRepository competitorRepository,
                                   QualifyingStandingsService qualifyingStandingsService,
@@ -49,6 +55,7 @@ public class QualifyingTableService {
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
+        this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.qualifyingStandingsService = qualifyingStandingsService;
@@ -77,11 +84,13 @@ public class QualifyingTableService {
             List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL);
             String className = racingClassRepository.findById(eventClass.getRacingClassId())
                     .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
+            Map<Long, String> carNumbers = carNumbers(heats);
             List<QualifyingTableDto.Row> rows = new ArrayList<>();
             int position = 1;
             for (QualifyingResult result : qualifyingStandingsService.rankedResultsFor(eventClass.getId())) {
                 rows.add(new QualifyingTableDto.Row(position++, result.entryId(),
-                        driverName(result.entryId(), restricted), result.lapsCompleted(),
+                        driverName(result.entryId(), restricted), carNumbers.get(result.entryId()),
+                        result.lapsCompleted(),
                         result.hasBestLap() ? result.bestLapMs() : null, result.points(),
                         result.rounds().stream()
                                 .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList()));
@@ -91,6 +100,19 @@ public class QualifyingTableService {
                     finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING), rows));
         }
         return tables;
+    }
+
+    /** Each entry's car number in the given heats, by entry id; a later heat's number replaces an earlier one. */
+    private Map<Long, String> carNumbers(List<Race> heats) {
+        Map<Long, String> carNumbers = new HashMap<>();
+        for (Race heat : heats) {
+            for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                if (raceEntry.getCarNumber() != null) {
+                    carNumbers.put(raceEntry.getEntryId(), raceEntry.getCarNumber().toString());
+                }
+            }
+        }
+        return carNumbers;
     }
 
     /** The driver's name; with a snapshot, as the public may see it (the entry id tells hidden drivers apart). */
