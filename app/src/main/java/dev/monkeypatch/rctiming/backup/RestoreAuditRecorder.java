@@ -36,6 +36,10 @@ public class RestoreAuditRecorder {
         this.audit = audit;
     }
 
+    /**
+     * Runs once, when the app is ready, on the main thread. Writes the audit row, as the OS user who ran the
+     * command, then removes the note. A failure is logged and leaves the note for the next start.
+     */
     @EventListener(ApplicationReadyEvent.class)
     public void recordPendingRestore() {
         try {

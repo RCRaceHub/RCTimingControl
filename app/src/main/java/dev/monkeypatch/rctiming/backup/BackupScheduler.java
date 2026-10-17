@@ -20,19 +20,26 @@ public class BackupScheduler {
         this.backupService = backupService;
     }
 
-    /** After the event is saved as completed, so the backup includes the day's final results. */
+    /**
+     * After the event is saved as completed, so the backup includes the day's final results. Runs after the
+     * closing transaction commits, on an async executor thread, so closing the day never waits for the copy.
+     */
     @Async
     @TransactionalEventListener
     public void onDayClosed(EventCompleted completed) {
         run("day-close");
     }
 
-    /** 02:00 server time unless {@code rctiming.backup.nightly-cron} says otherwise; {@code -} turns it off. */
+    /**
+     * 02:00 server time unless {@code rctiming.backup.nightly-cron} says otherwise; {@code -} turns it off. Runs on
+     * a scheduler thread.
+     */
     @Scheduled(cron = "${rctiming.backup.nightly-cron:0 0 2 * * *}")
     public void nightly() {
         run("nightly");
     }
 
+    /** Takes the backup and logs a failure rather than throwing, as neither caller has anyone to tell. */
     private void run(String reason) {
         try {
             backupService.backup(reason);

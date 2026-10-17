@@ -27,6 +27,7 @@ class LiveFeedConnection {
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
     private volatile WebSocket webSocket;
 
+    /** Whether the socket is open both ways; false once either side has closed, even if the relay did it. */
     boolean isOpen() {
         WebSocket ws = webSocket;
         return ws != null && !ws.isOutputClosed() && !ws.isInputClosed();

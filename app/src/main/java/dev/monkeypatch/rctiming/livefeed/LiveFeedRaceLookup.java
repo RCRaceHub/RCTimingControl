@@ -74,6 +74,12 @@ public class LiveFeedRaceLookup {
     public record GridCar(long entryId, String displayName, Integer carNumber) {
     }
 
+    /**
+     * Reads the race, its event, class and grid in one transaction on the write connection, so it never shows a
+     * half-committed race command. Empty if the race or its event is gone. Called every second per followed race
+     * from the live feed's thread. Names are those the public may see (#265); a car whose competitor cannot be
+     * found has a null name.
+     */
     @Transactional(readOnly = true)
     public Optional<RaceInfo> find(long raceId) {
         Race race = raceRepository.findById(raceId).orElse(null);

@@ -61,6 +61,11 @@ public class ResultsSender {
         this.restClient = restClientBuilder.requestFactory(requestFactory).build();
     }
 
+    /**
+     * One pass over the exports that are due, oldest first. Does nothing until the address and key are set, so
+     * exports wait in the outbox. Never throws: a failure to record an outcome is logged and the export is sent
+     * again on the next pass.
+     */
     @Scheduled(initialDelay = 15_000, fixedDelayString = "${rctiming.racehub.send-interval-ms:15000}")
     public void sendDue() {
         if (!endpoint.snapshot().sendingEnabled()) {
@@ -88,7 +93,11 @@ public class ResultsSender {
         }
     }
 
-    /** Sends one export and records the outcome. Returns whether it was accepted. */
+    /**
+     * Sends one export and records the outcome. Returns whether it was accepted. Any {@code 2xx} counts; every
+     * other answer, and a connection failure, is recorded as a failed attempt with a retry time. Blocks the
+     * scheduler thread for up to the connect and read timeouts.
+     */
     boolean send(ResultsOutboxItem item) {
         String key = idempotencyKey(item);
         URI url = endpoint.resultsUrl();

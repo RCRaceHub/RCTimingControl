@@ -20,6 +20,10 @@ public record RaceHubResultsProperties(URI resultsUrl, String token) {
     static final String URL_SETTING = "rctiming.racehub.results-url";
     static final String TOKEN_SETTING = "rctiming.racehub.token";
 
+    /**
+     * Normalises both settings: blank counts as unset. Throws at startup for an address that would send the key in
+     * the clear to another machine.
+     */
     public RaceHubResultsProperties {
         resultsUrl = SecureEndpoint.url(resultsUrl, URL_SETTING, "https", "http");
         token = SecureEndpoint.token(token);

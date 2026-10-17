@@ -117,6 +117,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         this.sequence = new AtomicLong(clock.millis());
     }
 
+    /** The feed's state for race control's status bar; also what is broadcast when the state changes. */
     public LiveFeedStatusDto status() {
         return new LiveFeedStatusDto(state.name(),
                 properties.relayUrl() == null ? null : properties.relayUrl().getHost(),
@@ -127,6 +128,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         return state;
     }
 
+    /** Changes the state and tells race control, once per change. A failed broadcast never disturbs the feed. */
     private void setState(LiveFeedState newState) {
         if (state != newState) {
             state = newState;
@@ -138,7 +140,11 @@ public class LiveFeedPublisher implements SmartLifecycle {
         }
     }
 
-    /** Follows races from the grid to the finish; the race clock itself is kept by {@link RaceClockService}. */
+    /**
+     * Follows races from the grid to the finish; the race clock itself is kept by {@link RaceClockService}. Runs
+     * synchronously on the thread that published the event, a request thread inside the race command's
+     * transaction, so it only records what to follow and leaves all sending to the feed's own thread.
+     */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         long raceId = event.getRaceId();
@@ -167,6 +173,11 @@ public class LiveFeedPublisher implements SmartLifecycle {
         }
     }
 
+    /**
+     * Sends whatever is due. With nothing due the connection is left alone, closed after
+     * {@link #IDLE_CLOSE_AFTER}. A send that fails closes the connection and starts the backoff; the messages not
+     * yet sent are dropped, since the next pass builds them afresh.
+     */
     private void sendDue() {
         if (!properties.configured()) {
             setState(LiveFeedState.NOT_SET_UP);
@@ -205,6 +216,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         }
     }
 
+    /** Opens the connection unless the backoff says to wait. Returns whether it is open now. */
     private boolean connect(Instant now) {
         if (now.isBefore(nextAttempt)) {
             return false;
@@ -227,6 +239,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         return true;
     }
 
+    /** Closes the connection and doubles the wait before the next attempt, up to {@link #MAX_RETRY}. */
     private void failed(Instant now, String doing, Exception e) {
         connection.close();
         if (state != LiveFeedState.RECONNECTING) {
@@ -238,7 +251,12 @@ public class LiveFeedPublisher implements SmartLifecycle {
         retryDelay = retryDelay.multipliedBy(2).compareTo(MAX_RETRY) > 0 ? MAX_RETRY : retryDelay.multipliedBy(2);
     }
 
-    /** The messages due this pass, oldest race first. Drops races that need no more sending. */
+    /**
+     * The messages due this pass, oldest race first. Drops races that need no more sending. Each followed race is
+     * read afresh from the database through {@link LiveFeedRaceLookup} on the feed's thread, so a slow read delays
+     * only the feed. A race is due when its content changed or it was last sent {@link #RESEND_EVERY} ago; its
+     * last message is the one that finds it finished (or back to pending).
+     */
     private List<Outgoing> collect(Instant now) {
         List<Outgoing> due = new ArrayList<>();
         for (Map.Entry<Long, Followed> followed : races.entrySet().stream()
@@ -276,6 +294,10 @@ public class LiveFeedPublisher implements SmartLifecycle {
         sent.remove(raceId);
     }
 
+    /**
+     * The race's standings: the cars timed so far in running order (the frozen final order once finished), then the
+     * cars on the grid that have not crossed the line, in grid order (a grid car with no name is left out).
+     */
     private Content content(LiveFeedRaceLookup.RaceInfo race, Followed followed) {
         List<LiveTimingRowDto> rows = followed.frozenRows() != null ? followed.frozenRows()
                 : lapTimingService.peek(race.raceId()).map(LiveRaceState::calculatePositions).orElse(List.of());
@@ -324,6 +346,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         return cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
     }
 
+    /** Starts the {@code live-feed} thread, ticking once a second. Idempotent. */
     @Override
     public synchronized void start() {
         if (executor != null) {
@@ -337,6 +360,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
         executor.scheduleWithFixedDelay(this::tick, TICK.toMillis(), TICK.toMillis(), TimeUnit.MILLISECONDS);
     }
 
+    /** Stops the thread, interrupting a pass in flight, and says goodbye to the relay. */
     @Override
     public synchronized void stop() {
         if (executor != null) {

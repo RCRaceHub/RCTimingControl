@@ -28,6 +28,10 @@ public class ResultsExportTriggers {
         this.exportService = exportService;
     }
 
+    /**
+     * A race finishing, or being abandoned, asks for an export. Runs synchronously inside the race command's
+     * transaction; a failure is logged and never fails the command.
+     */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         if (event.getNewStatus() == RaceStatus.FINISHED) {
@@ -35,17 +39,22 @@ public class ResultsExportTriggers {
         }
     }
 
+    /** A correction to a finished race asks for a new export, in the correcting transaction. */
     @EventListener
     public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
         run(() -> exportService.requestForRace(event.raceId(), ExportReason.CORRECTION));
     }
 
+    /** Closing the race day (the event completed) asks for a final export, in the closing transaction. */
     @EventListener
     public void onDayClosed(EventCompleted event) {
         run(() -> exportService.request(event.eventId(), ExportReason.DAY_CLOSE));
     }
 
-    /** Builds and queues each requested export. A failure leaves the request in place for the next pass. */
+    /**
+     * Builds and queues each requested export, on a scheduler thread. Each event is queued in its own transaction,
+     * so one failure leaves the request in place for the next pass and does not affect the others.
+     */
     @Scheduled(initialDelay = 2_000, fixedDelayString = "${rctiming.racehub.queue-interval-ms:2000}")
     public void queuePending() {
         for (long eventId : exportService.pendingEventIds()) {
