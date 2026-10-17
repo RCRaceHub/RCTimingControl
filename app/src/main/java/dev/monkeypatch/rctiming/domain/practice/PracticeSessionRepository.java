@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions.PRACTICE_SESSIONS;
 
+/** Repository for {@link PracticeSession} ({@code practice_sessions}). */
 @Repository
 public class PracticeSessionRepository extends JooqRepository<PracticeSession, PracticeSessionsRecord> {
 

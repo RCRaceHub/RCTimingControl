@@ -9,6 +9,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
+/** Repository for {@link Round} ({@code rounds}). */
 @Repository
 public class RoundRepository extends JooqRepository<Round, RoundsRecord> {
 

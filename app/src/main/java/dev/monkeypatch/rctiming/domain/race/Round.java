@@ -5,6 +5,10 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * A round of an event (table {@code rounds}): a set of races of one type, run in order. {@code roundNumber} counts
+ * rounds of the same type and {@code sequenceInEvent} is the order across the whole event.
+ */
 public class Round implements CreatedAt, UpdatedAt {
 
     private Long id;

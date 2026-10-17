@@ -26,6 +26,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Moves a race through its lifecycle, {@code PENDING -> GRID -> RUNNING -> STOPPED -> RUNNING} or to {@code FINISHED},
+ * from one table of allowed moves. Each command checks its move, sets the times it owns, saves the race, publishes a
+ * {@link RaceStatusChangedEvent} and has the live timing hub broadcast the new state; finishing also stores the result
+ * snapshot and applies the finishing order to the next round and any bump-up promotion. An invalid move throws {@link
+ * dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException} (HTTP 409).
+ *
+ * The commands change and save the race they are given but do not open a transaction themselves: they join the
+ * caller's.
+ */
 @Service
 public class RaceStateMachineService {
 
@@ -86,6 +96,10 @@ public class RaceStateMachineService {
     // start, finish and abandon set the race's times before the transition saves it, so every
     // listener reads them.
 
+    /**
+     * Calls the race to the grid. A final cannot be called until every qualifying heat of its class has finished, and
+     * the start type is refreshed from the class's current format first.
+     */
     public void callGrid(Race race) {
         requireAllowed(race, RaceStatus.GRID);
         requireQualifyingComplete(race);
@@ -122,10 +136,15 @@ public class RaceStateMachineService {
         transition(race, RaceStatus.RUNNING);
     }
 
+    /** Stops a running race; {@link #start} resumes it. */
     public void stop(Race race) {
         transition(race, RaceStatus.STOPPED);
     }
 
+    /**
+     * Finishes a running or stopped race and sets its finish time. Stores the result snapshot, and when the last
+     * qualifying heat of a class finishes seeds its finals (a failure there is logged and does not fail the finish).
+     */
     public void finish(Race race) {
         requireAllowed(race, RaceStatus.FINISHED);
         race.setFinishedAt(Instant.now());

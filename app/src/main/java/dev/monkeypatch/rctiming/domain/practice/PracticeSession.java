@@ -5,6 +5,11 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * An open practice session (table {@code practice_sessions}): laps are recorded for any transponder that crosses while
+ * it is {@link PracticeStatus#RUNNING}, whether or not it is entered in an event. {@code eventId} is null for a
+ * standalone session. {@code bestLapN} is how many consecutive laps the best average is taken over.
+ */
 public class PracticeSession implements CreatedAt, UpdatedAt {
 
     private Long id;
@@ -65,6 +70,11 @@ public class PracticeSession implements CreatedAt, UpdatedAt {
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
     // State machine transitions
+    /**
+     * Starts the session and stamps the start time. The entity changes in memory; the caller saves it.
+     *
+     * @throws StateConflictException if it is not IDLE (HTTP 409)
+     */
     public void start() {
         if (this.status != PracticeStatus.IDLE) {
             throw new StateConflictException("Cannot start session in " + this.status + " state");
@@ -73,6 +83,11 @@ public class PracticeSession implements CreatedAt, UpdatedAt {
         this.startedAt = Instant.now();
     }
 
+    /**
+     * Stops the session and stamps the stop time. The entity changes in memory; the caller saves it.
+     *
+     * @throws StateConflictException if it is not RUNNING (HTTP 409)
+     */
     public void stop() {
         if (this.status != PracticeStatus.RUNNING) {
             throw new StateConflictException("Cannot stop session in " + this.status + " state");

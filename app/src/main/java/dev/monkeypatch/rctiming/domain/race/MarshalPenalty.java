@@ -3,6 +3,10 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import java.time.Instant;
 
+/**
+ * A penalty applied for a {@link MarshalAbsence} (table {@code marshal_penalties}). {@code kind} says what it costs the
+ * driver (see {@link MarshalPenaltyKind}); it is worked out when results are scored, not when it is applied.
+ */
 public class MarshalPenalty {
 
     private Long id;

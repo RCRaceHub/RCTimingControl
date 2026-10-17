@@ -3,6 +3,13 @@ package dev.monkeypatch.rctiming.domain.practice;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * One lap a transponder completed in open practice (table {@code practice_laps}). {@code lapTimeMs} is in milliseconds
+ * and {@code crossingTime} is when the transponder crossed the line (UTC microseconds in the database). {@code
+ * runNumber} is the run the lap belongs to: a transponder quiet for longer than the session's {@code pauseSeconds}
+ * starts a new run, and the pause itself is not a lap. {@code userId} is only set on laps recorded before racers
+ * stopped having logins (L10).
+ */
 public class PracticeLap implements CreatedAt {
 
     private Long id;

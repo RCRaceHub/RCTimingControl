@@ -4,6 +4,11 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * A finished race's stored result (table {@code result_snapshots}), written once when the race finishes, since live
+ * positions are not stored during a race. The JSON columns hold lists read and written with {@link ResultSnapshotJson}:
+ * {@code positionsJson} the result rows, {@code lapHistoryJson} who was where after each lap.
+ */
 public class ResultSnapshot implements CreatedAt {
 
     private Long id;

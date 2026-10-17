@@ -9,6 +9,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PENALTIES;
 
+/** Repository for {@link Penalty} ({@code penalties}). */
 @Repository
 public class PenaltyRepository extends JooqRepository<Penalty, PenaltiesRecord> {
 

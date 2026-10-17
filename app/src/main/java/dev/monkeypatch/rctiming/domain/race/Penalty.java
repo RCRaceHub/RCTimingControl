@@ -4,6 +4,10 @@ package dev.monkeypatch.rctiming.domain.race;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * A referee's penalty against an entry in a race (table {@code penalties}). {@code value} is a number of laps for
+ * {@link PenaltyType#LAP} and a number of seconds for {@link PenaltyType#TIME}.
+ */
 public class Penalty {
 
     private Long id;

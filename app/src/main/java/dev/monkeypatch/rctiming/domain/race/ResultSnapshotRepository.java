@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
 
+/** Repository for {@link ResultSnapshot} ({@code result_snapshots}); a race has at most one. */
 @Repository
 public class ResultSnapshotRepository extends JooqRepository<ResultSnapshot, ResultSnapshotsRecord> {
 

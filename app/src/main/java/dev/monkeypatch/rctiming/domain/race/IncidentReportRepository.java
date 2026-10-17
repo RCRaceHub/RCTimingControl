@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports.INCIDENT_REPORTS;
 
+/** Repository for {@link IncidentReport} ({@code incident_reports}). */
 @Repository
 public class IncidentReportRepository extends JooqRepository<IncidentReport, IncidentReportsRecord> {
 

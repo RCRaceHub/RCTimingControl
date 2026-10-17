@@ -1,6 +1,11 @@
 package dev.monkeypatch.rctiming.domain.race;
 
 
+/**
+ * An entry's place on a race's grid (table {@code race_entries}): one row per entry per race. {@code gridPosition} is
+ * the starting order, {@code carNumber} the car number, and {@code bumped} marks a driver moved up into this final from
+ * the final below (#45).
+ */
 public class RaceEntry {
 
     private Long id;

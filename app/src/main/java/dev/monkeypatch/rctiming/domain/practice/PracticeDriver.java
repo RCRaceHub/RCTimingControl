@@ -3,7 +3,11 @@ package dev.monkeypatch.rctiming.domain.practice;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
-/** Who a transponder is in one practice session (#151). */
+/**
+ * Who a transponder is in one practice session (#151; table {@code practice_drivers}). Practice has no entries, so an
+ * official names a transponder as a competitor for the session; a transponder is named once per session. Moves to
+ * another competitor when two are merged.
+ */
 public class PracticeDriver implements CreatedAt {
 
     private Long id;

@@ -5,6 +5,14 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * One race: a heat or a final of one class in a round (table {@code races}). {@code status} is the lifecycle in {@link
+ * RaceStatus}, moved only by {@link RaceStateMachineService}. {@code heatNumber} numbers the class's heats within a
+ * round and {@code finalLetter} is set (A, B, ...) for a final and null for a heat; {@code sequenceInRound} is the
+ * running order within the round. The start, finish and abandon times are set by the state machine as it moves the
+ * race, and the live positions are never stored here: they are worked out in memory and only the result is stored, as a
+ * {@link ResultSnapshot} when the race finishes.
+ */
 public class Race implements CreatedAt, UpdatedAt {
 
     private Long id;
@@ -19,6 +27,7 @@ public class Race implements CreatedAt, UpdatedAt {
 
     private String finalLetter;
 
+    /** How the race starts; refreshed from the class's format when the grid is called. */
     private StartType startType;
 
     private RaceStatus status = RaceStatus.PENDING;
