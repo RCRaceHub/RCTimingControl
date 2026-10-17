@@ -53,7 +53,7 @@ export function useAutoRun(eventId: number | null) {
     onError: failed('Skip ahead'),
   });
   const settings = useMutation({
-    mutationFn: (value: { gapSeconds: number; holdBeforeFinals: boolean }) => setAutoRunSettings(eventId!, value),
+    mutationFn: (value: { gapSeconds: number; holdBeforeFinals: boolean; autoStart: boolean }) => setAutoRunSettings(eventId!, value),
     onSuccess: saved,
     onError: failed('Saving the auto run settings'),
   });

@@ -338,6 +338,8 @@ export type AutoRunStateDto = {
   heldMessage: string | null;
   gapSeconds: number;
   holdBeforeFinals: boolean;
+  /** Whether auto run switches itself on when a race is started by hand. */
+  autoStart: boolean;
   /** The server's clock when this was built, for counting down without trusting this browser's clock. */
   serverTime?: string;
 };
@@ -366,7 +368,7 @@ export async function autoRunSkipTo(eventId: number, seconds: number): Promise<A
 
 export async function setAutoRunSettings(
   eventId: number,
-  settings: { gapSeconds: number; holdBeforeFinals: boolean },
+  settings: { gapSeconds: number; holdBeforeFinals: boolean; autoStart: boolean },
 ): Promise<AutoRunStateDto> {
   const { data } = await api.put<AutoRunStateDto>(`${autoRunUrl(eventId)}/settings`, settings);
   return data;

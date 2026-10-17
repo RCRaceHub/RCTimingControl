@@ -16,6 +16,7 @@ function stateOf(overrides: Partial<AutoRunStateDto> = {}): AutoRunStateDto {
     heldMessage: null,
     gapSeconds: 180,
     holdBeforeFinals: true,
+    autoStart: true,
     ...overrides,
   };
 }
@@ -75,7 +76,7 @@ describe('AutoRunPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save settings' }));
 
     expect(autoRun.settings.mutate).toHaveBeenCalledWith(
-      { gapSeconds: 240, holdBeforeFinals: true },
+      { gapSeconds: 240, holdBeforeFinals: true, autoStart: true },
       expect.anything(),
     );
   });

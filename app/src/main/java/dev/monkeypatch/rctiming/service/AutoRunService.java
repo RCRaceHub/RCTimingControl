@@ -83,6 +83,7 @@ public class AutoRunService {
      * @param heldMessage   the detail, for a refused command
      * @param gapSeconds    the event's gap between races
      * @param holdBeforeFinals whether the event holds before the finals
+     * @param autoStart     whether auto run switches itself on when a race is started by hand
      * @param serverTime    the app's clock when this was built, so a browser whose own clock is out can still count
      *                      down to {@code startAt} correctly
      */
@@ -127,6 +128,8 @@ public class AutoRunService {
     }
 
     private final Map<Long, Plan> plans = new ConcurrentHashMap<>();
+    /** Events whose auto run an official stopped, so a race started by hand does not switch it on again. */
+    private final Set<Long> stoppedEvents = ConcurrentHashMap.newKeySet();
 
     private final RunOrderQuery runOrderQuery;
     private final RaceRepository raceRepository;
@@ -174,6 +177,7 @@ public class AutoRunService {
      */
     public synchronized AutoRunState go(Actor actor, long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
+        stoppedEvents.remove(eventId);
         boolean wasArmed = plans.containsKey(eventId);
         Plan plan = plans.computeIfAbsent(eventId, id -> new Plan());
         plan.release = true;
@@ -188,6 +192,7 @@ public class AutoRunService {
     /** Switches auto run off. A race already called to the grid or running is left as it is. */
     public synchronized AutoRunState stop(Actor actor, long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
+        stoppedEvents.add(eventId);
         if (plans.remove(eventId) != null) {
             record(actor, "AUTO_RUN_STOPPED", event, "Stopped auto run for " + event.getName());
         }
@@ -238,9 +243,17 @@ public class AutoRunService {
                 : Optional.of(new BoardView(plan.phase, plan.heldReason, plan.startAt, clock.instant()));
     }
 
-    /** A race of an armed event finished: the next tick plans what follows. */
+    /**
+     * A race of an armed event finished: the next tick plans what follows. A race started by hand switches auto
+     * run on for its event when the event asks for that and an official has not stopped it, so the races carry
+     * on without anyone pressing Go.
+     */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.RUNNING) {
+            armWhenStartedByHand(event.getRaceId());
+            return;
+        }
         if (event.getNewStatus() != RaceStatus.FINISHED || plans.isEmpty()) {
             return;
         }
@@ -254,6 +267,24 @@ public class AutoRunService {
             plan.finishedType = round.getType();
             plan.release = false;
             plan.replan = true;
+        }
+    }
+
+    /** Plans in memory only, as the listener runs in the start's write transaction. The next tick fills it in. */
+    private void armWhenStartedByHand(long raceId) {
+        Race race = raceRepository.findById(raceId).orElse(null);
+        Round round = race == null ? null : roundRepository.findById(race.getRoundId()).orElse(null);
+        if (round == null || plans.containsKey(round.getEventId()) || stoppedEvents.contains(round.getEventId())) {
+            return;
+        }
+        Event event = eventRepository.findById(round.getEventId()).orElse(null);
+        if (event != null && event.isAutoRunAutoStart()) {
+            Plan plan = new Plan();
+            plan.release = false;
+            plan.replan = true;
+            if (plans.putIfAbsent(event.getId(), plan) == null) {
+                log.info("Auto run switched on for event {} by the start of race {}", event.getId(), raceId);
+            }
         }
     }
 

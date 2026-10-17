@@ -148,6 +148,11 @@ public class Events extends TableImpl<EventsRecord> {
      */
     public final TableField<EventsRecord, Boolean> AUTO_RUN_HOLD_BEFORE_FINALS = createField(DSL.name("auto_run_hold_before_finals"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>events.auto_run_auto_start</code>.
+     */
+    public final TableField<EventsRecord, Boolean> AUTO_RUN_AUTO_START = createField(DSL.name("auto_run_auto_start"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BOOLEAN)), this, "");
+
     private Events(Name alias, Table<EventsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

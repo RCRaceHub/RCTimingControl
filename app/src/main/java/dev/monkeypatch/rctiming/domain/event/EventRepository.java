@@ -53,6 +53,7 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         e.setLiveFeedEnabled(r.getLiveFeedEnabled());
         e.setAutoRunGapSeconds(r.getAutoRunGapSeconds());
         e.setAutoRunHoldBeforeFinals(r.getAutoRunHoldBeforeFinals());
+        e.setAutoRunAutoStart(r.getAutoRunAutoStart());
         return e;
     }
 
@@ -72,6 +73,7 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         r.setLiveFeedEnabled(e.isLiveFeedEnabled());
         r.setAutoRunGapSeconds(e.getAutoRunGapSeconds());
         r.setAutoRunHoldBeforeFinals(e.isAutoRunHoldBeforeFinals());
+        r.setAutoRunAutoStart(e.isAutoRunAutoStart());
     }
 
     @Override
