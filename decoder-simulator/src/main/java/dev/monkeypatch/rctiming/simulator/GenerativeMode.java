@@ -19,6 +19,11 @@ import java.util.Random;
  * <p>A STATUS (heartbeat) frame is emitted every 5 seconds. Sequence numbers are
  * monotonically increasing across both PASSING and STATUS records, matching real
  * decoder behaviour.
+ *
+ * <p>The {@code timeSinceStart} field of each PASSING is the seconds since this client's session began (standing in
+ * for decoder power-on), so the app's epoch anchoring sees a clock that starts near zero for every connection. Every
+ * record uses decoder id 20, 300 hits, strength 130 and the dummy CRC {@code xDEAD}; the app's parser does not check
+ * the CRC. Each connected client gets its own run of this mode, with its own sequence numbers.
  */
 public class GenerativeMode {
 

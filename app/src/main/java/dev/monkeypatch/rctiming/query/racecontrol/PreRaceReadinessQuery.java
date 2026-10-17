@@ -40,6 +40,11 @@ public class PreRaceReadinessQuery {
     /**
      * Load the pre-race readiness data for the given race.
      *
+     * <p>The grid call has a slot per entry on the race, in grid order with unseeded entries (position 0) last. The
+     * marshal duty is the drivers of the race before this one in the event's run order, or for the first race of the
+     * event the last race of its own round. The returned {@code startType} is null and the stagger interval 0: the
+     * caller adds the race's start details with {@link PreRaceReadinessDto#withStart}.
+     *
      * @param raceId the race to load readiness for
      * @return a fully populated PreRaceReadinessDto
      * @throws EntityNotFoundException if no race with this ID exists

@@ -29,6 +29,10 @@ import java.util.function.Consumer;
  * <p>Owns single instances of {@link Rc4TextParser}, {@link EpochAnchor}, and
  * {@link SeqGapDetector} that persist across reconnects so the epoch is not lost on
  * transient TCP drops.
+ *
+ * <p>Threading: it runs one Netty event loop thread, which does the connecting, reading, parsing and reconnect
+ * scheduling, and calls both callbacks. {@code onStatus} is also called from the thread that calls {@link #stop()}.
+ * Lines are framed on line ends (at most 1024 bytes) and decoded as US-ASCII.
  */
 public class AmbRc4TimingSource implements TimingSource {
 
@@ -36,8 +40,11 @@ public class AmbRc4TimingSource implements TimingSource {
 
     /** Connection state reported to the onStatus callback. */
     public enum ConnectionState {
+        /** The TCP connection to the decoder is open. */
         CONNECTED,
+        /** The connection failed or dropped and a retry is scheduled. */
         RECONNECTING,
+        /** The source was stopped; no further attempts are made. */
         DISCONNECTED
     }
 

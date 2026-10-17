@@ -23,6 +23,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACIN
 @ReadTransaction
 public class EntrySearchQuery {
 
+    /** The most matches one search returns. */
     static final int SEARCH_LIMIT = 25;
 
     private final DSLContext dsl;
@@ -31,7 +32,11 @@ public class EntrySearchQuery {
         this.dsl = dsl;
     }
 
-    /** Case-insensitive substring match on the competitor's name. A blank query finds nothing. */
+    /**
+     * Case-insensitive substring match on the competitor's name among one event's entries, by name then class,
+     * capped at {@link #SEARCH_LIMIT}. A blank query finds nothing. {@code %}, {@code _} and backslash in the query
+     * are matched literally.
+     */
     public List<EntrySearchDto> searchByName(long eventId, String query) {
         if (query == null || query.isBlank()) {
             return List.of();

@@ -1,5 +1,10 @@
 package dev.monkeypatch.rctiming.query.championship;
 
+/**
+ * A driver's result in one round (one linked event) of a championship, as part of a {@link StandingsRowDto}.
+ * A DNS round has position 0 and points 0 but still counts towards the Y of best-X-from-Y. Position and points are
+ * both 0 for an excluded round.
+ */
 public record RoundResultDto(
         int roundNumber,
         Long eventId,

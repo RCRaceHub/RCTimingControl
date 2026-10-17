@@ -24,6 +24,7 @@ public record DatabaseProperties(
         @DefaultValue("db/migration") List<String> migrationLocations,
         @DefaultValue("4") int readConnections) {
 
+    /** The configured data folder, or the per-user or per-machine default when none is set. */
     public Path effectiveDataDirectory() {
         return dataDirectory != null ? dataDirectory : DataDirectories.defaultDirectory();
     }

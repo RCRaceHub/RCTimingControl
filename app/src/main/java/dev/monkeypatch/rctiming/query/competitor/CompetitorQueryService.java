@@ -33,6 +33,7 @@ public class CompetitorQueryService {
         this.dsl = dsl;
     }
 
+    /** Every competitor by display name, ties by id, with the speech name worked out for each. */
     public List<CompetitorSummaryDto> listAll() {
         return dsl.select(COMPETITORS.ID, COMPETITORS.DISPLAY_NAME, COMPETITORS.BRCA_NUMBER, COMPETITORS.HOME_CLUB,
                         COMPETITORS.SPOKEN_NAME, COMPETITORS.NAME_VISIBILITY)
@@ -67,6 +68,10 @@ public class CompetitorQueryService {
     /**
      * Competitors that may be one person entered twice: the same name (ignoring case and spacing) or
      * the same BRCA number. A pair that shares both is listed once (#123).
+     *
+     * <p>Groups come name groups first, then BRCA-only groups, each in the order of the first competitor in the
+     * name-sorted list. A group is only reported when it holds two or more competitors. The BRCA number is compared
+     * after trimming but case-sensitively; a blank one never matches.
      */
     public List<CompetitorDuplicateGroupDto> listPossibleDuplicates() {
         List<CompetitorSummaryDto> all = listAll();

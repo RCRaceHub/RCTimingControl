@@ -41,12 +41,17 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /**
  * Builds an event's Results Export v1 document (#27) from its result snapshots, penalties and championship
  * standings. Read-only; the caller decides the revision.
+ *
+ * <p>The whole build runs in one read snapshot. Only finished races are included, each with its stored result rows
+ * (races with no snapshot are sent with no rows). Entries from RaceHub are identified by RaceHub's ids; anything else
+ * is sent like a walk-in, by RCTC ids. The championship section covers every championship the event is linked to.
  */
 @Component
 @ReadTransaction
 public class ResultsExportQuery {
 
-    static final String SYSTEM = "RCTimingControl";
+    /** The {@code source.system} name sent in every export. */
+    static final String SYSTEM ="RCTimingControl";
 
     private final DSLContext dsl;
     private final ResultSnapshotJson snapshotJson;
@@ -59,6 +64,13 @@ public class ResultsExportQuery {
         this.standingsQuery = standingsQuery;
     }
 
+    /**
+     * The export document for one event at the given revision.
+     *
+     * @param revision    the revision number the caller allocated for this export
+     * @param generatedAt when the export was made; sent as an ISO-8601 instant
+     * @throws EntityNotFoundException if there is no such event
+     */
     public ResultsExportV1 build(long eventId, long revision, Instant generatedAt) {
         var event = dsl.select(EVENTS.NAME, EVENTS.EVENT_DATE, EVENTS.STATUS, EVENTS.RACEHUB_EVENT_ID)
                 .from(EVENTS)
@@ -238,6 +250,10 @@ public class ResultsExportQuery {
         return championships;
     }
 
+    /**
+     * One class's standings, highest points first and by name within equal points. Equal points share a position
+     * and the next differing score takes its place in the list (1, 1, 3).
+     */
     private List<ResultsExportV1.Standing> standings(List<StandingsRowDto> rows, long eventId,
                                                      Map<Long, CompetitorRef> competitors) {
         List<StandingsRowDto> sorted = new ArrayList<>(rows);

@@ -26,7 +26,10 @@ public class OfficialQueryService {
         this.dsl = dsl;
     }
 
-    /** Every official, enabled ones first, then by name. */
+    /**
+     * Every official, enabled ones first, then by first and last name (ties by id). Roles are read in a separate
+     * statement, so they come from the same snapshot as the users only because the class is a read transaction.
+     */
     public List<OfficialDto> listAll() {
         Map<Long, List<String>> roles = new LinkedHashMap<>();
         dsl.select(USER_ROLES.USER_ID, USER_ROLES.ROLE)

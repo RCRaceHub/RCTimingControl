@@ -20,6 +20,10 @@ public class AdminEntryQueryService {
         this.dsl = dsl;
     }
 
+    /**
+     * Every entry of the class at the meeting, withdrawn ones included, oldest submission first. The competitor name
+     * is a left join, so it is null if the competitor row is missing.
+     */
     public List<AdminEntryDto> listEntriesForClass(Long eventId, Long eventClassId) {
         return dsl.select(
                         ENTRIES.ID,

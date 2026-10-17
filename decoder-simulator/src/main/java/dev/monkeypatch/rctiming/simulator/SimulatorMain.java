@@ -35,6 +35,10 @@ public class SimulatorMain {
 
     private static final Logger log = LoggerFactory.getLogger(SimulatorMain.class);
 
+    /**
+     * Parses the flags, starts the chosen mode and blocks until the process is stopped; a shutdown hook stops the
+     * server. Bad flags print usage and exit with status 2.
+     */
     public static void main(String[] args) throws IOException, InterruptedException {
         Map<String, String> flags = parseFlags(args);
 

@@ -16,6 +16,10 @@ import java.util.List;
  * PASSING lines. STATUS lines before the first PASSING are spaced like the decoder's 5 s heartbeat;
  * after that they go out straight away, the PASSING lines setting the pace. The
  * {@code speed} factor compresses wall-clock delay: {@code speed=2.0} plays back at 2×.
+ *
+ * <p>The file holds the records as the decoder sent them, tab-separated, one per line, with or without the leading
+ * SOH byte; the replay sends each with the SOH and CRLF a real decoder uses. It plays once and returns, so the
+ * client sees the connection stay open with no more records. Each connected client gets its own replay from the start.
  */
 public class PlaybackMode {
 
