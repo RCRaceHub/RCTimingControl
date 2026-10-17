@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** A row looked up by id does not exist: 404 with the exception's message as {@code detail}. */
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
@@ -74,6 +75,10 @@ public class GlobalExceptionHandler {
         return detail;
     }
 
+    /**
+     * A request body failed Bean Validation: 400 with an {@code errors} map of field name to message (the first
+     * message wins when a field fails more than one rule).
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
@@ -117,6 +122,8 @@ public class GlobalExceptionHandler {
                 "The change conflicts with other data: something still uses it, or it refers to something missing");
     }
 
+    /** A command the race or event state machine does not allow from its current state, such as starting a finished
+     * race: 409 with the exception's message as {@code detail}. */
     @ExceptionHandler(IllegalStateTransitionException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ProblemDetail handleStateTransition(IllegalStateTransitionException ex) {
@@ -130,6 +137,7 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 
+    /** A change to an official's account that is refused, with the reason as {@code detail}. */
     @ExceptionHandler(OfficialChangeRefusedException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ProblemDetail handleOfficialChangeRefused(OfficialChangeRefusedException ex) {
@@ -161,18 +169,21 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Not signed in");
     }
 
+    /** A date or time that could not be built or parsed: 400, with the exception's message added to {@code detail}. */
     @ExceptionHandler(DateTimeException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail handleDateTimeException(DateTimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid date or time: " + ex.getMessage());
     }
 
+    /** A service rejected an argument: 400, with the exception's message as {@code detail}. */
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    /** A backup could not be written: 500, with the exception's message as {@code detail}. */
     @ExceptionHandler(BackupFailedException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ProblemDetail handleBackupFailed(BackupFailedException ex) {

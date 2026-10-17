@@ -4,6 +4,14 @@ import dev.monkeypatch.rctiming.domain.user.User;
 
 import java.util.List;
 
+/**
+ * The answer to a successful sign-in or refresh ({@link AuthController}).
+ *
+ * @param accessToken the JWT to send as {@code Authorization: Bearer}; it expires after about 15 minutes
+ * @param id          the official's user id, as text
+ * @param roles       the official's role names ({@code ADMIN}, {@code RACE_DIRECTOR}, {@code REFEREE}); a user can hold
+ *                    several
+ */
 public record AuthResponse(
         String accessToken,
         String id,

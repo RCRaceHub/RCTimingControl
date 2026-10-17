@@ -21,7 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 
-/** Officials' sign-in, refresh and sign-out; {@link AuthService} does the work and this sets the cookie. */
+/**
+ * Officials' sign-in, refresh and sign-out under {@code /api/v1/auth}; {@link AuthService} does the work and this
+ * sets the cookie. All three routes are open to anyone ({@code SecurityConfig}) because they are how a caller gets
+ * a token; the answer depends on the credentials or cookie sent. Racers and spectators have no account here.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -34,7 +38,15 @@ public class AuthController {
         this.jwtTokenService = jwtTokenService;
     }
 
-    /** Signs in. Every attempt is recorded in the audit log, wrong passwords included. */
+    /**
+     * Signs in with email and password: {@code POST /api/v1/auth/login}, open to anyone. Every attempt is recorded
+     * in the audit log, wrong passwords included.
+     *
+     * <p>On success answers 200 with an {@link AuthResponse} and sets the refresh cookie. A wrong email or password
+     * is a bare 401 that does not say which was wrong. An account that is not an official is a bare 403. A
+     * disabled account is a 403 {@link ProblemDetail} with {@code reason: "disabled"}, since the password was right.
+     * A malformed body is a 400.
+     */
     @Audited("audit_log")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request, HttpServletResponse response) {
@@ -58,8 +70,13 @@ public class AuthController {
     }
 
     /**
-     * Swaps the refresh cookie for a new access token; see {@link AuthService#refresh}. No cookie at all is the
-     * normal answer to an anonymous visitor and is not recorded.
+     * Swaps the refresh cookie for a new access token: {@code POST /api/v1/auth/refresh}, open to anyone who can
+     * send the cookie; see {@link AuthService#refresh}. No cookie at all is the normal answer to an anonymous
+     * visitor and is not recorded.
+     *
+     * <p>On success answers 200 with an {@link AuthResponse} and sets a new refresh cookie. An unknown, used or
+     * expired token, an official who no longer exists and a disabled account all answer a bare 401; an account
+     * that is no longer an official answers a bare 403.
      */
     @Audited("audit_log")
     @PostMapping("/refresh")
