@@ -6,8 +6,9 @@ import { useEffect, useState } from 'react';
  * clock, so a laptop or tablet whose own clock is a little out still agrees with the race.
  */
 export function useCountdown(startAt: string | null | undefined, serverTime?: string | null): number | null {
-  // The server's idea of now: this browser's clock moved by the gap measured when the answer arrived.
-  const [now, setNow] = useState(() => Date.now());
+  // The server's idea of now: this browser's clock moved by the gap measured when the answer arrived. Null until
+  // the first tick, so a skewed clock never flashes a wrong count.
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     if (!startAt) return;
     const offsetMs = serverTime ? new Date(serverTime).getTime() - Date.now() : 0;
@@ -19,7 +20,7 @@ export function useCountdown(startAt: string | null | undefined, serverTime?: st
       clearInterval(timer);
     };
   }, [startAt, serverTime]);
-  return startAt ? Math.max(0, Math.ceil((new Date(startAt).getTime() - now) / 1000)) : null;
+  return startAt && now !== null ? Math.max(0, Math.ceil((new Date(startAt).getTime() - now) / 1000)) : null;
 }
 
 /** A countdown as m:ss. */
