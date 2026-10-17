@@ -3,12 +3,18 @@ package dev.monkeypatch.rctiming.domain.auth;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * One row of {@code refresh_tokens}: a refresh token issued to an official at sign-in. Only a hash of the token is
+ * stored, never the token itself. A token is single-use: refreshing revokes it and issues a replacement in the same
+ * family, and signing out revokes the whole family (see {@link RefreshTokenRepository}).
+ */
 public class RefreshToken implements CreatedAt {
 
     private Long id;
 
     private Long userId;
 
+    /** Hash of the token the browser holds; looked up with {@link RefreshTokenRepository#findByTokenHash}. */
     private String tokenHash;
 
     private Instant expiresAt;

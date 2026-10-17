@@ -4,6 +4,10 @@ package dev.monkeypatch.rctiming.domain.championship;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * A racing class that counts toward a championship (table {@code championship_classes}); a driver is scored per class.
+ * A non-null {@code bestXFromYX} or {@code bestXFromYY} overrides the championship's value for this class only.
+ */
 public class ChampionshipClass implements CreatedAt {
 
     private Long id;

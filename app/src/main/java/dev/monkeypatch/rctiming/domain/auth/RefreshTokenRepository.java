@@ -13,6 +13,10 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens.REFRESH_TOKENS;
 
+/**
+ * Repository for {@link RefreshToken} ({@code refresh_tokens}). The revoke and rotate methods are single statements
+ * or single write transactions, so they stay correct when two requests present the same token at once.
+ */
 @Repository
 public class RefreshTokenRepository extends JooqRepository<RefreshToken, RefreshTokensRecord> {
 
@@ -20,6 +24,7 @@ public class RefreshTokenRepository extends JooqRepository<RefreshToken, Refresh
         super(dsl, REFRESH_TOKENS, REFRESH_TOKENS.ID);
     }
 
+    /** Finds a token by the hash of its value; revoked and expired tokens are returned too, the caller checks. */
     public Optional<RefreshToken> findByTokenHash(String tokenHash) {
         return findOne(REFRESH_TOKENS.TOKEN_HASH.eq(tokenHash));
     }

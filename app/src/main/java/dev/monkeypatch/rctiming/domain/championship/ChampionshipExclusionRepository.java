@@ -11,6 +11,9 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.CHAMPIONSHIP_EXCLUSIONS;
 
+/**
+ * Repository for {@link ChampionshipExclusion} ({@code championship_exclusions}); newest exclusion first when listed.
+ */
 @Repository
 public class ChampionshipExclusionRepository extends JooqRepository<ChampionshipExclusion, ChampionshipExclusionsRecord> {
 
