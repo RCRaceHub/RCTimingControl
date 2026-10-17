@@ -195,7 +195,7 @@ app/src/main/java/dev/monkeypatch/rctiming/
 
 ## Diagrams and Javadoc
 
-Diagrams for the main flows, the race state machine and the domain model are in [developer/](developer/README.md). Change a diagram in the same pull request as the code it describes. They are developer docs, so they are not added to the docs site manifest.
+Diagrams for the main flows, the race state machine and the domain model are in [developer/](developer/README.md). Change a diagram in the same pull request as the code it describes. They are developer docs, so they are not added to the docs site manifest. The same page says how to build the Javadoc, where CI keeps it and how to serve it at `/javadoc`.
 
 ## Running tests
 
