@@ -9,7 +9,8 @@ export interface DocHeading {
 export function plainHeadingText(raw: string): string {
   return raw
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[`*_]/g, '')
+    .replace(/[`*]/g, '')
+    .replace(/(^|\s)_+|_+(\s|$)/g, '$1$2')
     .replace(/<[^>]*>/g, '')
     .trim();
 }
@@ -17,7 +18,7 @@ export function plainHeadingText(raw: string): string {
 export function headingSlug(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
     .replace(/\s/g, '-');
 }
 
@@ -65,7 +66,8 @@ export function extractDocLinks(markdown: string): { file: string | null; anchor
       continue;
     }
     if (fence) continue;
-    for (const m of line.matchAll(/\]\(([^)\s]*)\)/g)) {
+    // Inline code is an example, not a link
+    for (const m of line.replace(/`[^`]*`/g, '').matchAll(/\]\(([^)\s]*)\)/g)) {
       const target = m[1];
       if (/^[a-z][a-z0-9+.-]*:/i.test(target)) continue;
       const [path, anchor] = target.split('#');

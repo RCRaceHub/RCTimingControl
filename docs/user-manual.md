@@ -33,7 +33,7 @@ Under **Admin → Decoder**, enter the decoder's address, leave the protocol on 
 
 ### 5. Create the event and bring in the entries
 
-Create the event, add its classes with a format each, and publish it. Then fill it with entries on its **Entries** tab from whichever source you have: a RaceHub Entry Export file, an RC-Timing driver CSV, an entry feed (a web address that serves the file), or walk-ins by hand. A file you choose yourself shows what will change before anything is saved. An entry feed set to fetch automatically imports changes that apply cleanly on its own, and holds only the revisions that need a decision for you to review. Sections 4 and 5 of the Admin Configuration Guide cover events, classes and every import. `docs/api.md` (the file format for any booking system) describes the file format a booking system can produce.
+Create the event, add its classes with a format each, and publish it. Then fill it with entries on its **Entries** tab from whichever source you have: a RaceHub Entry Export file, an RC-Timing driver CSV, an entry feed (a web address that serves the file), or walk-ins by hand. A file you choose yourself shows what will change before anything is saved. An entry feed set to fetch automatically imports changes that apply cleanly on its own, and holds only the revisions that need a decision for you to review. Sections 4 and 5 of the Admin Configuration Guide cover events, classes and every import. `docs/api.md` in the source repository, under "The file format for any booking system", describes the file format a booking system can produce.
 
 ### 6. Set up championships
 

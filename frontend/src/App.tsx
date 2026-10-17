@@ -55,6 +55,9 @@ const PublicResultsPage = lazy(() => import('@/pages/results/PublicResultsPage')
 const PublicChampionshipPage = lazy(() => import('@/pages/championships/PublicChampionshipPage'));
 const MeetingGuidePage = lazy(() => import('@/pages/print/MeetingGuidePage'));
 const AdminGuidePage = lazy(() => import('@/pages/print/AdminGuidePage'));
+const DocsLayout = lazy(() => import('@/pages/docs/DocsLayout'));
+const DocPage = lazy(() => import('@/pages/docs/DocPage'));
+const DocsIndexRedirect = lazy(() => import('@/pages/docs/DocPage').then(m => ({ default: m.DocsIndexRedirect })));
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
@@ -158,6 +161,14 @@ const router = createBrowserRouter([
       { path: '/championships/:id', element: <PublicChampionshipPage /> },
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },
       { path: '/print/admin-guide', element: <AdminGuidePage /> },
+      {
+        path: '/docs',
+        element: <DocsLayout />,
+        children: [
+          { index: true, element: <DocsIndexRedirect /> },
+          { path: ':slug', element: <DocPage /> },
+        ],
+      },
       { path: '/about', element: <AboutPage /> },
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
