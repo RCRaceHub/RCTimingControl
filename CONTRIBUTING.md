@@ -26,6 +26,10 @@ Every PR follows the same steps:
 
 ---
 
+### Documentation goes in the same PR
+
+Every code change carries its docs: Javadoc on the classes and methods it adds or changes (purpose, callers, thread, transaction, errors, units), an update to the Mermaid diagrams in `docs/developer/` when a flow, state machine or the domain model changes, and an update to the user guide in `docs/` when what a user sees changes. Check the Javadoc with `./gradlew :app:javadoc -x generateJooq`; CI runs the same build and fails on malformed comments and broken links. See `docs/developer/README.md`.
+
 ## Day-to-day development
 
 ```mermaid

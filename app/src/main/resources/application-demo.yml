@@ -11,3 +11,7 @@ rctiming:
   database:
     # Loads the Wyvern RC Club demo data (db/demo/<vendor>) once, after the baseline
     migration-locations: db/migration, db/demo
+  docs:
+    # The Docker demo image bundles the developer docs, so show them at /javadoc
+    javadoc:
+      enabled: true

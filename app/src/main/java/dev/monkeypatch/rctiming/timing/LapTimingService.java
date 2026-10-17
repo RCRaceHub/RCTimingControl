@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * In-memory race state manager for live timing.
  * Holds a {@code ConcurrentHashMap<Long, LiveRaceState>} keyed by raceId.
- * Holds a ConcurrentHashMap<Long, LiveRaceState> keyed by raceId.
  * Positions are calculated in memory and broadcast over STOMP — never persisted during a race.
  *
  * <p><strong>Threading.</strong> Decoder passings reach {@link #onLapPassing} synchronously on the
