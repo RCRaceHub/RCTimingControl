@@ -105,7 +105,7 @@ class ClubAudioSettingsTest {
         assertThat(settings.tuning().lapBeepHz()).isEqualTo(440);
         assertThat(settings.tuning().lapBeepMs()).isEqualTo(200);
         assertThat(settings.tickSound()).isTrue();
-        assertThat(settings.finalBeeps()).isTrue();
+        assertThat(settings.finalBeeps()).isFalse();
     }
 
     @Test

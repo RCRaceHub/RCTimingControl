@@ -422,7 +422,7 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
     renderHook(() =>
       useAnnouncements({
         raceId: 5,
-        settings: { ...settings, tuning: { finalSeconds: 3 } } as AudioSettingsDto,
+        settings: { ...settings, finalBeeps: true, tuning: { finalSeconds: 3 } } as AudioSettingsDto,
         raceState: 'RUNNING',
         raceEndsAt: Date.now() + 10_000,
       }),
@@ -435,11 +435,11 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
     expect(playTick.mock.calls.map((c) => c[1])).toEqual([false, false, true]);
   });
 
-  it('keeps the final beeps quiet when they are switched off', () => {
+  it('keeps the final beeps quiet unless they are switched on', () => {
     renderHook(() =>
       useAnnouncements({
         raceId: 5,
-        settings: { ...settings, finalBeeps: false } as AudioSettingsDto,
+        settings: settings as AudioSettingsDto,
         raceState: 'RUNNING',
         raceEndsAt: Date.now() + 10_000,
       }),
