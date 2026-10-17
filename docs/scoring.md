@@ -141,7 +141,7 @@ A championship links events (each event is a round) and scores each driver per c
 How a round is scored:
 
 - A driver's **qualifying position** is their best single heat finish at the event (not the combined qualifying order of section 2), and their **final position** is their best place in any round of finals, where a round of finals is placed as one: the A final's order, then the B final's without the drivers who bumped up into the A, then the C final's, and so on. A B final win is therefore not a first place, and a driver who bumped up has their A final place. The round's position is the better of the two (shown in the standings); the **points** follow the scoring source.
-- A final is not placed until every final above it has finished, since its drivers may still bump up. A driver who bumped up and did not start the higher final scores a DNS for the round.
+- A final is not placed until every final above it has finished, since its drivers may still bump up. A driver who bumped up and did not start the higher final is classed last in it, ahead of everyone from the final below.
 - Example of stacked finals: the A final finishes Ann, Bob, Cat and the B final Cat (who bumped up), Dan, Eve.
   The round's places are Ann 1, Bob 2, Cat 3, Dan 4, Eve 5. Cat's B final win does not count.
 - Abandoned races are not excluded from position points: if one has a stored result, its rows score.
