@@ -9,7 +9,6 @@ Diagrams and walk-throughs for people working on the code. They are [Mermaid](ht
 | [Race lifecycle](race-lifecycle.md) | The race state machine and the round types around it |
 | [Domain model](domain-model.md) | Class diagrams of the core domain and an entity relationship diagram of the tables |
 
-<<<<<<< HEAD
 The reference for the code itself is the Javadoc (tracker #346); see [Javadoc](#javadoc) below. The prose is in [architecture](../architecture.md) and [development](../development.md).
 
 ## Javadoc
@@ -17,9 +16,6 @@ The reference for the code itself is the Javadoc (tracker #346); see [Javadoc](#
 - Build it with `./gradlew :app:javadoc -x generateJooq`; it lands in `app/build/docs/javadoc`. The generated jOOQ code is left out.
 - The build uses doclint, so a malformed comment or a broken `{@link}` fails it. A GitHub workflow (`javadoc.yml`) runs this on every push and pull request, and on `main` keeps the result as a downloadable build artifact named `javadoc`.
 - To read it in the app, build the jar with `-PbundleJavadoc` and set `rctiming.docs.javadoc.enabled=true`; it is then served at `/javadoc`, signed in or not. The flag is off by default and on in the demo (the Docker image is built with the Javadoc inside).
-=======
-The reference for the code itself is the Javadoc (tracker #346). The prose is in [architecture](../architecture.md) and [development](../development.md).
->>>>>>> origin/main
 
 ## Keeping them true
 
