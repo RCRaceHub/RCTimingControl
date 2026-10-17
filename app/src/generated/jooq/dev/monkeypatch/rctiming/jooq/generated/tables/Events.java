@@ -138,6 +138,16 @@ public class Events extends TableImpl<EventsRecord> {
      */
     public final TableField<EventsRecord, Boolean> LIVE_FEED_ENABLED = createField(DSL.name("live_feed_enabled"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>events.auto_run_gap_seconds</code>.
+     */
+    public final TableField<EventsRecord, Integer> AUTO_RUN_GAP_SECONDS = createField(DSL.name("auto_run_gap_seconds"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("180"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>events.auto_run_hold_before_finals</code>.
+     */
+    public final TableField<EventsRecord, Boolean> AUTO_RUN_HOLD_BEFORE_FINALS = createField(DSL.name("auto_run_hold_before_finals"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BOOLEAN)), this, "");
+
     private Events(Name alias, Table<EventsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

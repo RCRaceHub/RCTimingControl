@@ -203,6 +203,34 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (Boolean) get(12);
     }
 
+    /**
+     * Setter for <code>events.auto_run_gap_seconds</code>.
+     */
+    public void setAutoRunGapSeconds(Integer value) {
+        set(13, value);
+    }
+
+    /**
+     * Getter for <code>events.auto_run_gap_seconds</code>.
+     */
+    public Integer getAutoRunGapSeconds() {
+        return (Integer) get(13);
+    }
+
+    /**
+     * Setter for <code>events.auto_run_hold_before_finals</code>.
+     */
+    public void setAutoRunHoldBeforeFinals(Boolean value) {
+        set(14, value);
+    }
+
+    /**
+     * Getter for <code>events.auto_run_hold_before_finals</code>.
+     */
+    public Boolean getAutoRunHoldBeforeFinals() {
+        return (Boolean) get(14);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -226,7 +254,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals) {
         super(Events.EVENTS);
 
         setId(id);
@@ -242,6 +270,8 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setResultsExportRevision(resultsExportRevision);
         setResultsExportPending(resultsExportPending);
         setLiveFeedEnabled(liveFeedEnabled);
+        setAutoRunGapSeconds(autoRunGapSeconds);
+        setAutoRunHoldBeforeFinals(autoRunHoldBeforeFinals);
         resetChangedOnNotNull();
     }
 }

@@ -36,6 +36,20 @@ public class Event implements CreatedAt, UpdatedAt {
     /** Whether race control sends this event's live timing to the relay while its races run (#28). */
     private boolean liveFeedEnabled;
 
+    /** Seconds between a race finishing and the next one starting while auto run is on (#338). */
+    private int autoRunGapSeconds = 180;
+
+    /** Whether auto run stops after the last qualifier so the finals can be checked first (#338). */
+    private boolean autoRunHoldBeforeFinals = true;
+
+    public int getAutoRunGapSeconds() { return autoRunGapSeconds; }
+    public void setAutoRunGapSeconds(int autoRunGapSeconds) { this.autoRunGapSeconds = autoRunGapSeconds; }
+
+    public boolean isAutoRunHoldBeforeFinals() { return autoRunHoldBeforeFinals; }
+    public void setAutoRunHoldBeforeFinals(boolean autoRunHoldBeforeFinals) {
+        this.autoRunHoldBeforeFinals = autoRunHoldBeforeFinals;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
