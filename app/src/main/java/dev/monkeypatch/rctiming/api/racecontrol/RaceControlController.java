@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MarshalAdjustmentRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveEntryRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.SkipToRaceRequest;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -17,6 +18,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
+import dev.monkeypatch.rctiming.service.HeatMoveService;
 import dev.monkeypatch.rctiming.service.MarshalService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -57,6 +59,7 @@ public class RaceControlController {
     private final ResultSnapshotRepository resultSnapshotRepository;
     private final QualifyingTableService qualifyingTableService;
     private final AutoFinalsSeedingService finalsSeedingService;
+    private final HeatMoveService heatMoveService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
                                   RaceRepository raceRepository,
@@ -67,7 +70,8 @@ public class RaceControlController {
                                   AuditService audit,
                                   ResultSnapshotRepository resultSnapshotRepository,
                                   QualifyingTableService qualifyingTableService,
-                                  AutoFinalsSeedingService finalsSeedingService) {
+                                  AutoFinalsSeedingService finalsSeedingService,
+                                  HeatMoveService heatMoveService) {
         this.runOrderQuery = runOrderQuery;
         this.raceRepository = raceRepository;
         this.stateMachine = stateMachine;
@@ -78,6 +82,7 @@ public class RaceControlController {
         this.resultSnapshotRepository = resultSnapshotRepository;
         this.qualifyingTableService = qualifyingTableService;
         this.finalsSeedingService = finalsSeedingService;
+        this.heatMoveService = heatMoveService;
     }
 
     /** The referee also reads the run order: it is how the Referee View picks a race (#107). */
@@ -102,6 +107,18 @@ public class RaceControlController {
     @Transactional
     public ResponseEntity<Void> seedFinals(@PathVariable long eventId, @PathVariable long eventClassId) {
         finalsSeedingService.reseed(CurrentOfficial.actor(), eventId, eventClassId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Moves a driver out of a pending heat into another pending heat of the same class, in the same round or, with
+     * {@code allRounds}, in every practice and qualifying round that still has both heats pending.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/move-entry")
+    public ResponseEntity<Void> moveEntry(@PathVariable long raceId, @Valid @RequestBody MoveEntryRequest request) {
+        heatMoveService.moveEntry(CurrentOfficial.actor(), raceId, request.entryId(), request.targetRaceId(),
+                request.allRounds());
         return ResponseEntity.noContent().build();
     }
 

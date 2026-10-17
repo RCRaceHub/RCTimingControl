@@ -6,6 +6,7 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 
@@ -18,6 +19,10 @@ public class RaceEntryRepository extends JooqRepository<RaceEntry, RaceEntriesRe
 
     public List<RaceEntry> findByRaceIdOrderByGridPosition(Long raceId) {
         return findWhere(RACE_ENTRIES.RACE_ID.eq(raceId), RACE_ENTRIES.GRID_POSITION.asc().nullsFirst(), RACE_ENTRIES.ID.asc());
+    }
+
+    public Optional<RaceEntry> findByRaceIdAndEntryId(Long raceId, Long entryId) {
+        return findWhere(RACE_ENTRIES.RACE_ID.eq(raceId).and(RACE_ENTRIES.ENTRY_ID.eq(entryId))).stream().findFirst();
     }
 
     @Override

@@ -231,6 +231,13 @@ export async function getRaceEntries(raceId: number): Promise<RaceEntryDto[]> {
   return data;
 }
 
+export async function moveEntryToHeat(
+  raceId: number,
+  req: { entryId: number; targetRaceId: number; allRounds: boolean },
+): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/move-entry`, req);
+}
+
 export async function linkUnknownTransponder(
   raceId: number,
   transponderNumber: string,
