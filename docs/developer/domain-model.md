@@ -22,7 +22,7 @@ classDiagram
     }
     class Competitor {
         displayName
-        externalId (RaceHub driver)
+        externalId : RaceHub driver id
         brcaNumber
         homeClub
     }
@@ -109,7 +109,7 @@ classDiagram
     class LiveRaceState {
         applyLapPassing()
         calculatePositions()
-        runtime transponder links
+        runtimeLinks
     }
     class LiveTimingHub {
         broadcastTimingUpdate()

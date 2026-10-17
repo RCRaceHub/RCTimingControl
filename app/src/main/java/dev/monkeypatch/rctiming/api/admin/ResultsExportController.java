@@ -6,6 +6,8 @@ import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
+import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
+import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -36,13 +38,16 @@ public class ResultsExportController {
     private final ResultsOutboxQuery outboxQuery;
     private final RaceHubResultsEndpoint endpoint;
     private final ClubProfileService clubProfileService;
+    private final ResultsPublishSettings publishSettings;
 
     public ResultsExportController(ResultsExportService exportService, ResultsOutboxQuery outboxQuery,
-                                   RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService) {
+                                   RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService,
+                                   ResultsPublishSettings publishSettings) {
         this.exportService = exportService;
         this.outboxQuery = outboxQuery;
         this.endpoint = endpoint;
         this.clubProfileService = clubProfileService;
+        this.publishSettings = publishSettings;
     }
 
     /**
@@ -50,10 +55,13 @@ public class ResultsExportController {
      * @param resultsUrl      the address in use, or null
      * @param savedUrl        the address set here, or null when the settings file's is in use
      * @param missingSettings what is still needed before anything is sent
+     * @param publishTarget   where results are published now: the club's choice, else the default
+     * @param chosenTarget    the club's choice, or null when it has not made one
      * @param exports         the newest exports first
      */
     public record ResultsExportsDto(boolean sendingEnabled, String resultsUrl, String savedUrl,
-                                    List<String> missingSettings,
+                                    List<String> missingSettings, ResultsPublishTarget publishTarget,
+                                    ResultsPublishTarget chosenTarget,
                                     List<ResultsOutboxQuery.OutboxRow> exports) {
     }
 
@@ -64,6 +72,8 @@ public class ResultsExportController {
                 settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
                 settings.savedUrl(),
                 settings.missingSettings(),
+                publishSettings.effective(),
+                publishSettings.chosen(),
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 
@@ -78,6 +88,18 @@ public class ResultsExportController {
             RaceHubResultsEndpoint.parse(request.resultsUrl());
         }
         clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(auth), request.resultsUrl());
+        return list();
+    }
+
+    /** @param target where to publish results; null clears the choice, so the default applies */
+    public record PublishTargetRequest(ResultsPublishTarget target) {
+    }
+
+    @Audited("audit_log")
+    @PutMapping("/results-exports/target")
+    public ResultsExportsDto setTarget(Authentication auth, @RequestBody PublishTargetRequest request) {
+        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(auth),
+                request.target() == null ? null : request.target().name());
         return list();
     }
 

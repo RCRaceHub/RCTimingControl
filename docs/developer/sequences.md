@@ -35,7 +35,7 @@ sequenceDiagram
     else a race is running
         LTS->>LRS: getRuntimeLink(transponder), else resolveEntryId
         LTS->>LRS: applyLapPassing(event, entryId, now, windowEnded)
-        opt no entry matches (or more than one)
+        opt no entry matches (or more than one), first sighting of that transponder
             LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
             Hub-->>B: /topic/race/id/unknown-transponder
         end
@@ -68,7 +68,7 @@ sequenceDiagram
     SM->>SM: requireAllowed(RUNNING), requireQualifyingComplete
     SM->>RRp: save(race with startedAt)
     SM->>Bus: RaceStatusChangedEvent(RUNNING)
-    Note over Bus: LapTimingService, RaceClockService,<br/>audio, live feed and practice react
+    Note over Bus: LapTimingService, RaceClockService, AutoRunService,<br/>results export, live feed, practice and audio react
     SM->>Hub: broadcastStateChange(RUNNING)
     Hub-->>RD: /topic/race/id/state
 
@@ -80,6 +80,7 @@ sequenceDiagram
     SM->>SM: applyFinishingOrderToNextRace (grid for the next heat, or bump-up)
     SM->>RS: snapshot(raceId)
     RS->>RS: positions from LiveRaceState, saved as a ResultSnapshot
+    RS->>RS: after commit, LapTimingService.releaseState(raceId)
     SM->>AF: seedIfQualifyingComplete(eventClassId) if it was a qualifier
 ```
 
@@ -151,12 +152,12 @@ sequenceDiagram
     participant I as RaceHubImportService
     participant DB as SQLite
 
-    O->>C: upload Entry Export v1 file (preview)
-    C->>I: preview(eventId, export) = importEntries(dryRun = true)
+    O->>C: POST racehub-import?dryRun=true (Entry Export v1 file)
+    C->>I: importEntries(actor, eventId, export, dryRun = true)
     I->>I: check schema_version = 1 and revision
     I->>DB: read class mappings, existing entries and competitors
     I-->>O: RaceHubImportResult (new, changed, withdrawn, unmapped classes, warnings, errors)
-    O->>C: apply
+    O->>C: same POST with dryRun=false (apply)
     C->>I: importEntries(actor, eventId, export, false)
     alt errors or unmapped classes
         I-->>O: nothing is applied
@@ -187,7 +188,7 @@ sequenceDiagram
     F->>F: valid token signs the request in, else anonymous
     Note over F: SecurityConfig then decides if anonymous is enough
     B->>W: STOMP CONNECT with the token
-    W->>W: anonymous may subscribe to the public boards topics only
+    W->>W: anonymous may subscribe to a race's timing and state topics only, and never send
     B->>A: POST /api/v1/auth/refresh before expiry
     A->>A: rotate (compare-and-set), reuse of an old token is refused
     A-->>B: new access token + new refresh token

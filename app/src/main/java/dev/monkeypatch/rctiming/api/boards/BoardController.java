@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Anonymous read API for the spectator boards on a venue TV (L12). No
- * @PreAuthorize: GET /api/v1/boards/** is permitAll in SecurityConfig.
+ * Anonymous read API for the spectator boards on a venue TV (L12). It has no {@code @PreAuthorize}:
+ * GET /api/v1/boards/** is permitAll in SecurityConfig.
  * Live updates come from the race's STOMP topics, which anonymous clients may subscribe to.
  */
 @RestController
