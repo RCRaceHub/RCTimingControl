@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Builds results exports and queues them for RaceHub (#27) when the club publishes there (#319). Only events whose entries came from a RaceHub
- * import are queued, since RaceHub needs its own event id to place them; any event can be downloaded.
+ * Builds results exports and queues them for RaceHub (#27) when the club publishes there (#319). Only events
+ * whose entries came from a RaceHub import are queued, since RaceHub needs its own event id to place them; any
+ * event can be downloaded.
  */
 @Service
 public class ResultsExportService {

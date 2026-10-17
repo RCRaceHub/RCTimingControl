@@ -57,21 +57,17 @@ function TargetForm({ target, chosen }: { target: ResultsPublishTarget; chosen: 
         <select
           id="publish-target"
           className="h-9 rounded-md border bg-background px-3 text-sm"
-          value={target}
+          value={chosen ?? ''}
           disabled={setTarget.isPending}
-          onChange={e => save(e.target.value as ResultsPublishTarget)}
+          onChange={e => save(e.target.value === '' ? null : (e.target.value as ResultsPublishTarget))}
         >
+          <option value="">Not chosen (currently {TARGETS.find(t => t.value === target)?.label})</option>
           {TARGETS.map(t => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
           ))}
         </select>
-        {chosen && (
-          <Button type="button" variant="outline" disabled={setTarget.isPending} onClick={() => save(null)}>
-            Use the default
-          </Button>
-        )}
       </div>
       <p className="text-xs text-muted-foreground">
         {chosen
