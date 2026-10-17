@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
@@ -47,8 +48,10 @@ public class RaceFormatService {
     /**
      * Returns the effective config for an EventClass by merging configSnapshot
      * with configOverride. Override values win. If override is null or empty,
-     * the snapshot is returned directly.
+     * the snapshot is returned directly. It reads no table, so it joins a transaction if there is one and takes
+     * none otherwise, which keeps public reads off the write connection.
      */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public RaceFormatConfig getEffectiveConfig(EventClass eventClass) {
         Map<String, Object> override = eventClass.getConfigOverride();
         if (override == null || override.isEmpty()) {

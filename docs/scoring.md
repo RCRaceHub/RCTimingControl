@@ -140,13 +140,16 @@ A championship links events (each event is a round) and scores each driver per c
 
 How a round is scored:
 
-- A driver's **qualifying position** is their best single heat finish at the event (not the combined qualifying order of section 2), and their **final position** is their best place in any final. The round's position is the better of the two (shown in the standings); the **points** follow the scoring source.
+- A driver's **qualifying position** is their best single heat finish at the event (not the combined qualifying order of section 2), and their **final position** is their best place in any round of finals, where a round of finals is placed as one: the A final's order, then the B final's without the drivers who bumped up into the A, then the C final's, and so on. A B final win is therefore not a first place, and a driver who bumped up has their A final place. The round's position is the better of the two (shown in the standings); the **points** follow the scoring source.
+- A final is not placed until every final above it has finished, since its drivers may still bump up. A driver who bumped up and did not start the higher final scores a DNS for the round.
+- Example of stacked finals: the A final finishes Ann, Bob, Cat and the B final Cat (who bumped up), Dan, Eve.
+  The round's places are Ann 1, Bob 2, Cat 3, Dan 4, Eve 5. Cat's B final win does not count.
 - Abandoned races are not excluded from position points: if one has a stored result, its rows score.
 - A driver on the grid at a round with no result in it has a **DNS** round, worth 0 points, which still counts
   towards Y.
 - **Drops**: the worst rounds are dropped to X from Y once the driver has Y rounds. "Worst" is fewest points, then
   the worse position, so a finish worth nothing is dropped before a DNS.
-- Bonuses are **per driver, per class and per round**: winning in two classes or two rounds earns each, and winning two A finals in one event pays once. The TQ goes to the driver who tops the combined qualifying laps of the class (most laps, then best lap), ignoring abandoned heats. The A-final bonus goes to whoever finished 1st in a finished final lettered A.
+- Bonuses are **per driver, per class and per round**: winning in two classes or two rounds earns each, and winning two A finals in one event pays once. The TQ goes to the driver at the top of the class's qualifying table once all its qualifying heats are finished (lowest points for a low-points class, otherwise most laps then best lap), so it is not given out part way through qualifying. The A-final bonus goes to whoever finished 1st in a finished final lettered A.
 - The class table is ordered by total points, then name.
 
 Example: scale 1st 15, 2nd 12, 3rd 10, 4th 8, 5th 6; scoring source `BOTH`; TQ bonus 2; A-final bonus 3;
@@ -165,11 +168,4 @@ With scoring source `FINALS`, only the final positions score: round 1 is 15 and 
 
 ## Known gaps
 
-These are how the code behaves today, recorded so they can be decided on.
-
-- **Final positions are per race.** A B final's winner scores "position 1" in the championship, not the position
-  after the A final's drivers. The A and B finals are not stacked into one overall order, so a B final winner
-  can outscore an A final runner-up. A driver bumped from B into A is in both finals and scores the better place, so winning the B final overrides their A final place. (To be decided: how finals should be stacked.)
-- **TQ in a low-points class** is decided by total laps then best lap, not by the low-points order the finals are
-  seeded from.
 - **`FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS`** all use total laps then best lap.

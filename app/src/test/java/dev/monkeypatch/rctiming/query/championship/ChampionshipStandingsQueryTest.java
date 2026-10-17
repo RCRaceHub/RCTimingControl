@@ -674,4 +674,141 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
                         org.assertj.core.groups.Tuple.tuple("Larry Login", 8));
         assertThat(standings.get(0).driverId()).isEqualTo(walkIn.getId());
     }
+
+    @Test
+    void aBFinalIsPlacedAfterEveryoneInTheAFinal() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6, 4, 4));
+        Event event = makeEvent("Stacked-finals-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry ann = makeEntry(makeUser("Ann", "Stack").getId(), event.getId(), ecId);
+        Entry bob = makeEntry(makeUser("Bob", "Stack").getId(), event.getId(), ecId);
+        Entry cat = makeEntry(makeUser("Cat", "Stack").getId(), event.getId(), ecId);
+        Entry dan = makeEntry(makeUser("Dan", "Stack").getId(), event.getId(), ecId);
+        makeRaceEntry(aFinal.getId(), ann.getId());
+        makeRaceEntry(aFinal.getId(), bob.getId());
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), dan.getId());
+        makeSnapshot(aFinal.getId(),
+                "[" + resultRow(ann.getId(), 1, 10, 5000) + "," + resultRow(bob.getId(), 2, 10, 5100) + "]");
+        makeSnapshot(bFinal.getId(),
+                "[" + resultRow(cat.getId(), 1, 9, 5200) + "," + resultRow(dan.getId(), 2, 9, 5300) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // The B final's winner is 3rd overall, not 1st
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Ann Stack", 10),
+                        org.assertj.core.groups.Tuple.tuple("Bob Stack", 8),
+                        org.assertj.core.groups.Tuple.tuple("Cat Stack", 6),
+                        org.assertj.core.groups.Tuple.tuple("Dan Stack", 4));
+    }
+
+    @Test
+    void aDriverBumpedUpIsPlacedInTheAFinalOnly() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6, 4, 4));
+        Event event = makeEvent("Bumped-finals-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry ann = makeEntry(makeUser("Ann", "Bump").getId(), event.getId(), ecId);
+        Entry bob = makeEntry(makeUser("Bob", "Bump").getId(), event.getId(), ecId);
+        Entry cat = makeEntry(makeUser("Cat", "Bump").getId(), event.getId(), ecId);
+        Entry dan = makeEntry(makeUser("Dan", "Bump").getId(), event.getId(), ecId);
+        makeRaceEntry(aFinal.getId(), ann.getId());
+        makeRaceEntry(aFinal.getId(), bob.getId());
+        makeRaceEntry(aFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), dan.getId());
+        makeSnapshot(aFinal.getId(), "[" + resultRow(ann.getId(), 1, 10, 5000) + ","
+                + resultRow(bob.getId(), 2, 10, 5100) + "," + resultRow(cat.getId(), 3, 9, 5200) + "]");
+        // Cat won the B final to bump up, then came 3rd in the A
+        makeSnapshot(bFinal.getId(),
+                "[" + resultRow(cat.getId(), 1, 9, 5200) + "," + resultRow(dan.getId(), 2, 9, 5300) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Ann Bump", 10),
+                        org.assertj.core.groups.Tuple.tuple("Bob Bump", 8),
+                        org.assertj.core.groups.Tuple.tuple("Cat Bump", 6),
+                        org.assertj.core.groups.Tuple.tuple("Dan Bump", 4));
+    }
+
+    @Test
+    void theTqOfALowPointsClassIsTheTopOfTheQualifyingTableNotTheMostLaps() throws Exception {
+        Championship champ = makeChampionship(2, 0, null, null, ScoringSource.QUALIFYING);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6));
+        Event event = makeEvent("Low-points-tq-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = dsl.transactionResult(tx -> tx.dsl().insertInto(EVENT_CLASSES)
+                .set(EVENT_CLASSES.EVENT_ID, event.getId())
+                .set(EVENT_CLASSES.RACING_CLASS_ID, racingClassId)
+                .set(EVENT_CLASSES.CONFIG_SNAPSHOT, "{\"type\":\"BUMP_UP\",\"qualifyingHeats\":3,"
+                        + "\"heatDurationMinutes\":5,\"bestHeatsCount\":2,\"gridSize\":10,\"bumpSpots\":2,"
+                        + "\"qualifyingStartType\":\"GRID\",\"finalsStartType\":\"GRID\","
+                        + "\"qualifyingType\":\"ROUND_BY_ROUND\",\"racePaddingMinutes\":0,"
+                        + "\"staggerIntervalSeconds\":0}")
+                .returning(EVENT_CLASSES.ID).fetchOne().get(EVENT_CLASSES.ID));
+        Entry fast = makeEntry(makeUser("Fast", "Laps").getId(), event.getId(), ecId);
+        Entry steady = makeEntry(makeUser("Steady", "Points").getId(), event.getId(), ecId);
+        Entry gap = makeEntry(makeUser("Gap", "Filler").getId(), event.getId(), ecId);
+        // Fast wins round 1 by a mile but is last in rounds 2 and 3, so has the most laps and 4 points from the
+        // best 2; Steady is 2nd, then wins twice, for 2 points.
+        String[][] rounds = {
+                {resultRow(fast.getId(), 1, 100, 5000), resultRow(steady.getId(), 2, 50, 5100),
+                        resultRow(gap.getId(), 3, 40, 5200)},
+                {resultRow(steady.getId(), 1, 30, 5100), resultRow(gap.getId(), 2, 20, 5200),
+                        resultRow(fast.getId(), 3, 10, 5300)},
+                {resultRow(steady.getId(), 1, 30, 5100), resultRow(gap.getId(), 2, 20, 5200),
+                        resultRow(fast.getId(), 3, 10, 5300)}};
+        for (int i = 0; i < rounds.length; i++) {
+            Round round = makeRound(event.getId(), RoundType.QUALIFIER, i + 1);
+            Race heat = makeRace(round.getId(), ecId, null, 1);
+            makeRaceEntry(heat.getId(), fast.getId());
+            makeRaceEntry(heat.getId(), steady.getId());
+            makeRaceEntry(heat.getId(), gap.getId());
+            makeSnapshot(heat.getId(), "[" + String.join(",", rounds[i]) + "]");
+        }
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Each scores for their best heat finish, 10, 10 and 8, and only Steady has the 2 point TQ bonus
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Fast Laps", 10),
+                        org.assertj.core.groups.Tuple.tuple("Steady Points", 12),
+                        org.assertj.core.groups.Tuple.tuple("Gap Filler", 8));
+    }
+
+    @Test
+    void aBFinalIsNotPlacedWhileTheAFinalIsStillToRun() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        Event event = makeEvent("Open-a-final-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        aFinal.setStatus(RaceStatus.PENDING);
+        raceRepository.save(aFinal);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry cat = makeEntry(makeUser("Cat", "Open").getId(), event.getId(), ecId);
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeSnapshot(bFinal.getId(), "[" + resultRow(cat.getId(), 1, 9, 5200) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // The B winner may still bump up, so the B final scores nothing until the A final has finished
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsOnly(0);
+    }
 }
