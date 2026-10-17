@@ -86,9 +86,9 @@ public class CompetitorAnonymiseService {
      * COMPETITOR_ANONYMISED} with counts only. It rewrites stored result snapshots, queued and sent RaceHub export
      * payloads, and the competitor's and their entries' histories.
      *
-     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such competitor (HTTP 404) @throws
-     * dev.monkeypatch.rctiming.domain.StateConflictException if an entry of theirs is in a race on the grid, running or
-     * stopped (HTTP 409), so the live screens do not keep the name
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such competitor (HTTP 404)
+     * @throws dev.monkeypatch.rctiming.domain.StateConflictException if an entry of theirs is in a race on the grid,
+     *         running or stopped (HTTP 409), so the live screens do not keep the name
      */
     @Transactional
     public Result anonymise(Long competitorId, Long adminUserId) {

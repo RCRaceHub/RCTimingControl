@@ -38,9 +38,9 @@ public class LogoUploadService {
     /**
      * Saves the image and sets it as the profile's logo, in the caller's write transaction.
      *
-     * @return the URL the logo is served from @throws IllegalArgumentException if the file is missing, not an allowed
-     * image type, over 2 MB or unreadable @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is
-     * no such club profile
+     * @return the URL the logo is served from
+     * @throws IllegalArgumentException if the file is missing, not an allowed image type, over 2 MB or unreadable
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such club profile
      */
     public String uploadLogo(Actor actor, Long clubProfileId, MultipartFile file) {
         if (file == null || file.isEmpty()) {

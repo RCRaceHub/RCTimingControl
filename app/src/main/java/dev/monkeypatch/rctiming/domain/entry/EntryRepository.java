@@ -10,6 +10,9 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 
+/**
+ * Repository for {@link Entry} ({@code entries}); every finder returns entries of any status unless it says otherwise.
+ */
 @Repository
 public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
 
@@ -32,6 +35,7 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         return findWhere(ENTRIES.COMPETITOR_ID.eq(competitorId));
     }
 
+    /** Every entry in the event, of any status. */
     public List<Entry> findByEventId(Long eventId) {
         return findWhere(ENTRIES.EVENT_ID.eq(eventId));
     }

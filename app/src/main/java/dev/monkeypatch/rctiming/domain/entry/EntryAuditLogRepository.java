@@ -10,6 +10,7 @@ import java.util.List;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
 
+/** Repository for {@link EntryAuditLog} ({@code entry_audit_log}). */
 @Repository
 public class EntryAuditLogRepository extends JooqRepository<EntryAuditLog, EntryAuditLogRecord> {
 

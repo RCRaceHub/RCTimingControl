@@ -40,6 +40,7 @@ public class EntryFeedClient {
         this.restClient = restClientBuilder.requestFactory(requestFactory).build();
     }
 
+    /** The outcome of a fetch: the file, a refused token, or any other failure with a message an official can read. */
     public sealed interface Result {
     }
 
@@ -52,7 +53,11 @@ public class EntryFeedClient {
     public record Failed(String message) implements Result {
     }
 
-    /** Fetches {@code url}, sending {@code token} (if any) as a bearer token. */
+    /**
+     * Fetches {@code url}, sending {@code token} (if any) as a bearer token. Blocks for up to 5 seconds to connect
+     * and 20 to read, so callers keep it outside any database transaction. The body is read up to a size limit
+     * (5 MB by default), and a longer answer is a {@link Failed}.
+     */
     public Result fetch(URI url, String token) {
         try {
             return restClient.get()

@@ -48,6 +48,9 @@ public class EntryImports {
         this.competitorRepository = competitorRepository;
     }
 
+    /**
+     * Loads the event's class mappings, class order and racing class names once, for an import to place its rows with.
+     */
     public EventClasses eventClasses(Long eventId) {
         Map<String, Long> mapped = mappingRepository.findByEventIdOrderByRacehubEventClassId(eventId).stream()
                 .collect(Collectors.toMap(RaceHubClassMapping::getRacehubEventClassId,

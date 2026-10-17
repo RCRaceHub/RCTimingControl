@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds.ENTRY_FEEDS;
 
+/** Repository for {@link EntryFeed} ({@code entry_feeds}); an event has at most one. */
 @Repository
 public class EntryFeedRepository extends JooqRepository<EntryFeed, EntryFeedsRecord> {
 

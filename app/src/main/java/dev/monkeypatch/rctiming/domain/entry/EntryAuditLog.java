@@ -8,8 +8,10 @@ import java.time.Instant;
 import java.util.Map;
 
 /**
- * One change to an entry, by an official, with what it was before and after as JSON. The entry history
- * ({@code EntryHistoryQuery}) reads these rows back.
+ * One change to an entry, by an official, with what it was before and after as JSON (table
+ * {@code entry_audit_log}). The entry history ({@code EntryHistoryQuery}) reads these rows back.
+ *
+ * <p>The snapshots hold names and transponder numbers, so they are blanked when the competitor is anonymised.
  */
 public class EntryAuditLog implements CreatedAt {
 

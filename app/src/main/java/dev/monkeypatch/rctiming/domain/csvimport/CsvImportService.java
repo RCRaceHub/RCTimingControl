@@ -91,6 +91,11 @@ public class CsvImportService {
      * Imports the file, or with {@code dryRun} only previews it. A real import creates the new rows and applies just the
      * {@code selection}; entries that came from elsewhere, such as walk-ins, are never withdrawn. Nothing is saved when
      * the result is blocked. {@code actor} is who is importing.
+     *
+     * <p>Runs in one write transaction, a dry run included, so the preview is worked out against the same data a real
+     * import would use. A real import writes an audit row with it.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such event (HTTP 404)
      */
     @Transactional
     public CsvImportResult importCsv(Actor actor, Long eventId, String content, boolean dryRun, Selection selection) {
