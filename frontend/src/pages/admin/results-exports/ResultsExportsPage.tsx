@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useResultsExports, useRetryResultsExport, useSetResultsAddress } from '@/hooks/admin/useResultsExports';
+import { useResultsExports, useRetryResultsExport, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
-import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus } from '@/lib/adminApi';
+import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus, ResultsPublishTarget } from '@/lib/adminApi';
 import { formatDateTime } from '@/lib/dates';
 
 const REASONS: Record<ResultsExportReason, string> = {
@@ -32,6 +32,52 @@ const STATUS_COLOR: Record<ResultsExportStatus, string> = {
   SENT: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   SUPERSEDED: 'bg-muted text-muted-foreground',
 };
+
+const TARGETS: { value: ResultsPublishTarget; label: string }[] = [
+  { value: 'NONE', label: 'Nowhere' },
+  { value: 'RACEHUB', label: 'RaceHub' },
+  { value: 'SITE', label: 'A results site (not available yet)' },
+  { value: 'BOTH', label: 'RaceHub and a results site (not available yet)' },
+];
+
+function TargetForm({ target, chosen }: { target: ResultsPublishTarget; chosen: ResultsPublishTarget | null }) {
+  const setTarget = useSetResultsTarget();
+
+  function save(next: ResultsPublishTarget | null) {
+    setTarget.mutate(next, {
+      onSuccess: () => toast.success('Saved.'),
+      onError: () => toast.error('Could not save where results are published.'),
+    });
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="publish-target">Publish results to</Label>
+      <div className="flex gap-2">
+        <select
+          id="publish-target"
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+          value={chosen ?? ''}
+          disabled={setTarget.isPending}
+          onChange={e => save(e.target.value === '' ? null : (e.target.value as ResultsPublishTarget))}
+        >
+          <option value="">Not chosen (currently {TARGETS.find(t => t.value === target)?.label})</option>
+          {TARGETS.map(t => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {chosen
+          ? 'Set by the club.'
+          : 'Not set: results go to RaceHub when a RaceHub address is set, and nowhere otherwise.'}{' '}
+        Choosing a results site queues nothing yet.
+      </p>
+    </div>
+  );
+}
 
 function detail(row: ResultsExportRowDto) {
   const parts = [REASONS[row.reason] ?? row.reason, `revision ${row.revision}`, formatDateTime(row.createdAt)];
@@ -117,6 +163,8 @@ export default function ResultsExportsPage() {
           newer one replaces any that have not gone yet. Racing is never held up by sending.
         </p>
       </div>
+
+      {data && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
 
       {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
 

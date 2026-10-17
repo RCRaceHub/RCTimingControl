@@ -272,6 +272,27 @@ public class ClubProfileService {
                 .after(Collections.singletonMap("resultsHost", after)).record();
     }
 
+    /** The publish target the club chose (a {@code ResultsPublishTarget} name), or empty when it has not chosen. */
+    @Transactional(readOnly = true)
+    public Optional<String> getResultsPublishTarget() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getResultsPublishTarget)
+                .filter(target -> !target.isBlank());
+    }
+
+    /** Sets where results are published; null clears the choice, so the default applies. */
+    public void updateResultsPublishTarget(Actor actor, String target) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        String before = profile.getResultsPublishTarget();
+        profile.setResultsPublishTarget(target);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        audit.entry(actor, "RESULTS_PUBLISH_TARGET_CHANGED").entity("club_profile", saved.getId())
+                .summary(target == null ? "Cleared the results publishing choice"
+                        : "Changed where results are published to " + target)
+                .before(Collections.singletonMap("target", before))
+                .after(Collections.singletonMap("target", target)).record();
+    }
+
     private static String hostOf(String url) {
         java.net.URI uri = java.net.URI.create(url);
         return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() >= 0 ? ":" + uri.getPort() : "");
