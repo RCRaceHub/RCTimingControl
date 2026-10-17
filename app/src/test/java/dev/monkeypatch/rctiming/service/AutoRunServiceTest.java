@@ -287,7 +287,7 @@ class AutoRunServiceTest {
     @Test
     void holdsWhenTheServerRefusesACommand() {
         addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
-        org.mockito.Mockito.doThrow(new IllegalStateException("decoder offline")).when(stateMachine).callGrid(any());
+        org.mockito.Mockito.doThrow(new dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException("decoder offline")).when(stateMachine).callGrid(any());
         service.go(Actor.system("test"), EVENT_ID);
 
         clock.advance(Duration.ofSeconds(150));
@@ -297,6 +297,34 @@ class AutoRunServiceTest {
         assertThat(state.phase()).isEqualTo(AutoRunService.Phase.HELD);
         assertThat(state.heldReason()).isEqualTo(AutoRunService.HeldReason.REFUSED);
         assertThat(state.heldMessage()).contains("decoder offline");
+    }
+
+    @Test
+    void anotherRaceFinishingDoesNotRestartTheCountdown() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        Race other = addRace(3, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        Instant startAt = service.state(EVENT_ID).startAt();
+
+        clock.advance(Duration.ofSeconds(40));
+        finish(other, RoundType.QUALIFIER);
+        service.tick();
+
+        assertThat(service.state(EVENT_ID).startAt()).isEqualTo(startAt);
+    }
+
+    @Test
+    void holdsWhenTheGridCallIsTakenBack() {
+        Race race = addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        clock.advance(Duration.ofSeconds(150));
+        service.tick();
+        race.setStatus(RaceStatus.PENDING);
+        clock.advance(Duration.ofSeconds(30));
+        service.tick();
+
+        assertThat(service.state(EVENT_ID).phase()).isEqualTo(AutoRunService.Phase.HELD);
+        verify(stateMachine, never()).start(any());
     }
 
     private static Map<String, Object> argThatText(String text) {

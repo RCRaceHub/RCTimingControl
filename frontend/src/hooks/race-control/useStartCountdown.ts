@@ -42,7 +42,10 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
   }, []);
 
   // Selecting another race, or the race moving on, drops the count rather than starting the wrong race
-  useEffect(() => cancel, [watch, cancel]);
+  // A lead-in played for auto run is left to finish: the server's own grid call and start move the status
+  useEffect(() => () => {
+    if (!leadInOnlyRef.current) cancel();
+  }, [watch, cancel]);
 
   // The count calls itself a second later, so it lives in a ref
   const stepRef = useRef<(left: number) => void>(() => undefined);

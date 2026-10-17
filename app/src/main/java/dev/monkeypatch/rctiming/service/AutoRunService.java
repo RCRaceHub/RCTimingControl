@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
@@ -88,22 +89,22 @@ public class AutoRunService {
     }
 
     private static final class Plan {
-        Phase phase = Phase.RACING;
-        Long raceId;
-        String label;
-        Instant startAt;
+        volatile Phase phase = Phase.RACING;
+        volatile Long raceId;
+        volatile String label;
+        volatile Instant startAt;
         int totalSeconds;
         boolean gridCalled;
         boolean leadInSent;
         final Set<Integer> announced = new HashSet<>();
-        HeldReason heldReason;
-        String heldMessage;
+        volatile HeldReason heldReason;
+        volatile String heldMessage;
         /** Set when a race of the event finished; the next tick plans the one after it. */
-        boolean replan;
+        volatile boolean replan;
         /** The type of the race that finished, or null when auto run was just switched on. */
-        RoundType finishedType;
+        volatile RoundType finishedType;
         /** Auto run was switched on or resumed by an official, so the hold before the finals does not apply. */
-        boolean release = true;
+        volatile boolean release = true;
     }
 
     private final Map<Long, Plan> plans = new ConcurrentHashMap<>();
@@ -186,10 +187,17 @@ public class AutoRunService {
                 }
             }
         }
+        record(actor, "AUTO_RUN_SKIPPED", event, "Brought the next race start forward to " + seconds
+                + " seconds for " + event.getName());
         return publish(event);
     }
 
-    public synchronized AutoRunState state(long eventId) {
+    /** Pushes the event's state to open race control pages, after its settings changed. */
+    public AutoRunState refresh(long eventId) {
+        return publish(eventRepository.getOrThrow(eventId));
+    }
+
+    public AutoRunState state(long eventId) {
         return stateOf(eventRepository.getOrThrow(eventId), plans.get(eventId));
     }
 
@@ -202,12 +210,13 @@ public class AutoRunService {
         Race race = raceRepository.findById(event.getRaceId()).orElse(null);
         Round round = race == null ? null : roundRepository.findById(race.getRoundId()).orElse(null);
         Plan plan = round == null ? null : plans.get(round.getEventId());
-        if (plan != null) {
-            synchronized (this) {
-                plan.replan = true;
-                plan.finishedType = round.getType();
-                plan.release = false;
-            }
+        // Not under the service's monitor: this runs in the finishing request's write transaction, and the
+        // scheduler holds the monitor while it waits for the write connection. A race other than the one being
+        // waited on does not disturb its countdown.
+        if (plan != null && (plan.phase != Phase.WAITING || Objects.equals(event.getRaceId(), plan.raceId))) {
+            plan.finishedType = round.getType();
+            plan.release = false;
+            plan.replan = true;
         }
     }
 
@@ -218,8 +227,14 @@ public class AutoRunService {
                 tick(entry.getKey(), entry.getValue());
             } catch (RuntimeException e) {
                 log.error("Auto run for event {} failed; holding", entry.getKey(), e);
-                hold(entry.getValue(), HeldReason.REFUSED, e.getMessage());
-                eventRepository.findById(entry.getKey()).ifPresent(this::publish);
+                // Only a refused transition has a message fit for the screen
+                hold(entry.getValue(), HeldReason.REFUSED, e instanceof IllegalStateTransitionException
+                        ? e.getMessage() : "a race command failed, see the log");
+                try {
+                    eventRepository.findById(entry.getKey()).ifPresent(this::publish);
+                } catch (RuntimeException publishFailure) {
+                    log.warn("Could not publish the auto run state of event {}", entry.getKey(), publishFailure);
+                }
             }
         }
     }
@@ -246,6 +261,12 @@ public class AutoRunService {
         if (race == null || (race.getStatus() != RaceStatus.PENDING && race.getStatus() != RaceStatus.GRID)) {
             // Someone started, finished or restarted it by hand
             plan.replan = true;
+            return;
+        }
+        if (plan.gridCalled && race.getStatus() == RaceStatus.PENDING) {
+            // The grid call was taken back: leave it to an official
+            hold(plan, HeldReason.REFUSED, "the grid call was taken back");
+            publish(event);
             return;
         }
         long left = secondsLeft(plan);
@@ -300,6 +321,9 @@ public class AutoRunService {
             return;
         }
         RunOrderItemDto item = next.get();
+        if (plan.phase == Phase.WAITING && Objects.equals(plan.raceId, item.raceId()) && plan.startAt != null) {
+            return;
+        }
         setRace(plan, item);
         boolean finalsNext = "FINAL".equals(item.roundType());
         if (!plan.release && event.isAutoRunHoldBeforeFinals() && finalsNext
@@ -317,7 +341,8 @@ public class AutoRunService {
         plan.phase = Phase.WAITING;
         plan.heldReason = null;
         plan.heldMessage = null;
-        plan.totalSeconds = "GRID".equals(item.status()) ? 0 : event.getAutoRunGapSeconds();
+        // A race already on the grid still gets its lead-in
+        plan.totalSeconds = "GRID".equals(item.status()) ? leadInSeconds() : event.getAutoRunGapSeconds();
         plan.startAt = clock.instant().plusSeconds(plan.totalSeconds);
         plan.gridCalled = "GRID".equals(item.status());
         plan.leadInSent = false;

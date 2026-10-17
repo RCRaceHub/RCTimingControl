@@ -79,6 +79,6 @@ public class AutoRunController {
     public AutoRunState settings(@PathVariable long eventId, @Valid @RequestBody AutoRunSettingsRequest request) {
         eventService.setAutoRunSettings(CurrentOfficial.actor(), eventId, request.gapSeconds(),
                 request.holdBeforeFinals());
-        return autoRunService.state(eventId);
+        return autoRunService.refresh(eventId);
     }
 }

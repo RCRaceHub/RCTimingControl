@@ -44,15 +44,15 @@ function heldText(state: AutoRunStateDto): string {
 export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canControl: boolean }) {
   const { state } = autoRun;
   const left = useSecondsUntil(state?.phase === 'WAITING' ? state.startAt : null);
-  const [gap, setGap] = useState<string>('');
+  const [gap, setGap] = useState<string | null>(null);
   const [hold, setHold] = useState<boolean | null>(null);
 
   if (!state) return null;
-  const gapValue = gap !== '' ? gap : String(state.gapSeconds);
+  const gapValue = gap ?? String(state.gapSeconds);
   const holdValue = hold ?? state.holdBeforeFinals;
   const busy = autoRun.go.isPending || autoRun.stop.isPending;
   const gapSeconds = Number(gapValue);
-  const gapValid = Number.isInteger(gapSeconds) && gapSeconds >= 0 && gapSeconds <= 3600;
+  const gapValid = gapValue !== '' && Number.isInteger(gapSeconds) && gapSeconds >= 0 && gapSeconds <= 3600;
   const settingsChanged = gapSeconds !== state.gapSeconds || holdValue !== state.holdBeforeFinals;
 
   return (
@@ -133,7 +133,7 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
               onClick={() =>
                 autoRun.settings.mutate(
                   { gapSeconds, holdBeforeFinals: holdValue },
-                  { onSuccess: () => { setGap(''); setHold(null); } },
+                  { onSuccess: () => { setGap(null); setHold(null); } },
                 )
               }
             >
