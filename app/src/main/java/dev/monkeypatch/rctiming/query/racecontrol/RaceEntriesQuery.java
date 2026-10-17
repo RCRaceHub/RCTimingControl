@@ -6,6 +6,7 @@ import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
@@ -37,7 +38,7 @@ public class RaceEntriesQuery {
                 .fetch(r -> new RaceEntryDto(
                         r.get(RACE_ENTRIES.ENTRY_ID),
                         r.get("driverName", String.class),
-                        r.get(RACE_ENTRIES.CAR_NUMBER) == null ? null : r.get(RACE_ENTRIES.CAR_NUMBER).toString()
+                        Objects.toString(r.get(RACE_ENTRIES.CAR_NUMBER), null)
                 ));
     }
 }

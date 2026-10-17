@@ -24,8 +24,8 @@ public record QualifyingTableDto(
      * round, in round order, with whether that round counts towards the total (empty otherwise). {@code carNumber}
      * is the driver's car number in the class's qualifying heats, null when none was recorded.
      */
-    public record Row(int position, long entryId, String driverName, String carNumber, int lapsCompleted, Long bestLapMs,
-                      Integer points, List<RoundPlace> rounds) {}
+    public record Row(int position, long entryId, String driverName, String carNumber, int lapsCompleted,
+                      Long bestLapMs, Integer points, List<RoundPlace> rounds) {}
 
     /** A driver's place in one finished round; {@code counted} is false for a round that was dropped. */
     public record RoundPlace(int place, boolean counted) {}

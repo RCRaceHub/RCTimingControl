@@ -90,8 +90,7 @@ public class QualifyingTableService {
             for (QualifyingResult result : qualifyingStandingsService.rankedResultsFor(eventClass.getId())) {
                 rows.add(new QualifyingTableDto.Row(position++, result.entryId(),
                         driverName(result.entryId(), restricted), carNumbers.get(result.entryId()),
-                        result.lapsCompleted(),
-                        result.hasBestLap() ? result.bestLapMs() : null, result.points(),
+                        result.lapsCompleted(), result.hasBestLap() ? result.bestLapMs() : null, result.points(),
                         result.rounds().stream()
                                 .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList()));
             }
@@ -102,7 +101,7 @@ public class QualifyingTableService {
         return tables;
     }
 
-    /** Each entry's car number in the given heats, by entry id; a later heat's number replaces an earlier one. */
+    /** Each entry's car number in the given heats, by entry id; the number from the heat read last wins. */
     private Map<Long, String> carNumbers(List<Race> heats) {
         Map<Long, String> carNumbers = new HashMap<>();
         for (Race heat : heats) {
