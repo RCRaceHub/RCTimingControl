@@ -14,7 +14,8 @@ import jakarta.validation.constraints.Size;
  * <p>Settings saved before these were added have none of them, so a missing switch is on and a missing lead-in
  * is 10 seconds (0 means none). {@code hornSounds} holds the club's own start and finish sound files, none until
  * the club uploads one. {@code tickSound} and {@code finalBeeps} are the start lead-in's ticks and the beeps in the
- * last seconds of a timed race, each with its own switch (the lap beep has {@code announceLapBeep}).
+ * last seconds of a timed race, each with its own switch (the lap beep has {@code announceLapBeep}). Unlike the
+ * other switches, a missing {@code finalBeeps} is off: the end of a race is not counted down unless the club asks.
  * {@code wording} is how each spoken line is worded and {@code tuning} the running order cadence, the
  * final-seconds count and the lap beep's tone; a blank wording or a missing number takes the standard.
  */
@@ -209,7 +210,7 @@ public record ClubAudioSettings(
         announceCarFinish = announceCarFinish == null || announceCarFinish;
         timeUpText = timeUpText == null || timeUpText.isBlank() ? DEFAULT_TIME_UP_TEXT : timeUpText.strip();
         tickSound = tickSound == null || tickSound;
-        finalBeeps = finalBeeps == null || finalBeeps;
+        finalBeeps = finalBeeps != null && finalBeeps;
         wording = wording == null ? Wording.STANDARD : wording;
         tuning = tuning == null ? Tuning.STANDARD : tuning;
         runningOrderPercent = runningOrderPercent == null ? DEFAULT_RUNNING_ORDER_PERCENT : runningOrderPercent;

@@ -208,15 +208,15 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.push(t);
     });
 
-    // A beep for each of the club's final seconds, the last one higher
-    if (s.finalBeeps !== false) {
+    // A beep for each of the club's final seconds, the last one higher; off unless the club switches it on
+    if (s.finalBeeps === true) {
       const finalSeconds = tuningOf(s).finalSeconds;
       for (let left = finalSeconds; left >= 1; left--) {
         const delay = raceEndsAt - left * 1000 - now;
         if (delay <= 0) continue;
         countdownTimeoutsRef.current.push(setTimeout(() => {
           if (raceStateRef.current !== 'RUNNING') return;
-          if (settingsRef.current?.finalBeeps === false) return;
+          if (settingsRef.current?.finalBeeps !== true) return;
           playTick(volumeRef.current, left === 1, settingsRef.current?.hornSounds);
         }, delay));
       }
