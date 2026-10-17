@@ -50,7 +50,7 @@ On Windows Command Prompt, run `set HOST_PORT=8081` first. Then open `http://loc
 
 ### Voice announcements
 
-The demo has no voice server, so race control uses the browser's own voice for announcements.
+The demo includes the announcer voice server (Piper) with one voice, so race control speaks announcements from the server. The first start downloads the voice, so it needs the internet; after that it runs offline. If the voice server is down, race control falls back to the browser's own voice.
 
 ## Running the club's server with Docker
 

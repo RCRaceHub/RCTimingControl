@@ -13,12 +13,23 @@ services:
     environment:
       # Loads the demo club into a fresh database
       SPRING_PROFILES_ACTIVE: demo
-      # No voice server in the demo; race control falls back to the browser's voice
-      TTS_ENABLED: "false"
+      # Announcer voices come from the piper service below
+      TTS_ENDPOINT: piper:10200
+      TTS_ENABLED: "true"
     ports:
       - "${HOST_PORT:-8080}:8080"
     volumes:
       - demo_data:/data
+    depends_on:
+      - piper
+
+  # Announcer voice (Piper text to speech). The first start downloads the voice, so it needs the internet.
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    volumes:
+      - piper_data:/data
+    command: >
+      --voice en_GB-alan-medium
 
   # The fake decoder shares the app's network, so it is on localhost:5100 where the demo club's
   # decoder settings point
@@ -31,3 +42,4 @@ services:
 
 volumes:
   demo_data:
+  piper_data:
