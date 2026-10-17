@@ -35,11 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtTokenService = jwtTokenService;
     }
 
+    /** Skips the sign-in and refresh endpoints, which carry no access token. */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return request.getServletPath().startsWith("/api/v1/auth/");
     }
 
+    /**
+     * Puts the token's official, with the roles in its claims, in the security context for this request; an invalid
+     * or expired token is ignored, never an error here. Runs on the request thread.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,

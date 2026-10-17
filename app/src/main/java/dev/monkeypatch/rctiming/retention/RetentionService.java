@@ -56,10 +56,16 @@ public class RetentionService {
         this.clock = clock;
     }
 
+    /** The limits in force, for the admin page that shows them. */
     public RetentionProperties policy() {
         return properties;
     }
 
+    /**
+     * Deletes expired refresh tokens, refused sign-ins older than {@code failedSignInDays}, and, unless
+     * {@code auditDays} is 0, every audit row older than {@code auditDays}; returns the counts. Ages are counted
+     * back from the clock's current instant. The summary row it writes is new, so it is never deleted by the same run.
+     */
     @Transactional
     public Result purge() {
         Instant now = clock.instant();

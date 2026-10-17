@@ -94,10 +94,16 @@ public class TtsClipService {
                 "race {} car finish entry {} clip", raceId, entryId);
     }
 
+    /** The voice asked for, else the configured default. */
     private String resolve(String voiceId) {
         return (voiceId != null && !voiceId.isBlank()) ? voiceId : properties.defaultVoice();
     }
 
+    /**
+     * Synthesises and stores one clip, returning its URL, or null when TTS is off or Piper is unreachable. The key
+     * names the voice, so a clip made with another voice is a different file; the same key is overwritten.
+     * Blocks while Piper synthesises.
+     */
     private String synthesizeAndUpload(String key, String text, String voice,
                                         String logPattern, Object... logArgs) {
         if (!properties.enabled()) {

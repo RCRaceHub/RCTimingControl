@@ -26,6 +26,12 @@ import java.util.Arrays;
 @EnableAsync
 @EnableScheduling
 public class RcTimingApplication {
+    /**
+     * Picks a command-line tool by the first argument, or starts the server. When the installer has set the
+     * machine-wide data scope, the data folder is wired in first so every mode finds the same database and log.
+     * {@code restore} and {@code reset-admin-password} end the JVM with their exit code; {@code relay} and
+     * {@code simulate} run their own programs and return when they stop.
+     */
     public static void main(String[] args) throws Exception {
         if (DataDirectories.isMachineScope()) {
             useMachineFolders();
@@ -75,6 +81,7 @@ public class RcTimingApplication {
                 "--interval-ms=13000", "--jitter-ms=2500"};
     }
 
+    /** Sets a system property unless the operator already did, on the command line or in the service definition. */
     private static void setIfAbsent(String key, String value) {
         if (System.getProperty(key) == null) {
             System.setProperty(key, value);

@@ -50,6 +50,10 @@ public class EventRunOrderService {
         this.audit = audit;
     }
 
+    /**
+     * Generates the event's rounds and heats for the first time, via {@link RoundGeneratorService}. Refused by it if
+     * the event already has a run order; use {@link #regenerateRounds} to replace one.
+     */
     public void generateRounds(Actor actor, RoundGenerationRequest request) {
         Event event = eventRepository.getOrThrow(request.eventId());
         roundGeneratorService.generate(request);
@@ -80,6 +84,10 @@ public class EventRunOrderService {
     /**
      * Seeds the class's finals from its qualifying results as stored when the heats finished. Refused while no
      * qualifying heat has finished and once a final has started, because seeding replaces the finals' grids.
+     * The layout is the caller's, unlike {@link AutoFinalsSeedingService}, which works it out from the class's format.
+     *
+     * @throws IllegalArgumentException if {@code bumpCount} is more than {@code carsPerFinal}
+     * @throws EntityNotFoundException  if the class is not in the event
      */
     public void seedFinals(Actor actor, Long eventId, Long eventClassId,
                            int finalsCount, int carsPerFinal, int bumpCount) {

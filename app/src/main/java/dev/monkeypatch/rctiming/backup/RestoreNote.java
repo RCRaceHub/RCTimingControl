@@ -19,6 +19,7 @@ record RestoreNote(String backup, String osUser, Instant at) {
 
     static final String FILE_NAME = "restore-pending.properties";
 
+    /** Leaves the note beside the database, naming the backup, the OS user running the command and the time. */
     static void write(Path dataDirectory, Path backup) throws IOException {
         Properties p = new Properties();
         p.setProperty("backup", backup.toString());
@@ -29,6 +30,7 @@ record RestoreNote(String backup, String osUser, Instant at) {
         }
     }
 
+    /** The pending note, or empty if there is none. Missing fields are filled with placeholders, not refused. */
     static Optional<RestoreNote> read(Path dataDirectory) throws IOException {
         Path file = dataDirectory.resolve(FILE_NAME);
         if (!Files.isRegularFile(file)) {
@@ -43,6 +45,7 @@ record RestoreNote(String backup, String osUser, Instant at) {
                 p.getProperty("osUser", "unknown"), at == null ? Instant.now() : Instant.parse(at)));
     }
 
+    /** Removes the note once it has been recorded. */
     static void remove(Path dataDirectory) throws IOException {
         Files.deleteIfExists(dataDirectory.resolve(FILE_NAME));
     }

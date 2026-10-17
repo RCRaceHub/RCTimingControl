@@ -25,6 +25,7 @@ public class DecoderProbe {
 
     /** Long enough to catch the decoder's 5-second STATUS heartbeat. */
     static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(8);
+    /** How long to wait for the TCP connection itself before giving up. */
     static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
     /** Longest RC-4 record we accept. Real records are a few dozen characters. */
@@ -47,6 +48,11 @@ public class DecoderProbe {
         this.connectTimeout = connectTimeout;
     }
 
+    /**
+     * Probes a decoder address on the calling (request) thread, blocking for up to the connect timeout plus the
+     * read timeout. Never throws for an unreachable or misbehaving host: every failure comes back as a
+     * {@link Result} with an operator-readable message.
+     */
     public Result probe(String host, int port, String protocol) {
         if (!"RC4".equals(protocol)) {
             return new Result(false, "Only the RC4 protocol is supported at the moment.");

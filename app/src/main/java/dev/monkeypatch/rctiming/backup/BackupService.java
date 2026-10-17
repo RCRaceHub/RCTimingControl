@@ -22,6 +22,10 @@ import java.util.stream.Stream;
 /**
  * Copies the live database into the backup folder and keeps the newest few (#22). The copy is
  * made by the database vendor, so it is consistent even while a race is being timed.
+ *
+ * <p>Backups are named {@code rctiming-yyyyMMdd-HHmmss-reason.db} (UTC), written under a {@code .partial} name,
+ * checked, and only then moved into place, so the folder never holds a half-written backup under a real name.
+ * Callers are the admin API on request threads and {@link BackupScheduler}.
  */
 @Service
 @EnableConfigurationProperties(BackupProperties.class)
@@ -50,7 +54,11 @@ public class BackupService {
     /**
      * Takes a backup now and deletes the oldest beyond the number kept.
      *
+     * <p>Synchronized, so two backups never write at once. Blocks the caller for the length of the copy.
+     *
      * @param reason a short lower-case label stored in the file name, such as {@code manual}
+     * @throws BackupFailedException if the folder is missing or the copy fails or does not pass the vendor's check;
+     *                               a failure to delete old backups is only logged
      */
     public synchronized BackupFile backup(String reason) {
         Path partial = null;
@@ -71,7 +79,11 @@ public class BackupService {
         }
     }
 
-    /** Backups in the folder, newest first. */
+    /**
+     * Backups in the folder, newest first, by file time. Files that do not match the backup naming are ignored.
+     *
+     * @throws BackupFailedException if a configured folder is missing
+     */
     public List<BackupFile> list() {
         Path folder = directory();
         if (!Files.isDirectory(folder)) {
@@ -143,6 +155,7 @@ public class BackupService {
         }
     }
 
+    /** The file name for a backup at {@code now}, with a number added if one was already taken this second. */
     private static Path uniqueTarget(Path folder, Instant now, String reason) {
         String stamp = STAMP.format(now);
         Path target = folder.resolve("rctiming-" + stamp + "-" + reason + ".db");

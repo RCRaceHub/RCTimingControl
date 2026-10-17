@@ -7,7 +7,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 
 /**
- * Thread pools for background work.
+ * Thread pools for background work: the general {@code @Async} pool and the single timing thread that every decoder
+ * passing runs on (see the decoder flow in {@code DecoderListener}). Scheduled jobs use Spring's own scheduler pool,
+ * sized by {@code spring.task.scheduling.pool.size}, not these.
  */
 @Configuration
 public class AsyncConfig {

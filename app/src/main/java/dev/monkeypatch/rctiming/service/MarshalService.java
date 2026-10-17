@@ -45,7 +45,8 @@ public class MarshalService {
     /**
      * Records the adjustment and applies it: to the live timing while the race runs, or, once it has finished,
      * by sending its corrected results again. A lap delta other than +1 or -1 is refused before anything is read,
-     * as the table allows only those.
+     * as the table allows only those. Runs on a request thread in one transaction; live timing is told only after
+     * the commit, so a rolled-back adjustment never reaches the boards.
      *
      * @param actingUserId the official making the adjustment
      * @return the adjustment as saved

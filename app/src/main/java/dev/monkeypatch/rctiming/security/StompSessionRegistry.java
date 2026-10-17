@@ -41,6 +41,7 @@ public class StompSessionRegistry implements WebSocketHandlerDecoratorFactory {
     /** Official id → when they were last signed out, to the second like a JWT's issued-at. */
     private final Map<String, Instant> signedOutAt = new ConcurrentHashMap<>();
 
+    /** Tracks each WebSocket session while it is open, so a sign-out can close it. */
     @Override
     public WebSocketHandler decorate(WebSocketHandler handler) {
         return new WebSocketHandlerDecorator(handler) {
@@ -75,7 +76,10 @@ public class StompSessionRegistry implements WebSocketHandlerDecoratorFactory {
         return at != null && (issuedAt == null || !issuedAt.isAfter(at));
     }
 
-    /** Closes the official's sockets once the change that signed them out is committed. */
+    /**
+     * Closes the official's sockets once the change that signed them out is committed (or at once if it was not in
+     * a transaction), and remembers the time so an older access token cannot reconnect.
+     */
     @TransactionalEventListener(fallbackExecution = true)
     public void onSignedOut(OfficialSignedOutEvent event) {
         String officialId = String.valueOf(event.userId());

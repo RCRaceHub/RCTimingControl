@@ -41,6 +41,7 @@ public class ResultsOutboxRepository extends JooqRepository<ResultsOutboxItem, R
         return "Results export";
     }
 
+    /** The exports in the given statuses whose next attempt is due, oldest id first. */
     public List<ResultsOutboxItem> findByStatusInAndNextAttemptAtLessThanEqualOrderByIdAsc(
             Collection<OutboxStatus> statuses, Instant due) {
         return findWhere(RESULTS_OUTBOX.STATUS.in(names(statuses)).and(RESULTS_OUTBOX.NEXT_ATTEMPT_AT.le(due)));

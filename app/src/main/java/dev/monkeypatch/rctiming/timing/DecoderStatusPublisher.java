@@ -20,10 +20,16 @@ public class DecoderStatusPublisher {
         this.liveTimingHub = liveTimingHub;
     }
 
+    /** The most recent state, for the status bar to read over REST before its first broadcast arrives. */
     public DecoderStatusDto getLastKnownStatus() {
         return new DecoderStatusDto(decoderState);
     }
 
+    /**
+     * Records the new state and broadcasts it. Called from {@link DecoderListener} on the Netty event-loop thread
+     * (or the lifecycle thread when the decoder is unconfigured); {@code state} is the name of the TCP source's
+     * connection state, such as {@code CONNECTED} or {@code DISCONNECTED}.
+     */
     public void onDecoderStatus(String state) {
         decoderState = state;
         liveTimingHub.broadcastDecoderStatus(new DecoderStatusDto(state));

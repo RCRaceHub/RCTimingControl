@@ -43,6 +43,11 @@ public class SecurityConfig {
 
     private static final String[] OFFICIAL_ROLES = Role.OFFICIAL_ROLES.stream().map(Role::name).toArray(String[]::new);
 
+    /**
+     * The HTTP rules, stateless with the {@link JwtAuthenticationFilter} ahead of the standard login filter. A
+     * request with no valid token is answered 401. Order matters: the explicit public routes come first and the last
+     * rule, any official role, applies to everything else under the API.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationFilter jwtFilter) throws Exception {
@@ -77,6 +82,7 @@ public class SecurityConfig {
                 .build();
     }
 
+    /** Whether this is a read of a page or asset of the bundled frontend rather than an API, storage or socket path. */
     static boolean isFrontendRequest(HttpServletRequest request) {
         // Decoded, as Spring MVC routes it, so an encoded /api path is not taken for a page
         String path = UrlPathHelper.defaultInstance.getPathWithinApplication(request);
@@ -84,6 +90,7 @@ public class SecurityConfig {
                 && !SpaConfig.isServerPath(path);
     }
 
+    /** BCrypt, for officials' passwords. Its slowness is deliberate; see {@code AuthService}. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

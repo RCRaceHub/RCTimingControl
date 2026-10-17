@@ -26,6 +26,7 @@ public class RetentionScheduler {
         this.runOnStartup = runOnStartup;
     }
 
+    /** Runs the clean-up once when the app is ready, unless {@code rctiming.retention.run-on-startup} is false. */
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         if (runOnStartup) {
@@ -35,7 +36,7 @@ public class RetentionScheduler {
 
     /**
      * 03:00 server time, an hour after the nightly backup, unless {@code rctiming.retention.cron} says otherwise;
-     * {@code -} turns the nightly run off.
+     * {@code -} turns the nightly run off. Runs on a scheduler thread. A failure is logged and never thrown.
      */
     @Scheduled(cron = "${rctiming.retention.cron:0 0 3 * * *}")
     public void nightly() {

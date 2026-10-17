@@ -6,6 +6,10 @@ import java.util.List;
 /**
  * In-memory per-entry position within a live race.
  * Not persisted — held inside LiveRaceState during the race.
+ *
+ * <p>A plain mutable holder with no locking of its own: {@link LiveRaceState} owns every instance and only touches
+ * it while holding its own lock. Times are in milliseconds; {@code lastPassingTimeMs} is the passing's UTC time
+ * converted from the decoder's microseconds.
  */
 public class LiveRacePosition {
 
@@ -33,6 +37,7 @@ public class LiveRacePosition {
     public Long getBestLapMs() { return bestLapMs; }
     public void setBestLapMs(Long bestLapMs) { this.bestLapMs = bestLapMs; }
 
+    /** Adds one valid lap to the running average. */
     public void accumulateLap(long lapMs) {
         lapCount++;
         lapSumMs += lapMs;

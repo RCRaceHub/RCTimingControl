@@ -19,6 +19,8 @@ public record LiveFeedProperties(URI relayUrl, String token) {
     static final String URL_SETTING = "rctiming.livefeed.relay-url";
     static final String TOKEN_SETTING = "rctiming.livefeed.token";
 
+    /** Normalises both settings: blank counts as unset. Throws at startup for a relay address that would send the key
+     * in the clear to another machine. */
     public LiveFeedProperties {
         relayUrl = SecureEndpoint.url(relayUrl, URL_SETTING, "wss", "ws");
         token = SecureEndpoint.token(token);

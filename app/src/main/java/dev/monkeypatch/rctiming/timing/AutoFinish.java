@@ -50,7 +50,11 @@ public class AutoFinish {
         }
     }
 
-    /** Finishes the race if it is still running; {@code actor} is the system actor's name. */
+    /**
+     * Finishes the race if it is still running; {@code actor} is the system actor's name. Runs in its own
+     * transaction, so the state change and its audit row commit together. A race that is no longer running
+     * (finished, restarted or deleted since the caller looked) is left alone, so calling this twice is harmless.
+     */
     public void finish(long raceId, String actor, String summary) {
         transactions.executeWithoutResult(status -> {
             // Look again inside the transaction: the director may have finished or restarted it meanwhile

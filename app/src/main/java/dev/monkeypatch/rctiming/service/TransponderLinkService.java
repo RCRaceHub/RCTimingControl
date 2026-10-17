@@ -77,6 +77,9 @@ public class TransponderLinkService {
      * the event find it by themselves.
      *
      * @return how many laps the link credited
+     * @throws StateConflictException   if the race is not running or stopped, or the number is linked to another
+     *                                  entry already
+     * @throws IllegalArgumentException if the entry is not in the race
      */
     public int link(long raceId, String transponderNumber, long entryId, long userId) {
         Race race = raceRepository.getOrThrow(raceId);

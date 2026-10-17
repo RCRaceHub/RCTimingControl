@@ -42,6 +42,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Keeps the stored result of a race (the {@code ResultSnapshot}), the only record of a race's positions once it
+ * is over. Live positions are held in memory by {@link LapTimingService} during the race and written here once, when
+ * the race finishes; this is also where later corrections (penalties, marshal laps) are folded in.
+ *
+ * <p>Two versions of the result are kept: the one as timed, which never changes, and the corrected one that
+ * championship points, exports and result screens read. Corrections are always applied to the timed one, so
+ * applying them twice cannot double them. Everything here runs in the caller's write transaction, on a request
+ * thread; the finish command calls {@link #snapshot} inside the same transaction as the state change.
+ */
 @Service
 @Transactional
 public class ResultSnapshotService {
@@ -161,7 +171,10 @@ public class ResultSnapshotService {
         applyCorrections(event.raceId());
     }
 
-    /** Recalculates the stored result from the result as timed and every correction made so far. */
+    /**
+     * Recalculates the stored result from the result as timed and every correction made so far. Does nothing but
+     * log if the race has no snapshot (it has not finished).
+     */
     public void applyCorrections(long raceId) {
         Optional<ResultSnapshot> found = resultSnapshotRepository.findByRaceId(raceId);
         if (found.isEmpty()) {
@@ -230,6 +243,7 @@ public class ResultSnapshotService {
         return ResultCorrections.apply(rows, lapDeltas, addedTimeMs);
     }
 
+    /** Removes the race's stored result, such as when the race is restarted to run again. A no-op if there is none. */
     public void deleteByRaceId(long raceId) {
         resultSnapshotRepository.findByRaceId(raceId)
                 .ifPresent(resultSnapshotRepository::delete);

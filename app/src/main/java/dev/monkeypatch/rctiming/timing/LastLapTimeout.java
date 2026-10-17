@@ -56,6 +56,10 @@ public class LastLapTimeout {
         return idleMs > maxLastLapMs;
     }
 
+    /**
+     * Looks at the running race once a second, on the scheduler thread. Does nothing while the clock is still
+     * running. Any failure is logged and the next tick tries again, so a database blip cannot stop the backstop.
+     */
     @Scheduled(initialDelay = 5_000, fixedDelay = 1_000)
     public void checkRunningRace() {
         try {

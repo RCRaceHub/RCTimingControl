@@ -27,6 +27,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         this.sessionRegistry = sessionRegistry;
     }
 
+    /**
+     * The in-memory simple broker serves {@code /topic}. Clients never send to the application ({@code /app} has no
+     * handlers); the server only broadcasts.
+     */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic");
@@ -45,6 +49,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registration.addDecoratorFactory(sessionRegistry);
     }
 
+    /** Every inbound frame goes through the JWT interceptor, which decides what an anonymous spectator may do. */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(jwtInterceptor);

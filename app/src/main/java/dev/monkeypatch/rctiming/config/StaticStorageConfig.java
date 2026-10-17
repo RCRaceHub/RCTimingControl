@@ -23,6 +23,7 @@ public class StaticStorageConfig implements WebMvcConfigurer {
         this.folder = StorageFolder.resolve(localPath, database);
     }
 
+    /** Maps {@code /storage/**} to the storage folder, the same one {@code FilesystemObjectStorageService} writes to. */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String location = folder.toUri().toString();

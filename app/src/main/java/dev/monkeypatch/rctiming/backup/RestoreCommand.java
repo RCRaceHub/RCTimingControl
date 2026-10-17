@@ -28,7 +28,11 @@ public final class RestoreCommand {
     static class Settings {
     }
 
-    /** Returns the process exit code. */
+    /**
+     * Restores {@code args[0]} and returns the process exit code: 0 on success, 1 if the restore failed, 2 for bad
+     * arguments or a missing file. Remaining arguments are passed to Spring as settings, so the data directory is
+     * found as the app finds it. Runs on the main thread with no web server or database connection pool started.
+     */
     public static int run(String[] args) {
         if (args.length == 0 || args[0].startsWith("--")) {
             System.err.println("Usage: java -jar app.jar restore <backup-file> [--rctiming.database.data-directory=<folder>]");

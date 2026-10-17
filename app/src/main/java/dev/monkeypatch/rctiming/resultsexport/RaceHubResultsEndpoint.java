@@ -41,6 +41,10 @@ public class RaceHubResultsEndpoint {
         this.clubProfileService = clubProfileService;
     }
 
+    /**
+     * Reads the saved address and the settings file and works out what is in use. A saved address that no longer
+     * passes {@link #parse} is ignored in favour of the settings file's, so a bad value cannot stop exports.
+     */
     public Snapshot snapshot() {
         String saved = clubProfileService.getRaceHubResultsUrl().orElse(null);
         URI url = properties.resultsUrl();
@@ -68,10 +72,12 @@ public class RaceHubResultsEndpoint {
         return snapshot().resultsUrl();
     }
 
+    /** The club's key for RaceHub, from the settings file only; null when unset. Never log or return it. */
     public String token() {
         return properties.token();
     }
 
+    /** Whether {@link ResultsSender} will send: an address (either source) and the key are both set. */
     public boolean sendingEnabled() {
         return snapshot().sendingEnabled();
     }

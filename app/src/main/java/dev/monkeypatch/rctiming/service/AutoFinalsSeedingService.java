@@ -58,7 +58,12 @@ public class AutoFinalsSeedingService {
         this.audit = audit;
     }
 
-    /** Call after a qualifying heat of the class has finished and been saved. */
+    /**
+     * Call after a qualifying heat of the class has finished and been saved; {@code RaceStateMachineService} does
+     * so from the finish command, so it runs on that request thread inside its transaction. Silently does nothing
+     * unless the class is ready to seed (see the class comment), as a finish is no place to fail. Audited as the
+     * system actor {@code finals-seeding}.
+     */
     public void seedIfQualifyingComplete(Long eventClassId) {
         if (!qualifyingComplete(eventClassId)) {
             return;
@@ -85,6 +90,9 @@ public class AutoFinalsSeedingService {
      * Seeds the class's finals again from the qualifying results, on an official's say, after a result changed
      * (a heat re-run or corrected). Refused until every qualifying heat is finished, since a driver who is only
      * in an unfinished heat would be left out of every final, and once a final has started.
+     *
+     * @throws EntityNotFoundException if the class is not in the event
+     * @throws StateConflictException  if qualifying is not complete, or the class has no finals
      */
     @Transactional
     public void reseed(Actor actor, Long eventId, Long eventClassId) {
@@ -122,7 +130,11 @@ public class AutoFinalsSeedingService {
                 .after(after).record();
     }
 
-    /** {cars per final, bump count} for a field of {@code field} drivers over {@code finalsCount} finals. */
+    /**
+     * {cars per final, bump count} for a field of {@code field} drivers over {@code finalsCount} finals.
+     * A bump-up format keeps its grid size unless the field would not fit, when the grid grows rather than leave a
+     * driver out of every final.
+     */
     static int[] layout(RaceFormatConfig config, int field, int finalsCount) {
         int cars = (field + finalsCount - 1) / finalsCount;
         int bump = 0;

@@ -38,10 +38,12 @@ public class LivePracticeState {
     /** The highest lap number given to each transponder so far. */
     private final Map<String, Integer> savedLaps = new ConcurrentHashMap<>();
 
+    /** A state with the default pause between runs. {@code bestLapN} is how many consecutive laps the best-N column sums. */
     public LivePracticeState(int bestLapN) {
         this(bestLapN, DEFAULT_PAUSE_SECONDS);
     }
 
+    /** As {@link #LivePracticeState(int)}, with the session's own pause (in seconds) that ends a run. */
     public LivePracticeState(int bestLapN, long pauseSeconds) {
         this.bestLapN = bestLapN;
         this.pauseMicros = pauseSeconds * 1_000_000L;
@@ -118,7 +120,8 @@ public class LivePracticeState {
     }
 
     /**
-     * Link an unknown transponder to a user (retroactive/on-the-fly linking).
+     * Link an unknown transponder to a user (retroactive/on-the-fly linking). Does nothing for a transponder that
+     * has not passed in this session. Laps already recorded stay with the transponder and show under the new name.
      */
     public void linkTransponder(String transponderNumber, Long userId, String racerName) {
         ParticipantState state = participants.get(transponderNumber);
@@ -179,6 +182,10 @@ public class LivePracticeState {
         return unknown;
     }
 
+    /**
+     * One transponder's laps in the session. Not synchronized itself: it is changed only inside
+     * {@code participants.compute}, which locks the transponder's entry, and read when positions are worked out.
+     */
     static class ParticipantState {
         String transponderNumber;
         Long userId;
