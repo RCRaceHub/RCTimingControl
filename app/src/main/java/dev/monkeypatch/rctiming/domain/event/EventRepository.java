@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 
+/** Repository for {@link Event} ({@code events}). */
 @Repository
 public class EventRepository extends JooqRepository<Event, EventsRecord> {
 

@@ -9,6 +9,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences.MARSHAL_ABSENCES;
 
+/** Repository for {@link MarshalAbsence} ({@code marshal_absences}). */
 @Repository
 public class MarshalAbsenceRepository extends JooqRepository<MarshalAbsence, MarshalAbsencesRecord> {
 

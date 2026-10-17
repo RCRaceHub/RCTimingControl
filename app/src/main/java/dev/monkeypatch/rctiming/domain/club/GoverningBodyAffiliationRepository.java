@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffiliations.GOVERNING_BODY_AFFILIATIONS;
 
+/** Repository for {@link GoverningBodyAffiliation} ({@code governing_body_affiliations}). */
 @Repository
 public class GoverningBodyAffiliationRepository
         extends JooqRepository<GoverningBodyAffiliation, GoverningBodyAffiliationsRecord> {

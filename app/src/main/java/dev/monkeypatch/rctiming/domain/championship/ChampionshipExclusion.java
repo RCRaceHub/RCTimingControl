@@ -4,6 +4,11 @@ package dev.monkeypatch.rctiming.domain.championship;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * An official's decision to exclude one driver from one event of a championship (table {@code championship_exclusions},
+ * CHAMP-02). That round then scores nothing for the driver, bonuses included. {@code driverId} is a competitor id and
+ * {@code createdBy} the official who recorded it; the audit row written with it keeps the reason after a delete.
+ */
 public class ChampionshipExclusion implements CreatedAt {
 
     private Long id;

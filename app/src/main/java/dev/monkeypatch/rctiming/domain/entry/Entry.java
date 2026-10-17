@@ -3,6 +3,15 @@ package dev.monkeypatch.rctiming.domain.entry;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * One driver's entry in one class of one event (table {@code entries}); it points at a {@link
+ * dev.monkeypatch.rctiming.domain.competitor.Competitor} and carries the transponder numbers they race with in this
+ * event. Entries come from the RaceHub import, the RC-Timing CSV import or are added as walk-ins.
+ *
+ * A competitor can hold only one active (not withdrawn) entry per event class, which the database enforces with a
+ * unique index. A withdrawn entry is kept, never deleted. {@code externalSource}, {@code externalEntryId} and {@code
+ * externalEntryVersion} identify an imported entry so a re-import updates it; all three are null for a walk-in.
+ */
 public class Entry implements UpdatedAt {
 
     private Long id;

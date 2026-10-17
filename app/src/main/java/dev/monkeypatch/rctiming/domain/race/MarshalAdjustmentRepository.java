@@ -9,6 +9,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.MARSHAL_ADJUSTMENTS;
 
+/** Repository for {@link MarshalAdjustment} ({@code marshal_adjustments}). */
 @Repository
 public class MarshalAdjustmentRepository extends JooqRepository<MarshalAdjustment, MarshalAdjustmentsRecord> {
 

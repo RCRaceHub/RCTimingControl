@@ -1,6 +1,10 @@
 package dev.monkeypatch.rctiming.domain.championship;
 
 
+/**
+ * The points a finishing position scores in a championship (table {@code championship_points_scale}, CHAMP-04). It has
+ * no id of its own: a row is identified by the championship and the position, and a position left out scores 0.
+ */
 public class ChampionshipPointsScaleEntry {
 
     private Long championshipId;

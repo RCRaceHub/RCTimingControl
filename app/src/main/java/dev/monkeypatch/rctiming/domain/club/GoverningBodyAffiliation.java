@@ -3,6 +3,10 @@ package dev.monkeypatch.rctiming.domain.club;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * A governing body the club's racers belong to, such as BRCA (table {@code governing_body_affiliations}). When {@code
+ * membershipRequired} is the club's flag for whether membership of that body is required.
+ */
 public class GoverningBodyAffiliation implements CreatedAt {
 
     private Long id;

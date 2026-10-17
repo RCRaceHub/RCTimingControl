@@ -16,6 +16,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 
+/** Repository for {@link EventClass} ({@code event_classes}); the config columns are JSON text. */
 @Repository
 public class EventClassRepository extends JooqRepository<EventClass, EventClassesRecord> {
 
@@ -26,6 +27,7 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
         super(dsl, EVENT_CLASSES, EVENT_CLASSES.ID);
     }
 
+    /** Every class entered in the event, with its format config. */
     public List<EventClass> findByEventId(Long eventId) {
         return findWhere(EVENT_CLASSES.EVENT_ID.eq(eventId));
     }
@@ -57,8 +59,10 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
                 .fetchMap(EVENT_CLASSES.ID, r -> new EventClassNames(r.value2(), r.value3()));
     }
 
+    /** The racing class name and the event name of an event class, for messages. */
     public record EventClassNames(String racingClassName, String eventName) {}
 
+    /** An event class's id and racing class, a light alternative to loading the whole {@link EventClass}. */
     public record EventClassRef(Long id, Long racingClassId) {
         public Long getId() {
             return id;

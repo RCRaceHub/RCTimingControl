@@ -6,6 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Small competitor operations that need no import: creating a walk-in, looking for duplicates by name and setting how a
+ * name is said aloud. Each write runs in its own transaction on the write connection.
+ */
 @Service
 public class CompetitorService {
 

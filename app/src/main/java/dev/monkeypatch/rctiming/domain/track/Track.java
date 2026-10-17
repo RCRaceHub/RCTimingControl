@@ -6,6 +6,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A track the club races at (table {@code tracks}). {@code decoderLoops} and {@code lapThresholds} are loaded and saved
+ * with it by {@link TrackRepository}.
+ */
 public class Track implements CreatedAt, UpdatedAt {
 
     private Long id;

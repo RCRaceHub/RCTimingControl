@@ -68,6 +68,7 @@ public class EntryFeedService {
         this.audit = audit;
     }
 
+    /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
     public Optional<EntryFeed> find(long eventId) {
         requireEvent(eventId);
         return feedRepository.findByEventId(eventId);
@@ -116,6 +117,10 @@ public class EntryFeedService {
         return saved;
     }
 
+    /**
+     * Removes the event's feed and any file it holds, and records {@code ENTRY_FEED_DELETED}. Nothing already imported
+     * is touched.
+     */
     @Transactional
     public void delete(Actor actor, long eventId) {
         Event event = requireEvent(eventId);

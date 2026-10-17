@@ -12,6 +12,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PRACTICE_LAPS;
 
+/** Repository for {@link PracticeLap} ({@code practice_laps}); each finder orders its laps as its name says. */
 @Repository
 public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeLapsRecord> {
 

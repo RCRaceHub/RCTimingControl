@@ -5,6 +5,14 @@ import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * A race meeting on one day at one track (table {@code events}). Its classes ({@code EventClass}), entries and rounds
+ * hang off it by id. It moves through {@link EventStatus} under {@link EventStateMachineService}.
+ *
+ * The {@code racehub*} fields record the last entry import from RaceHub and the RaceHub event the entries came from;
+ * the {@code resultsExport*} fields drive the results sent back to RaceHub (#27). {@code eventDate} is the local race
+ * day, a date with no time zone.
+ */
 public class Event implements CreatedAt, UpdatedAt {
 
     private Long id;

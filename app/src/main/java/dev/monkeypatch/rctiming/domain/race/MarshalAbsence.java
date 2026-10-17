@@ -3,6 +3,10 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import java.time.Instant;
 
+/**
+ * A driver who missed their marshalling duty in a race (table {@code marshal_absences}), recorded by a referee. It may
+ * then lead to a {@link MarshalPenalty}.
+ */
 public class MarshalAbsence {
 
     private Long id;

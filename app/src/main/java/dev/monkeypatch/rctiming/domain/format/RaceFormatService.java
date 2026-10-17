@@ -50,6 +50,8 @@ public class RaceFormatService {
      * with configOverride. Override values win. If override is null or empty,
      * the snapshot is returned directly. It reads no table, so it joins a transaction if there is one and takes
      * none otherwise, which keeps public reads off the write connection.
+     *
+     * @throws IllegalStateException if the override does not fit the config's type
      */
     @Transactional(propagation = Propagation.SUPPORTS)
     public RaceFormatConfig getEffectiveConfig(EventClass eventClass) {
@@ -148,16 +150,19 @@ public class RaceFormatService {
         return eventClass;
     }
 
+    /** Every format template. */
     @Transactional(readOnly = true)
     public List<RaceFormatTemplate> findAll() {
         return templateRepository.findAll();
     }
 
+    /** A format template; a 404 if there is none. */
     @Transactional(readOnly = true)
     public RaceFormatTemplate findById(Long id) {
         return templateRepository.getOrThrow(id);
     }
 
+    /** Adds a template and records {@code FORMAT_CREATED}. */
     public RaceFormatTemplate create(Actor actor, String name, RaceFormatConfig config) {
         return create(actor, "FORMAT_CREATED", "Added the race format ", name, config);
     }
@@ -187,6 +192,10 @@ public class RaceFormatService {
         return saved;
     }
 
+    /**
+     * Removes a template and records {@code FORMAT_DELETED}. Event classes that were given it keep their snapshot, and
+     * lose the template reference.
+     */
     public void delete(Actor actor, Long id) {
         RaceFormatTemplate template = findById(id);
         Map<String, Object> before = values(template);
@@ -203,10 +212,12 @@ public class RaceFormatService {
         return m;
     }
 
+    /** A template's config, for {@link RaceFormatCodec} to write out (FORMAT-14). */
     public RaceFormatConfig exportConfig(Long id) {
         return findById(id).getConfig();
     }
 
+    /** Adds a template from an imported config and records {@code FORMAT_IMPORTED} (FORMAT-14). */
     public RaceFormatTemplate importConfig(Actor actor, String name, RaceFormatConfig config) {
         return create(actor, "FORMAT_IMPORTED", "Imported the race format ", name, config);
     }

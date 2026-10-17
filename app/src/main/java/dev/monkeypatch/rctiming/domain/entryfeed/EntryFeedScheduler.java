@@ -20,6 +20,10 @@ public class EntryFeedScheduler {
 
     @Scheduled(initialDelayString = "${rctiming.entry-feed.interval-ms:300000}",
             fixedDelayString = "${rctiming.entry-feed.interval-ms:300000}")
+    /**
+     * Fetches each auto-fetch feed in turn; the interval is {@code rctiming.entry-feed.interval-ms}, five minutes by
+     * default.
+     */
     public void fetchAll() {
         feedRepository.findByAutoFetchTrue().forEach(feedService::autoFetch);
     }

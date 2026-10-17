@@ -5,6 +5,16 @@ import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 import java.util.Map;
 
+/**
+ * A racing class entered in one event (table {@code event_classes}): the event, the racing class, and the race format
+ * it runs to. The format is a snapshot copied from a {@link RaceFormatTemplate} when the class was added, so editing
+ * the template later changes nothing already set up (FORMAT-06). {@code configOverride} is an optional patch of
+ * top-level fields merged over the snapshot at read time (FORMAT-07); use {@code RaceFormatService#getEffectiveConfig}
+ * to get the merged result.
+ *
+ * Classes sharing a non-null {@code combinedRaceGroup} race together but are scored separately (EVENT-06). {@code
+ * finalsCount} is the number of finals the round generator made for the class.
+ */
 public class EventClass implements CreatedAt, UpdatedAt {
 
     private Long id;

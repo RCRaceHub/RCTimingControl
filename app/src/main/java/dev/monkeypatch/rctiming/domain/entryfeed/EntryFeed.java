@@ -4,19 +4,26 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
-/** Where an event's entries are pulled from, and how the latest fetch went (#42). See V13. */
+/**
+ * Where an event's entries are pulled from, and how the latest fetch went (#42), one row per event (table
+ * {@code entry_feeds}, see V13). With {@code autoFetch} on, {@link EntryFeedScheduler} fetches it every few minutes.
+ */
 public class EntryFeed implements CreatedAt, UpdatedAt {
 
     private Long id;
     private Long eventId;
     private String url;
+    /** The access token, encrypted; the plain token is never stored, logged or audited. */
     private String tokenEncrypted;
+    /** The last four characters of the token, so an official can tell which one is saved; null for a short token. */
     private String tokenHint;
     private boolean autoFetch;
     private Instant lastFetchAt;
     private EntryFeedStatus lastStatus;
     private String lastError;
+    /** The revision of the file last imported; fetching the same revision again changes nothing. */
     private Long appliedRevision;
+    /** A fetched file waiting for an official to preview and confirm, with its revision in {@code heldRevision}. */
     private String heldDocument;
     private Long heldRevision;
     private Instant createdAt;

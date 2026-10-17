@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers.PRACTICE_DRIVERS;
 
+/** Repository for {@link PracticeDriver} ({@code practice_drivers}). */
 @Repository
 public class PracticeDriverRepository extends JooqRepository<PracticeDriver, PracticeDriversRecord> {
 

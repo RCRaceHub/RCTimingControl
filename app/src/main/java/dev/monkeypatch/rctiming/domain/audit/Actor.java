@@ -9,6 +9,7 @@ package dev.monkeypatch.rctiming.domain.audit;
  */
 public record Actor(Long userId, String label, Source source) {
 
+    /** Where an action came from: an official in the browser, the command line, or a background job. */
     public enum Source { UI, CLI, SYSTEM }
 
     /** An official acting through the app. The name is looked up when the row is written. */

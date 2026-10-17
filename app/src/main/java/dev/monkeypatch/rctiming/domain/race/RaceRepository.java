@@ -17,6 +17,7 @@ import java.util.Optional;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
+/** Repository for {@link Race} ({@code races}). */
 @Repository
 public class RaceRepository extends JooqRepository<Race, RacesRecord> {
 
@@ -24,6 +25,7 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
         super(dsl, RACES, RACES.ID);
     }
 
+    /** A round's races in running order. */
     public List<Race> findByRoundIdOrderBySequenceInRound(Long roundId) {
         return findWhere(RACES.ROUND_ID.eq(roundId), RACES.SEQUENCE_IN_ROUND.asc(), RACES.ID.asc());
     }

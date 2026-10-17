@@ -79,6 +79,9 @@ public class ChampionshipService {
     /** An exclusion and the name of the official who recorded it, null if that account has been removed. */
     public record Exclusion(ChampionshipExclusion exclusion, String createdByName) {}
 
+    /**
+     * Creates a championship from {@code settings} and records {@code CHAMPIONSHIP_CREATED} in the same transaction.
+     */
     public Championship create(Actor actor, Settings settings) {
         Championship c = new Championship();
         apply(c, settings);
@@ -89,6 +92,12 @@ public class ChampionshipService {
         return saved;
     }
 
+    /**
+     * Replaces all of a championship's settings and records {@code CHAMPIONSHIP_UPDATED} with the before and after
+     * values.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such championship (HTTP 404)
+     */
     public Championship update(Actor actor, Long id, Settings settings) {
         Championship c = getChampionshipOrThrow(id);
         Map<String, Object> before = settingsOf(c);
@@ -100,11 +109,17 @@ public class ChampionshipService {
         return saved;
     }
 
+    /** Every championship, in a read-only transaction. */
     @Transactional(readOnly = true)
     public List<Championship> listAll() {
         return championshipRepository.findAll();
     }
 
+    /**
+     * A championship with its classes, rounds in order and points scale.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such championship (HTTP 404)
+     */
     @Transactional(readOnly = true)
     public Detail getDetail(Long id) {
         Championship c = getChampionshipOrThrow(id);
@@ -136,6 +151,9 @@ public class ChampionshipService {
         return saved;
     }
 
+    /**
+     * Removes a class from the championship. Removing one that was never added is not an error and records nothing.
+     */
     public void removeClass(Actor actor, Long championshipId, Long racingClassId) {
         championshipRepository.requireExists(championshipId);
         // Nothing to record if the class was not in the championship
@@ -150,6 +168,10 @@ public class ChampionshipService {
         classRepository.deleteByChampionshipIdAndRacingClassId(championshipId, racingClassId);
     }
 
+    /**
+     * Links an event as a round. Fails with a {@link DataIntegrityViolationException} if the event is already in the
+     * championship or the round number is taken, and with a 404 if either does not exist.
+     */
     public ChampionshipEventLink linkEvent(Actor actor, Long championshipId, Long eventId, Integer roundNumber) {
         championshipRepository.requireExists(championshipId);
         eventRepository.requireExists(eventId);
@@ -173,6 +195,7 @@ public class ChampionshipService {
         return saved;
     }
 
+    /** Unlinks an event; one that was not linked is not an error and records nothing. */
     public void unlinkEvent(Actor actor, Long championshipId, Long eventId) {
         championshipRepository.requireExists(championshipId);
         // Nothing to record if the event was not linked
@@ -234,6 +257,12 @@ public class ChampionshipService {
         return new Exclusion(saved, officialName(actor.userId()));
     }
 
+    /**
+     * Deletes an exclusion so the round scores again. The audit row keeps who excluded the driver and why.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the exclusion is not one of this
+     * championship's
+     */
     public void deleteExclusion(Actor actor, Long championshipId, Long exclusionId) {
         ChampionshipExclusion x = exclusionRepository.getOrThrow(exclusionId);
         if (!x.getChampionshipId().equals(championshipId)) {
@@ -248,6 +277,7 @@ public class ChampionshipService {
         exclusionRepository.delete(x);
     }
 
+    /** A championship's exclusions, newest first, each with the name of the official who recorded it. */
     @Transactional(readOnly = true)
     public List<Exclusion> listExclusions(Long championshipId) {
         championshipRepository.requireExists(championshipId);

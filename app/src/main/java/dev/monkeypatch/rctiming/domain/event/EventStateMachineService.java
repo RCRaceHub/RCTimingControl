@@ -31,6 +31,11 @@ public class EventStateMachineService {
         VALID_TRANSITIONS = Map.copyOf(m);
     }
 
+    /**
+     * Sets the event's status to {@code targetStatus} if the move is allowed. The event is changed in memory only.
+     *
+     * @throws IllegalStateTransitionException if the move is not allowed from the event's current status (HTTP 409)
+     */
     public void transition(Event event, EventStatus targetStatus) {
         Set<EventStatus> valid = VALID_TRANSITIONS.getOrDefault(event.getStatus(), Set.of());
         if (!valid.contains(targetStatus)) {

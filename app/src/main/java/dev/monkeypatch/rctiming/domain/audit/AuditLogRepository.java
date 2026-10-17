@@ -12,7 +12,7 @@ import java.util.Collection;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
 
 /**
- * Writes audit rows. Reads go through {@code AuditQueryService}. Rows are never updated; the only deletes are the
+ * Repository for {@link AuditEntry} ({@code audit_log}). Writes audit rows. Reads go through {@code AuditQueryService}. Rows are never updated; the only deletes are the
  * retention job's, by age (#262).
  */
 @Repository

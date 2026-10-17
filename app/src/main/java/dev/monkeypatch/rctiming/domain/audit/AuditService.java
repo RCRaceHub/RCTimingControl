@@ -61,6 +61,12 @@ public class AuditService {
         return new Builder(actor, action);
     }
 
+    /**
+     * Collects the parts of one audit row. Only the summary is required ({@link #record()} and
+     * {@link #recordStandalone()} throw {@link IllegalArgumentException} without one); an entity type left unset is
+     * {@code system}. Over-long labels, entity ids and summaries are truncated rather than refused, so auditing can
+     * never make the change it describes fail.
+     */
     public final class Builder {
         private final Actor actor;
         private final String action;
@@ -112,7 +118,11 @@ public class AuditService {
             return this;
         }
 
-        /** Writes the row in the current transaction, which must exist: it is the change's own. */
+        /**
+         * Writes the row in the current transaction, which must exist: it is the change's own.
+         *
+         * @throws IllegalTransactionStateException when no transaction is active
+         */
         public AuditEntry record() {
             if (!TransactionSynchronizationManager.isActualTransactionActive()) {
                 throw new IllegalTransactionStateException(
@@ -121,7 +131,10 @@ public class AuditService {
             return insert(this);
         }
 
-        /** Writes the row in a transaction of its own (or the current one), for events with no change to commit with. */
+        /**
+         * Writes the row in a transaction of its own (or the current one), for events with no change to commit with.
+         * Runs on the write connection like any other write.
+         */
         public AuditEntry recordStandalone() {
             return transactions.execute(status -> insert(this));
         }

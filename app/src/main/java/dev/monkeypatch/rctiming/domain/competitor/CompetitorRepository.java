@@ -13,6 +13,10 @@ import java.util.stream.Collectors;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 
+/**
+ * Repository for {@link Competitor} ({@code competitors}). Name matching is done in Java with {@link
+ * dev.monkeypatch.rctiming.domain.Names#matchKey}, not in SQL.
+ */
 @Repository
 public class CompetitorRepository extends JooqRepository<Competitor, CompetitorsRecord> {
 
@@ -20,6 +24,7 @@ public class CompetitorRepository extends JooqRepository<Competitor, Competitors
         super(dsl, COMPETITORS, COMPETITORS.ID);
     }
 
+    /** The competitor an import has seen before: the same source and the same id in that source. */
     public Optional<Competitor> findByExternalSourceAndExternalId(String externalSource, String externalId) {
         return findOne(COMPETITORS.EXTERNAL_SOURCE.eq(externalSource).and(COMPETITORS.EXTERNAL_ID.eq(externalId)));
     }

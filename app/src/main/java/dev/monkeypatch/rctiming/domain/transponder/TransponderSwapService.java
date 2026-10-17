@@ -48,6 +48,10 @@ public class TransponderSwapService {
      * Swaps run one at a time, since write transactions share the single write connection, so two
      * officials cannot both give the same free number to different competitors.
      *
+     * <p>Refusals come back as a {@link SwapResult} rather than an exception, and nothing is saved for them. The
+     * number is refused if another competitor's active entry in the event holds it; one competitor may share a number
+     * between their own entries. Swapping to the number the entry already has succeeds without changing anything.
+     *
      * @param newNumber the new number; blank removes a secondary transponder
      */
     @Transactional

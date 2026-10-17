@@ -4,6 +4,11 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * A kind of racing the club runs, such as {@code Stock Buggy} (table {@code racing_classes}). It is the club-wide
+ * definition; {@code EventClass} is that class entered in one event with its race format. Imports place rows in a class
+ * by its name ({@link dev.monkeypatch.rctiming.domain.Names#matchKey}).
+ */
 public class RacingClass implements CreatedAt, UpdatedAt {
 
     private Long id;

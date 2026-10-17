@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 
+/** Repository for {@link RaceEntry} ({@code race_entries}). */
 @Repository
 public class RaceEntryRepository extends JooqRepository<RaceEntry, RaceEntriesRecord> {
 

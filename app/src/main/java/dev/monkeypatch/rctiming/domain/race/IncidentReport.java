@@ -3,6 +3,10 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import java.time.Instant;
 
+/**
+ * A referee's report of an incident in a race (table {@code incident_reports}), raised against an entry. {@code
+ * incidentType} and {@code description} are free text the referee typed.
+ */
 public class IncidentReport {
 
     private Long id;

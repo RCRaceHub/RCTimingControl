@@ -6,13 +6,18 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-/** An official who can sign in. Their roles are stored in {@code user_roles}. */
+/**
+ * An official who can sign in (table {@code users}). Their roles are stored in {@code user_roles} and saved with the
+ * user by {@link UserRepository}. Only an email and a password hash are kept: no racer logins exist (L10, #18). Never
+ * delete one, since audit rows point at it; an admin disables the account instead.
+ */
 public class User implements CreatedAt, UpdatedAt {
 
     private Long id;
 
     private String email;
 
+    /** A one-way hash of the password, never the password. */
     private String passwordHash;
 
     private String firstName;

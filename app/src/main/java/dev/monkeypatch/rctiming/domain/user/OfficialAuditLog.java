@@ -2,7 +2,10 @@ package dev.monkeypatch.rctiming.domain.user;
 
 import java.time.Instant;
 
-/** One change to an official's account, and who made it (#61). Never holds a password. */
+/**
+ * One change to an official's account, and who made it (#61; table {@code official_audit_log}). Never holds a
+ * password. This is a separate log from the main audit log, written by {@link OfficialService}.
+ */
 public class OfficialAuditLog {
 
     /** What was changed. */

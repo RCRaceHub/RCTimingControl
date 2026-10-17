@@ -9,6 +9,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The club's racing classes, edited from the admin panel. Every change is audit-logged with the official who made it,
+ * in the same write transaction.
+ */
 @Service
 @Transactional
 public class RacingClassService {
@@ -21,16 +25,19 @@ public class RacingClassService {
         this.audit = audit;
     }
 
+    /** Every racing class. */
     @Transactional(readOnly = true)
     public List<RacingClass> findAll() {
         return racingClassRepository.findAll();
     }
 
+    /** A racing class; a 404 if there is none. */
     @Transactional(readOnly = true)
     public RacingClass findById(Long id) {
         return getRacingClassOrThrow(id);
     }
 
+    /** Adds a class and records {@code CLASS_CREATED}. */
     public RacingClass create(Actor actor, String name, String description) {
         RacingClass racingClass = new RacingClass();
         racingClass.setName(name);
@@ -42,6 +49,7 @@ public class RacingClassService {
         return saved;
     }
 
+    /** Renames or re-describes a class and records {@code CLASS_UPDATED}; a 404 if there is none. */
     public RacingClass update(Actor actor, Long id, String name, String description) {
         RacingClass racingClass = getRacingClassOrThrow(id);
         Map<String, Object> before = values(racingClass);
@@ -54,6 +62,7 @@ public class RacingClassService {
         return saved;
     }
 
+    /** Removes a class and records {@code CLASS_DELETED}; a 404 if there is none. */
     public void delete(Actor actor, Long id) {
         RacingClass racingClass = getRacingClassOrThrow(id);
         racingClassRepository.deleteById(id);

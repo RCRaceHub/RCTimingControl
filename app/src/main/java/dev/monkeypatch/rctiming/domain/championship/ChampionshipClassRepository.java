@@ -11,6 +11,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.CHAMPIONSHIP_CLASSES;
 
+/** Repository for {@link ChampionshipClass} ({@code championship_classes}). */
 @Repository
 public class ChampionshipClassRepository extends JooqRepository<ChampionshipClass, ChampionshipClassesRecord> {
 

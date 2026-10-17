@@ -6,7 +6,9 @@ import java.time.Instant;
 
 /**
  * Maps a class in an imported file to an event class here, when the names do not match (L7). The key is a
- * RaceHub event class id, or {@code CSV:<class name>} for a class in an RC-Timing driver CSV.
+ * RaceHub event class id, or {@code CSV:<class name>} for a class in an RC-Timing driver CSV. One row per event and
+ * key (table {@code racehub_class_mappings}); an import that meets a class with no mapping and no matching name is
+ * blocked until an official maps it.
  */
 public class RaceHubClassMapping implements CreatedAt, UpdatedAt {
 

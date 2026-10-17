@@ -68,10 +68,18 @@ public class EntryService {
     }
 
     /**
-     * Adds a walk-in entry by hand (L9, #17): an existing competitor or a new one by name, a primary
-     * transponder and an optional secondary. The entry is confirmed straight away, has no login and
-     * no external source. A transponder another active entry in the event already uses is a
-     * warning, not an error. Class membership rules are not checked: staff add walk-ins on the day.
+     * Adds a walk-in entry by hand (L9, #17): an existing competitor or a new one by name, a primary transponder and an
+     * optional secondary. The entry is confirmed straight away, has no login and no external source. A transponder
+     * another active entry in the event already uses is a warning, not an error. Class membership rules are not
+     * checked: staff add walk-ins on the day.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.StateConflictException if the event is completed, or the competitor
+     *         already has an active entry in the class (HTTP 409)
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the event, class or competitor does not exist
+     * @throws IllegalArgumentException if the class belongs to another event, the secondary transponder equals the
+     *         primary, or neither or both of an existing competitor and a new name are given
+     * @throws dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException if a new name matches an
+     *         existing competitor and {@code confirmNewCompetitor} is not set (HTTP 409)
      */
     public WalkInResult adminCreateEntry(Long adminUserId, WalkIn walkIn) {
         Event event = eventRepository.getOrThrow(walkIn.eventId());
@@ -149,6 +157,13 @@ public class EntryService {
         return new WalkInResult(persisted, warnings);
     }
 
+    /**
+     * Withdraws an entry. The row is kept with status {@link EntryStatus#WITHDRAWN} and a withdrawn time, and an {@code
+     * ADMIN_WITHDRAW} row with the reason goes in the entry audit log.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.StateConflictException if it is already withdrawn (HTTP 409)
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such entry (HTTP 404)
+     */
     public Entry adminWithdraw(Long entryId, Long adminUserId, String reason) {
         Entry entry = entryRepository.getOrThrow(entryId);
         if (entry.getStatus() == EntryStatus.WITHDRAWN) {

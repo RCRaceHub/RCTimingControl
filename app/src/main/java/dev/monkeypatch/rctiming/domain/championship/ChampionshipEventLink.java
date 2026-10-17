@@ -4,6 +4,10 @@ package dev.monkeypatch.rctiming.domain.championship;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import java.time.Instant;
 
+/**
+ * Links an event to a championship as one of its rounds (table {@code championship_event_links}). The round number is
+ * unique within the championship, and an event can be linked to a championship only once.
+ */
 public class ChampionshipEventLink implements CreatedAt {
 
     private Long id;

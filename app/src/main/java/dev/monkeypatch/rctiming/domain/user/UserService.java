@@ -24,11 +24,13 @@ public class UserService {
         this.officialService = officialService;
     }
 
+    /** The official with this email, if any, in a read-only transaction. */
     @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
+    /** The official with this id, if any, in a read-only transaction. */
     @Transactional(readOnly = true)
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);

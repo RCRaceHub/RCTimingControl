@@ -3,6 +3,12 @@ package dev.monkeypatch.rctiming.domain.race;
 
 import java.time.Instant;
 
+/**
+ * A marshal's lap correction for one car (table {@code marshal_adjustments}): {@code lapDelta} is +1 or -1 lap and
+ * {@code raceStateAtTime} the race's status when it was made. It is not a state change of the race: each adjustment is
+ * kept as an audit trail and triggers a position recalculation and re-broadcast. {@code actingUserName} is kept as text
+ * so the row still reads right if the official is renamed.
+ */
 public class MarshalAdjustment {
 
     private Long id;

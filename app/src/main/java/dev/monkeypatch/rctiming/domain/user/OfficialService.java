@@ -63,6 +63,13 @@ public class OfficialService {
         this.clock = clock;
     }
 
+    /**
+     * Adds an official with a password, and records it in the officials log.
+     *
+     * @param actorId the admin adding them, or null when there is none, as for the first admin
+     * @throws OfficialChangeRefusedException if the email is already in use (HTTP 409)
+     * @throws IllegalArgumentException if the email, a name, the password or the roles are missing or too short
+     */
     public User add(String email, String firstName, String lastName, String password, Set<Role> roles, Long actorId) {
         String address = requireText(email, "Email");
         Set<Role> granted = requireRoles(roles);
@@ -82,6 +89,11 @@ public class OfficialService {
         return user;
     }
 
+    /**
+     * Replaces the official's roles. Saving the roles they already have changes and records nothing.
+     *
+     * @throws OfficialChangeRefusedException if it would remove ADMIN from the only admin who can sign in (HTTP 409)
+     */
     public User changeRoles(long officialId, Set<Role> roles, long actorId) {
         User user = load(officialId);
         Set<Role> granted = requireRoles(roles);
@@ -102,6 +114,10 @@ public class OfficialService {
         return user;
     }
 
+    /**
+     * Sets a new password, revokes the official's refresh tokens and publishes an {@link OfficialSignedOutEvent}. A
+     * null {@code actorId} is the laptop's command line.
+     */
     public User setPassword(long officialId, String password, Long actorId) {
         User user = load(officialId);
         requirePassword(password);
@@ -113,6 +129,13 @@ public class OfficialService {
         return user;
     }
 
+    /**
+     * Stops the official signing in, revoking their refresh tokens and publishing an {@link OfficialSignedOutEvent}.
+     * Disabling one who is already disabled does nothing.
+     *
+     * @throws OfficialChangeRefusedException if it is the actor's own account or the only admin who can sign in (HTTP
+     *         409)
+     */
     public User disable(long officialId, long actorId) {
         User user = load(officialId);
         if (!user.isEnabled()) {
@@ -133,6 +156,7 @@ public class OfficialService {
         return user;
     }
 
+    /** Lets a disabled official sign in again; enabling one who is not disabled does nothing. */
     public User enable(long officialId, Long actorId) {
         User user = load(officialId);
         if (user.isEnabled()) {

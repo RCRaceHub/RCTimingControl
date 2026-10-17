@@ -9,6 +9,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops.DECODER_LOOPS;
 
+/** Repository for {@link DecoderLoop} ({@code decoder_loops}); {@link TrackRepository} saves them with their track. */
 @Repository
 public class DecoderLoopRepository extends JooqRepository<DecoderLoop, DecoderLoopsRecord> {
 
