@@ -53,13 +53,24 @@ public class EventRunOrderService {
     public void generateRounds(Actor actor, RoundGenerationRequest request) {
         Event event = eventRepository.getOrThrow(request.eventId());
         roundGeneratorService.generate(request);
+        recordGenerated(actor, event, request, "RUN_ORDER_GENERATED", "Generated");
+    }
+
+    /** Replaces the run order with a new one while no race has started, such as after entries or heat sizes change. */
+    public void regenerateRounds(Actor actor, RoundGenerationRequest request) {
+        Event event = eventRepository.getOrThrow(request.eventId());
+        roundGeneratorService.regenerate(request);
+        recordGenerated(actor, event, request, "RUN_ORDER_REGENERATED", "Regenerated");
+    }
+
+    private void recordGenerated(Actor actor, Event event, RoundGenerationRequest request, String action, String verb) {
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("practiceRoundsCount", request.practiceRoundsCount());
         after.put("qualifyingRoundsCount", request.qualifyingRoundsCount());
         after.put("maxCarsPerHeat", request.maxCarsPerHeat());
         after.put("classFinalsConfigs", request.classFinalsConfigs());
-        audit.entry(actor, "RUN_ORDER_GENERATED").entity("event", event.getId()).event(event.getId())
-                .summary("Generated the run order for " + event.getName() + ": "
+        audit.entry(actor, action).entity("event", event.getId()).event(event.getId())
+                .summary(verb + " the run order for " + event.getName() + ": "
                         + request.practiceRoundsCount() + " practice and "
                         + request.qualifyingRoundsCount() + " qualifying rounds, up to "
                         + request.maxCarsPerHeat() + " cars a heat")

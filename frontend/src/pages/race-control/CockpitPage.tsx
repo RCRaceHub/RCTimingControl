@@ -91,6 +91,7 @@ export default function CockpitPage() {
   // Generating rounds and finishing races are race director commands; referees also see the cockpit
   const { canRunEvent: canControlRace } = useRoles();
   const [generatorOpen, setGeneratorOpen] = useState(false);
+  const [regenerateOpen, setRegenerateOpen] = useState(false);
 
   // Unknown transponder link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -594,6 +595,14 @@ export default function CockpitPage() {
           />
         )}
 
+        {canControlRace && !isLoading && runOrder.length > 0 && runOrder.every((r) => r.status === 'PENDING') && (
+          <div className="px-3 pb-3">
+            <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setRegenerateOpen(true)}>
+              Regenerate rounds
+            </Button>
+          </div>
+        )}
+
         {/* Skip-to button: shown when user selects a PENDING race different from the active race */}
         {selectedRace?.status === 'PENDING' &&
           activeRace &&
@@ -658,6 +667,7 @@ export default function CockpitPage() {
       </main>
 
       <RoundGeneratorWizard open={generatorOpen} onOpenChange={setGeneratorOpen} eventId={eventId} />
+      <RoundGeneratorWizard open={regenerateOpen} onOpenChange={setRegenerateOpen} eventId={eventId} regenerate />
 
       <UnknownTransponderLinkDialog
         transponderNumber={linkTransponderNumber}

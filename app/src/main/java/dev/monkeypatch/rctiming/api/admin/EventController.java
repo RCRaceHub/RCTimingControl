@@ -100,6 +100,15 @@ public class EventController {
     }
 
     @Audited("audit_log")
+    @PostMapping("/{id}/regenerate-rounds")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    public ResponseEntity<Void> regenerateRounds(Authentication auth, @PathVariable Long id,
+                                                 @Valid @RequestBody GenerateRoundsRequest req) {
+        runOrderService.regenerateRounds(CurrentOfficial.actor(auth), req.toServiceRequest(id));
+        return ResponseEntity.noContent().build();
+    }
+
+    @Audited("audit_log")
     @PostMapping("/{id}/seed-finals")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     public ResponseEntity<Void> seedFinals(Authentication auth, @PathVariable Long id,

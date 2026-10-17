@@ -25,6 +25,8 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   eventId: number;
+  /** Replace the run order instead of building the first one; only offered while no race has started. */
+  regenerate?: boolean;
 };
 
 // Whole numbers in the ranges the inputs offer. The overall counts match what the server accepts; the per-class
@@ -44,6 +46,8 @@ const schema = z.object({
     eventClassId: z.number(),
     label: z.string(),
     finalsCount: count(1, 3),
+    staggerSeconds: count(1, 120),
+    initialStaggerSeconds: z.number(),
   })),
 });
 type FormInput = z.input<typeof schema>;
@@ -51,7 +55,9 @@ type FormValues = z.output<typeof schema>;
 
 const GLOBAL_DEFAULTS = { practiceRounds: 2, qualifyingRounds: 3, maxCarsPerHeat: 10, minCarsPerHeat: 2 };
 
-export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
+const DEFAULT_STAGGER_SECONDS = 1;
+
+export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate = false }: Props) {
   const queryClient = useQueryClient();
   const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -80,11 +86,19 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
     setInitialised(true);
     form.reset({
       ...GLOBAL_DEFAULTS,
-      classes: eventClasses.map((cls) => ({
-        eventClassId: cls.id,
-        label: racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`,
-        finalsCount: 2,
-      })),
+      classes: eventClasses.map((cls) => {
+        // The class's own override wins over its format, as the server reads it
+        const configured = (cls.configOverride?.staggerIntervalSeconds
+          ?? (cls.configSnapshot as { staggerIntervalSeconds?: number } | null)?.staggerIntervalSeconds) as number | undefined;
+        const stagger = configured && configured > 0 ? configured : DEFAULT_STAGGER_SECONDS;
+        return {
+          eventClassId: cls.id,
+          label: racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`,
+          finalsCount: 2,
+          staggerSeconds: stagger,
+          initialStaggerSeconds: stagger,
+        };
+      }),
     });
   }
 
@@ -95,8 +109,18 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
   }
 
   const generate = useMutation({
-    mutationFn: (values: FormValues) =>
-      adminApi.generateRounds(eventId, {
+    mutationFn: async (values: FormValues) => {
+      // A changed stagger gap is saved to the class first, as the gap is read from the class when a race is called
+      for (const row of values.classes) {
+        if (row.staggerSeconds === row.initialStaggerSeconds) continue;
+        const cls = eventClasses.find((c) => c.id === row.eventClassId);
+        await adminApi.updateOverrides(eventId, row.eventClassId, {
+          ...(cls?.configOverride ?? {}),
+          staggerIntervalSeconds: row.staggerSeconds,
+        });
+      }
+      const send = regenerate ? adminApi.regenerateRounds : adminApi.generateRounds;
+      return send(eventId, {
         practiceRoundsCount: values.practiceRounds,
         qualifyingRoundsCount: values.qualifyingRounds,
         maxCarsPerHeat: values.maxCarsPerHeat,
@@ -105,13 +129,15 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
           eventClassId: r.eventClassId,
           finalsCount: r.finalsCount,
         })),
-      }),
+      });
+    },
     onSuccess: () => {
-      toast.success('Rounds generated successfully');
+      toast.success(regenerate ? 'Rounds regenerated successfully' : 'Rounds generated successfully');
       queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.runOrder(eventId) });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
       close();
     },
-    onError: (err) => toast.error(getApiErrorMessage(err, 'Failed to generate rounds')),
+    onError: (err) => toast.error(getApiErrorMessage(err, regenerate ? 'Failed to regenerate rounds' : 'Failed to generate rounds')),
   });
 
   function numberField(name: FieldPath<FormInput>, label: string, min: number, max: number) {
@@ -139,9 +165,11 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
     <Dialog open={open} onOpenChange={(v) => { if (v) onOpenChange(true); else close(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Generate Rounds</DialogTitle>
+          <DialogTitle>{regenerate ? 'Regenerate Rounds' : 'Generate Rounds'}</DialogTitle>
           <DialogDescription>
-            Configure practice, qualifying and finals structure for this event. Each class can have independent finals settings.
+            {regenerate
+              ? 'Replaces the run order with a new one built from the current entries. Only possible while no race has been called or started.'
+              : 'Configure practice, qualifying and finals structure for this event. Each class can have independent finals settings.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -164,12 +192,13 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
 
           {classRows.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Finals per class</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Per class</p>
               {classRows.map((row, idx) => (
                 <fieldset key={row.id} className="rounded border p-3 space-y-2">
                   <legend className="px-1 text-sm font-medium">{row.label}</legend>
                   <div className="grid grid-cols-3 gap-2">
                     {numberField(`classes.${idx}.finalsCount`, 'Finals', 1, 3)}
+                    {numberField(`classes.${idx}.staggerSeconds`, 'Stagger gap (s)', 1, 120)}
                   </div>
                 </fieldset>
               ))}
@@ -180,7 +209,9 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId }: Props) {
         <DialogFooter>
           <Button variant="outline" onClick={close}>Cancel</Button>
           <Button type="submit" form="round-generator" disabled={!initialised || form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Generating…' : 'Generate Rounds'}
+            {form.formState.isSubmitting
+              ? (regenerate ? 'Regenerating…' : 'Generating…')
+              : (regenerate ? 'Regenerate Rounds' : 'Generate Rounds')}
           </Button>
         </DialogFooter>
       </DialogContent>
