@@ -344,7 +344,7 @@ Moving to another database means:
 gh pr create
 ```
 
-Reference the GitHub Issue number in the PR description (`Closes #N`). PRs should include passing tests — `make test` runs the full suite, including the decoder simulator tests.
+Reference the GitHub Issue number in the PR description (`Closes #N`). Include the docs for the change in the same PR: Javadoc on new or changed classes and methods, the `docs/developer/` diagrams if a flow or model changed, and the user guide if the visible behaviour changed. See [developer/](developer/README.md). PRs should include passing tests — `make test` runs the full suite, including the decoder simulator tests.
 
 ### Working with Claude Code
 
