@@ -63,7 +63,7 @@ public class RefereeController {
 
     /**
      * Record that an entry missed their marshal duty.
-     * Does NOT auto-create a penalty — use /apply-marshal-penalty for that.
+     * Does NOT auto-create a penalty — use /apply-marshal-penalty for that (which also records the miss itself).
      * {@code POST /race/{raceId}/marshal-absent}; REFEREE or ADMIN. Audited.
      */
     @Audited("audit_log")
@@ -75,9 +75,10 @@ public class RefereeController {
     }
 
     /**
-     * Apply a marshal penalty for a recorded absence, a separate action from recording it. The request can
-     * name the absence (its id comes back from {@code marshal-absent}); otherwise the entry's most recent
-     * absence in the event is used, if there is one. {@code POST /race/{raceId}/apply-marshal-penalty}; REFEREE or
+     * Apply a marshal penalty for a missed marshal duty. Marshals are assumed present, so recording the miss first
+     * is optional. The request can name the absence (its id comes back from {@code marshal-absent}); otherwise the
+     * entry's most recent absence in the event without a penalty is used, and if there is none the miss is
+     * recorded by this call. {@code POST /race/{raceId}/apply-marshal-penalty}; REFEREE or
      * ADMIN. 409 if the entry is not in the event, or the absence already has a penalty. Audited as
      * {@code MARSHAL_PENALTY_APPLIED}.
      */

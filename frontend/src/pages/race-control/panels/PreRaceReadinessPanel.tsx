@@ -42,8 +42,8 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
       title: `Penalise ${driverName} for missing marshal duty?`,
       description:
         kind === 'QUALIFYING_SCORE'
-          ? 'Their best qualifying round will not count (round by round qualifying only). If the finals are already seeded, seed them again from the qualifying table.'
-          : 'A lap comes off their result in the first final they race. This cannot be taken back.',
+          ? 'This also records that they missed. Their best qualifying round will not count (round by round qualifying only). If the finals are already seeded, seed them again from the qualifying table.'
+          : 'This also records that they missed. A lap comes off their result in the first final they race. This cannot be taken back.',
       confirmLabel: 'Penalise',
       destructive: true,
     });
@@ -91,6 +91,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h3 className="text-sm font-semibold mb-2">Marshal Duty</h3>
+          <p className="text-xs text-muted-foreground mb-2">Everyone is assumed to be marshalling. Use these buttons only for a driver who was not.</p>
           {data.marshalDuty.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No marshals to list for this race.
@@ -132,26 +133,22 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                         >
                           Missed duty
                         </Button>
-                        {row.missedThisEvent > 0 && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={mutations.marshalPenalty.isPending}
-                              onClick={() => penalise(row.entryId, row.driverName, 'QUALIFYING_SCORE')}
-                            >
-                              Lose best qualifying round
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={mutations.marshalPenalty.isPending}
-                              onClick={() => penalise(row.entryId, row.driverName, 'FINALS_LAP')}
-                            >
-                              Lap off in finals
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={mutations.marshalPenalty.isPending}
+                          onClick={() => penalise(row.entryId, row.driverName, 'QUALIFYING_SCORE')}
+                        >
+                          Lose best qualifying round
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={mutations.marshalPenalty.isPending}
+                          onClick={() => penalise(row.entryId, row.driverName, 'FINALS_LAP')}
+                        >
+                          Lap off in finals
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

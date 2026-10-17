@@ -111,8 +111,9 @@ The lowest final is always filled first, from the bottom of the standings, so it
 
 ## 4. Marshal duty
 
-A driver who misses their marshal duty is recorded by the referee, who then applies a penalty of the kind they
-choose. Both kinds are recorded per penalty:
+Everyone is assumed to be marshalling; nothing needs confirming. A driver who misses their marshal duty is
+recorded by the referee, who then applies a penalty of the kind they choose. Applying a penalty to a driver with no
+recorded miss records one automatically. Both kinds are recorded per penalty:
 
 | Kind | Effect |
 |---|---|

@@ -60,17 +60,18 @@ describe('PreRaceReadinessPanel', () => {
     expect(marshalAbsent).toHaveBeenCalledWith({ entryId: 20, eventId: 5 }, expect.anything());
   });
 
-  it('offers a penalty only to a driver who has missed duty, and asks before applying it', async () => {
+  it('offers a penalty to any driver without a recorded miss first, and asks before applying it', async () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
-    expect(screen.getAllByRole('button', { name: 'Lap off in finals' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Lap off in finals' }));
+    const buttons = screen.getAllByRole('button', { name: 'Lap off in finals' });
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[0]);
     expect(marshalPenalty).not.toHaveBeenCalled();
     fireEvent.click(await screen.findByRole('button', { name: 'Penalise' }));
 
     await waitFor(() =>
       expect(marshalPenalty).toHaveBeenCalledWith(
-        { entryId: 21, eventId: 5, kind: 'FINALS_LAP' },
+        { entryId: 20, eventId: 5, kind: 'FINALS_LAP' },
         expect.anything(),
       ),
     );
