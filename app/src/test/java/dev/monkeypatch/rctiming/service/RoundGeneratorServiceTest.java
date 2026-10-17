@@ -11,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
@@ -30,6 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +62,37 @@ class RoundGeneratorServiceTest {
         assertThatThrownBy(() -> service.generate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
                 .isInstanceOf(StateConflictException.class)
                 .hasMessageContaining("Run order already generated");
+    }
+
+    @Test
+    void regenerate_whenARaceHasStarted_isAConflictAndKeepsTheRunOrder() {
+        Round round = new Round();
+        round.setId(5L);
+        Race running = new Race();
+        running.setStatus(RaceStatus.RUNNING);
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(5L)).thenReturn(List.of(running));
+
+        assertThatThrownBy(() -> service.regenerate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("can't be regenerated");
+        verify(roundRepository, never()).delete(any(Round.class));
+    }
+
+    @Test
+    void regenerate_whenARaceHasPenaltiesOrIncidentsRecorded_isAConflictAndKeepsTheRunOrder() {
+        Round round = new Round();
+        round.setId(5L);
+        Race pending = new Race();
+        pending.setStatus(RaceStatus.PENDING);
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(5L)).thenReturn(List.of(pending));
+        when(raceRepository.hasRecordsAgainstEventRaces(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.regenerate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("penalties");
+        verify(roundRepository, never()).delete(any(Round.class));
     }
 
     @Test

@@ -175,6 +175,26 @@ class EventAuditIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void regeneratingReplacesThePendingRunOrderAndIsRecorded() {
+        long eventId = createEvent("Redo " + run);
+        Map<String, Object> first = Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1,
+                "maxCarsPerHeat", 10, "classFinalsConfigs", List.of());
+        Map<String, Object> second = Map.of("practiceRoundsCount", 1, "qualifyingRoundsCount", 2,
+                "maxCarsPerHeat", 10, "classFinalsConfigs", List.of());
+        assertThat(send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds", first).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+
+        assertThat(send("POST", "/api/v1/admin/events/" + eventId + "/regenerate-rounds", second).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+
+        List<Map<String, Object>> rows = rows(eventId);
+        assertThat(rows).extracting(r -> r.get("action")).containsExactly(
+                "EVENT_CREATED", "RUN_ORDER_GENERATED", "RUN_ORDER_REGENERATED");
+        assertThat(rows.get(2).get("summary").toString()).startsWith("Regenerated the run order")
+                .contains("1 practice and 2 qualifying");
+    }
+
+    @Test
     void generatingRounds_withAClassConfigMissingItsClass_isRefusedAndGeneratesNothing() {
         long eventId = createEvent("No class " + run);
         Map<String, Object> config = new HashMap<>();

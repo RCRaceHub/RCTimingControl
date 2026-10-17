@@ -662,6 +662,11 @@ export const adminApi = {
       .post<void>(`/api/v1/admin/events/${id}/generate-rounds`, body)
       .then(r => r.data),
 
+  regenerateRounds: (id: number, body: GenerateRoundsRequest) =>
+    api
+      .post<void>(`/api/v1/admin/events/${id}/regenerate-rounds`, body)
+      .then(r => r.data),
+
   // Event classes
 
   addEventClass: (eventId: number, body: AddEventClassRequest) =>
