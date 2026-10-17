@@ -109,6 +109,7 @@ public class ChampionshipService {
         return saved;
     }
 
+    /** Every championship, in a read-only transaction. */
     @Transactional(readOnly = true)
     public List<Championship> listAll() {
         return championshipRepository.findAll();

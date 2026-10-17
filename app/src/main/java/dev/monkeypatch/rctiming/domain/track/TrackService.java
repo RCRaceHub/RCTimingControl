@@ -38,16 +38,19 @@ public class TrackService {
         this.audit = audit;
     }
 
+    /** Every track, with its decoder loops and lap thresholds. */
     @Transactional(readOnly = true)
     public List<Track> findAll() {
         return trackRepository.findAll();
     }
 
+    /** A track with its loops and thresholds; a 404 if there is none. */
     @Transactional(readOnly = true)
     public Track findById(Long id) {
         return getTrackOrThrow(id);
     }
 
+    /** Adds a track and records {@code TRACK_CREATED}. */
     public Track create(Actor actor, String name, String venueNotes, Double trackLength) {
         Track track = new Track();
         track.setName(name);
@@ -60,6 +63,7 @@ public class TrackService {
         return saved;
     }
 
+    /** Changes a track's own details and records {@code TRACK_UPDATED}; a 404 if there is none. */
     public Track update(Actor actor, Long id, String name, String venueNotes, Double trackLength) {
         Track track = getTrackOrThrow(id);
         Map<String, Object> before = trackValues(track);
@@ -73,6 +77,7 @@ public class TrackService {
         return saved;
     }
 
+    /** Removes a track with its loops and thresholds and records {@code TRACK_DELETED}; a 404 if there is none. */
     public void delete(Actor actor, Long id) {
         Track track = getTrackOrThrow(id);
         Map<String, Object> before = trackValues(track);
@@ -82,6 +87,7 @@ public class TrackService {
                 .before(before).record();
     }
 
+    /** Adds a decoder loop to a track and records {@code DECODER_LOOP_ADDED}; a 404 if there is no such track. */
     public DecoderLoop addDecoderLoop(Actor actor, Long trackId, String loopId, String displayName,
                                       LoopType loopType, boolean scoringLoop) {
         Track track = getTrackOrThrow(trackId);
@@ -98,6 +104,7 @@ public class TrackService {
         return saved;
     }
 
+    /** Changes a decoder loop and records {@code DECODER_LOOP_UPDATED}; a 404 if there is none. */
     public DecoderLoop updateDecoderLoop(Actor actor, Long id, String loopId, String displayName,
                                          LoopType loopType, boolean scoringLoop) {
         DecoderLoop loop = decoderLoopRepository.getOrThrow(id);
@@ -113,6 +120,7 @@ public class TrackService {
         return saved;
     }
 
+    /** Removes a decoder loop and records {@code DECODER_LOOP_DELETED}; a 404 if there is none. */
     public void deleteDecoderLoop(Actor actor, Long id) {
         DecoderLoop loop = decoderLoopRepository.getOrThrow(id);
         decoderLoopRepository.deleteById(id);
@@ -164,6 +172,7 @@ public class TrackService {
         return saved;
     }
 
+    /** Removes a lap threshold and records {@code LAP_THRESHOLD_DELETED}; a 404 if there is none. */
     public void deleteLapThreshold(Actor actor, Long thresholdId) {
         TrackLapThreshold threshold = thresholdRepository.getOrThrow(thresholdId);
         thresholdRepository.deleteById(thresholdId);
