@@ -10,6 +10,10 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates.RACE_FORMAT_TEMPLATES;
 
+/**
+ * Repository for {@link RaceFormatTemplate} ({@code race_format_templates}); the config is converted with {@link
+ * RaceFormatConfigConverter}.
+ */
 @Repository
 public class RaceFormatTemplateRepository extends JooqRepository<RaceFormatTemplate, RaceFormatTemplatesRecord> {
 

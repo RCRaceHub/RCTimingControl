@@ -39,6 +39,7 @@ public class RaceFormatCodec {
         this.yamlMapper = jsonMapper.copyWith(new YAMLFactory());
     }
 
+    /** The config as pretty-printed text in the given file type. */
     public String write(RaceFormatConfig config, FileType fileType) {
         try {
             return mapper(fileType).writerWithDefaultPrettyPrinter().writeValueAsString(config);

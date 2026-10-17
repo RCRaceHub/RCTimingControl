@@ -4,6 +4,11 @@ import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
 
+/**
+ * A named race format that an official can reuse (table {@code race_format_templates}): the config is a {@link
+ * RaceFormatConfig} stored as JSON text. A template is only a starting point: a class copies it when it is added to an
+ * event, so changing or deleting a template does not affect events already set up (FORMAT-06).
+ */
 public class RaceFormatTemplate implements CreatedAt, UpdatedAt {
 
     private Long id;

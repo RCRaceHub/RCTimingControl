@@ -18,6 +18,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Which classes race in an event and what format each runs to. Adding a class copies a template's config into the class
+ * as its own snapshot (see {@link RaceFormatService#assignTemplateToEventClass}); every change is audit-logged. Runs in
+ * a write transaction unless noted.
+ */
 @Service
 @Transactional
 public class EventClassService {
@@ -46,12 +51,19 @@ public class EventClassService {
         this.audit = audit;
     }
 
+    /** Every class entered in the event; a 404 if there is no such event. */
     @Transactional(readOnly = true)
     public List<EventClass> listClassesForEvent(Long eventId) {
         eventRepository.requireExists(eventId);
         return eventClassRepository.findByEventId(eventId);
     }
 
+    /**
+     * Enters a racing class in the event using a format template, and records {@code EVENT_CLASS_ADDED}. The template
+     * is copied, not referenced, so later edits to it do not change this class.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the event, class or template does not exist
+     */
     public EventClass addClassToEvent(Actor actor, Long eventId, Long racingClassId, Long templateId) {
         Event event = eventRepository.getOrThrow(eventId);
         RacingClass racingClass = racingClassRepository.getOrThrow(racingClassId);
@@ -72,6 +84,13 @@ public class EventClassService {
         return saved;
     }
 
+    /**
+     * Sets or, with a null or empty map, clears the class's format override, and records {@code
+     * EVENT_CLASS_OVERRIDES_CHANGED}. The override is checked against the class's format before it is saved, so it
+     * cannot break race generation later.
+     *
+     * @throws IllegalArgumentException if the class belongs to another event or the override does not fit the format
+     */
     public EventClass updateOverrides(Actor actor, Long eventId, Long classId, Map<String, Object> requested) {
         EventClass ec = getEventClassOrThrow(classId);
         if (!eventId.equals(ec.getEventId())) {
@@ -92,6 +111,8 @@ public class EventClassService {
     /**
      * EVENT-06: Assigns the same non-null combined_race_group to every supplied event class
      * so they race together but score separately.
+     *
+     * @throws IllegalArgumentException if fewer than two ids are given or one belongs to another event
      */
     public List<EventClass> combineClasses(Actor actor, Long eventId, List<Long> eventClassIds) {
         if (eventClassIds == null || eventClassIds.size() < 2) {

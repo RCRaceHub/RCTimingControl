@@ -33,6 +33,7 @@ public class EventService {
         this.audit = audit;
     }
 
+    /** Creates an event in DRAFT and records {@code EVENT_CREATED}. */
     public Event create(Actor actor, String name, LocalDate eventDate, Long trackId) {
         Event event = new Event();
         event.setName(name);
@@ -46,6 +47,11 @@ public class EventService {
         return saved;
     }
 
+    /**
+     * Changes an event's name, date and track and records {@code EVENT_UPDATED}.
+     *
+     * @throws IllegalStateTransitionException if the event is not in DRAFT (HTTP 409)
+     */
     public Event update(Actor actor, Long id, String name, LocalDate eventDate, Long trackId) {
         Event event = getEventOrThrow(id);
         if (event.getStatus() != EventStatus.DRAFT) {
@@ -63,6 +69,12 @@ public class EventService {
         return saved;
     }
 
+    /**
+     * Moves the event to {@code targetStatus} and records {@code EVENT_<status>}. Moving to COMPLETED also publishes an
+     * {@link EventCompleted}.
+     *
+     * @throws IllegalStateTransitionException if the state machine does not allow the move (HTTP 409)
+     */
     public Event transition(Actor actor, Long id, EventStatus targetStatus) {
         Event event = getEventOrThrow(id);
         EventStatus from = event.getStatus();
@@ -117,6 +129,7 @@ public class EventService {
         return saved;
     }
 
+    /** The event, read in a read-only transaction. Throws a 404 if there is none. */
     @Transactional(readOnly = true)
     public Event findByIdOrThrow(Long id) {
         return getEventOrThrow(id);
