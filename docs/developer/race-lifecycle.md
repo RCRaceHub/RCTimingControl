@@ -16,12 +16,11 @@ stateDiagram-v2
     GRID --> FINISHED: abandon
     RUNNING --> FINISHED: abandon
     STOPPED --> FINISHED: abandon
-    FINISHED --> PENDING: restart
-    RUNNING --> PENDING: restart
     note right of FINISHED
         abandon sets finishedAt and abandonedAt.
-        restart clears the times and the result snapshot,
-        and works from any state (not in the table).
+        restart is not in the table: it works from any state,
+        clears the times and the result snapshot, and only
+        broadcasts (no RaceStatusChangedEvent).
     end note
 ```
 
@@ -51,7 +50,7 @@ Practice does not set qualifying order (qualifying starts in car number order); 
 
 ## The event around the races
 
-`EventStateMachineService` (`domain.event`) moves the race day through its own states. Completing an event publishes `EventCompleted`, which asks for a day-close [results export](sequences.md#results-export-to-racehub).
+The race day has its own states (`domain.event`). `EventStateMachineService` only checks the transition; `EventService.transition` saves it, and completing an event publishes `EventCompleted`, which asks for a day-close [results export](sequences.md#results-export-to-racehub).
 
 ```mermaid
 stateDiagram-v2
