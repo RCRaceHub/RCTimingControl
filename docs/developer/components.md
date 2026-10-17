@@ -40,7 +40,12 @@ flowchart LR
     sm -->|RaceStatusChangedEvent| rx
     sm -->|RaceStatusChangedEvent| lf
     sm --> hub
+<<<<<<< HEAD
     lts -.->|reads the running race| dom
+=======
+    te -.->|finds the running race| dom
+    lts -.->|resolves transponder to entry| dom
+>>>>>>> origin/main
     rx -->|Results Export v1, HTTPS| rh
     rh -.->|Entry Export v1 file, imported by an official| api
     lf -->|Live Feed v1, WebSocket| relay
@@ -50,5 +55,9 @@ flowchart LR
 ## Reading the picture
 
 - **Write side and read side.** Entities and their `@Repository` classes (`domain.*`) change data; `query.*` builds views in SQL. Both go through jOOQ. See [architecture](../architecture.md#cqrs-lite-split).
+<<<<<<< HEAD
 - **The timing thread.** The decoder thread only hands passings to `timingExecutor`; they are handled one at a time, in decoder order, and that thread is the only one that updates a race's `LiveRaceState`. Live positions are never written to the database during a race.
+=======
+- **The timing thread.** The decoder thread only hands passings to `timingExecutor`; they are handled one at a time, in decoder order, and passings are applied only on that thread. Marshal laps, penalties and transponder links come from request threads, and `LiveRaceState`'s locking serialises them with the passings. Live positions are never written to the database during a race.
+>>>>>>> origin/main
 - **Events.** `RaceStatusChangedEvent` is how the state machine tells audio, the race clock, the live feed, results export and practice that a race moved, without depending on them.

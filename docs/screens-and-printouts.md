@@ -78,4 +78,5 @@ Planned, tracked in issue #317:
 - Start position on the heat result, and real names (not the public name setting) on printouts opened by officials.
 - Championship standings laid out for print, and a meeting pack that prints a chosen set for every class.
 - A fixed network name for the laptop (for example `rctiming.local`) so printed QR codes survive an address change.
-- Choosing where results are published: nothing, RaceHub, a results site, or both.
+- A results site for clubs without RaceHub. The choice of where results are published (nothing, RaceHub, a results site or both) is made under **Admin → Results to RaceHub**, but choosing the results site sends nothing yet.
+- QR codes that link to RaceHub's public pages instead of this laptop (#316).
