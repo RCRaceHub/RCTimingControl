@@ -17,10 +17,10 @@ function LapSheet({
   lapHistory: ResultSnapshotDto['lapHistory'];
 }) {
   const columns = lapSheetColumns(positions, lapHistory);
-  const rows = columns.reduce((most, col) => Math.max(most, col.laps.length), 0);
   if (columns.length === 0) {
     return <p className="mt-4 text-sm text-muted-foreground">No lap times were recorded.</p>;
   }
+  const lastLap = columns.reduce((most, col) => Math.max(most, col.laps.at(-1)?.lapNumber ?? 0), 0);
   return (
     <section aria-label="Lap times" className="mt-6 break-before-page text-xs">
       <h2 className="mb-2 text-sm font-semibold">Lap times</h2>
@@ -37,17 +37,20 @@ function LapSheet({
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: rows }, (_, i) => (
-            <tr key={i} className="border-b border-border/50">
-              <th scope="row" className="py-0.5 pr-2 text-left font-normal text-muted-foreground">{i + 1}</th>
-              {columns.map((col) => (
-                <td
-                  key={col.entryId}
-                  className={`py-0.5 pr-2 text-right font-mono ${i === col.fastestIndex ? 'font-bold' : ''}`}
-                >
-                  {i < col.laps.length ? fmtMs(col.laps[i]) : ''}
-                </td>
-              ))}
+          {Array.from({ length: lastLap }, (_, i) => i + 1).map((lapNumber) => (
+            <tr key={lapNumber} className="border-b border-border/50 print:break-inside-avoid">
+              <th scope="row" className="py-0.5 pr-2 text-left font-normal text-muted-foreground">{lapNumber}</th>
+              {columns.map((col) => {
+                const lap = col.laps.find((l) => l.lapNumber === lapNumber);
+                return (
+                  <td
+                    key={col.entryId}
+                    className={`py-0.5 pr-2 text-right font-mono ${lapNumber === col.fastestLap ? 'font-bold' : ''}`}
+                  >
+                    {lap ? fmtMs(lap.ms) : ''}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
