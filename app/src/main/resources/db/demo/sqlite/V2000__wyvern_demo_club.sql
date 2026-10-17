@@ -39,19 +39,27 @@ INSERT INTO racing_classes (name, description) VALUES
 
 -- 6. race format templates
 INSERT INTO race_format_templates (name, config) VALUES
-    ('Timed 5-min', '{"type":"TIMED","durationMinutes":5,"startType":"ROLLING","qualifyingType":"FASTEST_LAP","racePaddingMinutes":1,"staggerIntervalSeconds":5}'),
-    ('Bump-up Finals', '{"type":"BUMP_UP","qualifyingHeats":3,"heatDurationMinutes":5,"bestHeatsCount":2,"gridSize":8,"bumpSpots":2,"qualifyingStartType":"STAGGER","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5}'),
-    ('Points Finals', '{"type":"POINTS_FINALS","qualifyingHeats":3,"finalsCount":3,"finalDurationMinutes":5,"heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5}');
+    ('Timed 5-min Rolling Start', '{"type":"TIMED","durationMinutes":5,"startType":"ROLLING","qualifyingType":"FASTEST_LAP","racePaddingMinutes":1,"staggerIntervalSeconds":5}'),
+    ('Timed 5-min Staggered Start', '{"type":"TIMED","durationMinutes":5,"startType":"STAGGER","qualifyingType":"FASTEST_LAP","racePaddingMinutes":1,"staggerIntervalSeconds":5}'),
+    ('Bump-up Finals, Grid Start', '{"type":"BUMP_UP","qualifyingHeats":3,"heatDurationMinutes":5,"bestHeatsCount":2,"gridSize":8,"bumpSpots":2,"qualifyingStartType":"STAGGER","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5}'),
+    ('Points Finals, 3 Legs', '{"type":"POINTS_FINALS","qualifyingHeats":3,"finalsCount":3,"finalDurationMinutes":5,"heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5}');
 
 -- 7. events: Round 4 is open for entries, Round 3 is completed
 INSERT INTO events (name, event_date, status, track_id) VALUES
     ('Wyvern Winter Series Round 4', '2026-06-20', 'OPEN', (SELECT id FROM tracks WHERE name = 'Rivermead Circuit')),
     ('Wyvern Winter Series Round 3', '2026-05-09', 'COMPLETED', (SELECT id FROM tracks WHERE name = 'Parklands Arena'));
 
--- 8. event classes
+-- 8. event classes: Round 3 ran one rolling-start timed class; Round 4 shows a staggered timed race, bump-up finals and points finals
 INSERT INTO event_classes (config_snapshot, template_id, event_id, racing_class_id, finals_count, cars_per_final, bump_count)
-SELECT (SELECT config FROM race_format_templates WHERE name = 'Timed 5-min'), (SELECT id FROM race_format_templates WHERE name = 'Timed 5-min'), e.id, (SELECT id FROM racing_classes WHERE name = '13.5 Touring'), 1, 8, 0
-FROM events e WHERE e.name IN ('Wyvern Winter Series Round 4', 'Wyvern Winter Series Round 3') ORDER BY e.id;
+SELECT (SELECT config FROM race_format_templates WHERE name = 'Timed 5-min Rolling Start'), (SELECT id FROM race_format_templates WHERE name = 'Timed 5-min Rolling Start'), (SELECT id FROM events WHERE name = 'Wyvern Winter Series Round 3'), (SELECT id FROM racing_classes WHERE name = '13.5 Touring'), 1, 8, 0;
+INSERT INTO event_classes (config_snapshot, template_id, event_id, racing_class_id, finals_count, cars_per_final, bump_count)
+SELECT t.config, t.id, (SELECT id FROM events WHERE name = 'Wyvern Winter Series Round 4'), (SELECT id FROM racing_classes WHERE name = c.class_name), c.finals, c.cars, c.bump
+FROM (
+    SELECT '13.5 Touring' AS class_name, 'Bump-up Finals, Grid Start' AS template, 3 AS finals, 8 AS cars, 2 AS bump
+    UNION ALL SELECT 'Stock Buggy', 'Timed 5-min Staggered Start', 1, 8, 0
+    UNION ALL SELECT 'F1 Open', 'Points Finals, 3 Legs', 3, 8, 0
+) c
+JOIN race_format_templates t ON t.name = c.template;
 
 -- 9. competitors, one per racer
 INSERT INTO competitors (display_name)
@@ -74,7 +82,8 @@ JOIN users u ON u.email = t.email
 JOIN competitors c ON c.display_name = u.first_name || ' ' || u.last_name
 JOIN events e ON e.name IN ('Wyvern Winter Series Round 4', 'Wyvern Winter Series Round 3')
 JOIN event_classes ec ON ec.event_id = e.id
-ORDER BY e.id, t.transponder;
+WHERE e.name = 'Wyvern Winter Series Round 4' OR ec.racing_class_id = (SELECT id FROM racing_classes WHERE name = '13.5 Touring')
+ORDER BY e.id, ec.id, t.transponder;
 
 -- 11. championship
 INSERT INTO championships (name, best_x_from_y_x, best_x_from_y_y, scoring_source, tq_bonus_points, afinal_winner_bonus_points)

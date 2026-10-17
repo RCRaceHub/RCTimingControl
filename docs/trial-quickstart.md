@@ -73,6 +73,8 @@ The demo event, **Wyvern Winter Series Round 4**, is still open for entries, so 
 5. Click **Call Grid**, then **Start Race**. Laps from the simulated decoder appear within about 15 seconds and the running order updates as you watch.
 6. When you have seen enough, click **Finish Race** and confirm. The result is saved and shown. Pick the next race in the run order to carry on.
 
+Round 4 has three classes, so you can see different race types: **13.5 Touring** runs bump-up finals with a stagger-start qualifier, **Stock Buggy** is a single timed race with a staggered start, and **F1 Open** runs points finals. Round 3, the past event, used a timed race with a rolling start.
+
 While a race is running, open these in other tabs or on a phone (see the About page for the address to use):
 
 - [/boards/now-next](http://localhost:8080/boards/now-next): the spectator board with the race on track and what's next.
