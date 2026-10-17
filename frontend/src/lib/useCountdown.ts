@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Whole seconds until {@code startAt}, ticking once a second; null when nothing is scheduled. When the server
@@ -6,18 +6,20 @@ import { useEffect, useMemo, useState } from 'react';
  * clock, so a laptop or tablet whose own clock is a little out still agrees with the race.
  */
 export function useCountdown(startAt: string | null | undefined, serverTime?: string | null): number | null {
+  // The server's idea of now: this browser's clock moved by the gap measured when the answer arrived.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!startAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [startAt]);
-  // The gap between the server's clock and this one, measured when the answer arrived.
-  const offsetMs = useMemo(
-    () => (serverTime ? new Date(serverTime).getTime() - Date.now() : 0),
-    [serverTime],
-  );
-  return startAt ? Math.max(0, Math.ceil((new Date(startAt).getTime() - (now + offsetMs)) / 1000)) : null;
+    const offsetMs = serverTime ? new Date(serverTime).getTime() - Date.now() : 0;
+    const tick = () => setNow(Date.now() + offsetMs);
+    const first = setTimeout(tick, 0);
+    const timer = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
+  }, [startAt, serverTime]);
+  return startAt ? Math.max(0, Math.ceil((new Date(startAt).getTime() - now) / 1000)) : null;
 }
 
 /** A countdown as m:ss. */
