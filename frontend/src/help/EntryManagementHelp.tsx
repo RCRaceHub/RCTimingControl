@@ -26,7 +26,7 @@ export function EntryManagementHelp() {
         </p>
       </div>
 
-      <GuideLinks admin meeting />
+      <GuideLinks admin meeting doc="user-manual" />
     </div>
   );
 }

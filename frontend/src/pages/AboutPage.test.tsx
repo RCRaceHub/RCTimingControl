@@ -41,6 +41,22 @@ describe('AboutPage', () => {
     expect(screen.getByText('v0.1.0')).toBeInTheDocument();
   });
 
+  it('lists the docs address with a QR code to it', async () => {
+    about.mockResolvedValue({
+      version: '0.1.0',
+      buildTime: '2026-10-04T12:00:00Z',
+      addresses: ['http://192.168.1.50:8080/', 'http://timing-laptop:8080'],
+    });
+    renderPage();
+
+    const list = await screen.findByRole('list', { name: 'Docs addresses' });
+    expect(within(list).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      'http://192.168.1.50:8080/docs',
+      'http://timing-laptop:8080/docs',
+    ]);
+    expect(screen.getByRole('img', { name: /QR code: Scan to open the docs/ })).toBeInTheDocument();
+  });
+
   it('leaves the section out when there are no addresses', async () => {
     about.mockResolvedValue({ version: '0.1.0', buildTime: '2026-10-04T12:00:00Z', addresses: [] });
     renderPage();

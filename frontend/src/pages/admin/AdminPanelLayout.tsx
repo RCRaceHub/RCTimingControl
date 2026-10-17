@@ -17,6 +17,7 @@ import {
   DatabaseBackup,
   CloudUpload,
   UserCog,
+  BookOpen,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -146,7 +147,16 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 
       <Separator />
 
-      <div className="px-3 pt-3">
+      <div className="px-3 pt-3 space-y-1">
+        <a
+          href="/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <BookOpen className="h-4 w-4 shrink-0" />
+          Docs
+        </a>
         <HelpSidebarButton onOpen={onNavClick} />
       </div>
 

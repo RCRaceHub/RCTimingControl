@@ -27,7 +27,7 @@ export function BackupsHelp() {
         </p>
       </div>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="installing#restoring-a-backup" />
     </div>
   );
 }

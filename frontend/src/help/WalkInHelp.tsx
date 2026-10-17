@@ -15,7 +15,7 @@ export function WalkInHelp() {
         <li><span className="font-semibold">After adding:</span> Generate or regenerate rounds so the driver is in the run order. The entry is logged with who added it.</li>
       </ul>
 
-      <GuideLinks meeting />
+      <GuideLinks meeting doc="user-manual" />
     </div>
   );
 }

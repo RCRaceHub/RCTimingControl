@@ -33,7 +33,7 @@ export function RaceControlHelp() {
         </p>
       </div>
 
-      <GuideLinks meeting />
+      <GuideLinks meeting doc="screens-and-printouts" />
     </div>
   );
 }

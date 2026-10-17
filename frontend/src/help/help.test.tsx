@@ -14,6 +14,9 @@ import { OfficialsHelp } from './OfficialsHelp';
 import { SetupWizardHelp } from './SetupWizardHelp';
 import { EntryManagementHelp } from './EntryManagementHelp';
 import { CompetitorsHelp } from './CompetitorsHelp';
+import { DOC_MANIFEST } from '@/docs/manifest';
+import { loadDocSource } from '@/docs/sources';
+import { extractHeadings } from '@/docs/markdown';
 
 describe('help panels', () => {
   it('explain the admin screens', () => {
@@ -67,13 +70,35 @@ describe('help panels', () => {
     const both = [EntryManagementHelp, EventManagementHelp, ChampionshipHelp];
     const hrefs = (Panel: () => React.ReactElement) => {
       const { container, unmount } = render(<Panel />);
-      const found = [...container.querySelectorAll('a')].map(a => a.getAttribute('href'));
+      const found = [...container.querySelectorAll('a')].map(a => a.getAttribute('href')!);
       unmount();
-      return found;
+      // Every panel also links to its page of the docs site first
+      expect(found[0]).toMatch(/^\/docs\//);
+      return found.slice(1);
     };
     for (const Panel of adminOnly) expect(hrefs(Panel)).toEqual(['/print/admin-guide']);
     for (const Panel of meetingOnly) expect(hrefs(Panel)).toEqual(['/print/meeting-guide']);
     for (const Panel of both) expect(hrefs(Panel)).toEqual(['/print/admin-guide', '/print/meeting-guide']);
+  });
+
+  it('link to a page and section that exist in the docs site', async () => {
+    const panels = [
+      BackupsHelp, ResultsExportsHelp, DecoderHelp, OfficialsHelp, SetupWizardHelp, TransponderHelp, WalkInHelp,
+      RaceControlHelp, PracticeHelp, RefereeHelp, EntryManagementHelp, EventManagementHelp, ChampionshipHelp, CompetitorsHelp,
+    ];
+    for (const Panel of panels) {
+      const { container, unmount } = render(<Panel />);
+      const href = container.querySelector('a[href^="/docs/"]')?.getAttribute('href');
+      unmount();
+      expect(href, Panel.name).toBeTruthy();
+      const [slug, anchor] = href!.replace('/docs/', '').split('#');
+      const entry = DOC_MANIFEST.find(e => e.slug === slug);
+      expect(entry, `${Panel.name} -> ${slug}`).toBeDefined();
+      if (anchor) {
+        const source = (await loadDocSource(entry!.file))!;
+        expect(extractHeadings(source).map(h => h.id), `${Panel.name} -> ${href}`).toContain(anchor);
+      }
+    }
   });
 
   it('explain how to fix a mispronounced name', () => {

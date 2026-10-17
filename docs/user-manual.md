@@ -1,6 +1,6 @@
 # User manual
 
-This is the path for a club from nothing to a finished race day, in the order you will meet things. Each step is a few sentences and points to the guide with the detail. Two printable guides come with the app: the **Admin Configuration Guide** and the **Race Meeting Guide**. Open them from the help panel in the app (the **?** button) or at `/print/admin-guide` and `/print/meeting-guide` on the timing laptop, and print them to PDF if you want paper at the track.
+This is the path for a club from nothing to a finished race day, in the order you will meet things. Each step is a few sentences and points to the guide with the detail. Two printable guides come with the app: the **Admin Configuration Guide** and the **Race Meeting Guide**. Open them from the help panel in the app (the **?** button) or at `/print/admin-guide` and `/print/meeting-guide` on the timing laptop, and print them to PDF if you want paper at the track. The full guides, with a menu and search, are also served by the app itself at `/docs` on the laptop's address (the **Docs** link in the sidebar and race control, and on the About page with a QR code). They work without the internet.
 
 RCTC (RC Timing Control) is one program on a laptop at the track. Only officials sign in: admins, race directors and referees. Racers never log in. Their entries come from a RaceHub export file or an RC-Timing CSV, or an official adds them as walk-ins.
 

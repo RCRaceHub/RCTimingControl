@@ -29,7 +29,7 @@ export function SetupWizardHelp() {
         </p>
       </div>
 
-      <GuideLinks admin />
+      <GuideLinks admin doc="installing#first-run" />
     </div>
   );
 }

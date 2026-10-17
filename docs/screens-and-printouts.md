@@ -14,6 +14,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 | Event schedule | `/events` | The events, with links to each finished race's results and the championship standings | Phones |
 | Race result | `/results/{raceId}` | One finished race with lap times per driver | Phones, reached from the schedule |
 | Championship standings | `/championships/{id}` | The championship table per class | Phones, reached from the schedule |
+| Docs | `/docs` | The user guides, with a menu and search. They are read from the app itself, so they work without the internet. The About page shows the address with a QR code | Anyone who needs the instructions at the track |
 
 Add `?event=ID` to `/boards/now-next`, `/boards/results`, `/boards/overlay` or `/qualifying` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
 
