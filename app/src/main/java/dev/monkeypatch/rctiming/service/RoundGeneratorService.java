@@ -186,6 +186,10 @@ public class RoundGeneratorService {
         return cars >= 2 * minCarsPerHeat ? Math.max(forMax, 2) : forMax;
     }
 
+    /**
+     * The worked-out heats for one generation: built without writing anything, so a refused request leaves the
+     * database alone, and {@link #persist} then writes rounds in event order (practice, qualifying, then finals).
+     */
     private class GenerationPlan {
 
         private final RoundGenerationRequest request;
@@ -216,6 +220,11 @@ public class RoundGeneratorService {
             persistFinals(sequence);
         }
 
+        /**
+         * Writes one practice or qualifying round with a race per heat of every class, and returns the next free
+         * sequence number. Only the first round of its kind gets grid positions; later ones are set from the
+         * previous round's finish.
+         */
         private int persistRound(RoundType type, int roundNumber, int sequenceStart, boolean isFirstRound) {
             Round round = new Round();
             round.setEventId(request.eventId());

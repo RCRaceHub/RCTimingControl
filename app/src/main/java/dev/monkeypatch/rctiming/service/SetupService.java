@@ -39,6 +39,7 @@ public class SetupService {
         this.raceFormatTemplateRepository = raceFormatTemplateRepository;
     }
 
+    /** Read from the unauthenticated setup endpoint to decide whether to show the wizard or the sign-in page. */
     @Transactional(readOnly = true)
     public Status getStatus() {
         boolean bootstrapped = userRepository.count() > 0;
@@ -46,6 +47,7 @@ public class SetupService {
         return new Status(bootstrapped, setupComplete);
     }
 
+    /** Which wizard steps are done, worked out from what is stored, so it survives a restart mid-wizard. */
     @Transactional(readOnly = true)
     public Progress getProgress() {
         boolean club = clubProfileRepository.count() > 0;

@@ -78,6 +78,7 @@ public class RefereeService {
         this.entryRepository = entryRepository;
     }
 
+    /** Records an incident report against an entry in a race. It changes nothing in the result; penalties are separate. */
     public IncidentReport raiseIncident(long raceId, long entryId, String incidentType, String description,
                                         long userId) {
         IncidentReport report = new IncidentReport();
@@ -103,6 +104,10 @@ public class RefereeService {
     /**
      * A LAP penalty comes off the car's laps in live timing straight away; a TIME penalty is only recorded, and is
      * added to the total time when the result is worked out. On a finished race the results are sent again.
+     * Live timing is only told after the commit.
+     *
+     * @throws IllegalArgumentException for a LAP penalty that is not a whole number of laps up to
+     *                                  {@link #MAX_LAP_PENALTY}
      */
     public Penalty applyPenalty(long raceId, long entryId, PenaltyType type, BigDecimal value, String reason,
                                 long userId) {
@@ -164,6 +169,9 @@ public class RefereeService {
      * recording it); otherwise the entry's most recent absence in the event is used, if there is one. The
      * {@code kind} says what it costs: the driver's best qualifying round (taken into account the next time the
      * qualifying order is worked out, so finals already seeded need seeding again) or a lap in their first final.
+     *
+     * @throws StateConflictException if the entry is not in the event, the named absence belongs to another entry or
+     *                                event, or the absence already has a penalty
      */
     public MarshalPenalty applyMarshalPenalty(long raceId, long entryId, long eventId, MarshalPenaltyKind kind,
                                               Long absenceId, String notes, long userId) {

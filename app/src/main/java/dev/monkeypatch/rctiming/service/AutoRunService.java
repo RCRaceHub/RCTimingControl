@@ -65,6 +65,7 @@ public class AutoRunService {
     /** A warning is only made when the gap is at least this much longer, so it does not talk over the last race. */
     private static final int WARNING_MARGIN_SECONDS = 10;
 
+    /** Where an armed event's auto run is: counting down to the next race, waiting for a race under way, or holding. */
     public enum Phase { WAITING, RACING, HELD }
 
     /** Why auto run is holding. */
@@ -88,6 +89,10 @@ public class AutoRunService {
                                int gapSeconds, boolean holdBeforeFinals) {
     }
 
+    /**
+     * One armed event's schedule. Written by request threads (under the service's monitor) and by the scheduler's
+     * tick, and read by the status-changed listener without the monitor, so the fields it touches are volatile.
+     */
     private static final class Plan {
         volatile Phase phase = Phase.RACING;
         volatile Long raceId;
@@ -149,7 +154,10 @@ public class AutoRunService {
         this.clock = clock;
     }
 
-    /** Switches auto run on for the event, or releases a hold, and plans the next race. */
+    /**
+     * Switches auto run on for the event, or releases a hold, and plans the next race. Runs on a request thread
+     * and is audited ({@code AUTO_RUN_STARTED} or {@code AUTO_RUN_RESUMED}).
+     */
     public synchronized AutoRunState go(Actor actor, long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
         boolean wasArmed = plans.containsKey(eventId);
@@ -172,7 +180,11 @@ public class AutoRunService {
         return publish(event);
     }
 
-    /** Brings the next start forward to {@code seconds} from now, as the 30s and 10s buttons of RC-Timing do. */
+    /**
+     * Brings the next start forward to {@code seconds} from now, as the 30s and 10s buttons of RC-Timing do. It
+     * never pushes a start back, and does nothing to the plan unless the event is counting down; warnings that
+     * would now be too early are marked as given so they are not spoken.
+     */
     public synchronized AutoRunState skipTo(Actor actor, long eventId, int seconds) {
         Event event = eventRepository.getOrThrow(eventId);
         Plan plan = plans.get(eventId);
@@ -197,6 +209,7 @@ public class AutoRunService {
         return publish(eventRepository.getOrThrow(eventId));
     }
 
+    /** The event's current auto run state, for race control to load; off when the event has no plan. */
     public AutoRunState state(long eventId) {
         return stateOf(eventRepository.getOrThrow(eventId), plans.get(eventId));
     }
@@ -220,6 +233,12 @@ public class AutoRunService {
         }
     }
 
+    /**
+     * Advances every armed event once a second, on the scheduler thread: plans after a finish, calls the grid,
+     * sends the lead-in and warnings, and starts the race when its time comes. Holds the service's monitor, so
+     * {@link #go} and {@link #stop} wait for a tick in progress. A failure in one event holds that event with the
+     * reason shown on race control and does not stop the others.
+     */
     @Scheduled(initialDelay = 5_000, fixedDelay = 1_000)
     public synchronized void tick() {
         for (Map.Entry<Long, Plan> entry : plans.entrySet()) {
@@ -392,7 +411,10 @@ public class AutoRunService {
         void run(Race race);
     }
 
-    /** Runs a race command in its own transaction, recorded as done by auto run. */
+    /**
+     * Runs a race command in its own transaction, recorded as done by auto run ({@code system:auto-run}). Called on
+     * the scheduler thread; an invalid transition throws and the tick holds the event.
+     */
     private void command(Event event, Race race, String action, String verb, RaceCommand command) {
         transactions.executeWithoutResult(status -> {
             Race current = raceRepository.getOrThrow(race.getId());
@@ -411,6 +433,7 @@ public class AutoRunService {
                 .entity("event", event.getId()).event(event.getId()).summary(summary).record());
     }
 
+    /** Sends the event's state to {@code /topic/event/{id}/auto-run} for open race control pages. */
     private AutoRunState publish(Event event) {
         AutoRunState state = stateOf(event, plans.get(event.getId()));
         messagingTemplate.convertAndSend("/topic/event/" + event.getId() + "/auto-run", state);
