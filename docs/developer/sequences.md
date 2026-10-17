@@ -1,0 +1,194 @@
+# Sequences
+
+Each diagram follows one thing through the code. Class names are the real ones, under `dev.monkeypatch.rctiming`.
+
+- [A lap passing, decoder to browser](#a-lap-passing-decoder-to-browser)
+- [Starting and finishing a race](#starting-and-finishing-a-race)
+- [Results export to RaceHub](#results-export-to-racehub)
+- [Live feed to the relay](#live-feed-to-the-relay)
+- [Importing entries from RaceHub](#importing-entries-from-racehub)
+- [Signing in and staying signed in](#signing-in-and-staying-signed-in)
+
+## A lap passing, decoder to browser
+
+The decoder thread never touches the database. Everything after `timingExecutor.execute` runs on the one timing thread, so passings are handled one at a time in decoder order.
+
+```mermaid
+sequenceDiagram
+    participant Dec as AMB decoder
+    participant DL as DecoderListener<br/>(Netty thread)
+    participant TE as timingExecutor<br/>(timing thread)
+    participant RR as RaceRepository
+    participant LTS as LapTimingService
+    participant LRS as LiveRaceState
+    participant Hub as LiveTimingHub
+    participant B as Browsers
+
+    Dec->>DL: RC-4 PASSING line (transponder, time)
+    DL->>TE: onPassing(generation, passing)
+    TE->>TE: drop it if the source was retired meanwhile
+    TE->>RR: findFirstByStatus(RUNNING)
+    RR-->>TE: running race id, or NO_RACE
+    TE->>LTS: publish LapPassingEvent(raceId, transponder, rtcTime)
+    alt no race is running
+        LTS->>LTS: ignore (practice listens to the same event)
+    else a race is running
+        LTS->>LRS: getRuntimeLink(transponder), else resolveEntryId
+        LTS->>LRS: applyLapPassing(event, entryId, now, windowEnded)
+        opt no entry matches (or more than one)
+            LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
+            Hub-->>B: /topic/race/id/unknown-transponder
+        end
+        LTS->>Hub: broadcastTimingUpdate(raceId, calculatePositions())
+        Hub-->>B: /topic/race/id/timing
+        opt every car has had its whole window
+            LTS->>LTS: publish AllCarsFlaggedEvent(raceId)
+            Note over LTS: AutoFinish finishes the race
+        end
+    end
+```
+
+An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen.
+
+## Starting and finishing a race
+
+```mermaid
+sequenceDiagram
+    participant RD as Race director (browser)
+    participant C as api.racecontrol controller
+    participant SM as RaceStateMachineService
+    participant RRp as RaceRepository
+    participant Bus as ApplicationEventPublisher
+    participant Hub as LiveTimingHub
+    participant RS as ResultSnapshotService
+    participant AF as AutoFinalsSeedingService
+
+    RD->>C: POST start
+    C->>SM: start(race)
+    SM->>SM: requireAllowed(RUNNING), requireQualifyingComplete
+    SM->>RRp: save(race with startedAt)
+    SM->>Bus: RaceStatusChangedEvent(RUNNING)
+    Note over Bus: LapTimingService, RaceClockService,<br/>audio, live feed and practice react
+    SM->>Hub: broadcastStateChange(RUNNING)
+    Hub-->>RD: /topic/race/id/state
+
+    RD->>C: POST finish
+    C->>SM: finish(race)
+    SM->>RRp: save(race with finishedAt)
+    SM->>Bus: RaceStatusChangedEvent(FINISHED)
+    SM->>Hub: broadcastStateChange(FINISHED)
+    SM->>SM: applyFinishingOrderToNextRace (grid for the next heat, or bump-up)
+    SM->>RS: snapshot(raceId)
+    RS->>RS: positions from LiveRaceState, saved as a ResultSnapshot
+    SM->>AF: seedIfQualifyingComplete(eventClassId) if it was a qualifier
+```
+
+Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment` and calls `LapTimingService.applyMarshalAdjustment`, which recalculates and rebroadcasts positions.
+
+## Results export to RaceHub
+
+The export is an outbox, so a finish never waits on the network and a crash loses nothing.
+
+```mermaid
+sequenceDiagram
+    participant SM as RaceStateMachineService
+    participant T as ResultsExportTriggers
+    participant ES as ResultsExportService
+    participant DB as SQLite (events, results_outbox)
+    participant S as ResultsSender
+    participant RH as RaceHub
+
+    SM-->>T: RaceStatusChangedEvent(FINISHED)<br/>(also FinishedRaceCorrected, EventCompleted)
+    T->>ES: requestForRace(raceId, reason)
+    ES->>DB: mark the event "export pending" (same transaction as the change)
+    loop every ~2 s (scheduler thread)
+        T->>ES: pendingEventIds()
+        T->>ES: queuePending(eventId)
+        ES->>DB: build Results Export v1, insert outbox row
+    end
+    loop every ~15 s (scheduler thread)
+        S->>DB: due outbox rows
+        S->>RH: POST results (idempotency key per item)
+        alt accepted
+            S->>DB: mark sent
+        else failed
+            S->>DB: record the error, retry later with a growing wait
+        end
+    end
+```
+
+Format: [Results Export v1](../results-export-v1.md).
+
+## Live feed to the relay
+
+```mermaid
+sequenceDiagram
+    participant P as LiveFeedPublisher<br/>(own thread, 1 s tick)
+    participant LTS as LapTimingService
+    participant Conn as LiveFeedConnection
+    participant R as Relay
+    participant V as Remote viewers
+
+    loop every second
+        P->>LTS: running order of each race on the grid or running<br/>in an event with the feed on
+        alt order or status changed, or a few seconds passed
+            P->>Conn: send Live Feed v1 message
+            Conn->>R: over the one outbound WebSocket
+            R-->>V: fan out
+        end
+    end
+    Note over P,Conn: A slow or missing relay only delays this thread.<br/>A dropped connection is reopened with a growing wait.
+```
+
+Format: [Live feed v1](../live-feed-v1.md).
+
+## Importing entries from RaceHub
+
+```mermaid
+sequenceDiagram
+    participant O as Official (browser)
+    participant C as api.admin import controller
+    participant I as RaceHubImportService
+    participant DB as SQLite
+
+    O->>C: upload Entry Export v1 file (preview)
+    C->>I: preview(eventId, export) = importEntries(dryRun = true)
+    I->>I: check schema_version = 1 and revision
+    I->>DB: read class mappings, existing entries and competitors
+    I-->>O: RaceHubImportResult (new, changed, withdrawn, unmapped classes, warnings, errors)
+    O->>C: apply
+    C->>I: importEntries(actor, eventId, export, false)
+    alt errors or unmapped classes
+        I-->>O: nothing is applied
+    else clean
+        I->>DB: upsert competitors and entries by entry_id<br/>(higher entry_version wins, withdraw never delete)
+        I->>DB: audit rows
+        I-->>O: result
+    end
+```
+
+Entries are never created for a racer login: competitors have no account.
+
+## Signing in and staying signed in
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as AuthService
+    participant J as JwtTokenService
+    participant F as JwtAuthenticationFilter
+    participant W as WebSocketJwtChannelInterceptor
+
+    B->>A: POST /api/v1/auth/login (email, password)
+    A->>A: check password, official, enabled (audit every attempt)
+    A->>J: generateAccessToken(user) (15 min by default)
+    A-->>B: access token + refresh token
+    B->>F: REST with Authorization: Bearer
+    F->>F: valid token signs the request in, else anonymous
+    Note over F: SecurityConfig then decides if anonymous is enough
+    B->>W: STOMP CONNECT with the token
+    W->>W: anonymous may subscribe to the public boards topics only
+    B->>A: POST /api/v1/auth/refresh before expiry
+    A->>A: rotate (compare-and-set), reuse of an old token is refused
+    A-->>B: new access token + new refresh token
+```
