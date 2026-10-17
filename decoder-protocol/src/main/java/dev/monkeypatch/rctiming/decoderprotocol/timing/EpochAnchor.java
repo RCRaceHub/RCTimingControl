@@ -18,6 +18,10 @@ import java.time.Instant;
  * the decoder is assumed to have restarted. The epoch is reset so the next call to
  * {@link #toRtcTimeMicros(double)} re-anchors.
  *
+ * <p>The result has millisecond resolution: the anchor is taken in whole milliseconds and the offset truncated to
+ * them. The anchor is the server's arrival time of the first passing, so every time is that much later than the true
+ * crossing; differences between passings are exact to the millisecond.
+ *
  * <p>All methods are synchronized for thread safety (called from a single Netty I/O thread
  * in normal operation, but made safe for testing).
  */

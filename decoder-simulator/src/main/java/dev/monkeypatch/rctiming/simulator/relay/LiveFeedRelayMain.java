@@ -19,6 +19,12 @@ public final class LiveFeedRelayMain {
     private LiveFeedRelayMain() {
     }
 
+    /**
+     * Starts a {@link LiveFeedTestRelay} on {@code --port} (default 8099), checking publishers against
+     * {@code --token} (default {@code dev-relay-token}), bound to {@code --bind} (default 127.0.0.1, so only this
+     * machine can reach it). Prints the app settings and viewer URL, then blocks until stopped. A malformed
+     * argument prints usage and exits with status 2.
+     */
     public static void main(String[] args) throws InterruptedException {
         Map<String, String> flags = new HashMap<>();
         for (String arg : args) {

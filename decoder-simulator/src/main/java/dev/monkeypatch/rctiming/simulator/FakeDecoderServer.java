@@ -25,6 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>Each accepted TCP connection is handled on a separate daemon thread.
  * Start via {@link #start()} and stop via {@link #stop()}.
+ *
+ * <p>There is no handshake or request: like a real RC-4 decoder (port 5100 by default), it starts sending as soon as
+ * a client connects. The server never reads from clients. Use it only for development, demos and tests, never
+ * against a real race.
  */
 public class FakeDecoderServer {
 
@@ -33,6 +37,7 @@ public class FakeDecoderServer {
     /** What the server sends one connected client, until the client goes or the thread is interrupted. */
     @FunctionalInterface
     interface ClientSession {
+        /** Writes records to the client until done; closing the client's socket makes the write fail and ends it. */
         void serve(OutputStream out) throws IOException;
     }
 

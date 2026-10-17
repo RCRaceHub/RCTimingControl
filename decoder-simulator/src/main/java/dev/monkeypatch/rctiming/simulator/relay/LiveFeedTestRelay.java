@@ -56,6 +56,15 @@ import java.util.regex.Pattern;
  *       one for each race.</li>
  *   <li>{@code /}: a viewer page that shows the running order as it changes.</li>
  * </ul>
+ *
+ * <p>It forwards each text message from a publisher to all viewers unchanged, and remembers only the latest message
+ * per race, found by the first {@code "rctc_race_id"} number in the text; a message without one is forwarded but not
+ * replayed to later viewers. Viewers cannot send. It does not parse or validate the Live Feed v1 payload, and it
+ * keeps everything in memory.
+ *
+ * <p>Run it by hand with {@link LiveFeedRelayMain}, or start one on a free port ({@code port} 0) in a test and read
+ * the counters to see what the app sent. Netty threads handle every connection; the counters are safe to read from
+ * the test thread.
  */
 public class LiveFeedTestRelay implements AutoCloseable {
 
@@ -111,6 +120,7 @@ public class LiveFeedTestRelay implements AutoCloseable {
         return port();
     }
 
+    /** The port actually bound, which differs from the requested one when that was 0. */
     public int port() {
         return ((InetSocketAddress) serverChannel.localAddress()).getPort();
     }
@@ -130,6 +140,7 @@ public class LiveFeedTestRelay implements AutoCloseable {
         return closeFrames.get();
     }
 
+    /** Stops listening, closes every connection and waits for the Netty threads to finish. */
     @Override
     public void close() {
         if (serverChannel != null) {

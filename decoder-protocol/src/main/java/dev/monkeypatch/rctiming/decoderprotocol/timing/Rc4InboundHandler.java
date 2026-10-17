@@ -27,6 +27,10 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
     private final SeqGapDetector                  gapDetector;
     private final Consumer<EpochCorrectedPassing> onPassing;
 
+    /**
+     * The handler shares the parser, anchor and gap detector with the source that built it, so they keep their
+     * state when a reconnect makes a new handler. The callback runs on the Netty event loop thread.
+     */
     public Rc4InboundHandler(Rc4TextParser parser,
                              EpochAnchor epochAnchor,
                              SeqGapDetector gapDetector,
@@ -37,6 +41,11 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
         this.onPassing   = onPassing;
     }
 
+    /**
+     * Handles one line already split by the frame decoder: feeds its sequence number to the gap detector (STATUS
+     * and PASSING alike), then, for a PASSING record, anchors its time and passes it on. STATUS and malformed lines
+     * produce no passing.
+     */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String line) {
         // Strip the SOH (0x01) byte if present; the parser rejects any other malformed input
