@@ -846,4 +846,33 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
                         org.assertj.core.groups.Tuple.tuple("Cat NoStart", 6),
                         org.assertj.core.groups.Tuple.tuple("Dan NoStart", 4));
     }
+
+    @Test
+    void aHigherFinalNobodyRacedTakesNoOneFromTheFinalBelow() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        Event event = makeEvent("Empty-a-final-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race aFinal = makeRace(finalRound.getId(), ecId, "A", 1);
+        Race bFinal = makeRace(finalRound.getId(), ecId, "B", 2);
+        Entry cat = makeEntry(makeUser("Cat", "Empty").getId(), event.getId(), ecId);
+        Entry dan = makeEntry(makeUser("Dan", "Empty").getId(), event.getId(), ecId);
+        makeRaceEntry(aFinal.getId(), cat.getId());
+        makeRaceEntry(aFinal.getId(), dan.getId());
+        makeRaceEntry(bFinal.getId(), cat.getId());
+        makeRaceEntry(bFinal.getId(), dan.getId());
+        makeSnapshot(aFinal.getId(), "[]");
+        makeSnapshot(bFinal.getId(),
+                "[" + resultRow(cat.getId(), 1, 9, 5200) + "," + resultRow(dan.getId(), 2, 9, 5300) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Nobody raced the A final, so the B final places stand
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Cat Empty", 10),
+                        org.assertj.core.groups.Tuple.tuple("Dan Empty", 8));
+    }
 }

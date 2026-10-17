@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.CHAMPIONSHIP_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
@@ -466,13 +465,8 @@ public class ChampionshipStandingsQuery {
             Set<Long> placed = new HashSet<>();
             Set<Long> onHigherGrid = new HashSet<>();
             int placesAbove = 0;
-            Map<Long, Set<Long>> onLowerGrid = new HashMap<>();
-            Set<Long> below = new HashSet<>();
-            for (int i = finals.size() - 1; i >= 0; i--) {
-                onLowerGrid.put(finals.get(i).raceId(), new HashSet<>(below));
-                below.addAll(finals.get(i).grid());
-            }
-            for (FinishedRace race : finals) {
+            for (int i = 0; i < finals.size(); i++) {
+                FinishedRace race = finals.get(i);
                 Map<Long, Integer> positions = new HashMap<>();
                 overall.put(race.raceId(), positions);
                 if (open != null && race.finalLetter() != null && race.finalLetter().compareTo(open) > 0) {
@@ -490,17 +484,34 @@ public class ChampionshipStandingsQuery {
                 }
                 int lastPlace = Math.max(placesAbove,
                         positions.values().stream().mapToInt(Integer::intValue).max().orElse(0));
-                // A driver bumped up who did not start this final is classed last in it
-                Set<Long> started = new HashSet<>();
-                rows.forEach(row -> started.add(row.entryId()));
-                for (Long entryId : new TreeSet<>(race.grid())) {
-                    if (!started.contains(entryId) && !onHigherGrid.contains(entryId)
-                            && onLowerGrid.get(race.raceId()).contains(entryId) && placed.add(entryId)) {
+                // A driver bumped up who did not start this final is classed last in it, in the order they
+                // finished the final below. Nobody is classed if no one raced this final.
+                if (!rows.isEmpty()) {
+                    Set<Long> started = new HashSet<>();
+                    rows.forEach(row -> started.add(row.entryId()));
+                    Map<Long, Integer> belowPlace = new HashMap<>();
+                    for (FinishedRace lower : finals.subList(i + 1, finals.size())) {
+                        lower.positions().forEach(row -> belowPlace.putIfAbsent(row.entryId(), row.position()));
+                    }
+                    List<Long> noStart = new ArrayList<>();
+                    for (Long entryId : race.grid()) {
+                        if (!started.contains(entryId) && !onHigherGrid.contains(entryId)
+                                && belowPlace.containsKey(entryId) && placed.add(entryId)) {
+                            noStart.add(entryId);
+                        }
+                    }
+                    noStart.sort((a, b) -> {
+                        int byPlace = Integer.compare(belowPlace.get(a), belowPlace.get(b));
+                        return byPlace != 0 ? byPlace : Long.compare(a, b);
+                    });
+                    for (Long entryId : noStart) {
                         positions.put(entryId, ++lastPlace);
                     }
                 }
                 placesAbove = lastPlace;
-                onHigherGrid.addAll(race.grid());
+                if (!rows.isEmpty()) {
+                    onHigherGrid.addAll(race.grid()); // a final nobody raced takes no one from the final below
+                }
             }
         });
         return overall;
