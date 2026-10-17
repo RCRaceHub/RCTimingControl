@@ -37,6 +37,7 @@ describe('heading anchors', () => {
   it('follows GitHub rules', () => {
     expect(headingSlug('Admin → Results to RaceHub')).toBe('admin--results-to-racehub');
     expect(headingSlug('First run')).toBe('first-run');
+    expect(extractHeadings('### 2.1 Low-points (`ROUND_BY_ROUND`)')[0].id).toBe('21-low-points-round_by_round');
   });
 
   it('numbers repeats and skips code fences', () => {
