@@ -176,6 +176,8 @@ val buildFrontend by tasks.registering(Exec::class) {
     commandLine(npm, "run", "build")
     inputs.dir(frontendDir.dir("src"))
     inputs.dir(frontendDir.dir("public"))
+    // The docs site bundles the user-facing guides (#326)
+    inputs.files(rootProject.fileTree("docs") { include("*.md") })
     inputs.files(frontendDir.files("index.html", "package.json", "package-lock.json", "vite.config.ts",
             "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json"))
     outputs.dir(frontendDir.dir("dist"))

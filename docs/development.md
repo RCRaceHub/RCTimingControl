@@ -226,6 +226,18 @@ None of them needs Docker. Each backend test run creates a temporary SQLite data
 
 ---
 
+## Adding a doc to the docs site
+
+The app serves the user-facing guides at `/docs` (#326). `docs/*.md` stays the only copy; the build imports the files listed for the site, and developer docs (this one, testing, architecture, requirements, api, plans) are not bundled.
+
+To add a guide:
+
+1. Write it in `docs/`. Link to other site docs as `installing.md#first-run`, never to a developer doc.
+2. Add it to `DOC_MANIFEST` in `frontend/src/docs/manifest.ts` (slug, title, file, menu section). The list order is the menu order.
+3. Add its path to the `import.meta.glob` list in `frontend/src/docs/sources.ts`.
+
+`npm test` fails if a manifest entry has no file, if a file is bundled without an entry, or if a bundled doc links to a doc or heading that isn't in the site.
+
 ## Makefile targets
 
 Run `make help` to see all targets. Quick reference:

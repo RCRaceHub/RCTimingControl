@@ -13,4 +13,4 @@ app/data
 *.db
 *.db-wal
 *.db-shm
-docs
+docs/plans

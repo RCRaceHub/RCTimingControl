@@ -9,6 +9,8 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   server: {
+    // The docs site reads ../docs/*.md (#326)
+    fs: { allow: ['..'] },
     proxy: {
       '/api': 'http://localhost:8080',
       '/storage': 'http://localhost:8080',
