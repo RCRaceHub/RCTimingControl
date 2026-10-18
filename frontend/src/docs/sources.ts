@@ -8,6 +8,7 @@ export const DOC_SOURCES = import.meta.glob(
     '../../../docs/docker.md',
     '../../../docs/decoder.md',
     '../../../docs/screens-and-printouts.md',
+    '../../../docs/race-types.md',
     '../../../docs/scoring.md',
     '../../../docs/live-feed-v1.md',
     '../../../docs/results-export-v1.md',
