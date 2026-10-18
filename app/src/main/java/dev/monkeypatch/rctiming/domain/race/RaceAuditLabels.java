@@ -26,7 +26,8 @@ public class RaceAuditLabels {
     /** The race as an official knows it, such as {@code A final (race 42)} or {@code heat 2 (race 42)}. */
     public String race(long raceId) {
         return raceRepository.findById(raceId).map(r -> {
-            String what = r.getFinalLetter() != null ? r.getFinalLetter() + " final" : "heat " + r.getHeatNumber();
+            String what = r.getFinalLetter() == null ? "heat " + r.getHeatNumber()
+                    : "Z".equals(r.getFinalLetter()) ? "zombie round" : r.getFinalLetter() + " final";
             return what + " (race " + raceId + ")";
         }).orElse("race " + raceId);
     }

@@ -16,7 +16,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * <p>With {@code mains} above 0 the heats are followed by that many mains (A, then B, then C) instead of ending the
  * event: the heat totals seed them, the lowest main takes the worst drivers, and each main holds
  * {@code mainGridSize} cars. The first {@code promotionSpots} places of a lower main move up into the main above it
- * when it finishes. Unknown JSON properties are ignored, so older saved configs still load (and have no mains).
+ * when it finishes. With {@code zombieRound} (and at least two mains) a zombie round runs after the lower mains and
+ * before the A main: every driver not already in the A main races once more, and the winner takes a place in it.
+ * Unknown JSON properties are ignored, so older saved configs still load (and have no mains).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ShikabaneConfig(
@@ -28,5 +30,6 @@ public record ShikabaneConfig(
     int heatLaps,
     int mains,
     int mainGridSize,
-    int promotionSpots
+    int promotionSpots,
+    boolean zombieRound
 ) implements RaceFormatConfig {}

@@ -186,6 +186,62 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
+    void zombieRound_takesOnePlaceFromTheMainBelowAIntoTheZombieGrid() {
+        Race bFinal = finalRace(200L, "B");
+        Race aFinal = finalRace(201L, "A");
+        Race zombie = finalRace(202L, "Z");
+        aFinal.setBumpSlots(2);
+        when(raceRepository.findById(bFinal.getId())).thenReturn(Optional.of(bFinal));
+        when(raceRepository.findByEventClassIdAndFinalLetter(10L, "A")).thenReturn(List.of(aFinal));
+        when(raceRepository.findByEventClassIdAndFinalLetter(10L, "Z")).thenReturn(List.of(zombie));
+        when(raceRepository.findByEventClassIdAndRoundType(10L, RoundType.FINAL))
+                .thenReturn(List.of(aFinal, bFinal, zombie));
+        List<RaceEntry> aGrid = seededGrid(aFinal, 2);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(aGrid);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(zombie.getId())).thenReturn(List.of());
+        // A promoted driver is on A's grid when the zombie round is filled
+        when(raceEntryRepository.save(any(RaceEntry.class))).thenAnswer(inv -> {
+            RaceEntry saved = inv.getArgument(0);
+            if (saved.getRaceId().equals(aFinal.getId())) {
+                aGrid.add(saved);
+            }
+            return saved;
+        });
+        List<RaceEntry> bGrid = new ArrayList<>();
+        bGrid.add(raceEntry(bFinal, 501L, 1, false));
+        bGrid.add(raceEntry(bFinal, 502L, 2, false));
+        bGrid.add(raceEntry(bFinal, 503L, 3, false));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(bFinal.getId())).thenReturn(bGrid);
+
+        // A has two bump places, one of them kept for the zombie round's winner
+        List<Long> promoted = service().applyBumpUpResults(bFinal.getId(), List.of(501L, 502L, 503L));
+
+        assertThat(promoted).containsExactly(501L);
+        ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository, times(3)).save(captor.capture());
+        List<RaceEntry> onZombie = captor.getAllValues().stream()
+                .filter(e -> e.getRaceId().equals(zombie.getId())).toList();
+        assertThat(onZombie).extracting(RaceEntry::getEntryId).containsExactly(502L, 503L);
+    }
+
+    @Test
+    void zombieRound_winnerTakesTheKeptPlaceInA() {
+        Race aFinal = finalRace(201L, "A");
+        Race zombie = finalRace(202L, "Z");
+        aFinal.setBumpSlots(2);
+        List<RaceEntry> aGrid = seededGrid(aFinal, 2);
+        aGrid.add(raceEntry(aFinal, 501L, 3, true));
+        when(raceRepository.findById(zombie.getId())).thenReturn(Optional.of(zombie));
+        when(raceRepository.findByEventClassIdAndFinalLetter(10L, "A")).thenReturn(List.of(aFinal));
+        when(raceRepository.findByEventClassIdAndFinalLetter(10L, "Z")).thenReturn(List.of(zombie));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(aGrid);
+
+        List<Long> promoted = service().applyBumpUpResults(zombie.getId(), List.of(502L, 503L));
+
+        assertThat(promoted).containsExactly(502L);
+    }
+
+    @Test
     void applyBumpUpResults_repeatCallPromotesNobodyOnceSlotsAreFull() {
         Race bFinal = finalRace(200L, "B");
         Race aFinal = finalRace(201L, "A");

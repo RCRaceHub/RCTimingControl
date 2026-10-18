@@ -208,6 +208,7 @@ the **lowest total wins**.
 |---|---|
 | Heat duration (min) | The length of every heat, used when Heat laps is 0 |
 | Mains | How many mains (A, B, C) follow the heats, 0 for none (up to 3) |
+| Zombie round | Runs a last-chance race for everyone not in the A main, between the lower mains and A (needs two or more mains) |
 | Cars per main, Promotion spots | The size of each main, and how many places of a lower main move up into the one above |
 | Heat laps | A heat ends after this many laps (typically 3 in Japanese club racing, sometimes 5). 0 runs it for the heat duration instead |
 | Start type, stagger interval (s) | How heats start, as above |
@@ -258,7 +259,9 @@ If an elimination or penalty is added to a finished heat, a grid already drawn f
 from the heat totals: the best drivers in the A main and the worst in the lowest. Each main holds Cars per main, less
 the places kept for promotion. When a lower main finishes, its first Promotion spots places are added to the back of
 the main above, so a driver can climb from the C main to the A main. A main is run like a heat, with the same
-Eliminate, Revive and False start buttons, and is ranked by its own result. See
+Eliminate, Revive and False start buttons, and is ranked by its own result. With the
+zombie round on, a race of everyone not in the A main runs after the lower mains and before A. Its winner takes one
+extra place at the back of the A grid, which A is given for it. See
 [Running a Shikabane meeting](shikabane-guide.md) for the order to do it in.
 
 ### Settings the round generator decides

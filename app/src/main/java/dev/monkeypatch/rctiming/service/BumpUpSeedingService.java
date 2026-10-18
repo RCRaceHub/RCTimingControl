@@ -38,6 +38,12 @@ public class BumpUpSeedingService {
 
     private static final Logger log = LoggerFactory.getLogger(BumpUpSeedingService.class);
 
+    /**
+     * The final letter of a Shikabane zombie round. It is not a rank in the A, B, C chain: it runs after the
+     * lowest mains and before A, and its winner takes the one extra bump place A is given for it.
+     */
+    public static final String ZOMBIE_LETTER = "Z";
+
     private final RaceRepository raceRepository;
     private final RaceEntryRepository raceEntryRepository;
     private final RoundRepository roundRepository;
@@ -86,6 +92,15 @@ public class BumpUpSeedingService {
         // Seeding replaces every grid, which would wipe a final that is under way or done, and the bumps already made
         if (finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
             throw new StateConflictException("A final for this class has already started, so it can't be seeded again");
+        }
+        // A zombie round has no qualifiers of its own: it is filled once the lower mains are done, and it gives the
+        // A main one more bump place for its winner
+        List<Race> zombies = finals.stream().filter(f -> ZOMBIE_LETTER.equals(f.getFinalLetter())).toList();
+        finals = new ArrayList<>(finals.stream().filter(f -> !ZOMBIE_LETTER.equals(f.getFinalLetter())).toList());
+        for (Race zombie : zombies) {
+            raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(zombie.getId()));
+            zombie.setBumpSlots(0);
+            raceRepository.save(zombie);
         }
         // Sort by finalLetter DESC: C before B before A (lowest final first for assignment)
         finals.sort(Comparator.comparing(Race::getFinalLetter).reversed());
@@ -157,8 +172,43 @@ public class BumpUpSeedingService {
             }
 
             // Reserve bump slots on non-lowest finals; applyBumpUpResults fills them
-            finalRace.setBumpSlots(isLowestFinal ? 0 : bumpCount);
+            boolean topFinal = fi == finals.size() - 1;
+            finalRace.setBumpSlots(isLowestFinal ? 0 : bumpCount + (topFinal && !zombies.isEmpty() ? 1 : 0));
             raceRepository.save(finalRace);
+        }
+    }
+
+    /**
+     * Puts everyone who raced a main but is not in the A main on the zombie round's grid, lower mains' drivers in
+     * the order of their main (B first). Runs when the main below A finishes, after its drivers have been promoted,
+     * so a driver who just moved up is not in it. Replaces any earlier grid.
+     */
+    private void fillZombieRound(Race zombie, Long eventClassId) {
+        List<Race> mains = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL).stream()
+                .filter(f -> f.getFinalLetter() != null && !ZOMBIE_LETTER.equals(f.getFinalLetter()))
+                .sorted(Comparator.comparing(Race::getFinalLetter)).toList();
+        Set<Long> inA = new java.util.HashSet<>();
+        List<Long> zombies = new ArrayList<>();
+        for (Race main : mains) {
+            for (RaceEntry e : raceEntryRepository.findByRaceIdOrderByGridPosition(main.getId())) {
+                if ("A".equals(main.getFinalLetter())) {
+                    inA.add(e.getEntryId());
+                } else if (!zombies.contains(e.getEntryId())) {
+                    zombies.add(e.getEntryId());
+                }
+            }
+        }
+        zombies.removeAll(inA);
+        raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(zombie.getId()));
+        int position = 1;
+        for (Long entryId : zombies) {
+            RaceEntry entry = new RaceEntry();
+            entry.setRaceId(zombie.getId());
+            entry.setEntryId(entryId);
+            entry.setGridPosition(position);
+            entry.setCarNumber(position++);
+            entry.setBumped(false);
+            raceEntryRepository.save(entry);
         }
     }
 
@@ -185,9 +235,10 @@ public class BumpUpSeedingService {
                     "Race " + finishedFinalRaceId + " is not a final");
         }
 
-        // Next higher final: 'C' → 'B', 'B' → 'A'. With none there is nobody to move up; this runs inside the
+        // Next higher final: 'C' → 'B', 'B' → 'A', and the zombie round's winner goes to 'A'. With none there is nobody to move up; this runs inside the
         // finish, so it must not throw for that (the finish would be rolled back, #217)
-        char nextChar = (char) (currentLetter.charAt(0) - 1);
+        boolean zombieRound = ZOMBIE_LETTER.equals(currentLetter);
+        char nextChar = zombieRound ? 'A' : (char) (currentLetter.charAt(0) - 1);
         if (nextChar < 'A') {
             return List.of();
         }
@@ -206,6 +257,15 @@ public class BumpUpSeedingService {
         List<RaceEntry> grid = raceEntryRepository.findByRaceIdOrderByGridPosition(nextFinal.getId());
         long alreadyBumped = grid.stream().filter(RaceEntry::isBumped).count();
         int openSlots = (int) Math.max(0, nextFinal.getBumpSlots() - alreadyBumped);
+        // The place kept for the zombie round's winner is not for the main below it
+        List<Race> zombieRaces = raceRepository.findByEventClassIdAndFinalLetter(
+                finishedRace.getEventClassId(), ZOMBIE_LETTER);
+        if (!zombieRound && nextChar == 'A' && !zombieRaces.isEmpty()) {
+            openSlots = Math.max(0, openSlots - 1);
+        }
+        if (zombieRound) {
+            openSlots = Math.min(openSlots, 1);
+        }
         Set<Long> alreadyInFinal = grid.stream().map(RaceEntry::getEntryId).collect(Collectors.toSet());
         int nextGridPosition = grid.stream().map(RaceEntry::getGridPosition).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).max().orElse(0) + 1;
@@ -224,6 +284,9 @@ public class BumpUpSeedingService {
             bumpedEntry.setBumped(true);
             raceEntryRepository.save(bumpedEntry);
             promoted.add(entryId);
+        }
+        if (!zombieRound && nextChar == 'A' && !zombieRaces.isEmpty()) {
+            fillZombieRound(zombieRaces.get(0), finishedRace.getEventClassId());
         }
         if (!promoted.isEmpty()) {
             // Nobody asked for this: it follows a final finishing, so the system is the actor

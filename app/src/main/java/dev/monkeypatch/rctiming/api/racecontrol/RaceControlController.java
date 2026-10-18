@@ -314,7 +314,7 @@ public class RaceControlController {
     /** The race as an official knows it, such as {@code A final (race 42)} or {@code heat 2 (race 42)}. */
     private static String describe(Race race) {
         String what = race.getFinalLetter() != null
-                ? race.getFinalLetter() + " final"
+                ? ("Z".equals(race.getFinalLetter()) ? "zombie round" : race.getFinalLetter() + " final")
                 : "heat " + race.getHeatNumber();
         return what + " (race " + race.getId() + ")";
     }

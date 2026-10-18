@@ -35,13 +35,13 @@ class AutoFinalsSeedingServiceTest {
 
     @Test
     void shikabaneMains_useTheirGridSizeAndPromotionSpots() {
-        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 3, 8, 2);
+        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 3, 8, 2, false);
         assertThat(AutoFinalsSeedingService.layout(shikabane, 20, 3)).containsExactly(8, 2);
     }
 
     @Test
     void shikabaneWithoutMainsGridSize_splitsTheFieldEvenly() {
-        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 2, 0, 0);
+        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 2, 0, 0, false);
         assertThat(AutoFinalsSeedingService.layout(shikabane, 17, 2)).containsExactly(9, 0);
     }
 }

@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { RaceFormatConfig, StartType, QualifyingType } from '@/lib/adminApi';
@@ -49,6 +50,7 @@ const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'>
   mains: 0,
   mainGridSize: 8,
   promotionSpots: 1,
+  zombieRound: false,
 };
 
 interface Props {
@@ -195,6 +197,14 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Mains (0 = none, max 3)" value={value.mains} onChange={v => patch('mains', v)} />
           <NumField label="Cars per Main" value={value.mainGridSize} onChange={v => patch('mainGridSize', v)} />
           <NumField label="Promotion Spots" value={value.promotionSpots} onChange={v => patch('promotionSpots', v)} />
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="shikabane-zombie-round"
+              checked={value.zombieRound}
+              onCheckedChange={checked => patch('zombieRound', checked === true)}
+            />
+            <Label htmlFor="shikabane-zombie-round" className="text-xs">Zombie round before the A main</Label>
+          </div>
         </div>
       )}
     </div>
