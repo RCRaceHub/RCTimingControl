@@ -185,8 +185,8 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Heat Duration (min)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
           <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
-          <NumField label="False Start Penalty (points)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />
-          <NumField label="Zombie Bonus (points)" value={value.zombieBonusPoints} onChange={v => patch('zombieBonusPoints', v)} />
+          <NumField label="False Start Penalty (points, not applied yet)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />
+          <NumField label="Zombie Bonus (points, not applied yet)" value={value.zombieBonusPoints} onChange={v => patch('zombieBonusPoints', v)} />
         </div>
       )}
     </div>

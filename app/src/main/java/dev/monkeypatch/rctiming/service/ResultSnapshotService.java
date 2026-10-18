@@ -88,7 +88,6 @@ public class ResultSnapshotService {
                                   MarshalAdjustmentRepository marshalAdjustmentRepository,
                                   FinalsMarshalPenalties finalsMarshalPenalties,
                                   RaceEliminationRepository raceEliminationRepository) {
-        this.raceEliminationRepository = raceEliminationRepository;
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.lapTimingService = lapTimingService;
@@ -100,6 +99,7 @@ public class ResultSnapshotService {
         this.penaltyRepository = penaltyRepository;
         this.marshalAdjustmentRepository = marshalAdjustmentRepository;
         this.finalsMarshalPenalties = finalsMarshalPenalties;
+        this.raceEliminationRepository = raceEliminationRepository;
     }
 
     /**

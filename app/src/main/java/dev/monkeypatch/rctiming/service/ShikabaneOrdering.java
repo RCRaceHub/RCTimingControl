@@ -3,8 +3,10 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto.ResultRow;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,7 +21,7 @@ final class ShikabaneOrdering {
     private ShikabaneOrdering() {}
 
     /**
-     * Reorders {@code rows} and renumbers their positions from 1. The result is a new list; the rows are copied with
+     * Reorders {@code rows} and renumbers their positions from 1. With nothing eliminated the list comes back as it was; otherwise it is a new list and the rows are copied with
      * their new position and the gap to the leader is kept as it was timed.
      *
      * @param rows               the heat's rows in timed order, with a row for every eliminated entry
@@ -31,9 +33,10 @@ final class ShikabaneOrdering {
         }
         Map<Long, ResultRow> byEntry = rows.stream()
                 .collect(Collectors.toMap(ResultRow::entryId, Function.identity(), (a, b) -> a));
+        Set<Long> deadIds = new HashSet<>(eliminatedInOrder);
         List<ResultRow> ordered = new ArrayList<>();
         for (ResultRow row : rows) {
-            if (!eliminatedInOrder.contains(row.entryId())) {
+            if (!deadIds.contains(row.entryId())) {
                 ordered.add(row);
             }
         }

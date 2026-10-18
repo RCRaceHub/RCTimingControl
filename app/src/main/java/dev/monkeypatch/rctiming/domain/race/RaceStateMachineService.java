@@ -82,7 +82,6 @@ public class RaceStateMachineService {
                                    RaceFormatService raceFormatService,
                                    EventClassRepository eventClassRepository,
                                    RaceEliminationRepository raceEliminationRepository) {
-        this.raceEliminationRepository = raceEliminationRepository;
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -94,6 +93,7 @@ public class RaceStateMachineService {
         this.autoFinalsSeedingService = autoFinalsSeedingService;
         this.raceFormatService = raceFormatService;
         this.eventClassRepository = eventClassRepository;
+        this.raceEliminationRepository = raceEliminationRepository;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every

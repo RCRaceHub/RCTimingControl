@@ -152,8 +152,15 @@ public class RaceEliminationService {
 
     private boolean isShikabane(Race race) {
         EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
-        return eventClass != null && eventClass.getConfigSnapshot() != null
-                && raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig;
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return false;
+        }
+        try {
+            return raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig;
+        } catch (RuntimeException e) {
+            // A bad format override is reported where the format is read; here the class just isn't Shikabane
+            return false;
+        }
     }
 
     private Race requireMarkable(long raceId, long entryId) {

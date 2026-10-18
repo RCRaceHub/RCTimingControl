@@ -14,7 +14,10 @@ import { raceControlQueryKeys } from './raceControlQueryKeys';
 export function useEliminations(raceId: number) {
   const queryClient = useQueryClient();
   const key = raceControlQueryKeys.eliminations(raceId);
-  const query = useQuery({ queryKey: key, queryFn: () => getEliminations(raceId), retry: false });
+  const query = useQuery({ queryKey: key, queryFn: () => getEliminations(raceId), retry: false,
+    // Another official may mark a car; this is not pushed over the race topics
+    refetchInterval: 5000,
+  });
 
   // A mark changes the result of a finished race and the history, so both are refetched
   const refresh = () => {

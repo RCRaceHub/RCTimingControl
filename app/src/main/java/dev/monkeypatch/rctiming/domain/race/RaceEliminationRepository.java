@@ -18,10 +18,9 @@ public class RaceEliminationRepository extends JooqRepository<RaceElimination, R
         super(dsl, RACE_ELIMINATIONS, RACE_ELIMINATIONS.ID);
     }
 
-    /** Every row of the race, eliminations and revivals, oldest first. */
+    /** Every row of the race, eliminations and revivals, in the order they were marked (row ids, not clock times). */
     public List<RaceElimination> findByRaceId(Long raceId) {
-        return findWhere(RACE_ELIMINATIONS.RACE_ID.eq(raceId), RACE_ELIMINATIONS.ELIMINATED_AT.asc(),
-                RACE_ELIMINATIONS.ID.asc());
+        return findWhere(RACE_ELIMINATIONS.RACE_ID.eq(raceId), RACE_ELIMINATIONS.ID.asc());
     }
 
     /** The entry's current elimination in the race, if it is dead now. */

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Shikabane eliminations and zombie revivals, marked by hand from race control. Under
- * {@code /api/v1/race-control/race/{raceId}/eliminations}; RACE_DIRECTOR, REFEREE or ADMIN. {@link RaceEliminationService}
+ * {@code /api/v1/race-control/race/{raceId}/eliminations}; reading is open to RACE_DIRECTOR, REFEREE or ADMIN and marking to RACE_DIRECTOR or ADMIN. {@link RaceEliminationService}
  * does the work and writes the audit rows. Each action answers 409 when the race is not a Shikabane race, has not
  * started, or the car is not in the state the action needs.
  */
@@ -45,6 +45,7 @@ public class EliminationController {
 
     /** Marks a car dead. {@code POST .../eliminate}; 200 with the row, 400 for a bad body. Audited. */
     @Audited("audit_log")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
     @PostMapping("/eliminate")
     public ResponseEntity<RaceEliminationDto> eliminate(@PathVariable long raceId,
                                                         @Valid @RequestBody RaceEliminationRequest req) {
@@ -54,6 +55,7 @@ public class EliminationController {
 
     /** Revives a dead car (a zombie). {@code POST .../revive}; 200 with the row. Audited. */
     @Audited("audit_log")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
     @PostMapping("/revive")
     public ResponseEntity<RaceEliminationDto> revive(@PathVariable long raceId,
                                                      @Valid @RequestBody RaceEliminationRequest req) {
@@ -63,6 +65,7 @@ public class EliminationController {
 
     /** Takes back an elimination made by mistake. {@code POST .../undo}; 200. Audited. */
     @Audited("audit_log")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
     @PostMapping("/undo")
     public ResponseEntity<Void> undo(@PathVariable long raceId, @Valid @RequestBody RaceEliminationRequest req) {
         eliminationService.undoElimination(raceId, req.entryId(), CurrentOfficial.id());

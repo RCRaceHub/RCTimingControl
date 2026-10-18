@@ -215,8 +215,9 @@ place in the order of elimination, and gets **Revive** and **Undo** buttons:
   if it dies again it goes to the back of the order.
 - **Undo** takes back a mark made by mistake.
 
-Marks can still be added after the race has finished, for a death noticed late; the result is worked out again. A
-restart clears them.
+Only the race director and admins can mark; referees can look. The server also accepts a mark on a finished race, for a
+death noticed late, and then works the result out again, but race control does not offer the buttons there yet. A
+restart clears the marks.
 
 The heat result puts the cars still alive first, in the usual order (most laps, then earliest finish), then the dead,
 the last car to die ahead of the one before it. So a car's place is its heat points: 1 for the winner, up to the

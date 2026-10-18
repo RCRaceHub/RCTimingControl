@@ -1,7 +1,7 @@
 -- Shikabane eliminations: a car that flips, breaks down or stalls is "dead" and its elimination order sets its
 -- heat points. Race control records each death by hand, since a decoder cannot tell a dead car from a slow one.
 --
--- eliminated_at: when race control marked the car dead (UTC microseconds); the order of these is the elimination order.
+-- eliminated_at: when race control marked the car dead (UTC microseconds); the elimination order follows the row ids, so a clock change cannot reorder it.
 -- revived_at: set when a zombie (a dead car flipped back onto its wheels by another car) goes back into the race.
 --   A revived row no longer counts as an elimination; it stays as the record of the revival, which is worth a
 --   bonus point. If the car dies again, a new row is added.
@@ -17,3 +17,5 @@ CREATE TABLE race_eliminations (
     CONSTRAINT race_eliminations_entry_id_fkey FOREIGN KEY (entry_id) REFERENCES entries(id)
 );
 CREATE INDEX idx_race_eliminations_race_id ON race_eliminations (race_id);
+-- A car is dead at most once at a time
+CREATE UNIQUE INDEX idx_race_eliminations_active ON race_eliminations (race_id, entry_id) WHERE revived_at IS NULL;
