@@ -483,3 +483,33 @@ export async function getQualifying(eventId: number): Promise<QualifyingTable[]>
 export async function seedFinalsFromQualifying(eventId: number, eventClassId: number): Promise<void> {
   await api.post(`/api/v1/race-control/event/${eventId}/qualifying/${eventClassId}/seed-finals`);
 }
+
+export type RaceEliminationDto = {
+  entryId: number;
+  eliminatedAt: string;
+  /** Null while the car is still dead; a row with a time is the record of a zombie revival. */
+  revivedAt: string | null;
+};
+
+export type RaceEliminationsDto = {
+  /** False for any race that is not run to the Shikabane format: race control hides the buttons. */
+  shikabane: boolean;
+  rows: RaceEliminationDto[];
+};
+
+export async function getEliminations(raceId: number): Promise<RaceEliminationsDto> {
+  const { data } = await api.get<RaceEliminationsDto>(`/api/v1/race-control/race/${raceId}/eliminations`);
+  return data;
+}
+
+export async function eliminateEntry(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/eliminations/eliminate`, { entryId });
+}
+
+export async function reviveEntry(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/eliminations/revive`, { entryId });
+}
+
+export async function undoElimination(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/eliminations/undo`, { entryId });
+}

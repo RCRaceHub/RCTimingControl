@@ -39,6 +39,14 @@ const POINTS_FINALS_DEFAULTS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 
   staggerIntervalSeconds: 5,
 };
 
+const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'> = {
+  heatDurationMinutes: 5,
+  startType: 'GRID',
+  staggerIntervalSeconds: 5,
+  falseStartPenaltyPoints: 3,
+  zombieBonusPoints: 1,
+};
+
 interface Props {
   value: RaceFormatConfig;
   onChange: (next: RaceFormatConfig) => void;
@@ -112,6 +120,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
   function handleTypeChange(newType: string) {
     if (newType === 'TIMED') onChange({ type: 'TIMED', ...TIMED_DEFAULTS });
     else if (newType === 'BUMP_UP') onChange({ type: 'BUMP_UP', ...BUMP_UP_DEFAULTS });
+    else if (newType === 'SHIKABANE') onChange({ type: 'SHIKABANE', ...SHIKABANE_DEFAULTS });
     else onChange({ type: 'POINTS_FINALS', ...POINTS_FINALS_DEFAULTS });
   }
 
@@ -131,6 +140,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
             <SelectItem value="TIMED">Timed</SelectItem>
             <SelectItem value="BUMP_UP">Bump Up</SelectItem>
             <SelectItem value="POINTS_FINALS">Points Finals</SelectItem>
+            <SelectItem value="SHIKABANE">Shikabane</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">Changing the type will reset variant-specific fields.</p>
@@ -167,6 +177,16 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
+        </div>
+      )}
+
+      {value.type === 'SHIKABANE' && (
+        <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+          <NumField label="Heat Duration (min)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
+          <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
+          <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
+          <NumField label="False Start Penalty (points)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />
+          <NumField label="Zombie Bonus (points)" value={value.zombieBonusPoints} onChange={v => patch('zombieBonusPoints', v)} />
         </div>
       )}
     </div>

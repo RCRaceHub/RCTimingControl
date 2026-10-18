@@ -84,6 +84,8 @@ sequenceDiagram
     SM->>AF: seedIfQualifyingComplete(eventClassId) if it was a qualifier
 ```
 
+Shikabane eliminations are not state changes either: `RaceEliminationService` saves a `RaceElimination` row for a car marked dead (or a revival), and `ResultSnapshotService` reads the active rows when it works out the heat result, ordering the dead after the survivors through `ShikabaneOrdering`. On a finished race it publishes `FinishedRaceCorrected` so the result is rebuilt.
+
 Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment` and calls `LapTimingService.applyMarshalAdjustment`, which recalculates and rebroadcasts positions.
 
 ## Results export to RaceHub

@@ -144,11 +144,21 @@ public class RaceEliminationService {
                 .toList();
     }
 
+    /** Whether the race's class races to the Shikabane format, so race control shows the elimination buttons. */
+    @Transactional(readOnly = true)
+    public boolean isShikabane(long raceId) {
+        return isShikabane(raceRepository.getOrThrow(raceId));
+    }
+
+    private boolean isShikabane(Race race) {
+        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        return eventClass != null && eventClass.getConfigSnapshot() != null
+                && raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig;
+    }
+
     private Race requireMarkable(long raceId, long entryId) {
         Race race = raceRepository.getOrThrow(raceId);
-        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
-        if (eventClass == null || eventClass.getConfigSnapshot() == null
-                || !(raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig)) {
+        if (!isShikabane(race)) {
             throw new StateConflictException("Eliminations are only recorded in a Shikabane race");
         }
         if (!MARKABLE.contains(race.getStatus())) {

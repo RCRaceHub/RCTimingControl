@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.api.racecontrol.dto.RaceEliminationDto;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.RaceEliminationRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.RaceEliminationsDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.service.RaceEliminationService;
@@ -14,8 +15,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * Shikabane eliminations and zombie revivals, marked by hand from race control. Under
@@ -34,10 +33,14 @@ public class EliminationController {
         this.eliminationService = eliminationService;
     }
 
-    /** The race's eliminations and revivals, oldest first. {@code GET}; 404 for a missing race. */
+    /**
+     * Whether the race is a Shikabane race, and its eliminations and revivals, oldest first. {@code GET}; 404 for a
+     * missing race. Race control shows its elimination buttons only when {@code shikabane} is true.
+     */
     @GetMapping
-    public List<RaceEliminationDto> list(@PathVariable long raceId) {
-        return eliminationService.list(raceId).stream().map(RaceEliminationDto::from).toList();
+    public RaceEliminationsDto list(@PathVariable long raceId) {
+        return new RaceEliminationsDto(eliminationService.isShikabane(raceId),
+                eliminationService.list(raceId).stream().map(RaceEliminationDto::from).toList());
     }
 
     /** Marks a car dead. {@code POST .../eliminate}; 200 with the row, 400 for a bad body. Audited. */

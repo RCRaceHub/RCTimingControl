@@ -8,7 +8,7 @@ There are two separate choices to keep apart:
 
 - The **round type** says what a round is for: practice, qualifying or a final (section 1).
 - The **race format** is set per class and says how its races are run: how long, how they start and how the finals are
-  laid out (sections 2 and 3). A format is one of **Timed**, **Bump Up** or **Points Finals**.
+  laid out (sections 2 and 3). A format is one of **Timed**, **Bump Up**, **Points Finals** or **Shikabane**.
 
 Open practice (section 7) is separate from both: it is not part of an event's run order.
 
@@ -126,7 +126,7 @@ change the laps a car is credited with, not the timing.
 When a race finishes, its result is stored and results are queued for RaceHub. See [Scoring](scoring.md) for how the
 result is ranked.
 
-## 4. The three formats
+## 4. The formats
 
 ### 4.1 Timed
 
@@ -193,6 +193,36 @@ final is ranks 8 to 14 and the A final is ranks 1 to 7. No place in a final is l
 final can be called as soon as qualifying is complete. Finals are placed as one set (A, then B without anyone from A,
 and so on) for championship points, as in [Scoring](scoring.md#5-championship-points).
 
+### 4.4 Shikabane
+
+A format for Shikabane RC racing, where a car that flips, breaks down or stalls stays where it stopped as an obstacle
+(a *corpse*) and is **eliminated**. The order of elimination sets each car's heat penalty points, and over the heats
+the **lowest total wins**.
+
+| Setting | What it does |
+|---|---|
+| Heat duration (min) | The length of every heat |
+| Start type, stagger interval (s) | How heats start, as above |
+| False start penalty (points) | Points added for a false start (recorded in a later release) |
+| Zombie bonus (points) | Points taken off a driver who revives a dead car (applied in a later release) |
+
+The timing system cannot tell a dead car from a slow one, so **race control marks each death by hand**. In live timing
+of a Shikabane race each car has an **Eliminate** button while the race is running or stopped. A dead car shows its
+place in the order of elimination, and gets **Revive** and **Undo** buttons:
+
+- **Eliminate** puts the car next in the elimination order.
+- **Revive** is for a zombie, a dead car another car has flipped back onto its wheels. It is no longer eliminated, and
+  if it dies again it goes to the back of the order.
+- **Undo** takes back a mark made by mistake.
+
+Marks can still be added after the race has finished, for a death noticed late; the result is worked out again. A
+restart clears them.
+
+The heat result puts the cars still alive first, in the usual order (most laps, then earliest finish), then the dead,
+the last car to die ahead of the one before it. So a car's place is its heat points: 1 for the winner, up to the
+number of cars for the first to die. A Shikabane class is ranked as low-points qualifying, which adds those places
+over the heats. See [Scoring](scoring.md#shikabane-heats).
+
 ### Settings the round generator decides
 
 The round generator is where an official sets the numbers for one event, so some of them are only a starting point
@@ -257,4 +287,7 @@ heats, no grid, no start, no clock to run out and no result that scores.
 
 - **Qualifying types.** `FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS` all rank the same way (see
   [Scoring](scoring.md#known-gaps)).
+- **Shikabane.** Only the format, the manual eliminations and the heat order are built so far. The reverse and
+  cumulative-points grids for heats 2 and 3, the false start and zombie points, and the total-laps tie-break are still
+  to come: until then a Shikabane class starts heat 2 and 3 in the previous heat's finishing order.
 - **Fixed number of laps.** A race is run for a time, not a number of laps. A race given no length is finished by hand.

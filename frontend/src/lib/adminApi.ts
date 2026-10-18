@@ -57,7 +57,16 @@ export interface PointsFinalsConfig {
   staggerIntervalSeconds: number;
 }
 
-export type RaceFormatConfig = TimedRaceConfig | BumpUpConfig | PointsFinalsConfig;
+export interface ShikabaneConfig {
+  type: 'SHIKABANE';
+  heatDurationMinutes: number;
+  startType: StartType;
+  staggerIntervalSeconds: number;
+  falseStartPenaltyPoints: number;
+  zombieBonusPoints: number;
+}
+
+export type RaceFormatConfig = TimedRaceConfig | BumpUpConfig | PointsFinalsConfig | ShikabaneConfig;
 
 export interface EventClassDto {
   id: number;

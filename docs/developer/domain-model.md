@@ -66,6 +66,12 @@ classDiagram
         lapHistoryJson
     }
     class MarshalAdjustment
+    class RaceElimination {
+        raceId
+        entryId
+        eliminatedAt
+        revivedAt
+    }
     class Penalty
     class IncidentReport
 
@@ -80,6 +86,7 @@ classDiagram
     Entry "1" --> "*" RaceEntry
     Race "1" --> "0..1" ResultSnapshot
     Race "1" --> "*" MarshalAdjustment
+    Race "1" --> "*" RaceElimination
     Race "1" --> "*" Penalty
     Race "1" --> "*" IncidentReport
     Entry "1" --> "*" MarshalAdjustment
@@ -156,6 +163,7 @@ erDiagram
     entries ||--o{ race_entries : ""
     races ||--o| result_snapshots : ""
     races ||--o{ marshal_adjustments : ""
+    races ||--o{ race_eliminations : "Shikabane"
     races ||--o{ penalties : ""
     races ||--o{ incident_reports : ""
     entries ||--o{ marshal_adjustments : ""
