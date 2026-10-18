@@ -176,6 +176,11 @@ How the finals run:
 The grid size and bump spots shape the seeding. The number of finals comes from the round generator (below), not from
 the format.
 
+**To run bump-up finals:** give the class a Bump Up format with a grid size and bump spots, then generate the rounds and
+choose how many finals the class has. A class whose format is not Bump Up is seeded without bump spots, as in Points
+Finals. Everything else (seeding, calling the finals in order, moving drivers up, the alert in race control) happens
+for you.
+
 ### 4.3 Points Finals
 
 Qualifying heats, then finals that **do not bump**: the field is split evenly over the finals and each final is a

@@ -41,6 +41,30 @@ A championship adds up results from several events with a best-X-from-Y rule, a 
 
 ---
 
+## Race types and formats
+
+A class races to a **format**, which you pick in step 4 and again for each class in step 5. The full rules, with the details of how each one starts and ends, are in [race-types.md](race-types.md); how results are ranked is in [scoring.md](scoring.md). In short:
+
+| Format | What it is | Finals |
+|---|---|---|
+| **Timed** | One timed race per heat, the same start every round | The field is split evenly over the class's finals, no bumping |
+| **Bump Up** | Qualifying heats, then finals where the best finishers of each lower final move up into the final above | **Grid size** cars per final, **bump spots** places in each higher final filled from the final below |
+| **Points Finals** | Qualifying heats, then finals that each score on their own | The field is split evenly over the finals, no bumping |
+
+**Bump-up finals are fully supported.** To run them, give the class a Bump Up format and set its grid size and bump spots. When you generate the rounds, say how many finals each class has (A, A+B, A+B+C). When the last qualifying heat finishes, the finals are seeded for you, the lowest final first. When a lower final finishes, its best finishers are added to the back of the grid of the final above, and race control shows an alert before you start it. A class without a Bump Up format gets no bumping.
+
+**How a race starts** is set in the format, separately for heats and finals:
+
+- **Grid**: every car goes together on the start horn.
+- **Stagger**: after the horn each driver is called by name every few seconds in grid order, and each car's time starts when it is called.
+- **Rolling**: drivers are not called. The clock waits until the first car crosses the line, and then runs for everyone, so every car's time ends together. Race control says "waiting for first car" until then.
+
+**How a race ends**: a timed race ends when every car has taken the flag after the clock runs out. If a car never comes round, the track's max last lap time finishes the race for you. **Practice** rounds are run like heats but never score; **open practice** is a separate timing session with no heats or result.
+
+**Qualifying** is ranked by the format's qualifying type. Low points over the best X rounds (**Round by round**) is the one that is fully worked out; the other three types currently rank by total laps and then best lap.
+
+---
+
 ## On the day
 
 ### 7. Add a walk-in and swap a transponder
