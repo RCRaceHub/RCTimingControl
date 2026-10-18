@@ -9,13 +9,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * {@code qualifyingStartType} and finals {@code finalsStartType}. The number of finals comes from the entry count at
  * event time, not from the config.
  *
- * <p>Durations are in minutes. {@code racePaddingMinutes} is the gap between successive races and
- * {@code staggerIntervalSeconds} the seconds between car number calls in a stagger start; {@code qualifyingType}
- * is how qualifying is ranked (see {@link QualifyingType}). Unknown JSON properties are ignored, so older saved
- * configs still load.
+ * <p>Durations are in minutes. {@code racePaddingMinutes} is kept so saved configs still load and is not
+ * read (the gap between races is the event's auto run gap). {@code staggerIntervalSeconds} is the seconds between
+ * car number calls in a stagger start and {@code qualifyingType} is how qualifying is ranked (see
+ * {@link QualifyingType}). Unknown JSON properties are ignored, so older saved configs still load.
  *
- * <p>Only {@code heatDurationMinutes} and the two start types are read by the backend so far. Round generation
- * takes cars per final and bump count from its request ({@code BumpUpSeedingService}), not from this record.
+ * <p>{@code qualifyingHeats} is the round generator's starting number of qualifying rounds in the browser form, which
+ * the official can change; the backend does not read it. {@code gridSize} and {@code bumpSpots} lay out the finals
+ * ({@code AutoFinalsSeedingService}); {@code bestHeatsCount} is read by qualifying scoring.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BumpUpConfig(

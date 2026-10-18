@@ -144,6 +144,11 @@ public class LapTimingService {
             entryId = resolveEntryId(raceId, transponderNumber);
         }
 
+        if (entryId != null) {
+            // A rolling start's clock waits for the first car; this starts it
+            raceClockService.onFirstPassing(raceId);
+        }
+
         boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
                 windowEnded(raceId, state, entryId));
 

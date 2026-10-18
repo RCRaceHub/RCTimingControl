@@ -139,7 +139,6 @@ export function FormatConfigFields({ value, onChange }: Props) {
       {value.type === 'TIMED' && (
         <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
           <NumField label="Duration (min)" value={value.durationMinutes} onChange={v => patch('durationMinutes', v)} />
-          <NumField label="Race Padding (min)" value={value.racePaddingMinutes} onChange={v => patch('racePaddingMinutes', v)} />
           <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
@@ -153,7 +152,6 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Best Heats Count" value={value.bestHeatsCount} onChange={v => patch('bestHeatsCount', v)} />
           <NumField label="Grid Size" value={value.gridSize} onChange={v => patch('gridSize', v)} />
           <NumField label="Bump Spots" value={value.bumpSpots} onChange={v => patch('bumpSpots', v)} />
-          <NumField label="Race Padding (min)" value={value.racePaddingMinutes} onChange={v => patch('racePaddingMinutes', v)} />
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
@@ -166,7 +164,6 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Finals Count" value={value.finalsCount} onChange={v => patch('finalsCount', v)} />
           <NumField label="Final Duration (min)" value={value.finalDurationMinutes} onChange={v => patch('finalDurationMinutes', v)} />
           <NumField label="Heat Duration (min)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
-          <NumField label="Race Padding (min)" value={value.racePaddingMinutes} onChange={v => patch('racePaddingMinutes', v)} />
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />

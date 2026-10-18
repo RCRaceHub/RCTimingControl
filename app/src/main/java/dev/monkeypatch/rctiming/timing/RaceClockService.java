@@ -26,8 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * Keeps each race's clock from its status changes: it resets when the race is called to the grid, counts while it
  * runs and pauses while it is stopped. The boards, the live feed (#28) and the streaming overlay (#29) read it.
  *
+ * <p>A race with a rolling start ({@link StartType#ROLLING}) is the exception to "counts while it runs": when it is
+ * started its clock is held at zero until the first car that is entered in the race crosses the line ({@link
+ * #onFirstPassing}), and then counts for everyone, so every car's time runs out at the same moment. A resume after a
+ * stop does not hold the clock again.
+ *
  * <p>Clocks are kept in memory only. A race already under way when the app started gets a clock worked out from
- * its start and finish times the first time it is needed, which counts any stop before then as race time.
+ * its start and finish times the first time it is needed, which counts any stop before then as race time, and a
+ * rolling start still waiting for its first car is counted from the start command.
  */
 @Component
 public class RaceClockService {
@@ -66,10 +72,44 @@ public class RaceClockService {
         long raceId = event.getRaceId();
         switch (event.getNewStatus()) {
             case GRID -> clocks.put(raceId, new RaceClock());
-            case RUNNING -> clockFor(raceId, now).start(now);
+            case RUNNING -> {
+                RaceClock raceClock = clockFor(raceId, now);
+                // A rolling start waits for the first car; a resume (the clock has run before) never does
+                if (!raceClock.hasRun() && isRollingStart(raceId)) {
+                    raceClock.holdForFirstPassing();
+                } else {
+                    raceClock.start(now);
+                }
+            }
             case STOPPED, FINISHED -> clockFor(raceId, now).stop(now);
             default -> { }
         }
+    }
+
+    /**
+     * Starts the clock of a rolling start race that is waiting for its first car: called by {@code LapTimingService}
+     * on the timing thread for each passing that resolves to an entry in the race. Does nothing for any other race, or
+     * once the clock is counting, so it is cheap to call on every passing.
+     */
+    public void onFirstPassing(long raceId) {
+        RaceClock raceClock = clocks.get(raceId);
+        if (raceClock != null) {
+            raceClock.startIfHeld(clock.instant());
+        }
+    }
+
+    /** Whether the race starts rolling: its own start type, else the format's, as {@link #planOf} reads it. */
+    private boolean isRollingStart(long raceId) {
+        return raceRepository.findById(raceId).map(race -> {
+            if (race.getStartType() != null) {
+                return race.getStartType() == StartType.ROLLING;
+            }
+            EventClass eventClass = race.getEventClassId() == null ? null
+                    : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+            return roundRepository.findById(race.getRoundId())
+                    .map(round -> raceFormatService.startType(eventClass, round.getType()) == StartType.ROLLING)
+                    .orElse(false);
+        }).orElse(false);
     }
 
     /**
@@ -166,6 +206,10 @@ public class RaceClockService {
     private static final class RaceClock {
         private long accumulatedMs;
         private Instant runningSince;
+        /** Set once the clock has counted, or was worked out from stored times, so a resume never waits again. */
+        private boolean hasRun;
+        /** A rolling start that has been started and is waiting for its first car; the clock reads zero. */
+        private boolean held;
 
         /** A stopped clock holding the time from the race's start to its finish, or to now if it hasn't finished. */
         static RaceClock fromTimes(Race race, Instant now) {
@@ -174,17 +218,37 @@ public class RaceClockService {
                 Instant until = race.getStatus() == RaceStatus.FINISHED && race.getFinishedAt() != null
                         ? race.getFinishedAt() : now;
                 raceClock.accumulatedMs = Math.max(0, Duration.between(race.getStartedAt(), until).toMillis());
+                raceClock.hasRun = true;
             }
             return raceClock;
         }
 
         synchronized void start(Instant now) {
+            held = false;
+            hasRun = true;
             if (runningSince == null) {
                 runningSince = now;
             }
         }
 
+        synchronized boolean hasRun() {
+            return hasRun;
+        }
+
+        synchronized void holdForFirstPassing() {
+            held = true;
+        }
+
+        /** Starts the clock if it was being held for a first passing; no-op otherwise. */
+        synchronized void startIfHeld(Instant now) {
+            if (held) {
+                start(now);
+            }
+        }
+
         synchronized void stop(Instant now) {
+            // A stopped race takes no first passing: the clock waits again when it is resumed
+            held = false;
             if (runningSince != null) {
                 accumulatedMs += Duration.between(runningSince, now).toMillis();
                 runningSince = null;

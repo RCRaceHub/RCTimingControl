@@ -59,13 +59,14 @@ class LapTimingServiceTransponderTest {
     @Mock LapThresholdQuery lapThresholdQuery;
 
     private LapTimingService service;
+    private final RaceClockService raceClockService = mock(RaceClockService.class);
     private final Map<Long, List<RaceEntry>> raceEntriesByRace = new HashMap<>();
     private final Map<Long, Entry> entriesById = new HashMap<>();
 
     @BeforeEach
     void setUp() {
         service = new LapTimingService(hub, raceEntryRepository, entryRepository, competitorRepository,
-                lapThresholdQuery, mock(RaceClockService.class), mock(ApplicationEventPublisher.class));
+                lapThresholdQuery, raceClockService, mock(ApplicationEventPublisher.class));
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(anyLong()))
                 .thenAnswer(inv -> raceEntriesByRace.getOrDefault(inv.<Long>getArgument(0), List.of()));
         when(entryRepository.findById(anyLong()))
@@ -108,6 +109,17 @@ class LapTimingServiceTransponderTest {
 
         lap(1L, "1001", 31_000);
         assertThat(lapsFor(1L, 10L)).isEqualTo(1);
+    }
+
+    @Test
+    void aPassingFromAnEntryStartsARollingClockButAnUnknownOneDoesNot() {
+        addEntry(1L, 10L, "1001", null, EntryStatus.CONFIRMED);
+
+        lap(1L, "9999", 500);
+        verify(raceClockService, never()).onFirstPassing(1L);
+
+        lap(1L, "1001", 1_000);
+        verify(raceClockService).onFirstPassing(1L);
     }
 
     @Test
