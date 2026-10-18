@@ -16,8 +16,8 @@ import java.util.Optional;
  * Finishes a timed race that has gone quiet after its clock ran out (TRACK-03), so a broken car on the track cannot
  * hold the finish up for ever. The track's "max last lap" for the race's class is the longest it waits: once the
  * clock has expired, the race is finished when no lap has counted for that long, counted from the moment the
- * clock expired if none has counted since. A race with no length is judged by lap count (see {@code checkLapCountRace}); one with no track or no
- * max last lap is left for the race director.
+ * clock expired if none has counted since. A race with no length is judged by lap count instead, from the first car
+ * to take the flag. A race with no track or no max last lap is left for the race director.
  *
  * <p>It finishes the race through {@link AutoFinish}, as {@code system:last-lap-timeout}. This is the backstop: the
  * race normally finishes sooner, once every car has taken the flag. Only the running race is looked at: a stopped
@@ -108,8 +108,11 @@ public class LastLapTimeout {
     private void checkLapCountRace(Race race) {
         Optional<LiveRaceState> state = lapTimingService.peek(race.getId());
         Optional<Long> firstFlaggedAtMs = state.flatMap(LiveRaceState::firstFlaggedAtMs);
+        if (firstFlaggedAtMs.isEmpty()) {
+            return;
+        }
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());
-        if (firstFlaggedAtMs.isEmpty() || maxLastLapMs.isEmpty()) {
+        if (maxLastLapMs.isEmpty()) {
             return;
         }
         long now = System.currentTimeMillis();

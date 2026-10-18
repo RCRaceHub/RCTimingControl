@@ -197,11 +197,10 @@ public class QualifyingStandingsService {
             QualifyingResult total = totalFor(entryId, rounds, missingPoints, bestRounds,
                     lostBest.getOrDefault(entryId, 0));
             results.add(shikabane == null ? total : new QualifyingResult(total.entryId(), total.bestLapMs(),
-                    total.lapsCompleted(), total.points(), total.rounds(), heatOf.getOrDefault(entryId, 0)));
+                    total.lapsCompleted(), total.points(), total.rounds(), heatOf.get(entryId)));
         }
         results.sort(Comparator
-                .comparing((QualifyingResult r) -> r.heat() == null ? 0 : r.heat())
-                .thenComparingInt(QualifyingResult::points)
+                .comparingInt(QualifyingResult::points)
                 .thenComparing(Comparator.comparingInt(QualifyingResult::lapsCompleted).reversed())
                 .thenComparingLong(QualifyingResult::bestLapMs)
                 .thenComparing(QualifyingResult::entryId));

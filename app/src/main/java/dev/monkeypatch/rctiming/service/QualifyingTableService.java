@@ -22,9 +22,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Builds each class's overall qualifying table from {@link QualifyingStandingsService}, so officials see the
@@ -88,9 +90,13 @@ public class QualifyingTableService {
             List<QualifyingTableDto.Row> rows = new ArrayList<>();
             int position = 1;
             Integer previousHeat = null;
-            for (QualifyingResult result : qualifyingStandingsService.rankedResultsFor(eventClass.getId())) {
+            // The overall order is kept for run orders and top qualifier; only this table groups it by heat
+            List<QualifyingResult> ranked = new ArrayList<>(
+                    qualifyingStandingsService.rankedResultsFor(eventClass.getId()));
+            ranked.sort(Comparator.comparingInt(r -> r.heat() == null ? 0 : r.heat()));
+            for (QualifyingResult result : ranked) {
                 // Heats that are separate overall races each count their positions from 1
-                if (!java.util.Objects.equals(previousHeat, result.heat())) {
+                if (!Objects.equals(previousHeat, result.heat())) {
                     position = 1;
                     previousHeat = result.heat();
                 }
