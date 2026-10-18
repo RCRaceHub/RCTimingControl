@@ -87,12 +87,19 @@ public class QualifyingTableService {
             Map<Long, String> carNumbers = carNumbers(heats);
             List<QualifyingTableDto.Row> rows = new ArrayList<>();
             int position = 1;
+            Integer previousHeat = null;
             for (QualifyingResult result : qualifyingStandingsService.rankedResultsFor(eventClass.getId())) {
+                // Heats that are separate overall races each count their positions from 1
+                if (!java.util.Objects.equals(previousHeat, result.heat())) {
+                    position = 1;
+                    previousHeat = result.heat();
+                }
                 rows.add(new QualifyingTableDto.Row(position++, result.entryId(),
                         driverName(result.entryId(), restricted), carNumbers.get(result.entryId()),
                         result.lapsCompleted(), result.hasBestLap() ? result.bestLapMs() : null, result.points(),
                         result.rounds().stream()
-                                .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList()));
+                                .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList(),
+                        result.heat()));
             }
             tables.add(new QualifyingTableDto(eventClass.getId(), className,
                     (int) heats.stream().filter(h -> h.getStatus() == RaceStatus.FINISHED).count(), heats.size(),

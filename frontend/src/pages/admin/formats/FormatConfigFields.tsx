@@ -45,6 +45,7 @@ const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'>
   staggerIntervalSeconds: 5,
   falseStartPenaltyPoints: 3,
   zombieBonusPoints: 1,
+  heatLaps: 0,
 };
 
 interface Props {
@@ -182,7 +183,8 @@ export function FormatConfigFields({ value, onChange }: Props) {
 
       {value.type === 'SHIKABANE' && (
         <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
-          <NumField label="Heat Duration (min)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
+          <NumField label="Heat Laps (0 = timed)" value={value.heatLaps} onChange={v => patch('heatLaps', v)} />
+          <NumField label="Heat Duration (min, if timed)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
           <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
           <NumField label="False Start Penalty (points)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />

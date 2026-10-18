@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 class ShikabaneHeatScoresTest {
 
     private static final long HEAT = 4L;
-    private static final ShikabaneConfig CONFIG = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1);
+    private static final ShikabaneConfig CONFIG = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0);
 
     private final RaceEntryRepository raceEntries = mock(RaceEntryRepository.class);
     private final ResultSnapshotRepository snapshots = mock(ResultSnapshotRepository.class);

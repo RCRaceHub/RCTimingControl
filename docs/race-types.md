@@ -206,7 +206,8 @@ the **lowest total wins**.
 
 | Setting | What it does |
 |---|---|
-| Heat duration (min) | The length of every heat |
+| Heat duration (min) | The length of every heat, used when Heat laps is 0 |
+| Heat laps | A heat ends after this many laps (typically 3 in Japanese club racing, sometimes 5). 0 runs it for the heat duration instead |
 | Start type, stagger interval (s) | How heats start, as above |
 | False start penalty (points) | Points added to a car given a false start |
 | Zombie bonus (points) | Points taken off a car for each time it is revived |
@@ -228,6 +229,16 @@ The heat result puts the cars still alive first, in the usual order (most laps, 
 the last car to die ahead of the one before it. So a car's place is its heat points: 1 for the winner, up to the
 number of cars for the first to die. A Shikabane class is ranked as low-points qualifying, which adds the heat points
 over the heats. See [Scoring](scoring.md#shikabane-heats).
+
+**Ending a heat by laps.** With Heat laps above 0 the heat has no clock. A car takes the flag on the lap that makes
+its target, and the heat finishes by itself once every car that has crossed the line has taken the flag. A car that
+has died never takes the flag, so the **max last lap** is the backstop here too, counted from the moment the first
+car took the flag. Until then, race control finishes the heat by hand.
+
+**Splitting a class into several heats.** When a class has more cars than fit on the track it is split into heats
+(the generator's cars per heat). Each heat is an independent race of its own: places and points are worked out within
+the heat, and points from different heats are not merged into one overall order. Qualifying tables and the boards
+show a Heat column and the position restarts in each heat.
 
 **Heats and grids.** A Shikabane run order is the practice and qualifying rounds the generator makes, with no finals:
 the last heat is scored with the others. The grids are:
@@ -306,6 +317,7 @@ heats, no grid, no start, no clock to run out and no result that scores.
 - **Qualifying types.** `FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS` all rank the same way (see
   [Scoring](scoring.md#known-gaps)).
 - **Shikabane.** Championship points still use the generic scoring (best heat finish and so on), not the overall
-  Shikabane total. Heat points are compared as they are when a class is split into several heats. A false start gives
+  Shikabane total. Heat points are not normalised between heats of different sizes (each split heat is its own race). A false start gives
   points only: the car's move to the back of the grid is made on the track.
-- **Fixed number of laps.** A race is run for a time, not a number of laps. A race given no length is finished by hand.
+- **Fixed number of laps.** Only a Shikabane format can end a race after a number of laps. Other formats run for a time,
+  and a race given no length is finished by hand.

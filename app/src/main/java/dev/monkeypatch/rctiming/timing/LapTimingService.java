@@ -175,6 +175,10 @@ public class LapTimingService {
             return false;
         }
         RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.lapTarget() != null) {
+            // A race of a set number of laps: the lap that makes the target is the car's last
+            return state.lapsCompleted(entryId) + 1 >= plan.lapTarget();
+        }
         if (plan.durationMs() == null) {
             return false;
         }
@@ -185,6 +189,10 @@ public class LapTimingService {
     /** Whether the last car to start has had its whole window: until then a car yet to cross the line may be racing. */
     private boolean allWindowsEnded(long raceId, LiveRaceState state) {
         RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.lapTarget() != null) {
+            // No clock to wait for: the race is over when every car that crossed the line has taken the flag
+            return true;
+        }
         if (plan.durationMs() == null) {
             return false;
         }

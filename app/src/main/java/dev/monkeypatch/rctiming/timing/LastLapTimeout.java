@@ -16,7 +16,7 @@ import java.util.Optional;
  * Finishes a timed race that has gone quiet after its clock ran out (TRACK-03), so a broken car on the track cannot
  * hold the finish up for ever. The track's "max last lap" for the race's class is the longest it waits: once the
  * clock has expired, the race is finished when no lap has counted for that long, counted from the moment the
- * clock expired if none has counted since. A race with no length (a fixed number of laps), no track or no
+ * clock expired if none has counted since. A race with no length is judged by lap count (see {@code checkLapCountRace}); one with no track or no
  * max last lap is left for the race director.
  *
  * <p>It finishes the race through {@link AutoFinish}, as {@code system:last-lap-timeout}. This is the backstop: the
@@ -71,7 +71,11 @@ public class LastLapTimeout {
 
     private void checkRace(Race race) {
         Optional<RaceClockDto> found = raceClockService.clock(race.getId());
-        if (found.isEmpty() || found.get().durationMs() == null || found.get().remainingMs() > 0) {
+        if (found.isPresent() && found.get().durationMs() == null) {
+            checkLapCountRace(race);
+            return;
+        }
+        if (found.isEmpty() || found.get().remainingMs() > 0) {
             return;
         }
         RaceClockDto clock = found.get();
@@ -93,6 +97,26 @@ public class LastLapTimeout {
                 .orElse(null);
         if (timedOut(overrunMs, quietMs, maxLastLapMs.get())) {
             finish(race.getId(), maxLastLapMs.get());
+        }
+    }
+
+    /**
+     * A race of a set number of laps has no clock to run out, so the wait starts when the first car takes the flag:
+     * the race is finished when no lap has counted for the max last lap since then. A race with no car flagged yet is
+     * left alone, as is one with no max last lap.
+     */
+    private void checkLapCountRace(Race race) {
+        Optional<LiveRaceState> state = lapTimingService.peek(race.getId());
+        Optional<Long> firstFlaggedAtMs = state.flatMap(LiveRaceState::firstFlaggedAtMs);
+        Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());
+        if (firstFlaggedAtMs.isEmpty() || maxLastLapMs.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long quietMs = state.flatMap(LiveRaceState::lastLapCreditedAtMs).map(at -> now - at).orElse(null);
+        if (timedOut(now - firstFlaggedAtMs.get(), quietMs, maxLastLapMs.get())) {
+            autoFinish.finish(race.getId(), "last-lap-timeout", "Finished the race automatically: no lap counted for "
+                    + maxLastLapMs.get() / 1000 + " seconds after the first car finished");
         }
     }
 

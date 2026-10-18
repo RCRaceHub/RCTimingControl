@@ -7,7 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * stopped as an obstacle (a "corpse") and is eliminated. Race control marks eliminations and zombie revivals by
  * hand; the order of elimination sets each car's heat penalty points and the lowest total over the heats wins.
  *
- * <p>Every heat runs for {@code heatDurationMinutes} with {@code startType}; {@code staggerIntervalSeconds} is the
+ * <p>A heat ends after {@code heatLaps} laps when that is more than 0 (each car takes the flag on its last lap and
+ * the heat is over when every car that crossed the line has), otherwise it runs for {@code heatDurationMinutes}.
+ * Either way it starts with {@code startType}; {@code staggerIntervalSeconds} is the
  * seconds between car number calls in a stagger start. {@code falseStartPenaltyPoints} is added to a car that
  * jumps the start and {@code zombieBonusPoints} is taken off a driver who revives a dead car. Unknown JSON
  * properties are ignored, so older saved configs still load.
@@ -18,5 +20,6 @@ public record ShikabaneConfig(
     StartType startType,
     int staggerIntervalSeconds,
     int falseStartPenaltyPoints,
-    int zombieBonusPoints
+    int zombieBonusPoints,
+    int heatLaps
 ) implements RaceFormatConfig {}

@@ -185,10 +185,16 @@ public class RaceClockService {
      * @param durationMs        each car's time on the track, or null for a race with no length
      * @param staggerIntervalMs the time between one car's start and the next in grid order, 0 unless the race starts
      *                          staggered
+     * @param lapTarget         the laps each car runs when the race ends on a lap count, else null
      */
-    public record RacePlan(Long durationMs, long staggerIntervalMs) {
+    public record RacePlan(Long durationMs, long staggerIntervalMs, Integer lapTarget) {
         /** For a race with no length and no stagger, or one that cannot be found. */
         public static final RacePlan NONE = new RacePlan(null, 0);
+
+        /** A plan with no lap target: the race ends on its clock, or by hand. */
+        public RacePlan(Long durationMs, long staggerIntervalMs) {
+            this(durationMs, staggerIntervalMs, null);
+        }
     }
 
     /**
@@ -203,7 +209,7 @@ public class RaceClockService {
             StartType startType = startTypeOf(race);
             long intervalMs = startType == StartType.STAGGER
                     ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
-            return new RacePlan(durationMs(race), intervalMs);
+            return new RacePlan(durationMs(race), intervalMs, raceFormatService.lapTarget(eventClass).orElse(null));
         });
     }
 

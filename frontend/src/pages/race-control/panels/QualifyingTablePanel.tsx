@@ -27,6 +27,7 @@ export function QualifyingTablePanel({
     queryFn: () => getQualifying(eventId),
   });
   const table = data?.find((t) => t.eventClassId === eventClassId);
+  const hasHeats = table?.rows.some((r) => r.heat != null) ?? false;
   const hasPoints = table?.rows.some((r) => r.points != null) ?? false;
   const rounds = table ? roundCount(table.rows) : 0;
 
@@ -66,6 +67,7 @@ export function QualifyingTablePanel({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
+                  {hasHeats && <th className="w-12 py-1">Heat</th>}
                   <th className="w-12 py-1">Pos</th>
                   <th className="w-12 py-1">Car</th>
                   <th className="py-1">Driver</th>
@@ -78,6 +80,7 @@ export function QualifyingTablePanel({
               <tbody>
                 {table.rows.map((row) => (
                   <tr key={row.entryId} className="border-b last:border-0">
+                    {hasHeats && <td className="py-1 tabular-nums">{row.heat}</td>}
                     <td className="py-1 tabular-nums">{row.position}</td>
                     <td className="py-1 tabular-nums">{row.carNumber ?? '—'}</td>
                     <td className="py-1">{row.driverName}</td>
