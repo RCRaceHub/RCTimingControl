@@ -14,6 +14,7 @@ type RaceRound = Pick<RunOrderItemDto, 'roundType' | 'roundNumber' | 'finalLette
 
 /** The round a race belongs to: "Final A", "Qualifier 2" ("Q2" when short) or "Practice". */
 export function roundName(race: RaceRound, short = false): string {
+  if (race.roundType === 'FINAL' && race.finalLetter === 'Z') return 'Zombie round';
   if (race.roundType === 'FINAL') return `Final${race.finalLetter ? ` ${race.finalLetter}` : ''}`;
   if (race.roundType === 'QUALIFIER') return short ? `Q${race.roundNumber}` : `Qualifier ${race.roundNumber}`;
   return 'Practice';

@@ -115,7 +115,9 @@ public class AutoFinalsSeedingService {
         }
         List<Long> standings = qualifyingStandingsService.standingsFor(eventClassId);
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
-        int finalsCount = finals.size();
+        // The zombie round is not one of the A, B, C mains the field is split over
+        int finalsCount = (int) finals.stream()
+                .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter())).count();
         int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount);
         bumpUpSeedingService.seedFinals(eventClassId, standings, finalsCount, layout[0], layout[1]);
 

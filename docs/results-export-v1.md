@@ -14,7 +14,7 @@ Each export is the **whole event as it stands**, not just the race that changed.
 |------|----------|
 | Top level | `schema_version` (always `1`), `revision`, `generated_at`, and `source` (`system` and the club's name) |
 | `event` | `racehub_event_id` (the RaceHub event the entries were imported from), `rctc_event_id`, `name`, `date`, `status` |
-| `races[]` | Every finished race, in running order: its class (`rctc_event_class_id`, the `racehub_event_class_ids` that the entries on its grid were booked under, finishers or not, and `class_name`), `round_type`, `round_number`, `heat_number`, `final_letter`, `status` (`FINISHED` or `ABANDONED`) and `finished_at` |
+| `races[]` | Every finished race, in running order: its class (`rctc_event_class_id`, the `racehub_event_class_ids` that the entries on its grid were booked under, finishers or not, and `class_name`), `round_type`, `round_number`, `heat_number`, `final_letter` (`A`, `B` and so on; `Z` for a Shikabane zombie round), `status` (`FINISHED` or `ABANDONED`) and `finished_at` |
 | `races[].results[]` | One row per finisher: `position`, `laps`, `total_time_ms`, `best_lap_ms`, `car_number`, `display_name`, the RaceHub ids, RCTC's own ids and the `penalties` given in that race |
 | `championships[]` | For each championship the event is a round of: its `round_number`, and per class the full `standings` as they stand now, with this event's position and points for each driver and whether they were dropped or excluded |
 

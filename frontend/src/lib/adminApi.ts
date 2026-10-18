@@ -72,6 +72,8 @@ export interface ShikabaneConfig {
   mainGridSize: number;
   /** Places of a lower main that move up into the main above it. */
   promotionSpots: number;
+  /** A last-chance race for everyone not in the A main, run before it; its winner takes a place in A. */
+  zombieRound: boolean;
 }
 
 export type RaceFormatConfig = TimedRaceConfig | BumpUpConfig | PointsFinalsConfig | ShikabaneConfig;

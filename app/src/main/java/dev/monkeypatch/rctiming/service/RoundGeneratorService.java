@@ -284,30 +284,42 @@ public class RoundGeneratorService {
             // sequenceInEvent; the round number still follows the letter (A is 1).
             for (EventClass ec : eventClasses) {
                 int finalsCount = resolveFinalsCount(ec);
+                boolean zombie = finalsCount >= 2 && raceFormatService.shikabaneConfig(ec)
+                        .map(ShikabaneConfig::zombieRound).orElse(false);
                 for (int f = finalsCount - 1; f >= 0; f--) {
-                    String finalLetter = String.valueOf((char) ('A' + f));
-                    Round round = new Round();
-                    round.setEventId(request.eventId());
-                    round.setType(RoundType.FINAL);
-                    round.setRoundNumber(f + 1);
-                    round.setSequenceInEvent(sequenceStart++);
-                    round.setStatus(RoundStatus.PENDING);
-                    Round savedRound = roundRepository.save(round);
-
-                    Race race = new Race();
-                    race.setRoundId(savedRound.getId());
-                    race.setEventClassId(ec.getId());
-                    race.setHeatNumber(1);
-                    race.setSequenceInRound(1);
-                    race.setFinalLetter(finalLetter);
-                    race.setStartType(raceFormatService.startType(ec, RoundType.FINAL));
-                    race.setStatus(RaceStatus.PENDING);
-                    // Finals start with an empty grid: BumpUpSeedingService seeds it from the
-                    // qualifying standings and reserves its bump slots. No placeholder rows, since
-                    // every race_entries row must point at a real entry (#45).
-                    raceRepository.save(race);
+                    // The zombie round runs after the lower mains and just before A
+                    if (zombie && f == 0) {
+                        sequenceStart = persistFinal(ec, BumpUpSeedingService.ZOMBIE_LETTER, finalsCount + 1,
+                                sequenceStart);
+                    }
+                    sequenceStart = persistFinal(ec, String.valueOf((char) ('A' + f)), f + 1, sequenceStart);
                 }
             }
+        }
+
+        /** One final in a round of its own, with an empty grid; returns the next free sequence in the event. */
+        private int persistFinal(EventClass ec, String finalLetter, int roundNumber, int sequence) {
+            Round round = new Round();
+            round.setEventId(request.eventId());
+            round.setType(RoundType.FINAL);
+            round.setRoundNumber(roundNumber);
+            round.setSequenceInEvent(sequence);
+            round.setStatus(RoundStatus.PENDING);
+            Round savedRound = roundRepository.save(round);
+
+            Race race = new Race();
+            race.setRoundId(savedRound.getId());
+            race.setEventClassId(ec.getId());
+            race.setHeatNumber(1);
+            race.setSequenceInRound(1);
+            race.setFinalLetter(finalLetter);
+            race.setStartType(raceFormatService.startType(ec, RoundType.FINAL));
+            race.setStatus(RaceStatus.PENDING);
+            // Finals start with an empty grid: BumpUpSeedingService seeds it from the
+            // qualifying standings and reserves its bump slots. No placeholder rows, since
+            // every race_entries row must point at a real entry (#45).
+            raceRepository.save(race);
+            return sequence + 1;
         }
 
         /**

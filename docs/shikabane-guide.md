@@ -33,8 +33,9 @@ Go to **Admin, Formats** and add a format of type **Shikabane** (or give a class
 | False Start Penalty | Points added to a car that jumps the start | 3 |
 | Zombie Bonus | Points taken off a driver who revives a dead car | 1 |
 | Mains | How many mains follow the heats, 0 for none, up to 3 | 3 (A, B, C) |
-| Cars per Main | The size of each main. It grows if the drivers would not fit in the mains you asked for | 8 |
+| Cars per Main | The size of each main. It grows if the drivers would not fit in the mains you asked for. With a zombie round the A main has one more car, for the zombie winner | 8 |
 | Promotion Spots | How many places of a lower main move up | 1 |
+| Zombie round | Tick to run a zombie round before the A main (needs at least two mains) | On |
 
 Then pick that format for the class in the event's class list. For a track that always ends a heat the same way, also set
 the track's **max last lap**: with a lap-count heat it is how long RCTC waits for a car that is stuck before it ends
@@ -81,14 +82,37 @@ the lowest main. Run the lowest main first. When it finishes, its first **Promot
 of the main above, and race control shows an alert before you start it. Run the mains the same way as heats: mark the
 deaths, finish when every car has taken the flag.
 
+**The zombie round.** With the zombie round ticked, the generator adds a race between the lowest mains and the A main,
+named "Zombie round". The A main is given one extra place for its winner. When the main just below A finishes, its
+promoted drivers move up, and everyone else who raced a main (and is not in A) is put on the zombie round's grid. Run
+it before the A main, marking deaths the same way. Its winner is added to the back of the A main's grid, and race control
+shows an alert. If you generate rounds with the zombie round ticked but only one main, there is no zombie round.
+
 Mains are scored by their own result: the A main winner is the event winner. A main's promotion is worked out when it
 finishes, from its result at that moment, so mark every death before you press Finish. A death added to a finished
 main afterwards changes its result but does not move anybody up or down again.
 
+## What you do by hand
+
+RCTC times the cars but cannot see the track, so these are done by people:
+
+| When | What you do |
+|---|---|
+| Before the day | Set up the Shikabane format and give the class it. Make sure the class's transponders are in the entries |
+| Before each heat | Look at the grid RCTC drew (heat 1 is random, later heats follow the rules above) and put the cars on their marks. Odd positions on the inside, even on the outside, two by two |
+| Every heat | Press **Eliminate** the moment a car is dead, **Revive** when a zombie drives on, and **False start** for a jumped start. RCTC cannot tell a dead car from a slow one |
+| A false start | Move the car to the back of the grid on the track. RCTC only adds the penalty points |
+| A stuck heat | If a car has stopped and the heat does not end, press **Finish**. With a track max last lap set, RCTC ends it for you once nothing has counted for that long |
+| After the heat | Check the result and the marks, and add any death noticed late. The next grid is redrawn for you if it has not been called yet |
+| After the last heat | If you changed a heat result late, press the finals **re-seed** button before the mains start. RCTC seeds the mains on its own when the last heat finishes, but not again after a later change |
+| Each main | Run the lowest main first, then the zombie round (if any), then the A main. RCTC does not stop you starting the A main early, so do not start it until the races below it have finished and the alert has shown who moved up |
+| Marking in a main | Mark deaths before pressing Finish. Promotion is worked out when the main finishes and is not redone for a death added afterwards |
+| With Auto run | Auto run starts the next race by itself after the gap, and a lap-count heat finishes by itself, so have someone marking deaths during the heat. Leave the hold before the mains switched on so you can check the seeding |
+| Championships | Championship points use the generic scoring, so work out any Shikabane overall total yourself from the qualifying table |
+
 ## What is not built yet
 
-- The **zombie round** (a last chance race for everyone not in the A main, with the winner taking a place in the A
-  main) is planned but cannot be run yet.
-- Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total.
+- Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total. The zombie round is not scored in championships; the A main's result is.
+- A zombie round whose grid ends up empty (everyone moved up) has to be skipped by hand.
 - Points are not adjusted between heats of different sizes. When a class is split into several heats, the mains are
   still seeded from all the drivers' heat points together, so keep the heats the same size.
