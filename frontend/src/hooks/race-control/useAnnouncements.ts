@@ -395,12 +395,14 @@ export function useAnnouncements({
     });
   }, [raceState, gridEntries, startType, staggerIntervalSeconds, clearStagger, playClip, fallbackSpeak]);
 
-  // Per-lap improvement beeps (AUDIO-04)
+  // Per-lap beeps (AUDIO-04): by pace, or one plain beep when the club switches pace beeps off
   const playBeep = useCallback(
     (pace: LapPace) => {
       if (settingsRef.current && !settingsRef.current.announceLapBeep) return;
       const tuning = tuningOf(settingsRef.current);
-      playLapBeep(volumeRef.current, pace, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
+      // Pace beeps off: every lap gets the plain beep, with no prediction of better or worse
+      const plain = settingsRef.current?.paceBeeps === false;
+      playLapBeep(volumeRef.current, plain ? 'onPace' : pace, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
         settingsRef.current?.hornSounds);
     },
     [],

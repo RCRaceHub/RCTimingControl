@@ -102,6 +102,8 @@ export interface AudioSettingsDto {
   /** Switches for the start lead-in's ticks and the beeps in the last seconds of a timed race. */
   tickSound?: boolean;
   finalBeeps?: boolean;
+  /** Whether a lap beep tells the pace (higher when faster, lower when slower); off, every lap gets the plain beep. */
+  paceBeeps?: boolean;
   wording?: AudioWording;
   tuning?: AudioTuning;
 }
@@ -110,7 +112,8 @@ export interface AudioSettingsDto {
 export const ANNOUNCEMENT_TOGGLES = [
   { key: 'announceCountdown', label: 'Countdown intervals' },
   { key: 'announceStagger', label: 'Stagger car calls' },
-  { key: 'announceLapBeep', label: 'Lap improvement beeps' },
+  { key: 'announceLapBeep', label: 'Lap beeps' },
+  { key: 'paceBeeps', label: 'Faster/slower lap beeps (off: plain beep)' },
   { key: 'tickSound', label: 'Start lead-in ticks' },
   { key: 'finalBeeps', label: 'Final-seconds beeps at the end of a timed race' },
   { key: 'announceFinish', label: 'Finish announcements' },

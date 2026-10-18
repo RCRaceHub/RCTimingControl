@@ -50,7 +50,7 @@ describe('AdminAudioSettingsPage', () => {
     );
 
     expect(screen.getByLabelText('Stagger car calls')).toBeInTheDocument();
-    expect(screen.getByLabelText('Lap improvement beeps')).toBeInTheDocument();
+    expect(screen.getByLabelText('Lap beeps')).toBeInTheDocument();
     expect(screen.getByLabelText('Finish announcements')).toBeInTheDocument();
     expect(screen.getByLabelText('Running order')).toBeInTheDocument();
   });

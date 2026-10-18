@@ -138,6 +138,19 @@ class AudioSettingsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void paceBeepsAreOnUntilTheClubSwitchesThemOffAndThePatchKeepsTheRest() {
+        ResponseEntity<JsonNode> initial = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("tickSound", true));
+        assertThat(initial.getBody().get("paceBeeps").asBoolean()).isTrue();
+
+        ResponseEntity<JsonNode> off = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("paceBeeps", false));
+        assertThat(off.getBody().get("paceBeeps").asBoolean()).isFalse();
+
+        // a patch that leaves it out keeps it off
+        ResponseEntity<JsonNode> other = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("tickSound", false));
+        assertThat(other.getBody().get("paceBeeps").asBoolean()).isFalse();
+    }
+
+    @Test
     void raceControlCanWordEachLineAndTuneTheTimingsAndTheOtherFieldsAreKept() {
         ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of(
                 "wording", Map.of("go", "Go go go!", "carFinish", "{name} is home in car {car}."),
