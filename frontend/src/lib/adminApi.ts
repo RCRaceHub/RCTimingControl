@@ -64,6 +64,8 @@ export interface ShikabaneConfig {
   staggerIntervalSeconds: number;
   falseStartPenaltyPoints: number;
   zombieBonusPoints: number;
+  /** Laps a heat runs for; 0 keeps the heat timed. */
+  heatLaps: number;
 }
 
 export type RaceFormatConfig = TimedRaceConfig | BumpUpConfig | PointsFinalsConfig | ShikabaneConfig;

@@ -107,6 +107,30 @@ class LapTimingServiceFlagTest {
         verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
     }
 
+    @Test
+    void aLapCountRaceFlagsTheCarOnTheLapThatReachesTheTarget() {
+        when(clock.planOf(RACE)).thenReturn(Optional.of(new RaceClockService.RacePlan(null, 0, 3)));
+        elapsedMs = 100_000;
+        lap(10);
+        lap(40);
+        lap(70);
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+
+        lap(100);
+        verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
+    }
+
+    @Test
+    void aOneLapRaceFlagsTheCarOnItsFirstCountedLap() {
+        when(clock.planOf(RACE)).thenReturn(Optional.of(new RaceClockService.RacePlan(null, 0, 1)));
+        elapsedMs = 100_000;
+        lap(10);
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+
+        lap(40);
+        verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
+    }
+
     /** A second car, in grid order after the first, in a stagger start with the given gap. */
     private void staggerWithSecondCar(long intervalMs) {
         RaceEntryRepository raceEntries = mock(RaceEntryRepository.class);

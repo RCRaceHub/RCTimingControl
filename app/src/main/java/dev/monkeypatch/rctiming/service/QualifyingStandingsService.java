@@ -168,6 +168,8 @@ public class QualifyingStandingsService {
 
         ShikabaneConfig shikabane = eventClassRepository.findById(eventClassId)
                 .flatMap(raceFormatService::shikabaneConfig).orElse(null);
+        // Shikabane heats are separate overall races: a driver is ranked only against the others in their heat
+        Map<Long, Integer> heatOf = new HashMap<>();
         List<Map<Long, RoundScore>> rounds = new ArrayList<>();
         List<Integer> missingPoints = new ArrayList<>();
         for (List<Race> heats : heatsByRound.values()) {
@@ -178,6 +180,12 @@ public class QualifyingStandingsService {
             }
             Map<Long, RoundScore> scored = shikabane != null
                     ? scoreShikabaneRound(heats, withdrawn, shikabane) : scoreRound(heats, withdrawn);
+            if (shikabane != null) {
+                for (Race heat : heats) {
+                    raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())
+                            .forEach(e -> heatOf.putIfAbsent(e.getEntryId(), heat.getHeatNumber()));
+                }
+            }
             rounds.add(scored);
             missingPoints.add(scored.size() + 1);
         }
@@ -186,7 +194,10 @@ public class QualifyingStandingsService {
         rounds.forEach(r -> drivers.addAll(r.keySet()));
         List<QualifyingResult> results = new ArrayList<>();
         for (Long entryId : drivers) {
-            results.add(totalFor(entryId, rounds, missingPoints, bestRounds, lostBest.getOrDefault(entryId, 0)));
+            QualifyingResult total = totalFor(entryId, rounds, missingPoints, bestRounds,
+                    lostBest.getOrDefault(entryId, 0));
+            results.add(shikabane == null ? total : new QualifyingResult(total.entryId(), total.bestLapMs(),
+                    total.lapsCompleted(), total.points(), total.rounds(), heatOf.get(entryId)));
         }
         results.sort(Comparator
                 .comparingInt(QualifyingResult::points)
@@ -369,9 +380,17 @@ public class QualifyingStandingsService {
      * @param points        the low-points total when ranked round by round, else null
      * @param rounds        the driver's place in each finished round, in round order, when ranked round by round
      *                      (empty otherwise)
+     * @param heat          the heat number the driver raced in, for a class whose heats are separate overall races
+     *                      (Shikabane); null when the whole class is ranked together
      */
     public record QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points,
-                                   List<RoundPlace> rounds) {
+                                   List<RoundPlace> rounds, Integer heat) {
+
+        /** A result ranked in one table for the whole class, with no heat. */
+        public QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted, Integer points,
+                                List<RoundPlace> rounds) {
+            this(entryId, bestLapMs, lapsCompleted, points, rounds, null);
+        }
 
         /** A result ranked by laps, which has no points. */
         public QualifyingResult(Long entryId, long bestLapMs, int lapsCompleted) {

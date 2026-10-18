@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 
 function ClassTable({ table }: { table: QualifyingBoardTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
+  const hasHeats = table.rows.some((r) => r.heat != null);
   const rounds = roundCount(table.rows);
   return (
     <section className="space-y-2 break-inside-avoid print:break-after-page print:last:break-after-auto">
@@ -32,6 +33,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
           <table className="w-full text-sm" aria-label={`${table.className} qualifying`}>
             <thead>
               <tr className="border-b bg-muted/50 text-left text-muted-foreground">
+                {hasHeats && <th className="px-3 py-2">Heat</th>}
                 <th className="px-3 py-2">Pos</th>
                 <th className="px-3 py-2">Car</th>
                 <th className="px-3 py-2">Driver</th>
@@ -44,6 +46,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
             <tbody>
               {table.rows.map((row) => (
                 <tr key={row.entryId} className="border-b last:border-0">
+                  {hasHeats && <td className="px-3 py-2 tabular-nums">{row.heat}</td>}
                   <td className="px-3 py-2 font-semibold tabular-nums">{row.position}</td>
                   <td className="px-3 py-2 tabular-nums">{row.carNumber ?? '—'}</td>
                   <td className="px-3 py-2">{row.driverName}</td>

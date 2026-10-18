@@ -49,6 +49,8 @@ public class LiveRaceState {
     Long lastLapCreditedAtMs = null;
     /** Decoder time, in milliseconds, of the first passing from an entry in the race; 0 until one crosses. */
     private long firstCrossingMs;
+    /** Server time, in epoch milliseconds, when the first car took the flag; null until one has. */
+    Long firstFlaggedAtMs = null;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
     /**
@@ -146,6 +148,9 @@ public class LiveRaceState {
             lastLapCreditedAtMs = nowMs;
             if (windowEnded && pos.getLapsCompleted() > 0) {
                 flagged.add(entryId);
+                if (firstFlaggedAtMs == null) {
+                    firstFlaggedAtMs = nowMs;
+                }
             }
         }
 
@@ -163,6 +168,17 @@ public class LiveRaceState {
         }
         finishRequested = true;
         return true;
+    }
+
+    /** Server time, in epoch milliseconds, when the first car took the flag, if one has. */
+    public synchronized Optional<Long> firstFlaggedAtMs() {
+        return Optional.ofNullable(firstFlaggedAtMs);
+    }
+
+    /** The laps the car is credited with, 0 if it has not crossed the line. */
+    public synchronized int lapsCompleted(long entryId) {
+        LiveRacePosition pos = positions.get(entryId);
+        return pos == null ? 0 : pos.getLapsCompleted();
     }
 
     /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */

@@ -464,6 +464,8 @@ export type QualifyingTableRow = {
   points: number | null;
   /** The place in each finished round, in round order; empty unless the class ranks round by round. */
   rounds: QualifyingRoundPlace[];
+  /** The heat, when the class's heats are separate overall races (positions count from 1 in each); else null. */
+  heat?: number | null;
 };
 
 export type QualifyingTable = {

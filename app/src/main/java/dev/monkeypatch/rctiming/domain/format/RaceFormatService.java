@@ -95,6 +95,12 @@ public class RaceFormatService {
         }
     }
 
+    /** The laps a heat runs for when the class's format ends heats by lap count, else empty. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<Integer> lapTarget(EventClass eventClass) {
+        return shikabaneConfig(eventClass).map(ShikabaneConfig::heatLaps).filter(laps -> laps > 0);
+    }
+
     /**
      * A race's length from its class's format, by round type: finals of a points-and-finals format have their own
      * length. Null when the class has no format or the format sets no length.
@@ -109,7 +115,7 @@ public class RaceFormatService {
             case BumpUpConfig bumpUp -> bumpUp.heatDurationMinutes();
             case PointsFinalsConfig points -> roundType == RoundType.FINAL
                     ? points.finalDurationMinutes() : points.heatDurationMinutes();
-            case ShikabaneConfig shikabane -> shikabane.heatDurationMinutes();
+            case ShikabaneConfig shikabane -> shikabane.heatLaps() > 0 ? 0 : shikabane.heatDurationMinutes();
         };
         return minutes > 0 ? minutes * 60_000L : null;
     }
