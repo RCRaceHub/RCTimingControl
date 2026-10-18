@@ -54,6 +54,8 @@ A class races to a **format**, which you pick in step 4 and again for each class
 
 **Bump-up finals are fully supported.** To run them, give the class a Bump Up format and set its grid size and bump spots. When you generate the rounds, say how many finals each class has (A, A+B, A+B+C). When the last qualifying heat finishes, the finals are seeded for you, the lowest final first. When a lower final finishes, its best finishers are added to the back of the grid of the final above, and race control shows an alert before you start it. A class without a Bump Up format gets no bumping.
 
+**Shikabane** needs some hands-on work: race control marks every dead car and zombie revival, false starts need the car moved on the track, and the mains and zombie round are run lowest first. [shikabane-guide.md](shikabane-guide.md) lists what is done by hand and in what order.
+
 **How a race starts** is set in the format, separately for heats and finals:
 
 - **Grid**: every car goes together on the start horn.
