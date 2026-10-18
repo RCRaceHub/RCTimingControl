@@ -76,7 +76,8 @@ public class AdminAudioController {
             Boolean tickSound,
             Boolean finalBeeps,
             @Valid ClubAudioSettings.Wording wording,
-            @Valid ClubAudioSettings.Tuning tuning
+            @Valid ClubAudioSettings.Tuning tuning,
+            Boolean paceBeeps
     ) {
         /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
         @JsonIgnore
@@ -91,7 +92,7 @@ public class AdminAudioController {
                     defaultVoiceId, s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
                     s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
-                    s.finalBeeps(), s.wording(), s.tuning());
+                    s.finalBeeps(), s.wording(), s.tuning(), s.paceBeeps());
         }
     }
 
@@ -138,7 +139,8 @@ public class AdminAudioController {
                     dto.wording() != null ? dto.wording() : kept.wording(),
                     dto.tuning() != null ? dto.tuning() : kept.tuning(),
                     dto.runningOrderPercent() != null ? dto.runningOrderPercent() : kept.runningOrderPercent(),
-                    dto.runningOrderAllUpTo() != null ? dto.runningOrderAllUpTo() : kept.runningOrderAllUpTo()
+                    dto.runningOrderAllUpTo() != null ? dto.runningOrderAllUpTo() : kept.runningOrderAllUpTo(),
+                    dto.paceBeeps() != null ? dto.paceBeeps() : kept.paceBeeps()
             ));
             // No voice chosen on the page: keep the one stored (the column is NOT NULL)
             if (dto.defaultVoiceId() != null && !dto.defaultVoiceId().isBlank()) {

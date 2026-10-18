@@ -72,7 +72,8 @@ public class AudioSettingsController {
             boolean tickSound,
             boolean finalBeeps,
             ClubAudioSettings.Wording wording,
-            ClubAudioSettings.Tuning tuning
+            ClubAudioSettings.Tuning tuning,
+            boolean paceBeeps
     ) {
         static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
@@ -80,13 +81,13 @@ public class AudioSettingsController {
                     s.countdownIntervals(),
                     s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
                     s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
-                    s.finalBeeps(), s.wording(), s.tuning());
+                    s.finalBeeps(), s.wording(), s.tuning(), s.paceBeeps());
         }
     }
 
     /**
      * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
-     * toggle it changed. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
+     * toggle it changed. {@code paceBeeps} turns the faster/slower lap beeps on or off. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
      * the full object (a line left empty has the standard wording).
      *
      * <p>The limits below are checked on the way in and a breach is a 400. {@code runningOrderPercent} is the share
@@ -113,7 +114,8 @@ public class AudioSettingsController {
             Boolean tickSound,
             Boolean finalBeeps,
             @Valid ClubAudioSettings.Wording wording,
-            @Valid ClubAudioSettings.Tuning tuning
+            @Valid ClubAudioSettings.Tuning tuning,
+            Boolean paceBeeps
     ) {
         /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
         @JsonIgnore
@@ -168,7 +170,8 @@ public class AudioSettingsController {
                             patch.wording() != null ? patch.wording() : s.wording(),
                             patch.tuning() != null ? patch.tuning() : s.tuning(),
                             patch.runningOrderPercent() != null ? patch.runningOrderPercent() : s.runningOrderPercent(),
-                            patch.runningOrderAllUpTo() != null ? patch.runningOrderAllUpTo() : s.runningOrderAllUpTo()
+                            patch.runningOrderAllUpTo() != null ? patch.runningOrderAllUpTo() : s.runningOrderAllUpTo(),
+                            patch.paceBeeps() != null ? patch.paceBeeps() : s.paceBeeps()
                     ));
                 });
         return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));

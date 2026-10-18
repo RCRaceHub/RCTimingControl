@@ -464,6 +464,21 @@ describe('useAnnouncements as cars finish and when the time is up', () => {
     expect(playLapBeep).toHaveBeenCalledWith(0.8, 'faster', { hz: 600, ms: 300 }, undefined);
   });
 
+  it('plays the plain lap beep for every pace when pace beeps are switched off', () => {
+    const { result } = renderHook(() =>
+      useAnnouncements({
+        raceId: 5,
+        settings: { ...settings, paceBeeps: false } as AudioSettingsDto,
+        raceState: 'RUNNING',
+      }),
+    );
+
+    act(() => { result.current.playBeep('faster'); });
+    act(() => { result.current.playBeep('slower'); });
+
+    expect(playLapBeep.mock.calls.map((c) => c[1])).toEqual(['onPace', 'onPace']);
+  });
+
   it('words the stop and resume lines as the club has', () => {
     const club = { ...settings, wording: { stop: 'Red flag.', resume: 'Green flag.' } } as AudioSettingsDto;
     const { rerender } = renderHook(

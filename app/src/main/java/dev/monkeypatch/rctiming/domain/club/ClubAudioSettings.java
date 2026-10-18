@@ -18,6 +18,10 @@ import jakarta.validation.constraints.Size;
  * other switches, a missing {@code finalBeeps} is off: the end of a race is not counted down unless the club asks.
  * {@code wording} is how each spoken line is worded and {@code tuning} the running order cadence, the
  * final-seconds count and the lap beep's tone; a blank wording or a missing number takes the standard.
+ *
+ * <p>{@code paceBeeps} says whether the lap beep tells the pace: a higher beep for a lap faster than the driver's
+ * best and a lower or own-file beep for a slower one. Off, every lap gets the same plain beep, as BRCA events
+ * expect. A setting saved before it existed has it on, so existing clubs hear no change.
  */
 public record ClubAudioSettings(
         boolean announceCountdown,
@@ -40,7 +44,8 @@ public record ClubAudioSettings(
         Wording wording,
         Tuning tuning,
         Integer runningOrderPercent,
-        Integer runningOrderAllUpTo
+        Integer runningOrderAllUpTo,
+        Boolean paceBeeps
 ) {
     /** The lead-in for settings saved before it was added. */
     public static final int DEFAULT_START_COUNTDOWN_SECONDS = 10;
@@ -215,6 +220,7 @@ public record ClubAudioSettings(
         tuning = tuning == null ? Tuning.STANDARD : tuning;
         runningOrderPercent = runningOrderPercent == null ? DEFAULT_RUNNING_ORDER_PERCENT : runningOrderPercent;
         runningOrderAllUpTo = runningOrderAllUpTo == null ? DEFAULT_RUNNING_ORDER_ALL_UP_TO : runningOrderAllUpTo;
+        paceBeeps = paceBeeps == null || paceBeeps;
     }
 
     /** The settings from before the running order named a share of the field, which take their defaults. */
@@ -227,7 +233,7 @@ public record ClubAudioSettings(
         this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
                 runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
                 startCountdownSeconds, hornSounds, announceCarFinish, timeUpText, tickSound, finalBeeps, wording,
-                tuning, null, null);
+                tuning, null, null, null);
     }
 
     /** The settings from before the wording, timings and tones could be changed, which take their defaults. */
@@ -269,7 +275,7 @@ public record ClubAudioSettings(
         return new ClubAudioSettings(announceCountdown, announceStagger, announceLapBeep, announceFinish,
                 announceRunningOrder, runningOrderDepth, countdownIntervals, startHorn, finishHorn,
                 announceRaceCalls, announceNextRace, startCountdownSeconds, sounds, announceCarFinish, timeUpText,
-                tickSound, finalBeeps, wording, tuning, runningOrderPercent, runningOrderAllUpTo);
+                tickSound, finalBeeps, wording, tuning, runningOrderPercent, runningOrderAllUpTo, paceBeeps);
     }
 
     /** The settings from before the finish calls and the time call wording, which take their defaults. */
