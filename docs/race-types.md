@@ -328,8 +328,7 @@ heats, no grid, no start, no clock to run out and no result that scores.
 
 - **Qualifying types.** `FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS` all rank the same way (see
   [Scoring](scoring.md#known-gaps)).
-- **Shikabane.** Championship points still use the generic scoring (best heat finish and so on), not the overall
-  Shikabane total. Heat points are not normalised between heats of different sizes (each split heat is its own race). A false start gives
+- **Shikabane.** It is for fun days, so its races never score in a championship. Heat points are not normalised between heats of different sizes (each split heat is its own race). A false start gives
   points only: the car's move to the back of the grid is made on the track.
 - **Fixed number of laps.** Only a Shikabane format can end a race after a number of laps. Other formats run for a time,
   and a race given no length is finished by hand.

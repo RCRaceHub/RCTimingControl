@@ -5,6 +5,9 @@ it. Nobody steps on the track: a car that flips, breaks down or stalls stays whe
 for everyone else. The reference for each setting is in [Race types](race-types.md#44-shikabane) and the scoring is in
 [Scoring](scoring.md#shikabane-heats); this page is the order to do things in on the day.
 
+Shikabane is meant for fun days, so its races are left out of championship standings (and out of the top qualifier
+bonus), even when the event is linked to a championship.
+
 ## How a Shikabane meeting works
 
 - **Heats are short.** Typically 3 laps, and a driver runs 3 heats (three sets of three laps). Some clubs use 5 laps.
@@ -108,11 +111,10 @@ RCTC times the cars but cannot see the track, so these are done by people:
 | Each main | Run the lowest main first, then the zombie round (if any), then the A main. RCTC does not stop you starting the A main early, so do not start it until the races below it have finished and the alert has shown who moved up |
 | Marking in a main | Mark deaths before pressing Finish. Promotion is worked out when the main finishes and is not redone for a death added afterwards |
 | With Auto run | Auto run starts the next race by itself after the gap, and a lap-count heat finishes by itself, so have someone marking deaths during the heat. Leave the hold before the mains switched on so you can check the seeding |
-| Championships | Championship points use the generic scoring, so work out any Shikabane overall total yourself from the qualifying table |
+| Results | Shikabane is for fun days, so it never counts towards a championship. The winner is the lowest total in the qualifying table, or the A main if you ran mains |
 
 ## What is not built yet
 
-- Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total. The zombie round is not scored in championships; the A main's result is.
 - A zombie round whose grid ends up empty (everyone moved up) has to be skipped by hand.
 - Points are not adjusted between heats of different sizes. When a class is split into several heats, the mains are
   still seeded from all the drivers' heat points together, so keep the heats the same size.

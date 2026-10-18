@@ -139,6 +139,9 @@ A qualifying penalty after the finals were seeded needs the reseed to take effec
 
 ## 5. Championship points
 
+A class run to the Shikabane format never scores in a championship, whatever the scoring source, and gets no top
+qualifier bonus: Shikabane is for fun days (see [Race types](race-types.md#44-shikabane)).
+
 A championship links events (each event is a round) and scores each driver per class.
 
 | Setting | What it does |
