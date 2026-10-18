@@ -207,6 +207,8 @@ the **lowest total wins**.
 | Setting | What it does |
 |---|---|
 | Heat duration (min) | The length of every heat, used when Heat laps is 0 |
+| Mains | How many mains (A, B, C) follow the heats, 0 for none (up to 3) |
+| Cars per main, Promotion spots | The size of each main, and how many places of a lower main move up into the one above |
 | Heat laps | A heat ends after this many laps (typically 3 in Japanese club racing, sometimes 5). 0 runs it for the heat duration instead |
 | Start type, stagger interval (s) | How heats start, as above |
 | False start penalty (points) | Points added to a car given a false start |
@@ -240,8 +242,8 @@ car took the flag. Until then, race control finishes the heat by hand.
 the heat, and points from different heats are not merged into one overall order. Qualifying tables and the boards
 show a Heat column and the position restarts in each heat.
 
-**Heats and grids.** A Shikabane run order is the practice and qualifying rounds the generator makes, with no finals:
-the last heat is scored with the others. The grids are:
+**Heats and grids.** A Shikabane run order is the practice and qualifying rounds the generator makes. With Mains at 0
+there are no finals and the last heat is scored with the others. The grids are:
 
 | Heat | Grid |
 |---|---|
@@ -251,6 +253,13 @@ the last heat is scored with the others. The grids are:
 
 The next grid is drawn when a heat finishes, for the same drivers (the generator keeps heats the same in every round).
 If an elimination or penalty is added to a finished heat, a grid already drawn from it is not drawn again.
+
+**Mains.** With Mains above 0 the generator makes that many finals, and they are seeded like a bump-up format's finals
+from the heat totals: the best drivers in the A main and the worst in the lowest. Each main holds Cars per main, less
+the places kept for promotion. When a lower main finishes, its first Promotion spots places are added to the back of
+the main above, so a driver can climb from the C main to the A main. A main is run like a heat, with the same
+Eliminate, Revive and False start buttons, and is ranked by its own result. See
+[Running a Shikabane meeting](shikabane-guide.md) for the order to do it in.
 
 ### Settings the round generator decides
 

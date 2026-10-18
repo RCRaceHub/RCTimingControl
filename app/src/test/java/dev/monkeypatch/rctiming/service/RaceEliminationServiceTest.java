@@ -64,11 +64,11 @@ class RaceEliminationServiceTest {
         race.setEventClassId(5L);
         race.setStatus(RaceStatus.RUNNING);
         when(raceRepository.getOrThrow(RACE)).thenReturn(race);
-        eventClass.setConfigSnapshot(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0));
+        eventClass.setConfigSnapshot(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0, 0, 0, 0));
         when(eventClassRepository.findById(5L)).thenReturn(Optional.of(eventClass));
         when(raceFormatService.getEffectiveConfig(eventClass)).thenReturn(eventClass.getConfigSnapshot());
         when(raceFormatService.shikabaneConfig(eventClass)).thenReturn(
-                Optional.of(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0)));
+                Optional.of(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0, 0, 0, 0)));
         when(pointPenalties.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(raceEntryRepository.findByRaceIdAndEntryId(RACE, ENTRY)).thenReturn(Optional.of(new RaceEntry()));
         when(eliminations.save(any())).thenAnswer(inv -> inv.getArgument(0));

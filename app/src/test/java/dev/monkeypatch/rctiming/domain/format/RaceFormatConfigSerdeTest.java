@@ -38,7 +38,7 @@ class RaceFormatConfigSerdeTest {
 
     @Test
     void shikabaneConfig_roundTrips_throughJson() throws JsonProcessingException {
-        ShikabaneConfig original = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0);
+        ShikabaneConfig original = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0, 0, 0, 0);
 
         String json = jsonMapper.writeValueAsString(original);
         RaceFormatConfig deserialized = jsonMapper.readValue(json, RaceFormatConfig.class);

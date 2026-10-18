@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -143,6 +144,14 @@ public class AutoFinalsSeedingService {
             bump = Math.max(0, Math.min(bumpUp.bumpSpots(), cars - 1));
             // The lowest final takes a full grid and each higher one its grid less the bump spots; grow the grid
             // until the field fits rather than leave drivers out of every final
+            while (cars + (finalsCount - 1) * (cars - bump) < field) {
+                cars++;
+            }
+        }
+        if (config instanceof ShikabaneConfig shikabane && shikabane.mainGridSize() > 0) {
+            // The mains work like a bump-up format's finals: promotion fills places at the back of the main above
+            cars = shikabane.mainGridSize();
+            bump = Math.max(0, Math.min(shikabane.promotionSpots(), cars - 1));
             while (cars + (finalsCount - 1) * (cars - bump) < field) {
                 cars++;
             }

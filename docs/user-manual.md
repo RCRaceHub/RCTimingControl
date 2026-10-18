@@ -49,6 +49,7 @@ A class races to a **format**, which you pick in step 4 and again for each class
 |---|---|---|
 | **Timed** | One timed race per heat, the same start every round | The field is split evenly over the class's finals, no bumping |
 | **Bump Up** | Qualifying heats, then finals where the best finishers of each lower final move up into the final above | **Grid size** cars per final, **bump spots** places in each higher final filled from the final below |
+| **Shikabane** | Marshal-less racing where a stopped car is out and the lowest points win; optional A, B and C mains with promotion | Mains work like Bump Up finals; see [shikabane-guide.md](shikabane-guide.md) |
 | **Points Finals** | Qualifying heats, then finals that each score on their own | The field is split evenly over the finals, no bumping |
 
 **Bump-up finals are fully supported.** To run them, give the class a Bump Up format and set its grid size and bump spots. When you generate the rounds, say how many finals each class has (A, A+B, A+B+C). When the last qualifying heat finishes, the finals are seeded for you, the lowest final first. When a lower final finishes, its best finishers are added to the back of the grid of the final above, and race control shows an alert before you start it. A class without a Bump Up format gets no bumping.
