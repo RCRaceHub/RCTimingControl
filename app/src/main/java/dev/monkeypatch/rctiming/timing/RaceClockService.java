@@ -45,6 +45,9 @@ public class RaceClockService {
     private final Clock clock;
     private final Map<Long, RaceClock> clocks = new ConcurrentHashMap<>();
 
+    /** A start time this recent belongs to the start command that is being handled (see {@link #startedJustNow}). */
+    private static final long FRESH_START_SECONDS = 5;
+
     @Autowired
     public RaceClockService(RaceRepository raceRepository, RoundRepository roundRepository,
                             EventClassRepository eventClassRepository, RaceFormatService raceFormatService) {
@@ -73,13 +76,13 @@ public class RaceClockService {
         switch (event.getNewStatus()) {
             case GRID -> clocks.put(raceId, new RaceClock());
             case RUNNING -> {
-                RaceClock raceClock = clockFor(raceId, now);
-                // A rolling start waits for the first car; a resume (the clock has run before) never does
-                if (!raceClock.hasRun() && isRollingStart(raceId)) {
-                    raceClock.holdForFirstPassing();
-                } else {
-                    raceClock.start(now);
+                // Looked up before touching the clock, so a passing that arrives meanwhile finds it settled
+                boolean rolling = isRollingStart(raceId);
+                if (!clocks.containsKey(raceId) && startedJustNow(raceId, now)) {
+                    // The grid was called before the app started, so this clock was never made: a first start
+                    clocks.put(raceId, new RaceClock());
                 }
+                clockFor(raceId, now).startOrHold(now, rolling);
             }
             case STOPPED, FINISHED -> clockFor(raceId, now).stop(now);
             default -> { }
@@ -94,22 +97,37 @@ public class RaceClockService {
     public void onFirstPassing(long raceId) {
         RaceClock raceClock = clocks.get(raceId);
         if (raceClock != null) {
-            raceClock.startIfHeld(clock.instant());
+            raceClock.onPassing(clock.instant());
         }
     }
 
-    /** Whether the race starts rolling: its own start type, else the format's, as {@link #planOf} reads it. */
+    /**
+     * Whether the race's start command was given now rather than earlier: {@code RaceStateMachineService} sets the
+     * start time just before it publishes the event, so a stored start time within a few seconds means this
+     * RUNNING is the first start, while an older one means a resume. Only asked when no clock is kept, that is, when
+     * the app started after the grid was called or the race was stopped.
+     */
+    private boolean startedJustNow(long raceId, Instant now) {
+        return raceRepository.findById(raceId)
+                .map(race -> race.getStartedAt() != null
+                        && Duration.between(race.getStartedAt(), now).abs().toSeconds() < FRESH_START_SECONDS)
+                .orElse(false);
+    }
+
+    /** Whether the race starts rolling, as {@link #startTypeOf} reads it. */
     private boolean isRollingStart(long raceId) {
-        return raceRepository.findById(raceId).map(race -> {
-            if (race.getStartType() != null) {
-                return race.getStartType() == StartType.ROLLING;
-            }
-            EventClass eventClass = race.getEventClassId() == null ? null
-                    : eventClassRepository.findById(race.getEventClassId()).orElse(null);
-            return roundRepository.findById(race.getRoundId())
-                    .map(round -> raceFormatService.startType(eventClass, round.getType()) == StartType.ROLLING)
-                    .orElse(false);
-        }).orElse(false);
+        return raceRepository.findById(raceId).map(race -> startTypeOf(race) == StartType.ROLLING).orElse(false);
+    }
+
+    /** How the race starts: its own start type, else the format's, as the pre-race readiness does; null if unknown. */
+    private StartType startTypeOf(Race race) {
+        if (race.getStartType() != null) {
+            return race.getStartType();
+        }
+        EventClass eventClass = race.getEventClassId() == null ? null
+                : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        return roundRepository.findById(race.getRoundId())
+                .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
     }
 
     /**
@@ -182,10 +200,7 @@ public class RaceClockService {
         return raceRepository.findById(raceId).map(race -> {
             EventClass eventClass = race.getEventClassId() == null ? null
                     : eventClassRepository.findById(race.getEventClassId()).orElse(null);
-            // As the pre-race readiness does: the race's own start, else the format's
-            StartType startType = race.getStartType() != null ? race.getStartType()
-                    : roundRepository.findById(race.getRoundId())
-                            .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
+            StartType startType = startTypeOf(race);
             long intervalMs = startType == StartType.STAGGER
                     ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
             return new RacePlan(durationMs(race), intervalMs);
@@ -210,6 +225,8 @@ public class RaceClockService {
         private boolean hasRun;
         /** A rolling start that has been started and is waiting for its first car; the clock reads zero. */
         private boolean held;
+        /** A car crossed before a rolling start's hold was set, so the hold is not needed. */
+        private boolean passingSeen;
 
         /** A stopped clock holding the time from the race's start to its finish, or to now if it hasn't finished. */
         static RaceClock fromTimes(Race race, Instant now) {
@@ -231,24 +248,31 @@ public class RaceClockService {
             }
         }
 
-        synchronized boolean hasRun() {
-            return hasRun;
+        /**
+         * Starts the clock, or for a {@code rolling} start that has never run holds it for the first car, unless a
+         * car has already crossed. A resume (the clock has run before) never holds.
+         */
+        synchronized void startOrHold(Instant now, boolean rolling) {
+            if (rolling && !hasRun && !passingSeen) {
+                held = true;
+            } else {
+                start(now);
+            }
         }
 
-        synchronized void holdForFirstPassing() {
-            held = true;
-        }
-
-        /** Starts the clock if it was being held for a first passing; no-op otherwise. */
-        synchronized void startIfHeld(Instant now) {
+        /** A car crossed: starts a held clock, or makes a hold that is about to be set unnecessary. */
+        synchronized void onPassing(Instant now) {
             if (held) {
                 start(now);
+            } else if (!hasRun) {
+                passingSeen = true;
             }
         }
 
         synchronized void stop(Instant now) {
             // A stopped race takes no first passing: the clock waits again when it is resumed
             held = false;
+            passingSeen = false;
             if (runningSince != null) {
                 accumulatedMs += Duration.between(runningSince, now).toMillis();
                 runningSince = null;

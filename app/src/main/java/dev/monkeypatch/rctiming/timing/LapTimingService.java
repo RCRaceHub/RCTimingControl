@@ -117,7 +117,9 @@ public class LapTimingService {
      * linking), then falling back to the entries' primary and secondary numbers in the DB.
      *
      * <p>A passing with no running race ({@link LapPassingEvent#NO_RACE}) is for practice only and is
-     * ignored here; otherwise it would create state for a race that does not exist.
+     * ignored here; otherwise it would create state for a race that does not exist. A passing that resolves to an
+     * entry also starts the race clock of a rolling start that is waiting for its first car
+     * ({@link RaceClockService#onFirstPassing}).
      */
     @EventListener(LapPassingEvent.class)
     public void onLapPassing(LapPassingEvent event) {

@@ -67,7 +67,7 @@ function effectiveFormat(cls: { configSnapshot: unknown; configOverride?: Record
 
 /** A whole number from a format field, within what this form accepts, or undefined when the format sets none. */
 function fromFormat(value: number | undefined, min: number, max: number) {
-  return Number.isInteger(value) && value! >= min ? Math.min(value!, max) : undefined;
+  return typeof value === 'number' && Number.isInteger(value) && value >= min ? Math.min(value, max) : undefined;
 }
 
 export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate = false }: Props) {

@@ -83,7 +83,8 @@ starts counting when the first car entered in the race crosses the line, and fro
 everyone, so every car's time runs out at the same moment, and each car takes the flag the next time it counts a lap
 after that. A crossing from a transponder that matches no entry in the race does not start the clock. If the race is
 stopped before any car crossed, the clock waits again when it is resumed; once it has counted, a resume carries on as
-for any other start. The race's start time (the time Start was pressed) is still the moment of the command.
+for any other start. Race control shows "waiting for first car" while the clock is held. The race's start time is still the moment Start
+was pressed, but total times in the result run from the first car's first crossing.
 
 ### The first lap
 

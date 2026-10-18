@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.service;
 
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustment;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustmentRepository;
 import dev.monkeypatch.rctiming.domain.race.Penalty;
@@ -117,7 +118,10 @@ public class ResultSnapshotService {
 
             positions = new ArrayList<>();
             long raceStartMs = 0L;
-            if (race.getStartedAt() != null) {
+            if (race.getStartType() == StartType.ROLLING && state.firstCrossingMs() > 0) {
+                // A rolling start's clock waits for the first car, so total times run from its first crossing
+                raceStartMs = state.firstCrossingMs();
+            } else if (race.getStartedAt() != null) {
                 raceStartMs = race.getStartedAt().toEpochMilli();
             } else {
                 log.warn("Race {} has no startedAt — totalTimeMs will be 0 for all positions", raceId);
