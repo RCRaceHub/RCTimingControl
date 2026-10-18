@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Race format templates, and the format a class actually races to. A class keeps its own snapshot of the
@@ -82,15 +83,15 @@ public class RaceFormatService {
      * Shikabane here; the error surfaces where the format is read for its own sake.
      */
     @Transactional(propagation = Propagation.SUPPORTS)
-    public java.util.Optional<ShikabaneConfig> shikabaneConfig(EventClass eventClass) {
+    public Optional<ShikabaneConfig> shikabaneConfig(EventClass eventClass) {
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
         try {
             return getEffectiveConfig(eventClass) instanceof ShikabaneConfig s
-                    ? java.util.Optional.of(s) : java.util.Optional.empty();
+                    ? Optional.of(s) : Optional.empty();
         } catch (RuntimeException e) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
     }
 

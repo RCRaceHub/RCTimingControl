@@ -7,16 +7,20 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -27,11 +31,14 @@ import java.util.Optional;
  * Draws the starting grid of the next Shikabane heat when a heat finishes. Heat 1 is a random draw (made by the round
  * generator), heat 2 starts in the reverse of heat 1's result so the winner is last, and every later heat starts in
  * cumulative-points order, fewest points at the front. Keeps the same drivers per heat number, as the generator does.
- * Called by the race state machine after the result is stored, in the finish's transaction.
+ * Called by the race state machine after the result is stored, in the finish's transaction, and again when a
+ * finished heat is corrected. A heat that has already been called is left as it is.
  */
 @Service
 @Transactional
 public class ShikabaneGridService {
+
+    private static final Logger log = LoggerFactory.getLogger(ShikabaneGridService.class);
 
     private final RoundRepository roundRepository;
     private final RaceRepository raceRepository;
@@ -65,6 +72,15 @@ public class ShikabaneGridService {
      * Shikabane class and there is a next round. Does nothing otherwise.
      */
     public void applyAfterFinish(Race finished) {
+        try {
+            draw(finished);
+        } catch (RuntimeException e) {
+            // Not allowed to fail the finish: the grid can still be set by hand
+            log.warn("Could not draw the next Shikabane grid after race {} finished", finished.getId(), e);
+        }
+    }
+
+    private void draw(Race finished) {
         Round round = roundRepository.findById(finished.getRoundId()).orElse(null);
         if (round == null || round.getType() != RoundType.QUALIFIER) {
             return;
@@ -84,7 +100,8 @@ public class ShikabaneGridService {
                 .filter(r -> r.getEventClassId().equals(finished.getEventClassId())
                         && r.getHeatNumber() == finished.getHeatNumber())
                 .findFirst().orElse(null);
-        if (nextHeat == null) {
+        // A heat that has been called or run keeps its grid
+        if (nextHeat == null || nextHeat.getStatus() != RaceStatus.PENDING) {
             return;
         }
         List<Long> order = next.getRoundNumber() == 2
@@ -95,10 +112,18 @@ public class ShikabaneGridService {
 
     /** The finished heat's entries, last place first. */
     private List<Long> reverseOfResult(Race finished) {
-        List<Long> order = new ArrayList<>(resultSnapshotRepository.findByRaceId(finished.getId())
+        List<Long> placed = new ArrayList<>(resultSnapshotRepository.findByRaceId(finished.getId())
                 .map(s -> snapshotJson.positions(finished.getId(), s.getPositionsJson())).orElse(List.of())
                 .stream().map(ResultSnapshotDto.ResultRow::entryId).toList());
-        java.util.Collections.reverse(order);
+        if (placed.isEmpty()) {
+            return placed;
+        }
+        Collections.reverse(placed);
+        // A car with no row was behind everyone who has one, so it starts at the front
+        List<Long> order = new ArrayList<>();
+        raceEntryRepository.findByRaceIdOrderByGridPosition(finished.getId()).stream()
+                .map(RaceEntry::getEntryId).filter(id -> !placed.contains(id)).forEach(order::add);
+        order.addAll(placed);
         return order;
     }
 

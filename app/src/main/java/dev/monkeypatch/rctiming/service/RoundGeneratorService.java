@@ -23,10 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Generates all Round, Race, and RaceEntry records for an event in a single transaction.
@@ -254,8 +256,8 @@ public class RoundGeneratorService {
                     List<Long> gridOrder = entryIds;
                     if (type == RoundType.QUALIFIER && isFirstRound
                             && raceFormatService.shikabaneConfig(ec).isPresent()) {
-                        gridOrder = new java.util.ArrayList<>(entryIds);
-                        java.util.Collections.shuffle(gridOrder, java.util.concurrent.ThreadLocalRandom.current());
+                        gridOrder = new ArrayList<>(entryIds);
+                        Collections.shuffle(gridOrder, ThreadLocalRandom.current());
                     }
                     for (int pos = 0; pos < entryIds.size(); pos++) {
                         RaceEntry entry = new RaceEntry();

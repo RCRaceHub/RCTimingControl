@@ -21,8 +21,9 @@ final class ShikabaneOrdering {
     private ShikabaneOrdering() {}
 
     /**
-     * Reorders {@code rows} and renumbers their positions from 1. With nothing eliminated the list comes back as it was; otherwise it is a new list and the rows are copied with
-     * their new position and the gap to the leader is kept as it was timed.
+     * Reorders {@code rows} and renumbers their positions from 1. With nothing eliminated the list comes back as it
+     * was; otherwise it is a new list and the rows are copied with their new position, and the gap to the leader is
+     * kept as it was timed.
      *
      * @param rows               the heat's rows in timed order, with a row for every eliminated entry
      * @param eliminatedInOrder  entry ids of the cars dead at the end, first to die first

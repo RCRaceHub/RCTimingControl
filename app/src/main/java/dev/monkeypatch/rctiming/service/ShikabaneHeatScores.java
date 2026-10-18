@@ -50,8 +50,8 @@ public class ShikabaneHeatScores {
 
     /**
      * Every car on the heat's grid, with its points. A car with no row in the result (it never crossed the line and
-     * was not marked dead), or any car of an abandoned heat, is placed after the last one that has a row. An empty
-     * list for a heat that is not finished.
+     * was not marked dead) is placed after the last one that has a row. An empty list for a heat with no stored
+     * result: one that is abandoned or not finished.
      */
     public List<Score> scores(Race heat, ShikabaneConfig config) {
         List<RaceEntry> grid = raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId());
@@ -66,7 +66,11 @@ public class ShikabaneHeatScores {
                 }
             });
         }
-        int unplaced = Math.max(place.size(), 0) + 1;
+        if (place.isEmpty()) {
+            // Abandoned, or no result stored: the heat has no scores and its cars take the round's missing-heat points
+            return List.of();
+        }
+        int unplaced = place.size() + 1;
 
         Map<Long, Integer> adjustment = new HashMap<>();
         for (RaceElimination e : eliminationRepository.findByRaceId(heat.getId())) {

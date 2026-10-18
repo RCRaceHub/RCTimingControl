@@ -33,8 +33,13 @@ export function EliminationButtons({ entryId, elim }: Props) {
         </>
       )}
       <Button size="sm" variant="ghost" className="ml-1" disabled={elim.falseStart.isPending}
-        onClick={() => elim.falseStart.mutate(entryId)}>
+        onClick={() => { if (window.confirm('Give this car the false start penalty?')) elim.falseStart.mutate(entryId); }}>
         False start
+      </Button>
+      <Button size="sm" variant="ghost" className="ml-1" disabled={elim.undoFalseStart.isPending}
+        title="Take back this car's latest false start"
+        onClick={() => elim.undoFalseStart.mutate(entryId)}>
+        Undo false start
       </Button>
     </span>
   );

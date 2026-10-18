@@ -81,7 +81,6 @@ public class QualifyingStandingsService {
                                       RaceFormatService raceFormatService,
                                       MarshalPenaltyRepository marshalPenaltyRepository,
                                       ShikabaneHeatScores shikabaneHeatScores) {
-        this.shikabaneHeatScores = shikabaneHeatScores;
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.resultSnapshotRepository = resultSnapshotRepository;
@@ -90,6 +89,7 @@ public class QualifyingStandingsService {
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
         this.marshalPenaltyRepository = marshalPenaltyRepository;
+        this.shikabaneHeatScores = shikabaneHeatScores;
     }
 
     /**

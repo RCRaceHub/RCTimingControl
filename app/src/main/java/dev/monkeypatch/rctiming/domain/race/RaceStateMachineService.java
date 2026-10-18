@@ -8,8 +8,8 @@ import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
-import dev.monkeypatch.rctiming.service.ShikabaneGridService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
+import dev.monkeypatch.rctiming.service.ShikabaneGridService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
@@ -225,6 +225,7 @@ public class RaceStateMachineService {
 
         // On RUNNING/STOPPED → FINISHED: propagate finishing order, then persist result snapshot
         if (target == RaceStatus.FINISHED) {
+            // For a Shikabane heat this is replaced by ShikabaneGridService below
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
             // After the snapshot too: a Shikabane heat's next grid is drawn from the stored result and its points

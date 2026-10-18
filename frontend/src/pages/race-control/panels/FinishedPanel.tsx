@@ -3,6 +3,7 @@ import { useResultSnapshot } from '@/hooks/race-control/useResultSnapshot';
 import { useEliminations } from '@/hooks/race-control/useEliminations';
 import { EliminationButtons } from './EliminationButtons';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,9 @@ type Props = {
 export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Props) {
   const { data, isLoading, error } = useResultSnapshot(raceId);
   const elim = useEliminations(raceId);
+  const { user } = useAuth();
+  // Marking is for the race director and admins; a referee can look
+  const canMark = elim.shikabane && !!user?.roles?.some((r: string) => r === 'RACE_DIRECTOR' || r === 'ADMIN');
 
   if (isLoading) {
     return (
@@ -109,7 +113,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
               </TableCell>
               {elim.shikabane && (
                 <TableCell className="text-right">
-                  <EliminationButtons entryId={row.entryId} elim={elim} />
+                  {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}
                 </TableCell>
               )}
             </TableRow>

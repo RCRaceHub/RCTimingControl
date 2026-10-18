@@ -58,7 +58,7 @@ class RaceEliminationServiceTest {
     @BeforeEach
     void setUp() {
         service = new RaceEliminationService(eliminations, raceRepository, raceEntryRepository, eventClassRepository,
-                raceFormatService, pointPenalties, publisher, audit, mock(RaceAuditLabels.class));
+                raceFormatService, mock(ShikabaneGridService.class), pointPenalties, publisher, audit, mock(RaceAuditLabels.class));
         race = new Race();
         race.setId(RACE);
         race.setEventClassId(5L);
@@ -124,6 +124,19 @@ class RaceEliminationServiceTest {
 
         assertThat(penalty.getPoints()).isEqualTo(3);
         assertThat(penalty.getEntryId()).isEqualTo(ENTRY);
+    }
+
+    @Test
+    void undoingAFalseStartDeletesTheLatestOne() {
+        RacePointPenalty first = new RacePointPenalty();
+        first.setEntryId(ENTRY);
+        RacePointPenalty second = new RacePointPenalty();
+        second.setEntryId(ENTRY);
+        when(pointPenalties.findByRaceId(RACE)).thenReturn(List.of(first, second));
+
+        service.undoFalseStart(RACE, ENTRY, USER);
+
+        verify(pointPenalties).delete(second);
     }
 
     @Test

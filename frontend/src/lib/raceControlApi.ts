@@ -517,3 +517,7 @@ export async function undoElimination(raceId: number, entryId: number): Promise<
 export async function falseStartEntry(raceId: number, entryId: number): Promise<void> {
   await api.post(`/api/v1/race-control/race/${raceId}/eliminations/false-start`, { entryId });
 }
+
+export async function undoFalseStartEntry(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/eliminations/false-start/undo`, { entryId });
+}

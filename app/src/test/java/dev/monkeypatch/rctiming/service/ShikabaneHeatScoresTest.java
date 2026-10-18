@@ -74,10 +74,10 @@ class ShikabaneHeatScoresTest {
     }
 
     @Test
-    void anAbandonedHeatPlacesEveryoneLast() {
+    void anAbandonedHeatHasNoScores() {
         heat.setAbandonedAt(Instant.now());
 
-        assertThat(pointsByEntry().values()).containsOnly(1);
+        assertThat(pointsByEntry()).isEmpty();
     }
 
     private Map<Long, Integer> pointsByEntry() {
