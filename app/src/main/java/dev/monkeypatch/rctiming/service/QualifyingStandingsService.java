@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
+import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.format.QualifyingType;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
@@ -136,6 +137,8 @@ public class QualifyingStandingsService {
             case TimedRaceConfig timed -> timed.qualifyingType();
             case BumpUpConfig bumpUp -> bumpUp.qualifyingType();
             case PointsFinalsConfig points -> points.qualifyingType();
+            // Heat points are the elimination order, so a Shikabane class ranks like low-points qualifying
+            case ShikabaneConfig shikabane -> QualifyingType.ROUND_BY_ROUND;
         };
         if (type != QualifyingType.ROUND_BY_ROUND) {
             return Optional.empty();

@@ -82,6 +82,14 @@ for it. With best 2 counting that is only used if it is one of her two best.
 Only a bump-up format has `bestHeatsCount`; a points-finals or single race format with `ROUND_BY_ROUND` counts
 every round.
 
+### Shikabane heats
+
+In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by
+laps: cars alive at the end first, in the order of section 1, then the dead, last to die first. Eliminations are marked
+by race control, and a car that was marked dead before it ever crossed the line still gets a place (with no laps). The
+class is ranked as low-points qualifying, so a car's place in each heat is its points. Zombie revival and false start
+points are not applied yet.
+
 ## 3. Seeding the finals
 
 Finals are seeded automatically as soon as the last qualifying heat of the class finishes, and an official can

@@ -9,6 +9,8 @@ import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceElimination;
+import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshot;
@@ -38,9 +40,11 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +74,7 @@ public class ResultSnapshotService {
     private final PenaltyRepository penaltyRepository;
     private final MarshalAdjustmentRepository marshalAdjustmentRepository;
     private final FinalsMarshalPenalties finalsMarshalPenalties;
+    private final RaceEliminationRepository raceEliminationRepository;
 
     public ResultSnapshotService(RaceRepository raceRepository,
                                   RoundRepository roundRepository,
@@ -81,7 +86,8 @@ public class ResultSnapshotService {
                                   CompetitorRepository competitorRepository,
                                   PenaltyRepository penaltyRepository,
                                   MarshalAdjustmentRepository marshalAdjustmentRepository,
-                                  FinalsMarshalPenalties finalsMarshalPenalties) {
+                                  FinalsMarshalPenalties finalsMarshalPenalties,
+                                  RaceEliminationRepository raceEliminationRepository) {
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.lapTimingService = lapTimingService;
@@ -93,6 +99,7 @@ public class ResultSnapshotService {
         this.penaltyRepository = penaltyRepository;
         this.marshalAdjustmentRepository = marshalAdjustmentRepository;
         this.finalsMarshalPenalties = finalsMarshalPenalties;
+        this.raceEliminationRepository = raceEliminationRepository;
     }
 
     /**
@@ -232,19 +239,27 @@ public class ResultSnapshotService {
         finalsMarshalPenalties.lapsOffIn(race)
                 .forEach((entryId, laps) -> lapDeltas.merge(entryId, -laps, Integer::sum));
 
-        // A marshal can credit laps to a car the decoder never saw, which has no row in the timed result
+        // Shikabane: the cars dead at the end, first to die first (empty for any other race)
+        List<Long> dead = raceEliminationRepository.findByRaceId(race.getId()).stream()
+                .filter(RaceElimination::isActive).map(RaceElimination::getEntryId).toList();
+
+        // A marshal can credit laps to a car the decoder never saw, which has no row in the timed result,
+        // and a car can die before it ever crossed the line
         List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(timed);
         Map<Long, EntryInfo> entryInfo = null;
-        for (Map.Entry<Long, Integer> delta : lapDeltas.entrySet()) {
-            long entryId = delta.getKey();
-            if (delta.getValue() > 0 && rows.stream().noneMatch(r -> r.entryId() == entryId)) {
+        Set<Long> needsRow = new LinkedHashSet<>(dead);
+        lapDeltas.forEach((entryId, delta) -> {
+            if (delta > 0) needsRow.add(entryId);
+        });
+        for (long entryId : needsRow) {
+            if (rows.stream().noneMatch(r -> r.entryId() == entryId)) {
                 if (entryInfo == null) entryInfo = resolveEntryInfo(race.getId());
                 EntryInfo info = entryInfo.getOrDefault(entryId, EntryInfo.UNKNOWN);
                 rows.add(new ResultSnapshotDto.ResultRow(rows.size() + 1, entryId, info.competitorId(),
                         info.driverName(), info.carNumber(), 0, 0L, null, null));
             }
         }
-        return ResultCorrections.apply(rows, lapDeltas, addedTimeMs);
+        return ShikabaneOrdering.apply(ResultCorrections.apply(rows, lapDeltas, addedTimeMs), dead);
     }
 
     /** Removes the race's stored result, such as when the race is restarted to run again. A no-op if there is none. */

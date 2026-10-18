@@ -37,6 +37,17 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
+    void shikabaneConfig_roundTrips_throughJson() throws JsonProcessingException {
+        ShikabaneConfig original = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1);
+
+        String json = jsonMapper.writeValueAsString(original);
+        RaceFormatConfig deserialized = jsonMapper.readValue(json, RaceFormatConfig.class);
+
+        assertThat(json).contains("\"type\":\"SHIKABANE\"");
+        assertThat(deserialized).isEqualTo(original);
+    }
+
+    @Test
     void bumpUpConfig_roundTrips_throughJson() throws JsonProcessingException {
         BumpUpConfig original = new BumpUpConfig(
                 3, 5, 2, 8, 2,

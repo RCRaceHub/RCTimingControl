@@ -14,7 +14,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = TimedRaceConfig.class,    name = "TIMED"),
     @JsonSubTypes.Type(value = BumpUpConfig.class,       name = "BUMP_UP"),
-    @JsonSubTypes.Type(value = PointsFinalsConfig.class, name = "POINTS_FINALS")
+    @JsonSubTypes.Type(value = PointsFinalsConfig.class, name = "POINTS_FINALS"),
+    @JsonSubTypes.Type(value = ShikabaneConfig.class,    name = "SHIKABANE")
 })
 public sealed interface RaceFormatConfig
-    permits TimedRaceConfig, BumpUpConfig, PointsFinalsConfig {}
+    permits TimedRaceConfig, BumpUpConfig, PointsFinalsConfig, ShikabaneConfig {}

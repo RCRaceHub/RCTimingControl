@@ -1,6 +1,7 @@
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
+import { useEliminations } from '@/hooks/race-control/useEliminations';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import {
   Table,
@@ -11,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fmtMs } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -26,6 +28,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
   const { rows: sorted, wsStatus, snapshotFailed } = useLiveTiming(raceId);
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
+  const elim = useEliminations(raceId);
+  const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
     <div className="flex flex-col gap-3">
@@ -61,6 +65,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
               <TableHead className="text-right">Best Lap</TableHead>
               <TableHead className="text-right">Interval</TableHead>
               <TableHead className="text-right">Leader</TableHead>
+              {elim.shikabane && <TableHead className="text-right">Shikabane</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,6 +88,16 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                 <TableCell>
                   <span>{row.driverName}</span>
                   {row.finished && <FinishedFlag />}
+                  {elim.deadOrder.has(row.entryId) && (
+                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
+                      DEAD #{elim.deadOrder.get(row.entryId)}
+                    </Badge>
+                  )}
+                  {(elim.revivals.get(row.entryId) ?? 0) > 0 && (
+                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-2 text-chart-2">
+                      ZOMBIE{(elim.revivals.get(row.entryId) ?? 0) > 1 ? ` x${elim.revivals.get(row.entryId)}` : ''}
+                    </Badge>
+                  )}
                   {lappedEntryIds.has(row.entryId) && (
                     <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-3 text-chart-3">
                       LAPPED
@@ -102,6 +117,28 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                     : row.lapsDown > 0 ? `+${row.lapsDown} Lap${row.lapsDown > 1 ? 's' : ''}`
                     : fmtMs(row.gapToLeaderMs)}
                 </TableCell>
+                {elim.shikabane && (
+                  <TableCell className="text-right whitespace-nowrap">
+                    {canMark && !elim.deadOrder.has(row.entryId) && (
+                      <Button size="sm" variant="destructive" disabled={elim.eliminate.isPending}
+                        onClick={() => elim.eliminate.mutate(row.entryId)}>
+                        Eliminate
+                      </Button>
+                    )}
+                    {canMark && elim.deadOrder.has(row.entryId) && (
+                      <>
+                        <Button size="sm" variant="outline" disabled={elim.revive.isPending}
+                          onClick={() => elim.revive.mutate(row.entryId)}>
+                          Revive
+                        </Button>
+                        <Button size="sm" variant="ghost" className="ml-1" disabled={elim.undo.isPending}
+                          onClick={() => elim.undo.mutate(row.entryId)}>
+                          Undo
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
               );
             })}

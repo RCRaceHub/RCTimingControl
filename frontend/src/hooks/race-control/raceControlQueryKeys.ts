@@ -6,6 +6,7 @@ export const raceControlQueryKeys = {
   qualifying: (eventId: number) => ['race-control', 'qualifying', eventId] as const,
   raceHistory: (raceId: number) => ['race-control', 'race-history', raceId] as const,
   resultSnapshot: (raceId: number) => ['race-control', 'result-snapshot', raceId] as const,
+  eliminations: (raceId: number | null) => ['race-control', 'eliminations', raceId] as const,
   raceEntries: (raceId: number | null) => ['race-control', 'race-entries', raceId] as const,
   liveTimingSnapshot: (raceId: number | null) => ['race-control', 'live-timing-snapshot', raceId] as const,
   raceClock: (raceId: number | null, status: string | undefined) =>
