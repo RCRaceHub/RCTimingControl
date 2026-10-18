@@ -17,8 +17,8 @@ for everyone else. The reference for each setting is in [Race types](race-types.
   start by total points so far, fewest at the front and most at the back.
 - **Zombies.** If another car hits a corpse and flips it back onto its wheels, it is a zombie and may drive on. The
   driver who did it gets a bonus (1 point off the heat total by default).
-- **Mains.** After the heats, the drivers are split into an A main, B main and C main by their points. The winner of a
-  lower main is promoted into the main above, so a driver in the C main can in theory win the B main, move up and win
+- **Mains.** After the heats, the drivers are split into an A main, B main and C main by their points. The best finishers
+  of a lower main are promoted into the main above (one by default), so a driver in the C main can in theory win the B main, move up and win
   the A main and the event.
 
 ## Before the day: set up the format
@@ -27,27 +27,27 @@ Go to **Admin, Formats** and add a format of type **Shikabane** (or give a class
 
 | Setting | What to put | Kai City style |
 |---|---|---|
-| Heat Laps | Laps in each heat. 0 runs the heat for a time instead | 3 |
-| Heat Duration | Only used when Heat Laps is 0 | 5 |
+| Heat Laps (0 = timed) | Laps in each heat. 0 runs the heat for a time instead | 3 |
+| Heat Duration (min, if timed) | Only used when Heat Laps is 0 | 5 |
 | Start Type | How the heat starts. Grid is the usual start | Grid |
 | False Start Penalty | Points added to a car that jumps the start | 3 |
 | Zombie Bonus | Points taken off a driver who revives a dead car | 1 |
 | Mains | How many mains follow the heats, 0 for none, up to 3 | 3 (A, B, C) |
-| Cars per Main | The most cars in a main | 8 |
+| Cars per Main | The size of each main. It grows if the drivers would not fit in the mains you asked for | 8 |
 | Promotion Spots | How many places of a lower main move up | 1 |
 
-Then give the class that format when you create the event. For a track that always ends a heat the same way, also set
+Then pick that format for the class in the event's class list. For a track that always ends a heat the same way, also set
 the track's **max last lap**: with a lap-count heat it is how long RCTC waits for a car that is stuck before it ends
 the heat.
 
 ## Generating the rounds
 
-In **Race control, Generate rounds**:
+In **Race control, Generate Rounds**:
 
-1. Set the **qualifying rounds** to the number of heats a driver runs (3 for Kai City). Practice rounds are optional.
-2. Set **cars per heat** to the most cars you want on the track together. A class with more cars than that is split
+1. Set **Qualifying rounds** to the number of heats a driver runs (3 for Kai City). Practice rounds are optional.
+2. Set **Max cars/heat** to the most cars you want on the track together. A class with more cars than that is split
    into several heats; each heat is its own race and its points are never added to another heat's.
-3. If the format has mains, the generator makes them as the class's finals. Change the number if you want fewer.
+3. If the format has mains, the generator makes them as the class's finals, and the **Finals** box shows how many. Change it to run fewer or more.
 
 The first heat's grid is drawn at random. The later grids are set for you as each heat finishes (see below).
 
@@ -81,11 +81,14 @@ the lowest main. Run the lowest main first. When it finishes, its first **Promot
 of the main above, and race control shows an alert before you start it. Run the mains the same way as heats: mark the
 deaths, finish when every car has taken the flag.
 
-Mains are scored by their own result: the A main winner is the event winner.
+Mains are scored by their own result: the A main winner is the event winner. A main's promotion is worked out when it
+finishes, from its result at that moment, so mark every death before you press Finish. A death added to a finished
+main afterwards changes its result but does not move anybody up or down again.
 
 ## What is not built yet
 
 - The **zombie round** (a last chance race for everyone not in the A main, with the winner taking a place in the A
   main) is planned but cannot be run yet.
 - Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total.
-- Points are not adjusted between heats of different sizes.
+- Points are not adjusted between heats of different sizes. When a class is split into several heats, the mains are
+  still seeded from all the drivers' heat points together, so keep the heats the same size.

@@ -89,7 +89,8 @@ laps: cars alive at the end first, in the order of section 1, then the dead, las
 by race control, and a car that was marked dead before it ever crossed the line still gets a place (with no laps). The
 class is ranked as low-points qualifying, so a car's place in each heat is its points, less the format's zombie bonus
 for each revival and plus the false start penalty for each false start. A car with no row in the result is placed after
-the last that has one. When the class is split into several heats, each heat is an independent overall race: the
+the last that has one. With mains, the heat totals seed them as a bump-up format's finals are seeded (best drivers in
+the A main) and each main is ranked by its own result; see [Race types](race-types.md#44-shikabane). When the class is split into several heats, each heat is an independent overall race: the
 qualifying table lists heat by heat, with positions restarting in each, and points are never added across heats. The lowest total over the heats wins and a tie goes to the most laps over all the heats.
 
 ## 3. Seeding the finals

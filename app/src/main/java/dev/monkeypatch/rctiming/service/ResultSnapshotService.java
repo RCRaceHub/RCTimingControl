@@ -262,6 +262,17 @@ public class ResultSnapshotService {
         return ShikabaneOrdering.apply(ResultCorrections.apply(rows, lapDeltas, addedTimeMs), dead);
     }
 
+    /**
+     * The entry ids of a finished race's stored result, best first: the corrected result, with a Shikabane race's
+     * dead cars behind the survivors. Empty when the race has no stored result. Runs in the caller's transaction.
+     */
+    public List<Long> finishingOrder(long raceId) {
+        return resultSnapshotRepository.findByRaceId(raceId)
+                .map(s -> snapshotJson.positions(raceId, s.getPositionsJson()).stream()
+                        .map(ResultSnapshotDto.ResultRow::entryId).toList())
+                .orElse(List.of());
+    }
+
     /** Removes the race's stored result, such as when the race is restarted to run again. A no-op if there is none. */
     public void deleteByRaceId(long raceId) {
         resultSnapshotRepository.findByRaceId(raceId)

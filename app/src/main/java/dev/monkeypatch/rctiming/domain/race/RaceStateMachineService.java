@@ -228,6 +228,10 @@ public class RaceStateMachineService {
             // For a Shikabane heat this is replaced by ShikabaneGridService below
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
+            // A Shikabane main is promoted from its stored result, which puts the dead cars behind the survivors
+            if (isShikabane(race) && isFinal(race)) {
+                applyBumpUpPromotion(race, resultSnapshotService.finishingOrder(race.getId()));
+            }
             // After the snapshot too: a Shikabane heat's next grid is drawn from the stored result and its points
             shikabaneGridService.applyAfterFinish(race);
             // After the snapshot, since the finals are seeded from the qualifying results stored with it
@@ -290,7 +294,10 @@ public class RaceStateMachineService {
 
         // Handle FINAL rounds: apply bump-up promotion to the next-higher final
         if (finishedRound.getType() == RoundType.FINAL) {
-            applyBumpUpPromotion(finishedRace);
+            // A Shikabane main is promoted from its stored result instead, after the snapshot (see move)
+            if (!isShikabane(finishedRace)) {
+                applyBumpUpPromotion(finishedRace, null);
+            }
             return;
         }
 
@@ -355,22 +362,35 @@ public class RaceStateMachineService {
      *
      * A-Finals are skipped (no higher final above A).
      */
-    private void applyBumpUpPromotion(Race finishedFinalRace) {
+    private boolean isShikabane(Race race) {
+        return raceFormatService.shikabaneConfig(eventClassRepository.findById(race.getEventClassId()).orElse(null))
+                .isPresent();
+    }
+
+    private boolean isFinal(Race race) {
+        return roundRepository.findById(race.getRoundId()).map(r -> r.getType() == RoundType.FINAL).orElse(false);
+    }
+
+    /**
+     * Promotes from a finished lower final. {@code storedOrder} is the stored result's entry ids, best first, or
+     * null to take the order from the live timing state (every format but Shikabane).
+     */
+    private void applyBumpUpPromotion(Race finishedFinalRace, List<Long> storedOrder) {
         String letter = finishedFinalRace.getFinalLetter();
         if (letter == null || letter.isEmpty() || letter.charAt(0) <= 'A') {
             // A-Final or no letter — nothing to promote
             return;
         }
 
-        Optional<LiveRaceState> state = lapTimingService.peek(finishedFinalRace.getId());
-        if (state.isEmpty()) {
-            log.warn("Bump-up: no live state for finished final race {}", finishedFinalRace.getId());
-            return;
+        List<Long> finishers = storedOrder;
+        if (finishers == null) {
+            Optional<LiveRaceState> state = lapTimingService.peek(finishedFinalRace.getId());
+            if (state.isEmpty()) {
+                log.warn("Bump-up: no live state for finished final race {}", finishedFinalRace.getId());
+                return;
+            }
+            finishers = state.get().calculatePositions().stream().map(LiveTimingRowDto::entryId).toList();
         }
-
-        List<Long> finishers = state.get().calculatePositions().stream()
-                .map(LiveTimingRowDto::entryId)
-                .toList();
 
         // Not caught, as above; with no higher final it returns no one rather than throwing
         List<Long> promoted = bumpUpSeedingService.applyBumpUpResults(finishedFinalRace.getId(), finishers);
