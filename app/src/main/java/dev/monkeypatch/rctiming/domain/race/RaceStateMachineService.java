@@ -68,6 +68,7 @@ public class RaceStateMachineService {
     private final AutoFinalsSeedingService autoFinalsSeedingService;
     private final RaceFormatService raceFormatService;
     private final EventClassRepository eventClassRepository;
+    private final RaceEliminationRepository raceEliminationRepository;
 
     public RaceStateMachineService(LiveTimingHub liveTimingHub,
                                    RoundGeneratorService roundGeneratorService,
@@ -79,7 +80,9 @@ public class RaceStateMachineService {
                                    BumpUpSeedingService bumpUpSeedingService,
                                    AutoFinalsSeedingService autoFinalsSeedingService,
                                    RaceFormatService raceFormatService,
-                                   EventClassRepository eventClassRepository) {
+                                   EventClassRepository eventClassRepository,
+                                   RaceEliminationRepository raceEliminationRepository) {
+        this.raceEliminationRepository = raceEliminationRepository;
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -169,7 +172,7 @@ public class RaceStateMachineService {
 
     /**
      * Restart a race — resets it to PENDING regardless of current state, clears
-     * in-memory timing state, and deletes any persisted result snapshot.
+     * in-memory timing state, and deletes any persisted result snapshot and Shikabane eliminations.
      * Intended for false starts or technical issues requiring a full re-run.
      *
      * <p>Unlike the commands above, this does not go through the transition table, so it works from any
@@ -185,6 +188,7 @@ public class RaceStateMachineService {
 
         AfterCommit.run(() -> lapTimingService.releaseState(race.getId()));
         resultSnapshotService.deleteByRaceId(race.getId());
+        raceEliminationRepository.deleteByRaceId(race.getId());
         liveTimingHub.broadcastStateChange(race.getId(), RaceStatus.PENDING);
     }
 

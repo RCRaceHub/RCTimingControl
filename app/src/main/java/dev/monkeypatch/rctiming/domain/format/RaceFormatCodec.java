@@ -59,7 +59,7 @@ public class RaceFormatCodec {
         } catch (InvalidTypeIdException e) {
             // Jackson's own message names the Java class
             throw new IllegalArgumentException(
-                    "Failed to parse format config: type must be one of TIMED, BUMP_UP, POINTS_FINALS", e);
+                    "Failed to parse format config: type must be one of TIMED, BUMP_UP, POINTS_FINALS, SHIKABANE", e);
         } catch (JsonProcessingException e) {
             String where = e.getLocation() == null ? ""
                     : " (line " + e.getLocation().getLineNr() + ", column " + e.getLocation().getColumnNr() + ")";

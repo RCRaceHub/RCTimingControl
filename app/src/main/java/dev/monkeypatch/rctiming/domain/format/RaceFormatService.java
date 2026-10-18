@@ -91,6 +91,7 @@ public class RaceFormatService {
             case BumpUpConfig bumpUp -> bumpUp.heatDurationMinutes();
             case PointsFinalsConfig points -> roundType == RoundType.FINAL
                     ? points.finalDurationMinutes() : points.heatDurationMinutes();
+            case ShikabaneConfig shikabane -> shikabane.heatDurationMinutes();
         };
         return minutes > 0 ? minutes * 60_000L : null;
     }
@@ -108,6 +109,7 @@ public class RaceFormatService {
                     case TimedRaceConfig timed -> timed.startType();
                     case BumpUpConfig bumpUp -> isFinal ? bumpUp.finalsStartType() : bumpUp.qualifyingStartType();
                     case PointsFinalsConfig points -> isFinal ? points.finalsStartType() : points.qualifyingStartType();
+                    case ShikabaneConfig shikabane -> shikabane.startType();
                 };
         if (fromFormat != null) {
             return fromFormat;
@@ -128,6 +130,7 @@ public class RaceFormatService {
             case TimedRaceConfig timed -> timed.staggerIntervalSeconds();
             case BumpUpConfig bumpUp -> bumpUp.staggerIntervalSeconds();
             case PointsFinalsConfig points -> points.staggerIntervalSeconds();
+            case ShikabaneConfig shikabane -> shikabane.staggerIntervalSeconds();
         };
         return seconds > 0 ? seconds : DEFAULT_STAGGER_INTERVAL_SECONDS;
     }

@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustmentRepository;
 import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -41,7 +42,7 @@ class ResultSnapshotServiceTest {
                 mock(ResultSnapshotRepository.class), mock(ResultSnapshotJson.class),
                 mock(RaceEntryRepository.class), mock(EntryRepository.class), mock(CompetitorRepository.class),
                 mock(PenaltyRepository.class), mock(MarshalAdjustmentRepository.class),
-                mock(FinalsMarshalPenalties.class));
+                mock(FinalsMarshalPenalties.class), mock(RaceEliminationRepository.class));
         Race race = new Race();
         race.setId(7L);
         race.setRoundId(3L);

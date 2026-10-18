@@ -198,7 +198,7 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
     @Override
     public List<Check<ClubProfilesRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name(""), "case (audio_settings is json) when (1 = 1) then 1 when (1 = 0) then 0 end <> 0", true)
+            Internal.createCheck(this, DSL.name(""), "(results_publish_target is null or results_publish_target in ('NONE', 'RACEHUB', 'SITE', 'BOTH'))", true)
         );
     }
 
