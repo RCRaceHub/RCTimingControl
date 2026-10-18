@@ -228,7 +228,9 @@ public class ChampionshipStandingsQuery {
                     String roundType = r.get(ROUNDS.TYPE);
                     FinishedRace race = new FinishedRace(raceId, r.get(RACES.ROUND_ID), r.get(ROUNDS.EVENT_ID),
                             roundType, r.get(RACES.FINAL_LETTER),
-                            r.get(EVENT_CLASSES.RACING_CLASS_ID), scores(scoringSource, roundType),
+                            r.get(EVENT_CLASSES.RACING_CLASS_ID),
+                            // A Shikabane zombie round is a last chance for a place in A, not a final of its own
+                            scores(scoringSource, roundType) && !"Z".equals(r.get(RACES.FINAL_LETTER)),
                             r.get(RACES.ABANDONED_AT) != null,
                             snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)), new HashSet<>());
                     races.put(raceId, race);

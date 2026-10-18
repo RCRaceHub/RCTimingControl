@@ -15,12 +15,12 @@ public final class RaceLabel {
         return "FINAL".equals(roundType) ? round : round + " — Heat " + heatNumber;
     }
 
-    /** "Practice 1", "Qualifying 2" or "B Final"; a final without a letter is the A final. */
+    /** "Practice 1", "Qualifying 2" or "B Final"; a final without a letter is the A final, and letter Z is the Shikabane zombie round. */
     public static String round(String roundType, int roundNumber, String finalLetter) {
         return switch (roundType) {
             case "PRACTICE" -> "Practice " + roundNumber;
             case "QUALIFIER" -> "Qualifying " + roundNumber;
-            case "FINAL" -> (finalLetter != null ? finalLetter : "A") + " Final";
+            case "FINAL" -> "Z".equals(finalLetter) ? "Zombie round" : (finalLetter != null ? finalLetter : "A") + " Final";
             default -> roundType + " " + roundNumber;
         };
     }

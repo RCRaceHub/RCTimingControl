@@ -33,7 +33,7 @@ Go to **Admin, Formats** and add a format of type **Shikabane** (or give a class
 | False Start Penalty | Points added to a car that jumps the start | 3 |
 | Zombie Bonus | Points taken off a driver who revives a dead car | 1 |
 | Mains | How many mains follow the heats, 0 for none, up to 3 | 3 (A, B, C) |
-| Cars per Main | The size of each main. It grows if the drivers would not fit in the mains you asked for | 8 |
+| Cars per Main | The size of each main. It grows if the drivers would not fit in the mains you asked for. With a zombie round the A main has one more car, for the zombie winner | 8 |
 | Promotion Spots | How many places of a lower main move up | 1 |
 | Zombie round | Tick to run a zombie round before the A main (needs at least two mains) | On |
 
@@ -112,6 +112,7 @@ RCTC times the cars but cannot see the track, so these are done by people:
 
 ## What is not built yet
 
-- Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total.
+- Championship points for a Shikabane class still use the generic scoring, not the overall Shikabane total. The zombie round is not scored in championships; the A main's result is.
+- A zombie round whose grid ends up empty (everyone moved up) has to be skipped by hand.
 - Points are not adjusted between heats of different sizes. When a class is split into several heats, the mains are
   still seeded from all the drivers' heat points together, so keep the heats the same size.

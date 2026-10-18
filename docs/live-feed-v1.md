@@ -14,7 +14,7 @@ Each message is one race as it stands: the whole running order, not a change sin
 |------|----------|
 | Top level | `schema_version` (always `1`), `type` (always `"race"`), `sequence` and `sent_at` |
 | `event` | `rctc_event_id`, `name`, `date` |
-| `race` | `rctc_race_id`, `class_name`, `round_type` (`PRACTICE`, `QUALIFIER` or `FINAL`), `round_number`, `heat_number`, `final_letter`, `status` (`GRID`, `RUNNING`, `STOPPED`, `FINISHED`, or `PENDING` after a restart) and `clock` |
+| `race` | `rctc_race_id`, `class_name`, `round_type` (`PRACTICE`, `QUALIFIER` or `FINAL`), `round_number`, `heat_number`, `final_letter` (`Z` is a Shikabane zombie round), `status` (`GRID`, `RUNNING`, `STOPPED`, `FINISHED`, or `PENDING` after a restart) and `clock` |
 | `race.clock` | `elapsed_ms` (race time so far, not counting time stopped), `duration_ms` and `remaining_ms` (null when the format sets no length) and `running` |
 | `standings[]` | In position order: `position`, `display_name`, `car_number`, `laps`, `last_lap_ms`, `best_lap_ms`, `gap_to_leader_ms`, `gap_to_ahead_ms` and `laps_down` |
 
