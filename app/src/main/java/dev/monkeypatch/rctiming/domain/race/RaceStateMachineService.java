@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
+import dev.monkeypatch.rctiming.service.ShikabaneGridService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
@@ -69,6 +70,8 @@ public class RaceStateMachineService {
     private final RaceFormatService raceFormatService;
     private final EventClassRepository eventClassRepository;
     private final RaceEliminationRepository raceEliminationRepository;
+    private final RacePointPenaltyRepository racePointPenaltyRepository;
+    private final ShikabaneGridService shikabaneGridService;
 
     public RaceStateMachineService(LiveTimingHub liveTimingHub,
                                    RoundGeneratorService roundGeneratorService,
@@ -81,7 +84,9 @@ public class RaceStateMachineService {
                                    AutoFinalsSeedingService autoFinalsSeedingService,
                                    RaceFormatService raceFormatService,
                                    EventClassRepository eventClassRepository,
-                                   RaceEliminationRepository raceEliminationRepository) {
+                                   RaceEliminationRepository raceEliminationRepository,
+                                   RacePointPenaltyRepository racePointPenaltyRepository,
+                                   ShikabaneGridService shikabaneGridService) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -94,6 +99,8 @@ public class RaceStateMachineService {
         this.raceFormatService = raceFormatService;
         this.eventClassRepository = eventClassRepository;
         this.raceEliminationRepository = raceEliminationRepository;
+        this.racePointPenaltyRepository = racePointPenaltyRepository;
+        this.shikabaneGridService = shikabaneGridService;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every
@@ -172,7 +179,7 @@ public class RaceStateMachineService {
 
     /**
      * Restart a race — resets it to PENDING regardless of current state, clears
-     * in-memory timing state, and deletes any persisted result snapshot and Shikabane eliminations.
+     * in-memory timing state, and deletes any persisted result snapshot and Shikabane eliminations and point penalties.
      * Intended for false starts or technical issues requiring a full re-run.
      *
      * <p>Unlike the commands above, this does not go through the transition table, so it works from any
@@ -189,6 +196,7 @@ public class RaceStateMachineService {
         AfterCommit.run(() -> lapTimingService.releaseState(race.getId()));
         resultSnapshotService.deleteByRaceId(race.getId());
         raceEliminationRepository.deleteByRaceId(race.getId());
+        racePointPenaltyRepository.deleteByRaceId(race.getId());
         liveTimingHub.broadcastStateChange(race.getId(), RaceStatus.PENDING);
     }
 
@@ -217,8 +225,11 @@ public class RaceStateMachineService {
 
         // On RUNNING/STOPPED → FINISHED: propagate finishing order, then persist result snapshot
         if (target == RaceStatus.FINISHED) {
+            // For a Shikabane heat this is replaced by ShikabaneGridService below
             applyFinishingOrderToNextRace(race);
             resultSnapshotService.snapshot(race.getId());
+            // After the snapshot too: a Shikabane heat's next grid is drawn from the stored result and its points
+            shikabaneGridService.applyAfterFinish(race);
             // After the snapshot, since the finals are seeded from the qualifying results stored with it
             seedFinalsAfterQualifying(race);
         }

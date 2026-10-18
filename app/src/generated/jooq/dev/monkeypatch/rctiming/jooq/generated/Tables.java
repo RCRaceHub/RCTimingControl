@@ -32,6 +32,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -191,6 +192,11 @@ public class Tables {
      * The table <code>race_format_templates</code>.
      */
     public static final RaceFormatTemplates RACE_FORMAT_TEMPLATES = RaceFormatTemplates.RACE_FORMAT_TEMPLATES;
+
+    /**
+     * The table <code>race_point_penalties</code>.
+     */
+    public static final RacePointPenalties RACE_POINT_PENALTIES = RacePointPenalties.RACE_POINT_PENALTIES;
 
     /**
      * The table <code>racehub_class_mappings</code>.

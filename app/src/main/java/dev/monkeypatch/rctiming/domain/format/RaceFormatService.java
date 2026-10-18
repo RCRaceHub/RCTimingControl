@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Race format templates, and the format a class actually races to. A class keeps its own snapshot of the
@@ -74,6 +75,23 @@ public class RaceFormatService {
             return objectMapper.convertValue(snapshotMap, RaceFormatConfig.class);
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Failed to merge format config override", e);
+        }
+    }
+
+    /**
+     * The class's Shikabane format, if it races to one. A format whose override cannot be merged counts as not
+     * Shikabane here; the error surfaces where the format is read for its own sake.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<ShikabaneConfig> shikabaneConfig(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return Optional.empty();
+        }
+        try {
+            return getEffectiveConfig(eventClass) instanceof ShikabaneConfig s
+                    ? Optional.of(s) : Optional.empty();
+        } catch (RuntimeException e) {
+            return Optional.empty();
         }
     }
 

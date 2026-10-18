@@ -17,8 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Shikabane eliminations and zombie revivals, marked by hand from race control. Under
- * {@code /api/v1/race-control/race/{raceId}/eliminations}; reading is open to RACE_DIRECTOR, REFEREE or ADMIN and marking to RACE_DIRECTOR or ADMIN. {@link RaceEliminationService}
+ * Shikabane eliminations, zombie revivals and false starts, marked by hand from race control. Under
+ * {@code /api/v1/race-control/race/{raceId}/eliminations}; reading is open to RACE_DIRECTOR, REFEREE or ADMIN and
+ * marking to RACE_DIRECTOR or ADMIN. {@link RaceEliminationService}
  * does the work and writes the audit rows. Each action answers 409 when the race is not a Shikabane race, has not
  * started, or the car is not in the state the action needs.
  */
@@ -69,6 +70,28 @@ public class EliminationController {
     @PostMapping("/undo")
     public ResponseEntity<Void> undo(@PathVariable long raceId, @Valid @RequestBody RaceEliminationRequest req) {
         eliminationService.undoElimination(raceId, req.entryId(), CurrentOfficial.id());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Gives a car the format's false start penalty points. {@code POST .../false-start}; 200. Audited. Can be given
+     * to the same car more than once.
+     */
+    @Audited("audit_log")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @PostMapping("/false-start")
+    public ResponseEntity<Void> falseStart(@PathVariable long raceId, @Valid @RequestBody RaceEliminationRequest req) {
+        eliminationService.falseStart(raceId, req.entryId(), CurrentOfficial.id());
+        return ResponseEntity.ok().build();
+    }
+
+    /** Takes back a car's latest false start. {@code POST .../false-start/undo}; 200. Audited. */
+    @Audited("audit_log")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @PostMapping("/false-start/undo")
+    public ResponseEntity<Void> undoFalseStart(@PathVariable long raceId,
+                                               @Valid @RequestBody RaceEliminationRequest req) {
+        eliminationService.undoFalseStart(raceId, req.entryId(), CurrentOfficial.id());
         return ResponseEntity.ok().build();
     }
 }

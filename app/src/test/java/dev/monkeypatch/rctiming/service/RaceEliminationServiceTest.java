@@ -15,6 +15,8 @@ import dev.monkeypatch.rctiming.domain.race.RaceElimination;
 import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenalty;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -46,6 +48,7 @@ class RaceEliminationServiceTest {
     private final RaceEntryRepository raceEntryRepository = mock(RaceEntryRepository.class);
     private final EventClassRepository eventClassRepository = mock(EventClassRepository.class);
     private final RaceFormatService raceFormatService = mock(RaceFormatService.class);
+    private final RacePointPenaltyRepository pointPenalties = mock(RacePointPenaltyRepository.class);
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
     private final AuditService audit = mock(AuditService.class, Answers.RETURNS_DEEP_STUBS);
     private RaceEliminationService service;
@@ -55,7 +58,7 @@ class RaceEliminationServiceTest {
     @BeforeEach
     void setUp() {
         service = new RaceEliminationService(eliminations, raceRepository, raceEntryRepository, eventClassRepository,
-                raceFormatService, publisher, audit, mock(RaceAuditLabels.class));
+                raceFormatService, mock(ShikabaneGridService.class), pointPenalties, publisher, audit, mock(RaceAuditLabels.class));
         race = new Race();
         race.setId(RACE);
         race.setEventClassId(5L);
@@ -64,6 +67,8 @@ class RaceEliminationServiceTest {
         eventClass.setConfigSnapshot(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1));
         when(eventClassRepository.findById(5L)).thenReturn(Optional.of(eventClass));
         when(raceFormatService.getEffectiveConfig(eventClass)).thenReturn(eventClass.getConfigSnapshot());
+        when(raceFormatService.shikabaneConfig(eventClass)).thenReturn(Optional.of(new ShikabaneConfig(5, StartType.GRID, 3, 3, 1)));
+        when(pointPenalties.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(raceEntryRepository.findByRaceIdAndEntryId(RACE, ENTRY)).thenReturn(Optional.of(new RaceEntry()));
         when(eliminations.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -91,9 +96,11 @@ class RaceEliminationServiceTest {
         TimedRaceConfig timed = new TimedRaceConfig(5, StartType.GRID, QualifyingType.ROUND_BY_ROUND, 0, 1);
         eventClass.setConfigSnapshot(timed);
         when(raceFormatService.getEffectiveConfig(eventClass)).thenReturn(timed);
+        when(raceFormatService.shikabaneConfig(eventClass)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.eliminate(RACE, ENTRY, USER))
                 .isInstanceOf(StateConflictException.class).hasMessageContaining("Shikabane");
+        when(raceFormatService.shikabaneConfig(eventClass)).thenReturn(Optional.empty());
         assertThat(service.isShikabane(RACE)).isFalse();
     }
 
@@ -109,6 +116,27 @@ class RaceEliminationServiceTest {
         when(raceEntryRepository.findByRaceIdAndEntryId(RACE, 99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.eliminate(RACE, 99L, USER)).isInstanceOf(StateConflictException.class);
+    }
+
+    @Test
+    void aFalseStartAddsTheFormatsPoints() {
+        RacePointPenalty penalty = service.falseStart(RACE, ENTRY, USER);
+
+        assertThat(penalty.getPoints()).isEqualTo(3);
+        assertThat(penalty.getEntryId()).isEqualTo(ENTRY);
+    }
+
+    @Test
+    void undoingAFalseStartDeletesTheLatestOne() {
+        RacePointPenalty first = new RacePointPenalty();
+        first.setEntryId(ENTRY);
+        RacePointPenalty second = new RacePointPenalty();
+        second.setEntryId(ENTRY);
+        when(pointPenalties.findByRaceId(RACE)).thenReturn(List.of(first, second));
+
+        service.undoFalseStart(RACE, ENTRY, USER);
+
+        verify(pointPenalties).delete(second);
     }
 
     @Test

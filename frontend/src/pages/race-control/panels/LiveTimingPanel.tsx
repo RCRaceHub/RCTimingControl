@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { EliminationButtons } from './EliminationButtons';
 import { cn } from '@/lib/utils';
 import { fmtMs } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -118,25 +118,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                     : fmtMs(row.gapToLeaderMs)}
                 </TableCell>
                 {elim.shikabane && (
-                  <TableCell className="text-right whitespace-nowrap">
-                    {canMark && !elim.deadOrder.has(row.entryId) && (
-                      <Button size="sm" variant="destructive" disabled={elim.eliminate.isPending}
-                        onClick={() => elim.eliminate.mutate(row.entryId)}>
-                        Eliminate
-                      </Button>
-                    )}
-                    {canMark && elim.deadOrder.has(row.entryId) && (
-                      <>
-                        <Button size="sm" variant="outline" disabled={elim.revive.isPending}
-                          onClick={() => elim.revive.mutate(row.entryId)}>
-                          Revive
-                        </Button>
-                        <Button size="sm" variant="ghost" className="ml-1" disabled={elim.undo.isPending}
-                          onClick={() => elim.undo.mutate(row.entryId)}>
-                          Undo
-                        </Button>
-                      </>
-                    )}
+                  <TableCell className="text-right">
+                    {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}
                   </TableCell>
                 )}
               </TableRow>

@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.Marshal
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations.RaceEliminationsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RaceEntriesPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties.RacePointPenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.ResultSnapshotsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.RoundsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UnknownTransponderLinkPath;
@@ -325,6 +326,19 @@ public class Races extends TableImpl<RacesRecord> {
             _raceEntries = new RaceEntriesPath(this, null, Keys.RACE_ENTRIES__RACE_ENTRIES_RACE_ID_FKEY.getInverseKey());
 
         return _raceEntries;
+    }
+
+    private transient RacePointPenaltiesPath _racePointPenalties;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>race_point_penalties</code> table
+     */
+    public RacePointPenaltiesPath racePointPenalties() {
+        if (_racePointPenalties == null)
+            _racePointPenalties = new RacePointPenaltiesPath(this, null, Keys.RACE_POINT_PENALTIES__RACE_POINT_PENALTIES_RACE_ID_FKEY.getInverseKey());
+
+        return _racePointPenalties;
     }
 
     private transient ResultSnapshotsPath _resultSnapshots;

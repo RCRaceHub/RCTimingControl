@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   eliminateEntry,
+  falseStartEntry,
   getEliminations,
   reviveEntry,
   undoElimination,
+  undoFalseStartEntry,
 } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from './raceControlQueryKeys';
 
@@ -39,6 +41,8 @@ export function useEliminations(raceId: number) {
     revivals,
     eliminate: useMutation({ mutationFn: (entryId: number) => eliminateEntry(raceId, entryId), onSuccess: refresh }),
     revive: useMutation({ mutationFn: (entryId: number) => reviveEntry(raceId, entryId), onSuccess: refresh }),
+    falseStart: useMutation({ mutationFn: (entryId: number) => falseStartEntry(raceId, entryId), onSuccess: refresh }),
+    undoFalseStart: useMutation({ mutationFn: (entryId: number) => undoFalseStartEntry(raceId, entryId), onSuccess: refresh }),
     undo: useMutation({ mutationFn: (entryId: number) => undoElimination(raceId, entryId), onSuccess: refresh }),
   };
 }

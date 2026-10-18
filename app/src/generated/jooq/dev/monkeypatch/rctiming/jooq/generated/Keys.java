@@ -32,6 +32,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -72,6 +73,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeSessionsRe
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceEliminationsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceEntriesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceFormatTemplatesRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacePointPenaltiesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassMappingsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacingClassesRecord;
@@ -133,6 +135,7 @@ public class Keys {
     public static final UniqueKey<RaceEliminationsRecord> RACE_ELIMINATIONS__PK_RACE_ELIMINATIONS = Internal.createUniqueKey(RaceEliminations.RACE_ELIMINATIONS, DSL.name("pk_race_eliminations"), new TableField[] { RaceEliminations.RACE_ELIMINATIONS.ID }, true);
     public static final UniqueKey<RaceEntriesRecord> RACE_ENTRIES__PK_RACE_ENTRIES = Internal.createUniqueKey(RaceEntries.RACE_ENTRIES, DSL.name("pk_race_entries"), new TableField[] { RaceEntries.RACE_ENTRIES.ID }, true);
     public static final UniqueKey<RaceFormatTemplatesRecord> RACE_FORMAT_TEMPLATES__PK_RACE_FORMAT_TEMPLATES = Internal.createUniqueKey(RaceFormatTemplates.RACE_FORMAT_TEMPLATES, DSL.name("pk_race_format_templates"), new TableField[] { RaceFormatTemplates.RACE_FORMAT_TEMPLATES.ID }, true);
+    public static final UniqueKey<RacePointPenaltiesRecord> RACE_POINT_PENALTIES__PK_RACE_POINT_PENALTIES = Internal.createUniqueKey(RacePointPenalties.RACE_POINT_PENALTIES, DSL.name("pk_race_point_penalties"), new TableField[] { RacePointPenalties.RACE_POINT_PENALTIES.ID }, true);
     public static final UniqueKey<RacehubClassMappingsRecord> RACEHUB_CLASS_MAPPINGS__PK_RACEHUB_CLASS_MAPPINGS = Internal.createUniqueKey(RacehubClassMappings.RACEHUB_CLASS_MAPPINGS, DSL.name("pk_racehub_class_mappings"), new TableField[] { RacehubClassMappings.RACEHUB_CLASS_MAPPINGS.ID }, true);
     public static final UniqueKey<RacesRecord> RACES__PK_RACES = Internal.createUniqueKey(Races.RACES, DSL.name("pk_races"), new TableField[] { Races.RACES.ID }, true);
     public static final UniqueKey<RacingClassesRecord> RACING_CLASSES__PK_RACING_CLASSES = Internal.createUniqueKey(RacingClasses.RACING_CLASSES, DSL.name("pk_racing_classes"), new TableField[] { RacingClasses.RACING_CLASSES.ID }, true);
@@ -199,6 +202,8 @@ public class Keys {
     public static final ForeignKey<RaceEliminationsRecord, RacesRecord> RACE_ELIMINATIONS__RACE_ELIMINATIONS_RACE_ID_FKEY = Internal.createForeignKey(RaceEliminations.RACE_ELIMINATIONS, DSL.name("race_eliminations_race_id_fkey"), new TableField[] { RaceEliminations.RACE_ELIMINATIONS.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true);
     public static final ForeignKey<RaceEntriesRecord, EntriesRecord> RACE_ENTRIES__RACE_ENTRIES_ENTRY_ID_FKEY = Internal.createForeignKey(RaceEntries.RACE_ENTRIES, DSL.name("race_entries_entry_id_fkey"), new TableField[] { RaceEntries.RACE_ENTRIES.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true);
     public static final ForeignKey<RaceEntriesRecord, RacesRecord> RACE_ENTRIES__RACE_ENTRIES_RACE_ID_FKEY = Internal.createForeignKey(RaceEntries.RACE_ENTRIES, DSL.name("race_entries_race_id_fkey"), new TableField[] { RaceEntries.RACE_ENTRIES.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true);
+    public static final ForeignKey<RacePointPenaltiesRecord, EntriesRecord> RACE_POINT_PENALTIES__RACE_POINT_PENALTIES_ENTRY_ID_FKEY = Internal.createForeignKey(RacePointPenalties.RACE_POINT_PENALTIES, DSL.name("race_point_penalties_entry_id_fkey"), new TableField[] { RacePointPenalties.RACE_POINT_PENALTIES.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true);
+    public static final ForeignKey<RacePointPenaltiesRecord, RacesRecord> RACE_POINT_PENALTIES__RACE_POINT_PENALTIES_RACE_ID_FKEY = Internal.createForeignKey(RacePointPenalties.RACE_POINT_PENALTIES, DSL.name("race_point_penalties_race_id_fkey"), new TableField[] { RacePointPenalties.RACE_POINT_PENALTIES.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true);
     public static final ForeignKey<RacehubClassMappingsRecord, EventClassesRecord> RACEHUB_CLASS_MAPPINGS__RACEHUB_CLASS_MAPPINGS_EVENT_CLASS_ID_FKEY = Internal.createForeignKey(RacehubClassMappings.RACEHUB_CLASS_MAPPINGS, DSL.name("racehub_class_mappings_event_class_id_fkey"), new TableField[] { RacehubClassMappings.RACEHUB_CLASS_MAPPINGS.EVENT_CLASS_ID }, Keys.EVENT_CLASSES__PK_EVENT_CLASSES, new TableField[] { EventClasses.EVENT_CLASSES.ID }, true);
     public static final ForeignKey<RacehubClassMappingsRecord, EventsRecord> RACEHUB_CLASS_MAPPINGS__RACEHUB_CLASS_MAPPINGS_EVENT_ID_FKEY = Internal.createForeignKey(RacehubClassMappings.RACEHUB_CLASS_MAPPINGS, DSL.name("racehub_class_mappings_event_id_fkey"), new TableField[] { RacehubClassMappings.RACEHUB_CLASS_MAPPINGS.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true);
     public static final ForeignKey<RacesRecord, EventClassesRecord> RACES__RACES_EVENT_CLASS_ID_FKEY = Internal.createForeignKey(Races.RACES, DSL.name("races_event_class_id_fkey"), new TableField[] { Races.RACES.EVENT_CLASS_ID }, Keys.EVENT_CLASSES__PK_EVENT_CLASSES, new TableField[] { EventClasses.EVENT_CLASSES.ID }, true);

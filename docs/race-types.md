@@ -208,8 +208,8 @@ the **lowest total wins**.
 |---|---|
 | Heat duration (min) | The length of every heat |
 | Start type, stagger interval (s) | How heats start, as above |
-| False start penalty (points) | Points added for a false start (recorded in a later release) |
-| Zombie bonus (points) | Points taken off a driver who revives a dead car (applied in a later release) |
+| False start penalty (points) | Points added to a car given a false start |
+| Zombie bonus (points) | Points taken off a car for each time it is revived |
 
 The timing system cannot tell a dead car from a slow one, so **race control marks each death by hand**. In live timing
 of a Shikabane race each car has an **Eliminate** button while the race is running or stopped. A dead car shows its
@@ -220,14 +220,26 @@ place in the order of elimination, and gets **Revive** and **Undo** buttons:
   if it dies again it goes to the back of the order.
 - **Undo** takes back a mark made by mistake.
 
-Only the race director and admins can mark; referees can look. The server also accepts a mark on a finished race, for a
-death noticed late, and then works the result out again, but race control does not offer the buttons there yet. A
-restart clears the marks.
+Only the race director and admins can mark; referees can look. There is also a **False start** button, which gives the
+car the format's penalty points; moving the car to the back of the grid is done on the track. The same buttons are on a
+finished heat's results, for a death noticed late, and the result is worked out again. A restart clears the marks.
 
 The heat result puts the cars still alive first, in the usual order (most laps, then earliest finish), then the dead,
 the last car to die ahead of the one before it. So a car's place is its heat points: 1 for the winner, up to the
-number of cars for the first to die. A Shikabane class is ranked as low-points qualifying, which adds those places
+number of cars for the first to die. A Shikabane class is ranked as low-points qualifying, which adds the heat points
 over the heats. See [Scoring](scoring.md#shikabane-heats).
+
+**Heats and grids.** A Shikabane run order is the practice and qualifying rounds the generator makes, with no finals:
+the last heat is scored with the others. The grids are:
+
+| Heat | Grid |
+|---|---|
+| 1 | A random draw, made when the run order is generated |
+| 2 | The reverse of heat 1's result, so the winner starts last |
+| 3 and later | Cumulative points so far, fewest at the front (ties: most laps, then car) |
+
+The next grid is drawn when a heat finishes, for the same drivers (the generator keeps heats the same in every round).
+If an elimination or penalty is added to a finished heat, a grid already drawn from it is not drawn again.
 
 ### Settings the round generator decides
 
@@ -293,7 +305,7 @@ heats, no grid, no start, no clock to run out and no result that scores.
 
 - **Qualifying types.** `FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS` all rank the same way (see
   [Scoring](scoring.md#known-gaps)).
-- **Shikabane.** Only the format, the manual eliminations and the heat order are built so far. The reverse and
-  cumulative-points grids for heats 2 and 3, the false start and zombie points, and the total-laps tie-break are still
-  to come: until then a Shikabane class starts heat 2 and 3 in the previous heat's finishing order.
+- **Shikabane.** Championship points still use the generic scoring (best heat finish and so on), not the overall
+  Shikabane total. Heat points are compared as they are when a class is split into several heats. A false start gives
+  points only: the car's move to the back of the grid is made on the track.
 - **Fixed number of laps.** A race is run for a time, not a number of laps. A race given no length is finished by hand.

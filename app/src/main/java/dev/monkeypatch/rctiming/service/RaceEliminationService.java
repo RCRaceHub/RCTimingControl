@@ -3,7 +3,6 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
@@ -12,6 +11,8 @@ import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceElimination;
 import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenalty;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -25,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Eliminations and zombie revivals in a Shikabane race. A decoder cannot tell a dead car from a slow one, so race
- * control marks each death and each revival by hand; the order of the deaths sets the heat result (see
+ * Eliminations, zombie revivals and false starts in a Shikabane race. A decoder cannot tell a dead car from a slow
+ * one, so race control marks each death and each revival by hand; the order of the deaths sets the heat result (see
  * {@link ShikabaneOrdering}). Each action is saved with an audit row in the same transaction, on a request thread.
  *
  * <p>Allowed while the race is running, stopped or finished, since a death is often noticed late. On a finished race
@@ -43,6 +44,8 @@ public class RaceEliminationService {
     private final RaceEntryRepository raceEntryRepository;
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
+    private final ShikabaneGridService gridService;
+    private final RacePointPenaltyRepository pointPenaltyRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final AuditService audit;
     private final RaceAuditLabels labels;
@@ -52,6 +55,8 @@ public class RaceEliminationService {
                                   RaceEntryRepository raceEntryRepository,
                                   EventClassRepository eventClassRepository,
                                   RaceFormatService raceFormatService,
+                                  ShikabaneGridService gridService,
+                                  RacePointPenaltyRepository pointPenaltyRepository,
                                   ApplicationEventPublisher eventPublisher,
                                   AuditService audit,
                                   RaceAuditLabels labels) {
@@ -60,6 +65,8 @@ public class RaceEliminationService {
         this.raceEntryRepository = raceEntryRepository;
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
+        this.gridService = gridService;
+        this.pointPenaltyRepository = pointPenaltyRepository;
         this.eventPublisher = eventPublisher;
         this.audit = audit;
         this.labels = labels;
@@ -128,6 +135,51 @@ public class RaceEliminationService {
         resultChanged(race);
     }
 
+    /**
+     * Gives a car the format's false start penalty: points added to its heat points, however many times it is
+     * given. Moving the car to the back of the grid is done on the track; RCTC only records the points.
+     *
+     * @throws StateConflictException (409) as for {@link #eliminate}, except that the car need not be dead
+     */
+    public RacePointPenalty falseStart(long raceId, long entryId, long userId) {
+        Race race = requireMarkable(raceId, entryId);
+        int points = raceFormatService.shikabaneConfig(eventClassRepository.findById(race.getEventClassId())
+                .orElse(null)).map(ShikabaneConfig::falseStartPenaltyPoints).orElse(0);
+        RacePointPenalty penalty = new RacePointPenalty();
+        penalty.setRaceId(raceId);
+        penalty.setEntryId(entryId);
+        penalty.setPoints(points);
+        penalty.setReason("False start");
+        penalty.setAppliedBy(userId);
+        penalty.setAppliedAt(Instant.now());
+        RacePointPenalty saved = pointPenaltyRepository.save(penalty);
+        audit.entry(Actor.official(userId), "FALSE_START_PENALTY").entity("race_point_penalty", saved.getId())
+                .race(raceId).event(labels.eventOf(raceId))
+                .summary("Gave " + labels.driver(entryId) + " " + points + " points for a false start in "
+                        + labels.race(raceId))
+                .after(Map.of("entryId", entryId, "points", points)).record();
+        resultChanged(race);
+        return saved;
+    }
+
+    /**
+     * Takes back the car's latest false start penalty.
+     *
+     * @throws StateConflictException (409) as for {@link #falseStart}, or if the car has no false start
+     */
+    public void undoFalseStart(long raceId, long entryId, long userId) {
+        Race race = requireMarkable(raceId, entryId);
+        RacePointPenalty latest = pointPenaltyRepository.findByRaceId(raceId).stream()
+                .filter(p -> p.getEntryId() == entryId).reduce((first, second) -> second)
+                .orElseThrow(() -> new StateConflictException("That car has no false start to take back"));
+        pointPenaltyRepository.delete(latest);
+        audit.entry(Actor.official(userId), "FALSE_START_UNDONE").entity("race_point_penalty", latest.getId())
+                .race(raceId).event(labels.eventOf(raceId))
+                .summary("Took back a false start of " + labels.driver(entryId) + " in " + labels.race(raceId))
+                .before(Map.of("entryId", entryId, "points", latest.getPoints())).record();
+        resultChanged(race);
+    }
+
     /** The race's rows, eliminations and revivals, oldest first. */
     @Transactional(readOnly = true)
     public List<RaceElimination> list(long raceId) {
@@ -151,25 +203,17 @@ public class RaceEliminationService {
     }
 
     private boolean isShikabane(Race race) {
-        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
-        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
-            return false;
-        }
-        try {
-            return raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig;
-        } catch (RuntimeException e) {
-            // A bad format override is reported where the format is read; here the class just isn't Shikabane
-            return false;
-        }
+        return raceFormatService.shikabaneConfig(eventClassRepository.findById(race.getEventClassId()).orElse(null))
+                .isPresent();
     }
 
     private Race requireMarkable(long raceId, long entryId) {
         Race race = raceRepository.getOrThrow(raceId);
         if (!isShikabane(race)) {
-            throw new StateConflictException("Eliminations are only recorded in a Shikabane race");
+            throw new StateConflictException("That is only recorded in a Shikabane race");
         }
         if (!MARKABLE.contains(race.getStatus())) {
-            throw new StateConflictException("Eliminations are recorded once the race has started");
+            throw new StateConflictException("That is recorded once the race has started");
         }
         if (raceEntryRepository.findByRaceIdAndEntryId(raceId, entryId).isEmpty()) {
             throw new StateConflictException("That entry is not in this race");
@@ -177,10 +221,15 @@ public class RaceEliminationService {
         return race;
     }
 
-    /** A finished race has its result and results export built again; a running one reads the rows when it ends. */
+    /**
+     * A finished race has its result and results export built again, and its next heat's grid drawn again; a running
+     * one reads the rows when it ends.
+     */
     private void resultChanged(Race race) {
         if (race.getStatus() == RaceStatus.FINISHED) {
             eventPublisher.publishEvent(new FinishedRaceCorrected(race.getId()));
+            // The next heat's grid came from this result, so it is drawn again if that heat has not been called
+            gridService.applyAfterFinish(race);
         }
     }
 }
