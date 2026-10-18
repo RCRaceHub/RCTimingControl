@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
@@ -62,12 +64,27 @@ public class ChampionshipStandingsQuery {
     private final DSLContext dsl;
     private final ResultSnapshotJson snapshotJson;
     private final QualifyingStandingsService qualifyingStandings;
+    private final RaceFormatService raceFormatService;
+    private final EventClassRepository eventClassRepository;
 
     public ChampionshipStandingsQuery(DSLContext dsl, ResultSnapshotJson snapshotJson,
-                                      QualifyingStandingsService qualifyingStandings) {
+                                      QualifyingStandingsService qualifyingStandings,
+                                      RaceFormatService raceFormatService,
+                                      EventClassRepository eventClassRepository) {
         this.dsl = dsl;
         this.snapshotJson = snapshotJson;
         this.qualifyingStandings = qualifyingStandings;
+        this.raceFormatService = raceFormatService;
+        this.eventClassRepository = eventClassRepository;
+    }
+
+    /**
+     * Whether an event class is run to the Shikabane format. Shikabane is for fun days, so its races never score
+     * in a championship, whatever the championship's scoring source.
+     */
+    private boolean isShikabane(Long eventClassId) {
+        return raceFormatService.shikabaneConfig(eventClassRepository.findById(eventClassId).orElse(null))
+                .isPresent();
     }
 
     /**
@@ -214,7 +231,8 @@ public class ChampionshipStandingsQuery {
 
         Map<Long, FinishedRace> races = new HashMap<>();
         Map<Long, EventResults> results = new HashMap<>();
-        dsl.select(RACES.ID, RACES.ROUND_ID, RACES.FINAL_LETTER, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.EVENT_ID,
+        Map<Long, Boolean> shikabaneClasses = new HashMap<>();
+        dsl.select(RACES.ID, RACES.ROUND_ID, RACES.EVENT_CLASS_ID, RACES.FINAL_LETTER, RACES.ABANDONED_AT, ROUNDS.TYPE, ROUNDS.EVENT_ID,
                         EVENT_CLASSES.RACING_CLASS_ID,
                         RESULT_SNAPSHOTS.POSITIONS_JSON)
                 .from(RACES)
@@ -230,7 +248,9 @@ public class ChampionshipStandingsQuery {
                             roundType, r.get(RACES.FINAL_LETTER),
                             r.get(EVENT_CLASSES.RACING_CLASS_ID),
                             // A Shikabane zombie round is a last chance for a place in A, not a final of its own
-                            scores(scoringSource, roundType) && !"Z".equals(r.get(RACES.FINAL_LETTER)),
+                            scores(scoringSource, roundType) && !"Z".equals(r.get(RACES.FINAL_LETTER))
+                                    && !shikabaneClasses.computeIfAbsent(r.get(RACES.EVENT_CLASS_ID),
+                                            this::isShikabane),
                             r.get(RACES.ABANDONED_AT) != null,
                             snapshotJson.positions(raceId, r.get(RESULT_SNAPSHOTS.POSITIONS_JSON)), new HashSet<>());
                     races.put(raceId, race);
@@ -314,6 +334,9 @@ public class ChampionshipStandingsQuery {
                         .add(new QualifyingHeat(r.get(ROUNDS.EVENT_ID), r.get(EVENT_CLASSES.RACING_CLASS_ID),
                                 "FINISHED".equals(r.get(RACES.STATUS)), r.get(RACES.ABANDONED_AT) != null)));
         heatsByClass.forEach((eventClassId, heats) -> {
+            if (isShikabane(eventClassId)) {
+                return; // no top qualifier bonus for a fun-day format
+            }
             boolean complete = heats.stream().allMatch(QualifyingHeat::finished)
                     && heats.stream().anyMatch(h -> !h.abandoned());
             EventResults event = results.get(heats.get(0).eventId());
