@@ -124,7 +124,7 @@
 - [x] **AUDIO-01**: Race control browser produces voice announcements throughout the meeting using the Web Speech API; all announcement types are individually configurable on/off
 - [x] **AUDIO-02**: Countdown announcements fire at configurable intervals before each race (default: 10m, 5m, 2m, 1m, 30s) announcing race number and time remaining
 - [x] **AUDIO-03**: In STAGGER start mode, each competitor on the grid is called by name at the configured stagger interval (entries have no car number); each driver starts when their name is called. The call is one Piper clip per entry, played in turn; the browser voice speaks it if the clip isn't ready in a few seconds
-- [x] **AUDIO-04**: Each lap crossing produces a high-pitched beep if the driver is improving on their best result, low-pitched otherwise
+- [x] **AUDIO-04**: Each lap crossing produces a high-pitched beep if the driver is improving on their best result, low-pitched otherwise (a club can switch this off for a plain beep: AUDIO-26)
 - [x] **AUDIO-05**: When a race ends, one "Race finished" announcement is made (there is no per-driver finish announcement)
 - [x] **AUDIO-06**: Running order is announced at 2-minute intervals for the first 10 minutes of a race, then at 5-minute intervals. Each call names the top 50% of the drivers (rounded up), or all of them in a race of 5 drivers or fewer; both numbers are set in the audio settings
 - [x] **AUDIO-07**: Admin can enable or disable individual announcement types from the settings panel
@@ -143,10 +143,10 @@
 - [x] **AUDIO-20**: Race calls, with one switch: the race and its number of drivers when the grid is called, "Race started" for a grid or rolling start, and "Race stopped", "Race resumed" and "Race abandoned". Spoken by the browser voice (#280, #282)
 - [x] **AUDIO-21**: A call between races, with a switch: after a race finishes, the next race and the drivers who marshal it (#283)
 - [x] **AUDIO-22**: The countdown clips are made for the club's own countdown intervals, and a race on the grid or running whose clips were lost (an app restart) has them made again when race control asks for them (#285)
-- [x] **AUDIO-26**: The club can switch pace beeps off, so every lap gets the same plain beep with no prediction of faster or slower than the driver's best, as BRCA events expect. On by default; on both the race control and admin audio screens
 - [x] **AUDIO-23**: The club can replace the start and finish horns with its own sound files (mp3, wav or ogg, up to 1 MB and 10 seconds) and go back to the built-in ones; race control's test buttons also try the lap beep and the Piper voice, and say if Piper cannot be reached (#278, #281, #286)
 - [x] **AUDIO-24**: The club words what is said when a timed race's clock reaches zero (empty goes back to the standard wording), and each car's number and name is called as it takes the flag, with a switch for those calls; live timing marks a car that has finished
 - [x] **AUDIO-25**: The club words every spoken line (start lead-in, grid call, race started, stopped, resumed and abandoned, race finished, next race, marshals, running order and each car as it finishes) with placeholders for what changes, an empty box meaning the standard wording; sets the countdown call times, the running order cadence, how many final seconds are counted (the start lead-in's ticks and beeps at the end of a timed race) and the lap beep's pitch and length; switches the lap beep, the ticks and the final-seconds beeps separately (the final-seconds beeps are off until the club switches them on); and replaces the tick and lap beep with its own sound files. All are on both the race control and admin audio screens, and clips already made for a race on the grid or running are made again when they change (#299)
+- [x] **AUDIO-26**: The club can switch pace beeps off, so every lap gets the same plain beep with no prediction of faster or slower than the driver's best, as BRCA events expect. On by default; on both the race control and admin audio screens
 
 ### Race Official Views
 

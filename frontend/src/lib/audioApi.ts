@@ -113,7 +113,7 @@ export const ANNOUNCEMENT_TOGGLES = [
   { key: 'announceCountdown', label: 'Countdown intervals' },
   { key: 'announceStagger', label: 'Stagger car calls' },
   { key: 'announceLapBeep', label: 'Lap beeps' },
-  { key: 'paceBeeps', label: 'Predictive lap beeps (faster/slower than best); off is a plain beep each lap' },
+  { key: 'paceBeeps', label: 'Faster/slower lap beeps (off: plain beep)' },
   { key: 'tickSound', label: 'Start lead-in ticks' },
   { key: 'finalBeeps', label: 'Final-seconds beeps at the end of a timed race' },
   { key: 'announceFinish', label: 'Finish announcements' },

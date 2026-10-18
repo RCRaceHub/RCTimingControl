@@ -87,7 +87,8 @@ public class AudioSettingsController {
 
     /**
      * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
-     * toggle it changed. {@code paceBeeps} turns the faster/slower lap beeps on or off. {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
+     * toggle it changed. {@code paceBeeps} turns the faster/slower lap beeps on or off.
+     * {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
      * the full object (a line left empty has the standard wording).
      *
      * <p>The limits below are checked on the way in and a breach is a 400. {@code runningOrderPercent} is the share
