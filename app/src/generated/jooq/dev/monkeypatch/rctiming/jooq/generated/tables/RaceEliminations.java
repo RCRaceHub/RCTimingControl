@@ -166,7 +166,7 @@ public class RaceEliminations extends TableImpl<RaceEliminationsRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.asList(Indexes.IDX_RACE_ELIMINATIONS_RACE_ID);
+        return Arrays.asList(Indexes.IDX_RACE_ELIMINATIONS_ACTIVE, Indexes.IDX_RACE_ELIMINATIONS_RACE_ID);
     }
 
     @Override
