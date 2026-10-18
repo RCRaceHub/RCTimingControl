@@ -223,6 +223,20 @@ public record ClubAudioSettings(
         paceBeeps = paceBeeps == null || paceBeeps;
     }
 
+    /** The settings from before the pace beeps could be switched off, which have them on. */
+    public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
+                             boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
+                             int[] countdownIntervals, Boolean startHorn, Boolean finishHorn,
+                             Boolean announceRaceCalls, Boolean announceNextRace, Integer startCountdownSeconds,
+                             HornSounds hornSounds, Boolean announceCarFinish, String timeUpText,
+                             Boolean tickSound, Boolean finalBeeps, Wording wording, Tuning tuning,
+                             Integer runningOrderPercent, Integer runningOrderAllUpTo) {
+        this(announceCountdown, announceStagger, announceLapBeep, announceFinish, announceRunningOrder,
+                runningOrderDepth, countdownIntervals, startHorn, finishHorn, announceRaceCalls, announceNextRace,
+                startCountdownSeconds, hornSounds, announceCarFinish, timeUpText, tickSound, finalBeeps, wording,
+                tuning, runningOrderPercent, runningOrderAllUpTo, null);
+    }
+
     /** The settings from before the running order named a share of the field, which take their defaults. */
     public ClubAudioSettings(boolean announceCountdown, boolean announceStagger, boolean announceLapBeep,
                              boolean announceFinish, boolean announceRunningOrder, int runningOrderDepth,
