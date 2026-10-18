@@ -9,6 +9,7 @@ export const DOC_SOURCES = import.meta.glob(
     '../../../docs/decoder.md',
     '../../../docs/screens-and-printouts.md',
     '../../../docs/race-types.md',
+    '../../../docs/shikabane-guide.md',
     '../../../docs/scoring.md',
     '../../../docs/live-feed-v1.md',
     '../../../docs/results-export-v1.md',

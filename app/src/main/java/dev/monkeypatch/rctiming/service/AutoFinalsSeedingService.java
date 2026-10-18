@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -132,20 +133,30 @@ public class AutoFinalsSeedingService {
 
     /**
      * {cars per final, bump count} for a field of {@code field} drivers over {@code finalsCount} finals.
-     * A bump-up format keeps its grid size unless the field would not fit, when the grid grows rather than leave a
-     * driver out of every final.
+     * A bump-up format, or a Shikabane format with mains, keeps its grid size unless the field would not fit, when the
+     * grid grows rather than leave a driver out of every final.
      */
     static int[] layout(RaceFormatConfig config, int field, int finalsCount) {
-        int cars = (field + finalsCount - 1) / finalsCount;
-        int bump = 0;
         if (config instanceof BumpUpConfig bumpUp && bumpUp.gridSize() > 0) {
-            cars = bumpUp.gridSize();
-            bump = Math.max(0, Math.min(bumpUp.bumpSpots(), cars - 1));
-            // The lowest final takes a full grid and each higher one its grid less the bump spots; grow the grid
-            // until the field fits rather than leave drivers out of every final
-            while (cars + (finalsCount - 1) * (cars - bump) < field) {
-                cars++;
-            }
+            return fitted(bumpUp.gridSize(), bumpUp.bumpSpots(), field, finalsCount);
+        }
+        if (config instanceof ShikabaneConfig shikabane && shikabane.mainGridSize() > 0) {
+            // The mains work like a bump-up format's finals: promotion fills places at the back of the main above
+            return fitted(shikabane.mainGridSize(), shikabane.promotionSpots(), field, finalsCount);
+        }
+        return new int[] {Math.max(1, (field + finalsCount - 1) / finalsCount), 0};
+    }
+
+    /**
+     * {cars per final, bump count} for a configured grid size and bump spots. The lowest final takes a full grid and
+     * each higher one its grid less the bump spots, so the grid grows until the field fits rather than leave drivers
+     * out of every final.
+     */
+    private static int[] fitted(int gridSize, int bumpSpots, int field, int finalsCount) {
+        int cars = gridSize;
+        int bump = Math.max(0, Math.min(bumpSpots, cars - 1));
+        while (cars + (finalsCount - 1) * (cars - bump) < field) {
+            cars++;
         }
         return new int[] {Math.max(1, cars), bump};
     }

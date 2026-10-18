@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.service;
 
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
 import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
+import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import org.junit.jupiter.api.Test;
 
@@ -30,5 +31,17 @@ class AutoFinalsSeedingServiceTest {
     void otherFormats_splitTheFieldEvenlyWithNoBumps() {
         var points = new PointsFinalsConfig(3, 2, 5, 5, StartType.STAGGER, StartType.GRID, null, 2, 1);
         assertThat(AutoFinalsSeedingService.layout(points, 17, 2)).containsExactly(9, 0);
+    }
+
+    @Test
+    void shikabaneMains_useTheirGridSizeAndPromotionSpots() {
+        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 3, 8, 2);
+        assertThat(AutoFinalsSeedingService.layout(shikabane, 20, 3)).containsExactly(8, 2);
+    }
+
+    @Test
+    void shikabaneWithoutMainsGridSize_splitsTheFieldEvenly() {
+        var shikabane = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 3, 2, 0, 0);
+        assertThat(AutoFinalsSeedingService.layout(shikabane, 17, 2)).containsExactly(9, 0);
     }
 }

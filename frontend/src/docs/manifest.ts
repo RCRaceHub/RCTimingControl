@@ -16,6 +16,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'decoder', title: 'Decoder', file: 'decoder.md', section: 'Setting up' },
   { slug: 'screens-and-printouts', title: 'Screens and printouts', file: 'screens-and-printouts.md', section: 'Using RCTC' },
   { slug: 'race-types', title: 'Race types', file: 'race-types.md', section: 'Using RCTC' },
+  { slug: 'shikabane-guide', title: 'Running Shikabane', file: 'shikabane-guide.md', section: 'Using RCTC' },
   { slug: 'scoring', title: 'Scoring', file: 'scoring.md', section: 'Using RCTC' },
   { slug: 'live-feed', title: 'Live feed', file: 'live-feed-v1.md', section: 'Sharing results' },
   { slug: 'results-export', title: 'Results export', file: 'results-export-v1.md', section: 'Sharing results' },

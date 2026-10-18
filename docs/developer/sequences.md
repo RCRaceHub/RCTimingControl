@@ -84,7 +84,7 @@ sequenceDiagram
     SM->>AF: seedIfQualifyingComplete(eventClassId) if it was a qualifier
 ```
 
-Shikabane eliminations are not state changes either: `RaceEliminationService` saves a `RaceElimination` row for a car marked dead (or a revival), and `ResultSnapshotService` reads the active rows when it works out the heat result, ordering the dead after the survivors through `ShikabaneOrdering`. On a finished race it publishes `FinishedRaceCorrected` so the result is rebuilt. When a Shikabane heat finishes, `RaceStateMachineService` calls `ShikabaneGridService` after the snapshot to draw the next heat's grid (reverse of the result, then cumulative `ShikabaneHeatScores`).
+Shikabane eliminations are not state changes either: `RaceEliminationService` saves a `RaceElimination` row for a car marked dead (or a revival), and `ResultSnapshotService` reads the active rows when it works out the heat result, ordering the dead after the survivors through `ShikabaneOrdering`. On a finished race it publishes `FinishedRaceCorrected` so the result is rebuilt. When a Shikabane heat finishes, `RaceStateMachineService` calls `ShikabaneGridService` after the snapshot to draw the next heat's grid (reverse of the result, then cumulative `ShikabaneHeatScores`). A Shikabane class with `mains` above 0 has finals too: `AutoFinalsSeedingService` seeds them through `BumpUpSeedingService` using the config's `mainGridSize` and `promotionSpots`, and a finishing lower main promotes its best finishers as in a bump-up format.
 
 Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment` and calls `LapTimingService.applyMarshalAdjustment`, which recalculates and rebroadcasts positions.
 

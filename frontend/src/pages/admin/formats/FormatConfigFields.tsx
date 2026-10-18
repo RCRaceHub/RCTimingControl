@@ -46,6 +46,9 @@ const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'>
   falseStartPenaltyPoints: 3,
   zombieBonusPoints: 1,
   heatLaps: 0,
+  mains: 0,
+  mainGridSize: 8,
+  promotionSpots: 1,
 };
 
 interface Props {
@@ -189,6 +192,9 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
           <NumField label="False Start Penalty (points)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />
           <NumField label="Zombie Bonus (points)" value={value.zombieBonusPoints} onChange={v => patch('zombieBonusPoints', v)} />
+          <NumField label="Mains (0 = none, max 3)" value={value.mains} onChange={v => patch('mains', v)} />
+          <NumField label="Cars per Main" value={value.mainGridSize} onChange={v => patch('mainGridSize', v)} />
+          <NumField label="Promotion Spots" value={value.promotionSpots} onChange={v => patch('promotionSpots', v)} />
         </div>
       )}
     </div>

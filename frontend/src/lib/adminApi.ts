@@ -66,6 +66,12 @@ export interface ShikabaneConfig {
   zombieBonusPoints: number;
   /** Laps a heat runs for; 0 keeps the heat timed. */
   heatLaps: number;
+  /** How many mains (A, B, C) follow the heats; 0 ends the event with the last heat. */
+  mains: number;
+  /** Cars in each main. */
+  mainGridSize: number;
+  /** Places of a lower main that move up into the main above it. */
+  promotionSpots: number;
 }
 
 export type RaceFormatConfig = TimedRaceConfig | BumpUpConfig | PointsFinalsConfig | ShikabaneConfig;

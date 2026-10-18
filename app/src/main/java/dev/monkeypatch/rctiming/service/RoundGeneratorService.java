@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
@@ -28,6 +29,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -308,17 +310,22 @@ public class RoundGeneratorService {
             }
         }
 
-        /** A class's finals count, from the request's override, then the class, then one final; none for Shikabane. */
+        /**
+         * A class's finals count, from the request's override, then the class, then one final. A Shikabane class
+         * has the mains its format says unless the request overrides, and none (the last heat is scored with the others) when it says 0.
+         */
         private int resolveFinalsCount(EventClass ec) {
-            // Shikabane has no finals: the last heat is scored with the others
-            if (raceFormatService.shikabaneConfig(ec).isPresent()) {
+            Optional<ShikabaneConfig> shikabane = raceFormatService.shikabaneConfig(ec);
+            if (shikabane.isPresent() && shikabane.get().mains() <= 0) {
                 return 0;
             }
             ClassFinalsConfig override = request.classFinalsConfigs().stream()
                     .filter(c -> ec.getId().equals(c.eventClassId()))
                     .findFirst()
                     .orElse(null);
-            return coalesce(override != null ? override.finalsCount() : null, ec.getFinalsCount(), 1);
+            Integer fromFormat = shikabane.map(c -> Math.min(3, c.mains())).orElse(null);
+            return coalesce(override != null ? override.finalsCount() : null,
+                    fromFormat != null ? fromFormat : ec.getFinalsCount(), 1);
         }
 
         private int coalesce(Integer... values) {

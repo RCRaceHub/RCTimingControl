@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /** Drawing the next Shikabane heat's grid: reverse after heat 1, cumulative points after that. */
 class ShikabaneGridServiceTest {
 
-    private static final ShikabaneConfig CONFIG = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0);
+    private static final ShikabaneConfig CONFIG = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0, 0, 0, 0);
 
     private final RoundRepository rounds = mock(RoundRepository.class);
     private final RaceRepository races = mock(RaceRepository.class);

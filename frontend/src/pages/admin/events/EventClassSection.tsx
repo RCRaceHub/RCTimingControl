@@ -49,6 +49,7 @@ function ConfigSummary({ config }: { config: EventClassDto['configSnapshot'] }) 
   if (config.type === 'TIMED') entries.push(`${config.durationMinutes} min`);
   if (config.type === 'BUMP_UP') entries.push(`${config.qualifyingHeats} heats`);
   if (config.type === 'SHIKABANE') entries.push(config.heatLaps > 0 ? `${config.heatLaps} lap heats` : `${config.heatDurationMinutes} min heats`);
+  if (config.type === 'SHIKABANE' && config.mains > 0) entries.push(`${config.mains} mains`);
   if (config.type === 'POINTS_FINALS') entries.push(`${config.qualifyingHeats} heats · ${config.finalsCount} finals`);
 
   return <span className="text-xs text-muted-foreground">{entries.join(' · ')}</span>;

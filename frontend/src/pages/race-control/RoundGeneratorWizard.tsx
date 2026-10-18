@@ -62,7 +62,7 @@ const DEFAULT_FINALS = 2;
 /** A class's format as the server reads it: the class's own override over its format. */
 function effectiveFormat(cls: { configSnapshot: unknown; configOverride?: Record<string, unknown> | null }) {
   return { ...(cls.configSnapshot as Record<string, unknown> | null), ...(cls.configOverride ?? {}) } as
-    { type?: string; qualifyingHeats?: number; finalsCount?: number; staggerIntervalSeconds?: number };
+    { type?: string; qualifyingHeats?: number; finalsCount?: number; mains?: number; staggerIntervalSeconds?: number };
 }
 
 /** A whole number from a format field, within what this form accepts, or undefined when the format sets none. */
@@ -114,7 +114,8 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
         return {
           eventClassId: cls.id,
           label: racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`,
-          finalsCount: (format.type === 'POINTS_FINALS' ? fromFormat(format.finalsCount, 1, 3) : undefined)
+          finalsCount: (format.type === 'POINTS_FINALS' ? fromFormat(format.finalsCount, 1, 3)
+            : format.type === 'SHIKABANE' ? fromFormat(format.mains, 1, 3) : undefined)
             ?? DEFAULT_FINALS,
           staggerSeconds: stagger,
           initialStaggerSeconds: stagger,
