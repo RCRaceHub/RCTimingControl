@@ -59,7 +59,8 @@ class RaceStateMachineServiceTest {
         service = new RaceStateMachineService(liveTimingHub, roundGeneratorService, raceRepository,
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
                 mock(BumpUpSeedingService.class), autoFinalsSeedingService, raceFormatService,
-                eventClassRepository, mock(RaceEliminationRepository.class));
+                eventClassRepository, mock(RaceEliminationRepository.class), mock(RacePointPenaltyRepository.class),
+                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class));
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);

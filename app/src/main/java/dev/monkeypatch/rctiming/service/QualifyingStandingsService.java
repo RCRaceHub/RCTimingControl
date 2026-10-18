@@ -70,6 +70,7 @@ public class QualifyingStandingsService {
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
     private final MarshalPenaltyRepository marshalPenaltyRepository;
+    private final ShikabaneHeatScores shikabaneHeatScores;
 
     public QualifyingStandingsService(RaceRepository raceRepository,
                                       RaceEntryRepository raceEntryRepository,
@@ -78,7 +79,9 @@ public class QualifyingStandingsService {
                                       ResultSnapshotJson snapshotJson,
                                       EventClassRepository eventClassRepository,
                                       RaceFormatService raceFormatService,
-                                      MarshalPenaltyRepository marshalPenaltyRepository) {
+                                      MarshalPenaltyRepository marshalPenaltyRepository,
+                                      ShikabaneHeatScores shikabaneHeatScores) {
+        this.shikabaneHeatScores = shikabaneHeatScores;
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.resultSnapshotRepository = resultSnapshotRepository;
@@ -163,6 +166,8 @@ public class QualifyingStandingsService {
             heatsByRound.computeIfAbsent(race.getRoundId(), id -> new ArrayList<>()).add(race);
         }
 
+        ShikabaneConfig shikabane = eventClassRepository.findById(eventClassId)
+                .flatMap(raceFormatService::shikabaneConfig).orElse(null);
         List<Map<Long, RoundScore>> rounds = new ArrayList<>();
         List<Integer> missingPoints = new ArrayList<>();
         for (List<Race> heats : heatsByRound.values()) {
@@ -171,7 +176,8 @@ public class QualifyingStandingsService {
             if (!finished || !anyRun) {
                 continue;
             }
-            Map<Long, RoundScore> scored = scoreRound(heats, withdrawn);
+            Map<Long, RoundScore> scored = shikabane != null
+                    ? scoreShikabaneRound(heats, withdrawn, shikabane) : scoreRound(heats, withdrawn);
             rounds.add(scored);
             missingPoints.add(scored.size() + 1);
         }
@@ -188,6 +194,23 @@ public class QualifyingStandingsService {
                 .thenComparingLong(QualifyingResult::bestLapMs)
                 .thenComparing(QualifyingResult::entryId));
         return results;
+    }
+
+    /**
+     * Each driver's heat points in one finished Shikabane round (see {@link ShikabaneHeatScores}), withdrawn entries
+     * left out. Points are not shared on a tie, since every car has its own place; the total laps break a tie in the
+     * overall order.
+     */
+    private Map<Long, RoundScore> scoreShikabaneRound(List<Race> heats, Set<Long> withdrawn,
+                                                      ShikabaneConfig config) {
+        Map<Long, RoundScore> scored = new LinkedHashMap<>();
+        for (Race heat : heats) {
+            for (ShikabaneHeatScores.Score score : shikabaneHeatScores.scores(heat, config)) {
+                scored.put(score.entryId(), new RoundScore(score.points(), score.laps(), 0L, NO_LAP));
+            }
+        }
+        scored.keySet().removeAll(withdrawn);
+        return scored;
     }
 
     /** Each driver's laps, time and place in one finished round, withdrawn entries left out. */

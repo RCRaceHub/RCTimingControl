@@ -32,6 +32,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -207,6 +208,11 @@ public class DefaultSchema extends SchemaImpl {
     public final RaceFormatTemplates RACE_FORMAT_TEMPLATES = RaceFormatTemplates.RACE_FORMAT_TEMPLATES;
 
     /**
+     * The table <code>race_point_penalties</code>.
+     */
+    public final RacePointPenalties RACE_POINT_PENALTIES = RacePointPenalties.RACE_POINT_PENALTIES;
+
+    /**
      * The table <code>racehub_class_mappings</code>.
      */
     public final RacehubClassMappings RACEHUB_CLASS_MAPPINGS = RacehubClassMappings.RACEHUB_CLASS_MAPPINGS;
@@ -310,6 +316,7 @@ public class DefaultSchema extends SchemaImpl {
             RaceEliminations.RACE_ELIMINATIONS,
             RaceEntries.RACE_ENTRIES,
             RaceFormatTemplates.RACE_FORMAT_TEMPLATES,
+            RacePointPenalties.RACE_POINT_PENALTIES,
             RacehubClassMappings.RACEHUB_CLASS_MAPPINGS,
             Races.RACES,
             RacingClasses.RACING_CLASSES,

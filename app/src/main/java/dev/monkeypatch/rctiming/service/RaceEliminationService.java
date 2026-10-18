@@ -3,7 +3,6 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
@@ -12,6 +11,8 @@ import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceElimination;
 import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenalty;
+import dev.monkeypatch.rctiming.domain.race.RacePointPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -25,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Eliminations and zombie revivals in a Shikabane race. A decoder cannot tell a dead car from a slow one, so race
+ * Eliminations, zombie revivals and false starts in a Shikabane race. A decoder cannot tell a dead car from a slow one, so race
  * control marks each death and each revival by hand; the order of the deaths sets the heat result (see
  * {@link ShikabaneOrdering}). Each action is saved with an audit row in the same transaction, on a request thread.
  *
@@ -43,6 +44,7 @@ public class RaceEliminationService {
     private final RaceEntryRepository raceEntryRepository;
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
+    private final RacePointPenaltyRepository pointPenaltyRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final AuditService audit;
     private final RaceAuditLabels labels;
@@ -52,6 +54,7 @@ public class RaceEliminationService {
                                   RaceEntryRepository raceEntryRepository,
                                   EventClassRepository eventClassRepository,
                                   RaceFormatService raceFormatService,
+                                  RacePointPenaltyRepository pointPenaltyRepository,
                                   ApplicationEventPublisher eventPublisher,
                                   AuditService audit,
                                   RaceAuditLabels labels) {
@@ -60,6 +63,7 @@ public class RaceEliminationService {
         this.raceEntryRepository = raceEntryRepository;
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
+        this.pointPenaltyRepository = pointPenaltyRepository;
         this.eventPublisher = eventPublisher;
         this.audit = audit;
         this.labels = labels;
@@ -128,6 +132,32 @@ public class RaceEliminationService {
         resultChanged(race);
     }
 
+    /**
+     * Gives a car the format's false start penalty: points added to its heat points, however many times it is
+     * given. Moving the car to the back of the grid is done on the track; RCTC only records the points.
+     *
+     * @throws StateConflictException (409) as for {@link #eliminate}, except that the car need not be dead
+     */
+    public RacePointPenalty falseStart(long raceId, long entryId, long userId) {
+        Race race = requireMarkable(raceId, entryId);
+        int points = raceFormatService.shikabaneConfig(eventClassRepository.findById(race.getEventClassId())
+                .orElse(null)).map(ShikabaneConfig::falseStartPenaltyPoints).orElse(0);
+        RacePointPenalty penalty = new RacePointPenalty();
+        penalty.setRaceId(raceId);
+        penalty.setEntryId(entryId);
+        penalty.setPoints(points);
+        penalty.setReason("False start");
+        penalty.setAppliedBy(userId);
+        penalty.setAppliedAt(Instant.now());
+        RacePointPenalty saved = pointPenaltyRepository.save(penalty);
+        audit.entry(Actor.official(userId), "FALSE_START_PENALTY").entity("race_point_penalty", saved.getId())
+                .race(raceId).event(labels.eventOf(raceId))
+                .summary("Gave " + labels.driver(entryId) + " " + points + " points for a false start in "
+                        + labels.race(raceId))
+                .after(Map.of("entryId", entryId, "points", points)).record();
+        return saved;
+    }
+
     /** The race's rows, eliminations and revivals, oldest first. */
     @Transactional(readOnly = true)
     public List<RaceElimination> list(long raceId) {
@@ -151,16 +181,8 @@ public class RaceEliminationService {
     }
 
     private boolean isShikabane(Race race) {
-        EventClass eventClass = eventClassRepository.findById(race.getEventClassId()).orElse(null);
-        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
-            return false;
-        }
-        try {
-            return raceFormatService.getEffectiveConfig(eventClass) instanceof ShikabaneConfig;
-        } catch (RuntimeException e) {
-            // A bad format override is reported where the format is read; here the class just isn't Shikabane
-            return false;
-        }
+        return raceFormatService.shikabaneConfig(eventClassRepository.findById(race.getEventClassId()).orElse(null))
+                .isPresent();
     }
 
     private Race requireMarkable(long raceId, long entryId) {

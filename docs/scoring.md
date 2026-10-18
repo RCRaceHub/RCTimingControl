@@ -87,8 +87,9 @@ every round.
 In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by
 laps: cars alive at the end first, in the order of section 1, then the dead, last to die first. Eliminations are marked
 by race control, and a car that was marked dead before it ever crossed the line still gets a place (with no laps). The
-class is ranked as low-points qualifying, so a car's place in each heat is its points. Zombie revival and false start
-points are not applied yet.
+class is ranked as low-points qualifying, so a car's place in each heat is its points, less the format's zombie bonus
+for each revival and plus the false start penalty for each false start. A car with no row in the result is placed after
+the last that has one. The lowest total over the heats wins and a tie goes to the most laps over all the heats.
 
 ## 3. Seeding the finals
 

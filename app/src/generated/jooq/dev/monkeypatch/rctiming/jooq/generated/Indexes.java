@@ -23,6 +23,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
@@ -78,6 +79,7 @@ public class Indexes {
     public static final Index IDX_RACE_ELIMINATIONS_RACE_ID = Internal.createIndex(DSL.name("idx_race_eliminations_race_id"), RaceEliminations.RACE_ELIMINATIONS, new OrderField[] { RaceEliminations.RACE_ELIMINATIONS.RACE_ID }, false);
     public static final Index IDX_RACE_ENTRIES_ENTRY_ID = Internal.createIndex(DSL.name("idx_race_entries_entry_id"), RaceEntries.RACE_ENTRIES, new OrderField[] { RaceEntries.RACE_ENTRIES.ENTRY_ID }, false);
     public static final Index IDX_RACE_ENTRIES_RACE_ID = Internal.createIndex(DSL.name("idx_race_entries_race_id"), RaceEntries.RACE_ENTRIES, new OrderField[] { RaceEntries.RACE_ENTRIES.RACE_ID }, false);
+    public static final Index IDX_RACE_POINT_PENALTIES_RACE_ID = Internal.createIndex(DSL.name("idx_race_point_penalties_race_id"), RacePointPenalties.RACE_POINT_PENALTIES, new OrderField[] { RacePointPenalties.RACE_POINT_PENALTIES.RACE_ID }, false);
     public static final Index IDX_RACES_EVENT_CLASS_ID = Internal.createIndex(DSL.name("idx_races_event_class_id"), Races.RACES, new OrderField[] { Races.RACES.EVENT_CLASS_ID }, false);
     public static final Index IDX_RACES_ROUND_ID = Internal.createIndex(DSL.name("idx_races_round_id"), Races.RACES, new OrderField[] { Races.RACES.ROUND_ID }, false);
     public static final Index IDX_REFRESH_TOKENS_USER_ID = Internal.createIndex(DSL.name("idx_refresh_tokens_user_id"), RefreshTokens.REFRESH_TOKENS, new OrderField[] { RefreshTokens.REFRESH_TOKENS.USER_ID }, false);

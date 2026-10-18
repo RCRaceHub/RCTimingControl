@@ -250,6 +250,13 @@ public class RoundGeneratorService {
                     Race savedRace = raceRepository.save(race);
 
                     List<Long> entryIds = heats.get(h);
+                    // Shikabane heat 1 is a random draw; car numbers stay in entry order
+                    List<Long> gridOrder = entryIds;
+                    if (type == RoundType.QUALIFIER && isFirstRound
+                            && raceFormatService.shikabaneConfig(ec).isPresent()) {
+                        gridOrder = new java.util.ArrayList<>(entryIds);
+                        java.util.Collections.shuffle(gridOrder, java.util.concurrent.ThreadLocalRandom.current());
+                    }
                     for (int pos = 0; pos < entryIds.size(); pos++) {
                         RaceEntry entry = new RaceEntry();
                         entry.setRaceId(savedRace.getId());
@@ -257,7 +264,7 @@ public class RoundGeneratorService {
                         // The first round of its kind: set gridPosition to seed (car number) order within heat
                         // (1-based). Subsequent rounds: gridPosition=null — will be assigned when the
                         // previous round finishes via applyPreviousRoundFinishingOrder.
-                        entry.setGridPosition(isFirstRound ? pos + 1 : null);
+                        entry.setGridPosition(isFirstRound ? gridOrder.indexOf(entryIds.get(pos)) + 1 : null);
                         entry.setCarNumber(pos + 1);  // car_number = 1-N, same as heat slot order for qualifying heats
                         entry.setBumped(false);
                         raceEntryRepository.save(entry);
@@ -299,8 +306,12 @@ public class RoundGeneratorService {
             }
         }
 
-        /** A class's finals count, from the request's override, then the class, then one final. */
+        /** A class's finals count, from the request's override, then the class, then one final; none for Shikabane. */
         private int resolveFinalsCount(EventClass ec) {
+            // Shikabane has no finals: the last heat is scored with the others
+            if (raceFormatService.shikabaneConfig(ec).isPresent()) {
+                return 0;
+            }
             ClassFinalsConfig override = request.classFinalsConfigs().stream()
                     .filter(c -> ec.getId().equals(c.eventClassId()))
                     .findFirst()

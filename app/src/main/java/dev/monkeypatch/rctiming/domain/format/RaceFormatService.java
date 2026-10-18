@@ -78,6 +78,23 @@ public class RaceFormatService {
     }
 
     /**
+     * The class's Shikabane format, if it races to one. A format whose override cannot be merged counts as not
+     * Shikabane here; the error surfaces where the format is read for its own sake.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public java.util.Optional<ShikabaneConfig> shikabaneConfig(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return getEffectiveConfig(eventClass) instanceof ShikabaneConfig s
+                    ? java.util.Optional.of(s) : java.util.Optional.empty();
+        } catch (RuntimeException e) {
+            return java.util.Optional.empty();
+        }
+    }
+
+    /**
      * A race's length from its class's format, by round type: finals of a points-and-finals format have their own
      * length. Null when the class has no format or the format sets no length.
      */
