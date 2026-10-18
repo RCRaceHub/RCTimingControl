@@ -23,6 +23,13 @@ describe('RaceClockDisplay', () => {
     expect(screen.getByRole('timer')).toHaveTextContent('2:00');
   });
 
+  it('says a rolling start is waiting for its first car, not stopped', () => {
+    render(<RaceClockDisplay clock={clock({ running: false, status: 'RUNNING' })} readAt={0} />);
+
+    expect(screen.getByText('waiting for first car')).toBeInTheDocument();
+    expect(screen.queryByText('stopped')).not.toBeInTheDocument();
+  });
+
   it('holds still and says so while the race is stopped', () => {
     render(<RaceClockDisplay clock={clock({ running: false, status: 'STOPPED', remainingMs: 90_000 })} readAt={0} />);
     expect(screen.getByRole('timer')).toHaveTextContent('1:30');

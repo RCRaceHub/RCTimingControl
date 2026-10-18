@@ -26,8 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * Keeps each race's clock from its status changes: it resets when the race is called to the grid, counts while it
  * runs and pauses while it is stopped. The boards, the live feed (#28) and the streaming overlay (#29) read it.
  *
+ * <p>A race with a rolling start ({@link StartType#ROLLING}) is the exception to "counts while it runs": when it is
+ * started its clock is held at zero until the first car that is entered in the race crosses the line ({@link
+ * #onFirstPassing}), and then counts for everyone, so every car's time runs out at the same moment. A resume after a
+ * stop does not hold the clock again.
+ *
  * <p>Clocks are kept in memory only. A race already under way when the app started gets a clock worked out from
- * its start and finish times the first time it is needed, which counts any stop before then as race time.
+ * its start and finish times the first time it is needed, which counts any stop before then as race time, and a
+ * rolling start still waiting for its first car is counted from the start command.
  */
 @Component
 public class RaceClockService {
@@ -38,6 +44,9 @@ public class RaceClockService {
     private final RaceFormatService raceFormatService;
     private final Clock clock;
     private final Map<Long, RaceClock> clocks = new ConcurrentHashMap<>();
+
+    /** A start time this recent belongs to the start command that is being handled (see {@link #startedJustNow}). */
+    private static final long FRESH_START_SECONDS = 5;
 
     @Autowired
     public RaceClockService(RaceRepository raceRepository, RoundRepository roundRepository,
@@ -66,10 +75,59 @@ public class RaceClockService {
         long raceId = event.getRaceId();
         switch (event.getNewStatus()) {
             case GRID -> clocks.put(raceId, new RaceClock());
-            case RUNNING -> clockFor(raceId, now).start(now);
+            case RUNNING -> {
+                // Looked up before touching the clock, so a passing that arrives meanwhile finds it settled
+                boolean rolling = isRollingStart(raceId);
+                if (!clocks.containsKey(raceId) && startedJustNow(raceId, now)) {
+                    // The grid was called before the app started, so this clock was never made: a first start
+                    clocks.put(raceId, new RaceClock());
+                }
+                clockFor(raceId, now).startOrHold(now, rolling);
+            }
             case STOPPED, FINISHED -> clockFor(raceId, now).stop(now);
             default -> { }
         }
+    }
+
+    /**
+     * Starts the clock of a rolling start race that is waiting for its first car: called by {@code LapTimingService}
+     * on the timing thread for each passing that resolves to an entry in the race. Does nothing for any other race, or
+     * once the clock is counting, so it is cheap to call on every passing.
+     */
+    public void onFirstPassing(long raceId) {
+        RaceClock raceClock = clocks.get(raceId);
+        if (raceClock != null) {
+            raceClock.onPassing(clock.instant());
+        }
+    }
+
+    /**
+     * Whether the race's start command was given now rather than earlier: {@code RaceStateMachineService} sets the
+     * start time just before it publishes the event, so a stored start time within a few seconds means this
+     * RUNNING is the first start, while an older one means a resume. Only asked when no clock is kept, that is, when
+     * the app started after the grid was called or the race was stopped.
+     */
+    private boolean startedJustNow(long raceId, Instant now) {
+        return raceRepository.findById(raceId)
+                .map(race -> race.getStartedAt() != null
+                        && Duration.between(race.getStartedAt(), now).abs().toSeconds() < FRESH_START_SECONDS)
+                .orElse(false);
+    }
+
+    /** Whether the race starts rolling, as {@link #startTypeOf} reads it. */
+    private boolean isRollingStart(long raceId) {
+        return raceRepository.findById(raceId).map(race -> startTypeOf(race) == StartType.ROLLING).orElse(false);
+    }
+
+    /** How the race starts: its own start type, else the format's, as the pre-race readiness does; null if unknown. */
+    private StartType startTypeOf(Race race) {
+        if (race.getStartType() != null) {
+            return race.getStartType();
+        }
+        EventClass eventClass = race.getEventClassId() == null ? null
+                : eventClassRepository.findById(race.getEventClassId()).orElse(null);
+        return roundRepository.findById(race.getRoundId())
+                .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
     }
 
     /**
@@ -142,10 +200,7 @@ public class RaceClockService {
         return raceRepository.findById(raceId).map(race -> {
             EventClass eventClass = race.getEventClassId() == null ? null
                     : eventClassRepository.findById(race.getEventClassId()).orElse(null);
-            // As the pre-race readiness does: the race's own start, else the format's
-            StartType startType = race.getStartType() != null ? race.getStartType()
-                    : roundRepository.findById(race.getRoundId())
-                            .map(round -> raceFormatService.startType(eventClass, round.getType())).orElse(null);
+            StartType startType = startTypeOf(race);
             long intervalMs = startType == StartType.STAGGER
                     ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
             return new RacePlan(durationMs(race), intervalMs);
@@ -166,6 +221,12 @@ public class RaceClockService {
     private static final class RaceClock {
         private long accumulatedMs;
         private Instant runningSince;
+        /** Set once the clock has counted, or was worked out from stored times, so a resume never waits again. */
+        private boolean hasRun;
+        /** A rolling start that has been started and is waiting for its first car; the clock reads zero. */
+        private boolean held;
+        /** A car crossed before a rolling start's hold was set, so the hold is not needed. */
+        private boolean passingSeen;
 
         /** A stopped clock holding the time from the race's start to its finish, or to now if it hasn't finished. */
         static RaceClock fromTimes(Race race, Instant now) {
@@ -174,17 +235,44 @@ public class RaceClockService {
                 Instant until = race.getStatus() == RaceStatus.FINISHED && race.getFinishedAt() != null
                         ? race.getFinishedAt() : now;
                 raceClock.accumulatedMs = Math.max(0, Duration.between(race.getStartedAt(), until).toMillis());
+                raceClock.hasRun = true;
             }
             return raceClock;
         }
 
         synchronized void start(Instant now) {
+            held = false;
+            hasRun = true;
             if (runningSince == null) {
                 runningSince = now;
             }
         }
 
+        /**
+         * Starts the clock, or for a {@code rolling} start that has never run holds it for the first car, unless a
+         * car has already crossed. A resume (the clock has run before) never holds.
+         */
+        synchronized void startOrHold(Instant now, boolean rolling) {
+            if (rolling && !hasRun && !passingSeen) {
+                held = true;
+            } else {
+                start(now);
+            }
+        }
+
+        /** A car crossed: starts a held clock, or makes a hold that is about to be set unnecessary. */
+        synchronized void onPassing(Instant now) {
+            if (held) {
+                start(now);
+            } else if (!hasRun) {
+                passingSeen = true;
+            }
+        }
+
         synchronized void stop(Instant now) {
+            // A stopped race takes no first passing: the clock waits again when it is resumed
+            held = false;
+            passingSeen = false;
             if (runningSince != null) {
                 accumulatedMs += Duration.between(runningSince, now).toMillis();
                 runningSince = null;

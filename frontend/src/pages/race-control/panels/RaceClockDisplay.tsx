@@ -5,7 +5,7 @@ import { fmtClock } from '@/pages/boards/boardFormat';
 /**
  * The race clock for race control: the time left, or the time so far for a race with no set length. The app
  * sends the clock when the race starts or resumes; between those it counts here, and holds still while the race
- * is stopped. {@code readAt} is when the clock was read.
+ * is stopped (or, for a rolling start, until the first car crosses). {@code readAt} is when the clock was read.
  */
 export function RaceClockDisplay({ clock, readAt }: { clock: RaceClockDto | undefined; readAt: number }) {
   const [now, setNow] = useState(() => Date.now());
@@ -25,7 +25,12 @@ export function RaceClockDisplay({ clock, readAt }: { clock: RaceClockDto | unde
     <div className="flex items-baseline gap-2" role="timer" aria-label={timed ? 'Time left' : 'Race time'}>
       <span className="text-sm text-muted-foreground">{timed ? 'Time left' : 'Race time'}</span>
       <span className="text-2xl font-bold tabular-nums">{text}</span>
-      {!running && <span className="text-xs font-semibold uppercase text-muted-foreground">stopped</span>}
+      {!running && (
+        <span className="text-xs font-semibold uppercase text-muted-foreground">
+          {/* A rolling start is running but its clock waits for the first car */}
+          {clock.status === 'RUNNING' ? 'waiting for first car' : 'stopped'}
+        </span>
+      )}
     </div>
   );
 }

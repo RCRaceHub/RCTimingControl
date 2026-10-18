@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -164,6 +165,107 @@ class RaceClockServiceTest {
 
         assertThat(seen.elapsedMs()).isEqualTo(50_000);
         assertThat(seen.running()).isFalse();
+    }
+
+    @Test
+    void aRollingStartHoldsTheClockUntilTheFirstCarCrosses() {
+        race.setStartType(StartType.ROLLING);
+        status(RaceStatus.GRID);
+        status(RaceStatus.RUNNING);
+        clock.advance(Duration.ofSeconds(8));
+
+        RaceClockDto waiting = service.clock(RACE_ID).orElseThrow();
+        assertThat(waiting.elapsedMs()).isZero();
+        assertThat(waiting.running()).isFalse();
+        assertThat(waiting.remainingMs()).isEqualTo(300_000);
+
+        service.onFirstPassing(RACE_ID);
+        clock.advance(Duration.ofSeconds(12));
+
+        RaceClockDto counting = service.clock(RACE_ID).orElseThrow();
+        assertThat(counting.elapsedMs()).isEqualTo(12_000);
+        assertThat(counting.running()).isTrue();
+    }
+
+    @Test
+    void laterPassingsDoNotRestartARollingClock() {
+        race.setStartType(StartType.ROLLING);
+        status(RaceStatus.GRID);
+        status(RaceStatus.RUNNING);
+        service.onFirstPassing(RACE_ID);
+        clock.advance(Duration.ofSeconds(10));
+
+        service.onFirstPassing(RACE_ID);
+        clock.advance(Duration.ofSeconds(5));
+
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isEqualTo(15_000);
+    }
+
+    @Test
+    void aRollingRaceStoppedBeforeAnyCarCrossedWaitsAgainWhenResumed() {
+        race.setStartType(StartType.ROLLING);
+        status(RaceStatus.GRID);
+        status(RaceStatus.RUNNING);
+        status(RaceStatus.STOPPED);
+        clock.advance(Duration.ofSeconds(5));
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isZero();
+
+        status(RaceStatus.RUNNING);
+        clock.advance(Duration.ofSeconds(5));
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isZero();
+        service.onFirstPassing(RACE_ID);
+        clock.advance(Duration.ofSeconds(4));
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isEqualTo(4_000);
+    }
+
+    @Test
+    void aRollingRaceResumedAfterItsClockRanDoesNotWaitAgain() {
+        race.setStartType(StartType.ROLLING);
+        status(RaceStatus.GRID);
+        status(RaceStatus.RUNNING);
+        service.onFirstPassing(RACE_ID);
+        clock.advance(Duration.ofSeconds(20));
+        status(RaceStatus.STOPPED);
+        status(RaceStatus.RUNNING);
+        clock.advance(Duration.ofSeconds(5));
+
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isEqualTo(25_000);
+    }
+
+    @Test
+    void aRollingStartAfterTheAppRestartedBetweenGridAndStartStillWaits() {
+        race.setStartType(StartType.ROLLING);
+        // No grid event reached this service, as if the app started after the grid was called
+        race.setStartedAt(clock.instant());
+        race.setStatus(RaceStatus.RUNNING);
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE_ID, RaceStatus.RUNNING));
+        clock.advance(Duration.ofSeconds(6));
+
+        RaceClockDto waiting = service.clock(RACE_ID).orElseThrow();
+        assertThat(waiting.elapsedMs()).isZero();
+        assertThat(waiting.running()).isFalse();
+    }
+
+    @Test
+    void aCarThatCrossesJustBeforeTheHoldIsSetStillStartsTheClock() {
+        race.setStartType(StartType.ROLLING);
+        status(RaceStatus.GRID);
+        // The timing thread sees the race running before the clock has been told
+        service.onFirstPassing(RACE_ID);
+        status(RaceStatus.RUNNING);
+        clock.advance(Duration.ofSeconds(7));
+
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isEqualTo(7_000);
+    }
+
+    @Test
+    void aGridStartRunsFromTheStartCommandAndIgnoresPassings() {
+        race.setStartType(StartType.GRID);
+        status(RaceStatus.GRID);
+        status(RaceStatus.RUNNING);
+        clock.advance(Duration.ofSeconds(8));
+
+        assertThat(service.clock(RACE_ID).orElseThrow().elapsedMs()).isEqualTo(8_000);
     }
 
     @Test

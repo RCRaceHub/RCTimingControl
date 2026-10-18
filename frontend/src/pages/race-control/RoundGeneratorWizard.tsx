@@ -57,6 +57,18 @@ type FormValues = z.output<typeof schema>;
 const GLOBAL_DEFAULTS = { practiceRounds: 2, qualifyingRounds: 3, maxCarsPerHeat: 10, minCarsPerHeat: 2 };
 
 const DEFAULT_STAGGER_SECONDS = 1;
+const DEFAULT_FINALS = 2;
+
+/** A class's format as the server reads it: the class's own override over its format. */
+function effectiveFormat(cls: { configSnapshot: unknown; configOverride?: Record<string, unknown> | null }) {
+  return { ...(cls.configSnapshot as Record<string, unknown> | null), ...(cls.configOverride ?? {}) } as
+    { type?: string; qualifyingHeats?: number; finalsCount?: number; staggerIntervalSeconds?: number };
+}
+
+/** A whole number from a format field, within what this form accepts, or undefined when the format sets none. */
+function fromFormat(value: number | undefined, min: number, max: number) {
+  return typeof value === 'number' && Number.isInteger(value) && value >= min ? Math.min(value, max) : undefined;
+}
 
 export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate = false }: Props) {
   const queryClient = useQueryClient();
@@ -87,17 +99,23 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
   // the reset only touches this form, and doing it twice changes nothing)
   if (open && eventLoaded && classesLoaded && !initialised) {
     setInitialised(true);
+    // The formats' qualifying heats (the rounds of qualifying) and a points finals format's finals count start the
+    // form; the official can still change them. The most qualifying rounds any class asks for covers them all.
+    const formatRounds = eventClasses
+      .map((cls) => fromFormat(effectiveFormat(cls).qualifyingHeats, 1, 10))
+      .filter((n): n is number => n !== undefined);
     form.reset({
       ...GLOBAL_DEFAULTS,
+      qualifyingRounds: formatRounds.length ? Math.max(...formatRounds) : GLOBAL_DEFAULTS.qualifyingRounds,
       classes: eventClasses.map((cls) => {
-        // The class's own override wins over its format, as the server reads it
-        const configured = (cls.configOverride?.staggerIntervalSeconds
-          ?? (cls.configSnapshot as { staggerIntervalSeconds?: number } | null)?.staggerIntervalSeconds) as number | undefined;
+        const format = effectiveFormat(cls);
+        const configured = format.staggerIntervalSeconds;
         const stagger = configured && configured > 0 ? configured : DEFAULT_STAGGER_SECONDS;
         return {
           eventClassId: cls.id,
           label: racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`,
-          finalsCount: 2,
+          finalsCount: (format.type === 'POINTS_FINALS' ? fromFormat(format.finalsCount, 1, 3) : undefined)
+            ?? DEFAULT_FINALS,
           staggerSeconds: stagger,
           initialStaggerSeconds: stagger,
         };

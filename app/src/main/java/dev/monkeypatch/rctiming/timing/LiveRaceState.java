@@ -47,6 +47,8 @@ public class LiveRaceState {
     final Map<Long, Long> minLapMs = new HashMap<>();
     /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
     Long lastLapCreditedAtMs = null;
+    /** Decoder time, in milliseconds, of the first passing from an entry in the race; 0 until one crosses. */
+    private long firstCrossingMs;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
     /**
@@ -134,6 +136,9 @@ public class LiveRaceState {
             return p;
         });
 
+        if (firstCrossingMs == 0) {
+            firstCrossingMs = passingTimeMs;
+        }
         if (flagged.contains(entryId)) {
             return false;
         }
@@ -173,6 +178,14 @@ public class LiveRaceState {
             }
         }
         return any;
+    }
+
+    /**
+     * Decoder time (UTC milliseconds) of the first passing from an entry in the race, which is when a rolling start's
+     * clock starts; 0 when no car has crossed.
+     */
+    public synchronized long firstCrossingMs() {
+        return firstCrossingMs;
     }
 
     /** Server time of the last passing that counted a lap, or empty if none has yet. */

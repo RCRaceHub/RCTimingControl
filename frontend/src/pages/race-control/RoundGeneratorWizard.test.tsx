@@ -52,6 +52,22 @@ describe('RoundGeneratorWizard', () => {
     expect(finals().value).toBe(before);
   });
 
+  it('starts from the qualifying heats and finals count of the classes\' formats', async () => {
+    vi.mocked(adminApi.getEvent).mockResolvedValue({
+      id: 5,
+      classes: [
+        { id: 11, racingClassId: 3, configSnapshot: { type: 'POINTS_FINALS', qualifyingHeats: 4, finalsCount: 3 } },
+        { id: 12, racingClassId: 3, configSnapshot: { type: 'BUMP_UP', qualifyingHeats: 3 }, configOverride: { qualifyingHeats: 5 } },
+      ],
+    } as unknown as EventDetailDto);
+    render(wizard(true));
+    await screen.findAllByText('Mod Buggy');
+
+    expect(screen.getByLabelText('Qualifying rounds')).toHaveValue(5);
+    const finals = screen.getAllByLabelText('Finals') as HTMLInputElement[];
+    expect(finals.map((f) => f.value)).toEqual(['3', '2']);
+  });
+
   it('generates rounds with the counts entered', async () => {
     vi.mocked(adminApi.generateRounds).mockResolvedValue(undefined as never);
     render(wizard(true));

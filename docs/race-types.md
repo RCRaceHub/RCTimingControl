@@ -64,7 +64,7 @@ a race that never started.
 |---|---|---|
 | `GRID` | The start horn and every car goes together | Every car has the full race length from the start |
 | `STAGGER` | The start horn, then each driver is called by name every N seconds in grid order | A car's time starts when it is called, so the last car to leave is last to finish |
-| `ROLLING` | Drivers are not called one by one. Cars take the start as they cross the line | Every car has the full race length from the start of the clock (see [Known gaps](#known-gaps)) |
+| `ROLLING` | Drivers are not called one by one. Cars take the start as they cross the line, and the clock waits for the first one | Every car has the same end time: the clock starts at the first car's first crossing |
 
 N is the format's **stagger interval** (seconds). A stagger interval of 0 or less is taken as 1 second. Race control
 shows how the race will start, and the drivers' call order for a staggered start, before it begins.
@@ -75,6 +75,16 @@ In a staggered start the driver in grid position 1 leaves first, position 2 N se
 gives each car its own start offset (position × N seconds) and works out each car's own time on the track from it. A
 driver with no grid position is called last. So a car's flag comes N seconds after the car before it, and the race is
 over for everyone only when the last car to leave has had its full time (section 3).
+
+### Rolling start in detail
+
+When the director presses Start on a rolling start race, the race is running but its **clock is held at zero**. It
+starts counting when the first car entered in the race crosses the line, and from then on it is one clock for
+everyone, so every car's time runs out at the same moment, and each car takes the flag the next time it counts a lap
+after that. A crossing from a transponder that matches no entry in the race does not start the clock. If the race is
+stopped before any car crossed, the clock waits again when it is resumed; once it has counted, a resume carries on as
+for any other start. Race control shows "waiting for first car" while the clock is held. The race's start time is still the moment Start
+was pressed, but total times in the result run from the first car's first crossing.
 
 ### The first lap
 
@@ -185,14 +195,16 @@ and so on) for championship points, as in [Scoring](scoring.md#5-championship-po
 
 ### Settings the round generator decides
 
-Some numbers are not read from the format:
+The round generator is where an official sets the numbers for one event, so some of them are only a starting point
+taken from the format:
 
-- **How many practice and qualifying rounds** an event has, and the **cars per heat**, come from the options in the
-  round generator when an official makes the run order. The format's own qualifying-heats count is not used for this.
-- **How many finals** a class has comes from the round generator's per-class setting, else the class's own finals count,
-  else one.
-- The format's race padding is not read when timing a race: the gap between races is the event's auto run gap
-  (section 6).
+- **How many qualifying rounds**: the generator opens with the format's **qualifying heats** (a Bump Up or Points
+  Finals format's setting; with several classes, the most any of them asks for), else 3. The official can change it
+  before generating.
+- **How many finals** a class has: the generator opens with a Points Finals format's **finals count** (up to 3), else
+  2. What the official enters is what the class gets.
+- **How many practice rounds** and the **cars per heat** are only set in the generator.
+- There is no race padding setting. The gap between races is the event's auto run gap (section 6).
 
 ## 5. Qualifying
 
@@ -243,11 +255,6 @@ heats, no grid, no start, no clock to run out and no result that scores.
 
 ## Known gaps
 
-- **Rolling start.** The race clock and every car's own time start when the director presses Start, exactly as for a
-  grid start. Race control describes a rolling start as "the clock starts when the first car crosses the line", but
-  the clock is not held back. The only difference today is that drivers are not called one by one.
 - **Qualifying types.** `FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS` all rank the same way (see
   [Scoring](scoring.md#known-gaps)).
 - **Fixed number of laps.** A race is run for a time, not a number of laps. A race given no length is finished by hand.
-- **Format fields not used yet.** The Bump Up format's qualifying heats and the Points Finals format's finals count
-  are not read; the round generator's options decide those. A format's race padding is not used either.

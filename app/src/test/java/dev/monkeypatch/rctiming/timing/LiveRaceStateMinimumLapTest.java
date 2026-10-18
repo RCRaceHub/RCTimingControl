@@ -41,6 +41,18 @@ class LiveRaceStateMinimumLapTest {
     }
 
     @Test
+    void theFirstCrossingOfAnEntryIsKeptForARollingStartsClock() {
+        assertThat(state.firstCrossingMs()).isZero();
+        state.applyLapPassing(new LapPassingEvent(1L, "unknown", 90_000_000L), null);
+        assertThat(state.firstCrossingMs()).isZero();
+
+        pass(1L, 100);
+        pass(2L, 101);
+
+        assertThat(state.firstCrossingMs()).isEqualTo(100_000L);
+    }
+
+    @Test
     void aLapExactlyTheMinimumCounts() {
         pass(1L, 100);
         pass(1L, 110);
