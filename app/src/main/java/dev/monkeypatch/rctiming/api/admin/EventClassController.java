@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,8 +25,8 @@ import java.util.List;
 
 /**
  * An event's classes under {@code /api/v1/admin/events/{eventId}/classes}: adding a racing class with a format,
- * removing one, overriding the format for the event, and combining classes to race together. The class is open to ADMIN,
- * RACE_DIRECTOR and REFEREE but every endpoint is narrowed to ADMIN. Changes are audited.
+ * removing one, overriding the format for the event, and combining classes to race together. The class is open to
+ * ADMIN, RACE_DIRECTOR and REFEREE but every endpoint is narrowed to ADMIN. Changes are audited.
  */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}/classes")

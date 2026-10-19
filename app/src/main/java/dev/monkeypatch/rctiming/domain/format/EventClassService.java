@@ -2,9 +2,9 @@ package dev.monkeypatch.rctiming.domain.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryService;
@@ -103,7 +103,8 @@ public class EventClassService {
      * generated for the class, since the races and their laps would be lost; the official clears the run order first.
      * A class with entries that are not withdrawn is refused too, unless {@code withdrawEntries} is set, when those
      * entries are withdrawn first (kept, never deleted, each with an {@code ADMIN_WITHDRAW} row in the entry audit
-     * log) and are left with no class.
+     * log) and are left with no class. The class's RaceHub class mappings go with it, so a re-import of that RaceHub
+     * class reports it as unmapped. Races are the only guard; the event's status is not checked.
      *
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the class does not exist
      * @throws IllegalArgumentException if the class belongs to another event
