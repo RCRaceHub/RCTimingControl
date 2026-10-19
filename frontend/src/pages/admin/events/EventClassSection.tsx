@@ -5,6 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   useAddEventClass,
   useCombineClasses,
+  useRemoveEventClass,
   useUpdateEventClassOverrides,
   useRacingClasses,
 } from '@/hooks/admin/useAdminEventClasses';
@@ -116,6 +118,77 @@ function OverrideEditorDialog({
           <Button onClick={handleSave} disabled={updateOverrides.isPending}>
             {updateOverrides.isPending ? 'Saving…' : 'Save Overrides'}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RemoveClassDialog({
+  eventId,
+  classId,
+  className,
+  open,
+  onOpenChange,
+}: {
+  eventId: number;
+  classId: number;
+  className: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const removeClass = useRemoveEventClass(eventId);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [needsWithdraw, setNeedsWithdraw] = useState(false);
+
+  function close(next: boolean) {
+    if (!next) {
+      setProblem(null);
+      setNeedsWithdraw(false);
+    }
+    onOpenChange(next);
+  }
+
+  async function handleConfirm() {
+    try {
+      await removeClass.mutateAsync({ classId, withdrawEntries: needsWithdraw });
+      toast.success(`${className} removed from the event`);
+      close(false);
+    } catch (err) {
+      const detail = axios.isAxiosError(err) ? (err.response?.data as { detail?: string } | undefined)?.detail : undefined;
+      if (axios.isAxiosError(err) && err.response?.status === 409 && detail) {
+        setProblem(detail);
+        setNeedsWithdraw(detail.includes('active entr'));
+      } else {
+        setProblem('Could not remove the class. Try again.');
+      }
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Remove {className}?</DialogTitle>
+          <DialogDescription>
+            The class is taken out of this event. A class that already has races cannot be removed
+            until the event's run order is deleted.
+          </DialogDescription>
+        </DialogHeader>
+        {problem && <p className="text-sm text-destructive">{problem}</p>}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => close(false)}>
+            Cancel
+          </Button>
+          {(!problem || needsWithdraw) && (
+            <Button variant="destructive" onClick={handleConfirm} disabled={removeClass.isPending}>
+              {removeClass.isPending
+                ? 'Removing…'
+                : needsWithdraw
+                  ? 'Withdraw entries and remove'
+                  : 'Remove class'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -276,6 +349,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
   const [addOpen, setAddOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [combineOpen, setCombineOpen] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string } | null>(null);
   const [overrideState, setOverrideState] = useState<{
     open: boolean;
     classId: number;
@@ -410,6 +484,15 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
               <Button
                 size="sm"
                 variant="outline"
+                onClick={() => setRemoveTarget({ id: cls.id, name: resolveClassName(cls.racingClassId) })}
+              >
+                Remove
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() =>
                   setOverrideState({
                     open: true,
@@ -435,6 +518,15 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         currentOverride={overrideState.currentOverride}
         open={overrideState.open}
         onOpenChange={open => setOverrideState(s => ({ ...s, open }))}
+      />
+
+      <RemoveClassDialog
+        key={removeTarget?.id ?? 0}
+        eventId={eventId}
+        classId={removeTarget?.id ?? 0}
+        className={removeTarget?.name ?? ''}
+        open={removeTarget !== null}
+        onOpenChange={open => { if (!open) setRemoveTarget(null); }}
       />
 
       <CombineConfirmDialog

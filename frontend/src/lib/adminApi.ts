@@ -699,6 +699,11 @@ export const adminApi = {
       .post<EventClassDto>(`/api/v1/admin/events/${eventId}/classes`, body)
       .then(r => r.data),
 
+  removeEventClass: (eventId: number, classId: number, withdrawEntries = false) =>
+    api
+      .delete(`/api/v1/admin/events/${eventId}/classes/${classId}`, { params: { withdrawEntries } })
+      .then(() => undefined),
+
   updateOverrides: (eventId: number, classId: number, override: Record<string, unknown>) =>
     api
       .put<EventClassDto>(

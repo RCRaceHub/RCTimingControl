@@ -2,10 +2,15 @@ package dev.monkeypatch.rctiming.domain.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
+import dev.monkeypatch.rctiming.domain.entry.EntryService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import org.springframework.stereotype.Service;
@@ -34,6 +39,9 @@ public class EventClassService {
     private final RaceFormatService raceFormatService;
     private final ObjectMapper objectMapper;
     private final AuditService audit;
+    private final EntryRepository entryRepository;
+    private final EntryService entryService;
+    private final RaceRepository raceRepository;
 
     public EventClassService(EventClassRepository eventClassRepository,
                              EventRepository eventRepository,
@@ -41,7 +49,10 @@ public class EventClassService {
                              RacingClassRepository racingClassRepository,
                              RaceFormatService raceFormatService,
                              ObjectMapper objectMapper,
-                             AuditService audit) {
+                             AuditService audit,
+                             EntryRepository entryRepository,
+                             EntryService entryService,
+                             RaceRepository raceRepository) {
         this.eventClassRepository = eventClassRepository;
         this.eventRepository = eventRepository;
         this.templateRepository = templateRepository;
@@ -49,6 +60,9 @@ public class EventClassService {
         this.raceFormatService = raceFormatService;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.entryRepository = entryRepository;
+        this.entryService = entryService;
+        this.raceRepository = raceRepository;
     }
 
     /** Every class entered in the event; a 404 if there is no such event. */
@@ -82,6 +96,49 @@ public class EventClassService {
                         + " using the format " + template.getName())
                 .after(after).record();
         return saved;
+    }
+
+    /**
+     * Takes a class out of the event and records {@code EVENT_CLASS_REMOVED}. Refused while any race has been
+     * generated for the class, since the races and their laps would be lost; the official clears the run order first.
+     * A class with entries that are not withdrawn is refused too, unless {@code withdrawEntries} is set, when those
+     * entries are withdrawn first (kept, never deleted, each with an {@code ADMIN_WITHDRAW} row in the entry audit
+     * log) and are left with no class. The class's RaceHub class mappings go with it, so a re-import of that RaceHub
+     * class reports it as unmapped. Races are the only guard; the event's status is not checked.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the class does not exist
+     * @throws IllegalArgumentException if the class belongs to another event
+     * @throws StateConflictException if races exist for the class, or it has active entries and
+     *         {@code withdrawEntries} is false (HTTP 409)
+     */
+    public void removeClassFromEvent(Actor actor, Long eventId, Long classId, boolean withdrawEntries) {
+        EventClass ec = getEventClassOrThrow(classId);
+        if (!eventId.equals(ec.getEventId())) {
+            throw new IllegalArgumentException("EventClass " + classId + " does not belong to event " + eventId);
+        }
+        String name = describe(ec);
+        if (raceRepository.existsByEventClassId(classId)) {
+            throw new StateConflictException("Races have been generated for " + name
+                    + ". Delete the event's run order before removing the class.");
+        }
+        List<Entry> active = entryRepository.findActiveByEventClassId(classId);
+        if (!active.isEmpty() && !withdrawEntries) {
+            throw new StateConflictException(name + " has " + active.size() + " active "
+                    + (active.size() == 1 ? "entry" : "entries")
+                    + ". Confirm to withdraw them and remove the class.");
+        }
+        for (Entry entry : active) {
+            entryService.adminWithdraw(entry.getId(), actor.userId(), "Class " + name + " removed from the event");
+        }
+        eventClassRepository.deleteById(classId);
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("racingClassId", ec.getRacingClassId());
+        before.put("templateId", ec.getTemplateId());
+        before.put("withdrawnEntries", active.size());
+        audit.entry(actor, "EVENT_CLASS_REMOVED").entity("event_class", classId).event(eventId)
+                .summary("Removed " + name + " from the event"
+                        + (active.isEmpty() ? "" : " and withdrew " + active.size() + " entries"))
+                .before(before).record();
     }
 
     /**
