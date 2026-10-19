@@ -65,6 +65,76 @@ class RoundGeneratorServiceTest {
     }
 
     @Test
+    void generate_whenNoClassHasEntries_isAConflictAndWritesNothing() {
+        EventClass eventClass = new EventClass();
+        eventClass.setId(10L);
+        eventClass.setEventId(1L);
+        when(roundRepository.existsByEventId(1L)).thenReturn(false);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(eventClass));
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(new ArrayList<>());
+
+        assertThatThrownBy(() -> service.generate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("No drivers are entered");
+        verify(roundRepository, never()).save(any(Round.class));
+        verify(raceRepository, never()).save(any(Race.class));
+    }
+
+    @Test
+    void generate_leavesOutAClassWithNoEntriesButKeepsTheOthers() {
+        EventClass empty = new EventClass();
+        empty.setId(10L);
+        empty.setEventId(1L);
+        EventClass full = new EventClass();
+        full.setId(11L);
+        full.setEventId(1L);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(empty, full));
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(new ArrayList<>());
+        Entry entry = new Entry();
+        entry.setId(1L);
+        entry.setEventClassId(11L);
+        when(entryRepository.findByEventClassIdAndStatus(11L, EntryStatus.CONFIRMED))
+                .thenReturn(new ArrayList<>(List.of(entry)));
+        AtomicLong ids = new AtomicLong();
+        when(roundRepository.save(any(Round.class))).thenAnswer(inv -> {
+            Round round = inv.getArgument(0);
+            round.setId(ids.incrementAndGet());
+            return round;
+        });
+        List<Race> races = new ArrayList<>();
+        when(raceRepository.save(any(Race.class))).thenAnswer(inv -> {
+            Race race = inv.getArgument(0);
+            race.setId(ids.incrementAndGet());
+            races.add(race);
+            return race;
+        });
+
+        service.generate(new RoundGenerationRequest(1L, 0, 1, 8, List.of()));
+
+        // One qualifying heat and one final, both for the class that has a driver
+        assertThat(races).hasSize(2).allMatch(r -> r.getEventClassId().equals(11L));
+    }
+
+    @Test
+    void regenerate_whenNoClassHasEntries_keepsTheExistingRunOrder() {
+        Round round = new Round();
+        round.setId(5L);
+        Race race = new Race();
+        race.setStatus(RaceStatus.PENDING);
+        EventClass eventClass = new EventClass();
+        eventClass.setId(10L);
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(5L)).thenReturn(List.of(race));
+        when(raceRepository.hasRecordsAgainstEventRaces(1L)).thenReturn(false);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(eventClass));
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(new ArrayList<>());
+
+        assertThatThrownBy(() -> service.regenerate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class);
+        verify(roundRepository, never()).delete(any(Round.class));
+    }
+
+    @Test
     void regenerate_whenARaceHasStarted_isAConflictAndKeepsTheRunOrder() {
         Round round = new Round();
         round.setId(5L);
