@@ -61,6 +61,8 @@ class EventAuditIT extends AbstractIntegrationTest {
     void tearDown() {
         jdbc.update("delete from audit_log where actor_user_id = ?", adminId);
         jdbc.update("delete from audit_log where summary like ?", "%" + run + "%");
+        jdbc.update("delete from rounds where event_id in (select id from events where name like ?)",
+                "%" + run + "%"); // races and race_entries cascade
         jdbc.update("delete from entries where event_id in (select id from events where name like ?)",
                 "%" + run + "%");
         jdbc.update("delete from events where name like ?", "%" + run + "%");
