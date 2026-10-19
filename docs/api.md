@@ -204,6 +204,16 @@ Request body:
 
 ---
 
+## Admin — Event Classes
+
+```http
+DELETE /admin/events/{eventId}/classes/{classId}?withdrawEntries=false    # 204
+```
+
+Takes a class out of an event; `ADMIN`; audited as `EVENT_CLASS_REMOVED`. Answers **409** if races have been generated for the class (delete the run order first), or if it has active entries and `withdrawEntries` is not `true`. With `withdrawEntries=true` those entries are withdrawn first (kept, never deleted). 404 for an unknown class, 400 if it belongs to another event.
+
+---
+
 ## Admin — Racing Classes
 
 ```http

@@ -11,10 +11,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +25,7 @@ import java.util.List;
 
 /**
  * An event's classes under {@code /api/v1/admin/events/{eventId}/classes}: adding a racing class with a format,
- * overriding the format for the event, and combining classes to race together. The class is open to ADMIN,
+ * removing one, overriding the format for the event, and combining classes to race together. The class is open to ADMIN,
  * RACE_DIRECTOR and REFEREE but every endpoint is narrowed to ADMIN. Changes are audited.
  */
 @RestController
@@ -50,6 +52,20 @@ public class EventClassController {
                                           @RequestBody @Valid AddEventClassRequest request) {
         return EventClassDto.from(eventClassService.addClassToEvent(CurrentOfficial.actor(auth), eventId,
                 request.racingClassId(), request.templateId()));
+    }
+
+    /**
+     * Removes a class from the event. {@code DELETE /{classId}}; ADMIN; answers 204. 409 if races have been generated
+     * for it, or it has active entries and {@code withdrawEntries} is not true. With it, the entries are withdrawn
+     * first. 404 for an unknown class, 400 if it belongs to another event. Audited.
+     */
+    @Audited("audit_log")
+    @DeleteMapping("/{classId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeClassFromEvent(Authentication auth, @PathVariable Long eventId, @PathVariable Long classId,
+                                     @RequestParam(defaultValue = "false") boolean withdrawEntries) {
+        eventClassService.removeClassFromEvent(CurrentOfficial.actor(auth), eventId, classId, withdrawEntries);
     }
 
     /**

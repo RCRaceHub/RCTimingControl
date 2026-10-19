@@ -18,6 +18,18 @@ export function useAddEventClass(eventId: number) {
   });
 }
 
+export function useRemoveEventClass(eventId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { classId: number; withdrawEntries: boolean }) =>
+      adminApi.removeEventClass(eventId, args.classId, args.withdrawEntries),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
+      qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() });
+    },
+  });
+}
+
 export function useUpdateEventClassOverrides(eventId: number) {
   const qc = useQueryClient();
   return useMutation({

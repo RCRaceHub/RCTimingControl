@@ -141,6 +141,39 @@ class EventAuditIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void removingAClassIsRecordedAndARefusedRemovalLeavesNoRow() {
+        long eventId = createEvent("Remove " + run);
+        long empty = addClass(eventId, racingClassId);
+        long busy = addClass(eventId, secondClassId);
+        long competitorId = jdbc.queryForObject("insert into competitors (display_name) values (?) returning id",
+                Long.class, "Remover " + run);
+        long entryId = jdbc.queryForObject("""
+                insert into entries (event_id, event_class_id, transponder_number, status, competitor_id)
+                values (?, ?, '1234567', 'CONFIRMED', ?) returning id""", Long.class, eventId, busy, competitorId);
+        try {
+            assertThat(send("DELETE", "/api/v1/admin/events/" + eventId + "/classes/" + empty, null).getStatusCode())
+                    .isEqualTo(HttpStatus.NO_CONTENT);
+            ResponseEntity<String> refused = send("DELETE", "/api/v1/admin/events/" + eventId + "/classes/" + busy, null);
+            assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+            assertThat(refused.getBody()).contains("1 active entry");
+            assertThat(send("DELETE", "/api/v1/admin/events/" + eventId + "/classes/" + busy
+                    + "?withdrawEntries=true", null).getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+            assertThat(rows(eventId)).extracting(r -> r.get("action")).containsExactly(
+                    "EVENT_CREATED", "EVENT_CLASS_ADDED", "EVENT_CLASS_ADDED", "EVENT_CLASS_REMOVED",
+                    "EVENT_CLASS_REMOVED");
+            assertThat(jdbc.queryForObject("select status from entries where id = ?", String.class, entryId))
+                    .isEqualTo("WITHDRAWN");
+            assertThat(jdbc.queryForObject("select count(*) from event_classes where event_id = ?", Integer.class,
+                    eventId)).isZero();
+        } finally {
+            jdbc.update("delete from entry_audit_log where entry_id = ?", entryId);
+            jdbc.update("delete from entries where id = ?", entryId);
+            jdbc.update("delete from competitors where id = ?", competitorId);
+        }
+    }
+
+    @Test
     void generatingTheRunOrderIsRecordedAndSeedingWithoutResultsIsRefused() {
         long eventId = createEvent("Run order " + run);
         long eventClassId = addClass(eventId, racingClassId);

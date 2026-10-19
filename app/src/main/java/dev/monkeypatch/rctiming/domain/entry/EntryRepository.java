@@ -25,6 +25,11 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
         return findWhere(ENTRIES.EVENT_CLASS_ID.eq(eventClassId).and(ENTRIES.STATUS.eq(status.name())));
     }
 
+    /** An event class's entries that are not withdrawn, for removing the class from its event. */
+    public List<Entry> findActiveByEventClassId(Long eventClassId) {
+        return findWhere(ENTRIES.EVENT_CLASS_ID.eq(eventClassId).and(ENTRIES.STATUS.ne(EntryStatus.WITHDRAWN.name())));
+    }
+
     /** For the RaceHub import (L7): upsert by the source's entry id. */
     public Optional<Entry> findByExternalSourceAndExternalEntryId(String externalSource, String externalEntryId) {
         return findOne(ENTRIES.EXTERNAL_SOURCE.eq(externalSource).and(ENTRIES.EXTERNAL_ENTRY_ID.eq(externalEntryId)));

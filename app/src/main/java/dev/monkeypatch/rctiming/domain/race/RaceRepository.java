@@ -48,6 +48,11 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
                 dsl.fetchExists(DSL.table(DSL.name(table)), raceId.in(eventRaces)));
     }
 
+    /** Whether any race, of any round and status, belongs to the event class. */
+    public boolean existsByEventClassId(Long eventClassId) {
+        return dsl.fetchExists(RACES, RACES.EVENT_CLASS_ID.eq(eventClassId));
+    }
+
     /** For BumpUpSeedingService: a class's races in rounds of the given type, such as its finals. */
     public List<Race> findByEventClassIdAndRoundType(Long eventClassId, RoundType roundType) {
         return dsl.select(RACES.fields()).from(RACES)
