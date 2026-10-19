@@ -61,7 +61,10 @@ class EventAuditIT extends AbstractIntegrationTest {
     void tearDown() {
         jdbc.update("delete from audit_log where actor_user_id = ?", adminId);
         jdbc.update("delete from audit_log where summary like ?", "%" + run + "%");
+        jdbc.update("delete from entries where event_id in (select id from events where name like ?)",
+                "%" + run + "%");
         jdbc.update("delete from events where name like ?", "%" + run + "%");
+        jdbc.update("delete from competitors where display_name = ?", "Audit driver " + run);
         jdbc.update("delete from racing_classes where id in (?, ?)", racingClassId, secondClassId);
         jdbc.update("delete from race_format_templates where id = ?", templateId);
         jdbc.update("delete from refresh_tokens where user_id = ?", adminId);
@@ -144,6 +147,7 @@ class EventAuditIT extends AbstractIntegrationTest {
     void generatingTheRunOrderIsRecordedAndSeedingWithoutResultsIsRefused() {
         long eventId = createEvent("Run order " + run);
         long eventClassId = addClass(eventId, racingClassId);
+        addDriver(eventId, eventClassId);
 
         ResponseEntity<String> generated = send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds",
                 Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1, "maxCarsPerHeat", 10,
@@ -163,6 +167,7 @@ class EventAuditIT extends AbstractIntegrationTest {
     @Test
     void aSecondRunOrderIsRefusedAndLeavesNoRow() {
         long eventId = createEvent("Twice " + run);
+        addDriver(eventId, addClass(eventId, racingClassId));
         Map<String, Object> body = Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1,
                 "maxCarsPerHeat", 10, "classFinalsConfigs", List.of());
         assertThat(send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds", body).getStatusCode())
@@ -171,12 +176,13 @@ class EventAuditIT extends AbstractIntegrationTest {
         ResponseEntity<String> again = send("POST", "/api/v1/admin/events/" + eventId + "/generate-rounds", body);
 
         assertThat(again.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(rows(eventId)).extracting(r -> r.get("action")).containsExactly("EVENT_CREATED", "RUN_ORDER_GENERATED");
+        assertThat(rows(eventId)).extracting(r -> r.get("action")).containsExactly("EVENT_CREATED", "EVENT_CLASS_ADDED", "RUN_ORDER_GENERATED");
     }
 
     @Test
     void regeneratingReplacesThePendingRunOrderAndIsRecorded() {
         long eventId = createEvent("Redo " + run);
+        addDriver(eventId, addClass(eventId, racingClassId));
         Map<String, Object> first = Map.of("practiceRoundsCount", 0, "qualifyingRoundsCount", 1,
                 "maxCarsPerHeat", 10, "classFinalsConfigs", List.of());
         Map<String, Object> second = Map.of("practiceRoundsCount", 1, "qualifyingRoundsCount", 2,
@@ -189,8 +195,8 @@ class EventAuditIT extends AbstractIntegrationTest {
 
         List<Map<String, Object>> rows = rows(eventId);
         assertThat(rows).extracting(r -> r.get("action")).containsExactly(
-                "EVENT_CREATED", "RUN_ORDER_GENERATED", "RUN_ORDER_REGENERATED");
-        assertThat(rows.get(2).get("summary").toString()).startsWith("Regenerated the run order")
+                "EVENT_CREATED", "EVENT_CLASS_ADDED", "RUN_ORDER_GENERATED", "RUN_ORDER_REGENERATED");
+        assertThat(rows.get(3).get("summary").toString()).startsWith("Regenerated the run order")
                 .contains("1 practice and 2 qualifying");
     }
 
@@ -243,6 +249,15 @@ class EventAuditIT extends AbstractIntegrationTest {
                         headers()), Map.class);
         assertThat(added.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return ((Number) added.getBody().get("id")).longValue();
+    }
+
+    /** A confirmed entry, since a run order can't be generated for a class nobody has entered. */
+    private void addDriver(long eventId, long eventClassId) {
+        long competitorId = jdbc.queryForObject("insert into competitors (display_name) values (?) returning id",
+                Long.class, "Audit driver " + run);
+        jdbc.update("""
+                insert into entries (event_id, event_class_id, competitor_id, transponder_number, status)
+                values (?, ?, ?, ?, 'CONFIRMED')""", eventId, eventClassId, competitorId, "9" + run);
     }
 
     private ResponseEntity<String> send(String method, String url, Object body) {
