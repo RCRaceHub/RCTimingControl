@@ -1,6 +1,7 @@
 # RaceHub integration: organise once, run locally
 
-Status: proposed roadmap, not implemented behaviour.  
+Status: proposed roadmap, not implemented behaviour.
+
 Planning baseline: 19 October 2026.
 
 This is the durable, public-safe product plan. It contains the requirements,
@@ -173,6 +174,27 @@ as public payloads. Define retention, visibility and erasure handling before
 public publication.
 
 ## Delivery and issue index
+
+Milestone: [RaceHub integration: organise once, run locally](https://github.com/RCRaceHub/RCTimingControl/milestone/1).
+
+Parent tracker: [#384](https://github.com/RCRaceHub/RCTimingControl/issues/384).
+
+Documentation change: [#385](https://github.com/RCRaceHub/RCTimingControl/pull/385).
+
+| Package | Child issue | Delivery |
+|---|---|---|
+| C01 | [#386](https://github.com/RCRaceHub/RCTimingControl/issues/386) | Ownership and versioned contracts |
+| C02 | [#387](https://github.com/RCRaceHub/RCTimingControl/issues/387) | Stable identities and publisher recovery |
+| C03 | [#388](https://github.com/RCRaceHub/RCTimingControl/issues/388) | Optional pairing and standalone setup |
+| C04 | [#389](https://github.com/RCRaceHub/RCTimingControl/issues/389) | Meeting/class import and local rules |
+| C05 | [#390](https://github.com/RCRaceHub/RCTimingControl/issues/390) | Companion meeting/entry exports |
+| C06 | [#391](https://github.com/RCRaceHub/RCTimingControl/issues/391) | Safe refresh and acknowledgements |
+| C07 | [#392](https://github.com/RCRaceHub/RCTimingControl/issues/392) | Timing result publication |
+| C08 | [#393](https://github.com/RCRaceHub/RCTimingControl/issues/393) | Companion results receipt/publication |
+| C09 | [#394](https://github.com/RCRaceHub/RCTimingControl/issues/394) | First integrated release acceptance |
+| C10 | [#395](https://github.com/RCRaceHub/RCTimingControl/issues/395) | Optional public live viewing |
+| C11 | [#396](https://github.com/RCRaceHub/RCTimingControl/issues/396) | Verified public sharing links |
+| C12 | [#397](https://github.com/RCRaceHub/RCTimingControl/issues/397) | Reviewed operational feedback |
 
 The milestone contains a parent tracker and the following child work packages.
 All cards initially live in the timing repository. "Companion work" identifies
