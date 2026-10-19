@@ -71,7 +71,8 @@ public class RoundGeneratorService {
      * Persists all Round, Race, and RaceEntry records in a single transaction.
      *
      * @param request generation parameters
-     * @throws StateConflictException if run order already exists for the event
+     * @throws StateConflictException if run order already exists for the event, or no class has a confirmed
+     *                                entry (HTTP 409); classes with no entries are left out of the run order
      */
     public void generate(RoundGenerationRequest request) {
         if (roundRepository.existsByEventId(request.eventId())) {
@@ -88,7 +89,8 @@ public class RoundGeneratorService {
      * The rounds go with their races, grids and result snapshots; the foreign keys cascade.
      * Refused as well when a race has penalties, incidents or marshal records, which don't cascade.
      *
-     * @throws StateConflictException if a race of the event has been called, started or finished
+     * @throws StateConflictException if a race of the event has been called, started or finished, or no class has
+     *                                a confirmed entry (checked before anything is deleted)
      */
     public void regenerate(RoundGenerationRequest request) {
         List<Round> rounds = roundRepository.findByEventIdOrderBySequenceInEvent(request.eventId());
@@ -105,8 +107,8 @@ public class RoundGeneratorService {
                     "The run order can't be regenerated while its races have penalties, incidents, marshal laps "
                             + "or transponder links recorded against them");
         }
-        rounds.forEach(roundRepository::delete);
         GenerationPlan plan = buildPlan(request);
+        rounds.forEach(roundRepository::delete);
         plan.persist();
     }
 
@@ -146,18 +148,21 @@ public class RoundGeneratorService {
         // For each class, load CONFIRMED entries and compute snake-draft heat assignment
         Map<Long, List<List<Long>>> heatsByClass = new HashMap<>(); // classId -> list of heats (each heat is list of entryIds)
 
+        List<EventClass> classesWithEntries = new ArrayList<>();
+
         for (EventClass ec : eventClasses) {
             List<Entry> entries = entryRepository.findByEventClassIdAndStatus(
                     ec.getId(), EntryStatus.CONFIRMED);
+            if (entries.isEmpty()) {
+                // No drivers, so no heats and no finals: a class with nobody in it is left out of the run order
+                continue;
+            }
+            classesWithEntries.add(ec);
 
             // Seed in entry order. Racer ability ratings went with racer accounts (L10, #18).
             entries.sort(Comparator.comparingLong(Entry::getId));
 
             int heatCount = heatCount(entries.size(), request.maxCarsPerHeat(), request.minCarsPerHeat());
-            if (heatCount == 0) {
-                heatsByClass.put(ec.getId(), List.of());
-                continue;
-            }
 
             // Snake draft: fill heats 0..heatCount-1 in snake order
             List<List<Long>> heats = new ArrayList<>();
@@ -174,7 +179,12 @@ public class RoundGeneratorService {
             heatsByClass.put(ec.getId(), heats);
         }
 
-        return new GenerationPlan(request, eventClasses, heatsByClass);
+        if (classesWithEntries.isEmpty()) {
+            throw new StateConflictException(
+                    "No drivers are entered in any class of this event, so there is nothing to generate heats for. "
+                            + "Add entries or walk-ins first.");
+        }
+        return new GenerationPlan(request, classesWithEntries, heatsByClass);
     }
 
     /**

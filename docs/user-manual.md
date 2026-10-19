@@ -72,7 +72,7 @@ A class races to a **format**, which you pick in step 4 and again for each class
 
 ### 7. Add a walk-in and swap a transponder
 
-RCTC treats every entrant as present; check-in is RaceHub's. For a driver who did not book, open **Race Control**, choose the event, then **Walk-in**, pick their class and enter them (admins and race directors). Then generate or regenerate rounds so they are in the run order. If a driver changes their transponder on the day, open **Race Control**, choose the event, then **Transponders**. Find the entry by name and enter the new number. A swap is logged, and a later RaceHub re-import keeps it. Section 1 of the Race Meeting Guide covers the pre-meeting checks.
+RCTC treats every entrant as present; check-in is RaceHub's. For a driver who did not book, open **Race Control**, choose the event, then **Walk-in**, pick their class and enter them (admins and race directors). Then generate or regenerate rounds so they are in the run order. A class with no confirmed entries is left out of the run order (no heats and no finals), and if no class has any entries, Generate Rounds refuses with a message asking you to add entries or walk-ins first. If a driver changes their transponder on the day, open **Race Control**, choose the event, then **Transponders**. Find the entry by name and enter the new number. A swap is logged, and a later RaceHub re-import keeps it. Section 1 of the Race Meeting Guide covers the pre-meeting checks.
 
 ### 8. Run the races
 
