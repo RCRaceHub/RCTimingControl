@@ -146,8 +146,8 @@ public class RoundGeneratorService {
         List<EventClass> eventClasses = eventClassRepository.findByEventId(request.eventId());
 
         // For each class, load CONFIRMED entries and compute snake-draft heat assignment
-        Map<Long, List<List<Long>>> heatsByClass = new HashMap<>(); // classId -> list of heats (each heat is list of entryIds)
-
+        // classId -> list of heats (each heat is list of entryIds)
+        Map<Long, List<List<Long>>> heatsByClass = new HashMap<>();
         List<EventClass> classesWithEntries = new ArrayList<>();
 
         for (EventClass ec : eventClasses) {
@@ -211,10 +211,10 @@ public class RoundGeneratorService {
         private final Map<Long, List<List<Long>>> heatsByClass;
 
         GenerationPlan(RoundGenerationRequest request,
-                       List<EventClass> eventClasses,
+                       List<EventClass> classesWithEntries,
                        Map<Long, List<List<Long>>> heatsByClass) {
             this.request = request;
-            this.eventClasses = eventClasses;
+            this.eventClasses = classesWithEntries;
             this.heatsByClass = heatsByClass;
         }
 
@@ -235,7 +235,7 @@ public class RoundGeneratorService {
         }
 
         /**
-         * Writes one practice or qualifying round with a race per heat of every class, and returns the next free
+         * Writes one practice or qualifying round with a race per heat of every class that has entries, and returns the next free
          * sequence number. Only the first round of its kind gets grid positions; later ones are set from the
          * previous round's finish.
          */

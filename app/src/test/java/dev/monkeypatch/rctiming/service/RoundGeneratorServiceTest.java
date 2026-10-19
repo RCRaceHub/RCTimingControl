@@ -111,7 +111,27 @@ class RoundGeneratorServiceTest {
 
         service.generate(new RoundGenerationRequest(1L, 0, 1, 8, List.of()));
 
-        assertThat(races).isNotEmpty().allMatch(r -> r.getEventClassId().equals(11L));
+        // One qualifying heat and one final, both for the class that has a driver
+        assertThat(races).hasSize(2).allMatch(r -> r.getEventClassId().equals(11L));
+    }
+
+    @Test
+    void regenerate_whenNoClassHasEntries_keepsTheExistingRunOrder() {
+        Round round = new Round();
+        round.setId(5L);
+        Race race = new Race();
+        race.setStatus(RaceStatus.PENDING);
+        EventClass eventClass = new EventClass();
+        eventClass.setId(10L);
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(1L)).thenReturn(List.of(round));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(5L)).thenReturn(List.of(race));
+        when(raceRepository.hasRecordsAgainstEventRaces(1L)).thenReturn(false);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(eventClass));
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(new ArrayList<>());
+
+        assertThatThrownBy(() -> service.regenerate(new RoundGenerationRequest(1L, 0, 1, 8, List.of())))
+                .isInstanceOf(StateConflictException.class);
+        verify(roundRepository, never()).delete(any(Round.class));
     }
 
     @Test
