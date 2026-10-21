@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.api.pub;
 
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
+import dev.monkeypatch.rctiming.query.championship.ChampionshipInfoDto;
+import dev.monkeypatch.rctiming.query.championship.ChampionshipInfoQuery;
 import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.championship.StandingsRowDto;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,11 +25,14 @@ import java.util.List;
 public class PublicChampionshipController {
 
     private final ChampionshipStandingsQuery query;
+    private final ChampionshipInfoQuery infoQuery;
 
     private final PublicNames publicNames;
 
-    public PublicChampionshipController(ChampionshipStandingsQuery query, PublicNames publicNames) {
+    public PublicChampionshipController(ChampionshipStandingsQuery query, ChampionshipInfoQuery infoQuery,
+                                        PublicNames publicNames) {
         this.query = query;
+        this.infoQuery = infoQuery;
         this.publicNames = publicNames;
     }
 
@@ -43,5 +48,14 @@ public class PublicChampionshipController {
                 .map(r -> new StandingsRowDto(r.driverId(), names.of(r.driverId(), r.displayName(), null),
                         r.racingClassId(), r.totalPoints(), r.rounds()))
                 .toList();
+    }
+
+    /**
+     * The championship's name and the classes it scores, to head the standings tables.
+     * {@code GET /api/v1/championships/{id}/info}, anonymous. 404 if the championship does not exist.
+     */
+    @GetMapping("/{id}/info")
+    public ChampionshipInfoDto getInfo(@PathVariable Long id) {
+        return infoQuery.find(id);
     }
 }

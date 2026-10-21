@@ -265,6 +265,18 @@ export async function getPublicChampionshipStandings(
   return data;
 }
 
+/** A championship's name and the classes it scores, to head each class's table on the standings sheet. */
+export type ChampionshipInfoDto = {
+  id: number;
+  name: string;
+  classes: { racingClassId: number; name: string }[];
+};
+
+export async function getPublicChampionshipInfo(championshipId: number): Promise<ChampionshipInfoDto> {
+  const { data } = await api.get<ChampionshipInfoDto>(`/api/v1/championships/${championshipId}/info`);
+  return data;
+}
+
 export type EventScheduleDto = {
   id: number;
   name: string;
