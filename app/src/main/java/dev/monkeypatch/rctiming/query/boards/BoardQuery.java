@@ -17,6 +17,7 @@ import java.util.Optional;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
@@ -115,6 +116,19 @@ public class BoardQuery {
         dsl.select(ENTRIES.ID, ENTRIES.COMPETITOR_ID).from(ENTRIES).where(ENTRIES.ID.in(entryIds))
                 .forEach(r -> ids.put(r.get(ENTRIES.ID), r.get(ENTRIES.COMPETITOR_ID)));
         return ids;
+    }
+
+    /** The car number each entry raced under, for names that stand in a number when the competitor is hidden. */
+    public Map<Long, String> carNumbers(Collection<Long> entryIds) {
+        if (entryIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> numbers = new HashMap<>();
+        dsl.select(RACE_ENTRIES.ENTRY_ID, RACE_ENTRIES.CAR_NUMBER).from(RACE_ENTRIES)
+                .where(RACE_ENTRIES.ENTRY_ID.in(entryIds)).and(RACE_ENTRIES.CAR_NUMBER.isNotNull())
+                .orderBy(RACE_ENTRIES.ID)
+                .forEach(r -> numbers.put(r.get(RACE_ENTRIES.ENTRY_ID), String.valueOf(r.get(RACE_ENTRIES.CAR_NUMBER))));
+        return numbers;
     }
 
     private static List<SortField<?>> runOrder() {

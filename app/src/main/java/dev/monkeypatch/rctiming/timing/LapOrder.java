@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Who held which place at the end of each lap, worked out from the order the cars crossed the line. It serves the
  * stored lap history of a finished race ({@code ResultSnapshotService}) and the live position chart of a race on
- * track ({@code BoardController}), so both draw the same lines. It is a plain value built from a snapshot of the
+ * track ({@code BoardController}), so both draw the same lines. It is a plain value built from copies of the
  * rows and lap times; it holds no lock and changes nothing. Times are milliseconds (UTC for passings).
  */
 public final class LapOrder {
@@ -32,6 +32,9 @@ public final class LapOrder {
         }
     }
 
+    /** One car's place at the end of one lap. */
+    public record Place(int lap, long entryId, int position) {}
+
     private final List<LiveTimingRowDto> rows;
     private final Map<Long, LapClock> clocks;
     private final Map<Long, LapClock> orderClocks;
@@ -47,22 +50,38 @@ public final class LapOrder {
     }
 
     /**
-     * Reads each car's lap times from the live state under its lock. {@code state} may be null (a legacy snapshot, or
-     * no live state), in which case every place falls back to the final position. Where the crossing order can't be
-     * worked out (a lap count changed by a marshal adjustment, for any car) the same fallback applies. A lapped
-     * car's line ends where it stopped counting laps.
+     * Reads each car's lap times from the live state, one car at a time. That is not atomic with {@code rows}: for a
+     * race still on track use {@link LiveRaceState#lapOrder()}, which copies both under the state's lock. For a
+     * finished race, which no passing changes, this is safe. {@code state} may be null (a legacy snapshot, or no
+     * live state), in which case every place falls back to the final position.
      *
      * @param rows  the final or current running order
      * @param state the race's live state, or null
      */
     public static LapOrder of(List<LiveTimingRowDto> rows, LiveRaceState state) {
-        Map<Long, LapClock> clocks = new HashMap<>();
+        Map<Long, List<Long>> lapTimes = new HashMap<>();
         if (state != null) {
             for (LiveTimingRowDto row : rows) {
-                List<Long> lapTimes = state.lapTimesSnapshot(row.entryId());
-                if (!lapTimes.isEmpty()) {
-                    clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), lapTimes));
-                }
+                lapTimes.put(row.entryId(), state.lapTimesSnapshot(row.entryId()));
+            }
+        }
+        return of(rows, lapTimes);
+    }
+
+    /**
+     * Builds the order from copied data, holding no lock. Where the crossing order can't be worked out (a lap count
+     * changed by a marshal adjustment, for any car) every place falls back to the final position. A lapped car's
+     * line ends where it stopped counting laps.
+     *
+     * @param rows     the running order
+     * @param lapTimes each car's lap durations by entry id; a car missing or with none is treated as unknown
+     */
+    public static LapOrder of(List<LiveTimingRowDto> rows, Map<Long, List<Long>> lapTimes) {
+        Map<Long, LapClock> clocks = new HashMap<>();
+        for (LiveTimingRowDto row : rows) {
+            List<Long> times = lapTimes.get(row.entryId());
+            if (times != null && !times.isEmpty()) {
+                clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), times));
             }
         }
         return new LapOrder(rows, clocks);
@@ -78,9 +97,6 @@ public final class LapOrder {
         return positionsAfterLap(lap, rows, orderClocks);
     }
 
-    /** One car's place at the end of one lap. */
-    public record Place(int lap, long entryId, int position) {}
-
     /** Every place held at the end of every lap, lap by lap, for a position chart. */
     public List<Place> places() {
         List<Place> places = new ArrayList<>();
@@ -95,7 +111,10 @@ public final class LapOrder {
         return places;
     }
 
-    /** The duration of a car's {@code lap} (1-based), or null when it isn't known. */
+    /**
+     * The duration of a car's {@code lap} (1-based), or null when it isn't known. Unlike the places this doesn't need
+     * the whole race's lap counts to agree, so it is given whenever the car has the time.
+     */
     public Long lapTimeMs(long entryId, int lap) {
         LapClock clock = clocks.get(entryId);
         return clock != null && lap <= clock.lapTimes().size() ? clock.lapTimes().get(lap - 1) : null;

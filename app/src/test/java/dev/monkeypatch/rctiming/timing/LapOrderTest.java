@@ -62,11 +62,26 @@ class LapOrderTest {
         List<LiveTimingRowDto> rows = List.of(row(1, 1, 2, 22_000), row(2, 2, 1, 15_000));
 
         // No live state: the places fall back to the final order and the lap times are unknown
-        LapOrder order = LapOrder.of(rows, null);
+        LapOrder order = LapOrder.of(rows, (LiveRaceState) null);
 
         assertThat(order.leaderLaps()).isEqualTo(2);
         assertThat(order.places()).containsExactly(
                 new LapOrder.Place(1, 1, 1), new LapOrder.Place(1, 2, 2), new LapOrder.Place(2, 1, 1));
         assertThat(order.lapTimeMs(1, 1)).isNull();
+    }
+
+    @Test
+    void copiedLapTimesGiveTheCrossingOrderWithoutTheLiveState() {
+        long start = 1_000_000;
+        List<LiveTimingRowDto> rows = List.of(
+                row(2, 1, 2, start + 11_000 + 9_000),
+                row(1, 2, 2, start + 10_000 + 12_000));
+
+        LapOrder order = LapOrder.of(rows, Map.of(1L, List.of(10_000L, 12_000L), 2L, List.of(11_000L, 9_000L)));
+
+        assertThat(order.places()).contains(
+                new LapOrder.Place(1, 1, 1), new LapOrder.Place(1, 2, 2),
+                new LapOrder.Place(2, 2, 1), new LapOrder.Place(2, 1, 2));
+        assertThat(order.lapTimeMs(1, 2)).isEqualTo(12_000L);
     }
 }

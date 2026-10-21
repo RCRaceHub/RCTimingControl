@@ -719,7 +719,7 @@ GET /boards/races/{raceId}/position-history
 ```http
 GET /boards/ticker?eventId={id}
 ```
-**200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one; `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
+**200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
 
 **Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing` and `/topic/race/{raceId}/state`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
 

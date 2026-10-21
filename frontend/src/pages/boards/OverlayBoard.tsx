@@ -141,7 +141,7 @@ function OverlayTicker({
   const { data: ticker } = useQuery({
     queryKey: publicQueryKeys.boards.ticker(eventId),
     queryFn: () => getTicker(eventId),
-    enabled: items.size > 0,
+    enabled: (['next', 'drivers', 'marshals', 'tq'] as const).some(item => items.has(item)),
     refetchInterval: BOARD_POLL_MS * 4,
   });
   const { data: round } = useQuery({
@@ -151,19 +151,23 @@ function OverlayTicker({
     refetchInterval: BOARD_POLL_MS * 6,
   });
   const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round));
-  if (segments.length === 0) return null;
   const text = segments.join('   •   ');
+  // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
+  // jump mid-scroll
+  const [shown, setShown] = useState<string | null>(null);
+  if (segments.length === 0) return null;
+  const display = shown ?? text;
   return (
     <div
       className={cn('fixed inset-x-0 bottom-0 overflow-hidden py-2 font-sans text-lg font-semibold', panelClass)}
       aria-label="Ticker"
     >
       <span
-        key={text}
         className="ticker-scroll"
-        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, text.length * TICKER_SECONDS_PER_CHAR)}s` }}
+        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, display.length * TICKER_SECONDS_PER_CHAR)}s` }}
+        onAnimationIteration={() => setShown(text)}
       >
-        {text}
+        {display}
       </span>
     </div>
   );
@@ -187,7 +191,8 @@ export default function OverlayBoard() {
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
   const lapFlash = useLapFlash(allRows);
-  const chartSeries = useLivePositionSeries(raceId, allRows);
+  const chartSeries = useLivePositionSeries(raceId, allRows, showChart);
+  const tickerEventId = eventId ?? nowNext?.eventId ?? null;
 
   if (!race) {
     const upcoming = nowNext?.nextRace?.label;
@@ -206,7 +211,7 @@ export default function OverlayBoard() {
           {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
         </section>
         <OverlayTicker
-          eventId={eventId ?? nowNext?.eventId ?? null}
+          eventId={tickerEventId}
           raceId={null}
           rows={[]}
           items={tickerItems}
@@ -291,14 +296,19 @@ export default function OverlayBoard() {
       </section>
       {showChart && chartSeries.length > 0 && (
         <section
-          className={cn('fixed bottom-14 right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg', colours.panel)}
+          className={cn(
+            'fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg',
+            // Clear of the ticker's strip when it is showing
+            tickerItems.size > 0 ? 'bottom-14' : 'bottom-4',
+            colours.panel,
+          )}
           aria-label="Position chart"
         >
           <PositionChart series={chartSeries} />
         </section>
       )}
       <OverlayTicker
-        eventId={eventId ?? nowNext?.eventId ?? null}
+        eventId={tickerEventId}
         raceId={race.raceId}
         rows={allRows}
         items={tickerItems}

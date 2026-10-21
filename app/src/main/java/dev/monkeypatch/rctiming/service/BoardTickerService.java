@@ -38,20 +38,29 @@ public class BoardTickerService {
         this.publicNames = publicNames;
     }
 
-    /** The ticker for an event, which is already resolved by the caller. */
+    /**
+     * The ticker for an event.
+     *
+     * @param eventId an event that exists, already resolved by the caller
+     * @return the parts of the ticker that have something to show; the next race is null when none is left
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the next race is deleted while this runs
+     */
     public TickerDto forEvent(long eventId) {
         Optional<BoardRaceDto> next = boardQuery.nextRace(eventId);
         List<String> drivers = List.of();
         List<String> marshals = List.of();
         if (next.isPresent()) {
             PreRaceReadinessDto readiness = preRaceReadinessQuery.load(next.get().raceId());
-            Map<Long, Long> competitors = boardQuery.competitorIds(entryIds(readiness));
+            List<Long> entryIds = entryIds(readiness);
+            Map<Long, Long> competitors = boardQuery.competitorIds(entryIds);
+            // The readiness query doesn't read car numbers yet, and a hidden driver shows as their number
+            Map<Long, String> carNumbers = boardQuery.carNumbers(entryIds);
             PublicNames.Snapshot names = publicNames.snapshot();
             drivers = readiness.gridCall().stream()
-                    .map(slot -> names.of(competitors.get(slot.entryId()), slot.driverName(), slot.carNumber()))
+                    .map(slot -> names.of(competitors.get(slot.entryId()), slot.driverName(), carNumbers.get(slot.entryId())))
                     .toList();
             marshals = readiness.marshalDuty().stream()
-                    .map(row -> names.of(competitors.get(row.entryId()), row.driverName(), row.carNumber()))
+                    .map(row -> names.of(competitors.get(row.entryId()), row.driverName(), carNumbers.get(row.entryId())))
                     .toList();
         }
         return new TickerDto(next.map(BoardRaceDto::label).orElse(null), drivers, marshals, topQualifiers(eventId));
@@ -67,7 +76,9 @@ public class BoardTickerService {
     private List<TickerDto.TopQualifier> topQualifiers(long eventId) {
         List<TickerDto.TopQualifier> top = new ArrayList<>();
         for (QualifyingTableDto table : qualifyingTableService.forEventPublic(eventId)) {
-            if (table.heatsFinished() > 0 && !table.rows().isEmpty()) {
+            // A class whose heats are separate overall races has no single top qualifier (its rows are grouped by heat)
+            boolean oneRanking = table.rows().stream().allMatch(row -> row.heat() == null);
+            if (table.heatsFinished() > 0 && !table.rows().isEmpty() && oneRanking) {
                 QualifyingTableDto.Row first = table.rows().get(0);
                 top.add(new TickerDto.TopQualifier(table.className(), first.driverName(), first.bestLapMs()));
             }

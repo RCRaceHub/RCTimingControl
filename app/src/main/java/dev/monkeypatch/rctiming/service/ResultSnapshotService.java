@@ -24,8 +24,8 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
-import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
+import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -308,7 +308,8 @@ public class ResultSnapshotService {
     /**
      * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
      * The places come from {@link LapOrder}, so a position chart shows who passed whom. The state parameter is
-     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs.
+     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. A correction
+     * after the race rebuilds this from the live state if it is still held, otherwise the stored history is kept.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
         List<ResultSnapshotDto.PositionAtLap> history = new ArrayList<>();
