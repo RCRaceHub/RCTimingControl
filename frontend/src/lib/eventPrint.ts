@@ -43,7 +43,7 @@ export function startPosition(race: EventResultsRace, entryId: number): number |
   return race.startPositions[String(entryId)] ?? null;
 }
 
-/** "Qualifier 2 heat 1", "Final A": what to call a race on a sheet that already shows the class. */
+/** "Qualifier 2, heat 1", "Final A": what to call a race on a sheet that already shows the class. */
 export function heatTitle(race: EventResultsRace): string {
   if (race.roundType === 'FINAL') {
     if (race.finalLetter === 'Z') return 'Zombie round';

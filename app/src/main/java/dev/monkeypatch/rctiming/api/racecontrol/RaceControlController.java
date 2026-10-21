@@ -131,9 +131,11 @@ public class RaceControlController {
 
     /**
      * Each class's overall qualifying table: the order its finals are seeded from.
-     * {@code GET /event/{eventId}/qualifying}, race director or admin. Read only.
+     * {@code GET /event/{eventId}/qualifying}, race director, referee or admin (the meeting pack printout reads it).
+     * Read only.
      */
     @GetMapping("/event/{eventId}/qualifying")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
         return qualifyingTableService.forEvent(eventId);
     }

@@ -57,7 +57,8 @@ export default function PublicChampionshipPage() {
     };
   }, [title]);
 
-  if (isLoading) {
+  // Wait for the names too, so the tables don't re-sort when they arrive; a failed read just falls back to "Class N"
+  if (isLoading || info.isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading standings…</div>;
   }
 

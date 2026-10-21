@@ -18,6 +18,7 @@ public record EventResultsDto(long eventId, String eventName, LocalDate eventDat
     /**
      * One finished race and where it sat in the event.
      *
+     * @param result         the stored result; its lap history is empty in an event-wide read
      * @param roundType      "PRACTICE", "QUALIFIER" or "FINAL"
      * @param finalLetter    null unless the race is a final
      * @param startPositions the 1-based grid position of each entry that had one, by entry id; an entry with no

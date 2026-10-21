@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.query.racecontrol;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -37,12 +38,13 @@ public class EventResultsQuery {
 
     /**
      * The event's finished races in run order, each with its stored result and starting grid. Practice rounds are
-     * included; the caller picks what it prints. Times in the results are milliseconds.
+     * included; the caller picks what it prints. The lap history is left out (the rows and times are enough for
+     * the sheets; {@link #forRace} keeps it). Times in the results are milliseconds.
      *
      * @throws EntityNotFoundException if there is no such event
      */
     public EventResultsDto forEvent(long eventId) {
-        return load(eventId, DSL.trueCondition());
+        return load(eventId, DSL.trueCondition(), false);
     }
 
     /**
@@ -60,14 +62,15 @@ public class EventResultsQuery {
         if (eventId == null) {
             throw new EntityNotFoundException("No race " + raceId);
         }
-        EventResultsDto results = load(eventId, RACES.ID.eq(raceId));
+        EventResultsDto results = load(eventId, RACES.ID.eq(raceId), true);
         if (results.races().isEmpty()) {
             throw new EntityNotFoundException("No result snapshot for race " + raceId);
         }
         return results;
     }
 
-    private EventResultsDto load(long eventId, Condition raceFilter) {
+    /** {@code withLaps} keeps each race's lap history, which only the single-heat lap sheet uses and which is the bulk of the payload. */
+    private EventResultsDto load(long eventId, Condition raceFilter, boolean withLaps) {
         var event = dsl.select(EVENTS.NAME, EVENTS.EVENT_DATE)
                 .from(EVENTS)
                 .where(EVENTS.ID.eq(eventId))
@@ -102,10 +105,15 @@ public class EventResultsQuery {
                     r.get(ROUNDS.TYPE),
                     r.get(RACES.HEAT_NUMBER),
                     r.get(RACES.FINAL_LETTER),
-                    snapshotQuery.load(raceId),
+                    withLaps ? snapshotQuery.load(raceId) : withoutLaps(snapshotQuery.load(raceId)),
                     grids.getOrDefault(raceId, Map.of()));
         });
         return new EventResultsDto(eventId, event.get(EVENTS.NAME), event.get(EVENTS.EVENT_DATE), races);
+    }
+
+    private static ResultSnapshotDto withoutLaps(ResultSnapshotDto snapshot) {
+        return new ResultSnapshotDto(snapshot.raceId(), snapshot.raceLabel(), snapshot.finishedAt(),
+                snapshot.positions(), List.of(), snapshot.clubBranding());
     }
 
     /** Grid position by entry id for each of the races; an entry with no grid position is left out. */

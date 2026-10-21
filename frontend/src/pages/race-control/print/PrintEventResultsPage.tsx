@@ -87,10 +87,11 @@ export default function PrintEventResultsPage() {
   const printedAt = useMemo(() => new Date().toLocaleString(), []);
 
   const results = useEventResults(validId ? eventId : null);
+  const standingsWanted = validId && view === 'pack' && parts.standings;
   const standings = useQuery({
     queryKey: raceControlQueryKeys.qualifying(eventId),
     queryFn: () => getQualifying(eventId),
-    enabled: validId && view === 'pack' && parts.standings,
+    enabled: standingsWanted,
     staleTime: 30_000,
   });
 
@@ -108,10 +109,10 @@ export default function PrintEventResultsPage() {
   if (!validId) {
     return <div className="p-8 text-sm text-destructive">There is no such event.</div>;
   }
-  if (results.isPending) {
+  if (results.isPending || (standingsWanted && standings.isPending)) {
     return <div className="p-8 text-sm text-muted-foreground">Loading results…</div>;
   }
-  if (results.isError || !results.data) {
+  if (results.isError || !results.data || (standingsWanted && standings.isError)) {
     return <div className="p-8 text-sm text-destructive">Could not load the results.</div>;
   }
 

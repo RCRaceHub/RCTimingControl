@@ -83,6 +83,7 @@ class EventResultsQueryIT extends AbstractIntegrationTest {
         assertThat(races).extracting(EventResultsDto.Race::roundType).containsExactly("QUALIFIER", "FINAL");
         assertThat(races).extracting(EventResultsDto.Race::raceId).doesNotContain(unfinishedId);
         assertThat(races.get(1).finalLetter()).isEqualTo("A");
+        assertThat(races.get(0).result().lapHistory()).isEmpty();
         assertThat(races.get(0).startPositions()).containsEntry(entryId, 3);
         assertThat(races.get(1).startPositions()).isEmpty();
     }
