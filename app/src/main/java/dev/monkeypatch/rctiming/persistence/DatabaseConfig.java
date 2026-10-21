@@ -62,11 +62,15 @@ public class DatabaseConfig {
         this.jdbcUrl = vendor.jdbcUrl(dataDirectory);
     }
 
-    /** The write pool, the primary data source: Flyway and every write transaction use it. */
+    /**
+     * The write pool, the primary data source: Flyway and every write transaction use it. Its transactions
+     * begin by taking the write lock (so even a read-only {@code @Transactional} on it blocks other writers).
+     */
     @Bean
     @Primary
     DataSource dataSource() {
-        HikariConfig config = poolConfig("rctiming-write", vendor.maxWriteConnections(), vendor.writeConnectionProperties());
+        HikariConfig config = poolConfig("rctiming-write", vendor.maxWriteConnections(),
+                vendor.writeConnectionProperties());
         return new HikariDataSource(config);
     }
 

@@ -32,7 +32,8 @@ public enum DatabaseVendor {
 
     /**
      * One SQLite file inside the app process (#26). WAL lets readers carry on while a write
-     * commits; a single writer connection means writes never contend for the lock.
+     * commits; a single writer connection serialises writes within one app instance (other processes, such
+     * as the backup, still share the file, so the write pool waits for the lock rather than failing).
      */
     SQLITE("sqlite", SQLDialect.SQLITE, 1) {
         @Override
@@ -214,7 +215,7 @@ public enum DatabaseVendor {
     /** JDBC URL of the app's database inside the data directory. */
     public abstract String jdbcUrl(Path dataDirectory);
 
-    /** Settings applied to every connection. */
+    /** The base settings of every connection; the write pool adds to them in {@link #writeConnectionProperties()}. */
     public abstract Properties connectionProperties();
 
     /**
