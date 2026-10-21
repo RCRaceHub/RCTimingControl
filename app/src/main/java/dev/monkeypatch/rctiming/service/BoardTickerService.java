@@ -1,9 +1,9 @@
 package dev.monkeypatch.rctiming.service;
 
-import dev.monkeypatch.rctiming.api.boards.dto.TickerDto;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
+import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.GridCallSlotDto;
 import dev.monkeypatch.rctiming.query.racecontrol.MarshalDutyRowDto;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
