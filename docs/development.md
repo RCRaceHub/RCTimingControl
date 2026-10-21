@@ -308,7 +308,7 @@ Migrations live in one folder per database: `app/src/main/resources/db/migration
 
 ### Keeping the database swappable
 
-The database is chosen in one place. `rctiming.database.vendor` picks it, and `DatabaseConfig` (in `persistence/`) applies it to Flyway and jOOQ. The vendor-specific values themselves live in `persistence/vendor/DatabaseVendor`: the JDBC URL, connection settings (for SQLite: WAL, `synchronous=NORMAL`, foreign keys on, a 5 second busy timeout), how many write connections it allows, and the jOOQ dialect.
+The database is chosen in one place. `rctiming.database.vendor` picks it, and `DatabaseConfig` (in `persistence/`) applies it to Flyway and jOOQ. The vendor-specific values themselves live in `persistence/vendor/DatabaseVendor`: the JDBC URL, connection settings (for SQLite: WAL, `synchronous=NORMAL`, foreign keys on, a 5 second busy timeout; the write pool also begins each transaction with `BEGIN IMMEDIATE`, so a transaction that reads first and writes later waits for the lock instead of failing at once with `SQLITE_BUSY`), how many write connections it allows, and the jOOQ dialect.
 
 The app opens two pools on the database: a write pool (one connection for SQLite, used by Flyway and Spring transactions) and a read pool of `rctiming.database.read-connections` (default 4) whose connections refuse writes. jOOQ queries outside a transaction go to the read pool; inside a `@Transactional` one, read-only included, they share the writer. `@ReadTransaction` runs a read-only transaction on the read pool instead, so a query class's several statements see one snapshot without taking the write connection; the `query/` classes use it.
 
