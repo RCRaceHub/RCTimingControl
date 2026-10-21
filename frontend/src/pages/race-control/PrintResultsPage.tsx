@@ -96,6 +96,9 @@ export default function PrintResultsPage() {
     }
   }, [data]);
 
+  // Only offered when the heat has places to draw: a chart of flat lines says nothing
+  const chartSeries = data ? positionSeries(data.positions, data.lapHistory) : [];
+
   if (isLoading) {
     return (
       <div className="p-8 text-sm text-muted-foreground">Loading results…</div>
@@ -135,10 +138,10 @@ export default function PrintResultsPage() {
         </section>
       )}
 
-      {showChart && positionSeries(data.positions, data.lapHistory).length > 0 && (
+      {showChart && chartSeries.length > 0 && (
         <section aria-label="Position chart" className="mt-6">
           <h2 className="mb-2 text-sm font-semibold">Position by lap</h2>
-          <PositionChart series={positionSeries(data.positions, data.lapHistory)} />
+          <PositionChart series={chartSeries} />
         </section>
       )}
 
@@ -153,14 +156,16 @@ export default function PrintResultsPage() {
           />
           Include lap-by-lap times
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={showChart}
-            onChange={(e) => setOption('chart', e.target.checked ? null : '0')}
-          />
-          Include position chart
-        </label>
+        {chartSeries.length > 0 && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showChart}
+              onChange={(e) => setOption('chart', e.target.checked ? null : '0')}
+            />
+            Include position chart
+          </label>
+        )}
         <button
           onClick={() => window.print()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm"

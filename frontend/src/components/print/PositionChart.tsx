@@ -5,10 +5,12 @@ const COLOURS = ['#2563eb', '#16a34a', '#dc2626', '#d97706', '#9333ea', '#0891b2
 
 const WIDTH = 720;
 const LEFT = 44;
-const RIGHT = 70;
+const RIGHT = 84;
 const TOP = 12;
 const BOTTOM = 40;
 const ROW = 28;
+const TALL_ROW = 20;
+const MAX_LABEL = 12;
 
 /**
  * Who held which place over the heat: lap across, place down (first at the top), one line per driver labelled at its
@@ -19,10 +21,12 @@ export function PositionChart({ series }: { series: PositionSeries[] }) {
   const lastLap = Math.max(...series.flatMap((s) => s.points.map((p) => p.lap)));
   const firstLap = Math.min(...series.flatMap((s) => s.points.map((p) => p.lap)));
   const places = Math.max(series.length, ...series.flatMap((s) => s.points.map((p) => p.position)));
-  const height = TOP + BOTTOM + (places - 1) * ROW + ROW;
+  // Crowded heats get tighter rows so the chart still fits its page
+  const row = places > 12 ? TALL_ROW : ROW;
+  const height = TOP + BOTTOM + places * row;
   const plotW = WIDTH - LEFT - RIGHT;
   const x = (lap: number) => LEFT + (lastLap === firstLap ? plotW / 2 : ((lap - firstLap) / (lastLap - firstLap)) * plotW);
-  const y = (position: number) => TOP + (position - 1) * ROW + ROW / 2;
+  const y = (position: number) => TOP + (position - 1) * row + row / 2;
   const lapTicks = Array.from({ length: lastLap - firstLap + 1 }, (_, i) => firstLap + i)
     .filter((lap) => lap === firstLap || lap === lastLap || (lap - firstLap) % Math.max(1, Math.ceil((lastLap - firstLap) / 10)) === 0);
 
@@ -44,10 +48,11 @@ export function PositionChart({ series }: { series: PositionSeries[] }) {
           <text key={lap} x={x(lap)} y={height - BOTTOM + 18} textAnchor="middle" fontSize="12" fill="currentColor">{lap}</text>
         ))}
         <text x={LEFT + plotW / 2} y={height - 6} textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor">Lap</text>
-        <text transform={`translate(12 ${TOP + (places * ROW) / 2}) rotate(-90)`} textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor">Position</text>
+        <text transform={`translate(12 ${TOP + (places * row) / 2}) rotate(-90)`} textAnchor="middle" fontSize="12" fontWeight="bold" fill="currentColor">Position</text>
         {series.map((s, i) => {
           const colour = COLOURS[i % COLOURS.length];
           const last = s.points[s.points.length - 1];
+          const label = s.label.length > MAX_LABEL ? `${s.label.slice(0, MAX_LABEL - 1)}…` : s.label;
           return (
             <g key={s.entryId}>
               <polyline
@@ -57,7 +62,8 @@ export function PositionChart({ series }: { series: PositionSeries[] }) {
                 strokeWidth="1.5"
                 strokeLinejoin="round"
               />
-              <text x={x(last.lap) + 6} y={y(last.position) + 4} fontSize="11" fill={colour}>{s.label}</text>
+              {s.points.length === 1 && <circle cx={x(last.lap)} cy={y(last.position)} r="3" fill={colour} />}
+              <text x={x(last.lap) + 6} y={y(last.position) + 4} fontSize="11" fill={colour}>{label}</text>
             </g>
           );
         })}

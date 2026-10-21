@@ -25,7 +25,6 @@ import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
-import dev.monkeypatch.rctiming.timing.LiveRacePosition;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -310,7 +309,9 @@ public class ResultSnapshotService {
      * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
      * The place at a lap is the order the cars crossed the line to complete it (see {@link #positionsAfterLap}), so a
      * position chart shows who passed whom. Where the crossing times can't be worked out (no live state, or a lap
-     * count changed by a marshal adjustment) a car's place falls back to its final position for that lap.
+     * count changed by a marshal adjustment, for any car) every place falls back to the final position. A lapped car's
+     * line ends where it stopped counting laps. A correction after the race rebuilds this from the live state if it
+     * is still held, otherwise it keeps the stored history.
      * The state parameter is nullable: legacy snapshots or races without live state get null lapTimeMs.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
@@ -321,15 +322,20 @@ public class ResultSnapshotService {
         Map<Long, LapClock> clocks = new HashMap<>();
         if (state != null) {
             for (LiveTimingRowDto row : rows) {
-                LiveRacePosition pos = state.getPositionSnapshot(row.entryId());
-                if (pos != null && pos.getLapTimes() != null && !pos.getLapTimes().isEmpty()) {
-                    clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), List.copyOf(pos.getLapTimes())));
+                List<Long> lapTimes = state.lapTimesSnapshot(row.entryId());
+                if (!lapTimes.isEmpty()) {
+                    clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), lapTimes));
                 }
             }
         }
+        // Decided once for the whole race, so one car's place never comes from a different rule than another's
+        // within a lap, or between laps.
+        boolean orderUsable = rows.stream().allMatch(r -> r.lapsCompleted() == 0
+                || (clocks.get(r.entryId()) != null && clocks.get(r.entryId()).lapTimes().size() == r.lapsCompleted()));
+        Map<Long, LapClock> orderClocks = orderUsable ? clocks : Map.of();
 
         for (int lap = 1; lap <= leaderLaps; lap++) {
-            Map<Long, Integer> placeAtLap = positionsAfterLap(lap, rows, clocks);
+            Map<Long, Integer> placeAtLap = positionsAfterLap(lap, rows, orderClocks);
             for (LiveTimingRowDto row : rows) {
                 if (row.lapsCompleted() >= lap) {
                     LapClock clock = clocks.get(row.entryId());
@@ -361,7 +367,7 @@ public class ResultSnapshotService {
     /**
      * The place of each car that completed {@code lap}, by the order they crossed the line to complete it: 1 is first
      * across. Cars that have not completed the lap are not placed. If any car that completed the lap has no usable
-     * lap times (none recorded, or fewer than {@code lap} because a marshal adjustment changed its count) the
+     * lap times (none recorded, or a count that differs from its laps because a marshal adjustment changed it) the
      * crossing order can't be trusted, so every car falls back to its final position.
      */
     static Map<Long, Integer> positionsAfterLap(int lap, List<LiveTimingRowDto> rows, Map<Long, LapClock> clocks) {
