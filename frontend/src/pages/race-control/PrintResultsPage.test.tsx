@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrintResultsPage from './PrintResultsPage';
-import { getPublicResultSnapshot, getRaceHistory } from '@/lib/raceControlApi';
+import { getRaceHistory, getRaceResult } from '@/lib/raceControlApi';
 
 vi.mock('@/lib/raceControlApi', () => ({
-  getPublicResultSnapshot: vi.fn(),
+  getRaceResult: vi.fn(),
   getRaceHistory: vi.fn(),
 }));
 
@@ -27,6 +27,25 @@ const snapshot = {
   ],
 };
 
+const raceResult = {
+  eventId: 1,
+  eventName: 'Autumn Club Day',
+  eventDate: '2026-10-17',
+  races: [
+    {
+      raceId: 5,
+      eventClassId: 2,
+      className: 'Buggy',
+      roundNumber: 1,
+      roundType: 'QUALIFIER',
+      heatNumber: 1,
+      finalLetter: null,
+      result: snapshot,
+      startPositions: { '10': 2, '11': 1 },
+    },
+  ],
+};
+
 function renderPage(url = '/results/5') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -43,7 +62,7 @@ function renderPage(url = '/results/5') {
 describe('PrintResultsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPublicResultSnapshot).mockResolvedValue(snapshot as never);
+    vi.mocked(getRaceResult).mockResolvedValue(raceResult as never);
     vi.mocked(getRaceHistory).mockResolvedValue([]);
   });
 
@@ -54,6 +73,19 @@ describe('PrintResultsPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Avg Lap' })).toBeInTheDocument();
     expect(screen.getByText('20.500')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Lap times' })).not.toBeInTheDocument();
+  });
+
+  it('shows where each driver started and the event it belongs to', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Start' })).toBeInTheDocument();
+    const annRow = screen.getByText('Ann Racer').closest('tr') as HTMLElement;
+    // Pos, Driver, Car, Start: Ann started second
+    expect(within(annRow).getAllByRole('cell')[3]).toHaveTextContent('2');
+    const bobRow = screen.getByText('Bob Racer').closest('tr') as HTMLElement;
+    expect(within(bobRow).getAllByRole('cell')[3]).toHaveTextContent('1');
+    expect(screen.getByText(/Autumn Club Day/)).toBeInTheDocument();
   });
 
   it('adds the lap-by-lap sheet when asked for it in the address', async () => {

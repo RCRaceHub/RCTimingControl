@@ -119,6 +119,17 @@ public class RaceControlController {
     }
 
     /**
+     * One finished race with real driver names and each driver's starting grid position, for the heat result
+     * printout. {@code GET /race/{raceId}/result}, any signed-in official. Read only. 404 if there is no such race
+     * or it has no stored result.
+     */
+    @GetMapping("/race/{raceId}/result")
+    @PreAuthorize("isAuthenticated()")
+    public EventResultsDto getRaceResult(@PathVariable long raceId) {
+        return eventResultsQuery.forRace(raceId);
+    }
+
+    /**
      * Each class's overall qualifying table: the order its finals are seeded from.
      * {@code GET /event/{eventId}/qualifying}, race director or admin. Read only.
      */

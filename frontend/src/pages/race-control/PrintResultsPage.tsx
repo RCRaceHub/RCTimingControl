@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useResultSnapshot } from '@/hooks/race-control/useResultSnapshot';
+import { useRaceResult } from '@/hooks/race-control/useEventResults';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { getRaceHistory, type ResultSnapshotDto } from '@/lib/raceControlApi';
-import { averageLapMs, lapSheetColumns, lapTimesFor } from '@/lib/heatSheet';
+import { lapSheetColumns } from '@/lib/heatSheet';
+import { HeatResultTable } from '@/components/print/HeatResultTable';
+import { SheetHeader } from '@/components/print/SheetHeader';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 
@@ -64,7 +66,9 @@ export default function PrintResultsPage() {
   const { raceId: raceIdStr } = useParams<{ raceId: string }>();
   const raceId = Number(raceIdStr);
 
-  const { data, isLoading, error } = useResultSnapshot(raceId || null);
+  const { data: eventResults, isLoading, error } = useRaceResult(raceId || null);
+  const race = eventResults?.races[0];
+  const data = race?.result;
   const [searchParams, setSearchParams] = useSearchParams();
   const showLaps = searchParams.get('laps') === '1';
   // The penalties are a nicety: if they can't be read the result still prints
@@ -88,7 +92,7 @@ export default function PrintResultsPage() {
     );
   }
 
-  if (error || !data) {
+  if (error || !eventResults || !race || !data) {
     return (
       <div className="p-8 text-sm text-destructive">
         {error ? 'Could not load results.' : 'No results available.'}
@@ -98,57 +102,15 @@ export default function PrintResultsPage() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto print:p-4">
-      <div className="mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{data.raceLabel}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {data.clubBranding?.clubName} &bull; Finished{' '}
-              {formatDateTime(data.finishedAt)}
-            </p>
-          </div>
-          {data.clubBranding?.logoUrl && (
-            <img
-              src={data.clubBranding.logoUrl}
-              alt={data.clubBranding?.clubName}
-              className="h-16 object-contain"
-            />
-          )}
-        </div>
-      </div>
+      <SheetHeader
+        title={data.raceLabel}
+        eventName={eventResults.eventName}
+        eventDate={eventResults.eventDate}
+        branding={data.clubBranding}
+      />
+      <p className="mb-4 text-sm text-muted-foreground">Finished {formatDateTime(data.finishedAt)}</p>
 
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b-2 border-foreground">
-            <th className="text-left py-2 pr-4 w-10">Pos</th>
-            <th className="text-left py-2 pr-4">Driver</th>
-            <th className="text-left py-2 pr-4">Car</th>
-            <th className="text-right py-2 pr-4">Laps</th>
-            <th className="text-right py-2 pr-4">Total Time</th>
-            <th className="text-right py-2 pr-4">Best Lap</th>
-            <th className="text-right py-2 pr-4">Avg Lap</th>
-            <th className="text-right py-2">Gap</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.positions.map((row) => (
-            <tr key={row.entryId} className="border-b border-border/50">
-              <td className="py-1.5 pr-4 font-semibold">{row.position}</td>
-              <td className="py-1.5 pr-4">{row.driverName}</td>
-              <td className="py-1.5 pr-4 text-muted-foreground">{row.carNumber ?? '—'}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{row.lapsCompleted}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.totalTimeMs)}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">
-                {fmtMs(averageLapMs(lapTimesFor(row.entryId, data.lapHistory)))}
-              </td>
-              <td className="py-1.5 text-right font-mono text-muted-foreground">
-                {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <HeatResultTable race={race} />
 
       {penalties.length > 0 && (
         <section aria-label="Penalties" className="mt-4 text-sm">

@@ -2,7 +2,9 @@ package dev.monkeypatch.rctiming.query.racecontrol;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -40,6 +42,32 @@ public class EventResultsQuery {
      * @throws EntityNotFoundException if there is no such event
      */
     public EventResultsDto forEvent(long eventId) {
+        return load(eventId, DSL.trueCondition());
+    }
+
+    /**
+     * One finished race of its event, shaped like {@link #forEvent} so the heat result page can use the same
+     * rows: the event's name and date and a single race.
+     *
+     * @throws EntityNotFoundException if there is no such race or it has no stored result yet
+     */
+    public EventResultsDto forRace(long raceId) {
+        Long eventId = dsl.select(ROUNDS.EVENT_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .where(RACES.ID.eq(raceId))
+                .fetchOne(ROUNDS.EVENT_ID);
+        if (eventId == null) {
+            throw new EntityNotFoundException("No race " + raceId);
+        }
+        EventResultsDto results = load(eventId, RACES.ID.eq(raceId));
+        if (results.races().isEmpty()) {
+            throw new EntityNotFoundException("No result snapshot for race " + raceId);
+        }
+        return results;
+    }
+
+    private EventResultsDto load(long eventId, Condition raceFilter) {
         var event = dsl.select(EVENTS.NAME, EVENTS.EVENT_DATE)
                 .from(EVENTS)
                 .where(EVENTS.ID.eq(eventId))
@@ -56,7 +84,7 @@ public class EventResultsQuery {
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
                 .join(RACING_CLASSES).on(RACING_CLASSES.ID.eq(EVENT_CLASSES.RACING_CLASS_ID))
                 .join(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
-                .where(ROUNDS.EVENT_ID.eq(eventId))
+                .where(ROUNDS.EVENT_ID.eq(eventId), raceFilter)
                 .orderBy(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
                         RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
                 .fetch();

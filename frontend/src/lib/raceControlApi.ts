@@ -448,6 +448,40 @@ export async function getRaceHistory(raceId: number): Promise<RaceHistoryItem[]>
   return data;
 }
 
+/** One finished race in the officials' results: the real-name result and each driver's grid position. */
+export type EventResultsRace = {
+  raceId: number;
+  eventClassId: number;
+  className: string;
+  roundNumber: number;
+  roundType: 'PRACTICE' | 'QUALIFIER' | 'FINAL';
+  heatNumber: number;
+  finalLetter: string | null;
+  result: ResultSnapshotDto;
+  /** Grid position by entry id; an entry with no grid position is missing. */
+  startPositions: Record<string, number>;
+};
+
+/** An event's finished races in run order, for the officials' printouts. Names are the real ones. */
+export type EventResultsDto = {
+  eventId: number;
+  eventName: string;
+  eventDate: string;
+  races: EventResultsRace[];
+};
+
+/** Every finished race of the event, with real names and starting grid (round summary, finals, meeting pack). */
+export async function getEventResults(eventId: number): Promise<EventResultsDto> {
+  const { data } = await api.get<EventResultsDto>(`/api/v1/race-control/event/${eventId}/results`);
+  return data;
+}
+
+/** One finished race in the same shape as {@link getEventResults}, for the heat result printout. */
+export async function getRaceResult(raceId: number): Promise<EventResultsDto> {
+  const { data } = await api.get<EventResultsDto>(`/api/v1/race-control/race/${raceId}/result`);
+  return data;
+}
+
 /** A driver's place in one finished qualifying round; `counted` is false for a round that was dropped. */
 export type QualifyingRoundPlace = {
   place: number;

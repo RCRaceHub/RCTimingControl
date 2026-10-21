@@ -88,6 +88,15 @@ class EventResultsQueryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void oneRaceComesBackWithItsGridAndAnUnfinishedRaceIsNotFound() {
+        EventResultsDto results = query.forRace(qualifierId);
+
+        assertThat(results.races()).hasSize(1);
+        assertThat(results.races().get(0).startPositions()).containsEntry(entryId, 3);
+        assertThatThrownBy(() -> query.forRace(unfinishedId)).isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
     void anUnknownEventIsNotFound() {
         assertThatThrownBy(() -> query.forEvent(-1L)).isInstanceOf(EntityNotFoundException.class);
     }
