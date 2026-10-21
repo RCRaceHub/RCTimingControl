@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useRaceResult } from '@/hooks/race-control/useEventResults';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { getRaceHistory, type ResultSnapshotDto } from '@/lib/raceControlApi';
-import { lapSheetColumns } from '@/lib/heatSheet';
+import { lapSheetColumns, positionSeries } from '@/lib/heatSheet';
+import { PositionChart } from '@/components/print/PositionChart';
 import { HeatResultTable } from '@/components/print/HeatResultTable';
 import { SheetHeader } from '@/components/print/SheetHeader';
 import { fmtMs } from '@/lib/format';
@@ -70,7 +71,16 @@ export default function PrintResultsPage() {
   const race = eventResults?.races[0];
   const data = race?.result;
   const [searchParams, setSearchParams] = useSearchParams();
+  /** Sets or clears one option in the page address, keeping the others, so a reload keeps the ticks. */
+  function setOption(key: string, value: string | null) {
+    const next = new URLSearchParams(searchParams);
+    if (value === null) next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  }
   const showLaps = searchParams.get('laps') === '1';
+  // The position chart is on unless the tick is cleared (`chart=0`)
+  const showChart = searchParams.get('chart') !== '0';
   // The penalties are a nicety: if they can't be read the result still prints
   const history = useQuery({
     queryKey: raceControlQueryKeys.raceHistory(raceId),
@@ -125,6 +135,13 @@ export default function PrintResultsPage() {
         </section>
       )}
 
+      {showChart && positionSeries(data.positions, data.lapHistory).length > 0 && (
+        <section aria-label="Position chart" className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold">Position by lap</h2>
+          <PositionChart series={positionSeries(data.positions, data.lapHistory)} />
+        </section>
+      )}
+
       {showLaps && <LapSheet positions={data.positions} lapHistory={data.lapHistory} />}
 
       <div className="mt-6 flex items-center gap-4 print:hidden">
@@ -132,11 +149,17 @@ export default function PrintResultsPage() {
           <input
             type="checkbox"
             checked={showLaps}
-            onChange={(e) =>
-              setSearchParams(e.target.checked ? { laps: '1' } : {}, { replace: true })
-            }
+            onChange={(e) => setOption('laps', e.target.checked ? '1' : null)}
           />
           Include lap-by-lap times
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showChart}
+            onChange={(e) => setOption('chart', e.target.checked ? null : '0')}
+          />
+          Include position chart
         </label>
         <button
           onClick={() => window.print()}

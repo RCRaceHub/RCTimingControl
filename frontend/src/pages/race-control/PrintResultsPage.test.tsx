@@ -88,6 +88,17 @@ describe('PrintResultsPage', () => {
     expect(screen.getByText(/Autumn Club Day/)).toBeInTheDocument();
   });
 
+  it('draws the position chart unless it is switched off in the address', async () => {
+    renderPage();
+    expect(await screen.findByRole('img', { name: 'Position by lap' })).toBeInTheDocument();
+  });
+
+  it('leaves the position chart off when the address says chart=0', async () => {
+    renderPage('/results/5?chart=0');
+    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Position by lap' })).not.toBeInTheDocument();
+  });
+
   it('adds the lap-by-lap sheet when asked for it in the address', async () => {
     renderPage('/results/5?laps=1');
 

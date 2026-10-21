@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { averageLapMs, lapSheetColumns, lapTimesFor } from './heatSheet';
+import { averageLapMs, lapSheetColumns, lapTimesFor, positionSeries } from './heatSheet';
 import type { PositionAtLap, ResultRow } from './raceControlApi';
 
 const lap = (entryId: number, lapNumber: number, lapTimeMs: number | null): PositionAtLap => ({
@@ -53,5 +53,23 @@ describe('heatSheet', () => {
 
   it('leaves out a driver with no timed lap', () => {
     expect(lapSheetColumns([row(1, 5)], [])).toEqual([]);
+  });
+
+  it('builds one position line per driver in finishing order, labelled by car, in lap order', () => {
+    const history: PositionAtLap[] = [
+      { entryId: 2, lapNumber: 2, position: 1, lapTimeMs: 1 },
+      { entryId: 1, lapNumber: 1, position: 1, lapTimeMs: 1 },
+      { entryId: 2, lapNumber: 1, position: 2, lapTimeMs: 1 },
+      { entryId: 1, lapNumber: 2, position: 2, lapTimeMs: 1 },
+    ];
+
+    const series = positionSeries([row(2, 1), row(1, 2)], history);
+
+    expect(series.map((s) => s.label)).toEqual(['Car 2', 'Car 1']);
+    expect(series[0].points).toEqual([{ lap: 1, position: 2 }, { lap: 2, position: 1 }]);
+  });
+
+  it('leaves a driver with no recorded laps out of the position chart', () => {
+    expect(positionSeries([row(1, 1)], [])).toEqual([]);
   });
 });

@@ -47,3 +47,26 @@ export function lapSheetColumns(positions: ResultRow[], lapHistory: PositionAtLa
     })
     .filter((col) => col.laps.length > 0);
 }
+
+export type PositionSeries = {
+  entryId: number;
+  /** What labels the line: the car number, else the driver's name. */
+  label: string;
+  /** The place after each lap the driver has a recorded place for, in lap order. */
+  points: { lap: number; position: number }[];
+};
+
+/** One line per driver for the position chart, in finishing order; a driver with no laps is left out. */
+export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap[]): PositionSeries[] {
+  return [...positions]
+    .sort((a, b) => a.position - b.position)
+    .map((row) => ({
+      entryId: row.entryId,
+      label: row.carNumber ? `Car ${row.carNumber}` : row.driverName,
+      points: lapHistory
+        .filter((l) => l.entryId === row.entryId)
+        .sort((a, b) => a.lapNumber - b.lapNumber)
+        .map((l) => ({ lap: l.lapNumber, position: l.position })),
+    }))
+    .filter((s) => s.points.length > 0);
+}
