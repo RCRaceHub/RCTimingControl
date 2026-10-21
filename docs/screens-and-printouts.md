@@ -58,12 +58,18 @@ Print from the browser (Ctrl+P, or the Print button), and choose **Save as PDF**
 
 | Printout | Where to open it | Contents |
 |----------|------------------|----------|
-| Heat result | Race control, a finished race, **Print** | Position, driver, car, laps, total time, best lap, average lap and gap. The penalties given in the heat are listed under the table |
+| Heat result | Race control, a finished race, **Print** | Position, driver, car, the grid position the driver started from, laps, total time, best lap, average lap and gap, with the event name and date at the top. The penalties given in the heat are listed under the table, and a position chart (lap across, place down, one line per car) sits under that unless you clear **Include position chart**. Names are the real ones |
 | Lap-by-lap sheet | The heat result page, tick **Include lap-by-lap times** | Every lap time, one column per driver in finishing order, each driver's quickest lap in bold. It prints on its own page. The tick is kept in the page address (`?laps=1`) so a reload keeps it |
+| Round summary | Race control, **Print**, then a qualifier | Every heat of that round, one class to a page, each with the full heat table |
+| Final results | Race control, **Print**, then **Final results** | Every final of each class, one class to a page, the A final first, each with the full heat table. A bump-up class's drivers appear in each final they raced |
+| Meeting pack | Race control, **Print**, tick the parts, **Open meeting pack** | One print job, class by class: the qualifying standings, every qualifying heat and the finals (whichever parts you tick) |
 | Qualifying standings | `/qualifying`, **Print** | Each class's overall table with each round's place, dropped rounds struck through, one class per page, and a QR code to the live page |
+| Championship standings | `/championships/{id}`, **Print** | One table per class with each round's points, dropped rounds struck through, one class per page, and a QR code to the live page. Names follow each competitor's public name setting |
 | Practice results | Race control, a practice session, **Print** | The session's results |
 | Race result (public) | `/results/{raceId}`, **Print Results** | One race with its lap times |
 | Meeting guide and admin guide | `/print/meeting-guide` and `/print/admin-guide` | The step-by-step guides for race day and for setting up the club |
+
+The sheets opened from race control (heat result, round summary, final results and meeting pack) show each driver's real name, because officials print them. Anything on a public page or the championship sheet follows the public name setting.
 
 The buttons and tick boxes on these pages are hidden on paper.
 
@@ -73,11 +79,8 @@ The qualifying standings page (`/qualifying`) is the standings after each round:
 
 ## Not built yet
 
-Planned, tracked in issue #317:
+Planned, tracked in issue #359:
 
-- Printing the round summary (all heats of a round) and the final results.
-- Start position on the heat result, and real names (not the public name setting) on printouts opened by officials.
-- Championship standings laid out for print, and a meeting pack that prints a chosen set for every class.
 - A fixed network name for the laptop (for example `rctiming.local`) so printed QR codes survive an address change.
 - A results site for clubs without RaceHub. The choice of where results are published (nothing, RaceHub, a results site or both) is made under **Admin → Results to RaceHub**, but choosing the results site sends nothing yet.
 - QR codes that link to RaceHub's public pages instead of this laptop (#316).

@@ -13,6 +13,8 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.query.racecontrol.EventResultsDto;
+import dev.monkeypatch.rctiming.query.racecontrol.EventResultsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
@@ -56,6 +58,7 @@ import java.util.Map;
 public class RaceControlController {
 
     private final RunOrderQuery runOrderQuery;
+    private final EventResultsQuery eventResultsQuery;
     private final RaceRepository raceRepository;
     private final RaceStateMachineService stateMachine;
     private final MarshalService marshalService;
@@ -68,6 +71,7 @@ public class RaceControlController {
     private final HeatMoveService heatMoveService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
+                                  EventResultsQuery eventResultsQuery,
                                   RaceRepository raceRepository,
                                   RaceStateMachineService stateMachine,
                                   MarshalService marshalService,
@@ -79,6 +83,7 @@ public class RaceControlController {
                                   AutoFinalsSeedingService finalsSeedingService,
                                   HeatMoveService heatMoveService) {
         this.runOrderQuery = runOrderQuery;
+        this.eventResultsQuery = eventResultsQuery;
         this.raceRepository = raceRepository;
         this.stateMachine = stateMachine;
         this.marshalService = marshalService;
@@ -103,10 +108,34 @@ public class RaceControlController {
     }
 
     /**
+     * Every finished race of the event with real driver names and each driver's starting grid position, for the
+     * round summary, final results and meeting pack printouts. {@code GET /event/{eventId}/results}, any signed-in
+     * official. Read only. 404 if there is no such event.
+     */
+    @GetMapping("/event/{eventId}/results")
+    @PreAuthorize("isAuthenticated()")
+    public EventResultsDto getEventResults(@PathVariable long eventId) {
+        return eventResultsQuery.forEvent(eventId);
+    }
+
+    /**
+     * One finished race with real driver names and each driver's starting grid position, for the heat result
+     * printout. {@code GET /race/{raceId}/result}, any signed-in official. Read only. 404 if there is no such race
+     * or it has no stored result.
+     */
+    @GetMapping("/race/{raceId}/result")
+    @PreAuthorize("isAuthenticated()")
+    public EventResultsDto getRaceResult(@PathVariable long raceId) {
+        return eventResultsQuery.forRace(raceId);
+    }
+
+    /**
      * Each class's overall qualifying table: the order its finals are seeded from.
-     * {@code GET /event/{eventId}/qualifying}, race director or admin. Read only.
+     * {@code GET /event/{eventId}/qualifying}, race director, referee or admin (the meeting pack printout reads it).
+     * Read only.
      */
     @GetMapping("/event/{eventId}/qualifying")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
         return qualifyingTableService.forEvent(eventId);
     }

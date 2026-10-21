@@ -390,4 +390,13 @@ public class LiveRaceState {
     public synchronized LiveRacePosition getPositionSnapshot(long entryId) {
         return positions.get(entryId);
     }
+
+    /**
+     * A copy of one entry's lap durations (milliseconds, in the order the laps were counted), taken under the lock so
+     * it is consistent with a concurrent passing. Empty when the entry has none.
+     */
+    public synchronized List<Long> lapTimesSnapshot(long entryId) {
+        LiveRacePosition pos = positions.get(entryId);
+        return pos == null || pos.getLapTimes() == null ? List.of() : List.copyOf(pos.getLapTimes());
+    }
 }

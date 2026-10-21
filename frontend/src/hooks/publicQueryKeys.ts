@@ -8,6 +8,7 @@ export const publicQueryKeys = {
   events: () => ['public', 'events'] as const,
   results: (raceId: number) => ['public', 'results', raceId] as const,
   championship: (id: number) => ['public', 'championships', id] as const,
+  championshipInfo: (id: number) => ['public', 'championships', id, 'info'] as const,
   boards: {
     all: ['boards'] as const,
     nowNext: (eventId: number | null) => ['boards', 'now-next', eventId] as const,

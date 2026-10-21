@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrintResultsPage from './PrintResultsPage';
-import { getPublicResultSnapshot, getRaceHistory } from '@/lib/raceControlApi';
+import { getRaceHistory, getRaceResult } from '@/lib/raceControlApi';
 
 vi.mock('@/lib/raceControlApi', () => ({
-  getPublicResultSnapshot: vi.fn(),
+  getRaceResult: vi.fn(),
   getRaceHistory: vi.fn(),
 }));
 
@@ -20,10 +20,29 @@ const snapshot = {
     { position: 2, entryId: 11, driverName: 'Bob Racer', carNumber: '2', lapsCompleted: 2, totalTimeMs: 43_000, bestLapMs: 21_000, gapToLeaderMs: 2_000 },
   ],
   lapHistory: [
-    { lapNumber: 1, entryId: 10, position: 1, lapTimeMs: 21_000 },
+    { lapNumber: 1, entryId: 10, position: 2, lapTimeMs: 21_000 },
     { lapNumber: 2, entryId: 10, position: 1, lapTimeMs: 20_000 },
-    { lapNumber: 1, entryId: 11, position: 2, lapTimeMs: 22_000 },
+    { lapNumber: 1, entryId: 11, position: 1, lapTimeMs: 22_000 },
     { lapNumber: 2, entryId: 11, position: 2, lapTimeMs: 21_000 },
+  ],
+};
+
+const raceResult = {
+  eventId: 1,
+  eventName: 'Autumn Club Day',
+  eventDate: '2026-10-17',
+  races: [
+    {
+      raceId: 5,
+      eventClassId: 2,
+      className: 'Buggy',
+      roundNumber: 1,
+      roundType: 'QUALIFIER',
+      heatNumber: 1,
+      finalLetter: null,
+      result: snapshot,
+      startPositions: { '10': 2, '11': 1 },
+    },
   ],
 };
 
@@ -43,7 +62,7 @@ function renderPage(url = '/results/5') {
 describe('PrintResultsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPublicResultSnapshot).mockResolvedValue(snapshot as never);
+    vi.mocked(getRaceResult).mockResolvedValue(raceResult as never);
     vi.mocked(getRaceHistory).mockResolvedValue([]);
   });
 
@@ -54,6 +73,30 @@ describe('PrintResultsPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Avg Lap' })).toBeInTheDocument();
     expect(screen.getByText('20.500')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Lap times' })).not.toBeInTheDocument();
+  });
+
+  it('shows where each driver started and the event it belongs to', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Start' })).toBeInTheDocument();
+    const annRow = screen.getByText('Ann Racer').closest('tr') as HTMLElement;
+    // Pos, Driver, Car, Start: Ann started second
+    expect(within(annRow).getAllByRole('cell')[3]).toHaveTextContent('2');
+    const bobRow = screen.getByText('Bob Racer').closest('tr') as HTMLElement;
+    expect(within(bobRow).getAllByRole('cell')[3]).toHaveTextContent('1');
+    expect(screen.getByText(/Autumn Club Day/)).toBeInTheDocument();
+  });
+
+  it('draws the position chart unless it is switched off in the address', async () => {
+    renderPage();
+    expect(await screen.findByRole('img', { name: 'Position by lap' })).toBeInTheDocument();
+  });
+
+  it('leaves the position chart off when the address says chart=0', async () => {
+    renderPage('/results/5?chart=0');
+    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Position by lap' })).not.toBeInTheDocument();
   });
 
   it('adds the lap-by-lap sheet when asked for it in the address', async () => {
