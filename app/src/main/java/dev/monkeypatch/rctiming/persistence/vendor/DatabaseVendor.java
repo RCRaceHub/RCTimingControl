@@ -50,6 +50,18 @@ public enum DatabaseVendor {
             return config.toProperties();
         }
 
+        /**
+         * Write transactions start with {@code BEGIN IMMEDIATE}. A deferred one that reads first and writes
+         * later fails at once with SQLITE_BUSY, ignoring the busy timeout, if another connection committed
+         * in between; taking the write lock up front makes it wait out the timeout instead.
+         */
+        @Override
+        public Properties writeConnectionProperties() {
+            SQLiteConfig config = new SQLiteConfig(connectionProperties());
+            config.setTransactionMode(SQLiteConfig.TransactionMode.IMMEDIATE);
+            return config.toProperties();
+        }
+
         @Override
         public boolean hasDatabase(Path dataDirectory) {
             return Files.isRegularFile(dataDirectory.resolve(DATABASE_FILE));
@@ -204,6 +216,14 @@ public enum DatabaseVendor {
 
     /** Settings applied to every connection. */
     public abstract Properties connectionProperties();
+
+    /**
+     * Settings for the write pool's connections. Defaults to {@link #connectionProperties()}; never used for
+     * the read pool, whose transactions must not take the write lock.
+     */
+    public Properties writeConnectionProperties() {
+        return connectionProperties();
+    }
 
     /** True when the data directory already holds a database, so connecting won't create an empty one. */
     public abstract boolean hasDatabase(Path dataDirectory);
