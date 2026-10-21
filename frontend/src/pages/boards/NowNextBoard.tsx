@@ -10,6 +10,8 @@ import { BoardLiveTable } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { BOARD_POLL_MS, parseEventParam } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useLivePositionSeries } from './useLivePositionSeries';
+import { PositionChart } from '@/components/print/PositionChart';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 /**
@@ -40,7 +42,8 @@ function NextStart({ autoRun }: { autoRun: AutoRunBoardDto | null | undefined })
 export default function NowNextBoard() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
-  const { nowNext, isPending, isError, currentRace, rows } = useBoardRace(eventId);
+  const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
+  const chartSeries = useLivePositionSeries(raceId, rows);
   const nextRace = nowNext?.nextRace ?? null;
   const lastCompletedRace = nowNext?.lastCompletedRace ?? null;
 
@@ -82,6 +85,11 @@ export default function NowNextBoard() {
           <BoardLiveTable rows={rows} />
         ) : (
           <BoardMessage>Waiting for the first lap…</BoardMessage>
+        )}
+        {chartSeries.length > 0 && (
+          <div className="mx-auto w-full max-w-4xl">
+            <PositionChart series={chartSeries} />
+          </div>
         )}
         {nextRace && (
           <div className="mt-auto border-t border-slate-800 pt-6">

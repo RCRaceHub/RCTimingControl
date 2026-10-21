@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { averageLapMs, lapSheetColumns, lapTimesFor, positionSeries } from './heatSheet';
-import type { PositionAtLap, ResultRow } from './raceControlApi';
+import { averageLapMs, lapSheetColumns, lapTimesFor, livePositionSeries, positionSeries } from './heatSheet';
+import type { LiveTimingRowDto, PositionAtLap, ResultRow } from './raceControlApi';
 
 const lap = (entryId: number, lapNumber: number, lapTimeMs: number | null): PositionAtLap => ({
   entryId,
@@ -77,5 +77,27 @@ describe('heatSheet', () => {
     const flat: PositionAtLap[] = [lap(1, 1, 1), lap(1, 2, 1), lap(2, 1, 1), lap(2, 2, 1)].map((l) => ({ ...l, position: l.entryId }));
 
     expect(positionSeries([row(1, 1), row(2, 2)], flat)).toEqual([]);
+  });
+});
+
+describe('livePositionSeries', () => {
+  const live = (entryId: number, position: number, carNumber: string | null) =>
+    ({ entryId, driverName: `Driver ${entryId}`, carNumber, position }) as unknown as LiveTimingRowDto;
+
+  it('draws a line per car in running order, even before any place has changed', () => {
+    const series = livePositionSeries(
+      [live(2, 2, '7'), live(1, 1, null)],
+      [
+        { lap: 1, entryId: 1, position: 1 },
+        { lap: 1, entryId: 2, position: 2 },
+      ],
+    );
+
+    expect(series.map((s) => s.label)).toEqual(['Driver 1', 'Car 7']);
+    expect(series[0].points).toEqual([{ lap: 1, position: 1 }]);
+  });
+
+  it('leaves out a car with no laps yet', () => {
+    expect(livePositionSeries([live(1, 1, null)], [])).toEqual([]);
   });
 });

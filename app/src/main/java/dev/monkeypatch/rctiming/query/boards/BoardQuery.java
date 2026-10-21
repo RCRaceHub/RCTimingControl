@@ -8,9 +8,13 @@ import org.jooq.Record;
 import org.jooq.SortField;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
@@ -100,6 +104,17 @@ public class BoardQuery {
                 .and(RACES.STATUS.eq("FINISHED"))
                 .orderBy(RACES.ID)
                 .fetch(RACES.ID);
+    }
+
+    /** The competitor behind each entry, so a board can apply that competitor's public name setting. */
+    public Map<Long, Long> competitorIds(Collection<Long> entryIds) {
+        if (entryIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> ids = new HashMap<>();
+        dsl.select(ENTRIES.ID, ENTRIES.COMPETITOR_ID).from(ENTRIES).where(ENTRIES.ID.in(entryIds))
+                .forEach(r -> ids.put(r.get(ENTRIES.ID), r.get(ENTRIES.COMPETITOR_ID)));
+        return ids;
     }
 
     private static List<SortField<?>> runOrder() {

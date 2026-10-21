@@ -121,3 +121,28 @@ export async function getRoundFastestLap(raceId: number): Promise<RoundFastestLa
   const { data } = await api.get<RoundFastestLapDto>(`/api/v1/boards/races/${raceId}/round-fastest-lap`);
   return data;
 }
+
+/** One car's place at the end of one lap of a race on track, for the live position chart. */
+export type LapPlace = {
+  lap: number;
+  entryId: number;
+  position: number;
+};
+
+export async function getPositionHistory(raceId: number): Promise<LapPlace[]> {
+  const { data } = await api.get<LapPlace[]>(`/api/v1/boards/races/${raceId}/position-history`);
+  return data;
+}
+
+/** What the overlay's ticker scrolls besides the live stats; names are as the public may see them. */
+export type TickerDto = {
+  nextRace: string | null;
+  nextDrivers: string[];
+  marshals: string[];
+  topQualifiers: { className: string; driverName: string; bestLapMs: number | null }[];
+};
+
+export async function getTicker(eventId?: number | null): Promise<TickerDto> {
+  const { data } = await api.get<TickerDto>('/api/v1/boards/ticker', eventParams(eventId));
+  return data;
+}

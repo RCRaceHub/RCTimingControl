@@ -63,6 +63,7 @@ const DocsIndexRedirect = lazy(() => import('@/pages/docs/DocPage').then(m => ({
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
+const ChartBoard = lazy(() => import('@/pages/boards/ChartBoard'));
 
 function RootLayout() {
   return (
@@ -184,6 +185,7 @@ const router = createBrowserRouter([
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
+      { path: '/boards/chart', element: <ChartBoard /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
       { path: '*', element: <NotFoundPage /> },

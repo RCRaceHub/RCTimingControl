@@ -6,6 +6,7 @@ Each diagram follows one thing through the code. Class names are the real ones, 
 - [Starting and finishing a race](#starting-and-finishing-a-race)
 - [Results export to RaceHub](#results-export-to-racehub)
 - [Officials' printouts](#officials-printouts)
+- [The overlay's chart and ticker](#the-overlays-chart-and-ticker)
 - [Live feed to the relay](#live-feed-to-the-relay)
 - [Importing entries from RaceHub](#importing-entries-from-racehub)
 - [Signing in and staying signed in](#signing-in-and-staying-signed-in)
@@ -148,6 +149,33 @@ sequenceDiagram
 ```
 
 The qualifying standings in a meeting pack come from the existing `GET /race-control/event/{id}/qualifying`. The championship sheet is the public standings page plus `GET /championships/{id}/info` for the class names.
+
+## The overlay's chart and ticker
+
+The streaming overlay, the live board and the `/boards/chart` screen all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. Neither read touches the timing thread beyond `LiveRaceState`'s lock.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (OBS)
+    participant BC as BoardController
+    participant LRS as LiveRaceState
+    participant LO as LapOrder
+    participant BTS as BoardTickerService
+    participant Q as BoardQuery,<br/>PreRaceReadinessQuery,<br/>QualifyingTableService
+
+    B->>BC: GET /boards/races/{id}/position-history<br/>(when total laps change)
+    BC->>LRS: lapOrder() (under the state lock)
+    LRS->>LO: LapOrder.of(rows, state)
+    LO-->>BC: places(): lap, entry, position
+    BC-->>B: [{lap, entryId, position}]
+    B->>BC: GET /boards/ticker (every 20 s)
+    BC->>BTS: forEvent(eventId)
+    BTS->>Q: next race, grid call, marshal duty, top qualifiers
+    BTS-->>BC: names through PublicNames
+    BC-->>B: TickerDto
+```
+
+`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
 
 ## Live feed to the relay
 

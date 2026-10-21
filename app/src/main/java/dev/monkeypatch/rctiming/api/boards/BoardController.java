@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
+import dev.monkeypatch.rctiming.api.boards.dto.TickerDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
@@ -11,7 +12,9 @@ import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.service.AutoRunService;
+import dev.monkeypatch.rctiming.service.BoardTickerService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
+import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.RaceClockService;
@@ -41,6 +44,7 @@ public class BoardController {
     private final PublicNames publicNames;
     private final QualifyingTableService qualifyingTableService;
     private final AutoRunService autoRunService;
+    private final BoardTickerService boardTickerService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -48,7 +52,8 @@ public class BoardController {
                            RaceClockService raceClockService,
                            PublicNames publicNames,
                            QualifyingTableService qualifyingTableService,
-                           AutoRunService autoRunService) {
+                           AutoRunService autoRunService,
+                           BoardTickerService boardTickerService) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -56,6 +61,7 @@ public class BoardController {
         this.publicNames = publicNames;
         this.qualifyingTableService = qualifyingTableService;
         this.autoRunService = autoRunService;
+        this.boardTickerService = boardTickerService;
     }
 
     /**
@@ -96,11 +102,34 @@ public class BoardController {
                 .orElse(new QualifyingBoardDto(null, null, List.of()));
     }
 
+    /**
+     * What the overlay's ticker scrolls: the next race, its drivers and marshals, and each class's top qualifier.
+     *
+     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     */
+    @GetMapping("/ticker")
+    public TickerDto ticker(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId)
+                .map(event -> boardTickerService.forEvent(event.id()))
+                .orElse(new TickerDto(null, List.of(), List.of(), List.of()));
+    }
+
     /** Seeds a board's live table before the first STOMP frame arrives. */
     @GetMapping("/races/{raceId}/live-timing")
     public List<LiveTimingRowDto> liveTiming(@PathVariable long raceId) {
         return lapTimingService.peek(raceId)
                 .map(LiveRaceState::calculatePositions)
+                .orElse(List.of());
+    }
+
+    /**
+     * Where each car stood at the end of every lap so far in a race on track, for the live position chart. Empty
+     * when the race has no live state (not started, or already finished: its stored result has the history).
+     */
+    @GetMapping("/races/{raceId}/position-history")
+    public List<LapOrder.Place> positionHistory(@PathVariable long raceId) {
+        return lapTimingService.peek(raceId)
+                .map(state -> state.lapOrder().places())
                 .orElse(List.of());
     }
 

@@ -21,9 +21,18 @@ vi.mock('@/lib/boardsApi', () => ({
   getBoardLiveTiming: vi.fn(),
   getRaceClock: vi.fn(),
   getRoundFastestLap: vi.fn(),
+  getPositionHistory: vi.fn(),
+  getTicker: vi.fn(),
 }));
 
-import { getBoardLiveTiming, getNowNext, getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
+import {
+  getBoardLiveTiming,
+  getNowNext,
+  getPositionHistory,
+  getRaceClock,
+  getRoundFastestLap,
+  getTicker,
+} from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
   raceId: 12,
@@ -92,6 +101,8 @@ beforeEach(() => {
   ]);
   vi.mocked(getRaceClock).mockResolvedValue(clock());
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
+  vi.mocked(getPositionHistory).mockResolvedValue([]);
+  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], topQualifiers: [] });
 });
 
 afterEach(() => {
@@ -206,14 +217,78 @@ describe('overlay options', () => {
       top: 10,
       showClass: true,
       theme: 'dark',
+      showChart: true,
+      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest']),
     });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);
     expect(parseOverlayOptions(new URLSearchParams('event=7')).eventId).toBe(7);
+  });
+
+  it('reads which ticker items and whether the chart to show from the address', () => {
+    expect(parseOverlayOptions(new URLSearchParams('ticker=hide')).tickerItems.size).toBe(0);
+    expect([...parseOverlayOptions(new URLSearchParams('ticker=next,tq,bogus')).tickerItems]).toEqual(['next', 'tq']);
+    expect(parseOverlayOptions(new URLSearchParams('chart=hide')).showChart).toBe(false);
   });
 
   it('formats race time as minutes and seconds', () => {
     expect(fmtClock(225_000)).toBe('3:45');
     expect(fmtClock(5_999)).toBe('0:05');
     expect(fmtClock(-1)).toBe('0:00');
+  });
+});
+
+describe('OverlayBoard chart and ticker', () => {
+  it('draws the position chart for the race on track unless the address hides it', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getPositionHistory).mockResolvedValue([
+      { lap: 1, entryId: 1, position: 2 },
+      { lap: 1, entryId: 2, position: 1 },
+      { lap: 2, entryId: 1, position: 1 },
+      { lap: 2, entryId: 2, position: 2 },
+    ]);
+    const first = renderOverlay();
+    expect(await screen.findByRole('img', { name: 'Position by lap' })).toBeInTheDocument();
+    first.unmount();
+
+    renderOverlay('/boards/overlay?chart=hide');
+    expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Position by lap' })).not.toBeInTheDocument();
+  });
+
+  it('scrolls the next race, its drivers and marshals, the top qualifier and the round\'s fastest lap', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Qualifying 1 — Stock Buggy — Heat 3',
+      nextDrivers: ['Ada Lovelace', 'Grace Hopper'],
+      marshals: ['Walk-in Wendy'],
+      topQualifiers: [{ className: 'Stock Buggy', driverName: 'Ada Lovelace', bestLapMs: 13_500 }],
+    });
+    vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: 12_900, driverName: 'Katherine Johnson' });
+    renderOverlay();
+
+    // The ticker is read afresh each time: it is a different element once the race has loaded
+    const ticker = () => screen.getByLabelText('Ticker');
+    await vi.waitFor(() => expect(ticker()).toHaveTextContent('Next: Qualifying 1 — Stock Buggy — Heat 3'));
+    expect(ticker()).toHaveTextContent('On the grid: Ada Lovelace, Grace Hopper');
+    expect(ticker()).toHaveTextContent('Marshals: Walk-in Wendy');
+    expect(ticker()).toHaveTextContent('TQ Stock Buggy: Ada Lovelace (13.500)');
+    await vi.waitFor(() =>
+      expect(ticker()).toHaveTextContent('Fastest lap of the round: 12.900 · Katherine Johnson'),
+    );
+  });
+
+  it('keeps the ticker up between races and leaves out items the address does not name', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(null));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Qualifying 2 — Stock Buggy — Heat 1',
+      nextDrivers: ['Ada Lovelace'],
+      marshals: [],
+      topQualifiers: [],
+    });
+    renderOverlay('/boards/overlay?ticker=next');
+
+    const ticker = await screen.findByLabelText('Ticker');
+    expect(ticker).toHaveTextContent('Next: Qualifying 2 — Stock Buggy — Heat 1');
+    expect(ticker).not.toHaveTextContent('On the grid');
   });
 });
