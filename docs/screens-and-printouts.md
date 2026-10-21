@@ -33,7 +33,7 @@ A few things help at the track:
 
 ## The streaming overlay for OBS
 
-The overlay shows the race on track over your video on a transparent background: the running order, laps, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A ticker underneath rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
+The overlay shows the race on track over your video on a transparent background: the running order, laps, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A small stats line under the order rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. A **position chart** (lap across, place down, one line per car) sits at the bottom right, and a **ticker** scrolls along the foot of the page with the next race, who is on its grid, who marshals it, each class's top qualifier and the fastest lap of the round. The ticker stays up between races, when the next race is the useful part. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
 
 To use it in OBS:
 
@@ -49,8 +49,13 @@ Options go on the end of the address:
 | `class=hide` | Leave out the race and class name |
 | `theme=light` | Dark text on a light panel instead of white on dark |
 | `event=ID` | Follow one event |
+| `chart=hide` | Leave out the position chart |
+| `ticker=hide` | Leave out the ticker |
+| `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |
 
 For example `/boards/overlay?top=6&theme=light`. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
+
+The same position chart is on the live timing board below the running order, and on a screen of its own at `/boards/chart` (add `?event=ID` for one event) for a TV that should show nothing else. Names follow each competitor's public name setting.
 
 ## Printouts
 

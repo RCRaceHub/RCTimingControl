@@ -36,7 +36,7 @@ export function PositionChart({ series }: { series: PositionSeries[] }) {
         viewBox={`0 0 ${WIDTH} ${height}`}
         role="img"
         aria-label="Position by lap"
-        className="w-full text-foreground"
+        className="w-full"
       >
         {Array.from({ length: places }, (_, i) => i + 1).map((place) => (
           <g key={place}>

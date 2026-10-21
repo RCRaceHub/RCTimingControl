@@ -399,4 +399,22 @@ public class LiveRaceState {
         LiveRacePosition pos = positions.get(entryId);
         return pos == null || pos.getLapTimes() == null ? List.of() : List.copyOf(pos.getLapTimes());
     }
+
+    /**
+     * The running order and the place each car held at the end of every lap so far. The rows and every car's lap
+     * times are copied together under the lock, so a passing arriving meanwhile can't leave a car's lap times and lap
+     * count out of step; the ordering itself is worked out after the lock is released, so the timing thread isn't
+     * held up. Called per request from the boards' position chart, on a Tomcat thread.
+     */
+    public LapOrder lapOrder() {
+        List<LiveTimingRowDto> rows;
+        Map<Long, List<Long>> lapTimes = new HashMap<>();
+        synchronized (this) {
+            rows = calculatePositions();
+            for (LiveTimingRowDto row : rows) {
+                lapTimes.put(row.entryId(), lapTimesSnapshot(row.entryId()));
+            }
+        }
+        return LapOrder.of(rows, lapTimes);
+    }
 }

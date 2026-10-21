@@ -24,6 +24,7 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -38,7 +39,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -307,87 +307,22 @@ public class ResultSnapshotService {
 
     /**
      * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
-     * The place at a lap is the order the cars crossed the line to complete it (see {@link #positionsAfterLap}), so a
-     * position chart shows who passed whom. Where the crossing times can't be worked out (no live state, or a lap
-     * count changed by a marshal adjustment, for any car) every place falls back to the final position. A lapped car's
-     * line ends where it stopped counting laps. A correction after the race rebuilds this from the live state if it
-     * is still held, otherwise it keeps the stored history.
-     * The state parameter is nullable: legacy snapshots or races without live state get null lapTimeMs.
+     * The places come from {@link LapOrder}, so a position chart shows who passed whom. The state parameter is
+     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. A correction
+     * after the race rebuilds this from the live state if it is still held, otherwise the stored history is kept.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
         List<ResultSnapshotDto.PositionAtLap> history = new ArrayList<>();
-        int leaderLaps = rows.stream().mapToInt(LiveTimingRowDto::lapsCompleted).max().orElse(0);
-        if (leaderLaps == 0) return history;
-
-        Map<Long, LapClock> clocks = new HashMap<>();
-        if (state != null) {
-            for (LiveTimingRowDto row : rows) {
-                List<Long> lapTimes = state.lapTimesSnapshot(row.entryId());
-                if (!lapTimes.isEmpty()) {
-                    clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), lapTimes));
-                }
-            }
-        }
-        // Decided once for the whole race, so one car's place never comes from a different rule than another's
-        // within a lap, or between laps.
-        boolean orderUsable = rows.stream().allMatch(r -> r.lapsCompleted() == 0
-                || (clocks.get(r.entryId()) != null && clocks.get(r.entryId()).lapTimes().size() == r.lapsCompleted()));
-        Map<Long, LapClock> orderClocks = orderUsable ? clocks : Map.of();
-
-        for (int lap = 1; lap <= leaderLaps; lap++) {
-            Map<Long, Integer> placeAtLap = positionsAfterLap(lap, rows, orderClocks);
+        LapOrder order = LapOrder.of(rows, state);
+        for (int lap = 1; lap <= order.leaderLaps(); lap++) {
+            Map<Long, Integer> placeAtLap = order.placesAfterLap(lap);
             for (LiveTimingRowDto row : rows) {
                 if (row.lapsCompleted() >= lap) {
-                    LapClock clock = clocks.get(row.entryId());
-                    Long lapTimeMs = clock != null && lap <= clock.lapTimes().size() ? clock.lapTimes().get(lap - 1) : null;
                     history.add(new ResultSnapshotDto.PositionAtLap(lap, row.entryId(),
-                            placeAtLap.getOrDefault(row.entryId(), row.position()), lapTimeMs));
+                            placeAtLap.getOrDefault(row.entryId(), row.position()), order.lapTimeMs(row.entryId(), lap)));
                 }
             }
         }
         return history;
-    }
-
-    /**
-     * A car's lap times and the time of its last counted passing, which is all that is needed to work out when it
-     * completed each lap. Times are in milliseconds, the passings' UTC time.
-     */
-    record LapClock(long lastPassingTimeMs, List<Long> lapTimes) {
-
-        /** Time the car crossed the line to complete {@code lap} (1-based): its last passing minus the laps after it. */
-        long completedLapAtMs(int lap) {
-            long after = 0;
-            for (int i = lap; i < lapTimes.size(); i++) {
-                after += lapTimes.get(i);
-            }
-            return lastPassingTimeMs - after;
-        }
-    }
-
-    /**
-     * The place of each car that completed {@code lap}, by the order they crossed the line to complete it: 1 is first
-     * across. Cars that have not completed the lap are not placed. If any car that completed the lap has no usable
-     * lap times (none recorded, or a count that differs from its laps because a marshal adjustment changed it) the
-     * crossing order can't be trusted, so every car falls back to its final position.
-     */
-    static Map<Long, Integer> positionsAfterLap(int lap, List<LiveTimingRowDto> rows, Map<Long, LapClock> clocks) {
-        List<LiveTimingRowDto> completed = rows.stream().filter(r -> r.lapsCompleted() >= lap).toList();
-        boolean usable = completed.stream().allMatch(r -> {
-            LapClock clock = clocks.get(r.entryId());
-            return clock != null && clock.lapTimes().size() == r.lapsCompleted();
-        });
-        Map<Long, Integer> places = new HashMap<>();
-        if (!usable) {
-            completed.forEach(r -> places.put(r.entryId(), r.position()));
-            return places;
-        }
-        List<LiveTimingRowDto> crossing = new ArrayList<>(completed);
-        crossing.sort(Comparator
-                .comparingLong((LiveTimingRowDto r) -> clocks.get(r.entryId()).completedLapAtMs(lap))
-                .thenComparingInt(LiveTimingRowDto::position));
-        for (int i = 0; i < crossing.size(); i++) {
-            places.put(crossing.get(i).entryId(), i + 1);
-        }
-        return places;
     }
 }

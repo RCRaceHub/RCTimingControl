@@ -298,6 +298,56 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void positionHistory_givesEachCarsPlaceAtTheEndOfEachLap() throws InterruptedException {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.RUNNING);
+        String slow = "S" + fx.suffix;
+        String quick = "Q" + fx.suffix;
+        Entry slowEntry = fx.gridEntry(heat1, "Slow Racer " + fx.suffix, slow, 1);
+        Entry quickEntry = fx.gridEntry(heat1, "Quick Racer " + fx.suffix, quick, 2);
+        String url = "/api/v1/boards/races/" + heat1.getId() + "/position-history";
+
+        try {
+            assertThat(getList(url)).isEmpty();
+
+            lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), slow, 1_000_000L));
+            lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), quick, 2_000_000L));
+            lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), quick, 20_000_000L));
+            lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), slow, 22_000_000L));
+
+            // Passings are handled asynchronously: wait for both cars to have completed the lap
+            long deadline = System.currentTimeMillis() + 5_000;
+            List<Map> places = getList(url);
+            while (places.size() < 2 && System.currentTimeMillis() < deadline) {
+                Thread.sleep(50);
+                places = getList(url);
+            }
+            assertThat(places).hasSize(2);
+            Map first = places.stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
+            assertThat(((Number) first.get("lap")).intValue()).isEqualTo(1);
+            assertThat(((Number) first.get("entryId")).longValue()).isEqualTo(quickEntry.getId());
+            assertThat(places).extracting(p -> ((Number) p.get("entryId")).longValue())
+                    .containsExactlyInAnyOrder(quickEntry.getId(), slowEntry.getId());
+        } finally {
+            lapTimingService.releaseState(heat1.getId());
+        }
+    }
+
+    @Test
+    void ticker_namesTheNextRaceAndItsDrivers() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.PENDING);
+        fx.gridEntry(heat1, "Next Racer " + fx.suffix, "T" + fx.suffix, 1);
+
+        Map body = get("/api/v1/boards/ticker?eventId=" + fx.event.getId());
+
+        assertThat(body.get("nextRace")).isEqualTo("Qualifying 1 — " + fx.className + " — Heat 1");
+        assertThat((List) body.get("nextDrivers")).containsExactly("Next Racer " + fx.suffix);
+        assertThat((List) body.get("marshals")).isEmpty();
+        assertThat((List) body.get("topQualifiers")).isEmpty();
+    }
+
+    @Test
     void raceClock_givesTheTimeSoFarAndTheLengthFromTheFormat() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         Race heat1 = fx.race(q1, 1, RaceStatus.RUNNING);
