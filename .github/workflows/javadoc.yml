@@ -39,7 +39,7 @@ jobs:
           git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'app/src/main/java/**/*.java' \
             | xargs -r python3 .github/scripts/check-class-javadoc.py
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
