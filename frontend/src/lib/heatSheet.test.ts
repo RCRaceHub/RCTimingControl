@@ -72,4 +72,10 @@ describe('heatSheet', () => {
   it('leaves a driver with no recorded laps out of the position chart', () => {
     expect(positionSeries([row(1, 1)], [])).toEqual([]);
   });
+
+  it('has no chart when no driver ever changed place', () => {
+    const flat: PositionAtLap[] = [lap(1, 1, 1), lap(1, 2, 1), lap(2, 1, 1), lap(2, 2, 1)].map((l) => ({ ...l, position: l.entryId }));
+
+    expect(positionSeries([row(1, 1), row(2, 2)], flat)).toEqual([]);
+  });
 });

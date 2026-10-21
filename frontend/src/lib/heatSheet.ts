@@ -56,9 +56,12 @@ export type PositionSeries = {
   points: { lap: number; position: number }[];
 };
 
-/** One line per driver for the position chart, in finishing order; a driver with no laps is left out. */
+/**
+ * One line per driver for the position chart, in finishing order; a driver with no laps is left out. A line is the
+ * place the driver held on completing each lap, as the result stored it; none when no place ever changed.
+ */
 export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap[]): PositionSeries[] {
-  return [...positions]
+  const series = [...positions]
     .sort((a, b) => a.position - b.position)
     .map((row) => ({
       entryId: row.entryId,
@@ -69,4 +72,6 @@ export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap
         .map((l) => ({ lap: l.lapNumber, position: l.position })),
     }))
     .filter((s) => s.points.length > 0);
+  // Every line flat means only the final order was stored, not the places lap by lap: there is nothing to chart
+  return series.every((s) => s.points.every((p) => p.position === s.points[0].position)) ? [] : series;
 }

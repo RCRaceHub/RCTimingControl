@@ -20,9 +20,9 @@ const snapshot = {
     { position: 2, entryId: 11, driverName: 'Bob Racer', carNumber: '2', lapsCompleted: 2, totalTimeMs: 43_000, bestLapMs: 21_000, gapToLeaderMs: 2_000 },
   ],
   lapHistory: [
-    { lapNumber: 1, entryId: 10, position: 1, lapTimeMs: 21_000 },
+    { lapNumber: 1, entryId: 10, position: 2, lapTimeMs: 21_000 },
     { lapNumber: 2, entryId: 10, position: 1, lapTimeMs: 20_000 },
-    { lapNumber: 1, entryId: 11, position: 2, lapTimeMs: 22_000 },
+    { lapNumber: 1, entryId: 11, position: 1, lapTimeMs: 22_000 },
     { lapNumber: 2, entryId: 11, position: 2, lapTimeMs: 21_000 },
   ],
 };

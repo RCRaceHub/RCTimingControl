@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -306,31 +307,81 @@ public class ResultSnapshotService {
     }
 
     /**
-     * Builds a lap history from the final standings, including per-lap durations from LiveRaceState.
-     * For each entry, records their final position and lap duration at each lap they completed.
-     * The state parameter is nullable — legacy snapshots or races without live state get null lapTimeMs.
+     * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
+     * The place at a lap is the order the cars crossed the line to complete it (see {@link #positionsAfterLap}), so a
+     * position chart shows who passed whom. Where the crossing times can't be worked out (no live state, or a lap
+     * count changed by a marshal adjustment) a car's place falls back to its final position for that lap.
+     * The state parameter is nullable: legacy snapshots or races without live state get null lapTimeMs.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
         List<ResultSnapshotDto.PositionAtLap> history = new ArrayList<>();
         int leaderLaps = rows.stream().mapToInt(LiveTimingRowDto::lapsCompleted).max().orElse(0);
         if (leaderLaps == 0) return history;
 
-        Map<Long, Integer> lapIndex = new HashMap<>();
+        Map<Long, LapClock> clocks = new HashMap<>();
+        if (state != null) {
+            for (LiveTimingRowDto row : rows) {
+                LiveRacePosition pos = state.getPositionSnapshot(row.entryId());
+                if (pos != null && pos.getLapTimes() != null && !pos.getLapTimes().isEmpty()) {
+                    clocks.put(row.entryId(), new LapClock(row.lastPassingTimeMs(), List.copyOf(pos.getLapTimes())));
+                }
+            }
+        }
+
         for (int lap = 1; lap <= leaderLaps; lap++) {
+            Map<Long, Integer> placeAtLap = positionsAfterLap(lap, rows, clocks);
             for (LiveTimingRowDto row : rows) {
                 if (row.lapsCompleted() >= lap) {
-                    int idx = lapIndex.merge(row.entryId(), 1, Integer::sum) - 1;
-                    Long lapTimeMs = null;
-                    if (state != null) {
-                        LiveRacePosition pos = state.getPositionSnapshot(row.entryId());
-                        if (pos != null && pos.getLapTimes() != null && idx < pos.getLapTimes().size()) {
-                            lapTimeMs = pos.getLapTimes().get(idx);
-                        }
-                    }
-                    history.add(new ResultSnapshotDto.PositionAtLap(lap, row.entryId(), row.position(), lapTimeMs));
+                    LapClock clock = clocks.get(row.entryId());
+                    Long lapTimeMs = clock != null && lap <= clock.lapTimes().size() ? clock.lapTimes().get(lap - 1) : null;
+                    history.add(new ResultSnapshotDto.PositionAtLap(lap, row.entryId(),
+                            placeAtLap.getOrDefault(row.entryId(), row.position()), lapTimeMs));
                 }
             }
         }
         return history;
+    }
+
+    /**
+     * A car's lap times and the time of its last counted passing, which is all that is needed to work out when it
+     * completed each lap. Times are in milliseconds, the passings' UTC time.
+     */
+    record LapClock(long lastPassingTimeMs, List<Long> lapTimes) {
+
+        /** Time the car crossed the line to complete {@code lap} (1-based): its last passing minus the laps after it. */
+        long completedLapAtMs(int lap) {
+            long after = 0;
+            for (int i = lap; i < lapTimes.size(); i++) {
+                after += lapTimes.get(i);
+            }
+            return lastPassingTimeMs - after;
+        }
+    }
+
+    /**
+     * The place of each car that completed {@code lap}, by the order they crossed the line to complete it: 1 is first
+     * across. Cars that have not completed the lap are not placed. If any car that completed the lap has no usable
+     * lap times (none recorded, or fewer than {@code lap} because a marshal adjustment changed its count) the
+     * crossing order can't be trusted, so every car falls back to its final position.
+     */
+    static Map<Long, Integer> positionsAfterLap(int lap, List<LiveTimingRowDto> rows, Map<Long, LapClock> clocks) {
+        List<LiveTimingRowDto> completed = rows.stream().filter(r -> r.lapsCompleted() >= lap).toList();
+        boolean usable = completed.stream().allMatch(r -> {
+            LapClock clock = clocks.get(r.entryId());
+            return clock != null && clock.lapTimes().size() == r.lapsCompleted();
+        });
+        Map<Long, Integer> places = new HashMap<>();
+        if (!usable) {
+            completed.forEach(r -> places.put(r.entryId(), r.position()));
+            return places;
+        }
+        List<LiveTimingRowDto> crossing = new ArrayList<>(completed);
+        crossing.sort(Comparator
+                .comparingLong((LiveTimingRowDto r) -> clocks.get(r.entryId()).completedLapAtMs(lap))
+                .thenComparingInt(LiveTimingRowDto::position));
+        for (int i = 0; i < crossing.size(); i++) {
+            places.put(crossing.get(i).entryId(), i + 1);
+        }
+        return places;
     }
 }

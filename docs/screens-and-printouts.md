@@ -58,7 +58,7 @@ Print from the browser (Ctrl+P, or the Print button), and choose **Save as PDF**
 
 | Printout | Where to open it | Contents |
 |----------|------------------|----------|
-| Heat result | Race control, a finished race, **Print** | Position, driver, car, the grid position the driver started from, laps, total time, best lap, average lap and gap, with the event name and date at the top. The penalties given in the heat are listed under the table. Names are the real ones |
+| Heat result | Race control, a finished race, **Print** | Position, driver, car, the grid position the driver started from, laps, total time, best lap, average lap and gap, with the event name and date at the top. The penalties given in the heat are listed under the table, and a position chart (lap across, place down, one line per car) sits under that unless you clear **Include position chart**. Names are the real ones |
 | Lap-by-lap sheet | The heat result page, tick **Include lap-by-lap times** | Every lap time, one column per driver in finishing order, each driver's quickest lap in bold. It prints on its own page. The tick is kept in the page address (`?laps=1`) so a reload keeps it |
 | Round summary | Race control, **Print**, then a qualifier | Every heat of that round, one class to a page, each with the full heat table |
 | Final results | Race control, **Print**, then **Final results** | Every final of each class, one class to a page, the A final first, each with the full heat table. A bump-up class's drivers appear in each final they raced |
