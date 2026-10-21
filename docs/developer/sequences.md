@@ -5,6 +5,7 @@ Each diagram follows one thing through the code. Class names are the real ones, 
 - [A lap passing, decoder to browser](#a-lap-passing-decoder-to-browser)
 - [Starting and finishing a race](#starting-and-finishing-a-race)
 - [Results export to RaceHub](#results-export-to-racehub)
+- [Officials' printouts](#officials-printouts)
 - [Live feed to the relay](#live-feed-to-the-relay)
 - [Importing entries from RaceHub](#importing-entries-from-racehub)
 - [Signing in and staying signed in](#signing-in-and-staying-signed-in)
@@ -121,6 +122,32 @@ sequenceDiagram
 ```
 
 Format: [Results Export v1](../results-export-v1.md).
+
+## Officials' printouts
+
+The round summary, final results, meeting pack and heat result are print-styled web pages (the browser does the paper or Save as PDF). They read from one officials-only endpoint, so they show real names where the public pages follow each competitor's public name setting, and they add the grid each driver started from.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (print page)
+    participant C as RaceControlController
+    participant Q as EventResultsQuery
+    participant R as ResultSnapshotQuery
+    participant DB as SQLite (read pool)
+
+    B->>C: GET /race-control/event/{id}/results (or /race/{id}/result)
+    C->>Q: forEvent / forRace
+    Q->>DB: finished races in run order, grid positions
+    loop each finished race
+        Q->>R: load(raceId)
+        R->>DB: stored result snapshot and club branding
+    end
+    Q-->>C: EventResultsDto (real names, start positions)
+    C-->>B: JSON
+    B->>B: group by class, round or finals, then window.print()
+```
+
+The qualifying standings in a meeting pack come from the existing `GET /race-control/event/{id}/qualifying`. The championship sheet is the public standings page plus `GET /championships/{id}/info` for the class names.
 
 ## Live feed to the relay
 
