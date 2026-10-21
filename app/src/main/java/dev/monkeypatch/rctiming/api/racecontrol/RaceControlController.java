@@ -13,6 +13,8 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.query.racecontrol.EventResultsDto;
+import dev.monkeypatch.rctiming.query.racecontrol.EventResultsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
@@ -56,6 +58,7 @@ import java.util.Map;
 public class RaceControlController {
 
     private final RunOrderQuery runOrderQuery;
+    private final EventResultsQuery eventResultsQuery;
     private final RaceRepository raceRepository;
     private final RaceStateMachineService stateMachine;
     private final MarshalService marshalService;
@@ -68,6 +71,7 @@ public class RaceControlController {
     private final HeatMoveService heatMoveService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
+                                  EventResultsQuery eventResultsQuery,
                                   RaceRepository raceRepository,
                                   RaceStateMachineService stateMachine,
                                   MarshalService marshalService,
@@ -79,6 +83,7 @@ public class RaceControlController {
                                   AutoFinalsSeedingService finalsSeedingService,
                                   HeatMoveService heatMoveService) {
         this.runOrderQuery = runOrderQuery;
+        this.eventResultsQuery = eventResultsQuery;
         this.raceRepository = raceRepository;
         this.stateMachine = stateMachine;
         this.marshalService = marshalService;
@@ -100,6 +105,17 @@ public class RaceControlController {
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
+    }
+
+    /**
+     * Every finished race of the event with real driver names and each driver's starting grid position, for the
+     * round summary, final results and meeting pack printouts. {@code GET /event/{eventId}/results}, any signed-in
+     * official. Read only. 404 if there is no such event.
+     */
+    @GetMapping("/event/{eventId}/results")
+    @PreAuthorize("isAuthenticated()")
+    public EventResultsDto getEventResults(@PathVariable long eventId) {
+        return eventResultsQuery.forEvent(eventId);
     }
 
     /**
