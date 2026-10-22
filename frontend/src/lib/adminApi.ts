@@ -801,6 +801,8 @@ export const adminApi = {
       api.post<ChampionshipEventLinkDto>(`/api/v1/admin/championships/${id}/events`, body).then(r => r.data),
     unlinkEvent: (id: number, eventId: number) =>
       api.delete(`/api/v1/admin/championships/${id}/events/${eventId}`),
+    applyScoringSystem: (id: number, systemId: number) =>
+      api.post<ChampionshipDto>(`/api/v1/admin/championships/${id}/scoring-system/${systemId}`).then(r => r.data),
     replacePointsScale: (id: number, entries: PointsScaleEntryDto[]) =>
       api.put<PointsScaleEntryDto[]>(`/api/v1/admin/championships/${id}/points-scale`, { entries }).then(r => r.data),
     listExclusions: (id: number) =>

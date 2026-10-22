@@ -71,6 +71,14 @@ export function useUnlinkChampionshipEvent(id: number) {
   });
 }
 
+export function useApplyScoringSystem(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (systemId: number) => adminApi.championships.applyScoringSystem(id, systemId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.championships.detail(id) }),
+  });
+}
+
 export function useReplacePointsScale(id: number) {
   const qc = useQueryClient();
   return useMutation({

@@ -2,6 +2,10 @@ package dev.monkeypatch.rctiming.domain.championship;
 
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.domain.scoring.ChampionshipScoringConfig;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -38,6 +42,7 @@ public class ChampionshipService {
     private final CompetitorRepository competitorRepository;
     private final UserRepository userRepository;
     private final AuditService audit;
+    private final ScoringSystemRepository scoringSystemRepository;
 
     public ChampionshipService(ChampionshipRepository championshipRepository,
                                ChampionshipClassRepository classRepository,
@@ -48,7 +53,8 @@ public class ChampionshipService {
                                RacingClassRepository racingClassRepository,
                                CompetitorRepository competitorRepository,
                                UserRepository userRepository,
-                               AuditService audit) {
+                               AuditService audit,
+                               ScoringSystemRepository scoringSystemRepository) {
         this.championshipRepository = championshipRepository;
         this.classRepository = classRepository;
         this.eventLinkRepository = eventLinkRepository;
@@ -59,6 +65,7 @@ public class ChampionshipService {
         this.competitorRepository = competitorRepository;
         this.userRepository = userRepository;
         this.audit = audit;
+        this.scoringSystemRepository = scoringSystemRepository;
     }
 
     /** A championship's own settings, as an official sets them on create or update. */
@@ -208,6 +215,46 @@ public class ChampionshipService {
                                 + championshipName(championshipId) + " (it was round " + existing.getRoundNumber() + ")")
                         .before(linkValues(existing)).record());
         eventLinkRepository.deleteByChampionshipIdAndEventId(championshipId, eventId);
+    }
+
+    /**
+     * Fills the championship's own scoring fields (best X from Y, the TQ and A final bonuses, the overall table switch
+     * and the whole points scale) from a championship scoring system, in one transaction, and records {@code
+     * CHAMPIONSHIP_SCORING_SYSTEM_APPLIED} with the values before and after. The values are copied, not linked: the
+     * name, classes, rounds and exclusions are untouched, the official can edit any field afterwards, and a later
+     * edit to the system changes nothing here. Called by {@code ChampionshipController}.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if the championship or system is missing
+     * @throws IllegalArgumentException (400) if the system is not a championship scoring system
+     */
+    public Championship applyScoringSystem(Actor actor, Long championshipId, Long scoringSystemId) {
+        Championship c = getChampionshipOrThrow(championshipId);
+        ScoringSystem system = scoringSystemRepository.getOrThrow(scoringSystemId);
+        if (system.getKind() != ScoringKind.CHAMPIONSHIP) {
+            throw new IllegalArgumentException(system.getName() + " is not a championship scoring system");
+        }
+        ChampionshipScoringConfig rules = (ChampionshipScoringConfig) system.getConfig();
+        Map<String, Object> before = settingsOf(c);
+        before.put("pointsScale", pointsScaleRepository.findByChampionshipIdOrderByPositionAsc(championshipId)
+                .stream().map(ScalePoint::of).toList());
+
+        c.setBestXFromYX(rules.bestX());
+        c.setBestXFromYY(rules.bestY());
+        c.setTqBonusPoints(rules.tqBonusPoints());
+        c.setAfinalWinnerBonusPoints(rules.aFinalWinnerBonusPoints());
+        c.setShowOverallTable(rules.showOverallTable());
+        Championship saved = championshipRepository.save(c);
+        pointsScaleRepository.deleteAllByChampionshipId(championshipId);
+        List<ChampionshipPointsScaleEntry> scale = pointsScaleRepository.saveAll(rules.pointsScale().stream()
+                .map(e -> new ChampionshipPointsScaleEntry(championshipId, e.position(), e.points())).toList());
+
+        Map<String, Object> after = settingsOf(saved);
+        after.put("pointsScale", scale.stream().sorted((a, b) -> Integer.compare(a.getPosition(), b.getPosition()))
+                .map(ScalePoint::of).toList());
+        audit.entry(actor, "CHAMPIONSHIP_SCORING_SYSTEM_APPLIED").entity("championship", championshipId)
+                .summary("Applied the scoring system " + system.getName() + " to championship " + saved.getName())
+                .before(before).after(after).record();
+        return saved;
     }
 
     /** CHAMP-04: replace-all points scale in a single transaction. */

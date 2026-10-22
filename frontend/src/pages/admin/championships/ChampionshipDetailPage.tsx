@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChampionshipConfigForm } from './ChampionshipConfigForm';
 import { PointsScaleEditor } from './PointsScaleEditor';
+import { ApplyScoringSystem } from './ApplyScoringSystem';
 import { ChampionshipStandingsTable } from './ChampionshipStandingsTable';
 import { ChampionshipClassesTab } from './ChampionshipClassesTab';
 import { ChampionshipEventsTab } from './ChampionshipEventsTab';
@@ -105,7 +106,9 @@ export default function ChampionshipDetailPage() {
 
         <TabsContent value="config" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
+            <ApplyScoringSystem championshipId={id} />
             <ChampionshipConfigForm
+              key={`${data.bestXFromYX}-${data.bestXFromYY}-${data.tqBonusPoints}-${data.afinalWinnerBonusPoints}-${data.showOverallTable}`}
               initialValue={data}
               onSubmit={handleUpdate}
               submitLabel="Save"
@@ -127,7 +130,11 @@ export default function ChampionshipDetailPage() {
 
         <TabsContent value="points-scale" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
-            <PointsScaleEditor championshipId={id} initialScale={data.pointsScale} />
+            <PointsScaleEditor
+              key={JSON.stringify(data.pointsScale)}
+              championshipId={id}
+              initialScale={data.pointsScale}
+            />
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 

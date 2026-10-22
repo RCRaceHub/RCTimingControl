@@ -257,7 +257,11 @@ system's values), so a file imports the same on any club's machine. A system a f
 scoring itself is unchanged: the same settings are read as before, so formats saved earlier score exactly as they did.
 Bump Up and Timed formats do not use systems yet.
 
-Championships will pick a system in a later change (tracker #435).
+**Championships.** On a championship's Config tab, an admin can pick a championship scoring system and **Apply** it. This
+copies the rounds scoring (best X from Y), the TQ and A final bonuses, the overall table setting and the whole points scale
+onto the championship, in one step that is recorded in the audit log with the values before and after. Nothing is linked:
+the name, classes, rounds and exclusions stay as they are, every field can still be edited, and editing the system later
+does not change a championship it was applied to.
 
 ## Known gaps
 
