@@ -16,6 +16,7 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
 vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: [] }) }));
 const mockRaceClock = vi.fn();
 vi.mock('@/hooks/race-control/useRaceClock', () => ({ useRaceClock: () => mockRaceClock() }));
+vi.mock('@/hooks/race-control/useJumpStarts', () => ({ useJumpStarts: () => [] }));
 vi.mock('./referee/useProximityAlerts', () => ({ useProximityAlerts: () => new Set<number>() }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
 vi.mock('./panels/RunOrderPanel', () => ({ RunOrderPanel: () => null }));

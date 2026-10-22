@@ -232,6 +232,19 @@ export async function getRaceEntries(raceId: number): Promise<RaceEntryDto[]> {
   return data;
 }
 
+/** A car that crossed the line before its turn in a stagger start; `earlyMs` is how early its first crossing was. */
+export type JumpStartDto = {
+  entryId: number;
+  driverName: string;
+  carNumber: string | null;
+  earlyMs: number;
+};
+
+export async function getJumpStarts(raceId: number): Promise<JumpStartDto[]> {
+  const { data } = await api.get<JumpStartDto[]>(`/api/v1/race-control/race/${raceId}/jump-starts`);
+  return data;
+}
+
 export async function moveEntryToHeat(
   raceId: number,
   req: { entryId: number; targetRaceId: number; allRounds: boolean },

@@ -11,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
+import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,12 @@ public class LapTimingService {
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
 
     private final Map<Long, LiveRaceState> states = new ConcurrentHashMap<>();
+    /**
+     * How early a car may cross before its turn without being called a jump start: clock and decoder times differ.
+     * The clock is read when the passing is handled, so a backlog on the timing thread can only hide a marginal
+     * jump start, never invent one.
+     */
+    static final long JUMP_START_GRACE_MS = 250;
     /**
      * Races whose state was released and that have not started again. A passing whose race lookup ran before the
      * finish or restart committed can reach {@link #onLapPassing} after the release; without this it would
@@ -149,6 +156,7 @@ public class LapTimingService {
         if (entryId != null) {
             // A rolling start's clock waits for the first car; this starts it
             raceClockService.onFirstPassing(raceId);
+            checkJumpStart(raceId, state, entryId);
         }
 
         boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
@@ -163,6 +171,34 @@ public class LapTimingService {
         if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
         }
+    }
+
+    /**
+     * Tells the referee when a car crosses the line before its turn in a stagger start. The car's turn is its start
+     * offset on the race clock, less {@link #JUMP_START_GRACE_MS} for the delay between the clock and the decoder.
+     * The passing is still timed as usual: whether it is a penalty is the referee's decision. Does nothing for any
+     * other start. Runs on the timing thread.
+     */
+    private void checkJumpStart(long raceId, LiveRaceState state, long entryId) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        // An entry added after the state was made has no slot, so it is not judged against anyone else's
+        if (plan.staggerIntervalMs() <= 0 || !state.hasStartOffset(entryId)) {
+            return;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        long earlyMs = state.startOffsetMs(entryId) - elapsedMs;
+        if (earlyMs > JUMP_START_GRACE_MS && state.recordJumpStart(entryId, earlyMs)) {
+            log.info("Race {}: entry {} crossed the line {} ms before its start", raceId, entryId, earlyMs);
+            liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts());
+        }
+    }
+
+    /**
+     * The cars that have jumped the start of a race in progress, for a referee screen that has just opened; empty
+     * once the race has finished and its live state is released.
+     */
+    public List<JumpStartDto> jumpStartsOf(long raceId) {
+        return peek(raceId).map(LiveRaceState::jumpStarts).orElse(List.of());
     }
 
     /**
@@ -252,7 +288,11 @@ public class LapTimingService {
     public void releaseState(long raceId) {
         released.add(raceId);
         plans.remove(raceId);
-        states.remove(raceId);
+        LiveRaceState removed = states.remove(raceId);
+        if (removed != null && !removed.jumpStarts().isEmpty()) {
+            // Tells open referee screens to drop the alerts: they belong to the run that has ended
+            liveTimingHub.broadcastJumpStarts(raceId, List.of());
+        }
     }
 
     /**

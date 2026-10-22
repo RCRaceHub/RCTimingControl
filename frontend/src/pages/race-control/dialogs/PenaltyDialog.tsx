@@ -45,9 +45,13 @@ type Props = {
   onSubmit: (req: PenaltyRequest) => void;
   isPending: boolean;
   drivers: { entryId: number; driverName: string; carNumber?: string | null }[];
+  /** The driver the form opens on, e.g. one flagged for a jump start. */
+  defaultEntryId?: number;
+  /** The reason the form opens with. */
+  defaultReason?: string;
 };
 
-export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers }: Props) {
+export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers, defaultEntryId, defaultReason }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { entryId: 0, penaltyType: 'LAP', value: 1, reason: '' },
@@ -62,7 +66,8 @@ export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers
   const { reset } = form;
   useEffect(() => {
     if (!open) reset();
-  }, [open, reset]);
+    else reset({ entryId: defaultEntryId ?? 0, penaltyType: 'LAP', value: 1, reason: defaultReason ?? '' });
+  }, [open, reset, defaultEntryId, defaultReason]);
 
   const penaltyType = useWatch({ control: form.control, name: 'penaltyType' });
 

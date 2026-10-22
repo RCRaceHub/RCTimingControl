@@ -671,9 +671,10 @@ The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-read
 GET  /race-control/race/{raceId}/entries
 POST /race-control/race/{raceId}/transponders/link   { "transponderNumber": "1234567", "entryId": 101 }
 GET  /race-control/race/{raceId}/history
+GET  /race-control/race/{raceId}/jump-starts
 ```
 
-`entries` lists everyone in the race, in any state, for linking a transponder or picking a driver for an incident or penalty (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `transponders/link` links an unknown transponder to an entry, credits the laps it has already done and saves the number on the entry (a swap: it replaces a number that has not passed in this race, otherwise it becomes the secondary), so later races at the event need no relinking, answering `{ "lapsCredited": 3 }` (`RACE_DIRECTOR` or `ADMIN`). `history` is the race's own audit log rows (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). A race's results come from the public `GET /results/{raceId}`, and its live timing from `GET /boards/races/{raceId}/live-timing`.
+`entries` lists everyone in the race, in any state, for linking a transponder or picking a driver for an incident or penalty (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `transponders/link` links an unknown transponder to an entry, credits the laps it has already done and saves the number on the entry (a swap: it replaces a number that has not passed in this race, otherwise it becomes the secondary), so later races at the event need no relinking, answering `{ "lapsCredited": 3 }` (`RACE_DIRECTOR` or `ADMIN`). `history` is the race's own audit log rows (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `jump-starts` lists the cars that crossed the line before their turn in a staggered start, as `[{ "entryId": 101, "driverName": "...", "carNumber": "12", "earlyMs": 2400 }]`, empty for other starts and once the race has finished (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`); later ones arrive on `/topic/race/{raceId}/jump-start`. A race's results come from the public `GET /results/{raceId}`, and its live timing from `GET /boards/races/{raceId}/live-timing`.
 
 ---
 

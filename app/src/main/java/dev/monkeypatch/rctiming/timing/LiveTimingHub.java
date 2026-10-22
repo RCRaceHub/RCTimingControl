@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
+import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -19,6 +20,7 @@ import java.util.Map;
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
+ * - /topic/race/{raceId}/jump-start — cars that crossed the line before their turn in a stagger start
  * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
  * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
@@ -60,6 +62,14 @@ public class LiveTimingHub {
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
                 Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+    }
+
+    /**
+     * Tells the referee which cars have jumped a stagger start. Sends the whole list, not a delta, so a screen that
+     * misses one message is right again at the next. Sent at once, from the timing thread.
+     */
+    public void broadcastJumpStarts(long raceId, List<JumpStartDto> jumpStarts) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/jump-start", jumpStarts);
     }
 
     /**

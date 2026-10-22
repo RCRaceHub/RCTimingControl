@@ -100,6 +100,7 @@ The AMB/MyLaps decoder client runs on a dedicated background thread (Netty 4.1, 
 | `/topic/race/{raceId}/state` | Race lifecycle changes |
 | `/topic/race/{raceId}/marshal` | Marshal lap adjustments |
 | `/topic/race/{raceId}/unknown-transponder` | A transponder that matched no entry, for the referee |
+| `/topic/race/{raceId}/jump-start` | Cars that crossed the line before their turn in a stagger start, for the referee |
 | `/topic/race/{raceId}/audio` | Announcements for the announcer's browser |
 | `/topic/race/{raceId}/bump-up-alert` | Bump-up prompts when a race finishes |
 | `/topic/practice/{sessionId}/timing`, `/unknown-transponder` | Open practice |

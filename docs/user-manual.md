@@ -59,7 +59,7 @@ A class races to a **format**, which you pick in step 4 and again for each class
 **How a race starts** is set in the format, separately for heats and finals:
 
 - **Grid**: every car goes together on the start horn.
-- **Stagger**: after the horn each driver is called by name every few seconds in grid order, and each car's time starts when it is called.
+- **Stagger**: after the horn each driver is called by name every few seconds in grid order, and each car's time starts when it is called. A car that crosses the line before it is called is flagged on the Referee View as a jump start, for the referee to penalise.
 - **Rolling**: drivers are not called. The clock waits until the first car crosses the line, and then runs for everyone, so every car's time ends together. Race control says "waiting for first car" until then.
 
 **How a race ends**: a timed race ends when every car has taken the flag after the clock runs out. If a car never comes round, the track's max last lap time finishes the race for you. **Practice** rounds are run like heats but never score; **open practice** is a separate timing session with no heats or result.
