@@ -1,13 +1,15 @@
-// A venue TV screen of its own for the live position chart (#410): who holds which place, lap by lap, for the race
-// on track. Anonymous like the other boards, and follows the race live through useBoardRace.
+// The Live Race screen for a venue TV: the race on track with its live timing table and the position chart (#410),
+// who holds which place lap by lap. Anonymous like the other boards, and follows the race live through useBoardRace.
+// Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
 import { PositionChart } from '@/components/print/PositionChart';
+import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { parseEventParam } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
 
-export default function ChartBoard() {
+export default function LiveRaceBoard() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
@@ -34,13 +36,23 @@ export default function ChartBoard() {
   }
   return (
     <BoardShell eventName={nowNext?.eventName}>
-      <h1 className="text-4xl font-bold lg:text-6xl">{currentRace.label}</h1>
-      {series.length > 0 ? (
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <h1 className="text-4xl font-bold lg:text-6xl">{currentRace.label}</h1>
+        <span
+          className={
+            currentRace.status === 'STOPPED'
+              ? 'rounded bg-red-600 px-4 py-1 text-2xl font-bold lg:text-3xl'
+              : 'rounded bg-green-600 px-4 py-1 text-2xl font-bold lg:text-3xl'
+          }
+        >
+          {currentRace.status === 'STOPPED' ? 'Stopped' : 'Racing'}
+        </span>
+      </div>
+      {rows.length > 0 ? <BoardLiveTable rows={rows} /> : <BoardMessage>Waiting for the first lap…</BoardMessage>}
+      {series.length > 0 && (
         <div className="mx-auto w-full max-w-6xl">
           <PositionChart series={series} />
         </div>
-      ) : (
-        <BoardMessage>Waiting for the first lap…</BoardMessage>
       )}
     </BoardShell>
   );

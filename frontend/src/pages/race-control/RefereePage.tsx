@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { useHelpContent } from '@/context/HelpContext';
 import { RefereeHelp } from '@/help/RefereeHelp';
 import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
+import { useJumpStarts } from '@/hooks/race-control/useJumpStarts';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
@@ -17,6 +18,7 @@ import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useProximityAlerts } from './referee/useProximityAlerts';
+import { JumpStartAlert } from './referee/JumpStartAlert';
 import { getRaceEntries } from '@/lib/raceControlApi';
 import type { IncidentReportRequest, PenaltyRequest } from '@/lib/raceControlApi';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -36,6 +38,8 @@ export default function RefereePage() {
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
   const [incidentOpen, setIncidentOpen] = useState(false);
   const [penaltyOpen, setPenaltyOpen] = useState(false);
+  // The driver the penalty form opens on, when it was opened from a jump start alert
+  const [penaltyEntryId, setPenaltyEntryId] = useState<number | undefined>(undefined);
 
   // Auto-select the race in progress on load (adjusting state while rendering rather than in an effect)
   if (runOrder.length > 0 && selectedRaceId === null) {
@@ -59,6 +63,10 @@ export default function RefereePage() {
 
   // Cars closing on the one ahead between timing updates
   const highlightEntryIds = useProximityAlerts(selectedRaceId, current);
+
+  // Cars that left before their turn in a stagger start
+  const jumpStarts = useJumpStarts(selectedRaceId);
+  const jumpStartEntryIds = useMemo(() => new Set(jumpStarts.map((j) => j.entryId)), [jumpStarts]);
 
   const selectedRace = runOrder.find((r) => r.raceId === selectedRaceId);
   const mutations = useRaceStateMutations(selectedRaceId ?? 0, eventId);
@@ -126,7 +134,7 @@ export default function RefereePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPenaltyOpen(true)}
+              onClick={() => { setPenaltyEntryId(undefined); setPenaltyOpen(true); }}
               disabled={!selectedRaceId}
             >
               Apply Penalty
@@ -138,10 +146,15 @@ export default function RefereePage() {
           <p className="text-sm text-muted-foreground">Select a race from the run order.</p>
         ) : (
           <>
+            <JumpStartAlert
+              jumpStarts={jumpStarts}
+              onPenalty={(entryId) => { setPenaltyEntryId(entryId); setPenaltyOpen(true); }}
+            />
             <LiveTimingPanel
               raceId={selectedRaceId}
               status={selectedRace?.status ?? 'PENDING'}
               highlightEntryIds={highlightEntryIds}
+              jumpStartEntryIds={jumpStartEntryIds}
             />
             <RaceHistoryPanel raceId={selectedRaceId} status={selectedRace?.status ?? 'PENDING'} />
           </>
@@ -161,6 +174,8 @@ export default function RefereePage() {
         onSubmit={onPenalty}
         isPending={mutations.penalty.isPending}
         drivers={drivers}
+        defaultEntryId={penaltyEntryId}
+        defaultReason={penaltyEntryId ? 'Jump start' : undefined}
       />
     </div>
   );

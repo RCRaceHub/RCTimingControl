@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -63,7 +63,7 @@ const DocsIndexRedirect = lazy(() => import('@/pages/docs/DocPage').then(m => ({
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
-const ChartBoard = lazy(() => import('@/pages/boards/ChartBoard'));
+const LiveRaceBoard = lazy(() => import('@/pages/boards/LiveRaceBoard'));
 
 function RootLayout() {
   return (
@@ -78,6 +78,12 @@ function RootLayout() {
       <Toaster />
     </AuthProvider>
   );
+}
+
+/** The chart screen became the Live Race screen; keeps a TV's old /boards/chart address (and ?event=) working. */
+function ChartRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/boards/live-race${search}`} replace />;
 }
 
 const router = createBrowserRouter([
@@ -185,7 +191,8 @@ const router = createBrowserRouter([
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
-      { path: '/boards/chart', element: <ChartBoard /> },
+      { path: '/boards/live-race', element: <LiveRaceBoard /> },
+      { path: '/boards/chart', element: <ChartRedirect /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
       { path: '*', element: <NotFoundPage /> },

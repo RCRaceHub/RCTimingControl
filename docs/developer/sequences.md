@@ -41,6 +41,11 @@ sequenceDiagram
             LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
             Hub-->>B: /topic/race/id/unknown-transponder
         end
+        opt a stagger start and the car crossed before its start offset
+            LTS->>LRS: recordJumpStart(entryId, earlyMs), first time only
+            LTS->>Hub: broadcastJumpStarts(raceId, jumpStarts)
+            Hub-->>B: /topic/race/id/jump-start
+        end
         LTS->>Hub: broadcastTimingUpdate(raceId, calculatePositions())
         Hub-->>B: /topic/race/id/timing
         opt every car has had its whole window
@@ -49,6 +54,8 @@ sequenceDiagram
         end
     end
 ```
+
+A car that crosses the line before its turn in a stagger start is flagged to the referee, who decides on a penalty; the passing is still timed.
 
 An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen.
 
@@ -152,7 +159,7 @@ The qualifying standings in a meeting pack come from the existing `GET /race-con
 
 ## The overlay's chart and ticker
 
-The streaming overlay, the live board and the `/boards/chart` screen all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. The chart read holds `LiveRaceState`'s lock only to copy the rows and lap times; the ordering is worked out after the lock is released.
+The streaming overlay and the Live race screen (`/boards/live-race`) all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. The chart read holds `LiveRaceState`'s lock only to copy the rows and lap times; the ordering is worked out after the lock is released.
 
 ```mermaid
 sequenceDiagram
@@ -174,6 +181,8 @@ sequenceDiagram
     BTS-->>BC: names through PublicNames
     BC-->>B: TickerDto
 ```
+
+The Now and next board polls the same ticker endpoint for the next drivers and marshals.
 
 `LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
 

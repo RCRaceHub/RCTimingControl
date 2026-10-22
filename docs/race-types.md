@@ -76,6 +76,14 @@ gives each car its own start offset (position × N seconds) and works out each c
 driver with no grid position is called last. So a car's flag comes N seconds after the car before it, and the race is
 over for everyone only when the last car to leave has had its full time (section 3).
 
+#### Jump starts
+
+A car that crosses the line before it has been called (its start offset has not yet come on the race clock) has jumped
+the start. A quarter of a second of slack is allowed for the gap between the clock and the decoder. The timing code
+reports the first early crossing of each car to the referee, who decides whether to give a penalty; the passing is
+still timed as normal and nothing is applied automatically. An entry added after the race was set up has no slot and is never flagged. Other start types have no jump start. The list is kept
+with the race's live timing, so it is gone once the race finishes.
+
 ### Rolling start in detail
 
 When the director presses Start on a rolling start race, the race is running but its **clock is held at zero**. It

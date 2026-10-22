@@ -351,8 +351,14 @@ export default function MeetingGuidePage() {
           <li>
             <span className="font-semibold">Now and next:</span> Open
             <span className="font-mono text-xs"> /boards/now-next</span> on a TV. While a race is on
-            track it shows the race name, Racing or Stopped, live timing, and the next race. Between
-            races it shows the next race, and the results of the last race that finished.
+            track it shows the race name, Racing or Stopped, the line-up in running order, and the next
+            race with its drivers and marshals. Between races it shows the next race, and the results
+            of the last race that finished.
+          </li>
+          <li>
+            <span className="font-semibold">Live race:</span> Open
+            <span className="font-mono text-xs"> /boards/live-race</span> for the race on track with its
+            live timing table and the position chart.
           </li>
           <li>
             <span className="font-semibold">Results:</span> Open

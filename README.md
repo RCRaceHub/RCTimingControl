@@ -77,7 +77,7 @@ Then set the decoder host to `localhost` and click **Test Connection**. See the 
 
 ### Spectator boards
 
-Point a TV's browser at `/boards/now-next` (the race on track with live timing, then what's next) or `/boards/results` (the last finished race). No login is needed. Add `?event=ID` to pin a board to one event; otherwise it follows the event that is racing.
+Point a TV's browser at `/boards/now-next` (the line-up of the race on track, then what's next), `/boards/live-race` (live timing and the position chart) or `/boards/results` (the last finished race). No login is needed. Add `?event=ID` to pin a board to one event; otherwise it follows the event that is racing.
 
 ### Streaming overlay
 

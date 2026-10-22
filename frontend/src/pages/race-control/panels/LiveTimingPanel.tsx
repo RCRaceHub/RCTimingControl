@@ -22,9 +22,11 @@ type Props = {
   status: RunOrderItemDto['status'];
   /** Entry IDs to highlight (e.g. proximity alerts from referee view). */
   highlightEntryIds?: Set<number>;
+  /** Entry IDs that jumped a stagger start, flagged on their row. */
+  jumpStartEntryIds?: Set<number>;
 };
 
-export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
+export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds }: Props) {
   const { rows: sorted, wsStatus, snapshotFailed } = useLiveTiming(raceId);
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
@@ -81,6 +83,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                   flash === 'improving'      && 'bg-green-500/30',
                   flash === 'slow'           && 'bg-red-500/30',
                   !flash && highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
+                  jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
                 <TableCell className="font-mono font-semibold">{row.position}</TableCell>
@@ -96,6 +99,11 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds }: Props) {
                   {(elim.revivals.get(row.entryId) ?? 0) > 0 && (
                     <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-2 text-chart-2">
                       ZOMBIE{(elim.revivals.get(row.entryId) ?? 0) > 1 ? ` x${elim.revivals.get(row.entryId)}` : ''}
+                    </Badge>
+                  )}
+                  {jumpStartEntryIds?.has(row.entryId) && (
+                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
+                      JUMP START
                     </Badge>
                   )}
                   {lappedEntryIds.has(row.entryId) && (
