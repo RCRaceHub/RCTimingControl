@@ -1,11 +1,13 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,8 @@ public class LiveRaceState {
     final Map<Long, Long> startOffsetMs = new HashMap<>();
     /** Whether the finish has been asked for, so it is asked for once. */
     boolean finishRequested = false;
+    /** Entries that crossed the line before their turn in a stagger start: entryId → how early the first crossing was. */
+    final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
@@ -82,6 +86,22 @@ public class LiveRaceState {
     /** When the last car starts, in milliseconds after the race clock starts; 0 when they all start together. */
     public synchronized long lastStartOffsetMs() {
         return startOffsetMs.values().stream().mapToLong(Long::longValue).max().orElse(0L);
+    }
+
+    /**
+     * Notes that an entry crossed the line {@code earlyMs} before its start. Only the entry's first early crossing is
+     * kept, so the referee is told once. Returns true if this is that first crossing.
+     */
+    public synchronized boolean recordJumpStart(long entryId, long earlyMs) {
+        return jumpStartEarlyMs.putIfAbsent(entryId, earlyMs) == null;
+    }
+
+    /** The entries that have jumped the start so far, in the order they did, with names and car numbers. */
+    public synchronized List<JumpStartDto> jumpStarts() {
+        List<JumpStartDto> result = new ArrayList<>(jumpStartEarlyMs.size());
+        jumpStartEarlyMs.forEach((entryId, earlyMs) -> result.add(new JumpStartDto(entryId,
+                entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs)));
+        return result;
     }
 
     /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */

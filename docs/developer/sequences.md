@@ -41,6 +41,11 @@ sequenceDiagram
             LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
             Hub-->>B: /topic/race/id/unknown-transponder
         end
+        opt a stagger start and the car crossed before its start offset
+            LTS->>LRS: recordJumpStart(entryId, earlyMs), first time only
+            LTS->>Hub: broadcastJumpStarts(raceId, jumpStarts)
+            Hub-->>B: /topic/race/id/jump-start
+        end
         LTS->>Hub: broadcastTimingUpdate(raceId, calculatePositions())
         Hub-->>B: /topic/race/id/timing
         opt every car has had its whole window
@@ -49,6 +54,8 @@ sequenceDiagram
         end
     end
 ```
+
+A car that crosses the line before its turn in a stagger start is flagged to the referee, who decides on a penalty; the passing is still timed.
 
 An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen.
 
