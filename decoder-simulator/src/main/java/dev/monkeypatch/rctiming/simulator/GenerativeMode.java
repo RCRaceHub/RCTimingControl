@@ -5,16 +5,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 /**
  * Emits synthetic RC-4 PASSING records for a configured list of transponder IDs.
  *
  * <p>Each transponder has its own independent lap timer. Initial passings are staggered
- * evenly across one base interval so all drivers don't cross the line simultaneously.
- * Lap times are varied the way real ones are: each driver gets a fixed pace of up to
- * {@value #MAX_PACE_SPREAD} faster or slower than the base interval, each lap adds bell-curve noise (standard
+ * across one base interval so all drivers don't cross the line together (a driver's pace
+ * shifts their first crossing a little). Lap times are varied the way real ones are: each driver gets a fixed pace of up to
+ * 5% faster or slower than the base interval, each lap adds bell-curve noise (standard
  * deviation a third of {@code jitterMs}) down to the millisecond, and about one lap in
  * {@value #SLOW_LAP_ONE_IN} is a slow lap (a spin or a marshal stop). Passings are stamped with their scheduled
  * crossing time rather than the 20 ms tick that sends them, so lap times are not quantised.
@@ -33,7 +35,6 @@ public class GenerativeMode {
     private static final Logger log = LoggerFactory.getLogger(GenerativeMode.class);
 
     /** Largest fixed pace offset a driver gets, as a fraction of the base interval (either way). */
-    static final String MAX_PACE_SPREAD = "5%";
     private static final double PACE_SPREAD = 0.05;
     /** About one lap in this many is a slow lap. */
     static final int SLOW_LAP_ONE_IN = 15;
@@ -43,6 +44,8 @@ public class GenerativeMode {
     /**
      * Gives each driver a fixed pace factor so some are consistently quicker than others.
      *
+     * @param count number of drivers
+     * @param rng   source of randomness
      * @return one factor per driver, uniformly in {@code [1 - 5%, 1 + 5%]}
      */
     static double[] paceFactors(int count, Random rng) {
@@ -59,6 +62,7 @@ public class GenerativeMode {
      * @param intervalMs base lap time, ms
      * @param pace       the driver's fixed pace factor from {@link #paceFactors}
      * @param jitterMs   spread of the per-lap noise, ms; zero gives the driver's pace exactly
+     * @param rng        source of randomness
      * @return the lap time in milliseconds, fractional, never below half the base interval
      */
     static double nextLapMs(long intervalMs, double pace, long jitterMs, Random rng) {
@@ -104,15 +108,16 @@ public class GenerativeMode {
             nextPassingMs[i] = startMs + intervalMs * pace[i] + stagger;
         }
 
-        log.info("[SIMULATOR] GenerativeMode: {} transponders, base {}ms, jitter ±{}ms, pace {}",
-                transponders.size(), intervalMs, jitterMs, java.util.Arrays.toString(pace));
+        log.info("[SIMULATOR] GenerativeMode: {} transponders, base {}ms, jitter ±{}ms",
+                transponders.size(), intervalMs, jitterMs);
+        log.debug("[SIMULATOR] pace factors {}", Arrays.toString(pace));
 
         while (!Thread.currentThread().isInterrupted()) {
             long nowMs  = System.currentTimeMillis();
 
             // Emit STATUS heartbeat every 5 s
             if (nowMs - lastStatusMs >= 5_000) {
-                String status = String.format("#\t20\t%d\t72\t0\txDEAD", seqNum++);
+                String status = String.format(Locale.ROOT, "#\t20\t%d\t72\t0\txDEAD", seqNum++);
                 Rc4Lines.write(out, status);
                 lastStatusMs = nowMs;
                 log.debug("[SIMULATOR] STATUS emitted: {}", status);
@@ -122,13 +127,17 @@ public class GenerativeMode {
             for (int i = 0; i < transponders.size(); i++) {
                 if (nowMs >= nextPassingMs[i]) {
                     double elapsedSec = (nextPassingMs[i] - startMs) / 1000.0;
-                    String passing = String.format("@\t20\t%d\t%s\t%.3f\t300\t130\t2\txDEAD",
+                    String passing = String.format(Locale.ROOT, "@\t20\t%d\t%s\t%.3f\t300\t130\t2\txDEAD",
                             seqNum++, transponders.get(i), elapsedSec);
                     Rc4Lines.write(out, passing);
                     log.debug("[SIMULATOR] PASSING emitted: {}", passing);
 
                     // Next lap is scheduled from this crossing, not from when the tick sent it
                     nextPassingMs[i] += nextLapMs(intervalMs, pace[i], jitterMs, rng);
+                    // After a stall (GC, sleep, slow client) restart from now instead of bursting to catch up
+                    if (nextPassingMs[i] < nowMs) {
+                        nextPassingMs[i] = nowMs + intervalMs * pace[i];
+                    }
                 }
             }
 
