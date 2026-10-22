@@ -33,6 +33,7 @@ public class ChampionshipRepository extends JooqRepository<Championship, Champio
         c.setScoringSource(r.getScoringSource() == null ? null : ScoringSource.valueOf(r.getScoringSource()));
         c.setTqBonusPoints(r.getTqBonusPoints());
         c.setAfinalWinnerBonusPoints(r.getAfinalWinnerBonusPoints());
+        c.setShowOverallTable(r.getShowOverallTable());
         c.setCreatedAt(r.getCreatedAt());
         c.setUpdatedAt(r.getUpdatedAt());
         return c;
@@ -46,6 +47,7 @@ public class ChampionshipRepository extends JooqRepository<Championship, Champio
         r.setScoringSource(c.getScoringSource() == null ? null : c.getScoringSource().name());
         r.setTqBonusPoints(c.getTqBonusPoints());
         r.setAfinalWinnerBonusPoints(c.getAfinalWinnerBonusPoints());
+        r.setShowOverallTable(c.isShowOverallTable());
         r.setCreatedAt(c.getCreatedAt());
         r.setUpdatedAt(c.getUpdatedAt());
     }

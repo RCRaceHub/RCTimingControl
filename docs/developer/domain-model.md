@@ -133,6 +133,7 @@ classDiagram
         snapshot(raceId)
     }
     class RoundGeneratorService
+    class ChampionshipSeedingQuery
     class BumpUpSeedingService
     class AutoFinalsSeedingService
     class FinalsLineupService
@@ -145,6 +146,7 @@ classDiagram
     RaceStateMachineService --> LiveTimingHub
     RaceStateMachineService --> ResultSnapshotService
     RaceStateMachineService --> RoundGeneratorService
+    RoundGeneratorService --> ChampionshipSeedingQuery : standings seed the first heats
     RaceStateMachineService --> BumpUpSeedingService
     FinalsLineupService --> AutoFinalsSeedingService
 ```

@@ -85,6 +85,7 @@ export function ChampionshipStandingsTable({ championshipId }: Props) {
           <TableRow>
             <TableHead className="w-12">#</TableHead>
             <TableHead>Driver</TableHead>
+            <TableHead>Class</TableHead>
             <TableHead className="text-right">Total</TableHead>
             {roundNumbers.map(n => (
               <TableHead key={n} className="text-center w-16">
@@ -94,12 +95,13 @@ export function ChampionshipStandingsTable({ championshipId }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row, idx) => {
+          {rows.map((row) => {
             const roundMap = new Map(row.rounds.map(r => [r.roundNumber, r]));
             return (
-              <TableRow key={row.driverId}>
-                <TableCell className="font-medium">{idx + 1}</TableCell>
+              <TableRow key={`${row.racingClassId}-${row.driverId}`}>
+                <TableCell className="font-medium">{row.position}</TableCell>
                 <TableCell>{row.displayName}</TableCell>
+                <TableCell>{row.racingClassId === 0 ? 'Overall' : `Class ${row.racingClassId}`}</TableCell>
                 <TableCell className="text-right font-semibold">{row.totalPoints}</TableCell>
                 {roundNumbers.map(n => (
                   <RoundCell key={n} result={roundMap.get(n)} />

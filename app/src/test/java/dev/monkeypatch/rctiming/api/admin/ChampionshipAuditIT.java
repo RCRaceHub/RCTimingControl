@@ -82,7 +82,7 @@ class ChampionshipAuditIT extends AbstractIntegrationTest {
     void everyChangeToAChampionshipIsRecordedWithWhoMadeIt() throws Exception {
         long id = create("Club Championship " + run, 4, 6, 2, 3);
         send(HttpMethod.PUT, "/" + id, adminToken, Map.of("name", "Club Championship " + run, "bestXFromYX", 5,
-                "bestXFromYY", 6, "scoringSource", "FINALS", "tqBonusPoints", 2, "afinalWinnerBonusPoints", 3));
+                "bestXFromYY", 6, "tqBonusPoints", 2, "afinalWinnerBonusPoints", 3));
         send(HttpMethod.POST, "/" + id + "/classes", adminToken, Map.of("racingClassId", racingClassId));
         send(HttpMethod.POST, "/" + id + "/events", adminToken, Map.of("eventId", eventId, "roundNumber", 1));
         send(HttpMethod.PUT, "/" + id + "/points-scale", adminToken,
@@ -154,7 +154,7 @@ class ChampionshipAuditIT extends AbstractIntegrationTest {
 
     private long create(String name, int x, int y, int tq, int afinal) {
         Map<String, Object> body = Map.of("name", name, "bestXFromYX", x, "bestXFromYY", y,
-                "scoringSource", "FINALS", "tqBonusPoints", tq, "afinalWinnerBonusPoints", afinal);
+                "tqBonusPoints", tq, "afinalWinnerBonusPoints", afinal);
         return send(HttpMethod.POST, "", adminToken, body).path("id").asLong();
     }
 

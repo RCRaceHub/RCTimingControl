@@ -21,8 +21,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.CHAMPIONSHIP_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
@@ -42,17 +45,16 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
  * Championship standings (CHAMP-01, CHAMP-02, CHAMP-04, CHAMP-07, CHAMP-08, CHAMP-09), worked out on demand
  * from the result snapshots of the linked events. Each event linked to the championship is a round.
  *
- * <p>A driver scores, per class, the points for their best position at each round. Scoring from both qualifying and
- * finals (CHAMP-06) pays the points of the best qualifying position and of the best final position and sums them;
- * the round's position is the better of the two. A driver on the grid at a round who has no result in it has a DNS
- * round worth nothing, which still counts towards Y. A round of finals is placed as one: the A final's order, then
- * the B final's without those who bumped up, and so on, so a B final win is not a first place. The TQ and A-final
- * winner bonuses are per driver, per class and per round: winning in two classes, or two rounds, earns each. The TQ
- * goes to one driver per class and round, the one at the top of the class's qualifying table once all its qualifying
- * heats are finished (the order finals are seeded in, so lowest points for a low-points class), not to every heat
- * winner. Both come from every finished race, whatever the scoring source. A round a driver is excluded from earns
- * them nothing, bonuses included, and a TQ they top is not passed down.
- * The worst rounds are then dropped to the best X from Y, and each class is ranked.
+ * <p>A driver scores, per class, the points for their place in the event's overall result: the finals where the
+ * class has them, otherwise its overall qualifying order (not each heat's own places). A driver on the grid at a round
+ * who has no result in it has a DNS round worth nothing, which still counts towards Y. A round of finals is placed as
+ * one: the A final's order, then the B final's without those who bumped up, and so on, so a B final win is not a first
+ * place. The TQ and A-final winner bonuses are per driver, per class and per round: winning in two classes, or two
+ * rounds, earns each. The TQ goes to one driver per class and round, the one at the top of the class's qualifying
+ * table once all its qualifying heats are finished (the order finals are seeded in, so lowest points for a low-points
+ * class), not to every heat winner. A round a driver is excluded from earns them nothing, bonuses included, and a TQ
+ * they top is not passed down. Each driver's best X rounds count, and each class is ranked with countback.
+ * Only classes added to the championship score, or every class while none is added.
  *
  * <p>Drivers are competitors (L5, #13): entries map to {@code entries.competitor_id}, so a driver with no login
  * still scores, and exclusions are keyed by competitor id. Reads only through the jOOQ DSL, with no repositories.
@@ -60,6 +62,12 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 @Service
 @ReadTransaction
 public class ChampionshipStandingsQuery {
+
+    /**
+     * The {@code racingClassId} of the overall table's rows, which rank every class together. No racing class has
+     * this id (they start at 1), and it sorts ahead of the real classes.
+     */
+    public static final long OVERALL_CLASS_ID = 0L;
 
     private static final Logger log = LoggerFactory.getLogger(ChampionshipStandingsQuery.class);
 
@@ -101,7 +109,7 @@ public class ChampionshipStandingsQuery {
     public List<StandingsRowDto> computeStandings(Long championshipId) {
         Rules rules = rules(championshipId);
         List<ChampionshipRound> rounds = rounds(championshipId);
-        Map<Long, EventResults> resultsByEvent = results(rounds, rules.scoringSource());
+        Map<Long, EventResults> resultsByEvent = results(rounds);
 
         Tally tally = new Tally();
         for (ChampionshipRound round : rounds) {
@@ -111,7 +119,7 @@ public class ChampionshipStandingsQuery {
     }
 
     /** How the championship scores: everything but the results themselves. */
-    private record Rules(String scoringSource, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
+    private record Rules(boolean showOverall, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
                          Map<Integer, Integer> pointsScale, int tqBonus, int aFinalBonus,
                          Set<DriverEvent> exclusions) {
 
@@ -121,6 +129,14 @@ public class ChampionshipStandingsQuery {
 
         boolean excluded(Long driverId, Long eventId) {
             return exclusions.contains(new DriverEvent(driverId, eventId));
+        }
+
+        /**
+         * Whether the class scores in the championship: only the classes added to it do, and one with no classes
+         * added yet scores every class that has results.
+         */
+        boolean scores(Long racingClassId) {
+            return classBestXFromY.isEmpty() || classBestXFromY.containsKey(racingClassId);
         }
 
         /** The class's own best X from Y, either half falling back to the championship's. */
@@ -143,8 +159,9 @@ public class ChampionshipStandingsQuery {
     /** Loads the championship's scoring settings, per-class overrides, points scale and exclusions. */
     private Rules rules(Long championshipId) {
         var championship = dsl
-                .select(CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y, CHAMPIONSHIPS.SCORING_SOURCE,
-                        CHAMPIONSHIPS.TQ_BONUS_POINTS, CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS)
+                .select(CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y,
+                        CHAMPIONSHIPS.TQ_BONUS_POINTS, CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS,
+                        CHAMPIONSHIPS.SHOW_OVERALL_TABLE)
                 .from(CHAMPIONSHIPS)
                 .where(CHAMPIONSHIPS.ID.eq(championshipId))
                 .fetchOne();
@@ -175,7 +192,7 @@ public class ChampionshipStandingsQuery {
                 .forEach(r -> exclusions.add(new DriverEvent(r.get(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID),
                         r.get(CHAMPIONSHIP_EXCLUSIONS.EVENT_ID))));
 
-        return new Rules(championship.get(CHAMPIONSHIPS.SCORING_SOURCE),
+        return new Rules(championship.get(CHAMPIONSHIPS.SHOW_OVERALL_TABLE),
                 new BestXFromY(championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_X),
                         championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_Y)),
                 classBestXFromY, pointsScale,
@@ -204,10 +221,11 @@ public class ChampionshipStandingsQuery {
      */
     private record EventResults(List<FinishedRace> races, Map<Long, EntryRef> scoringEntries,
                                 Map<Long, EntryRef> allEntries, Map<Long, String> displayNames,
-                                Map<Long, Long> topQualifiers, Map<RoundClass, String> firstOpenFinal) {
+                                Map<Long, Long> topQualifiers, Map<RoundClass, String> firstOpenFinal,
+                                Map<Long, List<Long>> qualifyingOrder) {
 
         static final EventResults NONE =
-                new EventResults(List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+                new EventResults(List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
     }
 
     /** The linked events in round number order. */
@@ -225,7 +243,7 @@ public class ChampionshipStandingsQuery {
      * The finished races of every linked event and the entries on their grids, in two queries for the whole
      * championship. Each race's snapshot is read once, for both the points and the bonuses.
      */
-    private Map<Long, EventResults> results(List<ChampionshipRound> rounds, String scoringSource) {
+    private Map<Long, EventResults> results(List<ChampionshipRound> rounds) {
         if (rounds.isEmpty()) {
             return Map.of();
         }
@@ -250,7 +268,7 @@ public class ChampionshipStandingsQuery {
                             roundType, r.get(RACES.FINAL_LETTER),
                             r.get(EVENT_CLASSES.RACING_CLASS_ID),
                             // A Shikabane zombie round is a last chance for a place in A, not a final of its own
-                            scores(scoringSource, roundType) && !"Z".equals(r.get(RACES.FINAL_LETTER))
+                            "FINAL".equals(roundType) && !"Z".equals(r.get(RACES.FINAL_LETTER))
                                     && !shikabaneClasses.computeIfAbsent(r.get(RACES.EVENT_CLASS_ID),
                                             this::isShikabane),
                             r.get(RACES.ABANDONED_AT) != null,
@@ -258,7 +276,7 @@ public class ChampionshipStandingsQuery {
                     races.put(raceId, race);
                     results.computeIfAbsent(race.eventId(), k -> new EventResults(new ArrayList<>(),
                             new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(),
-                            new HashMap<>())).races().add(race);
+                            new HashMap<>(), new HashMap<>())).races().add(race);
                 });
 
         // The entry's own class, which can differ from the race's, decides which class a DNS is in
@@ -291,7 +309,7 @@ public class ChampionshipStandingsQuery {
                     }
                 });
         combineFinalLegs(eventIds, results);
-        loadTopQualifiers(eventIds, results);
+        loadQualifying(eventIds, results);
         loadOpenFinals(eventIds, results);
         return results;
     }
@@ -394,11 +412,18 @@ public class ChampionshipStandingsQuery {
     }
 
     /**
-     * The entry that topped each class's qualifying once it was complete: the first in the table the finals are
-     * seeded from, which for a low-points class is the lowest score, not the most laps. A class with a qualifying
-     * heat still to run has no TQ yet, and nor does one whose heats were all abandoned.
+     * Reads each class's qualifying once it is complete (every heat finished, not all abandoned). The entry at the top
+     * of the table the finals are seeded from is the TQ, which for a low-points class is the lowest score, not the
+     * most laps; a class with a heat still to run has none yet. A class with no finals also gets its overall
+     * qualifying order, which it scores from (see {@link #scoreFromQualifying}).
      */
-    private void loadTopQualifiers(List<Long> eventIds, Map<Long, EventResults> results) {
+    private void loadQualifying(List<Long> eventIds, Map<Long, EventResults> results) {
+        Set<Long> classesWithFinals = new HashSet<>(dsl.selectDistinct(RACES.EVENT_CLASS_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .where(ROUNDS.EVENT_ID.in(eventIds))
+                .and(ROUNDS.TYPE.eq("FINAL"))
+                .fetch(RACES.EVENT_CLASS_ID));
         Map<Long, List<QualifyingHeat>> heatsByClass = new HashMap<>();
         dsl.select(RACES.EVENT_CLASS_ID, ROUNDS.EVENT_ID, EVENT_CLASSES.RACING_CLASS_ID, RACES.STATUS,
                         RACES.ABANDONED_AT)
@@ -420,11 +445,17 @@ public class ChampionshipStandingsQuery {
             if (!complete || event == null) {
                 return;
             }
+            Long racingClassId = heats.get(0).racingClassId();
             try {
-                qualifyingStandings.rankedResultsFor(eventClassId).stream()
+                List<QualifyingStandingsService.QualifyingResult> ranked =
+                        qualifyingStandings.rankedResultsFor(eventClassId);
+                ranked.stream()
                         .findFirst()
                         .filter(top -> top.lapsCompleted() > 0)
-                        .ifPresent(top -> event.topQualifiers().put(heats.get(0).racingClassId(), top.entryId()));
+                        .ifPresent(top -> event.topQualifiers().put(racingClassId, top.entryId()));
+                if (!classesWithFinals.contains(eventClassId)) {
+                    scoreFromQualifying(event, racingClassId, ranked);
+                }
             } catch (RuntimeException e) {
                 log.warn("No TQ for event class {}: its qualifying could not be ranked: {}", eventClassId,
                         e.getMessage());
@@ -435,15 +466,29 @@ public class ChampionshipStandingsQuery {
     /** A qualifying heat of an event class, for working out whether its qualifying is complete. */
     private record QualifyingHeat(Long eventId, Long racingClassId, boolean finished, boolean abandoned) {}
 
-    /** Whether a race in a round of this type counts for points. */
-    private static boolean scores(String scoringSource, String roundType) {
-        if ("QUALIFYING".equals(scoringSource)) {
-            return "QUALIFIER".equals(roundType);
+    /**
+     * Scores a class that has no finals from its qualifying: the event's overall qualifying order, not each heat's
+     * own places, so two heats of ten give twenty places. Called once all the class's heats are finished; every
+     * driver who was on a qualifying grid is put on the scoring grid (a driver with no laps is a DNS), and those
+     * with laps are placed in the order {@link QualifyingStandingsService} ranks them.
+     */
+    private static void scoreFromQualifying(EventResults event, Long racingClassId,
+                                            List<QualifyingStandingsService.QualifyingResult> ranked) {
+        for (FinishedRace race : event.races()) {
+            if ("QUALIFIER".equals(race.roundType()) && Objects.equals(race.racingClassId(), racingClassId)) {
+                for (Long entryId : race.grid()) {
+                    EntryRef entry = event.allEntries().get(entryId);
+                    if (entry != null) {
+                        event.scoringEntries().put(entryId, entry);
+                    }
+                }
+            }
         }
-        if ("FINALS".equals(scoringSource)) {
-            return "FINAL".equals(roundType);
-        }
-        return "QUALIFIER".equals(roundType) || "FINAL".equals(roundType); // BOTH; practice never scores
+        List<Long> order = ranked.stream()
+                .filter(r -> r.lapsCompleted() > 0)
+                .map(QualifyingStandingsService.QualifyingResult::entryId)
+                .toList();
+        event.qualifyingOrder().put(racingClassId, order);
     }
 
     /** A driver in one racing class: one row of the standings. */
@@ -499,8 +544,8 @@ public class ChampionshipStandingsQuery {
     }
 
     /**
-     * Adds one round's results to the tally: a result per driver and class who has a placed result, scored from the
-     * better of their qualifying and final positions (or the sum of both points, see {@link SourcePositions}), and a
+     * Adds one round's results to the tally: a result per driver and class who has a placed result, scored from their
+     * place in the event's overall result (the finals, or the overall qualifying order for a class with none), and a
      * DNS result for each driver on a scoring grid who has none in their class. An excluded driver's round is kept,
      * flagged excluded and worth nothing.
      */
@@ -508,20 +553,15 @@ public class ChampionshipStandingsQuery {
         Long eventId = round.eventId();
         tally.displayNames.putAll(results.displayNames());
 
-        // Each driver's best qualifying and best final position in each racing class, over every race that scores
+        // Each driver's best place in each racing class: the finals of the round, or a class's overall qualifying
         Map<Long, Map<Long, Integer>> overallInFinals = overallFinalPositions(results.races(), results.firstOpenFinal());
         Map<Long, Map<Long, SourcePositions>> bestPositions = new HashMap<>();
         for (FinishedRace race : results.races()) {
             if (!race.scores()) {
                 continue;
             }
-            // A final is placed across the round (see overallFinalPositions); other races by their own places
-            Map<Long, Integer> places = new LinkedHashMap<>();
-            if ("FINAL".equals(race.roundType())) {
-                places.putAll(overallInFinals.getOrDefault(race.raceId(), Map.of()));
-            } else {
-                race.positions().forEach(row -> places.put(row.entryId(), row.position()));
-            }
+            // A final is placed across the round (see overallFinalPositions)
+            Map<Long, Integer> places = overallInFinals.getOrDefault(race.raceId(), Map.of());
             places.forEach((entryId, position) -> {
                 EntryRef entry = results.scoringEntries().get(entryId);
                 if (entry == null || entry.driverId() == null) {
@@ -532,6 +572,17 @@ public class ChampionshipStandingsQuery {
                                 SourcePositions::better);
             });
         }
+
+        // A class with no finals scores from the event's overall qualifying order
+        results.qualifyingOrder().forEach((racingClassId, order) -> {
+            for (int i = 0; i < order.size(); i++) {
+                EntryRef entry = results.scoringEntries().get(order.get(i));
+                if (entry != null && entry.driverId() != null) {
+                    bestPositions.computeIfAbsent(racingClassId, k -> new HashMap<>())
+                            .merge(entry.driverId(), SourcePositions.of("QUALIFIER", i + 1), SourcePositions::better);
+                }
+            }
+        });
 
         bonuses(eventId, results, rules, tally);
 
@@ -656,7 +707,7 @@ public class ChampionshipStandingsQuery {
 
     /**
      * The TQ (CHAMP-07): in each class, the entry that topped qualifying once it was complete (see
-     * {@link #loadTopQualifiers}). A driver excluded from the round earns nothing, and the TQ is not passed to the
+     * {@link #loadQualifying}). A driver excluded from the round earns nothing, and the TQ is not passed to the
      * next car.
      */
     private static void topQualifiers(Long eventId, EventResults results, Rules rules, Tally tally) {
@@ -672,6 +723,9 @@ public class ChampionshipStandingsQuery {
     private static List<StandingsRowDto> rows(Tally tally, Rules rules) {
         List<StandingsRowDto> rows = new ArrayList<>();
         tally.rounds.forEach((driverClass, rounds) -> {
+            if (!rules.scores(driverClass.racingClassId())) {
+                return;
+            }
             List<RoundResultDto> marked = dropWorst(rounds, rules.bestXFromY(driverClass.racingClassId()));
             int totalPoints = marked.stream()
                     .filter(r -> !r.dropped() && !r.excluded())
@@ -681,21 +735,73 @@ public class ChampionshipStandingsQuery {
             totalPoints += rules.aFinalBonus() * roundsWon(tally.aFinalWins, driverClass);
             rows.add(new StandingsRowDto(driverClass.driverId(),
                     tally.displayNames.getOrDefault(driverClass.driverId(), ""),
-                    driverClass.racingClassId(), totalPoints, marked));
+                    driverClass.racingClassId(), totalPoints, 0, marked));
         });
+        if (rules.showOverall()) {
+            rows.addAll(overallRows(tally, rules));
+        }
         return rows;
     }
 
     /**
-     * The rounds in round order, the worst Y minus X marked dropped once the driver has Y rounds. Worst means
-     * fewest points, then the worse (higher-numbered) position. A DNS has position 0, so a finish worth
-     * nothing is dropped before a DNS.
+     * The overall table: one row per driver across every class that scores, ranked together. A driver's round is
+     * their best result in any class at that event, the best X rounds of the championship's own rule count (a
+     * class's own override does not apply), and the TQ and A-final bonuses they won in any class are added.
+     */
+    private static List<StandingsRowDto> overallRows(Tally tally, Rules rules) {
+        Map<Long, Map<Integer, RoundResultDto>> roundsByDriver = new LinkedHashMap<>();
+        tally.rounds.forEach((driverClass, rounds) -> {
+            if (!rules.scores(driverClass.racingClassId())) {
+                return;
+            }
+            for (RoundResultDto round : rounds) {
+                roundsByDriver.computeIfAbsent(driverClass.driverId(), k -> new TreeMap<>())
+                        .merge(round.roundNumber(), round, ChampionshipStandingsQuery::betterRound);
+            }
+        });
+        List<StandingsRowDto> rows = new ArrayList<>();
+        roundsByDriver.forEach((driverId, byRound) -> {
+            List<RoundResultDto> marked = dropWorst(new ArrayList<>(byRound.values()), rules.bestXFromY(null));
+            int totalPoints = marked.stream()
+                    .filter(r -> !r.dropped() && !r.excluded())
+                    .mapToInt(RoundResultDto::points)
+                    .sum();
+            totalPoints += rules.tqBonus() * bonusesWon(tally.tqWins, driverId, rules);
+            totalPoints += rules.aFinalBonus() * bonusesWon(tally.aFinalWins, driverId, rules);
+            rows.add(new StandingsRowDto(driverId, tally.displayNames.getOrDefault(driverId, ""),
+                    OVERALL_CLASS_ID, totalPoints, 0, marked));
+        });
+        return rows;
+    }
+
+    /** The better of a driver's results in one round: more points, then the better real place over a DNS. */
+    private static RoundResultDto betterRound(RoundResultDto a, RoundResultDto b) {
+        if (a.points() != b.points()) {
+            return b.points() > a.points() ? b : a;
+        }
+        if (a.position() == 0 || (b.position() != 0 && b.position() < a.position())) {
+            return b;
+        }
+        return a;
+    }
+
+    /** How many class rounds the driver won a bonus in, across the classes that score. */
+    private static int bonusesWon(Set<ClassRound> wins, Long driverId, Rules rules) {
+        return (int) wins.stream()
+                .filter(w -> w.driverClass().driverId().equals(driverId)
+                        && rules.scores(w.driverClass().racingClassId()))
+                .count();
+    }
+
+    /**
+     * The rounds in round order, with every round past the driver's best X marked dropped. A driver with X rounds
+     * or fewer keeps them all, so a round not raced costs nothing beyond the points it would have scored. Y does
+     * not change the result; with no X every round counts. Best means most points, then the better (lower)
+     * position, so a finish worth nothing is dropped before a DNS (position 0).
      */
     private static List<RoundResultDto> dropWorst(List<RoundResultDto> rounds, BestXFromY rule) {
         int count = rounds.size();
-        int x = rule.x() != null ? rule.x() : count;
-        int y = rule.y() != null ? rule.y() : count;
-        int dropFrom = y > x && count >= y ? Math.max(0, count - (y - x)) : count;
+        int dropFrom = rule.x() != null ? Math.min(Math.max(0, rule.x()), count) : count;
 
         List<RoundResultDto> marked = new ArrayList<>(rounds);
         marked.sort(Comparator.comparingInt(RoundResultDto::points).reversed()
@@ -715,8 +821,10 @@ public class ChampionshipStandingsQuery {
     }
 
     /**
-     * Each class by points, then display name. Classes come out in racing class order (a class with no racing
-     * class last): the order rows are first seen in follows hash-map order, which changes with the ids.
+     * Each class by points, then by countback (see {@link #countbackCompare}), then display name. Drivers level on
+     * points and countback share a position and the next one skips ahead (1, 1, 3). Classes come out in racing class
+     * order (a class with no racing class last): the order rows are first seen in follows hash-map order, which
+     * changes with the ids.
      */
     private static List<StandingsRowDto> rank(List<StandingsRowDto> rows) {
         Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
@@ -730,9 +838,47 @@ public class ChampionshipStandingsQuery {
         List<StandingsRowDto> ranked = new ArrayList<>();
         for (List<StandingsRowDto> classRows : inClassOrder.values()) {
             classRows.sort(Comparator.comparingInt(StandingsRowDto::totalPoints).reversed()
+                    .thenComparing(ChampionshipStandingsQuery::countbackCompare)
                     .thenComparing(StandingsRowDto::displayName));
-            ranked.addAll(classRows);
+            StandingsRowDto previous = null;
+            int position = 0;
+            for (int i = 0; i < classRows.size(); i++) {
+                StandingsRowDto row = classRows.get(i);
+                if (previous == null || row.totalPoints() != previous.totalPoints()
+                        || countbackCompare(row, previous) != 0) {
+                    position = i + 1;
+                }
+                ranked.add(new StandingsRowDto(row.driverId(), row.displayName(), row.racingClassId(),
+                        row.totalPoints(), position, row.rounds()));
+                previous = row;
+            }
         }
         return ranked;
+    }
+
+    /**
+     * Countback between two drivers level on points: the one with more wins ahead, then more seconds, and so on
+     * down the places. Only rounds that count are used (not dropped, not excluded, and raced), by the round's
+     * position, so a dropped win does not help. Negative when {@code a} is ahead.
+     */
+    private static int countbackCompare(StandingsRowDto a, StandingsRowDto b) {
+        Map<Integer, Long> countA = countedPositions(a);
+        Map<Integer, Long> countB = countedPositions(b);
+        int last = Stream.concat(countA.keySet().stream(), countB.keySet().stream())
+                .mapToInt(Integer::intValue).max().orElse(0);
+        for (int place = 1; place <= last; place++) {
+            int byPlace = Long.compare(countB.getOrDefault(place, 0L), countA.getOrDefault(place, 0L));
+            if (byPlace != 0) {
+                return byPlace;
+            }
+        }
+        return 0;
+    }
+
+    /** How many counted rounds the row has at each position. */
+    private static Map<Integer, Long> countedPositions(StandingsRowDto row) {
+        return row.rounds().stream()
+                .filter(r -> !r.dropped() && !r.excluded() && r.position() > 0)
+                .collect(Collectors.groupingBy(RoundResultDto::position, Collectors.counting()));
     }
 }

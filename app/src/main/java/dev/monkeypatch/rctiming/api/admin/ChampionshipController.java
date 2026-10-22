@@ -206,12 +206,12 @@ public class ChampionshipController {
     }
 
     private static ChampionshipService.Settings settings(CreateChampionshipRequest r) {
-        return new ChampionshipService.Settings(r.name(), r.bestXFromYX(), r.bestXFromYY(), r.scoringSource(),
-                r.tqBonusPoints(), r.afinalWinnerBonusPoints());
+        return new ChampionshipService.Settings(r.name(), r.bestXFromYX(), r.bestXFromYY(),
+                r.tqBonusPoints(), r.afinalWinnerBonusPoints(), r.showOverallTable());
     }
 
     private static ChampionshipService.Settings settings(UpdateChampionshipRequest r) {
-        return new ChampionshipService.Settings(r.name(), r.bestXFromYX(), r.bestXFromYY(), r.scoringSource(),
-                r.tqBonusPoints(), r.afinalWinnerBonusPoints());
+        return new ChampionshipService.Settings(r.name(), r.bestXFromYX(), r.bestXFromYY(),
+                r.tqBonusPoints(), r.afinalWinnerBonusPoints(), r.showOverallTable());
     }
 }

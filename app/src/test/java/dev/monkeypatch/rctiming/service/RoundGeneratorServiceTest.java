@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.query.championship.ChampionshipSeedingQuery;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +52,8 @@ class RoundGeneratorServiceTest {
     private EventClassRepository eventClassRepository;
     @Mock
     private RaceFormatService raceFormatService;
+    @Mock
+    private ChampionshipSeedingQuery championshipSeeding;
 
     @InjectMocks
     private RoundGeneratorService service;
@@ -113,6 +116,52 @@ class RoundGeneratorServiceTest {
 
         // One qualifying heat and one final, both for the class that has a driver
         assertThat(races).hasSize(2).allMatch(r -> r.getEventClassId().equals(11L));
+    }
+
+    @Test
+    void generate_spreadsTheChampionshipLeadersAcrossTheHeatsAndSeedsNewDriversLast() {
+        EventClass eventClass = new EventClass();
+        eventClass.setId(10L);
+        eventClass.setEventId(1L);
+        eventClass.setRacingClassId(5L);
+        when(eventClassRepository.findByEventId(1L)).thenReturn(List.of(eventClass));
+        List<Entry> entries = new ArrayList<>();
+        for (long id = 1; id <= 4; id++) {
+            Entry entry = new Entry();
+            entry.setId(id);
+            entry.setEventClassId(10L);
+            entry.setCompetitorId(10 + id);
+            entries.add(entry);
+        }
+        when(entryRepository.findByEventClassIdAndStatus(10L, EntryStatus.CONFIRMED)).thenReturn(entries);
+        // Entry 4's competitor leads the championship and entry 3's is second; entries 1 and 2 have no points
+        when(championshipSeeding.positionsFor(1L, 5L)).thenReturn(Map.of(14L, 1, 13L, 2));
+        AtomicLong ids = new AtomicLong();
+        when(roundRepository.save(any(Round.class))).thenAnswer(inv -> {
+            Round round = inv.getArgument(0);
+            round.setId(ids.incrementAndGet());
+            return round;
+        });
+        Map<Long, Integer> heatOfRace = new HashMap<>();
+        when(raceRepository.save(any(Race.class))).thenAnswer(inv -> {
+            Race race = inv.getArgument(0);
+            race.setId(ids.incrementAndGet());
+            heatOfRace.put(race.getId(), race.getHeatNumber());
+            return race;
+        });
+        Map<Integer, List<Long>> entriesByHeat = new TreeMap<>();
+        when(raceEntryRepository.save(any(RaceEntry.class))).thenAnswer(inv -> {
+            RaceEntry raceEntry = inv.getArgument(0);
+            entriesByHeat.computeIfAbsent(heatOfRace.get(raceEntry.getRaceId()), k -> new ArrayList<>())
+                    .add(raceEntry.getEntryId());
+            return raceEntry;
+        });
+
+        service.generate(new RoundGenerationRequest(1L, 0, 1, 2, 1, List.of()));
+
+        // Snake draft over the order 4, 3, 1, 2: the leader and the newcomer in heat 1, second and third in heat 2
+        assertThat(entriesByHeat.get(1)).containsExactlyInAnyOrder(4L, 2L);
+        assertThat(entriesByHeat.get(2)).containsExactlyInAnyOrder(3L, 1L);
     }
 
     @Test

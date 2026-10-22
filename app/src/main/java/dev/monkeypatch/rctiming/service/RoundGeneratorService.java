@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
+import dev.monkeypatch.rctiming.query.championship.ChampionshipSeedingQuery;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest.ClassFinalsConfig;
 import org.springframework.stereotype.Service;
@@ -52,19 +53,22 @@ public class RoundGeneratorService {
     private final EntryRepository entryRepository;
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
+    private final ChampionshipSeedingQuery championshipSeeding;
 
     public RoundGeneratorService(RoundRepository roundRepository,
                                   RaceRepository raceRepository,
                                   RaceEntryRepository raceEntryRepository,
                                   EntryRepository entryRepository,
                                   EventClassRepository eventClassRepository,
-                                  RaceFormatService raceFormatService) {
+                                  RaceFormatService raceFormatService,
+                                  ChampionshipSeedingQuery championshipSeeding) {
         this.roundRepository = roundRepository;
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
+        this.championshipSeeding = championshipSeeding;
     }
 
     /**
@@ -159,8 +163,14 @@ public class RoundGeneratorService {
             }
             classesWithEntries.add(ec);
 
-            // Seed in entry order. Racer ability ratings went with racer accounts (L10, #18).
-            entries.sort(Comparator.comparingLong(Entry::getId));
+            // Seed by the class's championship standing, best first; drivers with no points, and every driver
+            // when the event is in no championship for the class, keep entry order.
+            Map<Long, Integer> standing = championshipSeeding.positionsFor(request.eventId(), ec.getRacingClassId());
+            entries.sort(Comparator
+                    .comparingInt((Entry e) -> e.getCompetitorId() == null
+                            ? Integer.MAX_VALUE
+                            : standing.getOrDefault(e.getCompetitorId(), Integer.MAX_VALUE))
+                    .thenComparingLong(Entry::getId));
 
             int heatCount = heatCount(entries.size(), request.maxCarsPerHeat(), request.minCarsPerHeat());
 

@@ -62,8 +62,8 @@ public class ChampionshipService {
     }
 
     /** A championship's own settings, as an official sets them on create or update. */
-    public record Settings(String name, Integer bestXFromYX, Integer bestXFromYY, ScoringSource scoringSource,
-                           int tqBonusPoints, int afinalWinnerBonusPoints) {}
+    public record Settings(String name, Integer bestXFromYX, Integer bestXFromYY,
+                           int tqBonusPoints, int afinalWinnerBonusPoints, boolean showOverallTable) {}
 
     /** A championship with its classes, rounds in order and points scale by position. */
     public record Detail(Championship championship, List<ChampionshipClass> classes,
@@ -303,9 +303,9 @@ public class ChampionshipService {
         c.setName(settings.name());
         c.setBestXFromYX(settings.bestXFromYX());
         c.setBestXFromYY(settings.bestXFromYY());
-        c.setScoringSource(settings.scoringSource());
         c.setTqBonusPoints(settings.tqBonusPoints());
         c.setAfinalWinnerBonusPoints(settings.afinalWinnerBonusPoints());
+        c.setShowOverallTable(settings.showOverallTable());
     }
 
     private static Map<String, Object> settingsOf(Championship c) {
@@ -313,9 +313,9 @@ public class ChampionshipService {
         m.put("name", c.getName());
         m.put("bestXFromYX", c.getBestXFromYX());
         m.put("bestXFromYY", c.getBestXFromYY());
-        m.put("scoringSource", c.getScoringSource());
         m.put("tqBonusPoints", c.getTqBonusPoints());
         m.put("afinalWinnerBonusPoints", c.getAfinalWinnerBonusPoints());
+        m.put("showOverallTable", c.isShowOverallTable());
         return m;
     }
 

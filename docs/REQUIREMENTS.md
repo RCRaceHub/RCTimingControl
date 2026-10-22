@@ -171,7 +171,7 @@
 - [x] **CHAMP-03**: Separate championship standings per racing class
 - [x] **CHAMP-04**: Admin can configure the points scale (points per finishing position) per championship
 - [x] **CHAMP-05**: Public championship standings table is live on the web
-- [x] **CHAMP-06**: Championship can score from qualifying results, final results, or both; if both, points from each source are summed per round
+- [x] **CHAMP-06**: A championship scores each driver's place in the event's overall result: the finals where the class has them, otherwise its overall qualifying order across all heats (the old qualifying, finals or both setting is gone)
 - [x] **CHAMP-07**: Championship can award a configurable bonus point to the top qualifier (TQ) per class per round: a driver who tops qualifying in two classes, or at two events, earns it for each (#133)
 - [x] **CHAMP-08**: Championship can award a configurable bonus point to the A-final winner per class per round, earned once per class and event (#133)
 - [x] **CHAMP-09**: Individual drivers can be excluded from championship points for a specific round (DQ, non-eligible equipment, factory driver), and earns no TQ or A-final bonus for that round either; exclusion is audit-logged

@@ -1,6 +1,5 @@
-Mod | Alice Smith | 23 | R1:1/10 R2:4/4d R3:2/8
-Mod | Cara Lee | 18 | R1:3/6 R2:1/10 R3:4/4d
-Mod | Bob Jones | 16 | R1:1/10 R2:5/0d R3:3/6
-Mod | Dan Moss | 15 | R1:4/4 R2:2/8 R3:0/0d
+Mod | Cara Lee | 16 | R1:3/6 R2:2/8
+Mod | Alice Smith | 15 | R1:1/10
 Mod | Finn Reid | 15 | R3:1/10
-Mod | Eve Hart | 6 | R1:5/0d R2:3/6 R3:0/0
+Mod | Dan Moss | 13 | R2:1/10
+Mod | Bob Jones | 8 | R1:2/8

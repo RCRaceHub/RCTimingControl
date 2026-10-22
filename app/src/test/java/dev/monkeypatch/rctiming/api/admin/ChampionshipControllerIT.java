@@ -80,7 +80,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
     void createChampionship_asAdmin_returns201WithDefaults() {
         Map<String, Object> body = Map.of(
                 "name", "National Championship 2026",
-                "scoringSource", "FINALS",
                 "tqBonusPoints", 0,
                 "afinalWinnerBonusPoints", 0
         );
@@ -91,7 +90,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody().get("id"));
         assertEquals("National Championship 2026", response.getBody().get("name"));
-        assertEquals("FINALS", response.getBody().get("scoringSource"));
         assertEquals(0, response.getBody().get("tqBonusPoints"));
         assertEquals(0, response.getBody().get("afinalWinnerBonusPoints"));
     }
@@ -103,7 +101,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
                 "name", "Club Series 2026",
                 "bestXFromYX", 7,
                 "bestXFromYY", 10,
-                "scoringSource", "BOTH",
                 "tqBonusPoints", 3,
                 "afinalWinnerBonusPoints", 5
         );
@@ -121,7 +118,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
         Map<String, Object> detail = getResp.getBody();
         assertEquals(7, detail.get("bestXFromYX"));
         assertEquals(10, detail.get("bestXFromYY"));
-        assertEquals("BOTH", detail.get("scoringSource"));
         assertEquals(3, detail.get("tqBonusPoints"));
         assertEquals(5, detail.get("afinalWinnerBonusPoints"));
     }
@@ -423,7 +419,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
     @Test
     void createChampionship_missingName_returns400() {
         Map<String, Object> body = Map.of(
-                "scoringSource", "FINALS",
                 "tqBonusPoints", 0,
                 "afinalWinnerBonusPoints", 0
         );
@@ -448,7 +443,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
         HttpHeaders racerHeaders = headersFor(racerToken);
         Map<String, Object> body = Map.of(
                 "name", "test",
-                "scoringSource", "FINALS",
                 "tqBonusPoints", 0,
                 "afinalWinnerBonusPoints", 0
         );
@@ -465,7 +459,6 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
     private Long createChampionship(String name) {
         Map<String, Object> body = Map.of(
                 "name", name,
-                "scoringSource", "FINALS",
                 "tqBonusPoints", 0,
                 "afinalWinnerBonusPoints", 0
         );

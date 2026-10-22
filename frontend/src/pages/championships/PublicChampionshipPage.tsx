@@ -10,6 +10,9 @@ import PrivacyLink from '@/components/layout/PrivacyLink';
 import { QrLink } from '@/components/QrLink';
 import { Button } from '@/components/ui/button';
 
+/** The class id the backend gives the overall table's rows. */
+const OVERALL_CLASS_ID = 0;
+
 type ClassGroup = { racingClassId: number; name: string; rows: StandingsRowDto[] };
 
 /** The rows split by class in the order the classes are named; a class the info doesn't name is headed "Class N". */
@@ -20,14 +23,16 @@ function groupByClass(rows: StandingsRowDto[], names: Map<number, string>): Clas
     if (!group) {
       group = {
         racingClassId: row.racingClassId,
-        name: names.get(row.racingClassId) ?? `Class ${row.racingClassId}`,
+        name: row.racingClassId === OVERALL_CLASS_ID ? 'Overall' : (names.get(row.racingClassId) ?? `Class ${row.racingClassId}`),
         rows: [],
       };
       groups.set(row.racingClassId, group);
     }
     group.rows.push(row);
   }
-  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
+  // The overall table (class id 0, when the championship has one) comes first
+  return [...groups.values()].sort((a, b) =>
+    a.racingClassId === OVERALL_CLASS_ID ? -1 : b.racingClassId === OVERALL_CLASS_ID ? 1 : a.name.localeCompare(b.name));
 }
 
 export default function PublicChampionshipPage() {
@@ -107,9 +112,9 @@ export default function PublicChampionshipPage() {
               </tr>
             </thead>
             <tbody>
-              {group.rows.map((row, idx) => (
+              {group.rows.map((row) => (
                 <tr key={row.driverId} className="border-b border-border/50 print:break-inside-avoid">
-                  <td className="py-2 pr-4 font-mono">{idx + 1}</td>
+                  <td className="py-2 pr-4 font-mono">{row.position}</td>
                   <td className="py-2 pr-4">{row.displayName}</td>
                   <td className="py-2 pr-4 text-right font-mono font-bold">{row.totalPoints}</td>
                   <td className="flex flex-wrap gap-1 py-2">

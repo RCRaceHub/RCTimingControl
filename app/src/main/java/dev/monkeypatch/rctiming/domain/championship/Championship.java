@@ -25,12 +25,15 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     private Integer bestXFromYY;
 
-    /** Which rounds of an event score: qualifying, finals or both (CHAMP-06). */
+    /** Unused since championships score the event's overall result; see {@link ScoringSource}. */
     private ScoringSource scoringSource = ScoringSource.FINALS;
 
     private int tqBonusPoints = 0;
 
     private int afinalWinnerBonusPoints = 0;
+
+    /** Whether the standings also have an overall table ranking every class together. */
+    private boolean showOverallTable = false;
 
     private Instant createdAt;
 
@@ -58,6 +61,9 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     public int getAfinalWinnerBonusPoints() { return afinalWinnerBonusPoints; }
     public void setAfinalWinnerBonusPoints(int v) { this.afinalWinnerBonusPoints = v; }
+
+    public boolean isShowOverallTable() { return showOverallTable; }
+    public void setShowOverallTable(boolean v) { this.showOverallTable = v; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant t) { this.createdAt = t; }
