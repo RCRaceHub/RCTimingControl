@@ -51,7 +51,7 @@ export function lapSheetColumns(positions: ResultRow[], lapHistory: PositionAtLa
 
 export type PositionSeries = {
   entryId: number;
-  /** What labels the line: the car number, else the driver's name. */
+  /** What labels the line: the driver's name (the public name on public screens). */
   label: string;
   /** The place after each lap the driver has a recorded place for, in lap order. */
   points: { lap: number; position: number }[];
@@ -66,7 +66,7 @@ export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap
     .sort((a, b) => a.position - b.position)
     .map((row) => ({
       entryId: row.entryId,
-      label: row.carNumber ? `Car ${row.carNumber}` : row.driverName,
+      label: row.driverName,
       points: lapHistory
         .filter((l) => l.entryId === row.entryId)
         .sort((a, b) => a.lapNumber - b.lapNumber)
@@ -86,7 +86,7 @@ export function livePositionSeries(rows: LiveTimingRowDto[], places: LapPlace[])
     .sort((a, b) => a.position - b.position)
     .map((row) => ({
       entryId: row.entryId,
-      label: row.carNumber ? `Car ${row.carNumber}` : row.driverName,
+      label: row.driverName,
       points: places
         .filter((p) => p.entryId === row.entryId)
         .sort((a, b) => a.lap - b.lap)
