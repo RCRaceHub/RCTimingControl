@@ -246,8 +246,15 @@ is JSON with a `type`: `CLASSIC` or `BRCA` for races, `PLACE_POINTS` for champio
 switches, never logic, so a genuinely new kind of rule is a new `type` in the app. Values are range-checked on save and
 import, and every change is audited.
 
-Nothing reads a system yet. Race formats and championships will pick one in later changes (tracker #435), copying its
-values so editing a system never changes an event or championship already set up.
+**Race formats.** A Points Finals format has a **Scoring system** picker. Choosing one fills best heats count, tied
+places, BRCA qualifying, the race window, cars per final, fill A first, A final legs and legs counted from the system, and
+saving the format copies them again. When the format is added to an event class, the class takes the system's values as
+they are that day, so editing a system afterwards never changes a class already set up. Changing one of those options by
+hand in the editor stops the format following the system ("Set by hand"). A system a format uses cannot be deleted. The
+scoring itself is unchanged: the same settings are read as before, so formats saved earlier score exactly as they did.
+Bump Up and Timed formats do not use systems yet.
+
+Championships will pick a system in a later change (tracker #435).
 
 ## Known gaps
 

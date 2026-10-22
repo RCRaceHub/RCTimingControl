@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { RaceFormatConfig, StartType, QualifyingType } from '@/lib/adminApi';
+import type { RaceFormatConfig, RaceScoringConfig, StartType, QualifyingType } from '@/lib/adminApi';
+import { useScoringSystems } from '@/hooks/admin/useAdminScoringSystems';
+
+const NO_SYSTEM = 'none';
 
 const START_TYPES: StartType[] = ['STAGGER', 'GRID', 'ROLLING'];
 const QUALIFYING_TYPES: QualifyingType[] = ['FTQ', 'ROUND_BY_ROUND', 'FASTEST_LAP', 'CONSECUTIVE_LAPS'];
@@ -152,8 +155,39 @@ export function FormatConfigFields({ value, onChange }: Props) {
     else onChange({ type: 'POINTS_FINALS', ...POINTS_FINALS_DEFAULTS });
   }
 
+  const { data: raceSystems } = useScoringSystems('RACE');
+
   function patch(key: string, val: unknown) {
     onChange({ ...value, [key]: val } as RaceFormatConfig);
+  }
+
+  /** A scoring option changed by hand: the format no longer follows a scoring system. */
+  function patchScoring(key: string, val: unknown) {
+    onChange({ ...value, [key]: val, scoringSystemId: null } as RaceFormatConfig);
+  }
+
+  /** Picks a scoring system and shows its values; the server copies them again on save. */
+  function pickSystem(idText: string) {
+    if (value.type !== 'POINTS_FINALS') return;
+    if (idText === NO_SYSTEM) {
+      onChange({ ...value, scoringSystemId: null });
+      return;
+    }
+    const system = raceSystems?.find(s => String(s.id) === idText);
+    if (!system) return;
+    const c = system.config as RaceScoringConfig;
+    onChange({
+      ...value,
+      scoringSystemId: system.id,
+      bestHeatsCount: c.bestHeatsCount,
+      splitTiedPlaces: c.splitTiedPlaces,
+      brcaQualifying: c.type === 'BRCA',
+      maxRaceWindowSeconds: c.maxRaceWindowSeconds,
+      finalLegs: c.finalLegs,
+      legsCounted: c.legsCounted,
+      carsPerFinal: c.carsPerFinal,
+      fillTopFirst: c.fillTopFirst,
+    });
   }
 
   return (
@@ -198,6 +232,23 @@ export function FormatConfigFields({ value, onChange }: Props) {
 
       {value.type === 'POINTS_FINALS' && (
         <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+          <div className="col-span-2 space-y-1.5">
+            <Label htmlFor="points-scoring-system">Scoring system</Label>
+            <Select value={value.scoringSystemId == null ? NO_SYSTEM : String(value.scoringSystemId)} onValueChange={pickSystem}>
+              <SelectTrigger id="points-scoring-system">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SYSTEM}>Set by hand</SelectItem>
+                {(raceSystems ?? []).map(s => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Choosing a system fills the scoring options below. Changing one of them by hand stops the format following the system.
+            </p>
+          </div>
           <div className="col-span-2">
             <Button type="button" variant="outline" size="sm" onClick={() => onChange({ type: 'POINTS_FINALS', ...BRCA_POINTS_FINALS })}>
               Use BRCA 1/10 off-road settings
@@ -210,16 +261,16 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
-          <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patch('bestHeatsCount', v)} />
-          <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patch('maxRaceWindowSeconds', v)} />
-          <NumField label="Cars per Final (0 = even split)" value={value.carsPerFinal ?? 0} onChange={v => patch('carsPerFinal', v)} />
-          <NumField label="A Final Legs (1 = single race)" value={value.finalLegs ?? 1} onChange={v => patch('finalLegs', v)} />
-          <NumField label="Legs Counted (0 = all)" value={value.legsCounted ?? 0} onChange={v => patch('legsCounted', v)} />
+          <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patchScoring('bestHeatsCount', v)} />
+          <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patchScoring('maxRaceWindowSeconds', v)} />
+          <NumField label="Cars per Final (0 = even split)" value={value.carsPerFinal ?? 0} onChange={v => patchScoring('carsPerFinal', v)} />
+          <NumField label="A Final Legs (1 = single race)" value={value.finalLegs ?? 1} onChange={v => patchScoring('finalLegs', v)} />
+          <NumField label="Legs Counted (0 = all)" value={value.legsCounted ?? 0} onChange={v => patchScoring('legsCounted', v)} />
           <div className="flex items-center gap-2 pt-5">
             <Checkbox
               id="points-fill-top-first"
               checked={value.fillTopFirst === true}
-              onCheckedChange={checked => patch('fillTopFirst', checked === true)}
+              onCheckedChange={checked => patchScoring('fillTopFirst', checked === true)}
             />
             <Label htmlFor="points-fill-top-first" className="text-xs">Fill A first, short lowest final</Label>
           </div>
@@ -227,7 +278,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
             <Checkbox
               id="points-split-ties"
               checked={value.splitTiedPlaces === true}
-              onCheckedChange={checked => patch('splitTiedPlaces', checked === true)}
+              onCheckedChange={checked => patchScoring('splitTiedPlaces', checked === true)}
             />
             <Label htmlFor="points-split-ties" className="text-xs">Tied cars do not share a place</Label>
           </div>
@@ -235,7 +286,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
             <Checkbox
               id="points-brca-qualifying"
               checked={value.brcaQualifying === true}
-              onCheckedChange={checked => patch('brcaQualifying', checked === true)}
+              onCheckedChange={checked => patchScoring('brcaQualifying', checked === true)}
             />
             <Label htmlFor="points-brca-qualifying" className="text-xs">BRCA qualifying (flat DNS points and tie-break)</Label>
           </div>

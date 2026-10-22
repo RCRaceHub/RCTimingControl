@@ -164,6 +164,7 @@ erDiagram
     events ||--o{ results_outbox : ""
     racing_classes ||--o{ event_classes : ""
     race_format_templates ||--o{ event_classes : "snapshot at assignment"
+    scoring_systems ||--o{ race_format_templates : "picked by id in the Points Finals config; values copied on save and on adding a class"
     scoring_systems {
         text kind "RACE or CHAMPIONSHIP"
         bool built_in "locked, clone to change"

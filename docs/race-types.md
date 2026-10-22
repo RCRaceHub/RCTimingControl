@@ -224,7 +224,10 @@ final is ranks 8 to 14 and the A final is ranks 1 to 7. No place in a final is l
 final can be called as soon as qualifying is complete. Finals are placed as one set (A, then B without anyone from A,
 and so on) for championship points, as in [Scoring](scoring.md#5-championship-points).
 
-**BRCA 1/10 off-road.** In the format editor, the Points Finals form has a **Use BRCA 1/10 off-road settings** button
+**Scoring system.** The Points Finals form has a **Scoring system** picker above the scoring options. Pick **BRCA 1/10
+off-road** (or a system an admin has added) to fill them in; see [Scoring](scoring.md#6-scoring-systems).
+
+**BRCA 1/10 off-road.** In the format editor, the Points Finals form also has a **Use BRCA 1/10 off-road settings** button
 that fills in the BRCA rules: 4 qualifying rounds of 5 minutes with the best 2 counting, tied cars not sharing a place, BRCA
 qualifying (flat points for a driver who did not run, and its tie-break), a 6:30 (390 second) race window, 10 cars per
 final filled from A down with a short last final, and an A final of 3 legs of which the best 2 count. The finals

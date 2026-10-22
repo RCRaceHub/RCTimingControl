@@ -28,6 +28,9 @@ export const adminQueryKeys = {
   formats: {
     all: () => ['admin', 'formats'] as const,
   },
+  scoringSystems: {
+    all: () => ['admin', 'scoring-systems'] as const,
+  },
   racingClasses: {
     all: () => ['admin', 'racing-classes'] as const,
   },

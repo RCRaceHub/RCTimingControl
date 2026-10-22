@@ -13,7 +13,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * defaults for the finals layout that the system offers a format, because choosing BRCA should still fill 10 cars and
  * fill A first.
  *
- * <p>Nothing reads this yet; a later change points the race format at it and copies it into the class snapshot.
+ * <p>A Points Finals format picks a system by id; its values are copied into the format when it is saved and into the
+ * event class when it is added (see {@code RaceFormatService#resolveScoring}).
  */
 public sealed interface RaceScoringConfig extends ScoringConfig {
 

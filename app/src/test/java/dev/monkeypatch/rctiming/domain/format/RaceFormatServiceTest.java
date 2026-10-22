@@ -8,21 +8,25 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 class RaceFormatServiceTest {
 
     private RaceFormatService service;
     private ObjectMapper objectMapper;
+    private dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository scoringSystems;
 
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
+        scoringSystems = mock(dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository.class);
         service = new RaceFormatService(
                 mock(RaceFormatTemplateRepository.class),
                 mock(EventClassRepository.class),
                 objectMapper,
-                mock(dev.monkeypatch.rctiming.domain.audit.AuditService.class)
+                mock(dev.monkeypatch.rctiming.domain.audit.AuditService.class),
+                scoringSystems
         );
     }
 
@@ -124,5 +128,57 @@ class RaceFormatServiceTest {
         EventClass eventClass = new EventClass();
         eventClass.setConfigSnapshot(config);
         return eventClass;
+    }
+
+    private PointsFinalsConfig pointsWithSystem(Long systemId) {
+        return new PointsFinalsConfig(3, 2, 5, 5, StartType.STAGGER, StartType.GRID, QualifyingType.ROUND_BY_ROUND, 2, 5,
+                0, false, false, 0, 0, false, 0, 0, systemId);
+    }
+
+    private void systemExists(Long id, dev.monkeypatch.rctiming.domain.scoring.ScoringKind kind,
+                              dev.monkeypatch.rctiming.domain.scoring.ScoringConfig config) {
+        var system = new dev.monkeypatch.rctiming.domain.scoring.ScoringSystem();
+        system.setId(id);
+        system.setKind(kind);
+        system.setConfig(config);
+        org.mockito.Mockito.when(scoringSystems.findById(id)).thenReturn(java.util.Optional.of(system));
+    }
+
+    @Test
+    void resolveScoring_copiesTheSystemsValuesOverTheFormatsOwn() {
+        systemExists(7L, dev.monkeypatch.rctiming.domain.scoring.ScoringKind.RACE,
+                new dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig.Brca(2, true, 390, 3, 2, 10, true));
+
+        PointsFinalsConfig resolved = (PointsFinalsConfig) service.resolveScoring(pointsWithSystem(7L), true);
+
+        assertThat(resolved.bestHeatsCount()).isEqualTo(2);
+        assertThat(resolved.splitTiedPlaces()).isTrue();
+        assertThat(resolved.brcaQualifying()).isTrue();
+        assertThat(resolved.maxRaceWindowSeconds()).isEqualTo(390);
+        assertThat(resolved.finalLegs()).isEqualTo(3);
+        assertThat(resolved.legsCounted()).isEqualTo(2);
+        assertThat(resolved.carsPerFinal()).isEqualTo(10);
+        assertThat(resolved.fillTopFirst()).isTrue();
+        assertThat(resolved.scoringSystemId()).isEqualTo(7L);
+        assertThat(resolved.finalsCount()).as("layout and timing settings are untouched").isEqualTo(2);
+    }
+
+    @Test
+    void resolveScoring_aConfigWithNoSystemComesBackAsItIs() {
+        PointsFinalsConfig byHand = pointsWithSystem(null);
+        assertThat(service.resolveScoring(byHand, true)).isSameAs(byHand);
+    }
+
+    @Test
+    void resolveScoring_strictRefusesAMissingOrChampionshipSystem_lenientKeepsTheFormat() {
+        systemExists(8L, dev.monkeypatch.rctiming.domain.scoring.ScoringKind.CHAMPIONSHIP,
+                new dev.monkeypatch.rctiming.domain.scoring.ChampionshipScoringConfig(null, null, 0, 0, false, null));
+
+        assertThatThrownBy(() -> service.resolveScoring(pointsWithSystem(8L), true))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.resolveScoring(pointsWithSystem(99L), true))
+                .isInstanceOf(IllegalArgumentException.class);
+        PointsFinalsConfig lenient = pointsWithSystem(99L);
+        assertThat(service.resolveScoring(lenient, false)).isSameAs(lenient);
     }
 }

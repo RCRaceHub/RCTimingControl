@@ -12,6 +12,10 @@ vi.mock('@/hooks/admin/useAdminFormats', () => ({
   useDeleteFormat: () => ({ mutateAsync: vi.fn() }),
 }));
 
+vi.mock('@/hooks/admin/useAdminScoringSystems', () => ({
+  useScoringSystems: () => ({ data: [] }),
+}));
+
 describe('FormatsPage', () => {
   beforeEach(() => {
     create.mockReset();

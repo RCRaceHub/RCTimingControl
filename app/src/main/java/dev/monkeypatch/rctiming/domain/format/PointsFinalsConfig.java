@@ -32,6 +32,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * <p>{@code finalLegs} is how many races the A final is run in (0 or 1 for one race) and {@code legsCounted} how many of
  * a driver's legs count towards their place (0 for all of them): in each leg a driver scores their finishing place and
  * the lowest total over the counting legs wins. Lower finals are always a single race.
+ *
+ * <p>{@code scoringSystemId} is the race scoring system (see {@code domain/scoring}) the format was set from, or null
+ * when its scoring options were set by hand. When it is set, saving the template and giving it to an event class
+ * copies the system's values over {@code bestHeatsCount}, {@code splitTiedPlaces}, {@code brcaQualifying}, {@code
+ * maxRaceWindowSeconds}, {@code finalLegs}, {@code legsCounted}, {@code carsPerFinal} and {@code fillTopFirst}, so the
+ * scoring code keeps reading those fields and an event class keeps its own copy.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PointsFinalsConfig(
@@ -51,14 +57,28 @@ public record PointsFinalsConfig(
     int carsPerFinal,
     boolean fillTopFirst,
     int finalLegs,
-    int legsCounted
+    int legsCounted,
+    Long scoringSystemId
 ) implements RaceFormatConfig {
+
+    /** A config set by hand, with no scoring system. */
+    public PointsFinalsConfig(int qualifyingHeats, int finalsCount, int finalDurationMinutes,
+                              int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
+                              QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds,
+                              int bestHeatsCount, boolean splitTiedPlaces, boolean brcaQualifying,
+                              int maxRaceWindowSeconds, int carsPerFinal, boolean fillTopFirst, int finalLegs,
+                              int legsCounted) {
+        this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, bestHeatsCount,
+                splitTiedPlaces, brcaQualifying, maxRaceWindowSeconds, carsPerFinal, fillTopFirst, finalLegs,
+                legsCounted, null);
+    }
 
     /** A config without the round by round scoring options: every round counts and the rules are today's. */
     public PointsFinalsConfig(int qualifyingHeats, int finalsCount, int finalDurationMinutes,
                               int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
                               QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
         this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
-                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false, 0, 0);
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false, 0, 0, null);
     }
 }
