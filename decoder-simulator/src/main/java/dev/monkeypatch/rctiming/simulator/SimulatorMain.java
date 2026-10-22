@@ -26,7 +26,7 @@ import java.util.function.Function;
  *   <li>{@code --file} — the {@code .dump} file to replay (default: the bundled sample; playback mode only)</li>
  *   <li>{@code --transponders} — comma-separated transponder IDs (default: 11111,22222; generative mode only)</li>
  *   <li>{@code --interval-ms} — base lap time in milliseconds (default: 12500; generative mode only)</li>
- *   <li>{@code --jitter-ms} — maximum random lap-time deviation, either way (default: 2500; generative only)</li>
+ *   <li>{@code --jitter-ms} — spread of the per-lap noise, with per-driver pace and occasional slow laps on top (default: 2500; generative only)</li>
  * </ul>
  *
  * <p>Invalid or missing required arguments cause usage to be printed to stderr and exit code 2.
@@ -107,7 +107,7 @@ public class SimulatorMain {
               --file=/path/to/dump        Dump file path (playback only; default: classpath sample)
               --transponders=11111,22222  Transponder IDs (generative only)
               --interval-ms=12500         Base lap time in ms (default: 12500)
-              --jitter-ms=2500            Max random lap-time deviation ms (default: 2500)
+              --jitter-ms=2500            Lap-time noise spread ms (default: 2500)
             """);
         System.exit(2);
     }
