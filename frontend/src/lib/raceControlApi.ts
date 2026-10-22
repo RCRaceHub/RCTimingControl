@@ -1,5 +1,6 @@
 import api from './api';
 import type { StandingsRowDto } from './adminApi';
+import type { FinalLegs } from './boardsApi';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -546,6 +547,12 @@ export type QualifyingTable = {
 
 export async function getQualifying(eventId: number): Promise<QualifyingTable[]> {
   const { data } = await api.get<QualifyingTable[]>(`/api/v1/race-control/event/${eventId}/qualifying`);
+  return data;
+}
+
+/** The combined result of each class's A final that is run in legs; empty when no class has legs. */
+export async function getFinalLegs(eventId: number): Promise<FinalLegs[]> {
+  const { data } = await api.get<FinalLegs[]>(`/api/v1/race-control/event/${eventId}/final-legs`);
   return data;
 }
 

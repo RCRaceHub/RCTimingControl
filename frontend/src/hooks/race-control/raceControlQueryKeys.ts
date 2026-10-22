@@ -4,6 +4,7 @@ export const raceControlQueryKeys = {
   preRaceReadiness: (raceId: number) => ['race-control', 'pre-race-readiness', raceId] as const,
   runOrder: (eventId: number) => ['race-control', 'run-order', eventId] as const,
   qualifying: (eventId: number) => ['race-control', 'qualifying', eventId] as const,
+  finalLegs: (eventId: number) => ['race-control', 'final-legs', eventId] as const,
   finalsLineup: (eventId: number) => ['race-control', 'finals-lineup', eventId] as const,
   raceHistory: (raceId: number) => ['race-control', 'race-history', raceId] as const,
   resultSnapshot: (raceId: number) => ['race-control', 'result-snapshot', raceId] as const,

@@ -103,4 +103,40 @@ describe('ResultsBoard', () => {
     expect(await screen.findByText('Can’t reach the timing system. Trying again…')).toBeInTheDocument();
     expect(screen.queryByText('No results yet.')).not.toBeInTheDocument();
   });
+
+  it('shows the A final overall under the leg result when the final runs in legs', async () => {
+    vi.mocked(getResultsBoard).mockResolvedValue({
+      eventId: 7,
+      eventName: 'Club Round 3',
+      race: {
+        raceId: 12,
+        label: 'A Final — 1/10 Buggy — Leg 2',
+        roundType: 'FINAL',
+        roundNumber: 1,
+        className: '1/10 Buggy',
+        heatNumber: 2,
+        finalLetter: 'A',
+        status: 'FINISHED',
+      },
+      results: [],
+      legs: {
+        eventClassId: 3,
+        className: '1/10 Buggy',
+        legs: 3,
+        legsFinished: 2,
+        legsCounted: 2,
+        complete: false,
+        rows: [
+          { position: 1, entryId: 1, competitorId: 1, driverName: 'Leader Person', carNumber: '7', points: 2, laps: 25, timeMs: 600_000, legPoints: [1, 1], counted: [true, true] },
+          { position: 2, entryId: 2, competitorId: 2, driverName: 'Chaser Person', carNumber: '8', points: 4, laps: 24, timeMs: 600_000, legPoints: [2, 2], counted: [true, true] },
+        ],
+      },
+    });
+
+    renderBoard();
+
+    expect(await screen.findByText('A Final after 2 of 3 legs')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Overall' })).toBeInTheDocument();
+    expect(screen.getByText('Leader Person')).toBeInTheDocument();
+  });
 });

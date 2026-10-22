@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getResultsBoard } from '@/lib/boardsApi';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardResultsTable } from './BoardResultsTable';
+import { BoardLegsTable } from './BoardLegsTable';
 import { BOARD_POLL_MS, parseEventParam } from './boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
@@ -42,6 +43,7 @@ export default function ResultsBoard() {
     <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
       <h1 className="text-4xl font-bold lg:text-6xl">{data.race.label}</h1>
       <BoardResultsTable results={data.results} />
+      {data.legs && <BoardLegsTable legs={data.legs} />}
     </BoardShell>
   );
 }

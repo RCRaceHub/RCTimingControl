@@ -35,11 +35,37 @@ export type NowNextDto = {
   autoRun?: AutoRunBoardDto | null;
 };
 
+/** One driver in the combined result of an A final run in legs: lowest points wins. */
+export type FinalLegsRow = {
+  position: number;
+  entryId: number;
+  competitorId: number | null;
+  driverName: string;
+  carNumber: string | null;
+  points: number;
+  laps: number;
+  timeMs: number;
+  legPoints: number[];
+  counted: boolean[];
+};
+
+export type FinalLegs = {
+  eventClassId: number;
+  className: string;
+  legs: number;
+  legsFinished: number;
+  legsCounted: number;
+  complete: boolean;
+  rows: FinalLegsRow[];
+};
+
 export type ResultsBoardDto = {
   eventId: number | null;
   eventName: string | null;
   race: BoardRaceDto | null;
   results: ResultRow[];
+  /** The A final's combined result when the race is one of its legs. */
+  legs?: FinalLegs | null;
 };
 
 export type QualifyingBoardRow = {

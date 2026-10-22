@@ -3,11 +3,12 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrintEventResultsPage from './PrintEventResultsPage';
-import { getEventResults, getQualifying } from '@/lib/raceControlApi';
+import { getEventResults, getFinalLegs, getQualifying } from '@/lib/raceControlApi';
 
 vi.mock('@/lib/raceControlApi', () => ({
   getEventResults: vi.fn(),
   getQualifying: vi.fn(),
+  getFinalLegs: vi.fn(),
 }));
 
 function heat(raceId: number, eventClassId: number, className: string, over: Record<string, unknown> = {}) {
@@ -64,6 +65,7 @@ describe('PrintEventResultsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getEventResults).mockResolvedValue(results as never);
+    vi.mocked(getFinalLegs).mockResolvedValue([]);
     vi.mocked(getQualifying).mockResolvedValue([
       {
         eventClassId: 7, className: 'Buggy', heatsFinished: 2, heatsTotal: 2, finalsStarted: true,
