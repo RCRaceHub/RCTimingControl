@@ -166,7 +166,7 @@ has the best qualifiers, and its last places are filled by the best finishers fr
 | Best heats count | How many of a driver's qualifying rounds count (low-points qualifying only; 0 means all) |
 | Stagger interval (s), qualifying type | As above |
 | A final legs, legs counted | Run the A final as several races (BRCA: 3) and add each driver's best legs (BRCA: 2). See [Scoring](scoring.md#a-final-in-legs) |
-| Cars per final, fill A first | Cars per final (0 splits the field evenly) and whether the finals are filled from the top: A takes ranks 1 to that number, B the next block and the lowest final what is left. See [Scoring](scoring.md#seeding-the-finals) |
+| Cars per final, fill A first | Cars per final (0 splits the field evenly) and whether the finals are filled from the top: A takes ranks 1 to that number, B the next block and the lowest final what is left. See [Scoring](scoring.md#3-seeding-the-finals) |
 | Max race window (s) | A hard limit on how long a race runs from its start (390 for BRCA's 6:30), 0 for none. When it is reached the race finishes and a car still on its last lap keeps only its completed laps. See [Scoring](scoring.md#maximum-race-window) |
 | Best heats count, tied cars do not share a place, BRCA qualifying | How round by round qualifying is scored; see [Scoring](scoring.md#brca-qualifying-points-finals) |
 
