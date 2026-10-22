@@ -644,6 +644,38 @@ POST /race-control/race/{raceId}/restart
 
 Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`) and the live positions held in memory.
 
+## Race control — Run order, heats and finals
+
+Read endpoints are open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; the commands need `RACE_DIRECTOR` or `ADMIN`. Every command answers **204** with no body unless stated, and writes a row to the audit log.
+
+```
+GET  /race-control/event/{eventId}/run-order
+GET  /race-control/event/{eventId}/qualifying
+GET  /race-control/event/{eventId}/final-legs
+GET  /race-control/event/{eventId}/finals-lineup
+GET  /race-control/event/{eventId}/results            (any signed-in official)
+GET  /race-control/race/{raceId}/result               (any signed-in official)
+```
+
+`run-order` lists the event's races in running order with their status, which is how race control and the Referee View pick a race. `qualifying` is each class's overall qualifying table, the order its finals are seeded from. `final-legs` is the combined result of each class's A final that is run in legs (best legs added, lowest wins), empty when no class has legs. `results` and `race/{raceId}/result` return finished races with the real driver names and each driver's starting grid position, for the heat result, round summary, final results and meeting pack printouts; **404** for an unknown event, or a race with no stored result.
+
+`finals-lineup` has one item per class: `{ "eventClassId", "className", "qualifyingComplete", "calculated", "started", "defaultCarsPerFinal", "finals": [ { "raceId", "letter", "status", "bumpSlots", "editable", "drivers": [ { "entryId", "driverName", "gridPosition", "carNumber", "qualifyingPosition" } ] } ] }`. `qualifyingComplete` says every qualifying heat is finished (not all abandoned), `started` says a final has left PENDING and the line-ups are locked, and `defaultCarsPerFinal` is the largest qualifying heat.
+
+```
+POST /race-control/event/{eventId}/qualifying/{eventClassId}/seed-finals
+POST /race-control/race/{raceId}/finals/move
+POST /race-control/race/{raceId}/finals/swap
+POST /race-control/race/{raceId}/move-entry
+POST /race-control/race/{raceId}/marshal-adjustment
+POST /race-control/race/{raceId}/skip-to
+```
+
+- `seed-finals` is **Calculate finals**. The finals are no longer seeded when the last qualifier finishes: an official asks for them. The optional body `{ "carsPerFinal": 10 }` (1 to 100) sets the grid size; without it the class format's own grid size is used, and the grid grows if the field would not fit. Calling it again recalculates from the qualifying results and replaces hand edits. **404** if the class is not in the event; **409** if a qualifying heat is unfinished (or all were abandoned), the class has no finals, or a final has started.
+- `finals/move` takes `{ "entryId", "targetRaceId", "targetPosition" }` and moves a driver from the final in the path to another pending final of the same class, to a grid place (the back of the grid when `targetPosition` is null). `finals/swap` takes `{ "entryId", "otherRaceId", "otherEntryId" }` and swaps two drivers' grid places, on one final or across two. **400** for the same final or driver, different classes, or emptying a final; **404** if a driver is not in their final; **409** if either final has been called or started.
+- `move-entry` takes `{ "entryId", "targetRaceId", "allRounds": false }` and moves a driver out of the pending heat in the path into another pending heat of the same class, in the same round or, with `allRounds`, in every practice and qualifying round where both heats are still pending. The driver keeps their car number. **400** if the heats are the same, in different classes or events, are finals, or (without `allRounds`) are in different rounds; **409** if either heat has been called or started.
+- `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta.
+- `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server; the client keeps the active-race pointer.
+
 ## Race control — Entry search & transponder swap
 
 Open to any official (`ADMIN`, `RACE_DIRECTOR` or `REFEREE`). Withdrawn entries are never returned.

@@ -274,14 +274,19 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Configure scoring (Config tab):</span> Open
             the championship detail. The <span className="font-semibold">Config</span> tab
-            holds the Name, the optional "Rounds scoring" setting, and the TQ Bonus Points and
-            A-Final Winner Bonus. Set the number of rounds that count toward the title (e.g.
-            "Count best 8 from 10 rounds"), then click Save.
+            holds the Name, the optional "Rounds scoring" setting, the TQ Bonus Points and
+            A-Final Winner Bonus, and "Show an overall table". A driver scores the points for their place in the
+            event&apos;s overall result (the finals, or the overall qualifying order for a class with no finals).
+            Set the rounds that count (e.g. "Count best 8 from 10 rounds": at most 8 rounds count and a missed
+            round scores 0), then click Save. Drivers level on points are split by countback (most wins, then
+            most seconds). A saved scoring system (such as BRCA 1/10 off-road) can be applied at the top of the
+            tab to fill these in at once.
           </li>
           <li>
             <span className="font-semibold">Add classes (Classes tab):</span> Click
             <span className="font-semibold"> Add Class</span> to assign racing classes.
-            Each class can optionally override the global best-X-from-Y setting.
+            Each class can optionally override the global best-X-from-Y setting. Once you add any class, only
+            the classes listed here score; with none added every class that has results scores.
           </li>
           <li>
             <span className="font-semibold">Link events (Events tab):</span> Click
