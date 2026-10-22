@@ -14,15 +14,15 @@ repositories {
 }
 
 dependencies {
-    implementation("org.slf4j:slf4j-api:2.0.13")
+    implementation("org.slf4j:slf4j-api:2.0.20")
     // The live feed test relay (#28); the app already carries Netty for the decoder listener
-    implementation("io.netty:netty-all:4.1.121.Final")
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.6")
+    implementation("io.netty:netty-all:4.2.19.Final")
+    runtimeOnly("ch.qos.logback:logback-classic:1.6.5")
 
     testImplementation(project(":decoder-protocol"))
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.2")
-    testImplementation("org.assertj:assertj-core:3.25.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 application {
