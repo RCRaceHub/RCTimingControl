@@ -350,7 +350,7 @@ No authentication required.
 GET /events
 ```
 
-Returns the published events (published, open, entries closed or in progress), soonest first: each one's `id`, `name`, `eventDate`, the ids of its finished races (`finishedRaceIds`) and the championship it counts towards (`championshipId`, or null). Entry windows belong to RaceHub, so the schedule does not show them.
+Returns the published events (published, open, entries closed or in progress), soonest first: each one's `id`, `name`, `eventDate`, its finished races in run order (`finishedRaces`: each one's `id`, `roundLabel` such as "Qualifying 2" or "B Final", `className`, `heatNumber` and `isFinal`) and the championship it counts towards (`championshipId`, or null). Entry windows belong to RaceHub, so the schedule does not show them.
 
 ---
 

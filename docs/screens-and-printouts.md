@@ -12,7 +12,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 | Live race | `/boards/live-race` | The race on track with its live timing table (laps, last and best lap, gap) and the position chart | A second TV, or the one TV when the timing matters more than the line-up |
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
-| Event schedule | `/events` | The events, with links to each finished race's results and the championship standings | Phones |
+| Event schedule | `/events` | The events, with each finished race's results linked under its round and class (Heat 1, Heat 2, or Results for a final), plus the qualifying and championship standings | Phones |
 | Race result | `/results/{raceId}` | One finished race with lap times per driver | Phones, reached from the schedule |
 | Championship standings | `/championships/{id}` | The championship table per class | Phones, reached from the schedule |
 | Docs | `/docs` | The user guides, with a menu and search. They are read from the app itself, so they work without the internet. The About page shows the address with a QR code | Anyone who needs the instructions at the track |
