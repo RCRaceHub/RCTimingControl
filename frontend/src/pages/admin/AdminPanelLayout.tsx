@@ -6,6 +6,7 @@ import {
   Building2,
   MapPin,
   Sliders,
+  Scale,
   LogOut,
   Menu,
   Flag,
@@ -59,6 +60,7 @@ const adminOnlyOperations: NavEntry[] = [
 const configGroup: NavEntry[] = [
   { to: '/admin/tracks', label: 'Tracks', Icon: MapPin, adminOnly: true },
   { to: '/admin/formats', label: 'Formats', Icon: Sliders, adminOnly: true },
+  { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
 ];

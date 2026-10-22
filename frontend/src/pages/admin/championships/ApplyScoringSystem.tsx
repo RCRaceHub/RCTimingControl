@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApplyScoringSystem } from '@/hooks/admin/useAdminChampionships';
@@ -15,11 +16,17 @@ export function ApplyScoringSystem({ championshipId, onApplied }: { championship
   const { data: systems = [] } = useScoringSystems('CHAMPIONSHIP');
   const apply = useApplyScoringSystem(championshipId);
   const [systemId, setSystemId] = useState('');
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   async function handleApply() {
     const system = systems.find(s => String(s.id) === systemId);
     if (!system) return;
-    if (!window.confirm(`Replace this championship's scoring rules and points scale with ${system.name}? Unsaved changes below will be lost.`)) return;
+    const confirmed = await confirm({
+      title: `Apply ${system.name}?`,
+      description: "This replaces the championship's scoring rules and points scale. Unsaved changes below will be lost.",
+      confirmLabel: 'Apply',
+    });
+    if (!confirmed) return;
     try {
       await apply.mutateAsync(system.id);
       onApplied();
@@ -51,6 +58,7 @@ export function ApplyScoringSystem({ championshipId, onApplied }: { championship
         Fills the rounds scoring, bonuses, overall table setting and points scale below. You can still change any of them
         afterwards.
       </p>
+      {confirmDialog}
     </div>
   );
 }

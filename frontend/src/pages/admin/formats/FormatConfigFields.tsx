@@ -1,5 +1,4 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,27 +41,6 @@ const POINTS_FINALS_DEFAULTS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 
   qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
-};
-
-/** The BRCA 1/10 off-road rules: four rounds with the best two counting, 10-car finals and a 3-leg A final. */
-const BRCA_POINTS_FINALS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 'type'> = {
-  qualifyingHeats: 4,
-  finalsCount: 3,
-  finalDurationMinutes: 5,
-  heatDurationMinutes: 5,
-  qualifyingStartType: 'STAGGER',
-  finalsStartType: 'GRID',
-  qualifyingType: 'ROUND_BY_ROUND',
-  racePaddingMinutes: 2,
-  staggerIntervalSeconds: 5,
-  bestHeatsCount: 2,
-  splitTiedPlaces: true,
-  brcaQualifying: true,
-  maxRaceWindowSeconds: 390,
-  carsPerFinal: 10,
-  fillTopFirst: true,
-  finalLegs: 3,
-  legsCounted: 2,
 };
 
 const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'> = {
@@ -251,11 +229,6 @@ export function FormatConfigFields({ value, onChange }: Props) {
             <p className="text-xs text-muted-foreground">
               Choosing a system fills the scoring options below. Changing one of them by hand stops the format following the system.
             </p>
-          </div>
-          <div className="col-span-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ type: 'POINTS_FINALS', ...BRCA_POINTS_FINALS })}>
-              Use BRCA 1/10 off-road settings
-            </Button>
           </div>
           <NumField label="Qualifying Heats" value={value.qualifyingHeats} onChange={v => patch('qualifyingHeats', v)} />
           <NumField label="Finals Count" value={value.finalsCount} onChange={v => patch('finalsCount', v)} />

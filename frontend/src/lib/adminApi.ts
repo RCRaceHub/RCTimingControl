@@ -87,13 +87,26 @@ export interface RaceScoringConfig {
   fillTopFirst: boolean;
 }
 
-/** A saved scoring system; config is a RaceScoringConfig when kind is RACE. */
+/** The rules of a championship scoring system (type PLACE_POINTS). */
+export interface ChampionshipScoringConfig {
+  type: 'PLACE_POINTS';
+  bestX: number | null;
+  bestY: number | null;
+  tqBonusPoints: number;
+  aFinalWinnerBonusPoints: number;
+  showOverallTable: boolean;
+  pointsScale: { position: number; points: number }[];
+}
+
+export type ScoringConfig = RaceScoringConfig | ChampionshipScoringConfig;
+
+/** A saved scoring system; config is a RaceScoringConfig when kind is RACE, else a ChampionshipScoringConfig. */
 export interface ScoringSystemDto {
   id: number;
   kind: 'RACE' | 'CHAMPIONSHIP';
   name: string;
   builtIn: boolean;
-  config: RaceScoringConfig | Record<string, unknown>;
+  config: ScoringConfig;
 }
 
 export interface ShikabaneConfig {
@@ -880,10 +893,28 @@ export const adminApi = {
       api.delete(`/api/v1/admin/formats/${id}`),
   },
 
-  // Scoring systems (read here; managed on their own page later)
+  // Scoring systems
   scoringSystems: {
     list: (kind?: 'RACE' | 'CHAMPIONSHIP') =>
       api.get<ScoringSystemDto[]>('/api/v1/admin/scoring-systems', { params: kind ? { kind } : undefined }).then(r => r.data),
+    create: (body: { name: string; config: ScoringConfig }) =>
+      api.post<ScoringSystemDto>('/api/v1/admin/scoring-systems', body).then(r => r.data),
+    update: (id: number, body: { name: string; config: ScoringConfig }) =>
+      api.put<ScoringSystemDto>(`/api/v1/admin/scoring-systems/${id}`, body).then(r => r.data),
+    clone: (id: number, name: string) =>
+      api.post<ScoringSystemDto>(`/api/v1/admin/scoring-systems/${id}/clone`, { name }).then(r => r.data),
+    delete: (id: number) =>
+      api.delete(`/api/v1/admin/scoring-systems/${id}`),
+    /** The system's rules as JSON text, for saving to a file. */
+    exportText: (id: number) =>
+      api.get<string>(`/api/v1/admin/scoring-systems/${id}/export`, { transformResponse: r => r as string }).then(r => r.data),
+    /** Creates a system from the text of a JSON or YAML file. */
+    importText: (name: string, text: string, yaml: boolean) =>
+      api.post<ScoringSystemDto>('/api/v1/admin/scoring-systems/import', text, {
+        params: { name },
+        headers: { 'Content-Type': yaml ? 'application/yaml' : 'application/json' },
+        transformRequest: [(data: string) => data],
+      }).then(r => r.data),
   },
 
   // Competitors, also used for the driver search in championship exclusions
