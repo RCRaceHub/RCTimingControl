@@ -243,6 +243,9 @@ export function FormatConfigFields({ value, onChange }: Props) {
                 {(raceSystems ?? []).map(s => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}
+                {value.scoringSystemId != null && !(raceSystems ?? []).some(s => s.id === value.scoringSystemId) && (
+                  <SelectItem value={String(value.scoringSystemId)}>System #{value.scoringSystemId}</SelectItem>
+                )}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">

@@ -79,6 +79,7 @@ public record PointsFinalsConfig(
                               int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
                               QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
         this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
-                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false, 0, 0, null);
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false, 0, 0,
+                null);
     }
 }

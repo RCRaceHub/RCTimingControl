@@ -250,7 +250,10 @@ import, and every change is audited.
 places, BRCA qualifying, the race window, cars per final, fill A first, A final legs and legs counted from the system, and
 saving the format copies them again. When the format is added to an event class, the class takes the system's values as
 they are that day, so editing a system afterwards never changes a class already set up. Changing one of those options by
-hand in the editor stops the format following the system ("Set by hand"). A system a format uses cannot be deleted. The
+hand in the editor stops the format following the system ("Set by hand"). Editing a system does not rewrite the
+formats that name it; the numbers on the formats page are those of the last save, and a class added later takes the
+system's current values. Exporting a format leaves the system out of the file (the scoring options in it are already the
+system's values), so a file imports the same on any club's machine. A system a format uses cannot be deleted. The
 scoring itself is unchanged: the same settings are read as before, so formats saved earlier score exactly as they did.
 Bump Up and Timed formats do not use systems yet.
 

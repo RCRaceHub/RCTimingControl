@@ -20,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -188,7 +189,7 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
         Map<String, Object> system = send(HttpMethod.POST, URL, Map.of("name", "Used " + run, "config", mine), adminToken).getBody();
         Long systemId = ((Number) system.get("id")).longValue();
 
-        Map<String, Object> format = new java.util.LinkedHashMap<>(Map.of("type", "POINTS_FINALS", "qualifyingHeats", 4,
+        Map<String, Object> format = new LinkedHashMap<>(Map.of("type", "POINTS_FINALS", "qualifyingHeats", 4,
                 "finalsCount", 3, "finalDurationMinutes", 5, "heatDurationMinutes", 5, "qualifyingStartType", "STAGGER",
                 "finalsStartType", "GRID", "qualifyingType", "ROUND_BY_ROUND", "racePaddingMinutes", 2));
         format.put("staggerIntervalSeconds", 5);
@@ -201,6 +202,11 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
                 .containsEntry("brcaQualifying", true).containsEntry("scoringSystemId", systemId.intValue());
 
         assertThat(send(HttpMethod.DELETE, URL + "/" + systemId, null, adminToken).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        Long formatId = ((Number) created.getBody().get("id")).longValue();
+        ResponseEntity<String> exported = restTemplate.exchange("/api/v1/admin/formats/" + formatId + "/export",
+                HttpMethod.GET, new HttpEntity<>(headers(adminToken)), String.class);
+        assertThat(exported.getBody()).contains("finalLegs: 2").contains("scoringSystemId: null");
 
         format.put("scoringSystemId", 999_999_999);
         assertThat(send(HttpMethod.POST, "/api/v1/admin/formats", Map.of("name", "Nope " + run, "config", format), adminToken)

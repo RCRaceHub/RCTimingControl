@@ -227,13 +227,12 @@ public class RaceFormatService {
     /**
      * A Points Finals config set from a race scoring system, with that system's values copied over the config's own
      * scoring options; any other config, or one with no system, comes back as it is. Called when a template is saved
-     * (strict) and when it is given to an event class (not strict).
+     * (strict) and when it is given to an event class (not strict). It runs inside its caller's write transaction.
      *
      * @param strict whether a system that is missing or not a race system is refused; when not strict the config's
      *               own values are kept, so a system deleted since the template was saved cannot block adding a class
      * @throws IllegalArgumentException (400) in strict mode when the id is not a race scoring system
      */
-    @Transactional(propagation = Propagation.SUPPORTS)
     RaceFormatConfig resolveScoring(RaceFormatConfig config, boolean strict) {
         if (!(config instanceof PointsFinalsConfig p) || p.scoringSystemId() == null) {
             return config;
@@ -322,9 +321,20 @@ public class RaceFormatService {
         return m;
     }
 
-    /** A template's config, for {@link RaceFormatCodec} to write out (FORMAT-14). */
+    /**
+     * A template's config, for {@link RaceFormatCodec} to write out (FORMAT-14). A scoring system id is a row number in
+     * this club's database, so it is left out of the file; the scoring options in it are already the system's values.
+     */
     public RaceFormatConfig exportConfig(Long id) {
-        return findById(id).getConfig();
+        RaceFormatConfig config = findById(id).getConfig();
+        if (config instanceof PointsFinalsConfig p && p.scoringSystemId() != null) {
+            return new PointsFinalsConfig(p.qualifyingHeats(), p.finalsCount(), p.finalDurationMinutes(),
+                    p.heatDurationMinutes(), p.qualifyingStartType(), p.finalsStartType(), p.qualifyingType(),
+                    p.racePaddingMinutes(), p.staggerIntervalSeconds(), p.bestHeatsCount(), p.splitTiedPlaces(),
+                    p.brcaQualifying(), p.maxRaceWindowSeconds(), p.carsPerFinal(), p.fillTopFirst(), p.finalLegs(),
+                    p.legsCounted());
+        }
+        return config;
     }
 
     /** Adds a template from an imported config and records {@code FORMAT_IMPORTED} (FORMAT-14). */
