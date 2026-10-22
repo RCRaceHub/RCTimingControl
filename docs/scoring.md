@@ -193,6 +193,7 @@ A championship links events (each event is a round) and scores each driver per c
 | Setting | What it does |
 |---|---|
 | Points scale | Points per finishing position (position 1 gets the first value and so on; a position not in the scale scores 0) |
+| Overall table | When switched on, the standings also have an **Overall** table that ranks every driver of every scoring class together on championship points, so a win in either class scores the same. A driver's round is their best result in any class at that event, their best X rounds count by the championship's own rule (a class override does not apply), and the bonuses they won in any class are added. It is left out of the results sent to RaceHub. |
 | Classes | Only the classes added to the championship score. A championship with no classes added yet scores every class that has results. |
 | Best X from Y | A driver's best X rounds count and the rest are dropped; a driver with X rounds or fewer keeps them all, so a round not raced costs nothing beyond the points it would have scored. Can be set per class; an empty X falls back to the championship's. With no X every round counts. Y is kept for display and does not change the result. A DNS or excluded round is an ordinary round here, worth 0, so it is dropped first. |
 | TQ bonus points | Extra points to the driver who topped qualifying in the class at a round |

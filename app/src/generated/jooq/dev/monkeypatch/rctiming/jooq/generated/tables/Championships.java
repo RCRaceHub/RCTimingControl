@@ -109,6 +109,11 @@ public class Championships extends TableImpl<ChampionshipsRecord> {
      */
     public final TableField<ChampionshipsRecord, Instant> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
 
+    /**
+     * The column <code>championships.show_overall_table</code>.
+     */
+    public final TableField<ChampionshipsRecord, Boolean> SHOW_OVERALL_TABLE = createField(DSL.name("show_overall_table"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
+
     private Championships(Name alias, Table<ChampionshipsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

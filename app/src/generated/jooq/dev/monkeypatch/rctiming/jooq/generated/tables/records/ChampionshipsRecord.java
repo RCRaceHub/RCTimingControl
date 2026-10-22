@@ -146,6 +146,20 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
         return (Instant) get(8);
     }
 
+    /**
+     * Setter for <code>championships.show_overall_table</code>.
+     */
+    public void setShowOverallTable(Boolean value) {
+        set(9, value);
+    }
+
+    /**
+     * Getter for <code>championships.show_overall_table</code>.
+     */
+    public Boolean getShowOverallTable() {
+        return (Boolean) get(9);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -169,7 +183,7 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
     /**
      * Create a detached, initialised ChampionshipsRecord
      */
-    public ChampionshipsRecord(Long id, String name, Integer bestXFromYX, Integer bestXFromYY, String scoringSource, Integer tqBonusPoints, Integer afinalWinnerBonusPoints, Instant createdAt, Instant updatedAt) {
+    public ChampionshipsRecord(Long id, String name, Integer bestXFromYX, Integer bestXFromYY, String scoringSource, Integer tqBonusPoints, Integer afinalWinnerBonusPoints, Instant createdAt, Instant updatedAt, Boolean showOverallTable) {
         super(Championships.CHAMPIONSHIPS);
 
         setId(id);
@@ -181,6 +195,7 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
         setAfinalWinnerBonusPoints(afinalWinnerBonusPoints);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setShowOverallTable(showOverallTable);
         resetChangedOnNotNull();
     }
 }

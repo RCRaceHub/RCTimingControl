@@ -14,13 +14,15 @@ public record ChampionshipDto(
         Integer bestXFromYX,
         Integer bestXFromYY,
         int tqBonusPoints,
-        int afinalWinnerBonusPoints
+        int afinalWinnerBonusPoints,
+        boolean showOverallTable
 ) {
     public static ChampionshipDto from(Championship c) {
         return new ChampionshipDto(
                 c.getId(), c.getName(),
                 c.getBestXFromYX(), c.getBestXFromYY(),
-                c.getTqBonusPoints(), c.getAfinalWinnerBonusPoints()
+                c.getTqBonusPoints(), c.getAfinalWinnerBonusPoints(),
+                c.isShowOverallTable()
         );
     }
 }

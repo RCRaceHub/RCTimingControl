@@ -63,7 +63,7 @@ public class ChampionshipService {
 
     /** A championship's own settings, as an official sets them on create or update. */
     public record Settings(String name, Integer bestXFromYX, Integer bestXFromYY,
-                           int tqBonusPoints, int afinalWinnerBonusPoints) {}
+                           int tqBonusPoints, int afinalWinnerBonusPoints, boolean showOverallTable) {}
 
     /** A championship with its classes, rounds in order and points scale by position. */
     public record Detail(Championship championship, List<ChampionshipClass> classes,
@@ -305,6 +305,7 @@ public class ChampionshipService {
         c.setBestXFromYY(settings.bestXFromYY());
         c.setTqBonusPoints(settings.tqBonusPoints());
         c.setAfinalWinnerBonusPoints(settings.afinalWinnerBonusPoints());
+        c.setShowOverallTable(settings.showOverallTable());
     }
 
     private static Map<String, Object> settingsOf(Championship c) {
@@ -314,6 +315,7 @@ public class ChampionshipService {
         m.put("bestXFromYY", c.getBestXFromYY());
         m.put("tqBonusPoints", c.getTqBonusPoints());
         m.put("afinalWinnerBonusPoints", c.getAfinalWinnerBonusPoints());
+        m.put("showOverallTable", c.isShowOverallTable());
         return m;
     }
 

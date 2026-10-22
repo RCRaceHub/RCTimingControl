@@ -13,5 +13,6 @@ public record UpdateChampionshipRequest(
         @Min(1) Integer bestXFromYX,
         @Min(1) Integer bestXFromYY,
         @Min(0) int tqBonusPoints,
-        @Min(0) int afinalWinnerBonusPoints
+        @Min(0) int afinalWinnerBonusPoints,
+        boolean showOverallTable
 ) {}

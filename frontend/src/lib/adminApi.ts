@@ -343,6 +343,8 @@ export interface ChampionshipDto {
   bestXFromYY: number | null;
   tqBonusPoints: number;
   afinalWinnerBonusPoints: number;
+  /** Also rank every class together in an overall table. */
+  showOverallTable: boolean;
 }
 
 export interface ChampionshipClassDto {

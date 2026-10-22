@@ -63,6 +63,12 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 @ReadTransaction
 public class ChampionshipStandingsQuery {
 
+    /**
+     * The {@code racingClassId} of the overall table's rows, which rank every class together. No racing class has
+     * this id (they start at 1), and it sorts ahead of the real classes.
+     */
+    public static final long OVERALL_CLASS_ID = 0L;
+
     private static final Logger log = LoggerFactory.getLogger(ChampionshipStandingsQuery.class);
 
     private final DSLContext dsl;
@@ -113,7 +119,7 @@ public class ChampionshipStandingsQuery {
     }
 
     /** How the championship scores: everything but the results themselves. */
-    private record Rules(BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
+    private record Rules(boolean showOverall, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
                          Map<Integer, Integer> pointsScale, int tqBonus, int aFinalBonus,
                          Set<DriverEvent> exclusions) {
 
@@ -154,7 +160,8 @@ public class ChampionshipStandingsQuery {
     private Rules rules(Long championshipId) {
         var championship = dsl
                 .select(CHAMPIONSHIPS.BEST_X_FROM_Y_X, CHAMPIONSHIPS.BEST_X_FROM_Y_Y,
-                        CHAMPIONSHIPS.TQ_BONUS_POINTS, CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS)
+                        CHAMPIONSHIPS.TQ_BONUS_POINTS, CHAMPIONSHIPS.AFINAL_WINNER_BONUS_POINTS,
+                        CHAMPIONSHIPS.SHOW_OVERALL_TABLE)
                 .from(CHAMPIONSHIPS)
                 .where(CHAMPIONSHIPS.ID.eq(championshipId))
                 .fetchOne();
@@ -185,7 +192,7 @@ public class ChampionshipStandingsQuery {
                 .forEach(r -> exclusions.add(new DriverEvent(r.get(CHAMPIONSHIP_EXCLUSIONS.DRIVER_ID),
                         r.get(CHAMPIONSHIP_EXCLUSIONS.EVENT_ID))));
 
-        return new Rules(
+        return new Rules(championship.get(CHAMPIONSHIPS.SHOW_OVERALL_TABLE),
                 new BestXFromY(championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_X),
                         championship.get(CHAMPIONSHIPS.BEST_X_FROM_Y_Y)),
                 classBestXFromY, pointsScale,
@@ -729,7 +736,46 @@ public class ChampionshipStandingsQuery {
                     tally.displayNames.getOrDefault(driverClass.driverId(), ""),
                     driverClass.racingClassId(), totalPoints, 0, marked));
         });
+        if (rules.showOverall()) {
+            rows.addAll(overallRows(tally, rules));
+        }
         return rows;
+    }
+
+    /**
+     * The overall table: one row per driver across every class that scores, ranked together. A driver's round is
+     * their best result in any class at that event, the best X rounds of the championship's own rule count (a
+     * class's own override does not apply), and the TQ and A-final bonuses they won in any class are added.
+     */
+    private static List<StandingsRowDto> overallRows(Tally tally, Rules rules) {
+        Map<Long, Map<Integer, RoundResultDto>> roundsByDriver = new LinkedHashMap<>();
+        tally.rounds.forEach((driverClass, rounds) -> {
+            if (!rules.scores(driverClass.racingClassId())) {
+                return;
+            }
+            for (RoundResultDto round : rounds) {
+                roundsByDriver.computeIfAbsent(driverClass.driverId(), k -> new TreeMap<>())
+                        .merge(round.roundNumber(), round, (a, b) -> b.points() > a.points() ? b : a);
+            }
+        });
+        List<StandingsRowDto> rows = new ArrayList<>();
+        roundsByDriver.forEach((driverId, byRound) -> {
+            List<RoundResultDto> marked = dropWorst(new ArrayList<>(byRound.values()), rules.bestXFromY(null));
+            int totalPoints = marked.stream()
+                    .filter(r -> !r.dropped() && !r.excluded())
+                    .mapToInt(RoundResultDto::points)
+                    .sum();
+            totalPoints += rules.tqBonus() * bonusesWon(tally.tqWins, driverId);
+            totalPoints += rules.aFinalBonus() * bonusesWon(tally.aFinalWins, driverId);
+            rows.add(new StandingsRowDto(driverId, tally.displayNames.getOrDefault(driverId, ""),
+                    OVERALL_CLASS_ID, totalPoints, 0, marked));
+        });
+        return rows;
+    }
+
+    /** How many class rounds the driver won a bonus in, across all classes. */
+    private static int bonusesWon(Set<ClassRound> wins, Long driverId) {
+        return (int) wins.stream().filter(w -> w.driverClass().driverId().equals(driverId)).count();
     }
 
     /**

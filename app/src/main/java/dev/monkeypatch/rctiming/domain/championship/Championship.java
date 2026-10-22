@@ -32,6 +32,9 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     private int afinalWinnerBonusPoints = 0;
 
+    /** Whether the standings also have an overall table ranking every class together. */
+    private boolean showOverallTable = false;
+
     private Instant createdAt;
 
     private Instant updatedAt;
@@ -58,6 +61,9 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     public int getAfinalWinnerBonusPoints() { return afinalWinnerBonusPoints; }
     public void setAfinalWinnerBonusPoints(int v) { this.afinalWinnerBonusPoints = v; }
+
+    public boolean isShowOverallTable() { return showOverallTable; }
+    public void setShowOverallTable(boolean v) { this.showOverallTable = v; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant t) { this.createdAt = t; }

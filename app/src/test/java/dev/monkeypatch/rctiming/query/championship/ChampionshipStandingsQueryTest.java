@@ -399,6 +399,49 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void anOverallTableRanksEveryClassTogetherOnChampionshipPoints() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        champ.setShowOverallTable(true);
+        championshipRepository.save(champ);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        RacingClass fourWd = new RacingClass();
+        fourWd.setName("4WD-" + UUID.randomUUID());
+        fourWd.setCreatedAt(Instant.now());
+        fourWd.setUpdatedAt(Instant.now());
+        Long fourWdId = racingClassRepository.save(fourWd).getId();
+
+        Event event = makeEvent("Overall-table-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long twoWdEc = makeEventClass(event.getId());
+        Long fourWdEc = dsl.transactionResult(tx -> tx.dsl().insertInto(EVENT_CLASSES)
+                .set(EVENT_CLASSES.EVENT_ID, event.getId())
+                .set(EVENT_CLASSES.RACING_CLASS_ID, fourWdId)
+                .set(EVENT_CLASSES.CONFIG_SNAPSHOT, "{\"type\":\"TIMED\"}")
+                .returning(EVENT_CLASSES.ID).fetchOne().get(EVENT_CLASSES.ID));
+        Round round = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race twoWdFinal = makeRace(round.getId(), twoWdEc, "A", 1);
+        Race fourWdFinal = makeRace(round.getId(), fourWdEc, "A", 2);
+        Entry a = makeEntry(makeUser("Two", "Wd").getId(), event.getId(), twoWdEc);
+        Entry b = makeEntry(makeUser("Four", "Wd").getId(), event.getId(), fourWdEc);
+        makeRaceEntry(twoWdFinal.getId(), a.getId());
+        makeRaceEntry(fourWdFinal.getId(), b.getId());
+        makeSnapshot(twoWdFinal.getId(), "[" + resultRow(a.getId(), 1, 10, 5000) + "]");
+        makeSnapshot(fourWdFinal.getId(), "[" + resultRow(b.getId(), 1, 10, 5000) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // One row in each class and one in the overall table (class id 0, listed first), each driver on 10
+        assertThat(standings).extracting(StandingsRowDto::racingClassId)
+                .containsExactlyInAnyOrder(racingClassId, fourWdId, ChampionshipStandingsQuery.OVERALL_CLASS_ID,
+                        ChampionshipStandingsQuery.OVERALL_CLASS_ID);
+        assertThat(standings.get(0).racingClassId()).isEqualTo(ChampionshipStandingsQuery.OVERALL_CLASS_ID);
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsOnly(10);
+        // Level on points and wins, so both share first place in the overall table
+        assertThat(standings.stream().filter(r -> r.racingClassId() == ChampionshipStandingsQuery.OVERALL_CLASS_ID)
+                .map(StandingsRowDto::position)).containsExactly(1, 1);
+    }
+
+    @Test
     void bestXFromYDropsWorstRounds() throws Exception {
         // Championship: best 2 from 3 (drop worst 1 of 3 rounds)
         Championship champ = makeChampionship(0, 0, 2, 3, ScoringSource.FINALS);

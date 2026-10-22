@@ -229,6 +229,9 @@ public class ResultsExportQuery {
             Map<Long, CompetitorRef> competitors = competitors(standingsRows);
             Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
             for (StandingsRowDto row : standingsRows) {
+                if (Objects.equals(row.racingClassId(), ChampionshipStandingsQuery.OVERALL_CLASS_ID)) {
+                    continue; // the overall table is not a class, and Results Export v1 has no place for it
+                }
                 byClass.computeIfAbsent(row.racingClassId(), k -> new ArrayList<>()).add(row);
             }
             Map<Long, String> classNames = new LinkedHashMap<>();

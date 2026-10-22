@@ -15,6 +15,7 @@ const schema = z.object({
   bestXFromYY: optionalPositiveInt,
   tqBonusPoints: z.coerce.number().int().min(0),
   afinalWinnerBonusPoints: z.coerce.number().int().min(0),
+  showOverallTable: z.boolean(),
 }).superRefine(refineBestXFromY);
 
 type FormInput = z.input<typeof schema>;
@@ -39,6 +40,7 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
       bestXFromYY: initialValue?.bestXFromYY ?? null,
       tqBonusPoints: initialValue?.tqBonusPoints ?? 0,
       afinalWinnerBonusPoints: initialValue?.afinalWinnerBonusPoints ?? 0,
+      showOverallTable: initialValue?.showOverallTable ?? false,
     },
   });
 
@@ -49,6 +51,7 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
       bestXFromYY: values.bestXFromYY,
       tqBonusPoints: values.tqBonusPoints,
       afinalWinnerBonusPoints: values.afinalWinnerBonusPoints,
+      showOverallTable: values.showOverallTable,
     });
   }
 
@@ -101,6 +104,14 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
             <p className="text-xs text-destructive">{errors.afinalWinnerBonusPoints.message}</p>
           )}
         </div>
+      </div>
+
+      <div className="flex items-start gap-2">
+        <input id="overall-table" type="checkbox" className="mt-1" {...register('showOverallTable')} />
+        <Label htmlFor="overall-table" className="font-normal">
+          Show an overall table that ranks every class together on championship points, as well as each class's own
+          table
+        </Label>
       </div>
 
       <Button type="submit" disabled={isSubmitting || (!isDirty && !!initialValue)}>

@@ -13,5 +13,6 @@ public record CreateChampionshipRequest(
         @Min(1) Integer bestXFromYX,          // nullable — championship-wide default
         @Min(1) Integer bestXFromYY,
         @Min(0) int tqBonusPoints,            // CHAMP-07
-        @Min(0) int afinalWinnerBonusPoints   // CHAMP-08
+        @Min(0) int afinalWinnerBonusPoints,  // CHAMP-08
+        boolean showOverallTable              // ranks every class together as well
 ) {}
