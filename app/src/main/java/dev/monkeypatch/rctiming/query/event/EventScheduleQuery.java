@@ -14,14 +14,15 @@ import java.util.Map;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
 /**
  * The schedule anonymous visitors see: meetings that are published, open for entries, closed for entries or in
- * progress, with their finished races, labelled by round, class and heat (so results can be linked) and the championship they count
- * towards. Meetings in any other state are not listed. Runs as one read snapshot, so the three queries agree.
+ * progress, with their finished races (labelled by round, class and heat, so results can be linked) and the
+ * championship they count towards. Meetings in any other state are not listed. Runs as one read snapshot, so
+ * the three queries agree.
  */
 @Service
 @ReadTransaction

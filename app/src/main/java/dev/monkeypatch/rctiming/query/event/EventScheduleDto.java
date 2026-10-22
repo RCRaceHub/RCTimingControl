@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * One meeting on the public schedule ({@link EventScheduleQuery}).
  *
- * @param finishedRaces the meeting's finished races in run order, empty when none has finished
+ * @param finishedRaces  the meeting's finished races in run order, empty when none has finished
  * @param championshipId the championship the meeting counts towards, or null when it is not linked to one
  */
 public record EventScheduleDto(
