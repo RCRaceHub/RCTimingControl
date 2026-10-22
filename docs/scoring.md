@@ -104,6 +104,21 @@ BRCA uses 390 seconds, 6:30, for a 5 minute race. When the window is reached the
 are doing, and a car that has not crossed the line to complete its last lap keeps the laps it completed (its lap in
 progress is not counted). 0 means no window; the track's max last lap wait is then the only backstop.
 
+### A final in legs
+
+A Points Finals format can run the **A final** as several legs (BRCA: 3). Only the A final has legs; the lower finals
+stay a single race. The round generator makes one race for each leg in the A final's round, and every leg starts from the
+same grid, in qualifying order: seeding and any change to the line-up in the finals panel reach all the legs that have not
+been called yet. In the run order leg 1 is "A Final" and the others "A Final, Leg 2" and so on.
+
+In each leg a driver scores their finishing place (1 for the winner, ranked by laps then time as in section 1). A driver
+who did not run a leg scores one more than the number of drivers in the final. The **legs counted** setting (BRCA: 2)
+keeps each driver's best legs, the lowest total wins, and a tie goes to the best single counting leg, then the second
+best (1 + 3 beats 2 + 2), then the most laps and the least time over the counting legs. Until every leg has finished the order shows the legs run so far.
+Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`.
+
+Championship points and the boards do not use the combined order yet; see the tracker (#423).
+
 ### Shikabane heats
 
 In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by

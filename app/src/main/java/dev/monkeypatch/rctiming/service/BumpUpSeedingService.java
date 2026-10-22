@@ -117,7 +117,9 @@ public class BumpUpSeedingService {
         // A zombie round has no qualifiers of its own: it is filled once the lower mains are done, and it gives the
         // A main one more bump place for its winner
         List<Race> zombieRaces = finals.stream().filter(f -> ZOMBIE_LETTER.equals(f.getFinalLetter())).toList();
-        finals = new ArrayList<>(finals.stream().filter(f -> !ZOMBIE_LETTER.equals(f.getFinalLetter())).toList());
+        // Later legs of a final copy leg 1's grid at the end, so they are not finals of their own here
+        finals = new ArrayList<>(finals.stream().filter(f -> !ZOMBIE_LETTER.equals(f.getFinalLetter()))
+                .filter(f -> !FinalLegs.isExtraLeg(f)).toList());
         if (finals.isEmpty()) {
             throw new StateConflictException("This class has no mains to seed; generate the rounds first");
         }
@@ -214,6 +216,7 @@ public class BumpUpSeedingService {
             finalRace.setBumpSlots(isLowestFinal ? 0 : bumpCount + (topFinal && !zombieRaces.isEmpty() ? 1 : 0));
             raceRepository.save(finalRace);
         }
+        FinalLegs.syncGrids(raceRepository, raceEntryRepository, eventClassId);
     }
 
     /**

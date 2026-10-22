@@ -42,6 +42,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @Autowired AutoFinalsSeedingService autoFinalsSeedingService;
     @Autowired FinalsLineupService finalsLineupService;
     @Autowired QualifyingTableService qualifyingTableService;
+    @Autowired FinalLegsService finalLegsService;
     @Autowired RaceRepository raceRepository;
     @Autowired RaceEntryRepository raceEntryRepository;
     @Autowired JdbcTemplate jdbc;
@@ -393,6 +394,53 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(gridOf(finalOf(buggyClass, "C"))).extracting(RaceEntry::getEntryId)
                 .containsExactlyElementsOf(buggies.subList(20, 25));
         assertThat(finalOf(buggyClass, "A").getBumpSlots()).isZero();
+    }
+
+    private static final String POINTS_FINALS_LEGS = """
+            {"type":"POINTS_FINALS","qualifyingHeats":2,"finalsCount":2,"finalDurationMinutes":5,
+             "heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+             "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5,
+             "fillTopFirst":true,"carsPerFinal":6,"finalLegs":3,"legsCounted":2}""";
+
+    @Test
+    void theAFinalIsRunInLegsThatShareOneGridAndAreCombinedBestTwoOfThree() {
+        long buggyClass = addClass("Buggy", POINTS_FINALS_LEGS);
+        List<Long> drivers = addEntries(buggyClass, 12);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 12, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+
+        List<Race> aLegs = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.FINAL).stream()
+                .filter(f -> "A".equals(f.getFinalLetter()))
+                .sorted(Comparator.comparingInt(Race::getHeatNumber)).toList();
+        assertThat(aLegs).extracting(Race::getHeatNumber).containsExactly(1, 2, 3);
+        assertThat(aLegs.stream().map(Race::getRoundId).distinct()).hasSize(1);
+        assertThat(raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.FINAL)).hasSize(4);
+
+        bumpUpSeedingService.seedFinals(buggyClass, drivers, 2, 6, 0, true);
+
+        List<Long> expected = drivers.subList(0, 6);
+        for (Race leg : aLegs) {
+            assertThat(gridOf(leg)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(expected);
+        }
+        assertThat(finalLegsService.forEvent(eventId).get(0).complete()).isFalse();
+
+        int[][] lapsByLeg = {{12, 10, 10, 10, 10, 10}, {10, 12, 10, 10, 10, 10}, {5, 11, 10, 10, 10, 10}};
+        for (int leg = 0; leg < 3; leg++) {
+            List<long[]> rows = new ArrayList<>();
+            for (int d = 0; d < 6; d++) {
+                rows.add(new long[] {expected.get(d), lapsByLeg[leg][d], 60_000});
+            }
+            storeResult(aLegs.get(leg), rows, false);
+        }
+
+        var combined = finalLegsService.forEvent(eventId);
+
+        assertThat(combined).hasSize(1);
+        assertThat(combined.get(0).complete()).isTrue();
+        assertThat(combined.get(0).legsFinished()).isEqualTo(3);
+        assertThat(combined.get(0).rows()).extracting(r -> r.entryId())
+                .startsWith(expected.get(1), expected.get(0));
+        assertThat(combined.get(0).rows().get(0).points()).isEqualTo(2);
     }
 
     private static final String POINTS_FINALS_BRCA = """

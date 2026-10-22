@@ -28,6 +28,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * <p>{@code carsPerFinal} is the cars on each final's grid (0 splits the field evenly), and {@code fillTopFirst}
  * fills the finals from the top, A with ranks 1 to {@code carsPerFinal}, B with the next block, and the lowest
  * final with whoever is left, instead of filling the lowest final first. Neither makes drivers bump up.
+ *
+ * <p>{@code finalLegs} is how many races the A final is run in (0 or 1 for one race) and {@code legsCounted} how many of
+ * a driver's legs count towards their place (0 for all of them): in each leg a driver scores their finishing place and
+ * the lowest total over the counting legs wins. Lower finals are always a single race.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PointsFinalsConfig(
@@ -45,7 +49,9 @@ public record PointsFinalsConfig(
     boolean brcaQualifying,
     int maxRaceWindowSeconds,
     int carsPerFinal,
-    boolean fillTopFirst
+    boolean fillTopFirst,
+    int finalLegs,
+    int legsCounted
 ) implements RaceFormatConfig {
 
     /** A config without the round by round scoring options: every round counts and the rules are today's. */
@@ -53,6 +59,6 @@ public record PointsFinalsConfig(
                               int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
                               QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
         this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
-                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false);
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false, 0, 0);
     }
 }

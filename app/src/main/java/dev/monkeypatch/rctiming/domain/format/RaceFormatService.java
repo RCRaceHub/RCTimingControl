@@ -120,6 +120,27 @@ public class RaceFormatService {
         return minutes > 0 ? minutes * 60_000L : null;
     }
 
+    /** The class's format when it is a Points Finals one, else empty. */
+    private Optional<PointsFinalsConfig> pointsFinals(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(getEffectiveConfig(eventClass))
+                .filter(PointsFinalsConfig.class::isInstance).map(PointsFinalsConfig.class::cast);
+    }
+
+    /** How many races the class's A final is run in: 1 unless its Points Finals format sets more. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int finalLegs(EventClass eventClass) {
+        return pointsFinals(eventClass).map(PointsFinalsConfig::finalLegs).map(legs -> Math.max(1, legs)).orElse(1);
+    }
+
+    /** How many of a driver's A final legs count, 0 for all of them. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int legsCounted(EventClass eventClass) {
+        return pointsFinals(eventClass).map(PointsFinalsConfig::legsCounted).map(n -> Math.max(0, n)).orElse(0);
+    }
+
     /**
      * The longest a race of this class may run, in milliseconds, when its format sets a maximum race window; empty
      * for no limit (the format has none, or the class has no readable format).
@@ -129,8 +150,7 @@ public class RaceFormatService {
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
             return Optional.empty();
         }
-        return Optional.of(getEffectiveConfig(eventClass))
-                .filter(PointsFinalsConfig.class::isInstance).map(PointsFinalsConfig.class::cast)
+        return pointsFinals(eventClass)
                 .map(PointsFinalsConfig::maxRaceWindowSeconds)
                 .filter(seconds -> seconds > 0)
                 .map(seconds -> seconds * 1000L);

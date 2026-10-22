@@ -75,6 +75,8 @@ public class FinalsLineupService {
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
             List<Race> finals = new ArrayList<>(
                     raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL));
+            // Later legs of a final copy leg 1's line-up, so the panel shows each final once
+            finals.removeIf(FinalLegs::isExtraLeg);
             if (finals.isEmpty()) {
                 continue;
             }
@@ -142,6 +144,7 @@ public class FinalsLineupService {
         renumber(joined);
         raceEntryRepository.saveAll(rest);
         raceEntryRepository.saveAll(joined);
+        FinalLegs.syncGrids(raceRepository, raceEntryRepository, source.getEventClassId());
         record(actor, "FINALS_DRIVER_MOVED", source, "Moved entry " + entryId + " from final "
                 + source.getFinalLetter() + " to final " + target.getFinalLetter() + " (place " + (index + 1) + ")",
                 Map.of("entryId", entryId, "fromRaceId", source.getId(), "toRaceId", target.getId(),
@@ -181,6 +184,7 @@ public class FinalsLineupService {
         b.setRaceId(first.getId());
         raceEntryRepository.save(a);
         raceEntryRepository.save(b);
+        FinalLegs.syncGrids(raceRepository, raceEntryRepository, first.getEventClassId());
         record(actor, "FINALS_DRIVERS_SWAPPED", first, "Swapped entry " + entryId + " (final "
                 + first.getFinalLetter() + ") with entry " + otherEntryId + " (final " + second.getFinalLetter() + ")",
                 Map.of("entryId", entryId, "otherEntryId", otherEntryId, "raceId", first.getId(),

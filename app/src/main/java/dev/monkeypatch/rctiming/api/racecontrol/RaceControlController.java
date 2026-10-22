@@ -23,7 +23,9 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateFinalsRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsMoveRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
+import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
+import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsLineupService;
 import dev.monkeypatch.rctiming.service.HeatMoveService;
 import dev.monkeypatch.rctiming.service.MarshalService;
@@ -72,6 +74,7 @@ public class RaceControlController {
     private final AuditService audit;
     private final ResultSnapshotRepository resultSnapshotRepository;
     private final QualifyingTableService qualifyingTableService;
+    private final FinalLegsService finalLegsService;
     private final AutoFinalsSeedingService finalsSeedingService;
     private final HeatMoveService heatMoveService;
     private final FinalsLineupService finalsLineupService;
@@ -86,6 +89,7 @@ public class RaceControlController {
                                   AuditService audit,
                                   ResultSnapshotRepository resultSnapshotRepository,
                                   QualifyingTableService qualifyingTableService,
+                                  FinalLegsService finalLegsService,
                                   AutoFinalsSeedingService finalsSeedingService,
                                   HeatMoveService heatMoveService,
                                   FinalsLineupService finalsLineupService) {
@@ -99,6 +103,7 @@ public class RaceControlController {
         this.audit = audit;
         this.resultSnapshotRepository = resultSnapshotRepository;
         this.qualifyingTableService = qualifyingTableService;
+        this.finalLegsService = finalLegsService;
         this.finalsSeedingService = finalsSeedingService;
         this.heatMoveService = heatMoveService;
         this.finalsLineupService = finalsLineupService;
@@ -135,6 +140,16 @@ public class RaceControlController {
     @PreAuthorize("isAuthenticated()")
     public EventResultsDto getRaceResult(@PathVariable long raceId) {
         return eventResultsQuery.forRace(raceId);
+    }
+
+    /**
+     * The combined result of each class's A final that is run in legs (best legs added, lowest wins).
+     * {@code GET /event/{eventId}/final-legs}, race director, referee or admin. Read only; empty when no class has legs.
+     */
+    @GetMapping("/event/{eventId}/final-legs")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    public List<FinalLegsDto> getFinalLegs(@PathVariable long eventId) {
+        return finalLegsService.forEvent(eventId);
     }
 
     /**

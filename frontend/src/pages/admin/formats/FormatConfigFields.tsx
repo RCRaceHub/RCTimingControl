@@ -186,6 +186,8 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patch('bestHeatsCount', v)} />
           <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patch('maxRaceWindowSeconds', v)} />
           <NumField label="Cars per Final (0 = even split)" value={value.carsPerFinal ?? 0} onChange={v => patch('carsPerFinal', v)} />
+          <NumField label="A Final Legs (1 = single race)" value={value.finalLegs ?? 1} onChange={v => patch('finalLegs', v)} />
+          <NumField label="Legs Counted (0 = all)" value={value.legsCounted ?? 0} onChange={v => patch('legsCounted', v)} />
           <div className="flex items-center gap-2 pt-5">
             <Checkbox
               id="points-fill-top-first"

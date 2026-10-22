@@ -66,6 +66,10 @@ export interface PointsFinalsConfig {
   carsPerFinal?: number;
   /** Fill the finals from the top (A with ranks 1 to carsPerFinal, the lowest final with the rest). */
   fillTopFirst?: boolean;
+  /** Races the A final is run in; 0 or 1 for a single race. BRCA uses 3. */
+  finalLegs?: number;
+  /** How many of a driver's A final legs count; 0 or missing for all of them. BRCA uses 2. */
+  legsCounted?: number;
 }
 
 export interface ShikabaneConfig {
