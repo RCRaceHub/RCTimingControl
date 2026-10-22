@@ -265,6 +265,18 @@ export async function getPublicChampionshipStandings(
   return data;
 }
 
+/** A championship's name and the classes it scores, to head each class's table on the standings sheet. */
+export type ChampionshipInfoDto = {
+  id: number;
+  name: string;
+  classes: { racingClassId: number; name: string }[];
+};
+
+export async function getPublicChampionshipInfo(championshipId: number): Promise<ChampionshipInfoDto> {
+  const { data } = await api.get<ChampionshipInfoDto>(`/api/v1/championships/${championshipId}/info`);
+  return data;
+}
+
 export type EventScheduleDto = {
   id: number;
   name: string;
@@ -445,6 +457,40 @@ export type RaceHistoryItem = {
 /** Everything that happened in a race, oldest first (#140). */
 export async function getRaceHistory(raceId: number): Promise<RaceHistoryItem[]> {
   const { data } = await api.get<RaceHistoryItem[]>(`/api/v1/race-control/race/${raceId}/history`);
+  return data;
+}
+
+/** One finished race in the officials' results: the real-name result and each driver's grid position. */
+export type EventResultsRace = {
+  raceId: number;
+  eventClassId: number;
+  className: string;
+  roundNumber: number;
+  roundType: 'PRACTICE' | 'QUALIFIER' | 'FINAL';
+  heatNumber: number;
+  finalLetter: string | null;
+  result: ResultSnapshotDto;
+  /** Grid position by entry id; an entry with no grid position is missing. */
+  startPositions: Record<string, number>;
+};
+
+/** An event's finished races in run order, for the officials' printouts. Names are the real ones. */
+export type EventResultsDto = {
+  eventId: number;
+  eventName: string;
+  eventDate: string;
+  races: EventResultsRace[];
+};
+
+/** Every finished race of the event, with real names and starting grid (round summary, finals, meeting pack). */
+export async function getEventResults(eventId: number): Promise<EventResultsDto> {
+  const { data } = await api.get<EventResultsDto>(`/api/v1/race-control/event/${eventId}/results`);
+  return data;
+}
+
+/** One finished race in the same shape as {@link getEventResults}, for the heat result printout. */
+export async function getRaceResult(raceId: number): Promise<EventResultsDto> {
+  const { data } = await api.get<EventResultsDto>(`/api/v1/race-control/race/${raceId}/result`);
   return data;
 }
 

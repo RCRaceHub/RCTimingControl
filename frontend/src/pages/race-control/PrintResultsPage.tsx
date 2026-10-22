@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useResultSnapshot } from '@/hooks/race-control/useResultSnapshot';
+import { useRaceResult } from '@/hooks/race-control/useEventResults';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { getRaceHistory, type ResultSnapshotDto } from '@/lib/raceControlApi';
-import { averageLapMs, lapSheetColumns, lapTimesFor } from '@/lib/heatSheet';
+import { lapSheetColumns, positionSeries } from '@/lib/heatSheet';
+import { PositionChart } from '@/components/print/PositionChart';
+import { HeatResultTable } from '@/components/print/HeatResultTable';
+import { SheetHeader } from '@/components/print/SheetHeader';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 
@@ -64,9 +67,20 @@ export default function PrintResultsPage() {
   const { raceId: raceIdStr } = useParams<{ raceId: string }>();
   const raceId = Number(raceIdStr);
 
-  const { data, isLoading, error } = useResultSnapshot(raceId || null);
+  const { data: eventResults, isLoading, error } = useRaceResult(raceId || null);
+  const race = eventResults?.races[0];
+  const data = race?.result;
   const [searchParams, setSearchParams] = useSearchParams();
+  /** Sets or clears one option in the page address, keeping the others, so a reload keeps the ticks. */
+  function setOption(key: string, value: string | null) {
+    const next = new URLSearchParams(searchParams);
+    if (value === null) next.delete(key);
+    else next.set(key, value);
+    setSearchParams(next, { replace: true });
+  }
   const showLaps = searchParams.get('laps') === '1';
+  // The position chart is on unless the tick is cleared (`chart=0`)
+  const showChart = searchParams.get('chart') !== '0';
   // The penalties are a nicety: if they can't be read the result still prints
   const history = useQuery({
     queryKey: raceControlQueryKeys.raceHistory(raceId),
@@ -82,13 +96,16 @@ export default function PrintResultsPage() {
     }
   }, [data]);
 
+  // Only offered when the heat has places to draw: a chart of flat lines says nothing
+  const chartSeries = data ? positionSeries(data.positions, data.lapHistory) : [];
+
   if (isLoading) {
     return (
       <div className="p-8 text-sm text-muted-foreground">Loading results…</div>
     );
   }
 
-  if (error || !data) {
+  if (error || !eventResults || !race || !data) {
     return (
       <div className="p-8 text-sm text-destructive">
         {error ? 'Could not load results.' : 'No results available.'}
@@ -98,57 +115,15 @@ export default function PrintResultsPage() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto print:p-4">
-      <div className="mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{data.raceLabel}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {data.clubBranding?.clubName} &bull; Finished{' '}
-              {formatDateTime(data.finishedAt)}
-            </p>
-          </div>
-          {data.clubBranding?.logoUrl && (
-            <img
-              src={data.clubBranding.logoUrl}
-              alt={data.clubBranding?.clubName}
-              className="h-16 object-contain"
-            />
-          )}
-        </div>
-      </div>
+      <SheetHeader
+        title={data.raceLabel}
+        eventName={eventResults.eventName}
+        eventDate={eventResults.eventDate}
+        branding={data.clubBranding}
+      />
+      <p className="mb-4 text-sm text-muted-foreground">Finished {formatDateTime(data.finishedAt)}</p>
 
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b-2 border-foreground">
-            <th className="text-left py-2 pr-4 w-10">Pos</th>
-            <th className="text-left py-2 pr-4">Driver</th>
-            <th className="text-left py-2 pr-4">Car</th>
-            <th className="text-right py-2 pr-4">Laps</th>
-            <th className="text-right py-2 pr-4">Total Time</th>
-            <th className="text-right py-2 pr-4">Best Lap</th>
-            <th className="text-right py-2 pr-4">Avg Lap</th>
-            <th className="text-right py-2">Gap</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.positions.map((row) => (
-            <tr key={row.entryId} className="border-b border-border/50">
-              <td className="py-1.5 pr-4 font-semibold">{row.position}</td>
-              <td className="py-1.5 pr-4">{row.driverName}</td>
-              <td className="py-1.5 pr-4 text-muted-foreground">{row.carNumber ?? '—'}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{row.lapsCompleted}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.totalTimeMs)}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
-              <td className="py-1.5 pr-4 text-right font-mono">
-                {fmtMs(averageLapMs(lapTimesFor(row.entryId, data.lapHistory)))}
-              </td>
-              <td className="py-1.5 text-right font-mono text-muted-foreground">
-                {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <HeatResultTable race={race} />
 
       {penalties.length > 0 && (
         <section aria-label="Penalties" className="mt-4 text-sm">
@@ -163,6 +138,13 @@ export default function PrintResultsPage() {
         </section>
       )}
 
+      {showChart && chartSeries.length > 0 && (
+        <section aria-label="Position chart" className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold">Position by lap</h2>
+          <PositionChart series={chartSeries} />
+        </section>
+      )}
+
       {showLaps && <LapSheet positions={data.positions} lapHistory={data.lapHistory} />}
 
       <div className="mt-6 flex items-center gap-4 print:hidden">
@@ -170,12 +152,20 @@ export default function PrintResultsPage() {
           <input
             type="checkbox"
             checked={showLaps}
-            onChange={(e) =>
-              setSearchParams(e.target.checked ? { laps: '1' } : {}, { replace: true })
-            }
+            onChange={(e) => setOption('laps', e.target.checked ? '1' : null)}
           />
           Include lap-by-lap times
         </label>
+        {chartSeries.length > 0 && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showChart}
+              onChange={(e) => setOption('chart', e.target.checked ? null : '0')}
+            />
+            Include position chart
+          </label>
+        )}
         <button
           onClick={() => window.print()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded text-sm"

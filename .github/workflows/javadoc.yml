@@ -27,7 +27,7 @@ jobs:
     name: Javadoc (doclint)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -39,7 +39,7 @@ jobs:
           git diff --name-only --diff-filter=AM "origin/${{ github.base_ref }}...HEAD" -- 'app/src/main/java/**/*.java' \
             | xargs -r python3 .github/scripts/check-class-javadoc.py
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -51,7 +51,7 @@ jobs:
 
       - name: Keep the Javadoc
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: javadoc
           path: app/build/docs/javadoc

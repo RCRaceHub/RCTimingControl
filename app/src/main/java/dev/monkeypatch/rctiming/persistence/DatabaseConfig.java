@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Properties;
 
 /**
  * The one place that knows which database the app runs on (#26). It applies the vendor from
@@ -61,11 +62,15 @@ public class DatabaseConfig {
         this.jdbcUrl = vendor.jdbcUrl(dataDirectory);
     }
 
-    /** The write pool, the primary data source: Flyway and every write transaction use it. */
+    /**
+     * The write pool, the primary data source: Flyway and every write transaction use it. Its transactions
+     * begin by taking the write lock (so even a read-only {@code @Transactional} on it blocks other writers).
+     */
     @Bean
     @Primary
     DataSource dataSource() {
-        HikariConfig config = poolConfig("rctiming-write", vendor.maxWriteConnections());
+        HikariConfig config = poolConfig("rctiming-write", vendor.maxWriteConnections(),
+                vendor.writeConnectionProperties());
         return new HikariDataSource(config);
     }
 
@@ -73,7 +78,7 @@ public class DatabaseConfig {
     @Bean
     @Qualifier("read")
     DataSource readDataSource() {
-        HikariConfig config = poolConfig("rctiming-read", properties.readConnections());
+        HikariConfig config = poolConfig("rctiming-read", properties.readConnections(), vendor.connectionProperties());
         config.setConnectionInitSql(vendor.readOnlySessionSql());
         return new HikariDataSource(config);
     }
@@ -142,11 +147,11 @@ public class DatabaseConfig {
         return ExceptionTranslatorExecuteListener.of(context -> translator);
     }
 
-    private HikariConfig poolConfig(String name, int size) {
+    private HikariConfig poolConfig(String name, int size, Properties connectionProperties) {
         HikariConfig config = new HikariConfig();
         config.setPoolName(name);
         config.setJdbcUrl(jdbcUrl);
-        config.setDataSourceProperties(vendor.connectionProperties());
+        config.setDataSourceProperties(connectionProperties);
         config.setMaximumPoolSize(size);
         config.setMinimumIdle(1);
         return config;

@@ -5,6 +5,8 @@ Each diagram follows one thing through the code. Class names are the real ones, 
 - [A lap passing, decoder to browser](#a-lap-passing-decoder-to-browser)
 - [Starting and finishing a race](#starting-and-finishing-a-race)
 - [Results export to RaceHub](#results-export-to-racehub)
+- [Officials' printouts](#officials-printouts)
+- [The overlay's chart and ticker](#the-overlays-chart-and-ticker)
 - [Live feed to the relay](#live-feed-to-the-relay)
 - [Importing entries from RaceHub](#importing-entries-from-racehub)
 - [Signing in and staying signed in](#signing-in-and-staying-signed-in)
@@ -121,6 +123,59 @@ sequenceDiagram
 ```
 
 Format: [Results Export v1](../results-export-v1.md).
+
+## Officials' printouts
+
+The round summary, final results, meeting pack and heat result are print-styled web pages (the browser does the paper or Save as PDF). They read from one officials-only endpoint, so they show real names where the public pages follow each competitor's public name setting, and they add the grid each driver started from.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (print page)
+    participant C as RaceControlController
+    participant Q as EventResultsQuery
+    participant R as ResultSnapshotQuery
+    participant DB as SQLite (read pool)
+
+    B->>C: GET /race-control/event/{id}/results (or /race/{id}/result)
+    C->>Q: forEvent / forRace
+    Q->>DB: finished races in run order, grid positions
+    loop each finished race
+        Q->>R: load(raceId)
+        R->>DB: stored result snapshot and club branding
+    end
+    Q-->>C: EventResultsDto (real names, start positions)
+    C-->>B: JSON
+    B->>B: group by class, round or finals, then window.print()
+```
+
+The qualifying standings in a meeting pack come from the existing `GET /race-control/event/{id}/qualifying`. The championship sheet is the public standings page plus `GET /championships/{id}/info` for the class names.
+
+## The overlay's chart and ticker
+
+The streaming overlay, the live board and the `/boards/chart` screen all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. The chart read holds `LiveRaceState`'s lock only to copy the rows and lap times; the ordering is worked out after the lock is released.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (OBS)
+    participant BC as BoardController
+    participant LRS as LiveRaceState
+    participant LO as LapOrder
+    participant BTS as BoardTickerService
+    participant Q as BoardQuery,<br/>PreRaceReadinessQuery,<br/>QualifyingTableService
+
+    B->>BC: GET /boards/races/{id}/position-history<br/>(when total laps change)
+    BC->>LRS: lapOrder() (under the state lock)
+    LRS->>LO: LapOrder.of(rows, state)
+    LO-->>BC: places(): lap, entry, position
+    BC-->>B: [{lap, entryId, position}]
+    B->>BC: GET /boards/ticker (every 20 s)
+    BC->>BTS: forEvent(eventId)
+    BTS->>Q: next race, grid call, marshal duty, top qualifiers
+    BTS-->>BC: names through PublicNames
+    BC-->>B: TickerDto
+```
+
+`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
 
 ## Live feed to the relay
 

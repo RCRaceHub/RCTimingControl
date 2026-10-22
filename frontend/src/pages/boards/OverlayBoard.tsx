@@ -6,10 +6,20 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getRaceClock, getRoundFastestLap } from '@/lib/boardsApi';
+import { getRaceClock, getRoundFastestLap, getTicker } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
-import { BOARD_POLL_MS, fmtClock, parseOverlayOptions } from './boardFormat';
+import {
+  BOARD_POLL_MS,
+  fmtClock,
+  heatBestLap,
+  parseOverlayOptions,
+  roundBestLap,
+  tickerSegments,
+  type TickerItem,
+} from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useLivePositionSeries } from './useLivePositionSeries';
+import { PositionChart } from '@/components/print/PositionChart';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -82,19 +92,10 @@ function StatsTicker({
     return () => clearInterval(timer);
   }, []);
 
-  let heatBest: { lapMs: number; driverName: string } | null = null;
-  let totalLaps = 0;
-  for (const row of rows) {
-    totalLaps += row.lapsCompleted;
-    if (row.bestLapMs !== null && row.bestLapMs > 0 && (heatBest === null || row.bestLapMs < heatBest.lapMs)) {
-      heatBest = { lapMs: row.bestLapMs, driverName: row.driverName };
-    }
-  }
+  const totalLaps = rows.reduce((sum, row) => sum + row.lapsCompleted, 0);
+  const heatBest = heatBestLap(rows);
   // The round's fastest includes this heat, which has no snapshot until it finishes
-  const roundBest =
-    round?.lapMs != null && round.driverName && (heatBest === null || round.lapMs < heatBest.lapMs)
-      ? { lapMs: round.lapMs, driverName: round.driverName }
-      : heatBest;
+  const roundBest = roundBestLap(heatBest, round);
 
   const stats: Array<[string, string]> = [];
   if (totalLaps > 0) stats.push(['Laps in heat', String(totalLaps)]);
@@ -115,9 +116,66 @@ function StatsTicker({
   );
 }
 
+/** Seconds a ticker takes per character to cross the screen: slow enough to read, long text just takes longer. */
+const TICKER_SECONDS_PER_CHAR = 0.18;
+const TICKER_MIN_SECONDS = 20;
+
+/**
+ * A strip along the foot of the page that scrolls the next race, who is on its grid and marshalling, the class
+ * top qualifiers and the fastest lap of the round, as far as the page address switches each on. It stays up
+ * between races, when "next" is what people want. Renders nothing when there is nothing to say.
+ */
+function OverlayTicker({
+  eventId,
+  raceId,
+  rows,
+  items,
+  panelClass,
+}: {
+  eventId: number | null;
+  raceId: number | null;
+  rows: LiveTimingRowDto[];
+  items: Set<TickerItem>;
+  panelClass: string;
+}) {
+  const { data: ticker } = useQuery({
+    queryKey: publicQueryKeys.boards.ticker(eventId),
+    queryFn: () => getTicker(eventId),
+    enabled: (['next', 'drivers', 'marshals', 'tq'] as const).some(item => items.has(item)),
+    refetchInterval: BOARD_POLL_MS * 4,
+  });
+  const { data: round } = useQuery({
+    queryKey: publicQueryKeys.boards.roundFastest(raceId),
+    queryFn: () => getRoundFastestLap(raceId!),
+    enabled: raceId !== null && items.has('fastest'),
+    refetchInterval: BOARD_POLL_MS * 6,
+  });
+  const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round));
+  const text = segments.join('   •   ');
+  // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
+  // jump mid-scroll
+  const [shown, setShown] = useState<string | null>(null);
+  if (segments.length === 0) return null;
+  const display = shown ?? text;
+  return (
+    <div
+      className={cn('fixed inset-x-0 bottom-0 overflow-hidden py-2 font-sans text-lg font-semibold', panelClass)}
+      aria-label="Ticker"
+    >
+      <span
+        className="ticker-scroll"
+        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, display.length * TICKER_SECONDS_PER_CHAR)}s` }}
+        onAnimationIteration={() => setShown(text)}
+      >
+        {display}
+      </span>
+    </div>
+  );
+}
+
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
-  const { eventId, top, showClass, theme } = parseOverlayOptions(searchParams);
+  const { eventId, top, showClass, theme, showChart, tickerItems } = parseOverlayOptions(searchParams);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -133,6 +191,8 @@ export default function OverlayBoard() {
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
   const lapFlash = useLapFlash(allRows);
+  const chartSeries = useLivePositionSeries(raceId, allRows, showChart);
+  const tickerEventId = eventId ?? nowNext?.eventId ?? null;
 
   if (!race) {
     const upcoming = nowNext?.nextRace?.label;
@@ -150,6 +210,13 @@ export default function OverlayBoard() {
           <p className="text-sm font-semibold">{message}</p>
           {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
         </section>
+        <OverlayTicker
+          eventId={tickerEventId}
+          raceId={null}
+          rows={[]}
+          items={tickerItems}
+          panelClass={colours.panel}
+        />
       </div>
     );
   }
@@ -227,6 +294,26 @@ export default function OverlayBoard() {
         )}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
+      {showChart && chartSeries.length > 0 && (
+        <section
+          className={cn(
+            'fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg',
+            // Clear of the ticker's strip when it is showing
+            tickerItems.size > 0 ? 'bottom-14' : 'bottom-4',
+            colours.panel,
+          )}
+          aria-label="Position chart"
+        >
+          <PositionChart series={chartSeries} />
+        </section>
+      )}
+      <OverlayTicker
+        eventId={tickerEventId}
+        raceId={race.raceId}
+        rows={allRows}
+        items={tickerItems}
+        panelClass={colours.panel}
+      />
     </div>
   );
 }

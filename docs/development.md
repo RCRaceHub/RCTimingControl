@@ -217,7 +217,7 @@ None of them needs Docker. Each backend test run creates a temporary SQLite data
 | `/login` | Public | Officials' sign-in |
 | `/setup` | Public until set up | First-run setup wizard |
 | `/events`, `/results/:raceId`, `/championships/:id` | Public | Event schedule, results and championship standings |
-| `/boards/now-next`, `/boards/results`, `/boards/overlay` | Public | Spectator boards and the streaming overlay for OBS |
+| `/boards/now-next`, `/boards/results`, `/boards/chart`, `/boards/overlay` | Public | Spectator boards and the streaming overlay for OBS |
 | `/about` | Public | Version and the addresses other devices can open |
 | `/admin/*` | ADMIN / RACE_DIRECTOR / REFEREE | Admin panel. ADMIN only: club profile, tracks, formats, decoder, backups, results exports and officials (#132). Events and championships open to every official, but only an admin edits one (any official can still record a championship exclusion, a referee's disqualification); a race director also moves it through its day |
 | `/admin/race-control` | ADMIN / RACE_DIRECTOR / REFEREE | Pick an in-progress event for race control |
@@ -308,7 +308,7 @@ Migrations live in one folder per database: `app/src/main/resources/db/migration
 
 ### Keeping the database swappable
 
-The database is chosen in one place. `rctiming.database.vendor` picks it, and `DatabaseConfig` (in `persistence/`) applies it to Flyway and jOOQ. The vendor-specific values themselves live in `persistence/vendor/DatabaseVendor`: the JDBC URL, connection settings (for SQLite: WAL, `synchronous=NORMAL`, foreign keys on, a 5 second busy timeout), how many write connections it allows, and the jOOQ dialect.
+The database is chosen in one place. `rctiming.database.vendor` picks it, and `DatabaseConfig` (in `persistence/`) applies it to Flyway and jOOQ. The vendor-specific values themselves live in `persistence/vendor/DatabaseVendor`: the JDBC URL, connection settings (for SQLite: WAL, `synchronous=NORMAL`, foreign keys on, a 5 second busy timeout; the write pool also begins each transaction with `BEGIN IMMEDIATE`, so a transaction that reads first and writes later waits for the lock instead of failing at once with `SQLITE_BUSY`), how many write connections it allows, and the jOOQ dialect.
 
 The app opens two pools on the database: a write pool (one connection for SQLite, used by Flyway and Spring transactions) and a read pool of `rctiming.database.read-connections` (default 4) whose connections refuse writes. jOOQ queries outside a transaction go to the read pool; inside a `@Transactional` one, read-only included, they share the writer. `@ReadTransaction` runs a read-only transaction on the read pool instead, so a query class's several statements see one snapshot without taking the write connection; the `query/` classes use it.
 

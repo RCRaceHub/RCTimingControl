@@ -24,8 +24,8 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
-import dev.monkeypatch.rctiming.timing.LiveRacePosition;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
@@ -306,28 +306,20 @@ public class ResultSnapshotService {
     }
 
     /**
-     * Builds a lap history from the final standings, including per-lap durations from LiveRaceState.
-     * For each entry, records their final position and lap duration at each lap they completed.
-     * The state parameter is nullable — legacy snapshots or races without live state get null lapTimeMs.
+     * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
+     * The places come from {@link LapOrder}, so a position chart shows who passed whom. The state parameter is
+     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. A correction
+     * after the race rebuilds this from the live state if it is still held, otherwise the stored history is kept.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
         List<ResultSnapshotDto.PositionAtLap> history = new ArrayList<>();
-        int leaderLaps = rows.stream().mapToInt(LiveTimingRowDto::lapsCompleted).max().orElse(0);
-        if (leaderLaps == 0) return history;
-
-        Map<Long, Integer> lapIndex = new HashMap<>();
-        for (int lap = 1; lap <= leaderLaps; lap++) {
+        LapOrder order = LapOrder.of(rows, state);
+        for (int lap = 1; lap <= order.leaderLaps(); lap++) {
+            Map<Long, Integer> placeAtLap = order.placesAfterLap(lap);
             for (LiveTimingRowDto row : rows) {
                 if (row.lapsCompleted() >= lap) {
-                    int idx = lapIndex.merge(row.entryId(), 1, Integer::sum) - 1;
-                    Long lapTimeMs = null;
-                    if (state != null) {
-                        LiveRacePosition pos = state.getPositionSnapshot(row.entryId());
-                        if (pos != null && pos.getLapTimes() != null && idx < pos.getLapTimes().size()) {
-                            lapTimeMs = pos.getLapTimes().get(idx);
-                        }
-                    }
-                    history.add(new ResultSnapshotDto.PositionAtLap(lap, row.entryId(), row.position(), lapTimeMs));
+                    history.add(new ResultSnapshotDto.PositionAtLap(lap, row.entryId(),
+                            placeAtLap.getOrDefault(row.entryId(), row.position()), order.lapTimeMs(row.entryId(), lap)));
                 }
             }
         }

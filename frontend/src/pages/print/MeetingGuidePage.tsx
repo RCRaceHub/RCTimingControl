@@ -373,16 +373,21 @@ export default function MeetingGuidePage() {
             450 &times; 520 pixels. It shows the race on track over your video on a transparent
             background: the running order, laps, last lap and the race clock (time to go, or time so
             far when the format sets no length). Rows flash on each lap like the live timing screen
-            (purple race best, blue personal best, green faster, red slower), and a ticker underneath
-            rolls through the laps run in the heat, the heat's fastest lap and the round's fastest.
-            Between races it shows a small "No race on track" panel.
+            (purple race best, blue personal best, green faster, red slower), and a small stats line
+            underneath rolls through the laps run in the heat, the heat's fastest lap and the round's
+            fastest. A position chart sits at the bottom right, and a ticker scrolls along the foot of
+            the page with the next race, its drivers and marshals, the top qualifiers and the round's
+            fastest lap. Between races it shows a small "No race on track" panel, and the ticker stays up.
           </li>
           <li>
             <span className="font-semibold">Overlay options</span> go on the end of the address:
             <span className="font-mono text-xs"> top=N</span> shows the first N cars (default 10, up to
             40), <span className="font-mono text-xs">class=hide</span> leaves out the race and class
             name, <span className="font-mono text-xs">theme=light</span> gives dark text on a light
-            panel, and <span className="font-mono text-xs">event=ID</span> follows one event. For
+            panel, <span className="font-mono text-xs">chart=hide</span> leaves out the position chart,
+            <span className="font-mono text-xs"> ticker=hide</span> leaves out the ticker (or name the
+            items to scroll: <span className="font-mono text-xs">ticker=next,drivers,marshals,tq,fastest</span>),
+            and <span className="font-mono text-xs">event=ID</span> follows one event. For
             example <span className="font-mono text-xs">/boards/overlay?top=6&amp;theme=light</span>.
           </li>
         </ol>

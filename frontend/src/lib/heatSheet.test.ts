@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { averageLapMs, lapSheetColumns, lapTimesFor } from './heatSheet';
-import type { PositionAtLap, ResultRow } from './raceControlApi';
+import { averageLapMs, lapSheetColumns, lapTimesFor, livePositionSeries, positionSeries } from './heatSheet';
+import type { LiveTimingRowDto, PositionAtLap, ResultRow } from './raceControlApi';
 
 const lap = (entryId: number, lapNumber: number, lapTimeMs: number | null): PositionAtLap => ({
   entryId,
@@ -53,5 +53,51 @@ describe('heatSheet', () => {
 
   it('leaves out a driver with no timed lap', () => {
     expect(lapSheetColumns([row(1, 5)], [])).toEqual([]);
+  });
+
+  it('builds one position line per driver in finishing order, labelled by car, in lap order', () => {
+    const history: PositionAtLap[] = [
+      { entryId: 2, lapNumber: 2, position: 1, lapTimeMs: 1 },
+      { entryId: 1, lapNumber: 1, position: 1, lapTimeMs: 1 },
+      { entryId: 2, lapNumber: 1, position: 2, lapTimeMs: 1 },
+      { entryId: 1, lapNumber: 2, position: 2, lapTimeMs: 1 },
+    ];
+
+    const series = positionSeries([row(2, 1), row(1, 2)], history);
+
+    expect(series.map((s) => s.label)).toEqual(['Driver 2', 'Driver 1']);
+    expect(series[0].points).toEqual([{ lap: 1, position: 2 }, { lap: 2, position: 1 }]);
+  });
+
+  it('leaves a driver with no recorded laps out of the position chart', () => {
+    expect(positionSeries([row(1, 1)], [])).toEqual([]);
+  });
+
+  it('has no chart when no driver ever changed place', () => {
+    const flat: PositionAtLap[] = [lap(1, 1, 1), lap(1, 2, 1), lap(2, 1, 1), lap(2, 2, 1)].map((l) => ({ ...l, position: l.entryId }));
+
+    expect(positionSeries([row(1, 1), row(2, 2)], flat)).toEqual([]);
+  });
+});
+
+describe('livePositionSeries', () => {
+  const live = (entryId: number, position: number, carNumber: string | null) =>
+    ({ entryId, driverName: `Driver ${entryId}`, carNumber, position }) as unknown as LiveTimingRowDto;
+
+  it('draws a line per car in running order, even before any place has changed', () => {
+    const series = livePositionSeries(
+      [live(2, 2, '7'), live(1, 1, null)],
+      [
+        { lap: 1, entryId: 1, position: 1 },
+        { lap: 1, entryId: 2, position: 2 },
+      ],
+    );
+
+    expect(series.map((s) => s.label)).toEqual(['Driver 1', 'Driver 2']);
+    expect(series[0].points).toEqual([{ lap: 1, position: 1 }]);
+  });
+
+  it('leaves out a car with no laps yet', () => {
+    expect(livePositionSeries([live(1, 1, null)], [])).toEqual([]);
   });
 });

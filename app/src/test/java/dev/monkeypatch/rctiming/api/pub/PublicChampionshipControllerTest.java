@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +50,33 @@ class PublicChampionshipControllerTest extends AbstractIntegrationTest {
         // Championship with no event links returns empty standings list
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).isEmpty();
+    }
+
+    @Test
+    void infoNamesTheChampionshipWithoutAuth() {
+        Championship champ = new Championship();
+        champ.setName("Info Champ " + UUID.randomUUID());
+        champ.setTqBonusPoints(0);
+        champ.setAfinalWinnerBonusPoints(0);
+        champ.setScoringSource(ScoringSource.FINALS);
+        Instant now = Instant.now();
+        champ.setCreatedAt(now);
+        champ.setUpdatedAt(now);
+        champ = championshipRepository.save(champ);
+
+        ResponseEntity<Map> response = restTemplate.getForEntity(
+                "/api/v1/championships/" + champ.getId() + "/info", Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).containsEntry("name", champ.getName());
+        assertThat((List<?>) response.getBody().get("classes")).isEmpty();
+    }
+
+    @Test
+    void unknownChampionshipInfoReturns404() {
+        ResponseEntity<Object> response = restTemplate.getForEntity(
+                "/api/v1/championships/999999/info", Object.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

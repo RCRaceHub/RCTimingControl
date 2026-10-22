@@ -711,6 +711,16 @@ GET /boards/races/{raceId}/round-fastest-lap
 ```
 **200 OK** — `{ "lapMs": 18500, "driverName": "Sam Second" }`, the fastest lap in the other finished heats of the race's round and class, for the overlay's stats ticker. Names follow the public name rule. Both fields are null when no other heat has finished.
 
+```http
+GET /boards/races/{raceId}/position-history
+```
+**200 OK** — `[ { "lap": 1, "entryId": 31, "position": 2 }, ... ]`, the place each car held at the end of every lap so far, by the order the cars crossed the line, for the live position chart. `[]` for a race with no live state (not started, or finished: its stored result has the history). If a marshal adjustment has changed any car's lap count the crossing order can't be trusted, so every place is the car's current position.
+
+```http
+GET /boards/ticker?eventId={id}
+```
+**200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
+
 **Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing` and `/topic/race/{raceId}/state`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
 
 ---
@@ -836,7 +846,7 @@ PUT /api/v1/race-control/events/{eventId}/live-feed   { "enabled": true }
 
 ## Race control — Auto run
 
-Runs an event's races one after another (#338). Any official may read; only `RACE_DIRECTOR` or `ADMIN` may change it. Every call answers with the state: `{ "eventId": 1, "armed": true, "phase": "WAITING", "nextRaceId": 12, "nextRaceLabel": "Qualifying 2 — Buggy — Heat 1", "startAt": "2026-10-17T10:03:00Z", "heldReason": null, "heldMessage": null, "gapSeconds": 180, "holdBeforeFinals": true, "autoStart": true }`. `phase` is `WAITING` (counting to the start), `RACING` (waiting for a race under way) or `HELD` (`heldReason` is `FINALS`, `NO_DRIVERS` or `REFUSED`), and null when auto run is off.
+Runs an event's races one after another (#338). Any official may read; only `RACE_DIRECTOR` or `ADMIN` may change it. Every call answers with the state: `{ "eventId": 1, "armed": true, "phase": "WAITING", "nextRaceId": 12, "nextRaceLabel": "Qualifying 2 — Buggy — Heat 1", "startAt": "2026-10-17T10:03:00Z", "heldReason": null, "heldMessage": null, "gapSeconds": 180, "holdBeforeFinals": true, "autoStart": false }`. `phase` is `WAITING` (counting to the start), `RACING` (waiting for a race under way) or `HELD` (`heldReason` is `FINALS`, `NO_DRIVERS` or `REFUSED`), and null when auto run is off.
 
 ```http
 GET  /api/v1/race-control/events/{eventId}/auto-run

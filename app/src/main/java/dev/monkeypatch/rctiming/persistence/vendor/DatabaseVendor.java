@@ -32,7 +32,8 @@ public enum DatabaseVendor {
 
     /**
      * One SQLite file inside the app process (#26). WAL lets readers carry on while a write
-     * commits; a single writer connection means writes never contend for the lock.
+     * commits; a single writer connection serialises writes within one app instance (other processes, such
+     * as the backup, still share the file, so the write pool waits for the lock rather than failing).
      */
     SQLITE("sqlite", SQLDialect.SQLITE, 1) {
         @Override
@@ -47,6 +48,18 @@ public enum DatabaseVendor {
             config.setSynchronous(SQLiteConfig.SynchronousMode.NORMAL);
             config.enforceForeignKeys(true);
             config.setBusyTimeout(5000);
+            return config.toProperties();
+        }
+
+        /**
+         * Write transactions start with {@code BEGIN IMMEDIATE}. A deferred one that reads first and writes
+         * later fails at once with SQLITE_BUSY, ignoring the busy timeout, if another connection committed
+         * in between; taking the write lock up front makes it wait out the timeout instead.
+         */
+        @Override
+        public Properties writeConnectionProperties() {
+            SQLiteConfig config = new SQLiteConfig(connectionProperties());
+            config.setTransactionMode(SQLiteConfig.TransactionMode.IMMEDIATE);
             return config.toProperties();
         }
 
@@ -202,8 +215,16 @@ public enum DatabaseVendor {
     /** JDBC URL of the app's database inside the data directory. */
     public abstract String jdbcUrl(Path dataDirectory);
 
-    /** Settings applied to every connection. */
+    /** The base settings of every connection; the write pool adds to them in {@link #writeConnectionProperties()}. */
     public abstract Properties connectionProperties();
+
+    /**
+     * Settings for the write pool's connections. Defaults to {@link #connectionProperties()}; never used for
+     * the read pool, whose transactions must not take the write lock.
+     */
+    public Properties writeConnectionProperties() {
+        return connectionProperties();
+    }
 
     /** True when the data directory already holds a database, so connecting won't create an empty one. */
     public abstract boolean hasDatabase(Path dataDirectory);

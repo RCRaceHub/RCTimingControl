@@ -8,6 +8,7 @@ export const publicQueryKeys = {
   events: () => ['public', 'events'] as const,
   results: (raceId: number) => ['public', 'results', raceId] as const,
   championship: (id: number) => ['public', 'championships', id] as const,
+  championshipInfo: (id: number) => ['public', 'championships', id, 'info'] as const,
   boards: {
     all: ['boards'] as const,
     nowNext: (eventId: number | null) => ['boards', 'now-next', eventId] as const,
@@ -15,6 +16,8 @@ export const publicQueryKeys = {
     results: (eventId: number | null) => ['boards', 'results', eventId] as const,
     qualifying: (eventId: number | null) => ['boards', 'qualifying', eventId] as const,
     clock: (raceId: number | null) => ['boards', 'clock', raceId] as const,
+    positionHistory: (raceId: number | null, laps: number) => ['boards', 'position-history', raceId, laps] as const,
+    ticker: (eventId: number | null) => ['boards', 'ticker', eventId] as const,
     roundFastest: (raceId: number | null) => ['boards', 'round-fastest', raceId] as const,
   },
 };

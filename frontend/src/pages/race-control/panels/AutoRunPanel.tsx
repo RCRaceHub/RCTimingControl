@@ -119,7 +119,7 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
               checked={autoStartValue}
               onCheckedChange={(checked) => setAutoStart(checked === true)}
             />
-            <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on when a race is started by hand</Label>
+            <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on by itself when a race is started by hand (otherwise only Go starts it)</Label>
           </div>
           {settingsChanged && (
             <Button

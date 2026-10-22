@@ -41,6 +41,8 @@ const RaceControlLayout = lazy(() => import('@/pages/race-control/RaceControlLay
 const CockpitPage = lazy(() => import('@/pages/race-control/CockpitPage'));
 const RefereePage = lazy(() => import('@/pages/race-control/RefereePage'));
 const PrintResultsPage = lazy(() => import('@/pages/race-control/PrintResultsPage'));
+const PrintCentrePage = lazy(() => import('@/pages/race-control/print/PrintCentrePage'));
+const PrintEventResultsPage = lazy(() => import('@/pages/race-control/print/PrintEventResultsPage'));
 const PracticeSessionPage = lazy(() =>
   import('@/pages/race-control/PracticeSessionPage').then(m => ({ default: m.PracticeSessionPage })),
 );
@@ -61,6 +63,7 @@ const DocsIndexRedirect = lazy(() => import('@/pages/docs/DocPage').then(m => ({
 const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
+const ChartBoard = lazy(() => import('@/pages/boards/ChartBoard'));
 
 function RootLayout() {
   return (
@@ -124,7 +127,16 @@ const router = createBrowserRouter([
           { path: 'transponders', element: <TransponderPage /> },
           { path: 'referee', element: <RefereePage /> },
           { path: 'results/:raceId', element: <PrintResultsPage /> },
+          { path: 'print', element: <PrintCentrePage /> },
         ],
+      },
+      {
+        path: '/race-control/print/event/:eventId',
+        element: (
+          <ProtectedRoute roles={['RACE_DIRECTOR', 'REFEREE', 'ADMIN']}>
+            <PrintEventResultsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: '/race-control/practice/day',
@@ -173,6 +185,7 @@ const router = createBrowserRouter([
       { path: '/privacy', element: <PrivacyPage /> },
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
+      { path: '/boards/chart', element: <ChartBoard /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
       { path: '*', element: <NotFoundPage /> },

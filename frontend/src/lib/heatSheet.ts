@@ -1,4 +1,5 @@
-import type { PositionAtLap, ResultRow } from './raceControlApi';
+import type { LapPlace } from './boardsApi';
+import type { LiveTimingRowDto, PositionAtLap, ResultRow } from './raceControlApi';
 
 export type TimedLap = { lapNumber: number; ms: number };
 
@@ -46,4 +47,50 @@ export function lapSheetColumns(positions: ResultRow[], lapHistory: PositionAtLa
       };
     })
     .filter((col) => col.laps.length > 0);
+}
+
+export type PositionSeries = {
+  entryId: number;
+  /** What labels the line: the driver's name (the public name on public screens). */
+  label: string;
+  /** The place after each lap the driver has a recorded place for, in lap order. */
+  points: { lap: number; position: number }[];
+};
+
+/**
+ * One line per driver for the position chart, in finishing order; a driver with no laps is left out. A line is the
+ * place the driver held on completing each lap, as the result stored it; none when no place ever changed.
+ */
+export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap[]): PositionSeries[] {
+  const series = [...positions]
+    .sort((a, b) => a.position - b.position)
+    .map((row) => ({
+      entryId: row.entryId,
+      label: row.driverName,
+      points: lapHistory
+        .filter((l) => l.entryId === row.entryId)
+        .sort((a, b) => a.lapNumber - b.lapNumber)
+        .map((l) => ({ lap: l.lapNumber, position: l.position })),
+    }))
+    .filter((s) => s.points.length > 0);
+  // Every line flat means only the final order was stored, not the places lap by lap: there is nothing to chart
+  return series.every((s) => s.points.every((p) => p.position === s.points[0].position)) ? [] : series;
+}
+
+/**
+ * One line per car for the live position chart of a race on track, in running order. Unlike
+ * {@link positionSeries} a chart whose lines are all flat is kept: early in a heat nothing has changed yet.
+ */
+export function livePositionSeries(rows: LiveTimingRowDto[], places: LapPlace[]): PositionSeries[] {
+  return [...rows]
+    .sort((a, b) => a.position - b.position)
+    .map((row) => ({
+      entryId: row.entryId,
+      label: row.driverName,
+      points: places
+        .filter((p) => p.entryId === row.entryId)
+        .sort((a, b) => a.lap - b.lap)
+        .map((p) => ({ lap: p.lap, position: p.position })),
+    }))
+    .filter((s) => s.points.length > 0);
 }

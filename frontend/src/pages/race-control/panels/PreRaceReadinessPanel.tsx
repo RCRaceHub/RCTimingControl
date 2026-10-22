@@ -3,6 +3,7 @@ import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConfirm } from '@/components/ConfirmDialog';
 import type { MarshalPenaltyKind } from '@/lib/raceControlApi';
 import {
@@ -88,9 +89,44 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
   return (
     <Card className="p-6">
       <h2 className="text-lg font-semibold mb-4">Grid Called — {data.raceLabel}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h3 className="text-sm font-semibold mb-2">Marshal Duty</h3>
+      {/* Drivers is the default tab: the grid is what gets called out. Marshals is a separate tab so its
+          explanatory line cannot push the table out of line with the grid call. */}
+      <Tabs defaultValue="drivers">
+        <TabsList>
+          <TabsTrigger value="drivers">Drivers</TabsTrigger>
+          <TabsTrigger value="marshals">Marshals</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="drivers" className="mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Pos</TableHead>
+                <TableHead>Driver</TableHead>
+                <TableHead>Car</TableHead>
+                <TableHead>Class</TableHead>
+                <TableHead>RaceHub</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.gridCall.map((row) => (
+                <TableRow key={row.entryId}>
+                  <TableCell>{row.gridPosition > 0 ? row.gridPosition : '—'}</TableCell>
+                  <TableCell>{row.driverName}</TableCell>
+                  <TableCell>{row.carNumber ?? '—'}</TableCell>
+                  <TableCell>{row.className}</TableCell>
+                  <TableCell>
+                    <span className="text-xs text-muted-foreground">
+                      {row.racehubArrival === 'ARRIVED' ? 'arrived' : row.racehubArrival === 'NOT_ARRIVED' ? 'not arrived' : '—'}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TabsContent>
+
+        <TabsContent value="marshals" className="mt-4">
           <p className="text-xs text-muted-foreground mb-2">Everyone is assumed to be marshalling. Use these buttons only for a driver who was not.</p>
           {data.marshalDuty.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -156,38 +192,8 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
               </TableBody>
             </Table>
           )}
-        </div>
-
-        <div>
-          <h3 className="text-sm font-semibold mb-2">Grid Call</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pos</TableHead>
-                <TableHead>Driver</TableHead>
-                <TableHead>Car</TableHead>
-                <TableHead>Class</TableHead>
-                <TableHead>RaceHub</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.gridCall.map((row) => (
-                <TableRow key={row.entryId}>
-                  <TableCell>{row.gridPosition > 0 ? row.gridPosition : '—'}</TableCell>
-                  <TableCell>{row.driverName}</TableCell>
-                  <TableCell>{row.carNumber ?? '—'}</TableCell>
-                  <TableCell>{row.className}</TableCell>
-                  <TableCell>
-                    <span className="text-xs text-muted-foreground">
-                      {row.racehubArrival === 'ARRIVED' ? 'arrived' : row.racehubArrival === 'NOT_ARRIVED' ? 'not arrived' : '—'}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
       {confirmDialog}
     </Card>
   );
