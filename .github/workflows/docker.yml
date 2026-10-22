@@ -17,7 +17,7 @@ jobs:
     name: Docker demo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the club compose file
         run: docker compose -f docker-compose.club.yml config -q
