@@ -1,10 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { getEventSchedule } from '@/lib/raceControlApi';
+import { getEventSchedule, type FinishedRaceDto } from '@/lib/raceControlApi';
 import { Button } from '@/components/ui/button';
 import { formatEventDate } from '@/lib/dates';
 import PrivacyLink from '@/components/layout/PrivacyLink';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+
+type RoundGroup = { label: string; classes: { name: string; races: FinishedRaceDto[] }[] };
+
+/** Groups races (already in run order) by round, then class, keeping the order they first appear in. */
+function groupByRound(races: FinishedRaceDto[]): RoundGroup[] {
+  const rounds: RoundGroup[] = [];
+  for (const race of races) {
+    let round = rounds.find(r => r.label === race.roundLabel);
+    if (!round) {
+      round = { label: race.roundLabel, classes: [] };
+      rounds.push(round);
+    }
+    let cls = round.classes.find(c => c.name === race.className);
+    if (!cls) {
+      cls = { name: race.className, races: [] };
+      round.classes.push(cls);
+    }
+    cls.races.push(race);
+  }
+  return rounds;
+}
 
 export default function EventSchedulePage() {
   const { data: events, isLoading, isError } = useQuery({
@@ -52,29 +73,43 @@ export default function EventSchedulePage() {
               {formatEventDate(event.eventDate, 'long')}
             </p>
 
-            {(event.finishedRaceIds.length > 0 || event.championshipId !== null) && (
-              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border/50">
-                {event.finishedRaceIds.map(raceId => (
-                  <Button key={raceId} variant="outline" size="sm" asChild>
-                    <Link to={`/results/${raceId}`}>
-                      View Results
-                    </Link>
-                  </Button>
+            {(event.finishedRaces.length > 0 || event.championshipId !== null) && (
+              <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+                {groupByRound(event.finishedRaces).map(round => (
+                  <div key={round.label}>
+                    <h3 className="text-sm font-medium mb-1.5">{round.label}</h3>
+                    <ul className="space-y-1.5">
+                      {round.classes.map(cls => (
+                        <li key={cls.name} className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-muted-foreground min-w-32">{cls.name}</span>
+                          {cls.races.map(race => (
+                            <Button key={race.id} variant="outline" size="sm" asChild>
+                              <Link to={`/results/${race.id}`}>
+                                {race.isFinal ? 'Results' : `Heat ${race.heatNumber}`}
+                              </Link>
+                            </Button>
+                          ))}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-                {event.finishedRaceIds.length > 0 && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/qualifying?event=${event.id}`}>
-                      Qualifying Standings
-                    </Link>
-                  </Button>
-                )}
-                {event.championshipId !== null && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/championships/${event.championshipId}`}>
-                      View Standings
-                    </Link>
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {event.finishedRaces.length > 0 && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/qualifying?event=${event.id}`}>
+                        Qualifying Standings
+                      </Link>
+                    </Button>
+                  )}
+                  {event.championshipId !== null && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/championships/${event.championshipId}`}>
+                        Championship Standings
+                      </Link>
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
