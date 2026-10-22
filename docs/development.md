@@ -217,7 +217,7 @@ None of them needs Docker. Each backend test run creates a temporary SQLite data
 | `/login` | Public | Officials' sign-in |
 | `/setup` | Public until set up | First-run setup wizard |
 | `/events`, `/results/:raceId`, `/championships/:id` | Public | Event schedule, results and championship standings |
-| `/boards/now-next`, `/boards/results`, `/boards/chart`, `/boards/overlay` | Public | Spectator boards and the streaming overlay for OBS |
+| `/boards/now-next`, `/boards/results`, `/boards/live-race`, `/boards/overlay` | Public | Spectator boards and the streaming overlay for OBS |
 | `/about` | Public | Version and the addresses other devices can open |
 | `/admin/*` | ADMIN / RACE_DIRECTOR / REFEREE | Admin panel. ADMIN only: club profile, tracks, formats, decoder, backups, results exports and officials (#132). Events and championships open to every official, but only an admin edits one (any official can still record a championship exclusion, a referee's disqualification); a race director also moves it through its day |
 | `/admin/race-control` | ADMIN / RACE_DIRECTOR / REFEREE | Pick an in-progress event for race control |

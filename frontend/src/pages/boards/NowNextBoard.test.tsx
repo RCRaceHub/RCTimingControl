@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import NowNextBoard from './NowNextBoard';
@@ -20,9 +20,10 @@ vi.mock('@/lib/boardsApi', () => ({
   getNowNext: vi.fn(),
   getResultsBoard: vi.fn(),
   getBoardLiveTiming: vi.fn(),
+  getTicker: vi.fn(),
 }));
 
-import { getBoardLiveTiming, getNowNext, getResultsBoard } from '@/lib/boardsApi';
+import { getBoardLiveTiming, getNowNext, getResultsBoard, getTicker } from '@/lib/boardsApi';
 
 function race(overrides: Partial<BoardRaceDto>): BoardRaceDto {
   return {
@@ -84,6 +85,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   for (const key of Object.keys(stompFrames)) delete stompFrames[key];
   vi.mocked(getBoardLiveTiming).mockResolvedValue([]);
+  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], topQualifiers: [] });
   vi.mocked(getResultsBoard).mockResolvedValue({
     eventId: 7,
     eventName: 'Club Round 3',
@@ -117,16 +119,39 @@ describe('NowNextBoard', () => {
 
     expect(await screen.findByText('Qualifying 1 — Touring Stock — Heat 1')).toBeInTheDocument();
     expect(screen.getByText('Racing')).toBeInTheDocument();
-    const names = screen
-      .getAllByRole('row')
-      .slice(1)
+    const names = within(screen.getByRole('list', { name: 'Line-up' }))
+      .getAllByRole('listitem')
       .map((r) => r.textContent);
     expect(names[0]).toContain('Jane Doe');
     expect(names[1]).toContain('Sam Second');
-    expect(screen.getByText('+1 lap')).toBeInTheDocument();
+    // timing and the chart live on the Live Race screen
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByText('+1 lap')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Position by lap' })).not.toBeInTheDocument();
     expect(screen.getByText('Qualifying 1 — Touring Stock — Heat 2')).toBeInTheDocument();
     expect(mockUseStomp).toHaveBeenCalledWith('/topic/race/11/timing');
     expect(mockUseStomp).toHaveBeenCalledWith('/topic/race/11/state');
+  });
+
+  it('lists the next drivers and marshals under the next race', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(
+      nowNext({
+        currentRace: race({ raceId: 11 }),
+        nextRace: race({ raceId: 12, label: 'Qualifying 1 — Touring Stock — Heat 2', status: 'PENDING' }),
+      }),
+    );
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Qualifying 1 — Touring Stock — Heat 2',
+      nextDrivers: ['Ann Next', 'Bob Next'],
+      marshals: ['Cat Marshal'],
+      topQualifiers: [],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByText('Ann Next')).toBeInTheDocument();
+    expect(screen.getByText('Bob Next')).toBeInTheDocument();
+    expect(screen.getByTestId('board-next-marshals')).toHaveTextContent('Cat Marshal');
   });
 
   it('seeds the live table from the public snapshot before the first STOMP frame', async () => {
@@ -145,7 +170,7 @@ describe('NowNextBoard', () => {
     renderBoard();
 
     expect(await screen.findByText('Stopped')).toBeInTheDocument();
-    expect(screen.getByText('Waiting for the first lap…')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for the line-up…')).toBeInTheDocument();
   });
 
   it('between races shows what is next and the last finished results', async () => {

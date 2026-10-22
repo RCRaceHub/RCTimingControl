@@ -679,7 +679,7 @@ GET  /race-control/race/{raceId}/history
 
 ## Spectator boards
 
-No authentication: these are the read-only feeds behind the venue TV boards at `/boards/now-next` and `/boards/results`. Each takes an optional `eventId`; without it the board shows the event with a race on track, or failing that the most recent event in progress, so it keeps its event between races. The board is empty (every field `null`, `results` empty) only when the requested `eventId` doesn't exist, or none was given and no event is racing or in progress.
+No authentication: these are the read-only feeds behind the venue TV boards at `/boards/now-next`, `/boards/live-race` and `/boards/results`. Each takes an optional `eventId`; without it the board shows the event with a race on track, or failing that the most recent event in progress, so it keeps its event between races. The board is empty (every field `null`, `results` empty) only when the requested `eventId` doesn't exist, or none was given and no event is racing or in progress.
 
 ```http
 GET /boards/now-next?eventId=7
