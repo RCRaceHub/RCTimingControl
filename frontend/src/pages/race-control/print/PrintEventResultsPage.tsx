@@ -69,7 +69,7 @@ function LegsBlock({ legs }: { legs: FinalLegs }) {
   const heading = legs.complete
     ? `Final A overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
     : `Final A after ${legs.legsFinished} of ${legs.legs} legs`;
-  const legNumbers = Array.from({ length: legs.legsFinished }, (_, i) => i + 1);
+  const legNumbers = Array.from({ length: legs.rows[0]?.legPoints.length ?? 0 }, (_, i) => i + 1);
   return (
     <section className="mb-6 break-inside-avoid" aria-label="Final A overall">
       <h3 className="mb-1 text-base font-semibold">{heading}</h3>
