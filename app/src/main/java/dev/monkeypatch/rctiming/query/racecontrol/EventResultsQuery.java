@@ -20,8 +20,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems.SCORING_SYSTEMS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems.SCORING_SYSTEMS;
 
 /**
  * Reads an event's finished races for the officials' printouts. Called from
@@ -121,7 +121,8 @@ public class EventResultsQuery {
     /**
      * The name of the race scoring system each event class was set from, by event class id; a class whose format was
      * set by hand, is not a Points Finals one, or names a system that has been deleted is missing. The class's own
-     * snapshot says which system it took its values from, so a later edit to the system does not change this.
+     * snapshot says which system it took its values from, so a later edit to the system's values does not change
+     * this, though renaming the system does. A snapshot that cannot be read counts as set by hand.
      */
     private Map<Long, String> scoringSystemNames(List<Long> eventClassIds) {
         Map<Long, Long> systemOfClass = new HashMap<>();
@@ -129,9 +130,13 @@ public class EventResultsQuery {
                 .from(EVENT_CLASSES)
                 .where(EVENT_CLASSES.ID.in(eventClassIds.stream().distinct().toList()))
                 .forEach(r -> {
-                    if (CONFIG.convertToEntityAttribute(r.get(EVENT_CLASSES.CONFIG_SNAPSHOT)) instanceof PointsFinalsConfig p
-                            && p.scoringSystemId() != null) {
-                        systemOfClass.put(r.get(EVENT_CLASSES.ID), p.scoringSystemId());
+                    try {
+                        if (CONFIG.convertToEntityAttribute(r.get(EVENT_CLASSES.CONFIG_SNAPSHOT)) instanceof PointsFinalsConfig p
+                                && p.scoringSystemId() != null) {
+                            systemOfClass.put(r.get(EVENT_CLASSES.ID), p.scoringSystemId());
+                        }
+                    } catch (IllegalArgumentException unreadable) {
+                        // The label is a courtesy: a snapshot this version cannot read must not block the printout.
                     }
                 });
         if (systemOfClass.isEmpty()) {

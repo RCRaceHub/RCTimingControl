@@ -106,6 +106,12 @@ class EventResultsQueryIT extends AbstractIntegrationTest {
 
         assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
                 .as("a system deleted since names nothing").containsOnlyNulls();
+
+        jdbc.update("update event_classes set config_snapshot = ? where id = ?",
+                "{\"type\":\"NOPE\"}", eventClassId);
+
+        assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
+                .as("a snapshot this version cannot read does not break the printout").containsOnlyNulls();
     }
 
     @Test
