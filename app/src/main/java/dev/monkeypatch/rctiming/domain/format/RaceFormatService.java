@@ -120,6 +120,45 @@ public class RaceFormatService {
         return minutes > 0 ? minutes * 60_000L : null;
     }
 
+    /** The class's format when it is a Points Finals one, else empty. */
+    private Optional<PointsFinalsConfig> pointsFinals(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(getEffectiveConfig(eventClass))
+                .filter(PointsFinalsConfig.class::isInstance).map(PointsFinalsConfig.class::cast);
+    }
+
+    /** The most legs an A final can have, so a mistyped setting cannot generate a pile of races. */
+    private static final int MAX_FINAL_LEGS = 10;
+
+    /** How many races the class's A final is run in: 1 unless its Points Finals format sets more, up to 10. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int finalLegs(EventClass eventClass) {
+        return pointsFinals(eventClass).map(PointsFinalsConfig::finalLegs).map(legs -> Math.min(MAX_FINAL_LEGS, Math.max(1, legs))).orElse(1);
+    }
+
+    /** How many of a driver's A final legs count, 0 for all of them. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int legsCounted(EventClass eventClass) {
+        return pointsFinals(eventClass).map(PointsFinalsConfig::legsCounted).map(n -> Math.max(0, n)).orElse(0);
+    }
+
+    /**
+     * The longest a race of this class may run, in milliseconds, when its format sets a maximum race window; empty
+     * for no limit (the format has none, or the class has no readable format).
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<Long> maxRaceWindowMs(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return Optional.empty();
+        }
+        return pointsFinals(eventClass)
+                .map(PointsFinalsConfig::maxRaceWindowSeconds)
+                .filter(seconds -> seconds > 0)
+                .map(seconds -> seconds * 1000L);
+    }
+
     /**
      * How a race in this class starts, from its format by round type: heats and practice take the qualifying start
      * and finals the finals start, while a timed format has one start for both. With no format, or none set in it,

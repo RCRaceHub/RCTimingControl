@@ -300,15 +300,20 @@ public class RoundGeneratorService {
                     // The zombie round runs after the lower mains and just before A
                     if (zombie && f == 0) {
                         sequenceStart = persistFinal(ec, BumpUpSeedingService.ZOMBIE_LETTER, finalsCount + 1,
-                                sequenceStart);
+                                sequenceStart, 1);
                     }
-                    sequenceStart = persistFinal(ec, String.valueOf((char) ('A' + f)), f + 1, sequenceStart);
+                    // Only the A final is run in legs
+                    int legs = f == 0 ? Math.max(1, raceFormatService.finalLegs(ec)) : 1;
+                    sequenceStart = persistFinal(ec, String.valueOf((char) ('A' + f)), f + 1, sequenceStart, legs);
                 }
             }
         }
 
-        /** One final in a round of its own, with an empty grid; returns the next free sequence in the event. */
-        private int persistFinal(EventClass ec, String finalLetter, int roundNumber, int sequence) {
+        /**
+         * One final in a round of its own, with an empty grid; returns the next free sequence in the event. A final
+         * of {@code legs} legs has that many races in its round, numbered as heats 1 to {@code legs}.
+         */
+        private int persistFinal(EventClass ec, String finalLetter, int roundNumber, int sequence, int legs) {
             Round round = new Round();
             round.setEventId(request.eventId());
             round.setType(RoundType.FINAL);
@@ -317,18 +322,20 @@ public class RoundGeneratorService {
             round.setStatus(RoundStatus.PENDING);
             Round savedRound = roundRepository.save(round);
 
-            Race race = new Race();
-            race.setRoundId(savedRound.getId());
-            race.setEventClassId(ec.getId());
-            race.setHeatNumber(1);
-            race.setSequenceInRound(1);
-            race.setFinalLetter(finalLetter);
-            race.setStartType(raceFormatService.startType(ec, RoundType.FINAL));
-            race.setStatus(RaceStatus.PENDING);
-            // Finals start with an empty grid: BumpUpSeedingService seeds it from the
-            // qualifying standings and reserves its bump slots. No placeholder rows, since
-            // every race_entries row must point at a real entry (#45).
-            raceRepository.save(race);
+            for (int leg = 1; leg <= legs; leg++) {
+                Race race = new Race();
+                race.setRoundId(savedRound.getId());
+                race.setEventClassId(ec.getId());
+                race.setHeatNumber(leg);
+                race.setSequenceInRound(leg);
+                race.setFinalLetter(finalLetter);
+                race.setStartType(raceFormatService.startType(ec, RoundType.FINAL));
+                race.setStatus(RaceStatus.PENDING);
+                // Finals start with an empty grid: BumpUpSeedingService seeds it from the
+                // qualifying standings and reserves its bump slots. No placeholder rows, since
+                // every race_entries row must point at a real entry (#45).
+                raceRepository.save(race);
+            }
             return sequence + 1;
         }
 

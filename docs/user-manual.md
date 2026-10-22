@@ -50,7 +50,7 @@ A class races to a **format**, which you pick in step 4 and again for each class
 | **Timed** | One timed race per heat, the same start every round | The field is split evenly over the class's finals, no bumping |
 | **Bump Up** | Qualifying heats, then finals where the best finishers of each lower final move up into the final above | **Grid size** cars per final, **bump spots** places in each higher final filled from the final below |
 | **Shikabane** | Marshal-less racing where a stopped car is out and the lowest points win; optional A, B and C mains with promotion | Mains work like Bump Up finals; see [shikabane-guide.md](shikabane-guide.md) |
-| **Points Finals** | Qualifying heats, then finals that each score on their own | The field is split evenly over the finals, no bumping |
+| **Points Finals** | Qualifying heats, then finals that each score on their own. Has a **BRCA 1/10 off-road** preset button in the format editor | The field is split evenly over the finals, no bumping; or fixed-size finals filled from A, with a 3-leg A final (best 2 count) |
 
 **Balancing the heats.** Select a practice or qualifying heat that has not been called and the **Heat line-ups** panel shows who is in each heat of that round. Use **Move to…** beside a driver to put them in another heat, which is how you even up qualifying once you know who has turned up after practice. The heats don't have to stay the same size (5 and 3 is fine). By default the move is made in every round where both heats are still waiting, so a qualifying move covers all the qualifying rounds. Practice results are not used to arrange qualifying, and a driver keeps their car number when moved.
 

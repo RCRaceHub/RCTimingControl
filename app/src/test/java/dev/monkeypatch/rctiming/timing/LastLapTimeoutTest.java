@@ -32,4 +32,11 @@ class LastLapTimeoutTest {
     void finishesOnceTheTrackHasBeenQuietForTheWholeWindow() {
         assertThat(LastLapTimeout.timedOut(60_000, 31_000L, 30_000)).isTrue();
     }
+
+    @Test
+    void theMaximumRaceWindowIsReachedOnceTheRaceHasRunThatLong() {
+        // A 5 minute race with a 6:30 window: 89 s after the clock expired is not yet, 90 s is
+        assertThat(LastLapTimeout.windowReached(89_000, 300_000, 390_000)).isFalse();
+        assertThat(LastLapTimeout.windowReached(90_000, 300_000, 390_000)).isTrue();
+    }
 }

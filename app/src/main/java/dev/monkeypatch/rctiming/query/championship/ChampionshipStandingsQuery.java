@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.service.FinalLegScoring;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -288,9 +290,84 @@ public class ChampionshipStandingsQuery {
                         event.displayNames().put(entry.driverId(), displayName);
                     }
                 });
+        combineFinalLegs(eventIds, results);
         loadTopQualifiers(eventIds, results);
         loadOpenFinals(eventIds, results);
         return results;
+    }
+
+    /** The races that are the legs of one A final: its round and class. */
+    private record LegGroup(Long roundId, Long eventClassId) {}
+
+    /** One leg of an A final, whether or not it has finished. */
+    private record Leg(Long raceId, int heatNumber, Long eventId) {}
+
+    /**
+     * Replaces the finished legs of an A final run in legs (#427) with one race that carries the combined result, so
+     * the final is placed, and its winner bonus paid, from the combined order. Until every leg has finished the legs
+     * are left out altogether, so the A final is not placed from the legs run so far; the finals below it wait for it
+     * as for any final that is still to run. The combined race takes the first leg's id.
+     */
+    private void combineFinalLegs(List<Long> eventIds, Map<Long, EventResults> results) {
+        Map<LegGroup, List<Leg>> groups = new LinkedHashMap<>();
+        dsl.select(RACES.ID, RACES.ROUND_ID, RACES.EVENT_CLASS_ID, RACES.HEAT_NUMBER, ROUNDS.EVENT_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .where(ROUNDS.EVENT_ID.in(eventIds))
+                .and(ROUNDS.TYPE.eq("FINAL"))
+                .and(RACES.FINAL_LETTER.eq("A"))
+                .orderBy(RACES.HEAT_NUMBER.asc())
+                .forEach(r -> groups.computeIfAbsent(
+                                new LegGroup(r.get(RACES.ROUND_ID), r.get(RACES.EVENT_CLASS_ID)), k -> new ArrayList<>())
+                        .add(new Leg(r.get(RACES.ID), r.get(RACES.HEAT_NUMBER), r.get(ROUNDS.EVENT_ID))));
+        groups.forEach((group, legs) -> {
+            EventResults event = legs.size() < 2 ? null : results.get(legs.get(0).eventId());
+            if (event == null) {
+                return;
+            }
+            Set<Long> legIds = new HashSet<>();
+            legs.forEach(leg -> legIds.add(leg.raceId()));
+            Map<Long, Integer> heatOf = new HashMap<>();
+            legs.forEach(leg -> heatOf.put(leg.raceId(), leg.heatNumber()));
+            List<FinishedRace> finished = event.races().stream().filter(r -> legIds.contains(r.raceId()))
+                    .sorted(Comparator.comparingInt((FinishedRace r) -> heatOf.get(r.raceId())))
+                    .toList();
+            event.races().removeAll(finished);
+            if (finished.size() == legs.size()) {
+                event.races().add(combinedLegs(finished, group.eventClassId()));
+            }
+        });
+    }
+
+    /** The combined result of an A final's finished legs as one race, best first (see {@link FinalLegScoring}). */
+    private FinishedRace combinedLegs(List<FinishedRace> legs, Long eventClassId) {
+        FinishedRace first = legs.get(0);
+        Set<Long> drivers = new LinkedHashSet<>(first.grid());
+        Map<Long, ResultSnapshotDto.ResultRow> sample = new HashMap<>();
+        List<Map<Long, FinalLegScoring.Run>> runs = new ArrayList<>();
+        for (FinishedRace leg : legs) {
+            // An abandoned leg is over but has no result: it is left out of the scoring
+            if (leg.abandoned()) {
+                continue;
+            }
+            Map<Long, FinalLegScoring.Run> legRuns = new LinkedHashMap<>();
+            for (ResultSnapshotDto.ResultRow row : leg.positions()) {
+                legRuns.put(row.entryId(), new FinalLegScoring.Run(row.lapsCompleted(), row.totalTimeMs()));
+                sample.putIfAbsent(row.entryId(), row);
+                drivers.add(row.entryId());
+            }
+            runs.add(legRuns);
+        }
+        int legsCounted = eventClassRepository.findById(eventClassId).map(raceFormatService::legsCounted).orElse(0);
+        List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>();
+        for (FinalLegScoring.Standing standing : FinalLegScoring.rank(runs, drivers, legsCounted)) {
+            ResultSnapshotDto.ResultRow row = sample.get(standing.entryId());
+            rows.add(new ResultSnapshotDto.ResultRow(rows.size() + 1, standing.entryId(),
+                    row == null ? null : row.competitorId(), row == null ? "" : row.driverName(),
+                    row == null ? "" : row.carNumber(), standing.laps(), standing.timeMs(), null, null));
+        }
+        return new FinishedRace(first.raceId(), first.roundId(), first.eventId(), first.roundType(),
+                first.finalLetter(), first.racingClassId(), first.scores(), false, rows, first.grid());
     }
 
     /**

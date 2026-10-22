@@ -42,6 +42,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @Autowired AutoFinalsSeedingService autoFinalsSeedingService;
     @Autowired FinalsLineupService finalsLineupService;
     @Autowired QualifyingTableService qualifyingTableService;
+    @Autowired FinalLegsService finalLegsService;
     @Autowired RaceRepository raceRepository;
     @Autowired RaceEntryRepository raceEntryRepository;
     @Autowired JdbcTemplate jdbc;
@@ -376,6 +377,100 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
 
         assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 1, 3);
         assertThat(ranked.get(2).entryId()).isEqualTo(drivers.get(2));
+    }
+
+    @Test
+    void fillingTheFinalsFromTheTopGivesATenCarAFinalAndAShortLowestFinal() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 25);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 3))));
+
+        bumpUpSeedingService.seedFinals(buggyClass, buggies, 3, 10, 0, true);
+
+        assertThat(gridOf(finalOf(buggyClass, "A"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(0, 10));
+        assertThat(gridOf(finalOf(buggyClass, "B"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(10, 20));
+        assertThat(gridOf(finalOf(buggyClass, "C"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(20, 25));
+        assertThat(finalOf(buggyClass, "A").getBumpSlots()).isZero();
+    }
+
+    private static final String POINTS_FINALS_LEGS = """
+            {"type":"POINTS_FINALS","qualifyingHeats":2,"finalsCount":2,"finalDurationMinutes":5,
+             "heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+             "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5,
+             "fillTopFirst":true,"carsPerFinal":6,"finalLegs":3,"legsCounted":2}""";
+
+    @Test
+    void theAFinalIsRunInLegsThatShareOneGridAndAreCombinedBestTwoOfThree() {
+        long buggyClass = addClass("Buggy", POINTS_FINALS_LEGS);
+        List<Long> drivers = addEntries(buggyClass, 12);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 12, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+
+        List<Race> aLegs = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.FINAL).stream()
+                .filter(f -> "A".equals(f.getFinalLetter()))
+                .sorted(Comparator.comparingInt(Race::getHeatNumber)).toList();
+        assertThat(aLegs).extracting(Race::getHeatNumber).containsExactly(1, 2, 3);
+        assertThat(aLegs.stream().map(Race::getRoundId).distinct()).hasSize(1);
+        assertThat(raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.FINAL)).hasSize(4);
+
+        bumpUpSeedingService.seedFinals(buggyClass, drivers, 2, 6, 0, true);
+
+        List<Long> expected = drivers.subList(0, 6);
+        for (Race leg : aLegs) {
+            assertThat(gridOf(leg)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(expected);
+        }
+        assertThat(finalLegsService.forEvent(eventId).get(0).complete()).isFalse();
+
+        int[][] lapsByLeg = {{12, 10, 10, 10, 10, 10}, {10, 12, 10, 10, 10, 10}, {5, 11, 10, 10, 10, 10}};
+        for (int leg = 0; leg < 3; leg++) {
+            List<long[]> rows = new ArrayList<>();
+            for (int d = 0; d < 6; d++) {
+                rows.add(new long[] {expected.get(d), lapsByLeg[leg][d], 60_000});
+            }
+            storeResult(aLegs.get(leg), rows, false);
+        }
+
+        var combined = finalLegsService.forEvent(eventId);
+
+        assertThat(combined).hasSize(1);
+        assertThat(combined.get(0).complete()).isTrue();
+        assertThat(combined.get(0).legsFinished()).isEqualTo(3);
+        assertThat(combined.get(0).rows()).extracting(r -> r.entryId())
+                .startsWith(expected.get(1), expected.get(0));
+        assertThat(combined.get(0).rows().get(0).points()).isEqualTo(2);
+    }
+
+    private static final String POINTS_FINALS_BRCA = """
+            {"type":"POINTS_FINALS","qualifyingHeats":2,"finalsCount":1,"finalDurationMinutes":5,
+             "heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+             "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5,
+             "bestHeatsCount":0,"splitTiedPlaces":true,"brcaQualifying":true}""";
+
+    @Test
+    void brcaQualifyingGivesEachCarItsOwnPlaceAndAFlatScoreToADriverWhoDidNotRun() {
+        long buggyClass = addClass("Buggy", POINTS_FINALS_BRCA);
+        List<Long> drivers = addEntries(buggyClass, 4);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 1))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            List<long[]> rows = new ArrayList<>();
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                // Drivers 0 and 1 tie on laps and time, driver 2 is behind and driver 3 never started
+                int index = drivers.indexOf(onGrid.getEntryId());
+                rows.add(new long[] {onGrid.getEntryId(), index == 3 ? 0 : index == 2 ? 8 : 10, 60_000});
+            }
+            storeResult(heat, rows, false);
+        }
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        // A tie does not share a place, and the driver with no laps scores the 4 entries plus one
+        assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 2, 3, 5);
+        assertThat(ranked.get(3).entryId()).isEqualTo(drivers.get(3));
     }
 
     /** Marks the heat finished (as the race control does) and stores its result; each row is entry, laps, best lap. */

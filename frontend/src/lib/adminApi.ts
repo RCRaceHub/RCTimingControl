@@ -55,6 +55,22 @@ export interface PointsFinalsConfig {
   qualifyingType: QualifyingType;
   racePaddingMinutes: number;
   staggerIntervalSeconds: number;
+  /** Rounds that count when qualifying is round by round; 0 or missing counts them all. */
+  bestHeatsCount?: number;
+  /** Each car gets its own place in a round, even on identical laps and time. */
+  splitTiedPlaces?: boolean;
+  /** BRCA round by round rules: flat points for a driver with no laps, and the BRCA tie-break. */
+  brcaQualifying?: boolean;
+  /** Longest a race may run in seconds, from its start; 0 or missing for no limit. BRCA uses 390. */
+  maxRaceWindowSeconds?: number;
+  /** Cars on each final's grid; 0 or missing splits the field evenly. BRCA uses 10. */
+  carsPerFinal?: number;
+  /** Fill the finals from the top (A with ranks 1 to carsPerFinal, the lowest final with the rest). */
+  fillTopFirst?: boolean;
+  /** Races the A final is run in; 0 or 1 for a single race. BRCA uses 3. */
+  finalLegs?: number;
+  /** How many of a driver's A final legs count; 0 or missing for all of them. BRCA uses 2. */
+  legsCounted?: number;
 }
 
 export interface ShikabaneConfig {

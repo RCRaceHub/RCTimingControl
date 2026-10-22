@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
@@ -100,9 +101,12 @@ public class AutoFinalsSeedingService {
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         // The zombie round is not one of the A, B, C mains the field is split over
         int finalsCount = (int) finals.stream()
-                .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter())).count();
+                .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter()))
+                .filter(f -> !FinalLegs.isExtraLeg(f)).count();
         int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount, carsPerFinal);
-        bumpUpSeedingService.seedFinals(eventClassId, standings, finalsCount, layout[0], layout[1]);
+        boolean fillTopFirst = raceFormatService.getEffectiveConfig(eventClass) instanceof PointsFinalsConfig points
+                && points.fillTopFirst();
+        bumpUpSeedingService.seedFinals(eventClassId, standings, finalsCount, layout[0], layout[1], fillTopFirst);
 
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("finalsCount", finalsCount);
@@ -119,7 +123,8 @@ public class AutoFinalsSeedingService {
     /**
      * {cars per final, bump count} for a field of {@code field} drivers over {@code finalsCount} finals.
      * A bump-up format, or a Shikabane format with mains, keeps its bump spots; its grid size is used unless
-     * {@code cars} says otherwise. Either way the grid grows rather than leave a driver out of every final.
+     * {@code cars} says otherwise. Either way the grid grows rather than leave a driver out of every final. A
+     * Points Finals format uses its own cars per final when it sets one.
      *
      * @param cars the official's cars per final, or null for the format's own
      */
@@ -133,7 +138,10 @@ public class AutoFinalsSeedingService {
                     finalsCount);
         }
         int even = Math.max(1, (field + finalsCount - 1) / finalsCount);
-        return new int[] {cars != null ? Math.max(cars, even) : even, 0};
+        // A Points Finals format may fix the cars per final; the grid still grows rather than leave a driver out
+        int configured = config instanceof PointsFinalsConfig points && points.carsPerFinal() > 0
+                ? points.carsPerFinal() : even;
+        return new int[] {Math.max(cars != null ? cars : configured, even), 0};
     }
 
     /**

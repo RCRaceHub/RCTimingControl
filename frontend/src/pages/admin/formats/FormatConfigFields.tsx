@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,27 @@ const POINTS_FINALS_DEFAULTS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 
   qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
+};
+
+/** The BRCA 1/10 off-road rules: four rounds with the best two counting, 10-car finals and a 3-leg A final. */
+const BRCA_POINTS_FINALS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 'type'> = {
+  qualifyingHeats: 4,
+  finalsCount: 3,
+  finalDurationMinutes: 5,
+  heatDurationMinutes: 5,
+  qualifyingStartType: 'STAGGER',
+  finalsStartType: 'GRID',
+  qualifyingType: 'ROUND_BY_ROUND',
+  racePaddingMinutes: 2,
+  staggerIntervalSeconds: 5,
+  bestHeatsCount: 2,
+  splitTiedPlaces: true,
+  brcaQualifying: true,
+  maxRaceWindowSeconds: 390,
+  carsPerFinal: 10,
+  fillTopFirst: true,
+  finalLegs: 3,
+  legsCounted: 2,
 };
 
 const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'> = {
@@ -176,6 +198,11 @@ export function FormatConfigFields({ value, onChange }: Props) {
 
       {value.type === 'POINTS_FINALS' && (
         <div className="grid grid-cols-2 gap-3 animate-in fade-in duration-200">
+          <div className="col-span-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => onChange({ type: 'POINTS_FINALS', ...BRCA_POINTS_FINALS })}>
+              Use BRCA 1/10 off-road settings
+            </Button>
+          </div>
           <NumField label="Qualifying Heats" value={value.qualifyingHeats} onChange={v => patch('qualifyingHeats', v)} />
           <NumField label="Finals Count" value={value.finalsCount} onChange={v => patch('finalsCount', v)} />
           <NumField label="Final Duration (min)" value={value.finalDurationMinutes} onChange={v => patch('finalDurationMinutes', v)} />
@@ -183,6 +210,35 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
+          <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patch('bestHeatsCount', v)} />
+          <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patch('maxRaceWindowSeconds', v)} />
+          <NumField label="Cars per Final (0 = even split)" value={value.carsPerFinal ?? 0} onChange={v => patch('carsPerFinal', v)} />
+          <NumField label="A Final Legs (1 = single race)" value={value.finalLegs ?? 1} onChange={v => patch('finalLegs', v)} />
+          <NumField label="Legs Counted (0 = all)" value={value.legsCounted ?? 0} onChange={v => patch('legsCounted', v)} />
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-fill-top-first"
+              checked={value.fillTopFirst === true}
+              onCheckedChange={checked => patch('fillTopFirst', checked === true)}
+            />
+            <Label htmlFor="points-fill-top-first" className="text-xs">Fill A first, short lowest final</Label>
+          </div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-split-ties"
+              checked={value.splitTiedPlaces === true}
+              onCheckedChange={checked => patch('splitTiedPlaces', checked === true)}
+            />
+            <Label htmlFor="points-split-ties" className="text-xs">Tied cars do not share a place</Label>
+          </div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-brca-qualifying"
+              checked={value.brcaQualifying === true}
+              onCheckedChange={checked => patch('brcaQualifying', checked === true)}
+            />
+            <Label htmlFor="points-brca-qualifying" className="text-xs">BRCA qualifying (flat DNS points and tie-break)</Label>
+          </div>
         </div>
       )}
 

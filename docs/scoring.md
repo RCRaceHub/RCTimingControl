@@ -82,6 +82,44 @@ for it. With best 2 counting that is only used if it is one of her two best.
 Only a bump-up format has `bestHeatsCount`; a points-finals or single race format with `ROUND_BY_ROUND` counts
 every round.
 
+### BRCA qualifying (Points Finals)
+
+A Points Finals format with round by round qualifying has three extra settings, all off by default so existing
+formats score as above. They follow the BRCA 1/10 off-road rules.
+
+| Setting | Effect |
+|---|---|
+| Best heats count | How many rounds count (0 counts them all), as for a bump-up format. BRCA counts the best 2 of 4 |
+| Tied cars do not share a place | The Nth car in order in a round scores N points even when it ties with another on laps and time. The order of two exactly tied cars falls to the entry id |
+| BRCA qualifying | A driver with no laps in a round (a no show or a car that never started) scores **every registered entry in the class plus one**, rather than a place. A tie on points goes to the best single counting round, then the second best (so 1 + 3 beats 2 + 2), then the most laps over the counting rounds, then the least time over them |
+
+Example, best 2 of 4 counting: Ann scores 1, 3, 5, 6 and Bob 2, 2, 4, 7. Both total 4 from their best two. Ann's best
+round (1) beats Bob's (2), so Ann is ahead, whatever their laps.
+
+### Maximum race window
+
+A timed race ends when its clock runs out and each car takes the flag on its next crossing. A Points Finals format can
+also set a **max race window**, in seconds from the start of the race (from the last car's start in a stagger start).
+BRCA uses 390 seconds, 6:30, for a 5 minute race. When the window is reached the race is finished, whatever the cars
+are doing, and a car that has not crossed the line to complete its last lap keeps the laps it completed (its lap in
+progress is not counted). 0 means no window; the track's max last lap wait is then the only backstop.
+
+### A final in legs
+
+A Points Finals format can run the **A final** as several legs (BRCA: 3). Only the A final has legs; the lower finals
+stay a single race. The round generator makes one race for each leg in the A final's round, and every leg starts from the
+same grid, in qualifying order: seeding and any change to the line-up in the finals panel reach all the legs that have not
+been called yet. In the run order leg 1 is "A Final" and the others "A Final, Leg 2" and so on.
+
+In each leg a driver scores their finishing place (1 for the winner, ranked by laps then time as in section 1). A driver
+who did not run a leg scores one more than the number of drivers in the final. The **legs counted** setting (BRCA: 2)
+keeps each driver's best legs, the lowest total wins, and a tie goes to the best single counting leg, then the second
+best (1 + 3 beats 2 + 2), then the most laps and the least time over the counting legs. Until every leg has finished the order shows the legs run so far.
+Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`.
+
+Championship points use the combined order (see section 5): the A final is placed from it once every leg has finished, and
+its winner earns the A-final bonus. The boards and printouts do not show the combined order yet; see the tracker (#423).
+
 ### Shikabane heats
 
 In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by
@@ -110,6 +148,11 @@ The grid of each final follows qualifying order. The layout depends on the forma
 | Points finals, timed race, or a bump-up format with no grid size | `ceil(drivers / finals)` | none |
 
 The number of finals is the number the round generator made for the class.
+
+A Points Finals format can set **cars per final** and **fill A first**. With fill A first the finals are filled from
+the top instead of from the bottom: the A final is ranks 1 to the cars per final, B the next block, and the lowest final
+takes whoever is left, so with 25 drivers and 10 cars each the C final has 5. Nobody bumps up. If the field would not
+fit, the grid grows as above.
 
 Example (bump-up, grid size 10, bump spots 2, two finals, 18 drivers):
 
