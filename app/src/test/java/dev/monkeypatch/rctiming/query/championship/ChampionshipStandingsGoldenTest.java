@@ -122,11 +122,9 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
     }
 
     /**
-     * One class scored from two qualifying rounds per event. A driver's best heat counts, and a
-     * driver who misses both heats has one DNS round, not two. Of two rounds worth no points, the
-     * fifth place is dropped before the DNS. Finn races only the last round, fewer than X, so
-     * nothing is dropped. Dan and Finn tie on points and Finn goes ahead on countback, his one win beating
-     * Dan's best of 2nd.
+     * One class with two qualifying rounds and an A final per event. Only the finals score, so a driver who was not
+     * in the final has no round, and the qualifying heats still decide the TQ bonus. Dan and Finn's rivals Alice
+     * and Finn tie on 15 with a win each, and stand by name.
      */
     @Test
     void qualifyingHeatsMatchGoldenOutput() throws IOException {
