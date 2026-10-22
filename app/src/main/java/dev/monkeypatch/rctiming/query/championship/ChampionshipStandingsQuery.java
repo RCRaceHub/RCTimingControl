@@ -346,13 +346,15 @@ public class ChampionshipStandingsQuery {
         Map<Long, ResultSnapshotDto.ResultRow> sample = new HashMap<>();
         List<Map<Long, FinalLegScoring.Run>> runs = new ArrayList<>();
         for (FinishedRace leg : legs) {
+            // An abandoned leg is over but has no result: it is left out of the scoring
+            if (leg.abandoned()) {
+                continue;
+            }
             Map<Long, FinalLegScoring.Run> legRuns = new LinkedHashMap<>();
-            if (!leg.abandoned()) {
-                for (ResultSnapshotDto.ResultRow row : leg.positions()) {
-                    legRuns.put(row.entryId(), new FinalLegScoring.Run(row.lapsCompleted(), row.totalTimeMs()));
-                    sample.putIfAbsent(row.entryId(), row);
-                    drivers.add(row.entryId());
-                }
+            for (ResultSnapshotDto.ResultRow row : leg.positions()) {
+                legRuns.put(row.entryId(), new FinalLegScoring.Run(row.lapsCompleted(), row.totalTimeMs()));
+                sample.putIfAbsent(row.entryId(), row);
+                drivers.add(row.entryId());
             }
             runs.add(legRuns);
         }

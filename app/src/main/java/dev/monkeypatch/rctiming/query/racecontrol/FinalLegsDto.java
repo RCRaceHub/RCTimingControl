@@ -21,6 +21,8 @@ public record FinalLegsDto(Long eventClassId, String className, int legs, int le
      * One driver's line.
      *
      * @param position    1 for the best
+     * @param entryId     the driver's entry
+     * @param driverName  the name the legs' results were stored with
      * @param points      the total over the counting legs, lowest wins
      * @param laps        the laps over the counting legs
      * @param timeMs      the time over the counting legs in milliseconds

@@ -63,7 +63,8 @@ public class LastLapTimeout {
      * @param windowMs   the maximum race window, from the start of the race
      */
     static boolean windowReached(long overrunMs, long durationMs, long windowMs) {
-        return overrunMs >= windowMs - durationMs;
+        // A window shorter than the race itself behaves as no extra time after the clock
+        return overrunMs >= Math.max(0, windowMs - durationMs);
     }
 
     /**

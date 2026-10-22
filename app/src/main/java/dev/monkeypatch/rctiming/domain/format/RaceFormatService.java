@@ -129,10 +129,13 @@ public class RaceFormatService {
                 .filter(PointsFinalsConfig.class::isInstance).map(PointsFinalsConfig.class::cast);
     }
 
-    /** How many races the class's A final is run in: 1 unless its Points Finals format sets more. */
+    /** The most legs an A final can have, so a mistyped setting cannot generate a pile of races. */
+    private static final int MAX_FINAL_LEGS = 10;
+
+    /** How many races the class's A final is run in: 1 unless its Points Finals format sets more, up to 10. */
     @Transactional(propagation = Propagation.SUPPORTS)
     public int finalLegs(EventClass eventClass) {
-        return pointsFinals(eventClass).map(PointsFinalsConfig::finalLegs).map(legs -> Math.max(1, legs)).orElse(1);
+        return pointsFinals(eventClass).map(PointsFinalsConfig::finalLegs).map(legs -> Math.min(MAX_FINAL_LEGS, Math.max(1, legs))).orElse(1);
     }
 
     /** How many of a driver's A final legs count, 0 for all of them. */

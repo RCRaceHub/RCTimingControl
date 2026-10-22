@@ -87,8 +87,14 @@ public class FinalLegsService {
                 .stream().map(RaceEntry::getEntryId).forEach(drivers::add);
         Map<Long, String> names = new HashMap<>();
         List<Map<Long, FinalLegScoring.Run>> runs = new ArrayList<>();
+        int finished = 0;
         for (Race leg : legs) {
-            if (leg.getStatus() != RaceStatus.FINISHED || leg.getAbandonedAt() != null) {
+            if (leg.getStatus() != RaceStatus.FINISHED) {
+                continue;
+            }
+            finished++;
+            // An abandoned leg is over but has no result: it is left out of the scoring, as for the championship
+            if (leg.getAbandonedAt() != null) {
                 continue;
             }
             Map<Long, FinalLegScoring.Run> legRuns = new LinkedHashMap<>();
@@ -111,7 +117,7 @@ public class FinalLegsService {
         }
         String className = racingClassRepository.findById(eventClass.getRacingClassId())
                 .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
-        return new FinalLegsDto(eventClass.getId(), className, legs.size(), runs.size(), legsCounted,
-                runs.size() == legs.size(), rows);
+        return new FinalLegsDto(eventClass.getId(), className, legs.size(), finished, legsCounted,
+                finished == legs.size(), rows);
     }
 }

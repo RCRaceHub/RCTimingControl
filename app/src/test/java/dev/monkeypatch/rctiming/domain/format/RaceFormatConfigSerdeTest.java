@@ -83,6 +83,25 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
+    void pointsFinalsConfigSavedBeforeTheBrcaSettings_loadsWithTheOldBehaviour() throws JsonProcessingException {
+        String old = "{\"type\":\"POINTS_FINALS\",\"qualifyingHeats\":3,\"finalsCount\":2,"
+                + "\"finalDurationMinutes\":5,\"heatDurationMinutes\":5,\"qualifyingStartType\":\"STAGGER\","
+                + "\"finalsStartType\":\"GRID\",\"qualifyingType\":\"ROUND_BY_ROUND\","
+                + "\"racePaddingMinutes\":2,\"staggerIntervalSeconds\":5}";
+
+        PointsFinalsConfig result = (PointsFinalsConfig) jsonMapper.readValue(old, RaceFormatConfig.class);
+
+        assertThat(result.bestHeatsCount()).isZero();
+        assertThat(result.splitTiedPlaces()).isFalse();
+        assertThat(result.brcaQualifying()).isFalse();
+        assertThat(result.maxRaceWindowSeconds()).isZero();
+        assertThat(result.carsPerFinal()).isZero();
+        assertThat(result.fillTopFirst()).isFalse();
+        assertThat(result.finalLegs()).isZero();
+        assertThat(result.legsCounted()).isZero();
+    }
+
+    @Test
     void timedRaceConfig_roundTrips_throughYaml() throws JsonProcessingException {
         TimedRaceConfig original = new TimedRaceConfig(8, StartType.GRID, QualifyingType.CONSECUTIVE_LAPS, 3, 0);
 

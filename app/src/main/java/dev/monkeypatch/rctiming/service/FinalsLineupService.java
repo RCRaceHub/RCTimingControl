@@ -199,6 +199,9 @@ public class FinalsLineupService {
                 || BumpUpSeedingService.ZOMBIE_LETTER.equals(second.getFinalLetter())) {
             throw new IllegalArgumentException("The zombie round fills itself once the mains are done");
         }
+        if (FinalLegs.isExtraLeg(first) || FinalLegs.isExtraLeg(second)) {
+            throw new IllegalArgumentException("Later legs copy leg 1's line-up; edit the final's first leg");
+        }
         if (!Objects.equals(first.getEventClassId(), second.getEventClassId())) {
             throw new IllegalArgumentException("A driver can only move between finals of the same class");
         }

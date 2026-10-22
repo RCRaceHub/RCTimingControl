@@ -54,7 +54,8 @@ export interface PointsFinalsConfig {
   finalsStartType: StartType;
   qualifyingType: QualifyingType;
   racePaddingMinutes: number;
-  staggerIntervalSeconds: number;  /** Rounds that count when qualifying is round by round; 0 or missing counts them all. */
+  staggerIntervalSeconds: number;
+  /** Rounds that count when qualifying is round by round; 0 or missing counts them all. */
   bestHeatsCount?: number;
   /** Each car gets its own place in a round, even on identical laps and time. */
   splitTiedPlaces?: boolean;

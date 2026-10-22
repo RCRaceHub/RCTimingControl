@@ -32,6 +32,7 @@ public final class FinalLegScoring {
     /**
      * A driver's total over the counting legs.
      *
+     * @param entryId  the driver's entry
      * @param points   the sum of the counting legs' points
      * @param laps     the laps over the counting legs
      * @param timeMs   the time over the counting legs, in milliseconds
