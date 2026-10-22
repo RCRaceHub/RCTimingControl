@@ -49,7 +49,8 @@ jobs:
 
   test-e2e:
     name: E2E tests (Playwright, demo data and simulator)
-    runs-on: ubuntu-latest
+    # ubuntu-latest is now 26.04, which Playwright does not support yet
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
