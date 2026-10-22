@@ -162,6 +162,18 @@ public class ChampionshipController {
                 .toList();
     }
 
+    /**
+     * Fills the championship's scoring fields and points scale from a championship scoring system, which stay
+     * editable afterwards. {@code POST /{id}/scoring-system/{systemId}}; ADMIN; 400 if the system is a race system;
+     * 404 if either is missing. Audited with the values before and after.
+     */
+    @Audited("audit_log")
+    @PostMapping("/{id}/scoring-system/{systemId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ChampionshipDto applyScoringSystem(Authentication auth, @PathVariable Long id, @PathVariable Long systemId) {
+        return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(auth), id, systemId));
+    }
+
     /** The drivers excluded from events of the championship. {@code GET /{id}/exclusions}; read only. */
     @GetMapping("/{id}/exclusions")
     public List<ChampionshipExclusionDto> listExclusions(@PathVariable Long id) {

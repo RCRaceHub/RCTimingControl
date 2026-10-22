@@ -293,6 +293,37 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void applyScoringSystem_copiesTheRulesAndScale_andRefusesARaceSystem() {
+        Long champId = createChampionship("Applied scoring");
+        List<Map<String, Object>> systems = restTemplate.exchange("/api/v1/admin/scoring-systems", HttpMethod.GET,
+                new HttpEntity<>(adminHeaders()), List.class).getBody();
+        Long champBrca = systems.stream().filter(m -> "CHAMPIONSHIP".equals(m.get("kind")) && "BRCA 1/10 off-road".equals(m.get("name")))
+                .map(m -> ((Number) m.get("id")).longValue()).findFirst().orElseThrow();
+        Long raceBrca = systems.stream().filter(m -> "RACE".equals(m.get("kind")) && "BRCA 1/10 off-road".equals(m.get("name")))
+                .map(m -> ((Number) m.get("id")).longValue()).findFirst().orElseThrow();
+
+        ResponseEntity<Map> applied = restTemplate.exchange(
+                "/api/v1/admin/championships/" + champId + "/scoring-system/" + champBrca, HttpMethod.POST,
+                new HttpEntity<>(adminHeaders()), Map.class);
+        assertEquals(HttpStatus.OK, applied.getStatusCode());
+
+        Map<String, Object> detail = restTemplate.exchange("/api/v1/admin/championships/" + champId, HttpMethod.GET,
+                new HttpEntity<>(adminHeaders()), Map.class).getBody();
+        List<Map<String, Object>> scale = (List<Map<String, Object>>) detail.get("pointsScale");
+        assertEquals(10, scale.size());
+        assertEquals(100, scale.get(0).get("points"));
+        assertEquals("Applied scoring", detail.get("name"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, restTemplate.exchange(
+                "/api/v1/admin/championships/" + champId + "/scoring-system/" + raceBrca, HttpMethod.POST,
+                new HttpEntity<>(adminHeaders()), String.class).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, restTemplate.exchange(
+                "/api/v1/admin/championships/" + champId + "/scoring-system/999999999", HttpMethod.POST,
+                new HttpEntity<>(adminHeaders()), String.class).getStatusCode());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void createExclusion_asAdmin_returns201WithAudit() {
         Long champId = createChampionship("Exclusion Audit Championship");
 

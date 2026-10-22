@@ -1,4 +1,5 @@
 import { useRoles } from '@/hooks/useRoles';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChampionshipConfigForm } from './ChampionshipConfigForm';
 import { PointsScaleEditor } from './PointsScaleEditor';
+import { ApplyScoringSystem } from './ApplyScoringSystem';
 import { ChampionshipStandingsTable } from './ChampionshipStandingsTable';
 import { ChampionshipClassesTab } from './ChampionshipClassesTab';
 import { ChampionshipEventsTab } from './ChampionshipEventsTab';
@@ -57,6 +59,8 @@ export default function ChampionshipDetailPage() {
   const { data: competitors = [] } = useAdminCompetitorsList();
 
   const { isAdmin } = useRoles();
+  // Counts applied scoring systems, so the forms reload their values even when an apply changes nothing
+  const [appliedCount, setAppliedCount] = useState(0);
 
   async function handleUpdate(body: Omit<ChampionshipDto, 'id'>) {
     await updateMutation.mutateAsync(body);
@@ -105,7 +109,9 @@ export default function ChampionshipDetailPage() {
 
         <TabsContent value="config" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
+            <ApplyScoringSystem championshipId={id} onApplied={() => setAppliedCount(n => n + 1)} />
             <ChampionshipConfigForm
+              key={`${appliedCount}-${data.name}-${data.bestXFromYX}-${data.bestXFromYY}-${data.tqBonusPoints}-${data.afinalWinnerBonusPoints}-${data.showOverallTable}`}
               initialValue={data}
               onSubmit={handleUpdate}
               submitLabel="Save"
@@ -127,7 +133,11 @@ export default function ChampionshipDetailPage() {
 
         <TabsContent value="points-scale" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
-            <PointsScaleEditor championshipId={id} initialScale={data.pointsScale} />
+            <PointsScaleEditor
+              key={`${appliedCount}-${JSON.stringify(data.pointsScale)}`}
+              championshipId={id}
+              initialScale={data.pointsScale}
+            />
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 

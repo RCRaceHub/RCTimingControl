@@ -9,8 +9,8 @@ import java.util.Set;
 /**
  * How a championship turns places into points ({@code PLACE_POINTS}): the points for each finishing place, the best X
  * rounds that count (both null for all of them), the TQ and A final winner bonuses and whether the standings also have
- * an overall table across classes. These are the fields a championship holds itself; a later change lets an official
- * pick a system to fill them in. The highest total wins and ties go to countback, as in {@code docs/scoring.md}.
+ * an overall table across classes. These are the fields a championship holds itself; an admin can apply a system to fill them in
+ * ({@code ChampionshipService#applyScoringSystem}). The highest total wins and ties go to countback, as in {@code docs/scoring.md}.
  *
  * @param bestX rounds that count, null with {@code bestY} for all of them
  * @param bestY rounds the season has, shown only
