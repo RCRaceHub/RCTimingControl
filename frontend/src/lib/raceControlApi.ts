@@ -494,6 +494,8 @@ export type EventResultsRace = {
   result: ResultSnapshotDto;
   /** Grid position by entry id; an entry with no grid position is missing. */
   startPositions: Record<string, number>;
+  /** The scoring system the class's format was set from, so a printout can say how it was scored; null or missing when none. */
+  scoringSystem?: string | null;
 };
 
 /** An event's finished races in run order, for the officials' printouts. Names are the real ones. */

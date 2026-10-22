@@ -108,6 +108,11 @@ function LegsBlock({ legs }: { legs: FinalLegs }) {
   );
 }
 
+/** The scoring system a class's format was set from, as the printouts say it, or null when it was set by hand. */
+function scoringSystemOf(races: EventResultsRace[]): string | null {
+  return races.find((r) => r.scoringSystem)?.scoringSystem ?? null;
+}
+
 /** Which of the parts a meeting pack holds, from the address (`parts=standings,rounds,finals`; all when absent). */
 function packParts(raw: string | null) {
   const wanted = raw === null ? ['standings', 'rounds', 'finals'] : raw.split(',');
@@ -219,6 +224,9 @@ export default function PrintEventResultsPage() {
               eventDate={data.eventDate}
               branding={branding}
             />
+            {scoringSystemOf(group.races) && (
+              <p className="mb-3 text-sm text-muted-foreground">Scored under {scoringSystemOf(group.races)}.</p>
+            )}
             {table && <StandingsBlock table={table} />}
             {packRounds.map((n) => (
               <div key={n}>

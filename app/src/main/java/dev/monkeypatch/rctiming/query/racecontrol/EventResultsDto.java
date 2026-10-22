@@ -23,6 +23,9 @@ public record EventResultsDto(long eventId, String eventName, LocalDate eventDat
      * @param finalLetter    null unless the race is a final
      * @param startPositions the 1-based grid position of each entry that had one, by entry id; an entry with no
      *                       grid position (an unseeded bump-up slot) is missing
+     * @param scoringSystem  the name of the race scoring system the class's format was set from, so a printout can
+     *                       say how it was scored; null when the format was set by hand, the system has since been
+     *                       deleted, or the format is not a Points Finals one
      */
     public record Race(
             long raceId,
@@ -33,6 +36,7 @@ public record EventResultsDto(long eventId, String eventName, LocalDate eventDat
             int heatNumber,
             String finalLetter,
             ResultSnapshotDto result,
-            Map<Long, Integer> startPositions
+            Map<Long, Integer> startPositions,
+            String scoringSystem
     ) {}
 }

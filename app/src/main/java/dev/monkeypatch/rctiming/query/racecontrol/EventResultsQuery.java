@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.query.racecontrol;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatConfigConverter;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.Condition;
@@ -18,6 +20,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems.SCORING_SYSTEMS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
 /**
@@ -27,6 +30,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 @Component
 @ReadTransaction
 public class EventResultsQuery {
+
+    private static final RaceFormatConfigConverter CONFIG = new RaceFormatConfigConverter();
 
     private final DSLContext dsl;
     private final ResultSnapshotQuery snapshotQuery;
@@ -94,6 +99,7 @@ public class EventResultsQuery {
 
         List<Long> raceIds = finished.getValues(RACES.ID);
         Map<Long, Map<Long, Integer>> grids = startPositions(raceIds);
+        Map<Long, String> scoringSystems = scoringSystemNames(finished.getValues(RACES.EVENT_CLASS_ID));
 
         List<EventResultsDto.Race> races = finished.map(r -> {
             long raceId = r.get(RACES.ID);
@@ -106,9 +112,43 @@ public class EventResultsQuery {
                     r.get(RACES.HEAT_NUMBER),
                     r.get(RACES.FINAL_LETTER),
                     withLaps ? snapshotQuery.load(raceId) : withoutLaps(snapshotQuery.load(raceId)),
-                    grids.getOrDefault(raceId, Map.of()));
+                    grids.getOrDefault(raceId, Map.of()),
+                    scoringSystems.get(r.get(RACES.EVENT_CLASS_ID)));
         });
         return new EventResultsDto(eventId, event.get(EVENTS.NAME), event.get(EVENTS.EVENT_DATE), races);
+    }
+
+    /**
+     * The name of the race scoring system each event class was set from, by event class id; a class whose format was
+     * set by hand, is not a Points Finals one, or names a system that has been deleted is missing. The class's own
+     * snapshot says which system it took its values from, so a later edit to the system does not change this.
+     */
+    private Map<Long, String> scoringSystemNames(List<Long> eventClassIds) {
+        Map<Long, Long> systemOfClass = new HashMap<>();
+        dsl.select(EVENT_CLASSES.ID, EVENT_CLASSES.CONFIG_SNAPSHOT)
+                .from(EVENT_CLASSES)
+                .where(EVENT_CLASSES.ID.in(eventClassIds.stream().distinct().toList()))
+                .forEach(r -> {
+                    if (CONFIG.convertToEntityAttribute(r.get(EVENT_CLASSES.CONFIG_SNAPSHOT)) instanceof PointsFinalsConfig p
+                            && p.scoringSystemId() != null) {
+                        systemOfClass.put(r.get(EVENT_CLASSES.ID), p.scoringSystemId());
+                    }
+                });
+        if (systemOfClass.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> names = dsl.select(SCORING_SYSTEMS.ID, SCORING_SYSTEMS.NAME)
+                .from(SCORING_SYSTEMS)
+                .where(SCORING_SYSTEMS.ID.in(systemOfClass.values()))
+                .fetchMap(SCORING_SYSTEMS.ID, SCORING_SYSTEMS.NAME);
+        Map<Long, String> byClass = new HashMap<>();
+        systemOfClass.forEach((classId, systemId) -> {
+            String name = names.get(systemId);
+            if (name != null) {
+                byClass.put(classId, name);
+            }
+        });
+        return byClass;
     }
 
     private static ResultSnapshotDto withoutLaps(ResultSnapshotDto snapshot) {
