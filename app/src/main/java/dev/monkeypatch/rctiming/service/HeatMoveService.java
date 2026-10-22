@@ -129,8 +129,10 @@ public class HeatMoveService {
     }
 
     /**
-     * Takes the driver out of {@code from}, closing the gap in its grid and car numbers, and adds them to the end of
-     * {@code to}, whose grid positions are then 1 to N again.
+     * Takes the driver out of {@code from}, closing the gap in its grid, and adds them to the end of {@code to},
+     * whose grid positions are then 1 to N again. Car numbers only change when the rounds or finals are calculated,
+     * so the driver keeps theirs and nobody else is renumbered; only if the target heat already has that number does
+     * the driver take the next free one there.
      */
     private void move(Long entryId, Race from, Race to) {
         RaceEntry moving = raceEntryRepository.findByRaceIdAndEntryId(from.getId(), entryId)
@@ -139,14 +141,18 @@ public class HeatMoveService {
             throw new StateConflictException("The driver is already in heat " + to.getHeatNumber());
         }
         List<RaceEntry> target = raceEntryRepository.findByRaceIdOrderByGridPosition(to.getId());
-        int nextCar = target.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
-                .mapToInt(Integer::intValue).max().orElse(0) + 1;
+        Integer kept = moving.getCarNumber();
+        Integer car = kept;
+        if (kept == null || target.stream().anyMatch(t -> kept.equals(t.getCarNumber()))) {
+            car = target.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
+                    .mapToInt(Integer::intValue).max().orElse(0) + 1;
+        }
         Integer nextGrid = moving.getGridPosition() == null ? null
                 : target.stream().map(RaceEntry::getGridPosition).filter(Objects::nonNull)
                         .mapToInt(Integer::intValue).max().orElse(0) + 1;
         moving.setRaceId(to.getId());
         moving.setGridPosition(nextGrid);
-        moving.setCarNumber(nextCar);
+        moving.setCarNumber(car);
         raceEntryRepository.save(moving);
 
         List<RaceEntry> joined = new ArrayList<>(raceEntryRepository.findByRaceIdOrderByGridPosition(to.getId()));
@@ -154,11 +160,6 @@ public class HeatMoveService {
         raceEntryRepository.saveAll(joined);
 
         List<RaceEntry> rest = new ArrayList<>(raceEntryRepository.findByRaceIdOrderByGridPosition(from.getId()));
-        rest.sort(Comparator.comparing(RaceEntry::getCarNumber, Comparator.nullsLast(Comparator.naturalOrder())));
-        int car = 1;
-        for (RaceEntry entry : rest) {
-            entry.setCarNumber(car++);
-        }
         renumberGrid(rest);
         raceEntryRepository.saveAll(rest);
     }

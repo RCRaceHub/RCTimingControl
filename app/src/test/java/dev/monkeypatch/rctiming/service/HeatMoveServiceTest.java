@@ -70,11 +70,23 @@ class HeatMoveServiceTest {
         RaceEntry moved = inHeat1.get(0);
         assertThat(moved.getRaceId()).isEqualTo(2L);
         assertThat(moved.getGridPosition()).isEqualTo(2);
+        // Car 1 is taken in the target heat, so the driver takes the next free number there
         assertThat(moved.getCarNumber()).isEqualTo(2);
         assertThat(inHeat1.get(1).getGridPosition()).isEqualTo(1);
-        assertThat(inHeat1.get(1).getCarNumber()).isEqualTo(1);
         assertThat(inHeat1.get(2).getGridPosition()).isEqualTo(2);
-        assertThat(inHeat1.get(2).getCarNumber()).isEqualTo(2);
+        // Nobody else is renumbered
+        assertThat(inHeat1.get(1).getCarNumber()).isEqualTo(2);
+        assertThat(inHeat1.get(2).getCarNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void aMovedDriverKeepsTheirCarNumberWhenTheTargetHeatDoesNotUseIt() {
+        inHeat2.get(0).setCarNumber(7);
+
+        service.moveEntry(Actor.system("test"), 1L, 11L, 2L, false);
+
+        assertThat(inHeat1.get(0).getCarNumber()).isEqualTo(1);
+        assertThat(inHeat2.get(0).getCarNumber()).isEqualTo(7);
     }
 
     @Test

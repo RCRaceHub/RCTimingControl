@@ -236,8 +236,8 @@ public class BumpUpSeedingService {
      *
      * <p>Finds the next-higher final for the same EventClass (C→B→A, and the zombie round's winner into A) and adds the best finishers
      * not already in it, up to its unfilled bump slots, at the back of its grid with
-     * {@code bumped=true}. Grid positions and car numbers carry on from the highest already in
-     * that final. A repeat call adds nobody once the slots are full.
+     * {@code bumped=true}. Grid positions carry on from the highest already in that final, and each
+     * driver keeps the car number they had in the final below (the next free number if it is taken). A repeat call adds nobody once the slots are full.
      *
      * @param finishedFinalRaceId the Race ID of the final that just finished
      * @param finishingOrder      entry IDs of the finished final's drivers, best first
@@ -291,6 +291,16 @@ public class BumpUpSeedingService {
                 .mapToInt(Integer::intValue).max().orElse(0) + 1;
         int nextCarNumber = grid.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).max().orElse(0) + 1;
+        // A bumped driver keeps the car number they had in the lower final: numbers only change when the finals are
+        // calculated again
+        Map<Long, Integer> keptNumbers = new HashMap<>();
+        Set<Integer> numbersInUse = grid.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        for (RaceEntry below : raceEntryRepository.findByRaceIdOrderByGridPosition(finishedRace.getId())) {
+            if (below.getCarNumber() != null) {
+                keptNumbers.put(below.getEntryId(), below.getCarNumber());
+            }
+        }
 
         List<Long> promoted = new ArrayList<>(openSlots);
         for (Long entryId : finishingOrder) {
@@ -300,7 +310,12 @@ public class BumpUpSeedingService {
             bumpedEntry.setRaceId(nextFinal.getId());
             bumpedEntry.setEntryId(entryId);
             bumpedEntry.setGridPosition(nextGridPosition++);
-            bumpedEntry.setCarNumber(nextCarNumber++);
+            Integer kept = keptNumbers.get(entryId);
+            if (kept != null && numbersInUse.add(kept)) {
+                bumpedEntry.setCarNumber(kept);
+            } else {
+                bumpedEntry.setCarNumber(nextCarNumber++);
+            }
             bumpedEntry.setBumped(true);
             raceEntryRepository.save(bumpedEntry);
             promoted.add(entryId);

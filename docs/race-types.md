@@ -39,6 +39,11 @@ The round generator splits each class into heats and keeps the same heats for ev
 
 - **First round of its kind** (the first practice round, and the first qualifying round): the grid is in car number
   order within each heat. Practice does not carry over, so qualifying always starts in car number order.
+- **Car numbers** are a driver's start position in the first race after the field was arranged, and they only change
+  when it is arranged again. A driver who is car 1 in practice is still car 1 in qualifying, and takes a new number
+  only when the finals are calculated (their qualifying position). Moving a driver between heats or finals, or bumping
+  them up, keeps their number; the exception is a move into a heat that already has that number, where the driver takes
+  the next free one.
 - **Later practice and qualifying rounds**: when a heat finishes, its finishing order becomes the grid of the same
   heat in the next round. The best finisher is on grid position 1.
 - **Finals**: seeded from the qualifying order (section 4).
