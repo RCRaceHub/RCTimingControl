@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.event;
 
+import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
@@ -11,14 +12,17 @@ import java.util.List;
 import java.util.Map;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
 /**
  * The schedule anonymous visitors see: meetings that are published, open for entries, closed for entries or in
- * progress, with which of their races have finished (so results can be linked) and the championship they count
- * towards. Meetings in any other state are not listed. Runs as one read snapshot, so the three queries agree.
+ * progress, with their finished races (labelled by round, class and heat, so results can be linked) and the
+ * championship they count towards. Meetings in any other state are not listed. Runs as one read snapshot, so
+ * the three queries agree.
  */
 @Service
 @ReadTransaction
@@ -45,7 +49,7 @@ public class EventScheduleQuery {
         }
 
         List<Long> eventIds = events.getValues(EVENTS.ID);
-        Map<Long, List<Long>> finishedRacesByEvent = finishedRacesByEvent(eventIds);
+        Map<Long, List<EventScheduleDto.FinishedRace>> finishedRacesByEvent = finishedRacesByEvent(eventIds);
         Map<Long, Long> championshipByEvent = championshipByEvent(eventIds);
 
         return events.stream().map(r -> new EventScheduleDto(
@@ -57,13 +61,24 @@ public class EventScheduleQuery {
         )).toList();
     }
 
-    private Map<Long, List<Long>> finishedRacesByEvent(List<Long> eventIds) {
-        return dsl.select(ROUNDS.EVENT_ID, RACES.ID)
+    /** Finished races per event in run order (round, then race in round, then heat), labelled for display. */
+    private Map<Long, List<EventScheduleDto.FinishedRace>> finishedRacesByEvent(List<Long> eventIds) {
+        return dsl.select(ROUNDS.EVENT_ID, RACES.ID, ROUNDS.TYPE, ROUNDS.ROUND_NUMBER, RACES.FINAL_LETTER,
+                        RACING_CLASSES.NAME, RACES.HEAT_NUMBER)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
+                .join(RACING_CLASSES).on(RACING_CLASSES.ID.eq(EVENT_CLASSES.RACING_CLASS_ID))
                 .where(ROUNDS.EVENT_ID.in(eventIds))
                 .and(RACES.STATUS.eq("FINISHED"))
-                .fetchGroups(ROUNDS.EVENT_ID, RACES.ID);
+                .orderBy(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
+                        RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
+                .fetchGroups(r -> r.get(ROUNDS.EVENT_ID), r -> new EventScheduleDto.FinishedRace(
+                        r.get(RACES.ID),
+                        RaceLabel.round(r.get(ROUNDS.TYPE), r.get(ROUNDS.ROUND_NUMBER), r.get(RACES.FINAL_LETTER)),
+                        r.get(RACING_CLASSES.NAME),
+                        r.get(RACES.HEAT_NUMBER),
+                        "FINAL".equals(r.get(ROUNDS.TYPE))));
     }
 
     /** One championship per event by convention; if an event has more, the schedule shows the lowest id. */

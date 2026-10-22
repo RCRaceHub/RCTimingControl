@@ -290,11 +290,19 @@ export async function getPublicChampionshipInfo(championshipId: number): Promise
   return data;
 }
 
+export type FinishedRaceDto = {
+  id: number;
+  roundLabel: string;
+  className: string;
+  heatNumber: number;
+  isFinal: boolean;
+};
+
 export type EventScheduleDto = {
   id: number;
   name: string;
   eventDate: string;
-  finishedRaceIds: number[];
+  finishedRaces: FinishedRaceDto[];
   championshipId: number | null;
 };
 
