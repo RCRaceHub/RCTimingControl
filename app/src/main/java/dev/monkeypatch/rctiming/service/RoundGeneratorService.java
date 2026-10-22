@@ -167,7 +167,9 @@ public class RoundGeneratorService {
             // when the event is in no championship for the class, keep entry order.
             Map<Long, Integer> standing = championshipSeeding.positionsFor(request.eventId(), ec.getRacingClassId());
             entries.sort(Comparator
-                    .comparingInt((Entry e) -> standing.getOrDefault(e.getCompetitorId(), Integer.MAX_VALUE))
+                    .comparingInt((Entry e) -> e.getCompetitorId() == null
+                            ? Integer.MAX_VALUE
+                            : standing.getOrDefault(e.getCompetitorId(), Integer.MAX_VALUE))
                     .thenComparingLong(Entry::getId));
 
             int heatCount = heatCount(entries.size(), request.maxCarsPerHeat(), request.minCarsPerHeat());

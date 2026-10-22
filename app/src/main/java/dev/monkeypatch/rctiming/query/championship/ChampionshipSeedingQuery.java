@@ -2,13 +2,13 @@ package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.CHAMPIONSHIP_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
@@ -28,6 +28,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLi
 @ReadTransaction
 public class ChampionshipSeedingQuery {
 
+    private static final Logger log = LoggerFactory.getLogger(ChampionshipSeedingQuery.class);
+
     private final DSLContext dsl;
     private final ChampionshipStandingsQuery standingsQuery;
 
@@ -39,25 +41,32 @@ public class ChampionshipSeedingQuery {
     /**
      * Each scoring driver's place in the class's championship table, by competitor id, 1 for the leader. Drivers with
      * no points are left out, as is everyone when the event is in no championship that scores the class or is its
-     * first round. Never throws for a missing championship.
+     * first round. A failure reading the standings is logged and gives an empty map, so the run order is still generated.
      *
      * @param eventId       the event whose first qualifying round is being seeded
      * @param racingClassId the racing class of the event class being seeded, or null for none
      * @return competitor id to position (equal points share one); empty when there is nothing to seed from
      */
     public Map<Long, Integer> positionsFor(Long eventId, Long racingClassId) {
-        if (racingClassId == null) {
-            return Map.of();
-        }
-        Long championshipId = championshipFor(eventId, racingClassId);
-        if (championshipId == null) {
-            return Map.of();
-        }
         Map<Long, Integer> positions = new HashMap<>();
-        for (StandingsRowDto row : standingsQuery.computeStandings(championshipId)) {
-            if (racingClassId.equals(row.racingClassId()) && row.totalPoints() > 0 && row.driverId() != null) {
-                positions.putIfAbsent(row.driverId(), row.position());
+        if (racingClassId == null) {
+            return positions;
+        }
+        try {
+            Long championshipId = championshipFor(eventId, racingClassId);
+            if (championshipId == null) {
+                return positions;
             }
+            for (StandingsRowDto row : standingsQuery.computeStandings(championshipId)) {
+                if (racingClassId.equals(row.racingClassId()) && row.totalPoints() > 0 && row.driverId() != null) {
+                    positions.putIfAbsent(row.driverId(), row.position());
+                }
+            }
+        } catch (RuntimeException e) {
+            // Seeding is a nicety: a standings failure must never stop the run order being generated
+            log.warn("Not seeding event {} class {} from the championship: {}", eventId, racingClassId,
+                    e.getMessage());
+            positions.clear();
         }
         return positions;
     }
@@ -83,11 +92,10 @@ public class ChampionshipSeedingQuery {
 
     /** Whether the championship scores the class: it is listed, or the championship lists no classes at all. */
     private boolean scores(Long championshipId, Long racingClassId) {
-        List<Long> classes = dsl.select(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID)
+        Set<Long> listed = dsl.select(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID)
                 .from(CHAMPIONSHIP_CLASSES)
                 .where(CHAMPIONSHIP_CLASSES.CHAMPIONSHIP_ID.eq(championshipId))
-                .fetch(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID);
-        Set<Long> listed = classes.stream().collect(Collectors.toSet());
+                .fetchSet(CHAMPIONSHIP_CLASSES.RACING_CLASS_ID);
         return listed.isEmpty() || listed.contains(racingClassId);
     }
 }
