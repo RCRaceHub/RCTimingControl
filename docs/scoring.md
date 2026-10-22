@@ -238,13 +238,51 @@ round. Had Dan simply not been on the grid in round 3, there would be no round 3
 
 A **scoring system** is a named, saved set of scoring rules, in two kinds: *race* systems (rounds counted, tied places,
 A final legs, cut-off window, and default finals layout) and *championship* systems (points scale, best X from Y,
-bonuses, overall table). Admins manage them through `/api/v1/admin/scoring-systems`: list, read, create, clone, change,
-delete, and import or export as JSON or YAML. Race directors and referees can read and export them.
+bonuses, overall table). Admins manage them on the **Scoring Systems** page in the admin panel (under Configuration): create
+a race or championship system, edit or delete a custom one, clone any system, export one to a file and import a file as a
+new system. The same operations are available under `/api/v1/admin/scoring-systems`. Race directors and referees can read
+and export them through the API.
 
 Four are built in and locked, a *Club default* and *BRCA 1/10 off-road* of each kind; clone one to change it. Each system
 is JSON with a `type`: `CLASSIC` or `BRCA` for races, `PLACE_POINTS` for championships. A file carries only numbers and
 switches, never logic, so a genuinely new kind of rule is a new `type` in the app. Values are range-checked on save and
 import, and every change is audited.
+
+**The file format.** An exported system is a JSON (or YAML) file holding just its rules; the name is given when it is
+imported (the Scoring Systems page uses the file's name). A race system:
+
+```json
+{
+  "type": "BRCA",
+  "bestHeatsCount": 2,
+  "splitTiedPlaces": true,
+  "maxRaceWindowSeconds": 390,
+  "finalLegs": 3,
+  "legsCounted": 2,
+  "carsPerFinal": 10,
+  "fillTopFirst": true
+}
+```
+
+A championship system:
+
+```json
+{
+  "type": "PLACE_POINTS",
+  "bestX": 8,
+  "bestY": 10,
+  "tqBonusPoints": 0,
+  "aFinalWinnerBonusPoints": 0,
+  "showOverallTable": true,
+  "pointsScale": [{ "position": 1, "points": 100 }, { "position": 2, "points": 95 }]
+}
+```
+
+Limits: best heats 0 to 50; race window 0 to 86400 seconds; A final legs 1 to 10 with legs counted no more than the legs;
+cars per final 0 to 50; for a championship, best X at least 1 and no more than best Y, and best Y at most 100 (set both or
+leave both out to count every round), bonuses and points 0 to 10000, places 1 to 200 in the scale, each place once. A field left out counts as 0 or
+false, so check an imported file on the page. A name that is already taken for that kind (ignoring capitals and spaces)
+is refused.
 
 **Race formats.** A Points Finals format has a **Scoring system** picker. Choosing one fills best heats count, tied
 places, BRCA qualifying, the race window, cars per final, fill A first, A final legs and legs counted from the system, and

@@ -30,6 +30,7 @@ const AdminAudioSettingsPage = lazy(() => import('@/pages/admin/club/AdminAudioS
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
 const TracksPage = lazy(() => import('@/pages/admin/tracks/TracksPage'));
 const FormatsPage = lazy(() => import('@/pages/admin/formats/FormatsPage'));
+const ScoringSystemsPage = lazy(() => import('@/pages/admin/scoring/ScoringSystemsPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
 const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSettingsPage'));
 const BackupsPage = lazy(() => import('@/pages/admin/backups/BackupsPage'));
@@ -110,6 +111,7 @@ const router = createBrowserRouter([
           { path: 'club', element: <ProtectedRoute roles={['ADMIN']}><ClubProfilePage /></ProtectedRoute> },
           { path: 'tracks', element: <ProtectedRoute roles={['ADMIN']}><TracksPage /></ProtectedRoute> },
           { path: 'formats', element: <ProtectedRoute roles={['ADMIN']}><FormatsPage /></ProtectedRoute> },
+          { path: 'scoring-systems', element: <ProtectedRoute roles={['ADMIN']}><ScoringSystemsPage /></ProtectedRoute> },
           { path: 'race-control', element: <RaceControlSelectPage /> },
           { path: 'decoder', element: <ProtectedRoute roles={['ADMIN']}><DecoderSettingsPage /></ProtectedRoute> },
           { path: 'backups', element: <ProtectedRoute roles={['ADMIN']}><BackupsPage /></ProtectedRoute> },

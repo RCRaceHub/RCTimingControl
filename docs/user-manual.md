@@ -26,7 +26,7 @@ Under **Admin → Decoder**, enter the decoder's address, leave the protocol on 
 
 ### 4. Set up the club, tracks, formats and officials
 
-- **Club Profile**, **Tracks** (name, length and venue notes) and **Formats** (how a race is run) are in the Admin Configuration Guide, sections 1 to 3.
+- **Club Profile**, **Tracks** (name, length and venue notes) and **Formats** (how a race is run) are in the Admin Configuration Guide, sections 1 to 3. **Scoring Systems** (saved sets of scoring rules that formats and championships pick from) are in [Scoring](scoring.md#6-scoring-systems).
 - **Officials** (Admin → Officials) adds the people who sign in, with their roles, sets passwords and disables people who no longer help. Section 7 of the guide covers it, and [installing.md](installing.md#locked-out) covers a club with no admin who can sign in.
 - **Competitors** (Admin → Competitors) lists every driver. If the announcer says a name wrongly, click **Say as…** on the driver (admins, race directors and referees can), type how it should sound, click **Play** to hear it in the announcer voice, then **Save**. It stays with the driver for later meetings and imports never change it. Each change is logged with who made it, and admins can see who changed it last. If a driver was entered twice, **Merge…** on the Competitors page lists the likely duplicates and moves one's entries onto the other.
 - The classes you can pick for an event come from the club's list of racing classes. There is no admin screen for adding to that list yet; the API reference (`docs/api.md` in the source repository) shows how.

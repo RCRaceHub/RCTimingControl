@@ -227,11 +227,11 @@ and so on) for championship points, as in [Scoring](scoring.md#5-championship-po
 **Scoring system.** The Points Finals form has a **Scoring system** picker above the scoring options. Pick **BRCA 1/10
 off-road** (or a system an admin has added) to fill them in; see [Scoring](scoring.md#6-scoring-systems).
 
-**BRCA 1/10 off-road.** In the format editor, the Points Finals form also has a **Use BRCA 1/10 off-road settings** button
-that fills in the BRCA rules: 4 qualifying rounds of 5 minutes with the best 2 counting, tied cars not sharing a place, BRCA
-qualifying (flat points for a driver who did not run, and its tie-break), a 6:30 (390 second) race window, 10 cars per
-final filled from A down with a short last final, and an A final of 3 legs of which the best 2 count. The finals
-below A are single races. Change any setting afterwards for a club's own variation. The rules are in
+**BRCA 1/10 off-road.** Pick the **BRCA 1/10 off-road** scoring system. It sets the best 2 rounds counting, tied cars not
+sharing a place, BRCA qualifying (flat points for a driver who did not run, and its tie-break), a 6:30 (390 second) race
+window, 10 cars per final filled from A down with a short last final, and an A final of 3 legs of which the best 2 count.
+The finals below A are single races. The format's own settings (4 qualifying rounds of 5 minutes, 3 finals) are still set
+in the form. Clone the system on the **Scoring Systems** page for a club's own variation. The rules are in
 [Scoring](scoring.md#brca-qualifying-points-finals).
 
 ### 4.4 Shikabane
