@@ -644,6 +644,38 @@ POST /race-control/race/{raceId}/restart
 
 Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`) and the live positions held in memory.
 
+## Race control — Run order, heats and finals
+
+Read endpoints are open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; the commands need `RACE_DIRECTOR` or `ADMIN`. Every command answers **204** with no body unless stated, and writes a row to the audit log unless stated.
+
+```
+GET  /race-control/event/{eventId}/run-order
+GET  /race-control/event/{eventId}/qualifying
+GET  /race-control/event/{eventId}/final-legs
+GET  /race-control/event/{eventId}/finals-lineup
+GET  /race-control/event/{eventId}/results            (any signed-in official)
+GET  /race-control/race/{raceId}/result               (any signed-in official)
+```
+
+`run-order` lists the event's races in running order with their status, which is how race control and the Referee View pick a race. `qualifying` is each class's overall qualifying table, the order its finals are seeded from. `final-legs` is the combined result of each class's A final that is run in legs (best legs added, lowest wins), empty when no class has legs. `results` and `race/{raceId}/result` return finished races with the real driver names and each driver's starting grid position, for the heat result, round summary, final results and meeting pack printouts; **404** for an unknown event, or a race with no stored result.
+
+`finals-lineup` has one item per class: `{ "eventClassId", "className", "qualifyingComplete", "calculated", "started", "defaultCarsPerFinal", "finals": [ { "raceId", "letter", "status", "bumpSlots", "editable", "drivers": [ { "entryId", "driverName", "gridPosition", "carNumber", "qualifyingPosition" } ] } ] }`. `qualifyingComplete` says every qualifying heat is finished (not all abandoned), `started` says a final has left PENDING and the line-ups are locked, and `defaultCarsPerFinal` is the largest qualifying heat.
+
+```
+POST /race-control/event/{eventId}/qualifying/{eventClassId}/seed-finals
+POST /race-control/race/{raceId}/finals/move
+POST /race-control/race/{raceId}/finals/swap
+POST /race-control/race/{raceId}/move-entry
+POST /race-control/race/{raceId}/marshal-adjustment
+POST /race-control/race/{raceId}/skip-to
+```
+
+- `seed-finals` is **Calculate finals**. The finals are no longer seeded when the last qualifier finishes: an official asks for them. The optional body `{ "carsPerFinal": 10 }` (1 to 100) sets the grid size; without it the class format's own grid size is used, and the grid grows if the field would not fit. Calling it again recalculates from the qualifying results and replaces hand edits. **404** if the class is not in the event; **409** if a qualifying heat is unfinished (or all were abandoned), the class has no finals, or a final has started.
+- `finals/move` takes `{ "entryId", "targetRaceId", "targetPosition" }` and moves a driver from the final in the path to another pending final of the same class, to a grid place (the back of the grid when `targetPosition` is null). `finals/swap` takes `{ "entryId", "otherRaceId", "otherEntryId" }` and swaps two drivers' grid places, on one final or across two. **400** for the same final or driver, different classes, or emptying a final; **404** if a driver is not in their final; **409** if either final has been called or started.
+- `move-entry` takes `{ "entryId", "targetRaceId", "allRounds": false }` and moves a driver out of the pending heat in the path into another pending heat of the same class, in the same round or, with `allRounds`, in every practice and qualifying round where both heats are still pending. The driver keeps their car number. **400** if the heats are the same, in different classes or events, are finals, or (without `allRounds`) are in different rounds; **409** if either heat has been called or started.
+- `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta. It answers **200** with no body, and is recorded as a marshal adjustment (who, and the race's state at the time) rather than in the audit log.
+- `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server and writes no audit row; the client keeps the active-race pointer. **404** if either race is missing, **400** if the target is in another event.
+
 ## Race control — Entry search & transponder swap
 
 Open to any official (`ADMIN`, `RACE_DIRECTOR` or `REFEREE`). Withdrawn entries are never returned.
@@ -677,6 +709,97 @@ GET  /race-control/race/{raceId}/jump-starts
 `entries` lists everyone in the race, in any state, for linking a transponder or picking a driver for an incident or penalty (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `transponders/link` links an unknown transponder to an entry, credits the laps it has already done and saves the number on the entry (a swap: it replaces a number that has not passed in this race, otherwise it becomes the secondary), so later races at the event need no relinking, answering `{ "lapsCredited": 3 }` (`RACE_DIRECTOR` or `ADMIN`). `history` is the race's own audit log rows (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `jump-starts` lists the cars that crossed the line before their turn in a staggered start, as `[{ "entryId": 101, "driverName": "...", "carNumber": "12", "earlyMs": 2400 }]`, empty for other starts and once the race has finished (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`); later ones arrive on `/topic/race/{raceId}/jump-start`. A race's results come from the public `GET /results/{raceId}`, and its live timing from `GET /boards/races/{raceId}/live-timing`.
 
 ---
+
+## Race control — Referee
+
+Open to `REFEREE` and `ADMIN`. A race director who is not also a referee gets **403**. Each answers **200** with the record it saved and a row in the audit log.
+
+```
+POST /race-control/referee/race/{raceId}/incident-report
+POST /race-control/referee/race/{raceId}/penalty
+POST /race-control/referee/race/{raceId}/marshal-absent
+POST /race-control/referee/race/{raceId}/apply-marshal-penalty
+```
+
+- `incident-report` takes `{ "entryId", "incidentType", "description" }`, all required (the type is free text; the screen offers Jump start, Collision, Shortcut, Dangerous driving and Other). Audited as `INCIDENT_RAISED`.
+- `penalty` takes `{ "entryId", "penaltyType": "LAP", "value": 1, "reason" }`. `LAP` takes whole laps off the live timing straight away (at most 100); `TIME` adds seconds when the result is worked out. **400** for a bad body or a non-whole lap count. Audited as `PENALTY_APPLIED`; on a finished race its result is rebuilt and, for a RaceHub event, queued to be sent again.
+- `marshal-absent` takes `{ "entryId", "eventId" }` and records that the entry missed its marshal duty. It does not penalise. Everyone is assumed to be marshalling, so this is only for a driver who was not.
+- `apply-marshal-penalty` takes `{ "entryId", "eventId", "kind", "absenceId", "notes" }`, where `kind` is `QUALIFYING_SCORE` (loses the best qualifying round) or `FINALS_LAP` (a lap off in the first final). `absenceId` is optional: left out, the entry's latest absence without a penalty is used, and if there is none the miss is recorded by this call. **409** if the entry is not in the event or the absence already has a penalty. Audited as `MARSHAL_PENALTY_APPLIED`.
+
+## Race control — Shikabane eliminations
+
+```
+GET  /race-control/race/{raceId}/eliminations
+POST /race-control/race/{raceId}/eliminations/eliminate
+POST /race-control/race/{raceId}/eliminations/revive
+POST /race-control/race/{raceId}/eliminations/undo
+POST /race-control/race/{raceId}/eliminations/false-start
+POST /race-control/race/{raceId}/eliminations/false-start/undo
+```
+
+`GET` (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`) answers whether the race is a Shikabane race and its eliminations and revivals, oldest first; race control shows its elimination buttons only when `shikabane` is true. **404** for an unknown race. The commands (`RACE_DIRECTOR` or `ADMIN`) all take `{ "entryId" }` and are audited. `eliminate` marks a car dead and `revive` brings back a dead car (a zombie), each answering **200** with the row; `undo` takes back an elimination made by mistake. `false-start` gives the car the format's false start penalty points (it can be given more than once) and `false-start/undo` takes back the latest. See [shikabane-guide.md](shikabane-guide.md).
+
+## Practice sessions
+
+```
+POST /practice-sessions                       (ADMIN, RACE_DIRECTOR)
+GET  /practice-sessions                       (any official)
+GET  /practice-sessions/day                   (any official)
+GET  /practice-sessions/{id}                  (any official)
+POST /practice-sessions/{id}/start            (ADMIN, RACE_DIRECTOR)
+POST /practice-sessions/{id}/stop             (ADMIN, RACE_DIRECTOR)
+GET  /practice-sessions/{id}/snapshot         (any official)
+GET  /practice-sessions/{id}/results          (any official)
+GET  /practice-sessions/{id}/drivers          (any official)
+POST /practice-sessions/{id}/link-transponder (ADMIN, RACE_DIRECTOR)
+```
+
+Open practice is a timing session with no heats and no result that scores. `POST` takes `{ "name", "eventId", "bestLapN", "pauseSeconds" }`, all optional: `bestLapN` is how many consecutive laps the average is taken over (default 5) and `pauseSeconds` is how long a transponder may be quiet before its next lap starts a new run (default 180). It answers **201** with the session, in state `IDLE`. `start` (`IDLE` to `RUNNING`) and `stop` (`RUNNING` to `STOPPED`) answer the session and **409** for a state that does not allow them; `start` also answers **409** while a race is running, since practice and racing share the one decoder. `GET` lists recent sessions, newest first (`limit`, default 10). `snapshot` is the live timing rows sorted by position, and `results` is the same rows for a stopped session. `day` adds each driver up across every session that started on `date` (today when omitted, read in the club's time zone), averaging the best `bestLapN` laps of a run (5 when omitted).
+
+`link-transponder` takes `{ "transponderNumber", "competitorId", "newName", "confirmNewCompetitor" }` and names a transponder in a session: an existing competitor, or a new walk-in made from `newName`. A name that matches someone already there answers **409** with the matches unless `confirmNewCompetitor` is true. **400** for a missing or over-long number, **404** for an unknown session. `drivers` lists the transponders named in a session. Changes are audited. Live rows arrive on `/topic/practice/{sessionId}/timing` and unknown transponders on `/topic/practice/{sessionId}/unknown-transponder`.
+
+## Admin — Audio horns and settings
+
+```
+GET    /admin/audio/settings
+PUT    /admin/audio/settings
+PUT    /admin/audio/horns/{horn}        (multipart form data)
+DELETE /admin/audio/horns/{horn}
+```
+
+`ADMIN` or `RACE_DIRECTOR`. `PUT /settings` saves the club-wide audio switches and the default Piper voice and answers the body as sent, **400** for a value out of range (for example `runningOrderPercent` 1 to 100, `startCountdownSeconds` 0 to 60, `timeUpText` at most 200 characters). A null optional field keeps its saved value, and `hornSounds` is ignored on a write. The change is audited with the values before and after.
+
+`PUT /horns/{horn}` replaces a sound with the club's own file. `horn` is `start`, `finish`, `tick`, `lap-beep`, `faster-beep` or `slower-beep`. The form carries `file` (at most 1 MB) and `durationMs` (100 to 10000, how long it plays so race control can wait before a spoken line). **400** for a missing, oversized or unsupported file or a duration outside the range. `DELETE` goes back to the built-in sound. Both answer the club's sounds as saved.
+
+## Admin — Scoring systems
+
+Reading is open to `ADMIN`, `RACE_DIRECTOR` and `REFEREE`; changes need `ADMIN` and are audited.
+
+```
+GET    /admin/scoring-systems?kind=RACE        (kind is RACE or CHAMPIONSHIP; omit for all)
+GET    /admin/scoring-systems/{id}
+POST   /admin/scoring-systems
+POST   /admin/scoring-systems/{id}/clone
+PUT    /admin/scoring-systems/{id}
+DELETE /admin/scoring-systems/{id}
+GET    /admin/scoring-systems/{id}/export      (Accept: application/json or application/yaml)
+POST   /admin/scoring-systems/import           (JSON or YAML body, named by `name`)
+POST   /admin/championships/{id}/scoring-system/{systemId}
+```
+
+A system is a named set of scoring options a race format or a championship can follow, such as BRCA 1/10 off-road. `POST` and `clone` answer **201**; **400** when a value is out of range or an import cannot be read, **404** for an unknown system, **409** when the name is taken or when changing or deleting a built-in system (clone it instead). Applying a system to a championship copies its options onto the championship, which stays editable; changing the system afterwards does not change the championship. What each option does is in [scoring.md](scoring.md).
+
+## Club — Logo and privacy notice
+
+```
+PUT /admin/club/logo                (multipart form data, part `file`; ADMIN)
+GET /admin/club/privacy-notice      (any official)
+PUT /admin/club/privacy-notice      (ADMIN)
+GET /privacy-notice                 (anonymous)
+GET /admin/retention                (ADMIN)
+```
+
+`logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever). The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
 
 ## Spectator boards
 

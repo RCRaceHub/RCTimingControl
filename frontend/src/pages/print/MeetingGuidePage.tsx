@@ -95,6 +95,37 @@ export default function MeetingGuidePage() {
             This button appears below the Run Order list only when you select a pending
             race while another race is still active.
           </li>
+          <li>
+            <span className="font-semibold">Even up the heats:</span> Select a practice or
+            qualifying heat that has not been called and the{' '}
+            <span className="font-semibold">Heat line-ups</span> panel shows who is in each heat of
+            that round. Use <span className="font-semibold">Move to…</span> beside a driver to put them
+            in another heat, for example once you know who has turned up. Heats can be different sizes,
+            a driver keeps their car number, and by default the move is made in every round where both
+            heats are still waiting. Practice results do not decide who qualifies where.
+          </li>
+          <li>
+            <span className="font-semibold">Calculate the finals:</span> Finals are not set when the
+            last qualifier ends. Select any final that has not been called, check{' '}
+            <span className="font-semibold">Cars per final</span> in the Finals line-up panel (it starts
+            at the size of a qualifying heat) and click{' '}
+            <span className="font-semibold">Calculate finals</span>. Until a final is called you can move a
+            driver to another final or up and down a grid, and{' '}
+            <span className="font-semibold">Recalculate finals</span> if a qualifying result changed
+            (that replaces hand changes). Once a final has been called the line-ups are locked.
+          </li>
+          <li>
+            <span className="font-semibold">Auto run:</span> To run races without pressing anything
+            between them, press <span className="font-semibold">Go</span> in the Auto run panel at the
+            top of the run order. It holds after the last qualifier so you can check the finals; press{' '}
+            <span className="font-semibold">Resume</span> to carry on, and <span className="font-semibold">Stop</span> to
+            switch it off.
+          </li>
+          <li>
+            <span className="font-semibold">Print:</span> The <span className="font-semibold">Print</span> link
+            in race control opens the print centre: round summaries, final results and the meeting pack.
+            A finished race has its own Print button for the heat result.
+          </li>
         </ol>
       </section>
 
@@ -116,9 +147,18 @@ export default function MeetingGuidePage() {
             announces the heat via audio ("Heat 1, Qualifier 1, to the grid please").
           </li>
           <li>
-            <span className="font-semibold">Review the grid editor:</span> After calling
-            grid, the Grid Editor panel loads. It shows each entry's starting position.
-            Verify that transponders are correctly assigned to drivers before starting.
+            <span className="font-semibold">Review the Grid Called panel:</span> After calling
+            the grid the panel opens on its <span className="font-semibold">Drivers</span> tab, which lists
+            each entry's starting position and car number to read out. Verify that transponders are
+            correctly assigned to drivers before starting.
+          </li>
+          <li>
+            <span className="font-semibold">Check the marshals:</span> The{' '}
+            <span className="font-semibold">Marshals</span> tab lists the drivers who marshal this heat.
+            Everyone is assumed to be there. For one who was not, click{' '}
+            <span className="font-semibold">Missed duty</span> to record the absence. The referee can then use{' '}
+            <span className="font-semibold">Lose best qualifying round</span> or{' '}
+            <span className="font-semibold">Lap off in finals</span> beside it for a driver who missed duty.
           </li>
           <li>
             <span className="font-semibold">Pre-race readiness check:</span> Confirm all
@@ -138,14 +178,21 @@ export default function MeetingGuidePage() {
         <ol className="list-decimal list-inside space-y-2 text-sm">
           <li>
             <span className="font-semibold">Confirm grid is ready:</span> All drivers
-            should be in position with their cars on the grid. The Grid Editor panel shows
+            should be in position with their cars on the grid. The Grid Called panel shows
             the starting order.
           </li>
           <li>
             <span className="font-semibold">Click "Start Race":</span> The Start Race
-            button appears in the Grid Editor panel. Clicking it initiates the race. The
-            audio system plays the stagger start sequence, announcing each driver's name
-            at the configured interval.
+            button appears in the Grid Called panel. Clicking it starts a short countdown (with a
+            Cancel button) and then the race. A note above the panel says how the race starts.
+          </li>
+          <li>
+            <span className="font-semibold">How the start works:</span> The format sets this.
+            In a <span className="font-semibold">grid</span> start every car goes on the horn. In a{' '}
+            <span className="font-semibold">stagger</span> start each driver is called by name at the
+            configured interval and their time starts when they are called. In a{' '}
+            <span className="font-semibold">rolling</span> start nobody is called; the clock waits for the
+            first car to cross the line and then runs for everyone.
           </li>
           <li>
             <span className="font-semibold">The Live Timing panel appears:</span> Once
@@ -275,6 +322,13 @@ export default function MeetingGuidePage() {
             Transponders alert in the Cockpit and assign it to the correct entry via
             the Link Transponder dialog.
           </li>
+          <li>
+            <span className="font-semibold">Jump starts:</span> In a stagger start, a red{' '}
+            <span className="font-semibold">Jump start</span> alert appears on the Referee View when a car
+            crosses the line before it has been called, with how early it left. Click{' '}
+            <span className="font-semibold">Apply Penalty</span> on the alert to open the penalty form for
+            that driver. Nothing is applied automatically; the referee decides.
+          </li>
         </ol>
       </section>
 
@@ -329,7 +383,8 @@ export default function MeetingGuidePage() {
             <span className="font-semibold">Bump-up for finals:</span> When a B or
             C-Final finishes, the system automatically applies bump-up promotions and
             shows a toast notification listing how many drivers have been promoted to
-            the next final. Review the grid before starting the promoted final.
+            the next final. Review the grid before starting the promoted final. If a class's
+            A final is run in legs, its combined order is shown on the boards and finals printouts.
           </li>
           <li>
             <span className="font-semibold">End of meeting:</span> Once all races in
