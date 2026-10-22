@@ -65,7 +65,7 @@ describe('heatSheet', () => {
 
     const series = positionSeries([row(2, 1), row(1, 2)], history);
 
-    expect(series.map((s) => s.label)).toEqual(['Car 2', 'Car 1']);
+    expect(series.map((s) => s.label)).toEqual(['Driver 2', 'Driver 1']);
     expect(series[0].points).toEqual([{ lap: 1, position: 2 }, { lap: 2, position: 1 }]);
   });
 
@@ -93,7 +93,7 @@ describe('livePositionSeries', () => {
       ],
     );
 
-    expect(series.map((s) => s.label)).toEqual(['Driver 1', 'Car 7']);
+    expect(series.map((s) => s.label)).toEqual(['Driver 1', 'Driver 2']);
     expect(series[0].points).toEqual([{ lap: 1, position: 1 }]);
   });
 

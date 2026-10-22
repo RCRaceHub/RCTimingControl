@@ -5,12 +5,12 @@ const COLOURS = ['#2563eb', '#16a34a', '#dc2626', '#d97706', '#9333ea', '#0891b2
 
 const WIDTH = 720;
 const LEFT = 44;
-const RIGHT = 84;
+const RIGHT = 120;
 const TOP = 12;
 const BOTTOM = 40;
 const ROW = 28;
 const TALL_ROW = 20;
-const MAX_LABEL = 12;
+const MAX_LABEL = 16;
 
 /**
  * Who held which place over the heat: lap across, place down (first at the top), one line per driver labelled at its

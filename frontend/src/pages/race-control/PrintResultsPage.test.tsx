@@ -59,6 +59,11 @@ function renderPage(url = '/results/5') {
   );
 }
 
+/** The driver's name in the result table; the position chart labels its lines with the same name. */
+async function tableName(name: string) {
+  return (await screen.findAllByText(name)).find((el) => el.closest('tr')) as HTMLElement;
+}
+
 describe('PrintResultsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -69,7 +74,7 @@ describe('PrintResultsPage', () => {
   it('shows each driver\'s average lap and leaves the lap sheet off by default', async () => {
     renderPage();
 
-    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(await tableName('Ann Racer')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Avg Lap' })).toBeInTheDocument();
     expect(screen.getByText('20.500')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Lap times' })).not.toBeInTheDocument();
@@ -78,12 +83,12 @@ describe('PrintResultsPage', () => {
   it('shows where each driver started and the event it belongs to', async () => {
     renderPage();
 
-    expect(await screen.findByText('Ann Racer')).toBeInTheDocument();
+    expect(await tableName('Ann Racer')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Start' })).toBeInTheDocument();
-    const annRow = screen.getByText('Ann Racer').closest('tr') as HTMLElement;
+    const annRow = (await tableName('Ann Racer')).closest('tr') as HTMLElement;
     // Pos, Driver, Car, Start: Ann started second
     expect(within(annRow).getAllByRole('cell')[3]).toHaveTextContent('2');
-    const bobRow = screen.getByText('Bob Racer').closest('tr') as HTMLElement;
+    const bobRow = (await tableName('Bob Racer')).closest('tr') as HTMLElement;
     expect(within(bobRow).getAllByRole('cell')[3]).toHaveTextContent('1');
     expect(screen.getByText(/Autumn Club Day/)).toBeInTheDocument();
   });
