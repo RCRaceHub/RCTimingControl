@@ -97,6 +97,17 @@ class LapTimingServiceJumpStartTest {
     }
 
     @Test
+    void releasingTheRaceClearsTheAlertsOnOpenScreens() {
+        elapsedMs = 4_000;
+        pass("2000", 100);
+
+        service.releaseState(RACE);
+
+        assertThat(service.jumpStartsOf(RACE)).isEmpty();
+        verify(hub).broadcastJumpStarts(RACE, List.of());
+    }
+
+    @Test
     void aCarCrossingAfterItsTurnIsNotReported() {
         elapsedMs = 12_000;
         pass("2000", 100);

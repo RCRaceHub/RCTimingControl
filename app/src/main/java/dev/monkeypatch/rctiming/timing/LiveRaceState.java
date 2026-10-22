@@ -83,6 +83,11 @@ public class LiveRaceState {
         return startOffsetMs.getOrDefault(entryId, lastStartOffsetMs());
     }
 
+    /** Whether the entry has a slot in the stagger; false for an entry added after the offsets were set. */
+    public synchronized boolean hasStartOffset(long entryId) {
+        return startOffsetMs.containsKey(entryId);
+    }
+
     /** When the last car starts, in milliseconds after the race clock starts; 0 when they all start together. */
     public synchronized long lastStartOffsetMs() {
         return startOffsetMs.values().stream().mapToLong(Long::longValue).max().orElse(0L);

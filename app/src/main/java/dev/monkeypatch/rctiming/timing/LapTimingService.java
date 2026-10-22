@@ -52,6 +52,12 @@ public class LapTimingService {
 
     private final Map<Long, LiveRaceState> states = new ConcurrentHashMap<>();
     /**
+     * How early a car may cross before its turn without being called a jump start: clock and decoder times differ.
+     * The clock is read when the passing is handled, so a backlog on the timing thread can only hide a marginal
+     * jump start, never invent one.
+     */
+    static final long JUMP_START_GRACE_MS = 250;
+    /**
      * Races whose state was released and that have not started again. A passing whose race lookup ran before the
      * finish or restart committed can reach {@link #onLapPassing} after the release; without this it would
      * recreate the state and the next start would carry one stale lap.
@@ -64,8 +70,6 @@ public class LapTimingService {
     private final LapThresholdQuery lapThresholdQuery;
     private final RaceClockService raceClockService;
     private final ApplicationEventPublisher publisher;
-    /** How early a car may cross before its turn without being called a jump start: clock and decoder times differ. */
-    static final long JUMP_START_GRACE_MS = 250;
     /** Each running race's length and stagger, read once so a passing never queries for them. */
     private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
 
@@ -152,9 +156,6 @@ public class LapTimingService {
         if (entryId != null) {
             // A rolling start's clock waits for the first car; this starts it
             raceClockService.onFirstPassing(raceId);
-        }
-
-        if (entryId != null) {
             checkJumpStart(raceId, state, entryId);
         }
 
@@ -179,10 +180,12 @@ public class LapTimingService {
      * other start. Runs on the timing thread.
      */
     private void checkJumpStart(long raceId, LiveRaceState state, long entryId) {
-        if (planOf(raceId).staggerIntervalMs() <= 0) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        // An entry added after the state was made has no slot, so it is not judged against anyone else's
+        if (plan.staggerIntervalMs() <= 0 || !state.hasStartOffset(entryId)) {
             return;
         }
-        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, planOf(raceId).durationMs()).elapsedMs();
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
         long earlyMs = state.startOffsetMs(entryId) - elapsedMs;
         if (earlyMs > JUMP_START_GRACE_MS && state.recordJumpStart(entryId, earlyMs)) {
             log.info("Race {}: entry {} crossed the line {} ms before its start", raceId, entryId, earlyMs);
@@ -285,7 +288,11 @@ public class LapTimingService {
     public void releaseState(long raceId) {
         released.add(raceId);
         plans.remove(raceId);
-        states.remove(raceId);
+        LiveRaceState removed = states.remove(raceId);
+        if (removed != null && !removed.jumpStarts().isEmpty()) {
+            // Tells open referee screens to drop the alerts: they belong to the run that has ended
+            liveTimingHub.broadcastJumpStarts(raceId, List.of());
+        }
     }
 
     /**
