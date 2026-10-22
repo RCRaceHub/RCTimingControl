@@ -377,6 +377,24 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(ranked.get(2).entryId()).isEqualTo(drivers.get(2));
     }
 
+    @Test
+    void fillingTheFinalsFromTheTopGivesATenCarAFinalAndAShortLowestFinal() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 25);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 3))));
+
+        bumpUpSeedingService.seedFinals(buggyClass, buggies, 3, 10, 0, true);
+
+        assertThat(gridOf(finalOf(buggyClass, "A"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(0, 10));
+        assertThat(gridOf(finalOf(buggyClass, "B"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(10, 20));
+        assertThat(gridOf(finalOf(buggyClass, "C"))).extracting(RaceEntry::getEntryId)
+                .containsExactlyElementsOf(buggies.subList(20, 25));
+        assertThat(finalOf(buggyClass, "A").getBumpSlots()).isZero();
+    }
+
     private static final String POINTS_FINALS_BRCA = """
             {"type":"POINTS_FINALS","qualifyingHeats":2,"finalsCount":1,"finalDurationMinutes":5,
              "heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",

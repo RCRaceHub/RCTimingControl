@@ -62,6 +62,10 @@ export interface PointsFinalsConfig {
   brcaQualifying?: boolean;
   /** Longest a race may run in seconds, from its start; 0 or missing for no limit. BRCA uses 390. */
   maxRaceWindowSeconds?: number;
+  /** Cars on each final's grid; 0 or missing splits the field evenly. BRCA uses 10. */
+  carsPerFinal?: number;
+  /** Fill the finals from the top (A with ranks 1 to carsPerFinal, the lowest final with the rest). */
+  fillTopFirst?: boolean;
 }
 
 export interface ShikabaneConfig {

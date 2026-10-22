@@ -185,6 +185,15 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
           <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patch('bestHeatsCount', v)} />
           <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patch('maxRaceWindowSeconds', v)} />
+          <NumField label="Cars per Final (0 = even split)" value={value.carsPerFinal ?? 0} onChange={v => patch('carsPerFinal', v)} />
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-fill-top-first"
+              checked={value.fillTopFirst === true}
+              onCheckedChange={checked => patch('fillTopFirst', checked === true)}
+            />
+            <Label htmlFor="points-fill-top-first" className="text-xs">Fill A first, short lowest final</Label>
+          </div>
           <div className="flex items-center gap-2 pt-5">
             <Checkbox
               id="points-split-ties"

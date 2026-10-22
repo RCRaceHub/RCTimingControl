@@ -24,6 +24,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * last car's start in a stagger start), whatever the cars are doing: when it is reached the race is finished and a
  * car that has not completed its last lap is left with the laps it had before the heat's duration ran out. 0 means
  * no limit, and the track's max last lap wait is the only backstop.
+ *
+ * <p>{@code carsPerFinal} is the cars on each final's grid (0 splits the field evenly), and {@code fillTopFirst}
+ * fills the finals from the top, A with ranks 1 to {@code carsPerFinal}, B with the next block, and the lowest
+ * final with whoever is left, instead of filling the lowest final first. Neither makes drivers bump up.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PointsFinalsConfig(
@@ -39,7 +43,9 @@ public record PointsFinalsConfig(
     int bestHeatsCount,
     boolean splitTiedPlaces,
     boolean brcaQualifying,
-    int maxRaceWindowSeconds
+    int maxRaceWindowSeconds,
+    int carsPerFinal,
+    boolean fillTopFirst
 ) implements RaceFormatConfig {
 
     /** A config without the round by round scoring options: every round counts and the rules are today's. */
@@ -47,6 +53,6 @@ public record PointsFinalsConfig(
                               int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
                               QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
         this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
-                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0);
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0, 0, false);
     }
 }

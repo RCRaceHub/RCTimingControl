@@ -53,4 +53,13 @@ class AutoFinalsSeedingServiceTest {
         assertThat(AutoFinalsSeedingService.layout(points, 9, 2, 4)).containsExactly(5, 0);
         assertThat(AutoFinalsSeedingService.layout(points, 9, 2, 7)).containsExactly(7, 0);
     }
+
+    @Test
+    void aPointsFinalsFormatCanFixTheCarsPerFinal() {
+        var fixed = new PointsFinalsConfig(4, 3, 5, 5, StartType.STAGGER, StartType.GRID, null, 2, 1, 2, false, false,
+                390, 10, true);
+        // 25 drivers, three finals: ten cars each fits, and the grid grows if the field would not
+        assertThat(AutoFinalsSeedingService.layout(fixed, 25, 3, null)).containsExactly(10, 0);
+        assertThat(AutoFinalsSeedingService.layout(fixed, 35, 3, null)).containsExactly(12, 0);
+    }
 }

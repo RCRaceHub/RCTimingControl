@@ -133,6 +133,11 @@ The grid of each final follows qualifying order. The layout depends on the forma
 
 The number of finals is the number the round generator made for the class.
 
+A Points Finals format can set **cars per final** and **fill A first**. With fill A first the finals are filled from
+the top instead of from the bottom: the A final is ranks 1 to the cars per final, B the next block, and the lowest final
+takes whoever is left, so with 25 drivers and 10 cars each the C final has 5. Nobody bumps up. If the field would not
+fit, the grid grows as above.
+
 Example (bump-up, grid size 10, bump spots 2, two finals, 18 drivers):
 
 - **B final**: the lowest qualifiers, ranks 9 to 18 (10 cars), gridded in qualifying order.

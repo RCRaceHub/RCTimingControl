@@ -90,6 +90,21 @@ public class BumpUpSeedingService {
                            int finalsCount,
                            int carsPerFinal,
                            int bumpCount) {
+        seedFinals(eventClassId, qualifyingStandings, finalsCount, carsPerFinal, bumpCount, false);
+    }
+
+    /**
+     * As {@link #seedFinals(Long, List, int, int, int)}, but with {@code fillTopFirst} the finals are filled from the
+     * top: the top final takes the best {@code carsPerFinal} qualifiers, the next final the following block, and the
+     * lowest final the rest (at most {@code carsPerFinal}, since the caller has sized the grid to fit the field).
+     * That layout has no bump spots, so {@code bumpCount} is ignored.
+     */
+    public void seedFinals(Long eventClassId,
+                           List<Long> qualifyingStandings,
+                           int finalsCount,
+                           int carsPerFinal,
+                           int bumpCount,
+                           boolean fillTopFirst) {
         // Load all final races for this event class
         List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         if (finals.isEmpty()) {
@@ -119,6 +134,9 @@ public class BumpUpSeedingService {
         // Higher finals: positions 1..(carsPerFinal-bumpCount) = next block of regular qualifiers
         //                positions (carsPerFinal-bumpCount+1)..carsPerFinal = bump slots (Race.bumpSlots)
 
+        if (fillTopFirst) {
+            bumpCount = 0;
+        }
         // Work out regular slot counts per final
         int[] regularSlots = new int[finals.size()];
         for (int fi = 0; fi < finals.size(); fi++) {
@@ -137,25 +155,36 @@ public class BumpUpSeedingService {
             slotEntriesByFinal.add(null);
         }
 
-        int bottomPtr = qualifyingStandings.size() - 1;
-        int lowestSlots = regularSlots[0];
-        List<Long> lowestEntries = new ArrayList<>(lowestSlots);
-        for (int s = 0; s < lowestSlots && bottomPtr >= 0; s++) {
-            lowestEntries.add(0, qualifyingStandings.get(bottomPtr--)); // prepend to reverse order
-        }
-        slotEntriesByFinal.set(0, lowestEntries);
-
-        // Bound the top pass at bottomPtr (its value *after* the bottom pass above already
-        // ran) so the two passes can never claim the same standings entry twice when the
-        // qualifying field is smaller than total regular capacity.
-        int topPtr = 0;
-        for (int fi = finals.size() - 1; fi >= 1; fi--) {
-            int slots = regularSlots[fi];
-            List<Long> entries = new ArrayList<>(slots);
-            for (int s = 0; s < slots && topPtr <= bottomPtr; s++) {
-                entries.add(qualifyingStandings.get(topPtr++));
+        if (fillTopFirst) {
+            // Top final first; each takes a full grid and the lowest takes what is left
+            int next = 0;
+            for (int fi = finals.size() - 1; fi >= 0; fi--) {
+                int take = fi == 0 ? qualifyingStandings.size() - next : Math.min(carsPerFinal,
+                        qualifyingStandings.size() - next);
+                slotEntriesByFinal.set(fi, new ArrayList<>(qualifyingStandings.subList(next, next + Math.max(0, take))));
+                next += Math.max(0, take);
             }
-            slotEntriesByFinal.set(fi, entries);
+        } else {
+            int bottomPtr = qualifyingStandings.size() - 1;
+            int lowestSlots = regularSlots[0];
+            List<Long> lowestEntries = new ArrayList<>(lowestSlots);
+            for (int s = 0; s < lowestSlots && bottomPtr >= 0; s++) {
+                lowestEntries.add(0, qualifyingStandings.get(bottomPtr--)); // prepend to reverse order
+            }
+            slotEntriesByFinal.set(0, lowestEntries);
+
+            // Bound the top pass at bottomPtr (its value *after* the bottom pass above already
+            // ran) so the two passes can never claim the same standings entry twice when the
+            // qualifying field is smaller than total regular capacity.
+            int topPtr = 0;
+            for (int fi = finals.size() - 1; fi >= 1; fi--) {
+                int slots = regularSlots[fi];
+                List<Long> entries = new ArrayList<>(slots);
+                for (int s = 0; s < slots && topPtr <= bottomPtr; s++) {
+                    entries.add(qualifyingStandings.get(topPtr++));
+                }
+                slotEntriesByFinal.set(fi, entries);
+            }
         }
 
         for (int fi = 0; fi < finals.size(); fi++) {
