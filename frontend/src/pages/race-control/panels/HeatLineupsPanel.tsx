@@ -1,21 +1,39 @@
-import { useQueries } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
-import { getRaceEntries, type RunOrderItemDto } from '@/lib/raceControlApi';
+import { getRaceEntries, moveEntryToHeat, type RunOrderItemDto } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { roundName } from '@/lib/format';
+import { getApiErrorMessage } from '@/lib/errors';
 
 type Props = {
   race: RunOrderItemDto;
   runOrder: RunOrderItemDto[];
   onSelect: (raceId: number) => void;
+  canMove?: boolean;
 };
 
 /**
  * Who is in which heat of the selected practice or qualifying heat's round and class, so the line-ups can be checked
- * at the start of practice and before qualifying begins. Moving a driver is done from the heat's own driver list
- * ({@code HeatDriversPanel}); the heat names here select that heat.
+ * at the start of practice and before qualifying begins. A driver in a heat that has not been called can be moved to
+ * another such heat of the round to balance them (the heats need not stay the same size), in this round or in every
+ * round where both heats are still pending, which is how qualifying is evened up after practice. The heat names
+ * select that heat.
  */
-export function HeatLineupsPanel({ race, runOrder, onSelect }: Props) {
+export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: Props) {
+  const queryClient = useQueryClient();
+  const [allRounds, setAllRounds] = useState(true);
+  const move = useMutation({
+    mutationFn: (v: { raceId: number; entryId: number; targetRaceId: number }) =>
+      moveEntryToHeat(v.raceId, { entryId: v.entryId, targetRaceId: v.targetRaceId, allRounds }),
+    onSuccess: () => {
+      toast.success('Driver moved');
+      queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.all });
+    },
+    onError: (err) => toast.error(getApiErrorMessage(err, 'The driver could not be moved')),
+  });
+
   const heats = runOrder
     .filter((r) => r.eventClassId === race.eventClassId && r.roundType === race.roundType
       && r.roundNumber === race.roundNumber && r.finalLetter === null)
@@ -51,9 +69,29 @@ export function HeatLineupsPanel({ race, runOrder, onSelect }: Props) {
               </span>
               <ol className="space-y-0.5 text-sm">
                 {drivers.map((d) => (
-                  <li key={d.entryId}>
-                    {d.racerName}
-                    {d.carNumber && <span className="ml-1 text-muted-foreground">#{d.carNumber}</span>}
+                  <li key={d.entryId} className="flex items-center justify-between gap-2">
+                    <span>
+                      {d.racerName}
+                      {d.carNumber && <span className="ml-1 text-muted-foreground">#{d.carNumber}</span>}
+                    </span>
+                    {canMove && h.status === 'PENDING' && (
+                      <select
+                        aria-label={`Move ${d.racerName} to`}
+                        className="rounded border bg-background px-1 py-0.5 text-xs"
+                        value=""
+                        disabled={move.isPending}
+                        onChange={(ev) => {
+                          if (ev.target.value) {
+                            move.mutate({ raceId: h.raceId, entryId: d.entryId, targetRaceId: Number(ev.target.value) });
+                          }
+                        }}
+                      >
+                        <option value="">Move to…</option>
+                        {heats.filter((o) => o.raceId !== h.raceId && o.status === 'PENDING').map((o) => (
+                          <option key={o.raceId} value={o.raceId}>Heat {o.heatNumber}</option>
+                        ))}
+                      </select>
+                    )}
                   </li>
                 ))}
               </ol>
@@ -61,6 +99,12 @@ export function HeatLineupsPanel({ race, runOrder, onSelect }: Props) {
           );
         })}
       </div>
+      {canMove && (
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <input type="checkbox" checked={allRounds} onChange={(ev) => setAllRounds(ev.target.checked)} />
+          Also move them in the other rounds where both heats haven't been called
+        </label>
+      )}
     </Card>
   );
 }

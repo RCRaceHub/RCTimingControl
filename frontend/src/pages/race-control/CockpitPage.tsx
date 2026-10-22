@@ -437,7 +437,12 @@ export default function CockpitPage() {
               </>
             )}
             {selectedRace.roundType !== 'FINAL' && (
-              <HeatLineupsPanel race={selectedRace} runOrder={runOrder} onSelect={setSelectedRaceId} />
+              <HeatLineupsPanel
+                race={selectedRace}
+                runOrder={runOrder}
+                onSelect={setSelectedRaceId}
+                canMove={canControlRace}
+              />
             )}
           </div>
         );

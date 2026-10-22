@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HeatLineupsPanel } from './HeatLineupsPanel';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 
 const mockEntries = vi.fn();
+const mockMove = vi.fn();
 vi.mock('@/lib/raceControlApi', () => ({
   getRaceEntries: (...args: unknown[]) => mockEntries(...args),
+  moveEntryToHeat: (...args: unknown[]) => mockMove(...args),
 }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const heat = (raceId: number, heatNumber: number): RunOrderItemDto => ({
   raceId, eventClassId: 7, sequenceInEvent: raceId, roundNumber: 1, roundType: 'QUALIFIER', className: 'Buggy',
@@ -17,16 +20,17 @@ const heat = (raceId: number, heatNumber: number): RunOrderItemDto => ({
 describe('HeatLineupsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMove.mockResolvedValue(undefined);
     mockEntries.mockImplementation(async (raceId: number) => [
       { entryId: raceId * 10, racerName: `Driver ${raceId}`, carNumber: '1' },
     ]);
   });
 
-  function renderPanel(runOrder: RunOrderItemDto[], onSelect = vi.fn()) {
+  function renderPanel(runOrder: RunOrderItemDto[], onSelect = vi.fn(), canMove = false) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
-        <HeatLineupsPanel race={runOrder[0]} runOrder={runOrder} onSelect={onSelect} />
+        <HeatLineupsPanel race={runOrder[0]} runOrder={runOrder} onSelect={onSelect} canMove={canMove} />
       </QueryClientProvider>,
     );
     return onSelect;
@@ -38,6 +42,18 @@ describe('HeatLineupsPanel', () => {
     expect(await screen.findByText('Driver 2')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Heat 2' }));
     expect(onSelect).toHaveBeenCalledWith(2);
+  });
+
+  it('moves a driver to another heat in every round where both are pending, to balance the heats', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    fireEvent.change(await screen.findByLabelText('Move Driver 1 to'), { target: { value: '2' } });
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: true }));
+  });
+
+  it('offers no moves without permission', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)]);
+    await screen.findByText('Driver 1');
+    expect(screen.queryByLabelText('Move Driver 1 to')).not.toBeInTheDocument();
   });
 
   it('shows nothing for a class with a single heat', () => {
