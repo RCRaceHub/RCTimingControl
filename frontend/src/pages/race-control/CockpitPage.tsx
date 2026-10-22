@@ -428,6 +428,7 @@ export default function CockpitPage() {
             {selectedRace.roundType === 'FINAL' && (
               <>
                 <FinalsLineupPanel
+                  key={selectedRace.eventClassId}
                   eventId={eventId}
                   eventClassId={selectedRace.eventClassId}
                   canEdit={canControlRace}

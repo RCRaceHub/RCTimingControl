@@ -132,7 +132,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
                         <span className="ml-1 text-xs text-muted-foreground">(Q{d.qualifyingPosition})</span>
                       )}
                     </span>
-                    {canEdit && fin.editable && (
+                    {canEdit && fin.editable && fin.letter !== 'Z' && (
                       <span className="flex gap-1">
                         <select
                           aria-label={`Move ${d.driverName} to`}
@@ -146,7 +146,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
                           }}
                         >
                           <option value="">Move to…</option>
-                          {lineup.finals.filter((o) => o.raceId !== fin.raceId && o.editable).map((o) => (
+                          {lineup.finals.filter((o) => o.raceId !== fin.raceId && o.editable && o.letter !== 'Z').map((o) => (
                             <option key={o.raceId} value={o.raceId}>{o.letter} final</option>
                           ))}
                         </select>

@@ -125,6 +125,9 @@ public class FinalsLineupService {
         if (raceEntryRepository.findByRaceIdAndEntryId(target.getId(), entryId).isPresent()) {
             throw new StateConflictException("The driver is already in final " + target.getFinalLetter());
         }
+        if (moving.isBumped()) {
+            throw new StateConflictException("That driver was bumped up into this final and can't be moved");
+        }
         List<RaceEntry> rest = new ArrayList<>(raceEntryRepository.findByRaceIdOrderByGridPosition(source.getId()));
         rest.removeIf(e -> e.getEntryId().equals(entryId));
         if (rest.isEmpty()) {
@@ -163,6 +166,9 @@ public class FinalsLineupService {
                 .orElseThrow(() -> new EntityNotFoundException("Entry " + entryId + " is not in race " + raceId));
         RaceEntry b = raceEntryRepository.findByRaceIdAndEntryId(second.getId(), otherEntryId)
                 .orElseThrow(() -> new EntityNotFoundException("Entry " + otherEntryId + " is not in race " + otherRaceId));
+        if (a.isBumped() || b.isBumped()) {
+            throw new StateConflictException("A driver bumped up into a final can't be swapped");
+        }
         if (!first.getId().equals(second.getId())
                 && (raceEntryRepository.findByRaceIdAndEntryId(second.getId(), entryId).isPresent()
                 || raceEntryRepository.findByRaceIdAndEntryId(first.getId(), otherEntryId).isPresent())) {
@@ -184,6 +190,10 @@ public class FinalsLineupService {
     private void requireEditableFinals(Race first, Race second) {
         if (first.getFinalLetter() == null || second.getFinalLetter() == null) {
             throw new IllegalArgumentException("Only drivers in finals can be edited here");
+        }
+        if (BumpUpSeedingService.ZOMBIE_LETTER.equals(first.getFinalLetter())
+                || BumpUpSeedingService.ZOMBIE_LETTER.equals(second.getFinalLetter())) {
+            throw new IllegalArgumentException("The zombie round fills itself once the mains are done");
         }
         if (!Objects.equals(first.getEventClassId(), second.getEventClassId())) {
             throw new IllegalArgumentException("A driver can only move between finals of the same class");

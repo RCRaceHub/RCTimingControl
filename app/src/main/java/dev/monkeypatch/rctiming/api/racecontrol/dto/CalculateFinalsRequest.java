@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 /**
@@ -8,5 +9,5 @@ import jakarta.validation.constraints.Min;
  * @param carsPerFinal cars on each final's grid; null uses the class format's own grid size, and the grid grows
  *                     if the field would not fit
  */
-public record CalculateFinalsRequest(@Min(1) Integer carsPerFinal) {
+public record CalculateFinalsRequest(@Min(1) @Max(100) Integer carsPerFinal) {
 }

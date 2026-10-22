@@ -171,6 +171,7 @@ public class RaceControlController {
      * {@code GET /event/{eventId}/finals-lineup}. Read only.
      */
     @GetMapping("/event/{eventId}/finals-lineup")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<FinalsLineupDto> getFinalsLineup(@PathVariable long eventId) {
         return finalsLineupService.forEvent(eventId);
     }
@@ -182,7 +183,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/finals/move")
-    public ResponseEntity<Void> moveFinalsDriver(@PathVariable long raceId, @Valid @RequestBody FinalsMoveRequest request) {
+    public ResponseEntity<Void> moveFinalsDriver(@PathVariable long raceId,
+                                                 @Valid @RequestBody FinalsMoveRequest request) {
         finalsLineupService.moveDriver(CurrentOfficial.actor(), raceId, request.entryId(), request.targetRaceId(),
                 request.targetPosition());
         return ResponseEntity.noContent().build();
@@ -195,7 +197,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/finals/swap")
-    public ResponseEntity<Void> swapFinalsDrivers(@PathVariable long raceId, @Valid @RequestBody FinalsSwapRequest request) {
+    public ResponseEntity<Void> swapFinalsDrivers(@PathVariable long raceId,
+                                                  @Valid @RequestBody FinalsSwapRequest request) {
         finalsLineupService.swapDrivers(CurrentOfficial.actor(), raceId, request.entryId(), request.otherRaceId(),
                 request.otherEntryId());
         return ResponseEntity.noContent().build();

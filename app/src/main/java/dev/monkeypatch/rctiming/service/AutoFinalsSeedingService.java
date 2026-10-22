@@ -14,8 +14,6 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +33,6 @@ import java.util.Map;
  */
 @Service
 public class AutoFinalsSeedingService {
-
-    private static final Logger log = LoggerFactory.getLogger(AutoFinalsSeedingService.class);
 
     private final RaceRepository raceRepository;
     private final EventClassRepository eventClassRepository;
@@ -60,6 +56,7 @@ public class AutoFinalsSeedingService {
     }
 
     /** Every qualifying heat is finished and at least one was not abandoned, so there are results to seed from. */
+    /** Whether every qualifying heat is finished, as {@link FinalsLineupService} shows it. */
     boolean qualifyingComplete(Long eventClassId) {
         List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
         return qualifiers.stream().allMatch(q -> q.getStatus() == RaceStatus.FINISHED)
@@ -68,7 +65,8 @@ public class AutoFinalsSeedingService {
 
     /**
      * Calculates the class's finals from the qualifying results, on an official's say, the first time or again after
-     * a result changed (a heat re-run or corrected), which also throws away any hand edits to the line-ups. Refused until every qualifying heat is finished, since a driver who is only
+     * a result changed (a heat re-run or corrected), which also throws away any hand edits to the line-ups. Refused until every qualifying heat is finished,
+     * since a driver who is only
      * in an unfinished heat would be left out of every final, and once a final has started.
      *
      * @param carsPerFinal cars on each final's grid, or null for the format's own grid size (an even split of the
@@ -137,6 +135,7 @@ public class AutoFinalsSeedingService {
         int even = Math.max(1, (field + finalsCount - 1) / finalsCount);
         return new int[] {cars != null ? Math.max(cars, even) : even, 0};
     }
+
     /**
      * {cars per final, bump count} for a configured grid size and bump spots. The lowest final takes a full grid and
      * each higher one its grid less the bump spots, so the grid grows until the field fits rather than leave drivers
