@@ -11,7 +11,7 @@ import { useScoringSystems } from '@/hooks/admin/useAdminScoringSystems';
  * Fills the championship's rounds scoring, bonuses, overall table switch and points scale from a saved scoring system.
  * The values are copied, so everything stays editable afterwards and later edits to the system change nothing here.
  */
-export function ApplyScoringSystem({ championshipId }: { championshipId: number }) {
+export function ApplyScoringSystem({ championshipId, onApplied }: { championshipId: number; onApplied: () => void }) {
   const { data: systems = [] } = useScoringSystems('CHAMPIONSHIP');
   const apply = useApplyScoringSystem(championshipId);
   const [systemId, setSystemId] = useState('');
@@ -19,9 +19,10 @@ export function ApplyScoringSystem({ championshipId }: { championshipId: number 
   async function handleApply() {
     const system = systems.find(s => String(s.id) === systemId);
     if (!system) return;
-    if (!window.confirm(`Replace this championship's scoring rules and points scale with ${system.name}?`)) return;
+    if (!window.confirm(`Replace this championship's scoring rules and points scale with ${system.name}? Unsaved changes below will be lost.`)) return;
     try {
       await apply.mutateAsync(system.id);
+      onApplied();
       toast.success(`Applied ${system.name}`);
     } catch {
       toast.error('Could not apply the scoring system');

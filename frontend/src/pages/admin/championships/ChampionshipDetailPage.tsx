@@ -1,4 +1,5 @@
 import { useRoles } from '@/hooks/useRoles';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -58,6 +59,8 @@ export default function ChampionshipDetailPage() {
   const { data: competitors = [] } = useAdminCompetitorsList();
 
   const { isAdmin } = useRoles();
+  // Counts applied scoring systems, so the forms reload their values even when an apply changes nothing
+  const [appliedCount, setAppliedCount] = useState(0);
 
   async function handleUpdate(body: Omit<ChampionshipDto, 'id'>) {
     await updateMutation.mutateAsync(body);
@@ -106,9 +109,9 @@ export default function ChampionshipDetailPage() {
 
         <TabsContent value="config" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
-            <ApplyScoringSystem championshipId={id} />
+            <ApplyScoringSystem championshipId={id} onApplied={() => setAppliedCount(n => n + 1)} />
             <ChampionshipConfigForm
-              key={`${data.bestXFromYX}-${data.bestXFromYY}-${data.tqBonusPoints}-${data.afinalWinnerBonusPoints}-${data.showOverallTable}`}
+              key={`${appliedCount}-${data.name}-${data.bestXFromYX}-${data.bestXFromYY}-${data.tqBonusPoints}-${data.afinalWinnerBonusPoints}-${data.showOverallTable}`}
               initialValue={data}
               onSubmit={handleUpdate}
               submitLabel="Save"
@@ -131,7 +134,7 @@ export default function ChampionshipDetailPage() {
         <TabsContent value="points-scale" className="mt-4">
           <ReadOnlyUnlessAdmin isAdmin={isAdmin}>
             <PointsScaleEditor
-              key={JSON.stringify(data.pointsScale)}
+              key={`${appliedCount}-${JSON.stringify(data.pointsScale)}`}
               championshipId={id}
               initialScale={data.pointsScale}
             />
