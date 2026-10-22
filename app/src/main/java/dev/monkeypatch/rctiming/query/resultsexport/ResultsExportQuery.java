@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -251,29 +250,19 @@ public class ResultsExportQuery {
     }
 
     /**
-     * One class's standings, highest points first and by name within equal points. Equal points share a position
-     * and the next differing score takes its place in the list (1, 1, 3).
+     * One class's standings in the order {@link ChampionshipStandingsQuery} ranked them, each with the position it
+     * gave (drivers level on points and countback share one, 1, 1, 3).
      */
     private List<ResultsExportV1.Standing> standings(List<StandingsRowDto> rows, long eventId,
                                                      Map<Long, CompetitorRef> competitors) {
-        List<StandingsRowDto> sorted = new ArrayList<>(rows);
-        sorted.sort(Comparator.comparingInt(StandingsRowDto::totalPoints).reversed()
-                .thenComparing(StandingsRowDto::displayName, Comparator.nullsLast(Comparator.naturalOrder())));
         List<ResultsExportV1.Standing> standings = new ArrayList<>();
-        int position = 0;
-        Integer lastPoints = null;
-        for (int i = 0; i < sorted.size(); i++) {
-            StandingsRowDto row = sorted.get(i);
-            if (!Objects.equals(lastPoints, row.totalPoints())) {
-                position = i + 1;
-                lastPoints = row.totalPoints();
-            }
+        for (StandingsRowDto row : rows) {
             RoundResultDto here = row.rounds().stream()
                     .filter(rr -> Objects.equals(rr.eventId(), eventId))
                     .findFirst().orElse(null);
             CompetitorRef competitor = competitors.getOrDefault(row.driverId(), CompetitorRef.NONE);
             standings.add(new ResultsExportV1.Standing(
-                    position,
+                    row.position(),
                     competitor.externalSource(),
                     competitor.externalId(),
                     row.driverId(),

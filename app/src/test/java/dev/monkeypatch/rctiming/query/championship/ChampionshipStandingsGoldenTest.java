@@ -110,6 +110,12 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
         stockRule.setBestXFromYX(1);
         stockRule.setCreatedAt(Instant.now());
         championshipClassRepository.save(stockRule);
+        // Only the classes added to a championship score, so Mod is added with no rule of its own
+        ChampionshipClass modRule = new ChampionshipClass();
+        modRule.setChampionshipId(f.champId());
+        modRule.setRacingClassId(f.modClass());
+        modRule.setCreatedAt(Instant.now());
+        championshipClassRepository.save(modRule);
 
         assertThat(render(query.computeStandings(f.champId()), f.classNames()))
                 .isEqualTo(readGolden("championship-standings-finals.txt"));
@@ -118,8 +124,9 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
     /**
      * One class scored from two qualifying rounds per event. A driver's best heat counts, and a
      * driver who misses both heats has one DNS round, not two. Of two rounds worth no points, the
-     * fifth place is dropped before the DNS. Finn races only the last round, fewer than Y, so
-     * nothing is dropped. Bob and Cara tie on points, as do Dan and Finn, and stand by name.
+     * fifth place is dropped before the DNS. Finn races only the last round, fewer than X, so
+     * nothing is dropped. Dan and Finn tie on points and Finn goes ahead on countback, his one win beating
+     * Dan's best of 2nd.
      */
     @Test
     void qualifyingHeatsMatchGoldenOutput() throws IOException {
@@ -183,7 +190,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
     }
 
     /** The championship built by {@link #buildChampionship} and its two racing classes. */
-    private record Fixture(Long champId, Long stockClass, Map<Long, String> classNames) {}
+    private record Fixture(Long champId, Long modClass, Long stockClass, Map<Long, String> classNames) {}
 
     private Fixture buildChampionship(ScoringSource scoringSource) {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
@@ -242,7 +249,7 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
             }
         }
 
-        return new Fixture(champId, stockClass, Map.of(modClass, "Mod", stockClass, "Stock"));
+        return new Fixture(champId, modClass, stockClass, Map.of(modClass, "Mod", stockClass, "Stock"));
     }
 
     // ── Rendering ────────────────────────────────────────────────────────────────

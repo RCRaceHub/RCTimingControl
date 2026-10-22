@@ -404,6 +404,8 @@ export interface StandingsRowDto {
   displayName: string;
   racingClassId: number;
   totalPoints: number;
+  /** Place in the class; drivers level on points and countback share one. */
+  position: number;
   rounds: RoundResultDto[];
 }
 

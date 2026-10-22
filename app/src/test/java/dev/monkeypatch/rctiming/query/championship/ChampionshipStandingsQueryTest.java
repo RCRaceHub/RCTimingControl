@@ -2,6 +2,8 @@ package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.championship.Championship;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClass;
+import dev.monkeypatch.rctiming.domain.championship.ChampionshipClassRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLink;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipEventLinkRepository;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipPointsScaleEntry;
@@ -62,6 +64,9 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
     @Autowired
     ChampionshipRepository championshipRepository;
+
+    @Autowired
+    ChampionshipClassRepository championshipClassRepository;
 
     @Autowired
     ChampionshipEventLinkRepository eventLinkRepository;
@@ -314,6 +319,83 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         List<StandingsRowDto> standings = query.computeStandings(champ.getId());
 
         assertThat(standings.stream().mapToInt(StandingsRowDto::totalPoints).sum()).isZero();
+    }
+
+    /** One finished A final at a new event linked as round {@code roundNum}, with a driver in the given place. */
+    private void finishRound(Championship champ, int roundNum, User driver, int position) {
+        Event event = makeEvent("Event-" + roundNum + "-" + UUID.randomUUID().toString().substring(0, 6));
+        linkEventToChampionship(champ.getId(), event.getId(), roundNum);
+        Long ecId = makeEventClass(event.getId());
+        Round round = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race race = makeRace(round.getId(), ecId, "A", 1);
+        Entry entry = makeEntry(driver.getId(), event.getId(), ecId);
+        makeRaceEntry(race.getId(), entry.getId());
+        makeSnapshot(race.getId(), String.format(
+                "[{\"position\":%d,\"entryId\":%d,\"driverName\":\"X\",\"carNumber\":\"1\","
+                + "\"lapsCompleted\":10,\"totalTimeMs\":60000,\"bestLapMs\":6000,\"gapToLeaderMs\":0}]",
+                position, entry.getId()));
+    }
+
+    @Test
+    void bestXCountsAtMostXRoundsEvenWithFewerThanYRaced() throws Exception {
+        // Best 2 from 4, but only three rounds raced: the worst of the three is still dropped
+        Championship champ = makeChampionship(0, 0, 2, 4, ScoringSource.FINALS);
+        User driver = makeUser("Fay", "Few");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6));
+        finishRound(champ, 1, driver, 1);
+        finishRound(champ, 2, driver, 2);
+        finishRound(champ, 3, driver, 3);
+
+        StandingsRowDto row = query.computeStandings(champ.getId()).get(0);
+        assertThat(row.totalPoints()).isEqualTo(18);
+        assertThat(row.rounds().stream().filter(RoundResultDto::dropped).count()).isEqualTo(1);
+    }
+
+    @Test
+    void onlyTheClassesAddedToAChampionshipScore() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        User driver = makeUser("Cleo", "Class");
+        addPointsScale(champ.getId(), Map.of(1, 10));
+        finishRound(champ, 1, driver, 1);
+
+        // No classes added yet: every class with results scores
+        assertThat(query.computeStandings(champ.getId())).hasSize(1);
+
+        ChampionshipClass other = new ChampionshipClass();
+        other.setChampionshipId(champ.getId());
+        RacingClass otherClass = new RacingClass();
+        otherClass.setName("Other-" + UUID.randomUUID());
+        otherClass.setCreatedAt(Instant.now());
+        otherClass.setUpdatedAt(Instant.now());
+        other.setRacingClassId(racingClassRepository.save(otherClass).getId());
+        other.setCreatedAt(Instant.now());
+        championshipClassRepository.save(other);
+
+        assertThat(query.computeStandings(champ.getId())).isEmpty();
+    }
+
+    @Test
+    void driversLevelOnPointsAreSeparatedByCountbackAndShareAPositionIfStillLevel() throws Exception {
+        // Each driver races two events of their own: Ann 2nd and 2nd (16), Bea 1st and 5th (12), Cat and Dee 3rd
+        // and 3rd (12). Bea's win puts her ahead of Cat and Dee on countback, who are level and share third.
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6, 4, 4, 5, 2));
+        User ann = makeUser("Ann", "Aa");
+        User bea = makeUser("Bea", "Bb");
+        User cat = makeUser("Cat", "Cc");
+        User dee = makeUser("Dee", "Dd");
+        finishRound(champ, 1, ann, 2);
+        finishRound(champ, 2, ann, 2);
+        finishRound(champ, 3, bea, 1);
+        finishRound(champ, 4, bea, 5);
+        finishRound(champ, 5, cat, 3);
+        finishRound(champ, 6, cat, 3);
+        finishRound(champ, 7, dee, 3);
+        finishRound(champ, 8, dee, 3);
+
+        List<StandingsRowDto> rows = query.computeStandings(champ.getId());
+        assertThat(rows).extracting(StandingsRowDto::totalPoints).containsExactly(16, 12, 12, 12);
+        assertThat(rows).extracting(StandingsRowDto::position).containsExactly(1, 2, 3, 3);
     }
 
     @Test

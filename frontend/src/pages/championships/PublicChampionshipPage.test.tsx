@@ -28,8 +28,8 @@ describe('PublicChampionshipPage', () => {
   it("shows each competitor's display name, including drivers with no login", async () => {
     vi.mocked(getPublicChampionshipInfo).mockResolvedValue({ id: 5, name: 'Club Series', classes: [{ racingClassId: 1, name: 'Buggy' }] });
     vi.mocked(getPublicChampionshipStandings).mockResolvedValue([
-      { driverId: 7, displayName: 'Wendy Walkin', racingClassId: 1, totalPoints: 10, rounds: [] },
-      { driverId: 3, displayName: 'Larry Login', racingClassId: 1, totalPoints: 8, rounds: [] },
+      { driverId: 7, displayName: 'Wendy Walkin', racingClassId: 1, totalPoints: 10, position: 1, rounds: [] },
+      { driverId: 3, displayName: 'Larry Login', racingClassId: 1, totalPoints: 8, position: 2, rounds: [] },
     ]);
 
     renderPage();
@@ -46,8 +46,8 @@ describe('PublicChampionshipPage', () => {
       classes: [{ racingClassId: 1, name: 'Buggy' }, { racingClassId: 2, name: 'Truck' }],
     });
     vi.mocked(getPublicChampionshipStandings).mockResolvedValue([
-      { driverId: 1, displayName: 'Ann Buggy', racingClassId: 1, totalPoints: 20, rounds: [] },
-      { driverId: 2, displayName: 'Bob Truck', racingClassId: 2, totalPoints: 15, rounds: [] },
+      { driverId: 1, displayName: 'Ann Buggy', racingClassId: 1, totalPoints: 20, position: 1, rounds: [] },
+      { driverId: 2, displayName: 'Bob Truck', racingClassId: 2, totalPoints: 15, position: 1, rounds: [] },
     ]);
 
     renderPage();
@@ -62,7 +62,7 @@ describe('PublicChampionshipPage', () => {
   it('still shows the standings when the class names cannot be read', async () => {
     vi.mocked(getPublicChampionshipInfo).mockRejectedValue(new Error('down'));
     vi.mocked(getPublicChampionshipStandings).mockResolvedValue([
-      { driverId: 1, displayName: 'Ann Buggy', racingClassId: 9, totalPoints: 20, rounds: [] },
+      { driverId: 1, displayName: 'Ann Buggy', racingClassId: 9, totalPoints: 20, position: 1, rounds: [] },
     ]);
 
     renderPage();

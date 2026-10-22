@@ -194,7 +194,8 @@ A championship links events (each event is a round) and scores each driver per c
 |---|---|
 | Points scale | Points per finishing position (position 1 gets the first value and so on; a position not in the scale scores 0) |
 | Scoring source | `QUALIFYING`: the driver's best qualifying place scores. `FINALS`: the best final place scores. `BOTH`: the points for the best qualifying place **and** the best final place are added. Practice never scores. |
-| Best X from Y | Once a driver has at least Y rounds, their worst Y minus X rounds are dropped. Can be set per class; either number empty falls back to the championship's. With only X set, exactly X rounds are kept. With neither, every round counts. A DNS or excluded round is an ordinary round here, worth 0, so it is dropped first. |
+| Classes | Only the classes added to the championship score. A championship with no classes added yet scores every class that has results. |
+| Best X from Y | A driver's best X rounds count and the rest are dropped; a driver with X rounds or fewer keeps them all, so a round not raced costs nothing beyond the points it would have scored. Can be set per class; an empty X falls back to the championship's. With no X every round counts. Y is kept for display and does not change the result. A DNS or excluded round is an ordinary round here, worth 0, so it is dropped first. |
 | TQ bonus points | Extra points to the driver who topped qualifying in the class at a round |
 | A-final winner bonus points | Extra points to whoever won the A final in the class at a round |
 | Exclusions | An official can exclude a driver from a round: that round is worth nothing, bonuses included |
@@ -208,10 +209,12 @@ How a round is scored:
 - Abandoned races are not excluded from position points: if one has a stored result, its rows score.
 - A driver on the grid at a round with no result in it has a **DNS** round, worth 0 points, which still counts
   towards Y.
-- **Drops**: the worst rounds are dropped to X from Y once the driver has Y rounds. "Worst" is fewest points, then
-  the worse position, so a finish worth nothing is dropped before a DNS.
+- **Drops**: every round past the driver's best X is dropped. "Worst" is fewest points, then the worse position,
+  so a finish worth nothing is dropped before a DNS.
 - Bonuses are **per driver, per class and per round**: winning in two classes or two rounds earns each, and winning two A finals in one event pays once. The TQ goes to the driver at the top of the class's qualifying table once all its qualifying heats are finished (lowest points for a low-points class, otherwise most laps then best lap), so it is not given out part way through qualifying. The A-final bonus goes to whoever finished 1st in a finished final lettered A.
-- The class table is ordered by total points, then name.
+- The class table is ordered by total points, then by **countback**: the driver with more wins in their counting
+  rounds ahead, then more seconds, and so on (a dropped or excluded round is not used). Drivers still level share a
+  position (1, 1, 3), in the table and in the results sent to RaceHub, and stand by name.
 
 Example: scale 1st 15, 2nd 12, 3rd 10, 4th 8, 5th 6; scoring source `BOTH`; TQ bonus 2; A-final bonus 3;
 best 2 from 3 rounds. Dan, in one class:

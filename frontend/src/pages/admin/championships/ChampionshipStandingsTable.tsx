@@ -94,11 +94,11 @@ export function ChampionshipStandingsTable({ championshipId }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row, idx) => {
+          {rows.map((row) => {
             const roundMap = new Map(row.rounds.map(r => [r.roundNumber, r]));
             return (
               <TableRow key={row.driverId}>
-                <TableCell className="font-medium">{idx + 1}</TableCell>
+                <TableCell className="font-medium">{row.position}</TableCell>
                 <TableCell>{row.displayName}</TableCell>
                 <TableCell className="text-right font-semibold">{row.totalPoints}</TableCell>
                 {roundNumbers.map(n => (

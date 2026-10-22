@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.CHAMPIONSHIP_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS;
@@ -121,6 +123,14 @@ public class ChampionshipStandingsQuery {
 
         boolean excluded(Long driverId, Long eventId) {
             return exclusions.contains(new DriverEvent(driverId, eventId));
+        }
+
+        /**
+         * Whether the class scores in the championship: only the classes added to it do, and one with no classes
+         * added yet scores every class that has results.
+         */
+        boolean scores(Long racingClassId) {
+            return classBestXFromY.isEmpty() || classBestXFromY.containsKey(racingClassId);
         }
 
         /** The class's own best X from Y, either half falling back to the championship's. */
@@ -672,6 +682,9 @@ public class ChampionshipStandingsQuery {
     private static List<StandingsRowDto> rows(Tally tally, Rules rules) {
         List<StandingsRowDto> rows = new ArrayList<>();
         tally.rounds.forEach((driverClass, rounds) -> {
+            if (!rules.scores(driverClass.racingClassId())) {
+                return;
+            }
             List<RoundResultDto> marked = dropWorst(rounds, rules.bestXFromY(driverClass.racingClassId()));
             int totalPoints = marked.stream()
                     .filter(r -> !r.dropped() && !r.excluded())
@@ -681,21 +694,20 @@ public class ChampionshipStandingsQuery {
             totalPoints += rules.aFinalBonus() * roundsWon(tally.aFinalWins, driverClass);
             rows.add(new StandingsRowDto(driverClass.driverId(),
                     tally.displayNames.getOrDefault(driverClass.driverId(), ""),
-                    driverClass.racingClassId(), totalPoints, marked));
+                    driverClass.racingClassId(), totalPoints, 0, marked));
         });
         return rows;
     }
 
     /**
-     * The rounds in round order, the worst Y minus X marked dropped once the driver has Y rounds. Worst means
-     * fewest points, then the worse (higher-numbered) position. A DNS has position 0, so a finish worth
-     * nothing is dropped before a DNS.
+     * The rounds in round order, with every round past the driver's best X marked dropped. A driver with X rounds
+     * or fewer keeps them all, so a round not raced costs nothing beyond the points it would have scored. Y does
+     * not change the result; with no X every round counts. Best means most points, then the better (lower)
+     * position, so a finish worth nothing is dropped before a DNS (position 0).
      */
     private static List<RoundResultDto> dropWorst(List<RoundResultDto> rounds, BestXFromY rule) {
         int count = rounds.size();
-        int x = rule.x() != null ? rule.x() : count;
-        int y = rule.y() != null ? rule.y() : count;
-        int dropFrom = y > x && count >= y ? Math.max(0, count - (y - x)) : count;
+        int dropFrom = rule.x() != null ? Math.min(Math.max(0, rule.x()), count) : count;
 
         List<RoundResultDto> marked = new ArrayList<>(rounds);
         marked.sort(Comparator.comparingInt(RoundResultDto::points).reversed()
@@ -715,8 +727,10 @@ public class ChampionshipStandingsQuery {
     }
 
     /**
-     * Each class by points, then display name. Classes come out in racing class order (a class with no racing
-     * class last): the order rows are first seen in follows hash-map order, which changes with the ids.
+     * Each class by points, then by countback (see {@link #countbackCompare}), then display name. Drivers level on
+     * points and countback share a position and the next one skips ahead (1, 1, 3). Classes come out in racing class
+     * order (a class with no racing class last): the order rows are first seen in follows hash-map order, which
+     * changes with the ids.
      */
     private static List<StandingsRowDto> rank(List<StandingsRowDto> rows) {
         Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
@@ -730,9 +744,47 @@ public class ChampionshipStandingsQuery {
         List<StandingsRowDto> ranked = new ArrayList<>();
         for (List<StandingsRowDto> classRows : inClassOrder.values()) {
             classRows.sort(Comparator.comparingInt(StandingsRowDto::totalPoints).reversed()
+                    .thenComparing(ChampionshipStandingsQuery::countbackCompare)
                     .thenComparing(StandingsRowDto::displayName));
-            ranked.addAll(classRows);
+            StandingsRowDto previous = null;
+            int position = 0;
+            for (int i = 0; i < classRows.size(); i++) {
+                StandingsRowDto row = classRows.get(i);
+                if (previous == null || row.totalPoints() != previous.totalPoints()
+                        || countbackCompare(row, previous) != 0) {
+                    position = i + 1;
+                }
+                ranked.add(new StandingsRowDto(row.driverId(), row.displayName(), row.racingClassId(),
+                        row.totalPoints(), position, row.rounds()));
+                previous = row;
+            }
         }
         return ranked;
+    }
+
+    /**
+     * Countback between two drivers level on points: the one with more wins ahead, then more seconds, and so on
+     * down the places. Only rounds that count are used (not dropped, not excluded, and raced), by the round's
+     * position, so a dropped win does not help. Negative when {@code a} is ahead.
+     */
+    private static int countbackCompare(StandingsRowDto a, StandingsRowDto b) {
+        Map<Integer, Long> countA = countedPositions(a);
+        Map<Integer, Long> countB = countedPositions(b);
+        int last = Stream.concat(countA.keySet().stream(), countB.keySet().stream())
+                .mapToInt(Integer::intValue).max().orElse(0);
+        for (int place = 1; place <= last; place++) {
+            int byPlace = Long.compare(countB.getOrDefault(place, 0L), countA.getOrDefault(place, 0L));
+            if (byPlace != 0) {
+                return byPlace;
+            }
+        }
+        return 0;
+    }
+
+    /** How many counted rounds the row has at each position. */
+    private static Map<Integer, Long> countedPositions(StandingsRowDto row) {
+        return row.rounds().stream()
+                .filter(r -> !r.dropped() && !r.excluded() && r.position() > 0)
+                .collect(Collectors.groupingBy(RoundResultDto::position, Collectors.counting()));
     }
 }

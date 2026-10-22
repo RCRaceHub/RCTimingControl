@@ -107,9 +107,9 @@ export default function PublicChampionshipPage() {
               </tr>
             </thead>
             <tbody>
-              {group.rows.map((row, idx) => (
+              {group.rows.map((row) => (
                 <tr key={row.driverId} className="border-b border-border/50 print:break-inside-avoid">
-                  <td className="py-2 pr-4 font-mono">{idx + 1}</td>
+                  <td className="py-2 pr-4 font-mono">{row.position}</td>
                   <td className="py-2 pr-4">{row.displayName}</td>
                   <td className="py-2 pr-4 text-right font-mono font-bold">{row.totalPoints}</td>
                   <td className="flex flex-wrap gap-1 py-2">
