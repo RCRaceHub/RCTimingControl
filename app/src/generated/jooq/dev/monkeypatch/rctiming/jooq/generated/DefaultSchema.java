@@ -40,6 +40,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
@@ -248,6 +249,11 @@ public class DefaultSchema extends SchemaImpl {
     public final Rounds ROUNDS = Rounds.ROUNDS;
 
     /**
+     * The table <code>scoring_systems</code>.
+     */
+    public final ScoringSystems SCORING_SYSTEMS = ScoringSystems.SCORING_SYSTEMS;
+
+    /**
      * The table <code>track_lap_thresholds</code>.
      */
     public final TrackLapThresholds TRACK_LAP_THRESHOLDS = TrackLapThresholds.TRACK_LAP_THRESHOLDS;
@@ -324,6 +330,7 @@ public class DefaultSchema extends SchemaImpl {
             ResultSnapshots.RESULT_SNAPSHOTS,
             ResultsOutbox.RESULTS_OUTBOX,
             Rounds.ROUNDS,
+            ScoringSystems.SCORING_SYSTEMS,
             TrackLapThresholds.TRACK_LAP_THRESHOLDS,
             Tracks.TRACKS,
             UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK,

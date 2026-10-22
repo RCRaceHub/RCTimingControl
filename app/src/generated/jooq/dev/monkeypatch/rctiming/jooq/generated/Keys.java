@@ -40,6 +40,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
@@ -81,6 +82,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RefreshTokensRecor
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ResultSnapshotsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ResultsOutboxRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RoundsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.ScoringSystemsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.TrackLapThresholdsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.TracksRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.UnknownTransponderLinkRecord;
@@ -144,6 +146,8 @@ public class Keys {
     public static final UniqueKey<ResultSnapshotsRecord> RESULT_SNAPSHOTS__PK_RESULT_SNAPSHOTS = Internal.createUniqueKey(ResultSnapshots.RESULT_SNAPSHOTS, DSL.name("pk_result_snapshots"), new TableField[] { ResultSnapshots.RESULT_SNAPSHOTS.ID }, true);
     public static final UniqueKey<ResultsOutboxRecord> RESULTS_OUTBOX__PK_RESULTS_OUTBOX = Internal.createUniqueKey(ResultsOutbox.RESULTS_OUTBOX, DSL.name("pk_results_outbox"), new TableField[] { ResultsOutbox.RESULTS_OUTBOX.ID }, true);
     public static final UniqueKey<RoundsRecord> ROUNDS__PK_ROUNDS = Internal.createUniqueKey(Rounds.ROUNDS, DSL.name("pk_rounds"), new TableField[] { Rounds.ROUNDS.ID }, true);
+    public static final UniqueKey<ScoringSystemsRecord> SCORING_SYSTEMS__PK_SCORING_SYSTEMS = Internal.createUniqueKey(ScoringSystems.SCORING_SYSTEMS, DSL.name("pk_scoring_systems"), new TableField[] { ScoringSystems.SCORING_SYSTEMS.ID }, true);
+    public static final UniqueKey<ScoringSystemsRecord> SCORING_SYSTEMS__SCORING_SYSTEMS_KIND_NAME_KEY = Internal.createUniqueKey(ScoringSystems.SCORING_SYSTEMS, DSL.name("scoring_systems_kind_name_key"), new TableField[] { ScoringSystems.SCORING_SYSTEMS.KIND, ScoringSystems.SCORING_SYSTEMS.NAME }, true);
     public static final UniqueKey<TrackLapThresholdsRecord> TRACK_LAP_THRESHOLDS__PK_TRACK_LAP_THRESHOLDS = Internal.createUniqueKey(TrackLapThresholds.TRACK_LAP_THRESHOLDS, DSL.name("pk_track_lap_thresholds"), new TableField[] { TrackLapThresholds.TRACK_LAP_THRESHOLDS.ID }, true);
     public static final UniqueKey<TracksRecord> TRACKS__PK_TRACKS = Internal.createUniqueKey(Tracks.TRACKS, DSL.name("pk_tracks"), new TableField[] { Tracks.TRACKS.ID }, true);
     public static final UniqueKey<UnknownTransponderLinkRecord> UNKNOWN_TRANSPONDER_LINK__PK_UNKNOWN_TRANSPONDER_LINK = Internal.createUniqueKey(UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK, DSL.name("pk_unknown_transponder_link"), new TableField[] { UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK.ID }, true);
