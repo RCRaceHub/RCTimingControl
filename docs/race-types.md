@@ -214,6 +214,13 @@ final is ranks 8 to 14 and the A final is ranks 1 to 7. No place in a final is l
 final can be called as soon as qualifying is complete. Finals are placed as one set (A, then B without anyone from A,
 and so on) for championship points, as in [Scoring](scoring.md#5-championship-points).
 
+**BRCA 1/10 off-road.** In the format editor, the Points Finals form has a **Use BRCA 1/10 off-road settings** button
+that fills in the BRCA rules: 4 qualifying rounds of 5 minutes with the best 2 counting, tied cars not sharing a place, BRCA
+qualifying (flat points for a driver who did not run, and its tie-break), a 6:30 (390 second) race window, 10 cars per
+final filled from A down with a short last final, and an A final of 3 legs of which the best 2 count. The finals
+below A are single races. Change any setting afterwards for a club's own variation. The rules are in
+[Scoring](scoring.md#brca-qualifying-points-finals).
+
 ### 4.4 Shikabane
 
 A format for Shikabane RC racing, where a car that flips, breaks down or stalls stays where it stopped as an obstacle
