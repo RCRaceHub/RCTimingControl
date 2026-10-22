@@ -22,7 +22,9 @@ function download(filename: string, text: string) {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
+  document.body.appendChild(link);
   link.click();
+  link.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -30,6 +32,9 @@ function download(filename: string, text: string) {
 function fileName(name: string): string {
   return `${name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'scoring-system'}.json`;
 }
+
+/** A scoring system file is a few hundred bytes; anything bigger is not one. */
+const MAX_FILE_BYTES = 256 * 1024;
 
 type DialogState =
   | { mode: 'create'; config: ScoringConfig }
@@ -79,7 +84,7 @@ export default function ScoringSystemsPage() {
   async function handleDelete(system: ScoringSystemDto) {
     const confirmed = await confirm({
       title: `Delete ${system.name}?`,
-      description: 'Formats and championships that already copied its values keep them. This cannot be undone.',
+      description: 'Deleting is refused while a race format uses it. Event classes and championships that copied its values keep them. This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true,
     });
@@ -101,6 +106,10 @@ export default function ScoringSystemsPage() {
   }
 
   async function handleFile(file: File) {
+    if (file.size > MAX_FILE_BYTES) {
+      toast.error('That file is too large to be a scoring system.');
+      return;
+    }
     const name = file.name.replace(/\.(json|ya?ml)$/i, '');
     try {
       await m.importFile.mutateAsync({ name, text: await file.text(), yaml: /\.ya?ml$/i.test(file.name) });

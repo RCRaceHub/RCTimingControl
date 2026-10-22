@@ -279,8 +279,8 @@ A championship system:
 ```
 
 Limits: best heats 0 to 50; race window 0 to 86400 seconds; A final legs 1 to 10 with legs counted no more than the legs;
-cars per final 0 to 50; for a championship, best X at least 1 and no more than best Y (leave both out to count every
-round), bonuses and points 0 to 10000, at most 200 places in the scale, each place once. A field left out counts as 0 or
+cars per final 0 to 50; for a championship, best X at least 1 and no more than best Y, and best Y at most 100 (set both or
+leave both out to count every round), bonuses and points 0 to 10000, places 1 to 200 in the scale, each place once. A field left out counts as 0 or
 false, so check an imported file on the page. A name that is already taken for that kind (ignoring capitals and spaces)
 is refused.
 

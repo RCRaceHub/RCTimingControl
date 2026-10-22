@@ -85,4 +85,13 @@ describe('ScoringSystemsPage', () => {
       name: 'scottish-champs', text: '{"type":"PLACE_POINTS"}', yaml: false,
     }));
   });
+
+  it('refuses a file that is far too large without sending it', async () => {
+    render(<ScoringSystemsPage />);
+    const file = new File(['x'.repeat(300 * 1024)], 'big.json', { type: 'application/json' });
+    fireEvent.change(screen.getByLabelText('Scoring system file'), { target: { files: [file] } });
+
+    await waitFor(() => expect(screen.getByLabelText('Scoring system file')).toBeInTheDocument());
+    expect(importFile).not.toHaveBeenCalled();
+  });
 });
