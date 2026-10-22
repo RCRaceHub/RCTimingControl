@@ -646,7 +646,7 @@ Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** f
 
 ## Race control — Run order, heats and finals
 
-Read endpoints are open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; the commands need `RACE_DIRECTOR` or `ADMIN`. Every command answers **204** with no body unless stated, and writes a row to the audit log.
+Read endpoints are open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; the commands need `RACE_DIRECTOR` or `ADMIN`. Every command answers **204** with no body unless stated, and writes a row to the audit log unless stated.
 
 ```
 GET  /race-control/event/{eventId}/run-order
@@ -673,8 +673,8 @@ POST /race-control/race/{raceId}/skip-to
 - `seed-finals` is **Calculate finals**. The finals are no longer seeded when the last qualifier finishes: an official asks for them. The optional body `{ "carsPerFinal": 10 }` (1 to 100) sets the grid size; without it the class format's own grid size is used, and the grid grows if the field would not fit. Calling it again recalculates from the qualifying results and replaces hand edits. **404** if the class is not in the event; **409** if a qualifying heat is unfinished (or all were abandoned), the class has no finals, or a final has started.
 - `finals/move` takes `{ "entryId", "targetRaceId", "targetPosition" }` and moves a driver from the final in the path to another pending final of the same class, to a grid place (the back of the grid when `targetPosition` is null). `finals/swap` takes `{ "entryId", "otherRaceId", "otherEntryId" }` and swaps two drivers' grid places, on one final or across two. **400** for the same final or driver, different classes, or emptying a final; **404** if a driver is not in their final; **409** if either final has been called or started.
 - `move-entry` takes `{ "entryId", "targetRaceId", "allRounds": false }` and moves a driver out of the pending heat in the path into another pending heat of the same class, in the same round or, with `allRounds`, in every practice and qualifying round where both heats are still pending. The driver keeps their car number. **400** if the heats are the same, in different classes or events, are finals, or (without `allRounds`) are in different rounds; **409** if either heat has been called or started.
-- `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta.
-- `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server; the client keeps the active-race pointer.
+- `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta. It answers **200** with no body, and is recorded as a marshal adjustment (who, and the race's state at the time) rather than in the audit log.
+- `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server and writes no audit row; the client keeps the active-race pointer. **404** if either race is missing, **400** if the target is in another event.
 
 ## Race control — Entry search & transponder swap
 

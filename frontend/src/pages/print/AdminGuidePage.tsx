@@ -277,8 +277,8 @@ export default function AdminGuidePage() {
             holds the Name, the optional "Rounds scoring" setting, the TQ Bonus Points and
             A-Final Winner Bonus, and "Show an overall table". A driver scores the points for their place in the
             event&apos;s overall result (the finals, or the overall qualifying order for a class with no finals).
-            Set the rounds that count (e.g. "Count best 8 from 10 rounds": at most 8 rounds count and a missed
-            round scores 0), then click Save. Drivers level on points are split by countback (most wins, then
+            Set the rounds that count (e.g. "Count best 8 from 10 rounds": at most 8 rounds count, and a round
+            where the driver has no result scores 0 and is dropped first), then click Save. Drivers level on points are split by countback (most wins, then
             most seconds). A saved scoring system (such as BRCA 1/10 off-road) can be applied at the top of the
             tab to fill these in at once.
           </li>
