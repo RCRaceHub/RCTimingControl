@@ -246,6 +246,7 @@ public class Championships extends TableImpl<ChampionshipsRecord> {
     @Override
     public List<Check<ChampionshipsRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name(""), "show_overall_table in (0, 1)", true),
             Internal.createCheck(this, DSL.name("championships_scoring_source_check"), "scoring_source in ('QUALIFYING', 'FINALS', 'BOTH')", true)
         );
     }

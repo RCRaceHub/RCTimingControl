@@ -234,6 +234,21 @@ His best 2 rounds count, so round 3 is dropped: 15 + 10 = 25. The bonuses are ad
 so Dan also gets the TQ bonus (2) and the A-final bonus (3) for round 1: **30**. A bonus is never dropped with its
 round. Had Dan simply not been on the grid in round 3, there would be no round 3 for him and the total is the same.
 
+## 6. Scoring systems
+
+A **scoring system** is a named, saved set of scoring rules, in two kinds: *race* systems (rounds counted, tied places,
+A final legs, cut-off window, and default finals layout) and *championship* systems (points scale, best X from Y,
+bonuses, overall table). Admins manage them through `/api/v1/admin/scoring-systems`: list, read, create, clone, change,
+delete, and import or export as JSON or YAML. Race directors and referees can read and export them.
+
+Four are built in and locked, a *Club default* and *BRCA 1/10 off-road* of each kind; clone one to change it. Each system
+is JSON with a `type`: `CLASSIC` or `BRCA` for races, `PLACE_POINTS` for championships. A file carries only numbers and
+switches, never logic, so a genuinely new kind of rule is a new `type` in the app. Values are range-checked on save and
+import, and every change is audited.
+
+Nothing reads a system yet. Race formats and championships will pick one in later changes (tracker #435), copying its
+values so editing a system never changes an event or championship already set up.
+
 ## Known gaps
 
 - **`FTQ`, `FASTEST_LAP` and `CONSECUTIVE_LAPS`** all use total laps then best lap.

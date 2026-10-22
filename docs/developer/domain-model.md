@@ -164,6 +164,11 @@ erDiagram
     events ||--o{ results_outbox : ""
     racing_classes ||--o{ event_classes : ""
     race_format_templates ||--o{ event_classes : "snapshot at assignment"
+    scoring_systems {
+        text kind "RACE or CHAMPIONSHIP"
+        bool built_in "locked, clone to change"
+        json config "type: CLASSIC, BRCA, PLACE_POINTS"
+    }
     competitors ||--o{ entries : ""
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""

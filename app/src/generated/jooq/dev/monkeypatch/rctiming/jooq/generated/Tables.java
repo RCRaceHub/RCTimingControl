@@ -40,6 +40,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
@@ -232,6 +233,11 @@ public class Tables {
      * The table <code>rounds</code>.
      */
     public static final Rounds ROUNDS = Rounds.ROUNDS;
+
+    /**
+     * The table <code>scoring_systems</code>.
+     */
+    public static final ScoringSystems SCORING_SYSTEMS = ScoringSystems.SCORING_SYSTEMS;
 
     /**
      * The table <code>track_lap_thresholds</code>.
