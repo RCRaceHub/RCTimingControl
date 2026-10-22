@@ -145,6 +145,15 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
 
         Map<String, Object> lopsided = Map.of("type", "PLACE_POINTS", "bestX", 3, "tqBonusPoints", 0,
                 "aFinalWinnerBonusPoints", 0, "showOverallTable", false, "pointsScale", List.of());
+        ResponseEntity<Map> blank = restTemplate.exchange(URL + "/import?name={name}", HttpMethod.POST,
+                new HttpEntity<>("{\"type\":\"PLACE_POINTS\",\"pointsScale\":[]}", headers(adminToken)), Map.class, " ");
+        assertThat(blank.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        Map<String, Object> huge = Map.of("type", "PLACE_POINTS", "tqBonusPoints", 2_000_000_000,
+                "aFinalWinnerBonusPoints", 0, "showOverallTable", false, "pointsScale", List.of());
+        assertThat(send(HttpMethod.POST, URL, Map.of("name", "Huge " + run, "config", huge), adminToken).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+
         assertThat(send(HttpMethod.POST, URL, Map.of("name", "Lopsided " + run, "config", lopsided), adminToken).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -167,6 +176,8 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
                 "maxRaceWindowSeconds", 0, "finalLegs", 1, "legsCounted", 0, "carsPerFinal", 0, "fillTopFirst", false);
         assertThat(send(HttpMethod.POST, URL, Map.of("name", "Club default", "config", config), adminToken).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
+        assertThat(send(HttpMethod.POST, URL, Map.of("name", "CLUB DEFAULT", "config", config), adminToken).getStatusCode())
+                .as("names match without regard to case").isEqualTo(HttpStatus.CONFLICT);
     }
 
     // --- helpers ---

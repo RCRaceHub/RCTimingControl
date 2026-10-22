@@ -24,6 +24,11 @@ public record ChampionshipScoringConfig(Integer bestX, Integer bestY, int tqBonu
     /** Points for one finishing place. */
     public record ScalePoint(int position, int points) {}
 
+    /** Upper bounds, so a file cannot carry values that overflow a total later. */
+    private static final int MAX_ROUNDS = 100;
+    private static final int MAX_SCALE_ENTRIES = 200;
+    private static final int MAX_POINTS = 10_000;
+
     public ChampionshipScoringConfig {
         pointsScale = pointsScale == null ? List.of() : List.copyOf(pointsScale);
     }
@@ -35,19 +40,27 @@ public record ChampionshipScoringConfig(Integer bestX, Integer bestY, int tqBonu
 
     @Override
     public void validate() {
+        if (bestX != null && bestY != null && bestY > MAX_ROUNDS) {
+            throw new IllegalArgumentException("bestY cannot be more than " + MAX_ROUNDS);
+        }
+        if (pointsScale.size() > MAX_SCALE_ENTRIES) {
+            throw new IllegalArgumentException("The points scale cannot have more than " + MAX_SCALE_ENTRIES + " places");
+        }
         if ((bestX == null) != (bestY == null)) {
             throw new IllegalArgumentException("bestX and bestY must both be set or both be empty");
         }
         if (bestX != null && (bestX < 1 || bestY < bestX)) {
             throw new IllegalArgumentException("bestX must be at least 1 and no more than bestY");
         }
-        if (tqBonusPoints < 0 || aFinalWinnerBonusPoints < 0) {
-            throw new IllegalArgumentException("Bonus points cannot be negative");
+        if (tqBonusPoints < 0 || aFinalWinnerBonusPoints < 0 || tqBonusPoints > MAX_POINTS
+                || aFinalWinnerBonusPoints > MAX_POINTS) {
+            throw new IllegalArgumentException("Bonus points must be between 0 and " + MAX_POINTS);
         }
         Set<Integer> seen = new HashSet<>();
         for (ScalePoint p : pointsScale) {
-            if (p.position() < 1 || p.points() < 0) {
-                throw new IllegalArgumentException("Each scale entry needs a position of 1 or more and points of 0 or more");
+            if (p.position() < 1 || p.position() > MAX_SCALE_ENTRIES || p.points() < 0 || p.points() > MAX_POINTS) {
+                throw new IllegalArgumentException("Each scale entry needs a position of 1 to " + MAX_SCALE_ENTRIES
+                        + " and points of 0 to " + MAX_POINTS);
             }
             if (!seen.add(p.position())) {
                 throw new IllegalArgumentException("Position " + p.position() + " is in the points scale twice");

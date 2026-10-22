@@ -1,11 +1,13 @@
 package dev.monkeypatch.rctiming.domain.scoring;
 
+import dev.monkeypatch.rctiming.domain.Names;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +36,7 @@ public class ScoringSystemService {
         if (kind != null) {
             return repository.findByKind(kind);
         }
-        return java.util.Arrays.stream(ScoringKind.values()).flatMap(k -> repository.findByKind(k).stream()).toList();
+        return Arrays.stream(ScoringKind.values()).flatMap(k -> repository.findByKind(k).stream()).toList();
     }
 
     /** One system. @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if there is none */
@@ -72,7 +74,8 @@ public class ScoringSystemService {
         config.validate();
         ScoringSystem system = new ScoringSystem();
         system.setKind(config.kind());
-        system.setName(name.strip());
+        system.setName(cleanName(name));
+        requireFreeName(config.kind(), system.getName(), null);
         system.setConfig(config);
         ScoringSystem saved = repository.save(system);
         audit.entry(actor, action).entity("scoring_system", saved.getId())
@@ -95,7 +98,8 @@ public class ScoringSystemService {
         }
         config.validate();
         Map<String, Object> before = values(system);
-        system.setName(name.strip());
+        system.setName(cleanName(name));
+        requireFreeName(system.getKind(), system.getName(), id);
         system.setConfig(config);
         ScoringSystem saved = repository.save(system);
         audit.entry(actor, "SCORING_SYSTEM_UPDATED").entity("scoring_system", id)
@@ -118,6 +122,25 @@ public class ScoringSystemService {
         audit.entry(actor, "SCORING_SYSTEM_DELETED").entity("scoring_system", id)
                 .summary("Removed the scoring system " + system.getName())
                 .before(before).record();
+    }
+
+    /** The name without outer spaces. @throws IllegalArgumentException (400) if it is blank or over 255 characters */
+    private static String cleanName(String name) {
+        String clean = name == null ? "" : name.strip();
+        if (clean.isEmpty() || clean.length() > 255) {
+            throw new IllegalArgumentException("The name must be between 1 and 255 characters");
+        }
+        return clean;
+    }
+
+    /** Names are unique per kind without regard to case or spacing, as {@link Names#matchKey} compares them. */
+    private void requireFreeName(ScoringKind kind, String name, Long ownId) {
+        String key = Names.matchKey(name);
+        boolean taken = repository.findByKind(kind).stream()
+                .anyMatch(s -> !s.getId().equals(ownId) && Names.matchKey(s.getName()).equals(key));
+        if (taken) {
+            throw new StateConflictException("There is already a " + kind.name().toLowerCase() + " scoring system called " + name);
+        }
     }
 
     private static void requireCustom(ScoringSystem system, String verb) {
