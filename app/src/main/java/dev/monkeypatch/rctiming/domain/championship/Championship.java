@@ -25,7 +25,7 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     private Integer bestXFromYY;
 
-    /** Which rounds of an event score: qualifying, finals or both (CHAMP-06). */
+    /** Unused since championships score the event's overall result; see {@link ScoringSource}. */
     private ScoringSource scoringSource = ScoringSource.FINALS;
 
     private int tqBonusPoints = 0;

@@ -185,7 +185,7 @@ A qualifying penalty after the finals were calculated needs Calculate finals pre
 
 ## 5. Championship points
 
-A class run to the Shikabane format never scores in a championship, whatever the scoring source, and gets no top
+A class run to the Shikabane format never scores in a championship and gets no top
 qualifier bonus: Shikabane is for fun days (see [Race types](race-types.md#44-shikabane)).
 
 A championship links events (each event is a round) and scores each driver per class.
@@ -193,7 +193,6 @@ A championship links events (each event is a round) and scores each driver per c
 | Setting | What it does |
 |---|---|
 | Points scale | Points per finishing position (position 1 gets the first value and so on; a position not in the scale scores 0) |
-| Scoring source | `QUALIFYING`: the driver's best qualifying place scores. `FINALS`: the best final place scores. `BOTH`: the points for the best qualifying place **and** the best final place are added. Practice never scores. |
 | Classes | Only the classes added to the championship score. A championship with no classes added yet scores every class that has results. |
 | Best X from Y | A driver's best X rounds count and the rest are dropped; a driver with X rounds or fewer keeps them all, so a round not raced costs nothing beyond the points it would have scored. Can be set per class; an empty X falls back to the championship's. With no X every round counts. Y is kept for display and does not change the result. A DNS or excluded round is an ordinary round here, worth 0, so it is dropped first. |
 | TQ bonus points | Extra points to the driver who topped qualifying in the class at a round |
@@ -202,7 +201,12 @@ A championship links events (each event is a round) and scores each driver per c
 
 How a round is scored:
 
-- A driver's **qualifying position** is their best single heat finish at the event (not the combined qualifying order of section 2), and their **final position** is their best place in any round of finals, where a round of finals is placed as one: the A final's order, then the B final's without the drivers who bumped up into the A, then the C final's, and so on. A B final win is therefore not a first place, and a driver who bumped up has their A final place. The round's position is the better of the two (shown in the standings); the **points** follow the scoring source.
+- A championship scores each driver's place in the **event's overall result**. Where the class has finals, that is
+  the place across the whole round of finals: the A final's order, then the B final's without the drivers who bumped
+  up into the A, then the C final's, and so on. A B final win is therefore not a first place, and a driver who
+  bumped up has their A final place. A class with no finals scores from its **overall qualifying order** (section 2),
+  placed across all its heats, once every qualifying heat is finished. Practice never scores. The points are the
+  points scale at that place.
 - A final is not placed until every final above it has finished, since its drivers may still bump up. A driver who bumped up and did not start the higher final is classed last in it, ahead of everyone from the final below, in the order they finished that final. If nobody raced the higher final, the final below keeps its own places.
 - Example of stacked finals: the A final finishes Ann, Bob, Cat and the B final Cat (who bumped up), Dan, Eve.
   The round's places are Ann 1, Bob 2, Cat 3, Dan 4, Eve 5. Cat's B final win does not count.
@@ -216,19 +220,18 @@ How a round is scored:
   rounds ahead, then more seconds, and so on (a dropped or excluded round is not used). Drivers still level share a
   position (1, 1, 3), in the table and in the results sent to RaceHub, and stand by name.
 
-Example: scale 1st 15, 2nd 12, 3rd 10, 4th 8, 5th 6; scoring source `BOTH`; TQ bonus 2; A-final bonus 3;
-best 2 from 3 rounds. Dan, in one class:
+Example: scale 1st 15, 2nd 12, 3rd 10, 4th 8, 5th 6; TQ bonus 2; A-final bonus 3; best 2 from 3 rounds. Dan, in one
+class that runs finals:
 
-| Round | Qualifying | Final | Round points |
-|---|---|---|---|
-| 1 | 1st (15) | 1st (15), also TQ and A-final winner | 30 |
-| 2 | 4th (8) | 3rd (10) | 18 |
-| 3 | 2nd (12) | did not start | 12 |
+| Round | Place in the finals | Round points |
+|---|---|---|
+| 1 | 1st (15), also TQ and A-final winner | 15 |
+| 2 | 3rd (10) | 10 |
+| 3 | on the grid but did not start | 0 (DNS) |
 
-Three rounds are run, so the worst (round 3, with the fewest points) is dropped: 30 + 18 = 48. The bonuses are
-added after the drops, per round won, so Dan also gets the TQ bonus (2) and the A-final bonus (3) for round 1: **53**. A bonus is never dropped with its round.
-
-With scoring source `FINALS`, only the final positions score: round 1 is 15 and round 2 is 10. Round 3 is a DNS worth 0 if Dan was on that final's grid (no round at all if he was not), and it is the round dropped. With the same 5 in bonuses: **30**.
+His best 2 rounds count, so round 3 is dropped: 15 + 10 = 25. The bonuses are added after the drops, per round won,
+so Dan also gets the TQ bonus (2) and the A-final bonus (3) for round 1: **30**. A bonus is never dropped with its
+round. Had Dan simply not been on the grid in round 3, there would be no round 3 for him and the total is the same.
 
 ## Known gaps
 

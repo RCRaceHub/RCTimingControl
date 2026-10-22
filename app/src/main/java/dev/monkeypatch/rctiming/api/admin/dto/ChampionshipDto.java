@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin.dto;
 
 import dev.monkeypatch.rctiming.domain.championship.Championship;
-import dev.monkeypatch.rctiming.domain.championship.ScoringSource;
 
 /**
  * A championship's own settings, the answer of the championship list, create and update endpoints under
@@ -14,7 +13,6 @@ public record ChampionshipDto(
         String name,
         Integer bestXFromYX,
         Integer bestXFromYY,
-        ScoringSource scoringSource,
         int tqBonusPoints,
         int afinalWinnerBonusPoints
 ) {
@@ -22,7 +20,6 @@ public record ChampionshipDto(
         return new ChampionshipDto(
                 c.getId(), c.getName(),
                 c.getBestXFromYX(), c.getBestXFromYY(),
-                c.getScoringSource(),
                 c.getTqBonusPoints(), c.getAfinalWinnerBonusPoints()
         );
     }

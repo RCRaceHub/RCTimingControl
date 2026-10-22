@@ -12,7 +12,7 @@ export function ChampionshipHelp() {
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">
-        <li><span className="font-semibold">Config:</span> Set the Name and the Scoring Source (Qualifying, Finals or Both), which says which finished races count. With Both, a driver's points for their best qualifying position and for their best final are added together. Under "Rounds scoring" you can set "Count best X from Y rounds", filling in both numbers or neither: a driver's best X rounds count, and a driver with fewer than X keeps them all. Drivers level on points are split by countback (most wins, then most seconds) and share a place if still level. TQ Bonus Points go to the one driver who tops a class's qualifying at the event (most laps over all its heats, then the quickest lap), and A-Final Winner Bonus to a winner of an A-Final. Each is paid once for every class and round the driver wins it in, so winning in two classes, or at two events, earns it twice. A driver excluded from a round gets no bonus for it, and the TQ is not passed to the next driver. Click Save.</li>
+        <li><span className="font-semibold">Config:</span> Set the Name. A driver scores the points for their place in the event's overall result: the finals where a class has them, otherwise its overall qualifying order. Under "Rounds scoring" you can set "Count best X from Y rounds", filling in both numbers or neither: a driver's best X rounds count, and a driver with fewer than X keeps them all. Drivers level on points are split by countback (most wins, then most seconds) and share a place if still level. TQ Bonus Points go to the one driver who tops a class's qualifying at the event (most laps over all its heats, then the quickest lap), and A-Final Winner Bonus to a winner of an A-Final. Each is paid once for every class and round the driver wins it in, so winning in two classes, or at two events, earns it twice. A driver excluded from a round gets no bonus for it, and the TQ is not passed to the next driver. Click Save.</li>
         <li><span className="font-semibold">Add Class:</span> On the Classes tab, click "Add Class", choose a racing class, and optionally set a per-class "Count best X from Y rounds" override (both numbers or neither). A class with no override shows "Inherit" and uses the Config setting. Only the classes added here score; with none added every class that has results scores. The bin icon removes a class.</li>
         <li><span className="font-semibold">Link Event:</span> On the Events tab, click "Link Event", choose an event and give it a Round Number. The bin icon unlinks an event.</li>
         <li><span className="font-semibold">Points Scale:</span> On the Points Scale tab, type the points for each finishing position, or start from the ROAR or BRCA preset. "Add Row" adds a position, the bin icon removes one, and you must click Save for the change to count.</li>
@@ -25,7 +25,7 @@ export function ChampionshipHelp() {
         <p>
           An event can be linked only once, and each Round Number can be used only once in a
           championship, so linking a second event to round 3 shows a conflict. Standings stay empty
-          until a linked event has a finished race of the kind the Scoring Source counts. Points
+          until a linked event has a finished final (or, for a class with no finals, all its qualifying heats). Points
           are not stored: if you change the Points Scale, the standings change with it.
         </p>
       </div>

@@ -1,4 +1,4 @@
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
@@ -6,13 +6,11 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { ChampionshipDto, ScoringSource } from '@/lib/adminApi';
+import type { ChampionshipDto } from '@/lib/adminApi';
 import { optionalPositiveInt, refineBestXFromY } from './bestXFromY';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
-  scoringSource: z.enum(['QUALIFYING', 'FINALS', 'BOTH']),
   bestXFromYX: optionalPositiveInt,
   bestXFromYY: optionalPositiveInt,
   tqBonusPoints: z.coerce.number().int().min(0),
@@ -32,13 +30,11 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: initialValue?.name ?? '',
-      scoringSource: (initialValue?.scoringSource as ScoringSource) ?? 'QUALIFYING',
       bestXFromYX: initialValue?.bestXFromYX ?? null,
       bestXFromYY: initialValue?.bestXFromYY ?? null,
       tqBonusPoints: initialValue?.tqBonusPoints ?? 0,
@@ -49,7 +45,6 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
   async function handleFormSubmit(values: FormValues) {
     await onSubmit({
       name: values.name,
-      scoringSource: values.scoringSource,
       bestXFromYX: values.bestXFromYX,
       bestXFromYY: values.bestXFromYY,
       tqBonusPoints: values.tqBonusPoints,
@@ -63,30 +58,6 @@ export function ChampionshipConfigForm({ initialValue, onSubmit, submitLabel }: 
         <Label htmlFor="champ-name">Name</Label>
         <Input id="champ-name" {...register('name')} placeholder="e.g. 2026 Club Championship" />
         {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-      </div>
-
-      <div className="space-y-1.5">
-        <Label>Scoring Source</Label>
-        <Controller
-          name="scoringSource"
-          control={control}
-          render={({ field }) => (
-            <RadioGroup
-              value={field.value}
-              onValueChange={field.onChange}
-              className="flex gap-4"
-            >
-              {(['QUALIFYING', 'FINALS', 'BOTH'] as ScoringSource[]).map(val => (
-                <div key={val} className="flex items-center gap-2">
-                  <RadioGroupItem value={val} id={`scoring-${val}`} />
-                  <Label htmlFor={`scoring-${val}`} className="font-normal capitalize">
-                    {val.charAt(0) + val.slice(1).toLowerCase().replace('_', ' ')}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          )}
-        />
       </div>
 
       <div className="space-y-1.5">

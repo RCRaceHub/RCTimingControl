@@ -84,7 +84,6 @@ export default function ChampionshipListPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Scoring Source</TableHead>
                 <TableHead>Best X/Y</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
@@ -93,9 +92,6 @@ export default function ChampionshipListPage() {
               {(championships ?? []).map(c => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell className="capitalize">
-                    {c.scoringSource.charAt(0) + c.scoringSource.slice(1).toLowerCase().replace('_', ' ')}
-                  </TableCell>
                   <TableCell>
                     {c.bestXFromYX != null && c.bestXFromYY != null
                       ? `${c.bestXFromYX}/${c.bestXFromYY}`

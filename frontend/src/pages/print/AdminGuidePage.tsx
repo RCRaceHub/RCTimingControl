@@ -274,8 +274,7 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Configure scoring (Config tab):</span> Open
             the championship detail. The <span className="font-semibold">Config</span> tab
-            holds the Name, the Scoring Source (Qualifying, Finals or Both, which says which
-            finished races count), the optional "Rounds scoring" setting, and the TQ Bonus Points and
+            holds the Name, the optional "Rounds scoring" setting, and the TQ Bonus Points and
             A-Final Winner Bonus. Set the number of rounds that count toward the title (e.g.
             "Count best 8 from 10 rounds"), then click Save.
           </li>

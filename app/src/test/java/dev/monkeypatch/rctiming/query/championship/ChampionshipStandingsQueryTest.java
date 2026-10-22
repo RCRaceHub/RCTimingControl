@@ -513,18 +513,18 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
         List<StandingsRowDto> standings = query.computeStandings(champ.getId());
 
-        // Both win a heat for 10; only A tops the class, so only A has the 2 point bonus
-        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsExactlyInAnyOrder(12, 10);
+        // A tops the class overall (23 laps, quicker lap) for 10 and the 2 point bonus; B is second overall for 8,
+        // not first of its own heat
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsExactlyInAnyOrder(12, 8);
     }
 
     @Test
-    void scoringFromBothSumsTheQualifyingAndTheFinalPointsOfARound() throws Exception {
-        // CHAMP-06: both sources are summed per round, not the better of the two (#248)
-        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.BOTH);
-        User driver = makeUser("Both", "Driver");
+    void aClassWithFinalsScoresFromItsFinalsNotItsQualifying() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        User driver = makeUser("Finals", "Driver");
         addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
 
-        Event event = makeEvent("Both-sources-event");
+        Event event = makeEvent("Finals-over-qualifying-event");
         linkEventToChampionship(champ.getId(), event.getId(), 1);
         Long ecId = makeEventClass(event.getId());
         Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
@@ -540,10 +540,35 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         List<StandingsRowDto> standings = query.computeStandings(champ.getId());
 
         assertThat(standings).hasSize(1);
-        // 8 for second in qualifying and 10 for winning the final; the round's position is the better one
-        assertThat(standings.get(0).totalPoints()).isEqualTo(18);
+        // 10 for winning the final; the second place in qualifying scores nothing once the class has finals
+        assertThat(standings.get(0).totalPoints()).isEqualTo(10);
         assertThat(standings.get(0).rounds().get(0).position()).isEqualTo(1);
-        assertThat(standings.get(0).rounds().get(0).points()).isEqualTo(18);
+    }
+
+    @Test
+    void twoQualifyingHeatsArePlacedAcrossTheWholeClassWhenThereAreNoFinals() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        User first = makeUser("Heat", "One");
+        User second = makeUser("Heat", "Two");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Whole-class-qualifying-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Entry a = makeEntry(first.getId(), event.getId(), ecId);
+        Entry b = makeEntry(second.getId(), event.getId(), ecId);
+        Race heat1 = makeRace(qualRound.getId(), ecId, null, 1);
+        Race heat2 = makeRace(qualRound.getId(), ecId, null, 2);
+        makeRaceEntry(heat1.getId(), a.getId());
+        makeRaceEntry(heat2.getId(), b.getId());
+        // Each wins their own heat, but A completed more laps
+        makeSnapshot(heat1.getId(), "[" + resultRow(a.getId(), 1, 12, 5000) + "]");
+        makeSnapshot(heat2.getId(), "[" + resultRow(b.getId(), 1, 10, 5000) + "]");
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        assertThat(standings).extracting(StandingsRowDto::totalPoints).containsExactlyInAnyOrder(10, 8);
     }
 
     @Test
@@ -891,12 +916,13 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
 
         List<StandingsRowDto> standings = query.computeStandings(champ.getId());
 
-        // Each scores for their best heat finish, 10, 10 and 8, and only Steady has the 2 point TQ bonus
+        // Placed by the round by round qualifying table: Steady first (2 points), Fast and Gap level on 4 with
+        // Fast ahead on his best round, so 10, 8 and 6, and only Steady has the 2 point TQ bonus
         assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
                 .containsExactlyInAnyOrder(
-                        org.assertj.core.groups.Tuple.tuple("Fast Laps", 10),
+                        org.assertj.core.groups.Tuple.tuple("Fast Laps", 8),
                         org.assertj.core.groups.Tuple.tuple("Steady Points", 12),
-                        org.assertj.core.groups.Tuple.tuple("Gap Filler", 8));
+                        org.assertj.core.groups.Tuple.tuple("Gap Filler", 6));
     }
 
     @Test

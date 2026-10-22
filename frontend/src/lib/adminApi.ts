@@ -336,14 +336,11 @@ export interface DefaultLapLimits {
   maxLastLapSeconds: number | null;
 }
 
-export type ScoringSource = 'QUALIFYING' | 'FINALS' | 'BOTH';
-
 export interface ChampionshipDto {
   id: number;
   name: string;
   bestXFromYX: number | null;
   bestXFromYY: number | null;
-  scoringSource: ScoringSource;
   tqBonusPoints: number;
   afinalWinnerBonusPoints: number;
 }
