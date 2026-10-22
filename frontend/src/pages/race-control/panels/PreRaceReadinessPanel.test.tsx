@@ -52,8 +52,9 @@ describe('PreRaceReadinessPanel', () => {
     expect(screen.queryByText(/checked in/i)).not.toBeInTheDocument();
   });
 
-  it('records a missed marshal duty against the event', () => {
+  it('records a missed marshal duty against the event', async () => {
     render(<PreRaceReadinessPanel raceId={1} />);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Marshals' }));
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Missed duty' })[0]);
 
@@ -62,6 +63,7 @@ describe('PreRaceReadinessPanel', () => {
 
   it('offers a penalty to any driver without a recorded miss first, and asks before applying it', async () => {
     render(<PreRaceReadinessPanel raceId={1} />);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Marshals' }));
 
     const buttons = screen.getAllByRole('button', { name: 'Lap off in finals' });
     expect(buttons).toHaveLength(2);
