@@ -12,9 +12,9 @@ type AutoRun = ReturnType<typeof useAutoRun>;
 function heldText(state: AutoRunStateDto): string {
   switch (state.heldReason) {
     case 'FINALS':
-      return 'Qualifying is complete. Auto run is holding so the finals can be checked or seeded again.';
+      return 'Qualifying is complete. Auto run is holding so the finals can be calculated and checked in the Finals line-up panel.';
     case 'NO_DRIVERS':
-      return 'The next race has no drivers. Fix or abandon it, then resume.';
+      return 'The next race has no drivers. If it is a final, calculate the finals in race control; otherwise fix or abandon it, then resume.';
     default:
       return `Auto run stopped: ${state.heldMessage ?? 'a race command was refused'}.`;
   }

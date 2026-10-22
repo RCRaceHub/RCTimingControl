@@ -135,6 +135,7 @@ classDiagram
     class RoundGeneratorService
     class BumpUpSeedingService
     class AutoFinalsSeedingService
+    class FinalsLineupService
     class DecoderListener
 
     DecoderListener ..> LapTimingService : LapPassingEvent
@@ -145,7 +146,7 @@ classDiagram
     RaceStateMachineService --> ResultSnapshotService
     RaceStateMachineService --> RoundGeneratorService
     RaceStateMachineService --> BumpUpSeedingService
-    RaceStateMachineService --> AutoFinalsSeedingService
+    FinalsLineupService --> AutoFinalsSeedingService
 ```
 
 ## Tables (entity relationship)

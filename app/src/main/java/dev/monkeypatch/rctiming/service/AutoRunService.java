@@ -409,7 +409,7 @@ public class AutoRunService {
                 && plan.finishedType != null && plan.finishedType != RoundType.FINAL) {
             hold(plan, HeldReason.FINALS, null);
             cue(item.raceId(), Map.of("type", "auto-run-held",
-                    "text", "Qualifying is complete. The finals are being checked."));
+                    "text", "Qualifying is complete. The finals need calculating in race control."));
             return;
         }
         if (raceEntryRepository.findByRaceIdOrderByGridPosition(item.raceId()).isEmpty()) {

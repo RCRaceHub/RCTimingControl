@@ -63,7 +63,7 @@ describe('AutoRunPanel', () => {
     }));
     render(<AutoRunPanel autoRun={autoRun} canControl />);
 
-    expect(screen.getByTestId('auto-run-held')).toHaveTextContent(/finals can be checked/);
+    expect(screen.getByTestId('auto-run-held')).toHaveTextContent(/finals can be calculated and checked/);
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
     expect(autoRun.go.mutate).toHaveBeenCalled();
   });
