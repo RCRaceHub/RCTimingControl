@@ -3,7 +3,9 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.QualifyingResult;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,5 +47,48 @@ class QualifyingStandingsServiceTest {
                 new QualifyingResult(5L, 50_000, 20)));
 
         assertThat(order).containsExactly(3L, 5L, 9L);
+    }
+
+    private static QualifyingResult total(long entryId, int points, int laps) {
+        return new QualifyingResult(entryId, 50_000, laps, points, List.of());
+    }
+
+    private static List<Long> brcaRank(Map<Long, QualifyingStandingsService.CountingRounds> counting,
+                                       QualifyingResult... results) {
+        List<QualifyingResult> sorted = new ArrayList<>(List.of(results));
+        sorted.sort(QualifyingStandingsService.brcaOrder(counting));
+        return sorted.stream().map(QualifyingResult::entryId).toList();
+    }
+
+    @Test
+    void brcaOrder_putsTheBestSingleRoundAheadOfTwoSecondPlaces() {
+        // 1 + 3 and 2 + 2 are both 4 points; the driver with the single best round wins even with fewer laps
+        var counting = Map.of(
+                1L, new QualifyingStandingsService.CountingRounds(List.of(2, 2), 600_000),
+                2L, new QualifyingStandingsService.CountingRounds(List.of(1, 3), 600_000));
+
+        assertThat(brcaRank(counting, total(1, 4, 40), total(2, 4, 30))).containsExactly(2L, 1L);
+    }
+
+    @Test
+    void brcaOrder_comparesTheSecondBestRoundWhenTheBestIsTheSame() {
+        var counting = Map.of(
+                1L, new QualifyingStandingsService.CountingRounds(List.of(1, 5), 600_000),
+                2L, new QualifyingStandingsService.CountingRounds(List.of(1, 4), 600_000));
+
+        assertThat(brcaRank(counting, total(1, 6, 40), total(2, 5, 30))).containsExactly(2L, 1L);
+        assertThat(brcaRank(counting, total(1, 5, 40), total(2, 5, 30))).containsExactly(2L, 1L);
+    }
+
+    @Test
+    void brcaOrder_fallsBackToCountingLapsThenCountingTime() {
+        var counting = Map.of(
+                1L, new QualifyingStandingsService.CountingRounds(List.of(1, 3), 610_000),
+                2L, new QualifyingStandingsService.CountingRounds(List.of(1, 3), 600_000),
+                3L, new QualifyingStandingsService.CountingRounds(List.of(1, 3), 620_000));
+
+        // Same rounds: more laps first, then the shorter combined time
+        assertThat(brcaRank(counting, total(1, 4, 40), total(2, 4, 40), total(3, 4, 41)))
+                .containsExactly(3L, 2L, 1L);
     }
 }

@@ -105,10 +105,10 @@ public class QualifyingStandingsService {
      * showing the overall qualifying table.
      */
     public List<QualifyingResult> rankedResultsFor(Long eventClassId) {
-        Optional<Integer> bestRounds = roundByRoundBestCount(eventClassId);
-        if (bestRounds.isPresent()) {
+        Optional<RoundRules> rules = roundByRoundRules(eventClassId);
+        if (rules.isPresent()) {
             List<QualifyingResult> byPoints =
-                    roundByRound(eventClassId, bestRounds.get(), lostBestRounds(eventClassId));
+                    roundByRound(eventClassId, rules.get(), lostBestRounds(eventClassId));
             if (!byPoints.isEmpty()) {
                 return byPoints;
             }
@@ -118,12 +118,18 @@ public class QualifyingStandingsService {
     }
 
     /**
-     * The number of rounds that count when the class's format ranks qualifying round by round (low points), 0 for
-     * all of them (also for a count of 0 or less); empty for any other qualifying type, which uses the total laps
-     * order. A format whose settings cannot be read is treated as not round by round, so that the table and the
-     * seeding still work.
+     * How a round by round class is scored: {@code bestRounds} is the number of rounds that count (0 for all of
+     * them), {@code splitTiedPlaces} gives each car its own place in a round even on identical laps and time, and
+     * {@code brca} applies the BRCA rules (flat points for a driver with no laps, and its tie-break).
      */
-    private Optional<Integer> roundByRoundBestCount(Long eventClassId) {
+    private record RoundRules(int bestRounds, boolean splitTiedPlaces, boolean brca) {}
+
+    /**
+     * The scoring rules when the class's format ranks qualifying round by round (low points); empty for any other
+     * qualifying type, which uses the total laps order. A format whose settings cannot be read is treated as not
+     * round by round, so that the table and the seeding still work.
+     */
+    private Optional<RoundRules> roundByRoundRules(Long eventClassId) {
         EventClass eventClass = eventClassRepository.findById(eventClassId).orElse(null);
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
             return Optional.empty();
@@ -146,7 +152,12 @@ public class QualifyingStandingsService {
         if (type != QualifyingType.ROUND_BY_ROUND) {
             return Optional.empty();
         }
-        return Optional.of(config instanceof BumpUpConfig bumpUp ? Math.max(0, bumpUp.bestHeatsCount()) : 0);
+        return Optional.of(switch (config) {
+            case BumpUpConfig bumpUp -> new RoundRules(Math.max(0, bumpUp.bestHeatsCount()), false, false);
+            case PointsFinalsConfig points -> new RoundRules(Math.max(0, points.bestHeatsCount()),
+                    points.splitTiedPlaces(), points.brcaQualifying());
+            default -> new RoundRules(0, false, false);
+        });
     }
 
     /**
@@ -157,8 +168,13 @@ public class QualifyingStandingsService {
      * when 0) and the lowest total wins; a tie goes to the most laps and then the quickest lap in the counting
      * rounds. A round with a heat still to run, or whose heats were all abandoned, is left out, since its places
      * are not settled. Empty when no round qualifies.
+     *
+     * <p>{@code rules} can change three things: each car gets its own place even on an exact tie, a driver with no
+     * laps (or missing from the round) scores the class's entries plus one, and a tie on points follows the BRCA
+     * tie-break (see {@link #brcaOrder}).
      */
-    private List<QualifyingResult> roundByRound(Long eventClassId, int bestRounds, Map<Long, Integer> lostBest) {
+    private List<QualifyingResult> roundByRound(Long eventClassId, RoundRules rules, Map<Long, Integer> lostBest) {
+        int bestRounds = rules.bestRounds();
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
                 .stream().map(Entry::getId).collect(Collectors.toSet());
         Map<Long, List<Race>> heatsByRound = new LinkedHashMap<>();
@@ -166,6 +182,9 @@ public class QualifyingStandingsService {
             heatsByRound.computeIfAbsent(race.getRoundId(), id -> new ArrayList<>()).add(race);
         }
 
+        // The BRCA score for a driver who did not run: every registered entry of the class, plus one
+        int dnsPoints = rules.brca()
+                ? entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.CONFIRMED).size() + 1 : 0;
         ShikabaneConfig shikabane = eventClassRepository.findById(eventClassId)
                 .flatMap(raceFormatService::shikabaneConfig).orElse(null);
         // Shikabane heats are separate overall races: a driver is ranked only against the others in their heat
@@ -179,7 +198,8 @@ public class QualifyingStandingsService {
                 continue;
             }
             Map<Long, RoundScore> scored = shikabane != null
-                    ? scoreShikabaneRound(heats, withdrawn, shikabane) : scoreRound(heats, withdrawn);
+                    ? scoreShikabaneRound(heats, withdrawn, shikabane)
+                    : scoreRound(heats, withdrawn, rules.splitTiedPlaces(), dnsPoints);
             if (shikabane != null) {
                 for (Race heat : heats) {
                     raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())
@@ -187,17 +207,22 @@ public class QualifyingStandingsService {
                 }
             }
             rounds.add(scored);
-            missingPoints.add(scored.size() + 1);
+            missingPoints.add(rules.brca() ? Math.max(dnsPoints, scored.size() + 1) : scored.size() + 1);
         }
 
         Set<Long> drivers = new LinkedHashSet<>();
         rounds.forEach(r -> drivers.addAll(r.keySet()));
         List<QualifyingResult> results = new ArrayList<>();
+        Map<Long, CountingRounds> counting = new HashMap<>();
         for (Long entryId : drivers) {
             QualifyingResult total = totalFor(entryId, rounds, missingPoints, bestRounds,
-                    lostBest.getOrDefault(entryId, 0));
+                    lostBest.getOrDefault(entryId, 0), counting);
             results.add(shikabane == null ? total : new QualifyingResult(total.entryId(), total.bestLapMs(),
                     total.lapsCompleted(), total.points(), total.rounds(), heatOf.get(entryId)));
+        }
+        if (rules.brca()) {
+            results.sort(brcaOrder(counting));
+            return results;
         }
         results.sort(Comparator
                 .comparingInt(QualifyingResult::points)
@@ -225,7 +250,8 @@ public class QualifyingStandingsService {
     }
 
     /** Each driver's laps, time and place in one finished round, withdrawn entries left out. */
-    private Map<Long, RoundScore> scoreRound(List<Race> heats, Set<Long> withdrawn) {
+    private Map<Long, RoundScore> scoreRound(List<Race> heats, Set<Long> withdrawn, boolean splitTiedPlaces,
+                                             int dnsPoints) {
         Map<Long, RoundScore> inRound = new LinkedHashMap<>();
         for (Race heat : heats) {
             // A driver who never crossed the line, or whose heat was abandoned, is last in the round. They sort
@@ -256,13 +282,15 @@ public class QualifyingStandingsService {
         for (int i = 0; i < ordered.size(); i++) {
             Map.Entry<Long, RoundScore> entry = ordered.get(i);
             RoundScore raw = entry.getValue();
-            boolean tied = previous != null && previous.laps() == raw.laps()
+            boolean tied = !splitTiedPlaces && previous != null && previous.laps() == raw.laps()
                     && previous.totalTimeMs() == raw.totalTimeMs();
             if (!tied) {
                 place = i + 1;
             }
             previous = raw;
-            scored.put(entry.getKey(), new RoundScore(place, raw.laps(), raw.totalTimeMs(), raw.bestLapMs()));
+            // BRCA: a driver with no laps did not run, and scores the flat penalty rather than a place
+            int points = dnsPoints > 0 && raw.laps() == 0 ? dnsPoints : place;
+            scored.put(entry.getKey(), new RoundScore(points, raw.laps(), raw.totalTimeMs(), raw.bestLapMs()));
         }
         return scored;
     }
@@ -287,7 +315,8 @@ public class QualifyingStandingsService {
      * count are made up with the worst place scored in a round, so a penalty can never help a driver.
      */
     private static QualifyingResult totalFor(Long entryId, List<Map<Long, RoundScore>> rounds,
-                                             List<Integer> missingPoints, int bestRounds, int lostBest) {
+                                             List<Integer> missingPoints, int bestRounds, int lostBest,
+                                             Map<Long, CountingRounds> countingByEntry) {
         List<RoundScore> byRound = new ArrayList<>();
         for (int i = 0; i < rounds.size(); i++) {
             byRound.add(rounds.get(i).getOrDefault(entryId,
@@ -311,6 +340,9 @@ public class QualifyingStandingsService {
         while (counting.size() < counted) {
             counting.add(new RoundScore(worst, 0, Long.MAX_VALUE, NO_LAP));
         }
+        countingByEntry.put(entryId, new CountingRounds(
+                counting.stream().map(RoundScore::points).sorted().toList(),
+                counting.stream().mapToLong(r -> Math.min(r.totalTimeMs(), MAX_ROUND_TIME_MS)).sum()));
         Set<Integer> countingSet = new HashSet<>(countingRounds);
         List<RoundPlace> places = new ArrayList<>();
         for (int i = 0; i < byRound.size(); i++) {
@@ -321,6 +353,41 @@ public class QualifyingStandingsService {
                 counting.stream().mapToInt(RoundScore::laps).sum(),
                 counting.stream().mapToInt(RoundScore::points).sum(),
                 places);
+    }
+
+    /** A round's time for a driver who has none is counted as this long, so summing rounds cannot overflow. */
+    private static final long MAX_ROUND_TIME_MS = 24L * 60 * 60 * 1000;
+
+    /**
+     * What the BRCA tie-break reads of a driver's counting rounds: their points, best first, and their times added
+     * together (the laps are already in the driver's result).
+     */
+    record CountingRounds(List<Integer> pointsBestFirst, long totalTimeMs) {}
+
+    /**
+     * The BRCA qualifying order: lowest total points, then the best single counting round, then the second best
+     * (comparing the counting rounds' points best first, so a 1 + 3 beats a 2 + 2), then the most laps in the
+     * counting rounds, then the least time in them, then the quickest lap and the entry id so that the order never
+     * changes between calls.
+     */
+    static Comparator<QualifyingResult> brcaOrder(Map<Long, CountingRounds> counting) {
+        Comparator<QualifyingResult> byRounds = (a, b) -> {
+            List<Integer> left = counting.get(a.entryId()).pointsBestFirst();
+            List<Integer> right = counting.get(b.entryId()).pointsBestFirst();
+            for (int i = 0; i < Math.min(left.size(), right.size()); i++) {
+                int compared = Integer.compare(left.get(i), right.get(i));
+                if (compared != 0) {
+                    return compared;
+                }
+            }
+            return 0;
+        };
+        return Comparator.comparingInt(QualifyingResult::points)
+                .thenComparing(byRounds)
+                .thenComparing(Comparator.comparingInt(QualifyingResult::lapsCompleted).reversed())
+                .thenComparingLong(r -> counting.get(r.entryId()).totalTimeMs())
+                .thenComparingLong(QualifyingResult::bestLapMs)
+                .thenComparing(QualifyingResult::entryId);
     }
 
     /** A driver's place in one finished round, and whether that round counts towards their total. */

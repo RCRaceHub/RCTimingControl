@@ -12,6 +12,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * read (the gap between races is the event's auto run gap). {@code staggerIntervalSeconds} is the seconds between
  * car number calls in a stagger start and {@code qualifyingType} is how qualifying is ranked (see
  * {@link QualifyingType}). Unknown JSON properties are ignored, so older saved configs still load.
+ *
+ * <p>{@code bestHeatsCount} is how many of the qualifying rounds count when ranked round by round (0 counts them
+ * all). {@code splitTiedPlaces} stops cars with identical laps and time sharing a place in a round, so the Nth car
+ * in order scores N points. {@code brcaQualifying} applies the BRCA rules to round by round qualifying: a driver
+ * with no laps scores the class's entries plus one, and a tie on points goes to the best single counting round,
+ * then the second best, then the summed laps and the summed time of the counting rounds. All three are off (0 or
+ * false) in configs saved before they existed, which keeps their behaviour.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PointsFinalsConfig(
@@ -23,5 +30,17 @@ public record PointsFinalsConfig(
     StartType finalsStartType,
     QualifyingType qualifyingType,
     int racePaddingMinutes,
-    int staggerIntervalSeconds
-) implements RaceFormatConfig {}
+    int staggerIntervalSeconds,
+    int bestHeatsCount,
+    boolean splitTiedPlaces,
+    boolean brcaQualifying
+) implements RaceFormatConfig {
+
+    /** A config without the round by round scoring options: every round counts and the rules are today's. */
+    public PointsFinalsConfig(int qualifyingHeats, int finalsCount, int finalDurationMinutes,
+                              int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
+                              QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
+        this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false);
+    }
+}

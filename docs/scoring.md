@@ -82,6 +82,20 @@ for it. With best 2 counting that is only used if it is one of her two best.
 Only a bump-up format has `bestHeatsCount`; a points-finals or single race format with `ROUND_BY_ROUND` counts
 every round.
 
+### BRCA qualifying (Points Finals)
+
+A Points Finals format with round by round qualifying has three extra settings, all off by default so existing
+formats score as above. They follow the BRCA 1/10 off-road rules.
+
+| Setting | Effect |
+|---|---|
+| Best heats count | How many rounds count (0 counts them all), as for a bump-up format. BRCA counts the best 2 of 4 |
+| Tied cars do not share a place | The Nth car in order in a round scores N points even when it ties with another on laps and time. The order of two exactly tied cars falls to the entry id |
+| BRCA qualifying | A driver with no laps in a round (a no show or a car that never started) scores **every registered entry in the class plus one**, rather than a place. A tie on points goes to the best single counting round, then the second best (so 1 + 3 beats 2 + 2), then the most laps over the counting rounds, then the least time over them |
+
+Example, best 2 of 4 counting: Ann scores 1, 3, 5, 6 and Bob 2, 2, 4, 7. Both total 4 from their best two. Ann's best
+round (1) beats Bob's (2), so Ann is ahead, whatever their laps.
+
 ### Shikabane heats
 
 In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by

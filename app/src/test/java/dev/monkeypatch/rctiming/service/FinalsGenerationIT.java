@@ -377,6 +377,35 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(ranked.get(2).entryId()).isEqualTo(drivers.get(2));
     }
 
+    private static final String POINTS_FINALS_BRCA = """
+            {"type":"POINTS_FINALS","qualifyingHeats":2,"finalsCount":1,"finalDurationMinutes":5,
+             "heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID",
+             "qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5,
+             "bestHeatsCount":0,"splitTiedPlaces":true,"brcaQualifying":true}""";
+
+    @Test
+    void brcaQualifyingGivesEachCarItsOwnPlaceAndAFlatScoreToADriverWhoDidNotRun() {
+        long buggyClass = addClass("Buggy", POINTS_FINALS_BRCA);
+        List<Long> drivers = addEntries(buggyClass, 4);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 1))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            List<long[]> rows = new ArrayList<>();
+            for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
+                // Drivers 0 and 1 tie on laps and time, driver 2 is behind and driver 3 never started
+                int index = drivers.indexOf(onGrid.getEntryId());
+                rows.add(new long[] {onGrid.getEntryId(), index == 3 ? 0 : index == 2 ? 8 : 10, 60_000});
+            }
+            storeResult(heat, rows, false);
+        }
+
+        var ranked = qualifyingStandingsService.rankedResultsFor(buggyClass);
+
+        // A tie does not share a place, and the driver with no laps scores the 4 entries plus one
+        assertThat(ranked).extracting(r -> r.points()).containsExactly(1, 2, 3, 5);
+        assertThat(ranked.get(3).entryId()).isEqualTo(drivers.get(3));
+    }
+
     /** Marks the heat finished (as the race control does) and stores its result; each row is entry, laps, best lap. */
     private void finishWithResult(Race heat, List<Long> buggies, int round) {
         List<long[]> rows = new ArrayList<>();

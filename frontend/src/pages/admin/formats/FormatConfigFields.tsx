@@ -183,6 +183,23 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
           <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
+          <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patch('bestHeatsCount', v)} />
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-split-ties"
+              checked={value.splitTiedPlaces === true}
+              onCheckedChange={checked => patch('splitTiedPlaces', checked === true)}
+            />
+            <Label htmlFor="points-split-ties" className="text-xs">Tied cars do not share a place</Label>
+          </div>
+          <div className="flex items-center gap-2 pt-5">
+            <Checkbox
+              id="points-brca-qualifying"
+              checked={value.brcaQualifying === true}
+              onCheckedChange={checked => patch('brcaQualifying', checked === true)}
+            />
+            <Label htmlFor="points-brca-qualifying" className="text-xs">BRCA qualifying (flat DNS points and tie-break)</Label>
+          </div>
         </div>
       )}
 
