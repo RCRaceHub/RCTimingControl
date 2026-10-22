@@ -37,14 +37,14 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
     implementation("org.flywaydb:flyway-core")
 
     // #26: the app keeps its data in one SQLite file; only persistence/ may use these directly
-    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
+    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
 
     // jOOQ for all reads and writes, with Spring JDBC transactions and the Hikari pools (#69)
     implementation("org.springframework.boot:spring-boot-starter-jooq")
@@ -60,8 +60,8 @@ dependencies {
     // Checks Results Export v1 documents against their published JSON schema (#27)
     testImplementation("com.networknt:json-schema-validator:1.5.8")
 
-    jooqGenerator("org.xerial:sqlite-jdbc:3.50.3.0")
-    jooqGenerator("org.slf4j:slf4j-simple:2.0.13")
+    jooqGenerator("org.xerial:sqlite-jdbc:3.53.4.0")
+    jooqGenerator("org.slf4j:slf4j-simple:2.0.20")
 }
 
 tasks.withType<Test> {

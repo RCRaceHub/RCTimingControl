@@ -8,5 +8,5 @@ repositories {
 
 dependencies {
     implementation("org.flywaydb:flyway-core:13.10.3")
-    implementation("org.xerial:sqlite-jdbc:3.50.3.0")
+    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
 }
