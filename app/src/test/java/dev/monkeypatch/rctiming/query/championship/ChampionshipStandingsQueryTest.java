@@ -818,6 +818,48 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void anAFinalRunInLegsIsPlacedFromItsCombinedBestTwoOfThreeLegs() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6));
+        Event event = makeEvent("A-final-legs-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = dsl.transactionResult(tx -> tx.dsl().insertInto(EVENT_CLASSES)
+                .set(EVENT_CLASSES.EVENT_ID, event.getId())
+                .set(EVENT_CLASSES.RACING_CLASS_ID, racingClassId)
+                .set(EVENT_CLASSES.CONFIG_SNAPSHOT, "{\"type\":\"POINTS_FINALS\",\"qualifyingHeats\":2,"
+                        + "\"finalsCount\":1,\"finalDurationMinutes\":5,\"heatDurationMinutes\":5,"
+                        + "\"qualifyingStartType\":\"GRID\",\"finalsStartType\":\"GRID\","
+                        + "\"qualifyingType\":\"ROUND_BY_ROUND\",\"racePaddingMinutes\":0,"
+                        + "\"staggerIntervalSeconds\":0,\"finalLegs\":3,\"legsCounted\":2}")
+                .returning(EVENT_CLASSES.ID).fetchOne().get(EVENT_CLASSES.ID));
+        Entry a = makeEntry(makeUser("Ann", "Leg").getId(), event.getId(), ecId);
+        Entry b = makeEntry(makeUser("Bob", "Leg").getId(), event.getId(), ecId);
+        Entry c = makeEntry(makeUser("Cat", "Leg").getId(), event.getId(), ecId);
+        // Ann wins leg 1 only, Bob wins legs 2 and 3: best two legs are Ann 1 + 2, Bob 1 + 1, Cat 2 + 3
+        String[][] legs = {
+                {resultRow(a.getId(), 1, 12, 5000), resultRow(b.getId(), 2, 10, 5000), resultRow(c.getId(), 3, 8, 5000)},
+                {resultRow(b.getId(), 1, 12, 5000), resultRow(a.getId(), 2, 10, 5000), resultRow(c.getId(), 3, 8, 5000)},
+                {resultRow(b.getId(), 1, 11, 5000), resultRow(c.getId(), 2, 10, 5000), resultRow(a.getId(), 3, 5, 5000)}};
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        for (int leg = 0; leg < legs.length; leg++) {
+            Race race = makeRace(finalRound.getId(), ecId, "A", leg + 1);
+            makeRaceEntry(race.getId(), a.getId());
+            makeRaceEntry(race.getId(), b.getId());
+            makeRaceEntry(race.getId(), c.getId());
+            makeSnapshot(race.getId(), "[" + String.join(",", legs[leg]) + "]");
+        }
+
+        List<StandingsRowDto> standings = query.computeStandings(champ.getId());
+
+        // Placed Bob, Ann, Cat; without combining, Ann's win in leg 1 would have scored first place
+        assertThat(standings).extracting(StandingsRowDto::displayName, StandingsRowDto::totalPoints)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("Bob Leg", 10),
+                        org.assertj.core.groups.Tuple.tuple("Ann Leg", 8),
+                        org.assertj.core.groups.Tuple.tuple("Cat Leg", 6));
+    }
+
+    @Test
     void aBFinalIsNotPlacedWhileTheAFinalIsStillToRun() throws Exception {
         Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
         addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));

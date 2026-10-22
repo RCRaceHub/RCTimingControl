@@ -117,7 +117,8 @@ keeps each driver's best legs, the lowest total wins, and a tie goes to the best
 best (1 + 3 beats 2 + 2), then the most laps and the least time over the counting legs. Until every leg has finished the order shows the legs run so far.
 Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`.
 
-Championship points and the boards do not use the combined order yet; see the tracker (#423).
+Championship points use the combined order (see section 5): the A final is placed from it once every leg has finished, and
+its winner earns the A-final bonus. The boards and printouts do not show the combined order yet; see the tracker (#423).
 
 ### Shikabane heats
 

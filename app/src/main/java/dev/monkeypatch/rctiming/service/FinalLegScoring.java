@@ -13,9 +13,10 @@ import java.util.Map;
  * single counting leg, then the second best, then the most laps over the counting legs, then the least time over
  * them. A driver who did not run a leg (no laps) scores one more than the number of drivers.
  *
- * <p>Pure: no Spring, no database. {@link FinalLegsService} reads the legs' results and calls it.
+ * <p>Pure: no Spring, no database. {@link FinalLegsService} and the championship standings read the legs' results
+ * and call it.
  */
-final class FinalLegScoring {
+public final class FinalLegScoring {
 
     /** A leg's time for a driver is capped at this, so adding legs cannot overflow. */
     private static final long MAX_LEG_TIME_MS = 24L * 60 * 60 * 1000;
@@ -24,8 +25,8 @@ final class FinalLegScoring {
     }
 
     /** One driver's run in one leg. */
-    record Run(int laps, long totalTimeMs) {
-        static final Run NONE = new Run(0, MAX_LEG_TIME_MS);
+    public record Run(int laps, long totalTimeMs) {
+        public static final Run NONE = new Run(0, MAX_LEG_TIME_MS);
     }
 
     /**
@@ -37,7 +38,7 @@ final class FinalLegScoring {
      * @param legPoints the points in each leg, in leg order
      * @param counted  whether each leg counted towards the total, in leg order
      */
-    record Standing(long entryId, int points, int laps, long timeMs, List<Integer> legPoints, List<Boolean> counted) {}
+    public record Standing(long entryId, int points, int laps, long timeMs, List<Integer> legPoints, List<Boolean> counted) {}
 
     /**
      * Ranks the drivers over the legs that have been run.
@@ -47,7 +48,7 @@ final class FinalLegScoring {
      * @param legsCounted how many legs count (0 for all of them); never more than the legs run so far
      * @return the drivers best first
      */
-    static List<Standing> rank(List<Map<Long, Run>> legs, Collection<Long> drivers, int legsCounted) {
+    public static List<Standing> rank(List<Map<Long, Run>> legs, Collection<Long> drivers, int legsCounted) {
         int didNotRun = drivers.size() + 1;
         Map<Long, List<Integer>> pointsBy = new HashMap<>();
         Map<Long, List<Run>> runsBy = new HashMap<>();
