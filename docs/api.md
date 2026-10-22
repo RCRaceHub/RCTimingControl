@@ -836,7 +836,7 @@ PUT /api/v1/race-control/events/{eventId}/live-feed   { "enabled": true }
 
 ## Race control — Auto run
 
-Runs an event's races one after another (#338). Any official may read; only `RACE_DIRECTOR` or `ADMIN` may change it. Every call answers with the state: `{ "eventId": 1, "armed": true, "phase": "WAITING", "nextRaceId": 12, "nextRaceLabel": "Qualifying 2 — Buggy — Heat 1", "startAt": "2026-10-17T10:03:00Z", "heldReason": null, "heldMessage": null, "gapSeconds": 180, "holdBeforeFinals": true, "autoStart": true }`. `phase` is `WAITING` (counting to the start), `RACING` (waiting for a race under way) or `HELD` (`heldReason` is `FINALS`, `NO_DRIVERS` or `REFUSED`), and null when auto run is off.
+Runs an event's races one after another (#338). Any official may read; only `RACE_DIRECTOR` or `ADMIN` may change it. Every call answers with the state: `{ "eventId": 1, "armed": true, "phase": "WAITING", "nextRaceId": 12, "nextRaceLabel": "Qualifying 2 — Buggy — Heat 1", "startAt": "2026-10-17T10:03:00Z", "heldReason": null, "heldMessage": null, "gapSeconds": 180, "holdBeforeFinals": true, "autoStart": false }`. `phase` is `WAITING` (counting to the start), `RACING` (waiting for a race under way) or `HELD` (`heldReason` is `FINALS`, `NO_DRIVERS` or `REFUSED`), and null when auto run is off.
 
 ```http
 GET  /api/v1/race-control/events/{eventId}/auto-run

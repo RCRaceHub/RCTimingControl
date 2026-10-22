@@ -354,7 +354,8 @@ class AutoRunServiceTest {
     }
 
     @Test
-    void aRaceStartedByHandSwitchesAutoRunOn() {
+    void aRaceStartedByHandSwitchesAutoRunOnWhenTheEventAsksFor() {
+        event.setAutoRunAutoStart(true);
         Race running = addRace(1, RoundType.QUALIFIER, RaceStatus.RUNNING);
         addRace(2, RoundType.QUALIFIER, RaceStatus.PENDING);
         Round round = new Round();
@@ -375,8 +376,7 @@ class AutoRunServiceTest {
     }
 
     @Test
-    void aRaceStartedByHandDoesNotSwitchItOnWhenTheEventAsksNot() {
-        event.setAutoRunAutoStart(false);
+    void aRaceStartedByHandDoesNotSwitchItOnByDefault() {
         Race running = addRace(1, RoundType.QUALIFIER, RaceStatus.RUNNING);
         Round round = new Round();
         round.setEventId(EVENT_ID);
