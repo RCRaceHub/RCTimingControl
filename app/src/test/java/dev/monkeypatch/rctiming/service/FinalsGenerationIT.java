@@ -40,6 +40,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     @Autowired EventRunOrderService runOrderService;
     @Autowired QualifyingStandingsService qualifyingStandingsService;
     @Autowired AutoFinalsSeedingService autoFinalsSeedingService;
+    @Autowired FinalsLineupService finalsLineupService;
     @Autowired QualifyingTableService qualifyingTableService;
     @Autowired RaceRepository raceRepository;
     @Autowired RaceEntryRepository raceEntryRepository;
@@ -225,7 +226,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(table.rows().get(0).lapsCompleted()).isEqualTo(21);
         assertThat(table.finalsStarted()).isFalse();
 
-        autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass);
+        autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass, null);
 
         // An even split of the table over the two finals: ranks 1-10 in the A final, 11-20 in the B final
         List<Long> order = table.rows().stream().map(r -> r.entryId()).toList();
@@ -247,10 +248,10 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 first.getRoundId());
         finishWithResult(first, buggies, round);
 
-        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass))
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass, null))
                 .isInstanceOf(StateConflictException.class);
         assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId + 1_000_000,
-                buggyClass)).isInstanceOf(EntityNotFoundException.class);
+                buggyClass, null)).isInstanceOf(EntityNotFoundException.class);
     }
 
     @Test
@@ -465,6 +466,55 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 .isInstanceOf(StateConflictException.class);
 
         assertThat(gridOf(aFinal)).hasSize(seeded);
+    }
+
+    @Test
+    void finalsAreCalculatedOnRequestThenEditedByMovesAndSwapsUntilAFinalIsCalled() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+
+        var before = finalsLineupService.forEvent(eventId).get(0);
+        assertThat(before.qualifyingComplete()).isFalse();
+        assertThat(before.calculated()).isFalse();
+        assertThat(before.defaultCarsPerFinal()).isEqualTo(10);
+
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            finishWithResult(heat, buggies, 1);
+        }
+        // Finishing the last heat does not seed anything by itself
+        assertThat(finalsLineupService.forEvent(eventId).get(0).calculated()).isFalse();
+        assertThat(finalsLineupService.forEvent(eventId).get(0).qualifyingComplete()).isTrue();
+
+        autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass, 12);
+        var lineup = finalsLineupService.forEvent(eventId).get(0);
+        assertThat(lineup.calculated()).isTrue();
+        assertThat(lineup.finals()).extracting(f -> f.letter()).containsExactly("A", "B");
+        Race a = finalOf(buggyClass, "A");
+        Race b = finalOf(buggyClass, "B");
+        long topB = gridOf(b).get(0).getEntryId();
+        long topA = gridOf(a).get(0).getEntryId();
+
+        // The finals need not stay the same size: 12 cars each calculated 8 in A and 12 in B, and a move makes it 9 and 11
+        finalsLineupService.moveDriver(Actor.system("test"), b.getId(), topB, a.getId(), 1);
+        assertThat(gridOf(a)).extracting(RaceEntry::getEntryId).first().isEqualTo(topB);
+        assertThat(gridOf(a)).extracting(RaceEntry::getGridPosition)
+                .containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, gridOf(a).size()).boxed().toList());
+        assertThat(gridOf(b)).extracting(RaceEntry::getEntryId).doesNotContain(topB);
+
+        // A swap across finals exchanges the two drivers and their places
+        long lastB = gridOf(b).get(gridOf(b).size() - 1).getEntryId();
+        finalsLineupService.swapDrivers(Actor.system("test"), a.getId(), topA, b.getId(), lastB);
+        assertThat(gridOf(a)).extracting(RaceEntry::getEntryId).contains(lastB).doesNotContain(topA);
+        assertThat(gridOf(b)).extracting(RaceEntry::getEntryId).contains(topA).doesNotContain(lastB);
+
+        // Once a final is called, its line-up is locked
+        jdbc.update("update races set status = 'GRID' where id = ?", a.getId());
+        assertThatThrownBy(() -> finalsLineupService.moveDriver(Actor.system("test"), b.getId(),
+                gridOf(b).get(0).getEntryId(), a.getId(), null)).isInstanceOf(StateConflictException.class);
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseed(Actor.system("test"), eventId, buggyClass, null))
+                .isInstanceOf(StateConflictException.class);
     }
 
     private long addClass(String name) {

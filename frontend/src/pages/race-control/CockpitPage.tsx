@@ -23,6 +23,8 @@ import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { QualifyingTablePanel } from './panels/QualifyingTablePanel';
+import { FinalsLineupPanel } from './panels/FinalsLineupPanel';
+import { HeatLineupsPanel } from './panels/HeatLineupsPanel';
 import { AudioSettingsPanel } from './panels/AudioSettingsPanel';
 import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import {
@@ -424,11 +426,17 @@ export default function CockpitPage() {
               </p>
             )}
             {selectedRace.roundType === 'FINAL' && (
-              <QualifyingTablePanel
-                eventId={eventId}
-                eventClassId={selectedRace.eventClassId}
-                canSeed={canControlRace}
-              />
+              <>
+                <FinalsLineupPanel
+                  eventId={eventId}
+                  eventClassId={selectedRace.eventClassId}
+                  canEdit={canControlRace}
+                />
+                <QualifyingTablePanel eventId={eventId} eventClassId={selectedRace.eventClassId} />
+              </>
+            )}
+            {selectedRace.roundType !== 'FINAL' && (
+              <HeatLineupsPanel race={selectedRace} runOrder={runOrder} onSelect={setSelectedRaceId} />
             )}
           </div>
         );

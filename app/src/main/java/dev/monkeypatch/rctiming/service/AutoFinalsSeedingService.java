@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Seeds a class's finals from its qualifying results as soon as the last qualifying heat finishes, so the
- * finals are ready to run without an official having to ask. The layout comes from the class's format: a
- * bump-up format's grid size and bump spots, otherwise the field split evenly over the class's finals with no
- * bumps. The number of finals is the number the generator made for the class.
+ * Calculates a class's finals from its qualifying results when an official asks for it from the finals line-up
+ * panel. The layout comes from the class's format: a bump-up format's bump spots, otherwise no bumps, with the
+ * official's cars per final or, when none is given, the format's grid size (else an even split of the field). The
+ * number of finals is the number the generator made for the class.
  *
- * <p>It does nothing when a qualifying heat is still to run, when there are no finals, or when a final has
- * already started, since seeding replaces the finals' grids. An official can still seed again by hand
- * ({@code EventRunOrderService.seedFinals}) until a final starts.
+ * <p>Nothing is calculated by itself when qualifying ends: the official reviews and edits the line-ups first
+ * ({@link FinalsLineupService}). It refuses while a qualifying heat is still to run, when there are no finals, and
+ * once a final has started, since calculating replaces the finals' grids.
  */
 @Service
 public class AutoFinalsSeedingService {
@@ -59,44 +59,29 @@ public class AutoFinalsSeedingService {
         this.audit = audit;
     }
 
-    /**
-     * Call after a qualifying heat of the class has finished and been saved; {@code RaceStateMachineService} does
-     * so from the finish command, so it runs on that request thread inside its transaction. Silently does nothing
-     * unless the class is ready to seed (see the class comment), as a finish is no place to fail. Audited as the
-     * system actor {@code finals-seeding}.
-     */
-    public void seedIfQualifyingComplete(Long eventClassId) {
-        if (!qualifyingComplete(eventClassId)) {
-            return;
-        }
-        List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
-        if (finals.isEmpty() || finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
-            return;
-        }
-        if (qualifyingStandingsService.standingsFor(eventClassId).isEmpty()) {
-            log.info("Not seeding the finals of event class {}: no qualifying result", eventClassId);
-            return;
-        }
-        seed(Actor.system("finals-seeding"), eventClassId, "when qualifying finished");
-    }
-
     /** Every qualifying heat is finished and at least one was not abandoned, so there are results to seed from. */
-    private boolean qualifyingComplete(Long eventClassId) {
+    boolean qualifyingComplete(Long eventClassId) {
         List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
         return qualifiers.stream().allMatch(q -> q.getStatus() == RaceStatus.FINISHED)
                 && qualifiers.stream().anyMatch(q -> q.getAbandonedAt() == null);
     }
 
     /**
-     * Seeds the class's finals again from the qualifying results, on an official's say, after a result changed
-     * (a heat re-run or corrected). Refused until every qualifying heat is finished, since a driver who is only
+     * Calculates the class's finals from the qualifying results, on an official's say, the first time or again after
+     * a result changed (a heat re-run or corrected), which also throws away any hand edits to the line-ups. Refused until every qualifying heat is finished, since a driver who is only
      * in an unfinished heat would be left out of every final, and once a final has started.
      *
-     * @throws EntityNotFoundException if the class is not in the event
-     * @throws StateConflictException  if qualifying is not complete, or the class has no finals
+     * @param carsPerFinal cars on each final's grid, or null for the format's own grid size (an even split of the
+     *                     field when the format has none); raised if the field would not fit
+     * @throws EntityNotFoundException  if the class is not in the event
+     * @throws IllegalArgumentException if {@code carsPerFinal} is less than 1
+     * @throws StateConflictException   if qualifying is not complete, or the class has no finals
      */
     @Transactional
-    public void reseed(Actor actor, Long eventId, Long eventClassId) {
+    public void reseed(Actor actor, Long eventId, Long eventClassId, Integer carsPerFinal) {
+        if (carsPerFinal != null && carsPerFinal < 1) {
+            throw new IllegalArgumentException("carsPerFinal must be at least 1");
+        }
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         if (!eventClass.getEventId().equals(eventId)) {
             throw new EntityNotFoundException("Event class " + eventClassId + " not found in event " + eventId);
@@ -105,10 +90,10 @@ public class AutoFinalsSeedingService {
             throw new StateConflictException(
                 "Every qualifying heat for this class must be finished, and not all abandoned, before its finals are seeded");
         }
-        seed(actor, eventClassId, "on request");
+        seed(actor, eventClassId, carsPerFinal);
     }
 
-    private void seed(Actor actor, Long eventClassId, String when) {
+    private void seed(Actor actor, Long eventClassId, Integer carsPerFinal) {
         List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         if (finals.isEmpty()) {
             throw new StateConflictException("This class has no finals to seed; generate the rounds first");
@@ -118,7 +103,7 @@ public class AutoFinalsSeedingService {
         // The zombie round is not one of the A, B, C mains the field is split over
         int finalsCount = (int) finals.stream()
                 .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter())).count();
-        int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount);
+        int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount, carsPerFinal);
         bumpUpSeedingService.seedFinals(eventClassId, standings, finalsCount, layout[0], layout[1]);
 
         Map<String, Object> after = new LinkedHashMap<>();
@@ -128,27 +113,30 @@ public class AutoFinalsSeedingService {
         after.put("qualifyingOrder", standings);
         audit.entry(actor, "FINALS_SEEDED").entity("event_class", eventClassId)
                 .event(eventClass.getEventId())
-                .summary("Seeded the finals from " + standings.size() + " qualifiers " + when + " ("
+                .summary("Calculated the finals from " + standings.size() + " qualifiers ("
                         + finalsCount + " finals, " + layout[0] + " cars each, " + layout[1] + " bumping up)")
                 .after(after).record();
     }
 
     /**
      * {cars per final, bump count} for a field of {@code field} drivers over {@code finalsCount} finals.
-     * A bump-up format, or a Shikabane format with mains, keeps its grid size unless the field would not fit, when the
-     * grid grows rather than leave a driver out of every final.
+     * A bump-up format, or a Shikabane format with mains, keeps its bump spots; its grid size is used unless
+     * {@code cars} says otherwise. Either way the grid grows rather than leave a driver out of every final.
+     *
+     * @param cars the official's cars per final, or null for the format's own
      */
-    static int[] layout(RaceFormatConfig config, int field, int finalsCount) {
+    static int[] layout(RaceFormatConfig config, int field, int finalsCount, Integer cars) {
         if (config instanceof BumpUpConfig bumpUp && bumpUp.gridSize() > 0) {
-            return fitted(bumpUp.gridSize(), bumpUp.bumpSpots(), field, finalsCount);
+            return fitted(cars != null ? cars : bumpUp.gridSize(), bumpUp.bumpSpots(), field, finalsCount);
         }
         if (config instanceof ShikabaneConfig shikabane && shikabane.mainGridSize() > 0) {
             // The mains work like a bump-up format's finals: promotion fills places at the back of the main above
-            return fitted(shikabane.mainGridSize(), shikabane.promotionSpots(), field, finalsCount);
+            return fitted(cars != null ? cars : shikabane.mainGridSize(), shikabane.promotionSpots(), field,
+                    finalsCount);
         }
-        return new int[] {Math.max(1, (field + finalsCount - 1) / finalsCount), 0};
+        int even = Math.max(1, (field + finalsCount - 1) / finalsCount);
+        return new int[] {cars != null ? Math.max(cars, even) : even, 0};
     }
-
     /**
      * {cars per final, bump count} for a configured grid size and bump spots. The lowest final takes a full grid and
      * each higher one its grid less the bump spots, so the grid grows until the field fits rather than leave drivers

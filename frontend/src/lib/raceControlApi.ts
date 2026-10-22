@@ -549,8 +549,60 @@ export async function getQualifying(eventId: number): Promise<QualifyingTable[]>
   return data;
 }
 
-export async function seedFinalsFromQualifying(eventId: number, eventClassId: number): Promise<void> {
-  await api.post(`/api/v1/race-control/event/${eventId}/qualifying/${eventClassId}/seed-finals`);
+/** Calculates a class's finals from its qualifying results; replaces any hand edits to the line-ups. */
+export async function calculateFinals(
+  eventId: number,
+  eventClassId: number,
+  carsPerFinal: number | null,
+): Promise<void> {
+  await api.post(`/api/v1/race-control/event/${eventId}/qualifying/${eventClassId}/seed-finals`, { carsPerFinal });
+}
+
+export type FinalsLineupDriverDto = {
+  entryId: number;
+  driverName: string;
+  gridPosition: number | null;
+  carNumber: number | null;
+  qualifyingPosition: number | null;
+};
+
+export type FinalsLineupFinalDto = {
+  raceId: number;
+  letter: string;
+  status: RunOrderItemDto['status'];
+  /** Places at the back of the grid still to be filled by the winners of the final below. */
+  bumpSlots: number;
+  editable: boolean;
+  drivers: FinalsLineupDriverDto[];
+};
+
+export type FinalsLineupDto = {
+  eventClassId: number;
+  className: string;
+  qualifyingComplete: boolean;
+  calculated: boolean;
+  started: boolean;
+  defaultCarsPerFinal: number;
+  finals: FinalsLineupFinalDto[];
+};
+
+export async function getFinalsLineup(eventId: number): Promise<FinalsLineupDto[]> {
+  const { data } = await api.get<FinalsLineupDto[]>(`/api/v1/race-control/event/${eventId}/finals-lineup`);
+  return data;
+}
+
+export async function moveFinalsDriver(
+  raceId: number,
+  req: { entryId: number; targetRaceId: number; targetPosition: number | null },
+): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/finals/move`, req);
+}
+
+export async function swapFinalsDrivers(
+  raceId: number,
+  req: { entryId: number; otherRaceId: number; otherEntryId: number },
+): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/finals/swap`, req);
 }
 
 export type RaceEliminationDto = {

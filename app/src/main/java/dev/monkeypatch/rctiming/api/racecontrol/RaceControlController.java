@@ -19,7 +19,12 @@ import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateFinalsRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsMoveRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
+import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
+import dev.monkeypatch.rctiming.service.FinalsLineupService;
 import dev.monkeypatch.rctiming.service.HeatMoveService;
 import dev.monkeypatch.rctiming.service.MarshalService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
@@ -69,6 +74,7 @@ public class RaceControlController {
     private final QualifyingTableService qualifyingTableService;
     private final AutoFinalsSeedingService finalsSeedingService;
     private final HeatMoveService heatMoveService;
+    private final FinalsLineupService finalsLineupService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
                                   EventResultsQuery eventResultsQuery,
@@ -81,7 +87,8 @@ public class RaceControlController {
                                   ResultSnapshotRepository resultSnapshotRepository,
                                   QualifyingTableService qualifyingTableService,
                                   AutoFinalsSeedingService finalsSeedingService,
-                                  HeatMoveService heatMoveService) {
+                                  HeatMoveService heatMoveService,
+                                  FinalsLineupService finalsLineupService) {
         this.runOrderQuery = runOrderQuery;
         this.eventResultsQuery = eventResultsQuery;
         this.raceRepository = raceRepository;
@@ -94,6 +101,7 @@ public class RaceControlController {
         this.qualifyingTableService = qualifyingTableService;
         this.finalsSeedingService = finalsSeedingService;
         this.heatMoveService = heatMoveService;
+        this.finalsLineupService = finalsLineupService;
     }
 
     /**
@@ -141,18 +149,55 @@ public class RaceControlController {
     }
 
     /**
-     * Seeds the class's finals again from the qualifying results so far, for after a heat was re-run or corrected.
-     * Refused once a final has started.
+     * Calculates the class's finals from its qualifying results: the first time, or again after a heat was re-run or
+     * corrected, which replaces any hand edits. Refused once a final has started.
      *
-     * <p>{@code POST /event/{eventId}/qualifying/{eventClassId}/seed-finals}; 204 on success. 404 if the class is
-     * not in that event; 409 if a qualifying heat is unfinished (or all were abandoned), the class has no finals
-     * yet, or a final has started. Recorded in the audit log.
+     * <p>{@code POST /event/{eventId}/qualifying/{eventClassId}/seed-finals}; the body is optional and names the cars
+     * per final. 204 on success. 404 if the class is not in that event; 409 if a qualifying heat is unfinished (or
+     * all were abandoned), the class has no finals yet, or a final has started. Recorded in the audit log.
      */
     @Audited("audit_log")
     @PostMapping("/event/{eventId}/qualifying/{eventClassId}/seed-finals")
     @Transactional
-    public ResponseEntity<Void> seedFinals(@PathVariable long eventId, @PathVariable long eventClassId) {
-        finalsSeedingService.reseed(CurrentOfficial.actor(), eventId, eventClassId);
+    public ResponseEntity<Void> seedFinals(@PathVariable long eventId, @PathVariable long eventClassId,
+                                           @Valid @RequestBody(required = false) CalculateFinalsRequest request) {
+        finalsSeedingService.reseed(CurrentOfficial.actor(), eventId, eventClassId,
+                request == null ? null : request.carsPerFinal());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Each class's finals line-up: who is on every final's grid, and whether the finals can be calculated yet.
+     * {@code GET /event/{eventId}/finals-lineup}. Read only.
+     */
+    @GetMapping("/event/{eventId}/finals-lineup")
+    public List<FinalsLineupDto> getFinalsLineup(@PathVariable long eventId) {
+        return finalsLineupService.forEvent(eventId);
+    }
+
+    /**
+     * Moves a driver from a pending final to another pending final of the same class.
+     * {@code POST /race/{raceId}/finals/move}; 204 on success. 400 for the same final, different classes, or emptying
+     * a final; 404 if the driver is not in the final; 409 if either final has been called or started. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/finals/move")
+    public ResponseEntity<Void> moveFinalsDriver(@PathVariable long raceId, @Valid @RequestBody FinalsMoveRequest request) {
+        finalsLineupService.moveDriver(CurrentOfficial.actor(), raceId, request.entryId(), request.targetRaceId(),
+                request.targetPosition());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Swaps two drivers' grid places, on one pending final or across two of the same class.
+     * {@code POST /race/{raceId}/finals/swap}; 204 on success. 400 for the same driver or different classes; 404 if a
+     * driver is not in their final; 409 if either final has been called or started. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/finals/swap")
+    public ResponseEntity<Void> swapFinalsDrivers(@PathVariable long raceId, @Valid @RequestBody FinalsSwapRequest request) {
+        finalsLineupService.swapDrivers(CurrentOfficial.actor(), raceId, request.entryId(), request.otherRaceId(),
+                request.otherEntryId());
         return ResponseEntity.noContent().build();
     }
 

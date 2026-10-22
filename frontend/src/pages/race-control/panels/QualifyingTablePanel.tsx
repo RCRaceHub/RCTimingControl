@@ -1,27 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
-import { getQualifying, seedFinalsFromQualifying } from '@/lib/raceControlApi';
+import { getQualifying } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
-import { getApiErrorMessage } from '@/lib/errors';
-import { Button } from '@/components/ui/button';
 import { RoundHeaderCells, RoundPlaceCells, roundCount } from '@/components/QualifyingRounds';
 
 /**
- * A class's overall qualifying table, the order its finals are seeded from, with a button to seed the finals
- * again after a heat was re-run or corrected. The finals are also seeded by themselves when the last
- * qualifying heat finishes.
+ * A class's overall qualifying table, the order its finals are calculated from. The finals are calculated, and
+ * edited, in the finals line-up panel.
  */
 export function QualifyingTablePanel({
   eventId,
   eventClassId,
-  canSeed,
 }: {
   eventId: number;
   eventClassId: number;
-  canSeed: boolean;
 }) {
-  const queryClient = useQueryClient();
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: raceControlQueryKeys.qualifying(eventId),
     queryFn: () => getQualifying(eventId),
@@ -30,15 +23,6 @@ export function QualifyingTablePanel({
   const hasHeats = table?.rows.some((r) => r.heat != null) ?? false;
   const hasPoints = table?.rows.some((r) => r.points != null) ?? false;
   const rounds = table ? roundCount(table.rows) : 0;
-
-  const seed = useMutation({
-    mutationFn: () => seedFinalsFromQualifying(eventId, eventClassId),
-    onSuccess: () => {
-      toast.success('Finals seeded from the qualifying order');
-      queryClient.invalidateQueries({ queryKey: ['race-control'] });
-    },
-    onError: (err) => toast.error(getApiErrorMessage(err, 'Could not seed the finals')),
-  });
 
   return (
     <section aria-label="Overall qualifying" className="flex flex-col gap-2">
@@ -92,24 +76,6 @@ export function QualifyingTablePanel({
                 ))}
               </tbody>
             </table>
-          )}
-          {canSeed && (
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="w-fit"
-                onClick={() => seed.mutate()}
-                disabled={seed.isPending || table.finalsStarted || table.heatsFinished < table.heatsTotal || table.rows.length === 0}
-              >
-                {seed.isPending ? 'Seeding…' : 'Seed finals from this order'}
-              </Button>
-              {!table.finalsStarted && table.heatsFinished < table.heatsTotal && (
-                <span className="text-sm text-muted-foreground">Finish or abandon every qualifying heat first.</span>
-              )}
-              {table.finalsStarted && (
-                <span className="text-sm text-muted-foreground">A final has started, so the finals can't be seeded again.</span>
-              )}
-            </div>
           )}
         </>
       )}

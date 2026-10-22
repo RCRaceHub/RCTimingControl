@@ -168,10 +168,14 @@ has the best qualifiers, and its last places are filled by the best finishers fr
 
 How the finals run:
 
-1. When the last qualifying heat of a class finishes, the finals are **seeded automatically**. The lowest final is
-   filled first from the bottom of the qualifying order with a full grid; each higher final takes what is left, with
-   the bump spots left empty. Worked examples are in [Scoring, section 3](scoring.md#3-seeding-the-finals). An official
-   can seed again by hand, for instance after a correction, until any final has started.
+1. When the last qualifying heat of a class finishes, press **Calculate finals** in the **Finals line-up** panel of a
+   final in race control (nothing is calculated for you). Set **Cars per final** first; it starts at the size of a
+   qualifying heat, so the marshalling is the same as in qualifying. The lowest final is filled first from the bottom
+   of the qualifying order with a full grid; each higher final takes what is left, with the bump spots left empty.
+   Worked examples are in [Scoring, section 3](scoring.md#3-seeding-the-finals). The panel then shows who is in each
+   final, and you can move a driver to another final, or move a driver up or down the grid, until the final is called
+   to the grid. The finals need not stay the same size. Pressing the button again (after a correction, say) replaces
+   your edits, and asks first.
 2. A final **cannot be called to the grid or started** until every qualifying heat of its class has finished. An
    abandoned heat counts as finished.
 3. Finals run **lowest first**: C, then B, then A.
@@ -308,7 +312,7 @@ one waits the event's gap, is called to the grid 30 seconds before it starts, ge
 announces the time to the next race at 10, 5, 2 and 1 minutes when the gap is long enough. It **holds** instead of
 carrying on when:
 
-- the event asks to hold after the last qualifier, so the finals can be checked and seeded before anyone lets them run
+- the event asks to hold after the last qualifier, so the finals can be calculated and checked before anyone lets them run
   (held for the finals),
 - the next race has no drivers, or
 - a command is refused.

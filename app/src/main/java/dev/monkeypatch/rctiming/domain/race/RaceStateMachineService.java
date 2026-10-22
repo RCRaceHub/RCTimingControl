@@ -5,7 +5,6 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
-import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -66,7 +65,6 @@ public class RaceStateMachineService {
     private final ResultSnapshotService resultSnapshotService;
     private final ApplicationEventPublisher eventPublisher;
     private final BumpUpSeedingService bumpUpSeedingService;
-    private final AutoFinalsSeedingService autoFinalsSeedingService;
     private final RaceFormatService raceFormatService;
     private final EventClassRepository eventClassRepository;
     private final RaceEliminationRepository raceEliminationRepository;
@@ -81,7 +79,6 @@ public class RaceStateMachineService {
                                    ResultSnapshotService resultSnapshotService,
                                    ApplicationEventPublisher eventPublisher,
                                    BumpUpSeedingService bumpUpSeedingService,
-                                   AutoFinalsSeedingService autoFinalsSeedingService,
                                    RaceFormatService raceFormatService,
                                    EventClassRepository eventClassRepository,
                                    RaceEliminationRepository raceEliminationRepository,
@@ -95,7 +92,6 @@ public class RaceStateMachineService {
         this.resultSnapshotService = resultSnapshotService;
         this.eventPublisher = eventPublisher;
         this.bumpUpSeedingService = bumpUpSeedingService;
-        this.autoFinalsSeedingService = autoFinalsSeedingService;
         this.raceFormatService = raceFormatService;
         this.eventClassRepository = eventClassRepository;
         this.raceEliminationRepository = raceEliminationRepository;
@@ -234,8 +230,6 @@ public class RaceStateMachineService {
             }
             // After the snapshot too: a Shikabane heat's next grid is drawn from the stored result and its points
             shikabaneGridService.applyAfterFinish(race);
-            // After the snapshot, since the finals are seeded from the qualifying results stored with it
-            seedFinalsAfterQualifying(race);
         }
     }
 
@@ -254,20 +248,6 @@ public class RaceStateMachineService {
             throw new IllegalStateTransitionException(
                 "Cannot call the grid for or start a final until all qualifying heats for its class are finished ("
                 + unfinished + " still to run)");
-        }
-    }
-
-    /** When the last qualifying heat of a class finishes, its finals are seeded from the qualifying results. */
-    private void seedFinalsAfterQualifying(Race finishedRace) {
-        Round round = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
-        if (round != null && round.getType() == RoundType.QUALIFIER) {
-            // Not allowed to fail the finish: the official can still seed the finals by hand
-            try {
-                autoFinalsSeedingService.seedIfQualifyingComplete(finishedRace.getEventClassId());
-            } catch (RuntimeException e) {
-                log.warn("Could not seed the finals of event class {} after race {} finished",
-                        finishedRace.getEventClassId(), finishedRace.getId(), e);
-            }
         }
     }
 

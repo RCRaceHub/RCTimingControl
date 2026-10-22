@@ -95,8 +95,11 @@ qualifying table lists heat by heat, with positions restarting in each, and poin
 
 ## 3. Seeding the finals
 
-Finals are seeded automatically as soon as the last qualifying heat of the class finishes, and an official can
-reseed with the button until any final has started. A re-run heat that finishes again reseeds automatically while no final has started. A correction or a marshal penalty given after a heat finished does not, so those need the reseed button, which is refused until every qualifying heat is finished (and not all abandoned). If the finals have not been generated, nothing is seeded. A final cannot start until every qualifying heat of its class is
+Finals are calculated when an official presses **Calculate finals** in race control's Finals line-up panel, which is
+refused until every qualifying heat is finished (and not all abandoned) and once any final has been called. Nothing is
+calculated by itself, so a re-run heat, a correction or a marshal penalty given after a heat finished is picked up by
+pressing the button again, which replaces any hand edits to the line-ups. The official sets the cars per final (it
+starts at the size of a qualifying heat); a bump-up or Shikabane format keeps its bump spots. If the finals have not been generated, nothing is calculated. A final cannot start until every qualifying heat of its class is
 finished.
 
 The grid of each final follows qualifying order. The layout depends on the format:
@@ -135,7 +138,7 @@ Example (the table in 2.1, best 2 counting): Bob misses a marshal duty and gets 
 best round (round 2, place 1) is dropped, so his counting rounds are round 1 (2) and round 3 (3): 5 points, which
 puts him behind Cat (4). Ann is unchanged on 3.
 
-A qualifying penalty after the finals were seeded needs the reseed to take effect on the grids.
+A qualifying penalty after the finals were calculated needs Calculate finals pressed again to take effect on the grids.
 
 ## 5. Championship points
 

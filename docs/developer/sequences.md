@@ -70,7 +70,6 @@ sequenceDiagram
     participant Bus as ApplicationEventPublisher
     participant Hub as LiveTimingHub
     participant RS as ResultSnapshotService
-    participant AF as AutoFinalsSeedingService
 
     RD->>C: POST start
     C->>SM: start(race)
@@ -90,10 +89,9 @@ sequenceDiagram
     SM->>RS: snapshot(raceId)
     RS->>RS: positions from LiveRaceState, saved as a ResultSnapshot
     RS->>RS: after commit, LapTimingService.releaseState(raceId)
-    SM->>AF: seedIfQualifyingComplete(eventClassId) if it was a qualifier
 ```
 
-Shikabane eliminations are not state changes either: `RaceEliminationService` saves a `RaceElimination` row for a car marked dead (or a revival), and `ResultSnapshotService` reads the active rows when it works out the heat result, ordering the dead after the survivors through `ShikabaneOrdering`. On a finished race it publishes `FinishedRaceCorrected` so the result is rebuilt. When a Shikabane heat finishes, `RaceStateMachineService` calls `ShikabaneGridService` after the snapshot to draw the next heat's grid (reverse of the result, then cumulative `ShikabaneHeatScores`). A Shikabane class with `mains` above 0 has finals too: `AutoFinalsSeedingService` seeds them through `BumpUpSeedingService` using the config's `mainGridSize` and `promotionSpots`, and a finishing lower main promotes its best finishers as in a bump-up format. A zombie round is a final with letter `Z` that `BumpUpSeedingService` leaves out of the seeding, fills with everyone outside A when the main below A finishes, and whose winner is promoted into A through the extra bump place A is given.
+Shikabane eliminations are not state changes either: `RaceEliminationService` saves a `RaceElimination` row for a car marked dead (or a revival), and `ResultSnapshotService` reads the active rows when it works out the heat result, ordering the dead after the survivors through `ShikabaneOrdering`. On a finished race it publishes `FinishedRaceCorrected` so the result is rebuilt. When a Shikabane heat finishes, `RaceStateMachineService` calls `ShikabaneGridService` after the snapshot to draw the next heat's grid (reverse of the result, then cumulative `ShikabaneHeatScores`). A Shikabane class with `mains` above 0 has finals too: `AutoFinalsSeedingService` (on the official's Calculate finals) seeds them through `BumpUpSeedingService` using the config's `mainGridSize` and `promotionSpots`, and a finishing lower main promotes its best finishers as in a bump-up format. A zombie round is a final with letter `Z` that `BumpUpSeedingService` leaves out of the seeding, fills with everyone outside A when the main below A finishes, and whose winner is promoted into A through the extra bump place A is given.
 
 Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment` and calls `LapTimingService.applyMarshalAdjustment`, which recalculates and rebroadcasts positions.
 
