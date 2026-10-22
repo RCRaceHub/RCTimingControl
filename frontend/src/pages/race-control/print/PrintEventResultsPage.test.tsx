@@ -100,6 +100,22 @@ describe('PrintEventResultsPage', () => {
     expect(within(buggy).queryByText('Qualifier 1')).not.toBeInTheDocument();
   });
 
+  it('says which scoring system a class was scored under, and nothing for a class set by hand', async () => {
+    vi.mocked(getEventResults).mockResolvedValue({
+      ...results,
+      races: [
+        heat(1, 7, 'Buggy', { scoringSystem: 'BRCA 1/10 off-road' }),
+        heat(5, 8, 'Truck'),
+      ],
+    } as never);
+
+    renderPage('?view=round&type=QUALIFIER&round=1');
+
+    const buggy = await screen.findByRole('article', { name: 'Buggy' });
+    expect(within(buggy).getByText('Scored under BRCA 1/10 off-road.')).toBeInTheDocument();
+    expect(within(screen.getByRole('article', { name: 'Truck' })).queryByText(/Scored under/)).not.toBeInTheDocument();
+  });
+
   it('says so when nothing has finished', async () => {
     vi.mocked(getEventResults).mockResolvedValue({ ...results, races: [] } as never);
 

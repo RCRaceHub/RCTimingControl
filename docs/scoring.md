@@ -295,6 +295,10 @@ system's values), so a file imports the same on any club's machine. A system a f
 scoring itself is unchanged: the same settings are read as before, so formats saved earlier score exactly as they did.
 Bump Up and Timed formats do not use systems yet.
 
+**On printouts.** The officials' results printouts (round summary, final results, meeting pack) say "Scored under
+<system name>" at the top of each class whose format was set from a scoring system. A class whose format was set by hand,
+or whose system has since been deleted, shows nothing. The live boards and the public pages do not show it.
+
 **Championships.** On a championship's Config tab, an admin can pick a championship scoring system and **Apply** it. This
 copies the rounds scoring (best X from Y), the TQ and A final bonuses, the overall table setting and the whole points scale
 onto the championship, in one step that is recorded in the audit log with the values before and after. Nothing is linked:

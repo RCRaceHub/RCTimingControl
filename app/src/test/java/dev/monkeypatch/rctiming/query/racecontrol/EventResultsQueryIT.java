@@ -89,6 +89,32 @@ class EventResultsQueryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aClassSetFromAScoringSystemNamesItOnItsRaces() {
+        assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
+                .as("a format set by hand names no system").containsOnlyNulls();
+
+        long brca = jdbc.queryForObject(
+                "select id from scoring_systems where kind = 'RACE' and name = 'BRCA 1/10 off-road'", Long.class);
+        jdbc.update("update event_classes set config_snapshot = ? where id = ?",
+                "{\"type\":\"POINTS_FINALS\",\"scoringSystemId\":" + brca + "}", eventClassId);
+
+        assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
+                .containsOnly("BRCA 1/10 off-road");
+
+        jdbc.update("update event_classes set config_snapshot = ? where id = ?",
+                "{\"type\":\"POINTS_FINALS\",\"scoringSystemId\":999999999}", eventClassId);
+
+        assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
+                .as("a system deleted since names nothing").containsOnlyNulls();
+
+        jdbc.update("update event_classes set config_snapshot = ? where id = ?",
+                "{\"type\":\"NOPE\"}", eventClassId);
+
+        assertThat(query.forEvent(eventId).races()).extracting(EventResultsDto.Race::scoringSystem)
+                .as("a snapshot this version cannot read does not break the printout").containsOnlyNulls();
+    }
+
+    @Test
     void oneRaceComesBackWithItsGridAndAnUnfinishedRaceIsNotFound() {
         EventResultsDto results = query.forRace(qualifierId);
 
