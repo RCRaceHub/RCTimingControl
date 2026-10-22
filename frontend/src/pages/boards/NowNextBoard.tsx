@@ -66,14 +66,18 @@ export default function NowNextBoard() {
     refetchInterval: BOARD_POLL_MS,
   });
 
+  // Pinned to the event this board shows, so the names can't come from a different event than the race above them
+  const tickerEventId = eventId ?? nowNext?.eventId ?? null;
   const { data: ticker } = useQuery({
-    queryKey: publicQueryKeys.boards.ticker(eventId),
-    queryFn: () => getTicker(eventId),
+    queryKey: publicQueryKeys.boards.ticker(tickerEventId),
+    queryFn: () => getTicker(tickerEventId),
     enabled: nextRace !== null,
     refetchInterval: BOARD_POLL_MS,
   });
-  const nextDrivers = nextRace ? (ticker?.nextDrivers ?? []) : [];
-  const nextMarshals = nextRace ? (ticker?.marshals ?? []) : [];
+  // The ticker polls on its own timer, so ignore its names until it is talking about the race shown as next
+  const tickerIsCurrent = nextRace !== null && ticker?.nextRace === nextRace.label;
+  const nextDrivers = tickerIsCurrent ? ticker.nextDrivers : [];
+  const nextMarshals = tickerIsCurrent ? ticker.marshals : [];
 
   if (isPending) {
     return (
@@ -113,7 +117,7 @@ export default function NowNextBoard() {
             ))}
           </ol>
         ) : (
-          <BoardMessage>Waiting for the first lap…</BoardMessage>
+          <BoardMessage>Waiting for the line-up…</BoardMessage>
         )}
         {nextRace && (
           <div className="mt-auto border-t border-slate-800 pt-6">

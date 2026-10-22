@@ -175,6 +175,8 @@ sequenceDiagram
     BC-->>B: TickerDto
 ```
 
+The Now and next board polls the same ticker endpoint for the next drivers and marshals.
+
 `LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
 
 ## Live feed to the relay

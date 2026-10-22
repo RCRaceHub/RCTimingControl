@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import NowNextBoard from './NowNextBoard';
@@ -119,7 +119,9 @@ describe('NowNextBoard', () => {
 
     expect(await screen.findByText('Qualifying 1 — Touring Stock — Heat 1')).toBeInTheDocument();
     expect(screen.getByText('Racing')).toBeInTheDocument();
-    const names = screen.getAllByRole('listitem').map((r) => r.textContent);
+    const names = within(screen.getByRole('list', { name: 'Line-up' }))
+      .getAllByRole('listitem')
+      .map((r) => r.textContent);
     expect(names[0]).toContain('Jane Doe');
     expect(names[1]).toContain('Sam Second');
     // timing and the chart live on the Live Race screen
@@ -168,7 +170,7 @@ describe('NowNextBoard', () => {
     renderBoard();
 
     expect(await screen.findByText('Stopped')).toBeInTheDocument();
-    expect(screen.getByText('Waiting for the first lap…')).toBeInTheDocument();
+    expect(screen.getByText('Waiting for the line-up…')).toBeInTheDocument();
   });
 
   it('between races shows what is next and the last finished results', async () => {

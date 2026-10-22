@@ -77,7 +77,7 @@ Round 4 has three classes, so you can see different race types: **13.5 Touring**
 
 While a race is running, open these in other tabs or on a phone (see the About page for the address to use):
 
-- [/boards/now-next](http://localhost:8080/boards/now-next): the spectator board with the race on track and what's next.
+- [/boards/now-next](http://localhost:8080/boards/now-next): the spectator board with the line-up of the race on track and what's next. [/boards/live-race](http://localhost:8080/boards/live-race) adds the live timing and position chart.
 - [/boards/overlay](http://localhost:8080/boards/overlay): the streaming overlay for OBS.
 
 ### Admin
