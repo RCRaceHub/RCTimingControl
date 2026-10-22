@@ -8,7 +8,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Printer } from 'lucide-react';
 import { useEventResults } from '@/hooks/race-control/useEventResults';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
-import { getQualifying, type EventResultsRace, type QualifyingTable } from '@/lib/raceControlApi';
+import { getFinalLegs, getQualifying, type EventResultsRace, type QualifyingTable } from '@/lib/raceControlApi';
+import type { FinalLegs } from '@/lib/boardsApi';
 import { finalsInReadingOrder, groupByClass, heatTitle, qualifyingRounds, racesOfRound } from '@/lib/eventPrint';
 import { fmtMs } from '@/lib/format';
 import { HeatResultTable } from '@/components/print/HeatResultTable';
@@ -63,6 +64,50 @@ function StandingsBlock({ table }: { table: QualifyingTable }) {
   );
 }
 
+/** The A final's combined result when it ran in legs: points in each leg (a dropped leg struck through) and the total. */
+function LegsBlock({ legs }: { legs: FinalLegs }) {
+  const heading = legs.complete
+    ? `Final A overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
+    : `Final A after ${legs.legsFinished} of ${legs.legs} legs`;
+  const legNumbers = Array.from({ length: legs.rows[0]?.legPoints.length ?? 0 }, (_, i) => i + 1);
+  return (
+    <section className="mb-6 break-inside-avoid" aria-label="Final A overall">
+      <h3 className="mb-1 text-base font-semibold">{heading}</h3>
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b-2 border-foreground">
+            <th scope="col" className="w-10 py-2 pr-4 text-left">Pos</th>
+            <th scope="col" className="py-2 pr-4 text-left">Driver</th>
+            <th scope="col" className="py-2 pr-4 text-left">Car</th>
+            {legNumbers.map((n) => (
+              <th key={n} scope="col" className="py-2 pr-4 text-right">Leg {n}</th>
+            ))}
+            <th scope="col" className="py-2 text-right">Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          {legs.rows.map((row) => (
+            <tr key={row.entryId} className="border-b border-border/50 print:break-inside-avoid">
+              <td className="py-1.5 pr-4 font-semibold">{row.position}</td>
+              <td className="py-1.5 pr-4">{row.driverName}</td>
+              <td className="py-1.5 pr-4 text-muted-foreground">{row.carNumber ?? '—'}</td>
+              {row.legPoints.map((points, i) => (
+                <td
+                  key={i}
+                  className={`py-1.5 pr-4 text-right font-mono ${row.counted[i] ? '' : 'text-muted-foreground line-through'}`}
+                >
+                  {points}
+                </td>
+              ))}
+              <td className="py-1.5 text-right font-mono font-semibold">{row.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 /** Which of the parts a meeting pack holds, from the address (`parts=standings,rounds,finals`; all when absent). */
 function packParts(raw: string | null) {
   const wanted = raw === null ? ['standings', 'rounds', 'finals'] : raw.split(',');
@@ -95,6 +140,15 @@ export default function PrintEventResultsPage() {
     staleTime: 30_000,
   });
 
+  // Only the finals printouts show it, and a failure to load it leaves the rest of the sheet as it was
+  const legsWanted = validId && (view === 'finals' || (view === 'pack' && parts.finals));
+  const finalLegs = useQuery({
+    queryKey: raceControlQueryKeys.finalLegs(eventId),
+    queryFn: () => getFinalLegs(eventId),
+    enabled: legsWanted,
+    staleTime: 30_000,
+  });
+
   const title = view === 'round'
     ? `Round summary — ${roundType === 'PRACTICE' ? 'Practice' : 'Qualifier'} ${roundNumber}`
     : view === 'finals' ? 'Final results' : 'Meeting results';
@@ -121,6 +175,7 @@ export default function PrintEventResultsPage() {
   const round: Round = { type: roundType, number: roundNumber };
   const classes = groupByClass(data.races);
   const standingsByClass = new Map((standings.data ?? []).map((t) => [t.eventClassId, t]));
+  const legsByClass = new Map((finalLegs.data ?? []).map((l) => [l.eventClassId, l]));
 
   const sections = classes.map((group) => {
     const heats = view === 'round' ? racesOfRound(group.races, round.type, round.number) : [];
@@ -175,6 +230,7 @@ export default function PrintEventResultsPage() {
             {finals.length > 0 && (
               <div>
                 {view === 'pack' && <h2 className="mb-2 text-lg font-semibold">Finals</h2>}
+                {legsByClass.has(group.eventClassId) && <LegsBlock legs={legsByClass.get(group.eventClassId)!} />}
                 {finals.map((race) => <HeatBlock key={race.raceId} race={race} />)}
               </div>
             )}

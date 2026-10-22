@@ -10,9 +10,11 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
+import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
+import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -45,6 +47,7 @@ public class BoardController {
     private final QualifyingTableService qualifyingTableService;
     private final AutoRunService autoRunService;
     private final BoardTickerService boardTickerService;
+    private final FinalLegsService finalLegsService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -53,7 +56,8 @@ public class BoardController {
                            PublicNames publicNames,
                            QualifyingTableService qualifyingTableService,
                            AutoRunService autoRunService,
-                           BoardTickerService boardTickerService) {
+                           BoardTickerService boardTickerService,
+                           FinalLegsService finalLegsService) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -62,6 +66,7 @@ public class BoardController {
         this.qualifyingTableService = qualifyingTableService;
         this.autoRunService = autoRunService;
         this.boardTickerService = boardTickerService;
+        this.finalLegsService = finalLegsService;
     }
 
     /**
@@ -88,9 +93,10 @@ public class BoardController {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> {
                     BoardRaceDto race = boardQuery.lastCompletedRace(event.id()).orElse(null);
-                    return new ResultsBoardDto(event.id(), event.name(), race, resultRows(race));
+                    return new ResultsBoardDto(event.id(), event.name(), race, resultRows(race),
+                            legsOf(event.id(), race));
                 })
-                .orElse(new ResultsBoardDto(null, null, null, List.of()));
+                .orElse(new ResultsBoardDto(null, null, null, List.of(), null));
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
@@ -158,6 +164,15 @@ public class BoardController {
         return fastest == null
                 ? new RoundFastestLapDto(null, null)
                 : new RoundFastestLapDto(fastest.bestLapMs(), fastest.driverName());
+    }
+
+    /** The A final's combined result when the race is one of its legs, matched by class name; else null. */
+    private FinalLegsDto legsOf(long eventId, BoardRaceDto race) {
+        if (race == null || !"A".equals(race.finalLetter())) {
+            return null;
+        }
+        return finalLegsService.forEventPublic(eventId).stream()
+                .filter(legs -> legs.className().equals(race.className())).findFirst().orElse(null);
     }
 
     private List<ResultSnapshotDto.ResultRow> resultRows(BoardRaceDto race) {

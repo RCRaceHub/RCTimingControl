@@ -47,7 +47,9 @@ export function startPosition(race: EventResultsRace, entryId: number): number |
 export function heatTitle(race: EventResultsRace): string {
   if (race.roundType === 'FINAL') {
     if (race.finalLetter === 'Z') return 'Zombie round';
-    return `Final${race.finalLetter ? ` ${race.finalLetter}` : ''}`;
+    const final = `Final${race.finalLetter ? ` ${race.finalLetter}` : ''}`;
+    // Leg 1 of a final in legs is the plain final; later legs are numbered
+    return race.finalLetter && race.heatNumber > 1 ? `${final}, leg ${race.heatNumber}` : final;
   }
   const round = race.roundType === 'QUALIFIER' ? `Qualifier ${race.roundNumber}` : 'Practice';
   return `${round}, heat ${race.heatNumber}`;

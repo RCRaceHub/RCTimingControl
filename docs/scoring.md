@@ -118,7 +118,7 @@ best (1 + 3 beats 2 + 2), then the most laps and the least time over the countin
 Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`.
 
 Championship points use the combined order (see section 5): the A final is placed from it once every leg has finished, and
-its winner earns the A-final bonus. The boards and printouts do not show the combined order yet; see the tracker (#423).
+its winner earns the A-final bonus. The public results board shows the combined order while the A final's last finished leg is the race on show, and the finals printouts always show it, with each leg's points and the legs that count.
 
 ### Shikabane heats
 

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.service;
 
+import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
@@ -14,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class FinalLegsService {
     private final ResultSnapshotRepository resultSnapshotRepository;
     private final ResultSnapshotJson snapshotJson;
     private final RaceFormatService raceFormatService;
+    private final PublicNames publicNames;
 
     public FinalLegsService(EventClassRepository eventClassRepository,
                             RacingClassRepository racingClassRepository,
@@ -51,7 +54,8 @@ public class FinalLegsService {
                             RaceEntryRepository raceEntryRepository,
                             ResultSnapshotRepository resultSnapshotRepository,
                             ResultSnapshotJson snapshotJson,
-                            RaceFormatService raceFormatService) {
+                            RaceFormatService raceFormatService,
+                            PublicNames publicNames) {
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
@@ -59,6 +63,7 @@ public class FinalLegsService {
         this.resultSnapshotRepository = resultSnapshotRepository;
         this.snapshotJson = snapshotJson;
         this.raceFormatService = raceFormatService;
+        this.publicNames = publicNames;
     }
 
     /**
@@ -67,6 +72,16 @@ public class FinalLegsService {
      */
     @Transactional(readOnly = true)
     public List<FinalLegsDto> forEvent(Long eventId) {
+        return combined(eventId, null);
+    }
+
+    /** The same results for the public boards, each name shown as the competitor allows (#265). */
+    @ReadTransaction
+    public List<FinalLegsDto> forEventPublic(Long eventId) {
+        return combined(eventId, publicNames.snapshot());
+    }
+
+    private List<FinalLegsDto> combined(Long eventId, PublicNames.Snapshot restricted) {
         List<FinalLegsDto> results = new ArrayList<>();
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
             List<Race> legs = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL)
@@ -75,17 +90,17 @@ public class FinalLegsService {
             if (legs.size() < 2) {
                 continue;
             }
-            results.add(combine(eventClass, legs));
+            results.add(combine(eventClass, legs, restricted));
         }
         return results;
     }
 
-    private FinalLegsDto combine(EventClass eventClass, List<Race> legs) {
+    private FinalLegsDto combine(EventClass eventClass, List<Race> legs, PublicNames.Snapshot restricted) {
         // Everyone on the first leg's grid is in the final, so a driver who missed a later leg still scores for it
         Set<Long> drivers = new LinkedHashSet<>();
         raceEntryRepository.findByRaceIdOrderByGridPosition(legs.get(0).getId())
                 .stream().map(RaceEntry::getEntryId).forEach(drivers::add);
-        Map<Long, String> names = new HashMap<>();
+        Map<Long, ResultSnapshotDto.ResultRow> sample = new HashMap<>();
         List<Map<Long, FinalLegScoring.Run>> runs = new ArrayList<>();
         int finished = 0;
         for (Race leg : legs) {
@@ -101,7 +116,7 @@ public class FinalLegsService {
             resultSnapshotRepository.findByRaceId(leg.getId()).ifPresent(snapshot -> {
                 for (ResultSnapshotDto.ResultRow row : snapshotJson.positions(leg.getId(), snapshot.getPositionsJson())) {
                     legRuns.put(row.entryId(), new FinalLegScoring.Run(row.lapsCompleted(), row.totalTimeMs()));
-                    names.putIfAbsent(row.entryId(), row.driverName());
+                    sample.putIfAbsent(row.entryId(), row);
                     drivers.add(row.entryId());
                 }
             });
@@ -112,7 +127,12 @@ public class FinalLegsService {
         List<FinalLegsDto.Row> rows = new ArrayList<>();
         for (int i = 0; i < standings.size(); i++) {
             FinalLegScoring.Standing s = standings.get(i);
-            rows.add(new FinalLegsDto.Row(i + 1, s.entryId(), names.getOrDefault(s.entryId(), "Entry " + s.entryId()),
+            ResultSnapshotDto.ResultRow row = sample.get(s.entryId());
+            Long competitorId = row == null ? null : row.competitorId();
+            String name = row == null ? "Entry " + s.entryId() : row.driverName();
+            String car = row == null ? null : row.carNumber();
+            rows.add(new FinalLegsDto.Row(i + 1, s.entryId(), competitorId,
+                    restricted == null ? name : restricted.of(competitorId, name, car), car,
                     s.points(), s.laps(), s.timeMs(), s.legPoints(), s.counted()));
         }
         String className = racingClassRepository.findById(eventClass.getRacingClassId())

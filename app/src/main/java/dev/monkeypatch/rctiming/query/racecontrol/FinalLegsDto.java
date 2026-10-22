@@ -22,13 +22,15 @@ public record FinalLegsDto(Long eventClassId, String className, int legs, int le
      *
      * @param position    1 for the best
      * @param entryId     the driver's entry
-     * @param driverName  the name the legs' results were stored with
+     * @param competitorId the driver, or null when the legs' results predate competitors
+     * @param driverName  the name the legs' results were stored with; on the public board, as the competitor allows
+     * @param carNumber   the car number
      * @param points      the total over the counting legs, lowest wins
      * @param laps        the laps over the counting legs
      * @param timeMs      the time over the counting legs in milliseconds
      * @param legPoints   the points in each leg run so far
      * @param counted     whether each of those legs counted
      */
-    public record Row(int position, long entryId, String driverName, int points, int laps, long timeMs,
-                      List<Integer> legPoints, List<Boolean> counted) {}
+    public record Row(int position, long entryId, Long competitorId, String driverName, String carNumber, int points,
+                      int laps, long timeMs, List<Integer> legPoints, List<Boolean> counted) {}
 }
