@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.Names;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +16,9 @@ import java.util.Map;
 /**
  * Scoring systems: a named, reusable set of rules for scoring races or a championship. Called by {@code
  * ScoringSystemController}; every method that changes data runs in one write transaction and records an audit row.
- * Built-in systems are locked and a clone is how one is changed. Nothing reads a system yet; later changes let a
- * race format and a championship pick one, and copy its values so a later edit never changes what is already set up.
+ * Built-in systems are locked and a clone is how one is changed. A race format picks a race system and
+ * copies its values, and so does each event class it is given to, so a later edit never changes what is already set
+ * up; championships will pick one in a later change.
  */
 @Service
 @Transactional
@@ -24,10 +26,12 @@ public class ScoringSystemService {
 
     private final ScoringSystemRepository repository;
     private final AuditService audit;
+    private final RaceFormatService raceFormats;
 
-    public ScoringSystemService(ScoringSystemRepository repository, AuditService audit) {
+    public ScoringSystemService(ScoringSystemRepository repository, AuditService audit, RaceFormatService raceFormats) {
         this.repository = repository;
         this.audit = audit;
+        this.raceFormats = raceFormats;
     }
 
     /** Every system, or only those of {@code kind} when it is given; built-ins first. */
@@ -109,14 +113,17 @@ public class ScoringSystemService {
     }
 
     /**
-     * Removes a custom system and records {@code SCORING_SYSTEM_DELETED}. Nothing uses a system yet; once formats and
-     * championships pick one, this refuses while one is in use.
+     * Removes a custom system and records {@code SCORING_SYSTEM_DELETED}. Event classes keep their own copy of the
+     * values, so only the format templates that are set from it stop a delete.
      *
-     * @throws StateConflictException (409) for a built-in system
+     * @throws StateConflictException (409) for a built-in system or one a format template uses
      */
     public void delete(Actor actor, Long id) {
         ScoringSystem system = get(id);
         requireCustom(system, "deleted");
+        if (raceFormats.isScoringSystemInUse(id)) {
+            throw new StateConflictException("The scoring system " + system.getName() + " is used by a race format; change that format first");
+        }
         Map<String, Object> before = values(system);
         repository.deleteById(id);
         audit.entry(actor, "SCORING_SYSTEM_DELETED").entity("scoring_system", id)

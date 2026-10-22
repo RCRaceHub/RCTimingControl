@@ -20,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -178,6 +179,38 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
                 .isEqualTo(HttpStatus.CONFLICT);
         assertThat(send(HttpMethod.POST, URL, Map.of("name", "CLUB DEFAULT", "config", config), adminToken).getStatusCode())
                 .as("names match without regard to case").isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void aFormatSetFromASystemTakesItsValues_andTheSystemCannotBeDeletedWhileUsed() {
+        Map<String, Object> mine = Map.of("type", "BRCA", "bestHeatsCount", 3, "splitTiedPlaces", true,
+                "maxRaceWindowSeconds", 300, "finalLegs", 2, "legsCounted", 1, "carsPerFinal", 8, "fillTopFirst", true);
+        Map<String, Object> system = send(HttpMethod.POST, URL, Map.of("name", "Used " + run, "config", mine), adminToken).getBody();
+        Long systemId = ((Number) system.get("id")).longValue();
+
+        Map<String, Object> format = new LinkedHashMap<>(Map.of("type", "POINTS_FINALS", "qualifyingHeats", 4,
+                "finalsCount", 3, "finalDurationMinutes", 5, "heatDurationMinutes", 5, "qualifyingStartType", "STAGGER",
+                "finalsStartType", "GRID", "qualifyingType", "ROUND_BY_ROUND", "racePaddingMinutes", 2));
+        format.put("staggerIntervalSeconds", 5);
+        format.put("scoringSystemId", systemId);
+        ResponseEntity<Map> created = send(HttpMethod.POST, "/api/v1/admin/formats", Map.of("name", "From system " + run, "config", format), adminToken);
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Map<String, Object> saved = (Map<String, Object>) created.getBody().get("config");
+        assertThat(saved).containsEntry("bestHeatsCount", 3).containsEntry("finalLegs", 2).containsEntry("legsCounted", 1)
+                .containsEntry("maxRaceWindowSeconds", 300).containsEntry("carsPerFinal", 8)
+                .containsEntry("brcaQualifying", true).containsEntry("scoringSystemId", systemId.intValue());
+
+        assertThat(send(HttpMethod.DELETE, URL + "/" + systemId, null, adminToken).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+
+        Long formatId = ((Number) created.getBody().get("id")).longValue();
+        ResponseEntity<String> exported = restTemplate.exchange("/api/v1/admin/formats/" + formatId + "/export",
+                HttpMethod.GET, new HttpEntity<>(headers(adminToken)), String.class);
+        assertThat(exported.getBody()).contains("finalLegs: 2").contains("scoringSystemId: null");
+
+        format.put("scoringSystemId", 999_999_999);
+        assertThat(send(HttpMethod.POST, "/api/v1/admin/formats", Map.of("name", "Nope " + run, "config", format), adminToken)
+                .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     // --- helpers ---

@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
+import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -34,16 +38,19 @@ public class RaceFormatService {
     private final EventClassRepository eventClassRepository;
     private final ObjectMapper objectMapper;
     private final AuditService audit;
+    private final ScoringSystemRepository scoringSystemRepository;
 
     public RaceFormatService(
             RaceFormatTemplateRepository templateRepository,
             EventClassRepository eventClassRepository,
             ObjectMapper objectMapper,
-            AuditService audit) {
+            AuditService audit,
+            ScoringSystemRepository scoringSystemRepository) {
         this.templateRepository = templateRepository;
         this.eventClassRepository = eventClassRepository;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.scoringSystemRepository = scoringSystemRepository;
     }
 
     /**
@@ -204,9 +211,10 @@ public class RaceFormatService {
      * Template edits do not affect the snapshot after assignment.
      */
     public EventClass assignTemplateToEventClass(RaceFormatTemplate template) {
-        // Deep copy: serialize then deserialize to break the reference
+        // Deep copy: serialize then deserialize to break the reference. A format set from a scoring system takes the
+        // system's values as they are now, so the class is scored as the system says on the day it was added.
         RaceFormatConfig snapshot = objectMapper.convertValue(
-                template.getConfig(),
+                resolveScoring(template.getConfig(), false),
                 RaceFormatConfig.class
         );
 
@@ -214,6 +222,41 @@ public class RaceFormatService {
         eventClass.setConfigSnapshot(snapshot);
         eventClass.setTemplateId(template.getId());
         return eventClass;
+    }
+
+    /**
+     * A Points Finals config set from a race scoring system, with that system's values copied over the config's own
+     * scoring options; any other config, or one with no system, comes back as it is. Called when a template is saved
+     * (strict) and when it is given to an event class (not strict). It runs inside its caller's write transaction.
+     *
+     * @param strict whether a system that is missing or not a race system is refused; when not strict the config's
+     *               own values are kept, so a system deleted since the template was saved cannot block adding a class
+     * @throws IllegalArgumentException (400) in strict mode when the id is not a race scoring system
+     */
+    RaceFormatConfig resolveScoring(RaceFormatConfig config, boolean strict) {
+        if (!(config instanceof PointsFinalsConfig p) || p.scoringSystemId() == null) {
+            return config;
+        }
+        ScoringSystem system = scoringSystemRepository.findById(p.scoringSystemId()).orElse(null);
+        if (system == null || system.getKind() != ScoringKind.RACE) {
+            if (strict) {
+                throw new IllegalArgumentException("Scoring system " + p.scoringSystemId() + " is not a race scoring system");
+            }
+            return config;
+        }
+        RaceScoringConfig r = (RaceScoringConfig) system.getConfig();
+        return new PointsFinalsConfig(p.qualifyingHeats(), p.finalsCount(), p.finalDurationMinutes(),
+                p.heatDurationMinutes(), p.qualifyingStartType(), p.finalsStartType(), p.qualifyingType(),
+                p.racePaddingMinutes(), p.staggerIntervalSeconds(), r.bestHeatsCount(), r.splitTiedPlaces(),
+                r.brcaQualifying(), r.maxRaceWindowSeconds(), r.carsPerFinal(), r.fillTopFirst(), r.finalLegs(),
+                r.legsCounted(), p.scoringSystemId());
+    }
+
+    /** Whether any format template is set from this scoring system, so it cannot be deleted. */
+    @Transactional(readOnly = true)
+    public boolean isScoringSystemInUse(Long scoringSystemId) {
+        return templateRepository.findAll().stream().anyMatch(t ->
+                t.getConfig() instanceof PointsFinalsConfig p && scoringSystemId.equals(p.scoringSystemId()));
     }
 
     /** Every format template. */
@@ -237,7 +280,7 @@ public class RaceFormatService {
                                       RaceFormatConfig config) {
         RaceFormatTemplate template = new RaceFormatTemplate();
         template.setName(name);
-        template.setConfig(config);
+        template.setConfig(resolveScoring(config, true));
         RaceFormatTemplate saved = templateRepository.save(template);
         audit.entry(actor, action).entity("race_format", saved.getId())
                 .summary(summary + saved.getName())
@@ -250,7 +293,7 @@ public class RaceFormatService {
         RaceFormatTemplate template = findById(id);
         Map<String, Object> before = values(template);
         template.setName(name);
-        template.setConfig(config);
+        template.setConfig(resolveScoring(config, true));
         RaceFormatTemplate saved = templateRepository.save(template);
         audit.entry(actor, "FORMAT_UPDATED").entity("race_format", id)
                 .summary("Changed the race format " + saved.getName())
@@ -278,9 +321,20 @@ public class RaceFormatService {
         return m;
     }
 
-    /** A template's config, for {@link RaceFormatCodec} to write out (FORMAT-14). */
+    /**
+     * A template's config, for {@link RaceFormatCodec} to write out (FORMAT-14). A scoring system id is a row number in
+     * this club's database, so it is left out of the file; the scoring options in it are already the system's values.
+     */
     public RaceFormatConfig exportConfig(Long id) {
-        return findById(id).getConfig();
+        RaceFormatConfig config = findById(id).getConfig();
+        if (config instanceof PointsFinalsConfig p && p.scoringSystemId() != null) {
+            return new PointsFinalsConfig(p.qualifyingHeats(), p.finalsCount(), p.finalDurationMinutes(),
+                    p.heatDurationMinutes(), p.qualifyingStartType(), p.finalsStartType(), p.qualifyingType(),
+                    p.racePaddingMinutes(), p.staggerIntervalSeconds(), p.bestHeatsCount(), p.splitTiedPlaces(),
+                    p.brcaQualifying(), p.maxRaceWindowSeconds(), p.carsPerFinal(), p.fillTopFirst(), p.finalLegs(),
+                    p.legsCounted());
+        }
+        return config;
     }
 
     /** Adds a template from an imported config and records {@code FORMAT_IMPORTED} (FORMAT-14). */

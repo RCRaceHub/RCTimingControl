@@ -71,6 +71,29 @@ export interface PointsFinalsConfig {
   finalLegs?: number;
   /** How many of a driver's A final legs count; 0 or missing for all of them. BRCA uses 2. */
   legsCounted?: number;
+  /** The race scoring system the options above were set from; the server copies its values over them on save. */
+  scoringSystemId?: number | null;
+}
+
+/** The rules of a race scoring system (type CLASSIC or BRCA). */
+export interface RaceScoringConfig {
+  type: 'CLASSIC' | 'BRCA';
+  bestHeatsCount: number;
+  splitTiedPlaces: boolean;
+  maxRaceWindowSeconds: number;
+  finalLegs: number;
+  legsCounted: number;
+  carsPerFinal: number;
+  fillTopFirst: boolean;
+}
+
+/** A saved scoring system; config is a RaceScoringConfig when kind is RACE. */
+export interface ScoringSystemDto {
+  id: number;
+  kind: 'RACE' | 'CHAMPIONSHIP';
+  name: string;
+  builtIn: boolean;
+  config: RaceScoringConfig | Record<string, unknown>;
 }
 
 export interface ShikabaneConfig {
@@ -853,6 +876,12 @@ export const adminApi = {
       api.put<RaceFormatTemplateDto>(`/api/v1/admin/formats/${id}`, body).then(r => r.data),
     delete: (id: number) =>
       api.delete(`/api/v1/admin/formats/${id}`),
+  },
+
+  // Scoring systems (read here; managed on their own page later)
+  scoringSystems: {
+    list: (kind?: 'RACE' | 'CHAMPIONSHIP') =>
+      api.get<ScoringSystemDto[]>('/api/v1/admin/scoring-systems', { params: kind ? { kind } : undefined }).then(r => r.data),
   },
 
   // Competitors, also used for the driver search in championship exclusions
