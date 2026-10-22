@@ -8,7 +8,8 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 
 | Screen | Address | What it shows | Good for |
 |--------|---------|---------------|----------|
-| Now and next | `/boards/now-next` | The race on track with live timing and its status (Racing or Stopped), then the next race. Between races it shows the next race and the last finished race's results. When auto run is on it also shows a large countdown to the next start, or "Waiting for the finals to be released" while it is holding. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
+| Now and next | `/boards/now-next` | The line-up of the race on track in running order, with its status (Racing or Stopped), then the next race with the drivers on its grid and the marshals. Between races it shows the next race, its drivers and marshals, and the last finished race's results. When auto run is on it also shows a large countdown to the next start, or "Waiting for the finals to be released" while it is holding. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
+| Live race | `/boards/live-race` | The race on track with its live timing table (laps, last and best lap, gap) and the position chart | A second TV, or the one TV when the timing matters more than the line-up |
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
 | Event schedule | `/events` | The events, with links to each finished race's results and the championship standings | Phones |
@@ -16,7 +17,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 | Championship standings | `/championships/{id}` | The championship table per class | Phones, reached from the schedule |
 | Docs | `/docs` | The user guides, with a menu and search. They are read from the app itself, so they work without the internet. The About page shows the address with a QR code | Anyone who needs the instructions at the track |
 
-Add `?event=ID` to `/boards/now-next`, `/boards/results`, `/boards/overlay` or `/qualifying` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
+Add `?event=ID` to `/boards/now-next`, `/boards/live-race`, `/boards/results`, `/boards/overlay` or `/qualifying` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
 
 ### Setting up a TV
 
@@ -55,7 +56,7 @@ Options go on the end of the address:
 
 For example `/boards/overlay?top=6&theme=light`. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
 
-The same position chart is on the live timing board below the running order, and on a screen of its own at `/boards/chart` (add `?event=ID` for one event) for a TV that should show nothing else. Names follow each competitor's public name setting.
+The same position chart is on the Live race screen (`/boards/live-race`, add `?event=ID` for one event) below the live timing. The old `/boards/chart` address still works and opens the Live race screen. Names follow each competitor's public name setting.
 
 ## Printouts
 

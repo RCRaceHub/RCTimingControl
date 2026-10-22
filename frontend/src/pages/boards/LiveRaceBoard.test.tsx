@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import ChartBoard from './ChartBoard';
+import LiveRaceBoard from './LiveRaceBoard';
 import type { NowNextDto } from '@/lib/boardsApi';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -42,13 +42,13 @@ function renderBoard() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <ChartBoard />
+        <LiveRaceBoard />
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe('ChartBoard', () => {
+describe('LiveRaceBoard', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('draws the chart of the race on track', async () => {
@@ -63,6 +63,7 @@ describe('ChartBoard', () => {
     renderBoard();
 
     expect(await screen.findByText(race.label)).toBeInTheDocument();
+    expect(await screen.findByRole('table', { name: 'Live timing' })).toBeInTheDocument();
     expect(await screen.findByRole('img', { name: 'Position by lap' })).toBeInTheDocument();
   });
 

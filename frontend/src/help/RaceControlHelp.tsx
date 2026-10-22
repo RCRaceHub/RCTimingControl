@@ -19,7 +19,7 @@ export function RaceControlHelp() {
         <li><span className="font-semibold">Link unknown transponder:</span> If a transponder is detected but not linked to an entry, a badge appears with a "Link to entry" button — resolve it during the race.</li>
         <li><span className="font-semibold">Jump to race:</span> Select a pending race while another is active and click "Jump to this race" to skip ahead in the run order.</li>
         <li><span className="font-semibold">Corrections after the finish:</span> A finished race&apos;s result is rebuilt when a penalty or lap correction is recorded for it, so results pages, championship points and the download all show the corrected order. For an event imported from RaceHub, a corrected result is queued to be sent again.</li>
-        <li><span className="font-semibold">Boards for screens:</span> Spectators need no login. Open /boards/now-next (the race on track and what is next) or /boards/results (the last finished race) on a TV, or /boards/overlay as a Browser source in OBS. The Race Meeting Guide lists the options.</li>
+        <li><span className="font-semibold">Boards for screens:</span> Spectators need no login. Open /boards/now-next (the line-up and what is next), /boards/live-race (live timing and the position chart) or /boards/results (the last finished race) on a TV, or /boards/overlay as a Browser source in OBS. The Race Meeting Guide lists the options.</li>
         <li><span className="font-semibold">Live feed:</span> When the club has a live feed relay set up, the status bar shows LIVE FEED next to the decoder. Turn on "Send this event" so people away from the track can follow each race; racing carries on as normal if the feed drops out.</li>
       </ul>
 

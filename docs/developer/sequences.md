@@ -152,7 +152,7 @@ The qualifying standings in a meeting pack come from the existing `GET /race-con
 
 ## The overlay's chart and ticker
 
-The streaming overlay, the live board and the `/boards/chart` screen all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. The chart read holds `LiveRaceState`'s lock only to copy the rows and lap times; the ordering is worked out after the lock is released.
+The streaming overlay and the Live race screen (`/boards/live-race`) all draw the same position chart. The running order comes live over STOMP; the places lap by lap come from one anonymous read that is repeated whenever the field's total laps change. The ticker's text is read on a slow poll. The chart read holds `LiveRaceState`'s lock only to copy the rows and lap times; the ordering is worked out after the lock is released.
 
 ```mermaid
 sequenceDiagram
