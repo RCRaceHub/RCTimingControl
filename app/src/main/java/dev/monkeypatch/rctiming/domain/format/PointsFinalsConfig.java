@@ -19,6 +19,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * with no laps scores the class's entries plus one, and a tie on points goes to the best single counting round,
  * then the second best, then the summed laps and the summed time of the counting rounds. All three are off (0 or
  * false) in configs saved before they existed, which keeps their behaviour.
+ *
+ * <p>{@code maxRaceWindowSeconds} is the longest a timed race may run, counted from the start of the race (from the
+ * last car's start in a stagger start), whatever the cars are doing: when it is reached the race is finished and a
+ * car that has not completed its last lap is left with the laps it had before the heat's duration ran out. 0 means
+ * no limit, and the track's max last lap wait is the only backstop.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PointsFinalsConfig(
@@ -33,7 +38,8 @@ public record PointsFinalsConfig(
     int staggerIntervalSeconds,
     int bestHeatsCount,
     boolean splitTiedPlaces,
-    boolean brcaQualifying
+    boolean brcaQualifying,
+    int maxRaceWindowSeconds
 ) implements RaceFormatConfig {
 
     /** A config without the round by round scoring options: every round counts and the rules are today's. */
@@ -41,6 +47,6 @@ public record PointsFinalsConfig(
                               int heatDurationMinutes, StartType qualifyingStartType, StartType finalsStartType,
                               QualifyingType qualifyingType, int racePaddingMinutes, int staggerIntervalSeconds) {
         this(qualifyingHeats, finalsCount, finalDurationMinutes, heatDurationMinutes, qualifyingStartType,
-                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false);
+                finalsStartType, qualifyingType, racePaddingMinutes, staggerIntervalSeconds, 0, false, false, 0);
     }
 }

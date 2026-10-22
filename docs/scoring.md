@@ -96,6 +96,14 @@ formats score as above. They follow the BRCA 1/10 off-road rules.
 Example, best 2 of 4 counting: Ann scores 1, 3, 5, 6 and Bob 2, 2, 4, 7. Both total 4 from their best two. Ann's best
 round (1) beats Bob's (2), so Ann is ahead, whatever their laps.
 
+### Maximum race window
+
+A timed race ends when its clock runs out and each car takes the flag on its next crossing. A Points Finals format can
+also set a **max race window**, in seconds from the start of the race (from the last car's start in a stagger start).
+BRCA uses 390 seconds, 6:30, for a 5 minute race. When the window is reached the race is finished, whatever the cars
+are doing, and a car that has not crossed the line to complete its last lap keeps the laps it completed (its lap in
+progress is not counted). 0 means no window; the track's max last lap wait is then the only backstop.
+
 ### Shikabane heats
 
 In a Shikabane class (see [Race types](race-types.md#44-shikabane)) a heat is placed by elimination, not only by

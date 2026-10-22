@@ -121,6 +121,22 @@ public class RaceFormatService {
     }
 
     /**
+     * The longest a race of this class may run, in milliseconds, when its format sets a maximum race window; empty
+     * for no limit (the format has none, or the class has no readable format).
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public Optional<Long> maxRaceWindowMs(EventClass eventClass) {
+        if (eventClass == null || eventClass.getConfigSnapshot() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(getEffectiveConfig(eventClass))
+                .filter(PointsFinalsConfig.class::isInstance).map(PointsFinalsConfig.class::cast)
+                .map(PointsFinalsConfig::maxRaceWindowSeconds)
+                .filter(seconds -> seconds > 0)
+                .map(seconds -> seconds * 1000L);
+    }
+
+    /**
      * How a race in this class starts, from its format by round type: heats and practice take the qualifying start
      * and finals the finals start, while a timed format has one start for both. With no format, or none set in it,
      * heats are staggered and finals start on the grid, as rounds were generated before the format was read (#142).

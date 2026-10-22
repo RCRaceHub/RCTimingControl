@@ -60,6 +60,8 @@ export interface PointsFinalsConfig {
   splitTiedPlaces?: boolean;
   /** BRCA round by round rules: flat points for a driver with no laps, and the BRCA tie-break. */
   brcaQualifying?: boolean;
+  /** Longest a race may run in seconds, from its start; 0 or missing for no limit. BRCA uses 390. */
+  maxRaceWindowSeconds?: number;
 }
 
 export interface ShikabaneConfig {

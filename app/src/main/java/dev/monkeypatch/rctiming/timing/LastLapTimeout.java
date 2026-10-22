@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -19,6 +21,10 @@ import java.util.Optional;
  * clock expired if none has counted since. A race with no length is judged by lap count instead, from the first car
  * to take the flag. A race with no track or no max last lap is left for the race director.
  *
+ * <p>A format can also set a maximum race window, a hard limit on how long the race runs whatever the cars are doing
+ * (the BRCA 6:30 cut-off). When it is reached the race is finished at once, and a car that is still on its last lap
+ * keeps only the laps it had completed, so it does not score the lap it did not finish.
+ *
  * <p>It finishes the race through {@link AutoFinish}, as {@code system:last-lap-timeout}. This is the backstop: the
  * race normally finishes sooner, once every car has taken the flag. Only the running race is looked at: a stopped
  * race is paused, and its clock is not expiring.
@@ -33,15 +39,31 @@ public class LastLapTimeout {
     private final LapTimingService lapTimingService;
     private final LapThresholdQuery lapThresholdQuery;
     private final AutoFinish autoFinish;
+    private final EventClassRepository eventClassRepository;
+    private final RaceFormatService raceFormatService;
 
     public LastLapTimeout(RaceRepository raceRepository,
                           RaceClockService raceClockService, LapTimingService lapTimingService,
-                          LapThresholdQuery lapThresholdQuery, AutoFinish autoFinish) {
+                          LapThresholdQuery lapThresholdQuery, AutoFinish autoFinish,
+                          EventClassRepository eventClassRepository, RaceFormatService raceFormatService) {
         this.raceRepository = raceRepository;
         this.raceClockService = raceClockService;
         this.lapTimingService = lapTimingService;
         this.lapThresholdQuery = lapThresholdQuery;
         this.autoFinish = autoFinish;
+        this.eventClassRepository = eventClassRepository;
+        this.raceFormatService = raceFormatService;
+    }
+
+    /**
+     * Whether the maximum race window has been reached.
+     *
+     * @param overrunMs the time since the clock expired, counted from the last car's start
+     * @param durationMs the race's length
+     * @param windowMs   the maximum race window, from the start of the race
+     */
+    static boolean windowReached(long overrunMs, long durationMs, long windowMs) {
+        return overrunMs >= windowMs - durationMs;
     }
 
     /**
@@ -85,6 +107,13 @@ public class LastLapTimeout {
         if (overrunMs >= 0 && lapTimingService.peek(race.getId()).map(LiveRaceState::allFlagged).orElse(false)) {
             // The finish asked for when the last car took the flag may not have happened, say if the race was stopped
             autoFinish.finish(race.getId(), "flag-finish", "Finished the race automatically: every car took the flag");
+            return;
+        }
+        Optional<Long> windowMs = race.getEventClassId() == null ? Optional.empty()
+                : eventClassRepository.findById(race.getEventClassId()).flatMap(raceFormatService::maxRaceWindowMs);
+        if (windowMs.isPresent() && windowReached(overrunMs, clock.durationMs(), windowMs.get())) {
+            autoFinish.finish(race.getId(), "race-window", "Finished the race automatically: the maximum race window of "
+                    + windowMs.get() / 1000 + " seconds was reached, so cars still on their last lap keep the laps they had");
             return;
         }
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());

@@ -165,6 +165,7 @@ has the best qualifiers, and its last places are filled by the best finishers fr
 | Bump spots | Places in each higher final filled by the final below (at most grid size - 1) |
 | Best heats count | How many of a driver's qualifying rounds count (low-points qualifying only; 0 means all) |
 | Stagger interval (s), qualifying type | As above |
+| Max race window (s) | A hard limit on how long a race runs from its start (390 for BRCA's 6:30), 0 for none. When it is reached the race finishes and a car still on its last lap keeps only its completed laps. See [Scoring](scoring.md#maximum-race-window) |
 | Best heats count, tied cars do not share a place, BRCA qualifying | How round by round qualifying is scored; see [Scoring](scoring.md#brca-qualifying-points-finals) |
 
 How the finals run:
