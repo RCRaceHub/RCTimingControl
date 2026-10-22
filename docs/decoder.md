@@ -70,7 +70,7 @@ make simulator-playback DUMP_FILE=path/to/capture.dump
 Generative mode options (pass them with `--args` if you run the module directly):
 - `--transponders=101,102,...`: transponder IDs (default matches the dev seed, 101–106)
 - `--interval-ms=12500`: base lap time in milliseconds
-- `--jitter-ms=2500`: each lap is `intervalMs ± rand(0, jitterMs)`
+- `--jitter-ms=2500`: spread of the per-lap noise. Each driver also has a fixed pace up to 5% faster or slower than the base lap, laps vary down to the millisecond (bell-curve noise, clamped to ±`jitterMs`), and about one lap in 15 is a slow lap (a spin or marshal stop) adding up to 2.5 × `jitterMs`. `0` gives steady laps at each driver's pace.
 
 The simulator prints each PASSING record to stdout.
 

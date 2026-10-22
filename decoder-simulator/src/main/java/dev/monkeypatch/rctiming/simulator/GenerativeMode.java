@@ -13,8 +13,11 @@ import java.util.Random;
  *
  * <p>Each transponder has its own independent lap timer. Initial passings are staggered
  * evenly across one base interval so all drivers don't cross the line simultaneously.
- * Each subsequent lap interval is {@code intervalMs ± rand(0, jitterMs)} to simulate
- * realistic lap-time variation between drivers.
+ * Lap times are varied the way real ones are: each driver gets a fixed pace of up to
+ * {@value #MAX_PACE_SPREAD} faster or slower than the base interval, each lap adds bell-curve noise (standard
+ * deviation a third of {@code jitterMs}) down to the millisecond, and about one lap in
+ * {@value #SLOW_LAP_ONE_IN} is a slow lap (a spin or a marshal stop). Passings are stamped with their scheduled
+ * crossing time rather than the 20 ms tick that sends them, so lap times are not quantised.
  *
  * <p>A STATUS (heartbeat) frame is emitted every 5 seconds. Sequence numbers are
  * monotonically increasing across both PASSING and STATUS records, matching real
@@ -29,7 +32,46 @@ public class GenerativeMode {
 
     private static final Logger log = LoggerFactory.getLogger(GenerativeMode.class);
 
+    /** Largest fixed pace offset a driver gets, as a fraction of the base interval (either way). */
+    static final String MAX_PACE_SPREAD = "5%";
+    private static final double PACE_SPREAD = 0.05;
+    /** About one lap in this many is a slow lap. */
+    static final int SLOW_LAP_ONE_IN = 15;
+
     private GenerativeMode() {}
+
+    /**
+     * Gives each driver a fixed pace factor so some are consistently quicker than others.
+     *
+     * @return one factor per driver, uniformly in {@code [1 - 5%, 1 + 5%]}
+     */
+    static double[] paceFactors(int count, Random rng) {
+        double[] pace = new double[count];
+        for (int i = 0; i < count; i++) {
+            pace[i] = 1.0 + (rng.nextDouble() * 2.0 - 1.0) * PACE_SPREAD;
+        }
+        return pace;
+    }
+
+    /**
+     * Picks the next lap time for one driver.
+     *
+     * @param intervalMs base lap time, ms
+     * @param pace       the driver's fixed pace factor from {@link #paceFactors}
+     * @param jitterMs   spread of the per-lap noise, ms; zero gives the driver's pace exactly
+     * @return the lap time in milliseconds, fractional, never below half the base interval
+     */
+    static double nextLapMs(long intervalMs, double pace, long jitterMs, Random rng) {
+        double lap = intervalMs * pace;
+        if (jitterMs > 0) {
+            double noise = rng.nextGaussian() * jitterMs / 3.0;
+            lap += Math.max(-jitterMs, Math.min(jitterMs, noise));
+            if (rng.nextInt(SLOW_LAP_ONE_IN) == 0) {
+                lap += jitterMs * (0.5 + rng.nextDouble() * 2.0);
+            }
+        }
+        return Math.max(intervalMs / 2.0, lap);
+    }
 
     /**
      * Start emitting RC-4 frames. Blocks until the thread is interrupted or the stream closes.
@@ -37,8 +79,8 @@ public class GenerativeMode {
      * @param out          client output stream
      * @param transponders list of transponder ID strings to simulate
      * @param intervalMs   base milliseconds per lap (target lap time)
-     * @param jitterMs     maximum random deviation added to each lap interval;
-     *                     each lap time is {@code intervalMs + rand(-jitterMs, +jitterMs)}
+     * @param jitterMs     spread of the per-lap noise (clamped to ±{@code jitterMs}), and the scale of slow laps
+     *                     (which add up to 2.5 × {@code jitterMs}); zero gives steady laps at each driver's pace
      * @throws IOException if the stream write fails
      */
     public static void run(OutputStream out, List<String> transponders,
@@ -55,18 +97,18 @@ public class GenerativeMode {
         // Schedule each transponder's first passing, staggered evenly across one base interval
         // so drivers don't all cross the line at the same moment.
         int    count        = Math.max(1, transponders.size());
-        long[] nextPassingMs = new long[count];
+        double[] pace = paceFactors(count, rng);
+        double[] nextPassingMs = new double[count];
         for (int i = 0; i < count; i++) {
-            long stagger = (long)(i * intervalMs / (double) count);
-            nextPassingMs[i] = startMs + intervalMs + stagger;
+            double stagger = i * intervalMs / (double) count;
+            nextPassingMs[i] = startMs + intervalMs * pace[i] + stagger;
         }
 
-        log.info("[SIMULATOR] GenerativeMode: {} transponders, base {}ms, jitter ±{}ms",
-                transponders.size(), intervalMs, jitterMs);
+        log.info("[SIMULATOR] GenerativeMode: {} transponders, base {}ms, jitter ±{}ms, pace {}",
+                transponders.size(), intervalMs, jitterMs, java.util.Arrays.toString(pace));
 
         while (!Thread.currentThread().isInterrupted()) {
             long nowMs  = System.currentTimeMillis();
-            double elapsedSec = (nowMs - startMs) / 1000.0;
 
             // Emit STATUS heartbeat every 5 s
             if (nowMs - lastStatusMs >= 5_000) {
@@ -79,20 +121,18 @@ public class GenerativeMode {
             // Check each transponder independently
             for (int i = 0; i < transponders.size(); i++) {
                 if (nowMs >= nextPassingMs[i]) {
+                    double elapsedSec = (nextPassingMs[i] - startMs) / 1000.0;
                     String passing = String.format("@\t20\t%d\t%s\t%.3f\t300\t130\t2\txDEAD",
                             seqNum++, transponders.get(i), elapsedSec);
                     Rc4Lines.write(out, passing);
                     log.debug("[SIMULATOR] PASSING emitted: {}", passing);
 
-                    // Next lap: base interval + random jitter in [-jitterMs, +jitterMs]
-                    long jitter = jitterMs > 0
-                            ? (long)((rng.nextDouble() * 2.0 - 1.0) * jitterMs)
-                            : 0L;
-                    nextPassingMs[i] = nowMs + intervalMs + jitter;
+                    // Next lap is scheduled from this crossing, not from when the tick sent it
+                    nextPassingMs[i] += nextLapMs(intervalMs, pace[i], jitterMs, rng);
                 }
             }
 
-            Rc4Lines.pause(250); // 250 ms tick — tight enough for 10 s laps, light on CPU
+            Rc4Lines.pause(20); // 20 ms tick — passings are stamped with their scheduled time, the tick only sends them
         }
     }
 }
