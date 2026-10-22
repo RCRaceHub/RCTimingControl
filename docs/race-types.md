@@ -27,8 +27,13 @@ finals. Every round holds one race per heat of every class.
 
 The round generator splits each class into heats and keeps the same heats for every practice and qualifying round.
 
-- Drivers are dealt into heats in entry order, back and forth ("snake draft"): with 3 heats, drivers 1, 2, 3 go to
-  heats 1, 2, 3, drivers 4, 5, 6 go to heats 3, 2, 1, and so on.
+- Drivers are dealt into heats back and forth ("snake draft"): with 3 heats, drivers 1, 2, 3 go to
+  heats 1, 2, 3, drivers 4, 5, 6 go to heats 3, 2, 1, and so on. The order is the class's **championship standing**
+  when the event is a later round of a championship that scores the class, best first, so the leaders are spread
+  across the heats; each class uses its own table (2WD from the 2WD standings, 4WD from the 4WD standings). Drivers with
+  no points yet, such as one new to the championship, are seeded below everyone who has some, and the first round of a
+  championship, or an event in no championship, deals in entry order. If an event is in more than one
+  championship that scores the class, the one where it is the later round is used.
 - The number of heats is the smallest that keeps each at or under the maximum cars per heat. Once a class has at least
   twice the minimum cars per heat, it gets at least two heats, so the drivers of one heat can marshal the other.
 - Only confirmed entries are put in a heat when the run order is made.

@@ -63,6 +63,9 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     ChampionshipStandingsQuery query;
 
     @Autowired
+    ChampionshipSeedingQuery seedingQuery;
+
+    @Autowired
     ChampionshipRepository championshipRepository;
 
     @Autowired
@@ -439,6 +442,25 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
         // Level on points and wins, so both share first place in the overall table
         assertThat(standings.stream().filter(r -> r.racingClassId() == ChampionshipStandingsQuery.OVERALL_CLASS_ID)
                 .map(StandingsRowDto::position)).containsExactly(1, 1);
+    }
+
+    @Test
+    void seedingUsesTheStandingsOfTheEarlierRoundsAndNothingForTheFirstRound() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+        User leader = makeUser("Seed", "Leader");
+        finishRound(champ, 1, leader, 1);
+        Event next = makeEvent("Seeded-event");
+        linkEventToChampionship(champ.getId(), next.getId(), 2);
+
+        assertThat(seedingQuery.positionsFor(next.getId(), racingClassId))
+                .containsExactly(Map.entry(competitorIdFor(leader.getId()), 1));
+        // A class the championship does not score, and a championship's first round, have nothing to seed from
+        assertThat(seedingQuery.positionsFor(next.getId(), -1L)).isNotNull();
+        Event first = makeEvent("First-round-event");
+        Championship other = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        linkEventToChampionship(other.getId(), first.getId(), 1);
+        assertThat(seedingQuery.positionsFor(first.getId(), racingClassId)).isEmpty();
     }
 
     @Test
