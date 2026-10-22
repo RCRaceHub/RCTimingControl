@@ -123,8 +123,8 @@ class ChampionshipStandingsGoldenTest extends AbstractIntegrationTest {
 
     /**
      * One class with two qualifying rounds and an A final per event. Only the finals score, so a driver who was not
-     * in the final has no round, and the qualifying heats still decide the TQ bonus. Dan and Finn's rivals Alice
-     * and Finn tie on 15 with a win each, and stand by name.
+     * in the final has no round, and the qualifying heats still decide the TQ bonus. Alice and Finn tie on 15 with
+     * a win each, and stand by name.
      */
     @Test
     void qualifyingHeatsMatchGoldenOutput() throws IOException {
