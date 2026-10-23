@@ -695,7 +695,7 @@ Content-Type: application/json
 
 `slot` is `PRIMARY` or `SECONDARY`. A blank number removes the secondary. **200 OK** with `{ "entryId": 101, "slot": "PRIMARY", "oldTransponderNumber": "1234567", "newTransponderNumber": "7654321" }`; the change is written to the entry audit log as `TRANSPONDER_SWAP`, and laps count on the new number from the next passing. **409** `transponder_already_assigned` if another competitor's entry in the event uses the number (the same competitor's other entries may share it), or `entry_withdrawn`. **400** `same_as_other_transponder` or `primary_required`.
 
-The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot.
+The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot. For a final with bump slots, `marshalDuty` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up.
 
 ## Race control — Race entries, transponder links and history
 
