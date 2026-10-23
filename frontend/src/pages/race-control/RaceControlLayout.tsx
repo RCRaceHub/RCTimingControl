@@ -16,6 +16,7 @@ import { DecoderStatusBar } from './panels/DecoderStatusBar';
 import { LiveFeedStatus } from './panels/LiveFeedStatus';
 import { RaceControlErrorBoundary } from '@/components/RaceControlErrorBoundary';
 import PageLoading from '@/components/PageLoading';
+import { BoardsMenu } from '@/components/BoardsMenu';
 
 export default function RaceControlLayout() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -78,6 +79,7 @@ export default function RaceControlLayout() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
+          <BoardsMenu eventId={eventId} />
           <span className="text-xs text-muted-foreground hidden sm:block">
             {user ? `${user.firstName} ${user.lastName}` : ''}
           </span>

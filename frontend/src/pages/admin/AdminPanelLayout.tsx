@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useMatch } from 'react-router-dom';
 import {
   Calendar,
   Trophy,
@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useHelp } from '@/context/HelpContext';
+import { BoardsMenu } from '@/components/BoardsMenu';
 import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
@@ -104,6 +105,7 @@ function NavItem({
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin } = useRoles();
+  const eventId = useMatch('/admin/events/:id')?.params.id;
 
   return (
     <div className="flex flex-col h-full">
@@ -159,6 +161,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <BookOpen className="h-4 w-4 shrink-0" />
           Docs
         </a>
+        <BoardsMenu placement="beside" eventId={eventId} />
         <HelpSidebarButton onOpen={onNavClick} />
       </div>
 
