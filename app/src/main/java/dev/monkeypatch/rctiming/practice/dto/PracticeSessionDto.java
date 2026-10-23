@@ -7,6 +7,8 @@ import java.time.Instant;
 /**
  * DTO for PracticeSession entity.
  * Returned by create/start/stop endpoints and list queries.
+ * {@code raceRunning} is true while any race is RUNNING, when a session can't be started (practice and a race share
+ * the one decoder); the screens use it to disable Start with a hint.
  */
 public record PracticeSessionDto(
         Long id,
@@ -17,5 +19,6 @@ public record PracticeSessionDto(
         Integer bestLapN,
         Integer pauseSeconds,
         Instant startedAt,
-        Instant stoppedAt
+        Instant stoppedAt,
+        boolean raceRunning
 ) {}

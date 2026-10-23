@@ -204,7 +204,8 @@ public class PracticeSessionService {
                 session.getBestLapN(),
                 session.getPauseSeconds(),
                 session.getStartedAt(),
-                session.getStoppedAt()
+                session.getStoppedAt(),
+                raceRepository.findFirstByStatus(RaceStatus.RUNNING).isPresent()
         );
     }
 
