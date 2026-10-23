@@ -280,6 +280,19 @@ class AutoRunServiceTest {
     }
 
     @Test
+    void stepsOverAFinalTheCalculationLeftEmpty() {
+        Race a = addRace(1, RoundType.FINAL, RaceStatus.RUNNING);
+        addRace(2, RoundType.FINAL, RaceStatus.PENDING);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(2L)).thenReturn(List.of());
+        service.go(Actor.system("test"), EVENT_ID);
+        finish(a, RoundType.FINAL);
+        service.tick();
+
+        // The empty final is not held for and not waited on: with nothing else left, auto run is done
+        assertThat(service.state(EVENT_ID).armed()).isFalse();
+    }
+
+    @Test
     void switchesItselfOffWhenTheRunOrderIsDone() {
         Race last = addRace(1, RoundType.FINAL, RaceStatus.RUNNING);
         service.go(Actor.system("test"), EVENT_ID);
