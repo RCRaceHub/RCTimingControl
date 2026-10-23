@@ -148,6 +148,6 @@ describe('RefereePage driver list (#107)', () => {
     mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'FINISHED' }, { raceId: 6, status: 'PENDING' }] });
     view.rerenderPage();
     expect(getRaceEntries).toHaveBeenLastCalledWith(5);
-    expect(screen.getByText('No race is live; showing the last one')).toBeInTheDocument();
+    expect(await screen.findByText('No race is live; showing the last one')).toBeInTheDocument();
   });
 });
