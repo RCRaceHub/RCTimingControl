@@ -268,8 +268,9 @@ public class BumpUpSeedingService {
      *
      * <p>Finds the next-higher final for the same EventClass (C→B→A, and the zombie round's winner into A) and adds the best finishers
      * not already in it, up to its unfilled bump slots, at the back of its grid with
-     * {@code bumped=true}. Grid positions carry on from the highest already in that final, and each
-     * driver keeps the car number they had in the final below (the next free number if it is taken). A repeat call adds nobody once the slots are full.
+     * {@code bumped=true}. Grid positions carry on from the highest already in that final, in finishing order (the
+     * winner of the lower final takes the first bump place), and each driver's car number is their grid position
+     * (the next free number if it is taken). A repeat call adds nobody once the slots are full.
      *
      * @param finishedFinalRaceId the Race ID of the final that just finished
      * @param finishingOrder      entry IDs of the finished final's drivers, best first
@@ -323,16 +324,11 @@ public class BumpUpSeedingService {
                 .mapToInt(Integer::intValue).max().orElse(0) + 1;
         int nextCarNumber = grid.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
                 .mapToInt(Integer::intValue).max().orElse(0) + 1;
-        // A bumped driver keeps the car number they had in the lower final: numbers only change when the finals are
-        // calculated again
-        Map<Long, Integer> keptNumbers = new HashMap<>();
+        // A bumped driver takes the car number of their place on the grid they move to, so the bump-ups read 9, 10 in
+        // finishing order and not whatever qualifying rank they had in the lower final (which ran the other way when
+        // the winner qualified lowest). The next free number stands in when that one is taken.
         Set<Integer> numbersInUse = grid.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        for (RaceEntry below : raceEntryRepository.findByRaceIdOrderByGridPosition(finishedRace.getId())) {
-            if (below.getCarNumber() != null) {
-                keptNumbers.put(below.getEntryId(), below.getCarNumber());
-            }
-        }
 
         List<Long> promoted = new ArrayList<>(openSlots);
         for (Long entryId : finishingOrder) {
@@ -341,11 +337,14 @@ public class BumpUpSeedingService {
             RaceEntry bumpedEntry = new RaceEntry();
             bumpedEntry.setRaceId(nextFinal.getId());
             bumpedEntry.setEntryId(entryId);
-            bumpedEntry.setGridPosition(nextGridPosition++);
-            Integer kept = keptNumbers.get(entryId);
-            if (kept != null && numbersInUse.add(kept)) {
-                bumpedEntry.setCarNumber(kept);
+            int gridPosition = nextGridPosition++;
+            bumpedEntry.setGridPosition(gridPosition);
+            if (numbersInUse.add(gridPosition)) {
+                bumpedEntry.setCarNumber(gridPosition);
             } else {
+                while (!numbersInUse.add(nextCarNumber)) {
+                    nextCarNumber++;
+                }
                 bumpedEntry.setCarNumber(nextCarNumber++);
             }
             bumpedEntry.setBumped(true);

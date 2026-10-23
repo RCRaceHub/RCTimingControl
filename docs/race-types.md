@@ -194,7 +194,8 @@ How the finals run:
    abandoned heat counts as finished.
 3. Finals run **lowest first**: C, then B, then A.
 4. When a lower final finishes, its best finishers that are not already in the next final up are added to the back of
-   that grid, up to its bump spots, marked as bumped. Race control gets a bump-up alert so the director sees it before
+   that grid, up to its bump spots, marked as bumped. They take the places in finishing order (the winner of the
+   lower final gets the first bump place, the runner-up the next) and are numbered by that place. Race control gets a bump-up alert so the director sees it before
    starting the next final. The A final is never bumped from.
 5. A driver who bumped up is on the grid of the higher final and is classed there. A driver who bumped up and did not
    start the higher final is classed last in it (see [Scoring, section 5](scoring.md#5-championship-points)).

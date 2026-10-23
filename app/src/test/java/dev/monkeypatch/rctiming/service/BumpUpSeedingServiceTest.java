@@ -186,7 +186,7 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
-    void applyBumpUpResults_keepsTheCarNumbersTheBumpedDriversHadInTheFinalBelow() {
+    void applyBumpUpResults_numbersTheBumpedCarsByTheirPlaceOnTheGridWhateverTheyQualified() {
         Race bFinal = finalRace(200L, "B");
         Race aFinal = finalRace(201L, "A");
         aFinal.setBumpSlots(2);
@@ -195,17 +195,19 @@ class BumpUpSeedingServiceTest {
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(seededGrid(aFinal, 8));
         RaceEntry b1 = new RaceEntry();
         b1.setEntryId(501L);
-        b1.setCarNumber(12);
+        b1.setCarNumber(15);
         RaceEntry b2 = new RaceEntry();
         b2.setEntryId(502L);
-        b2.setCarNumber(15);
+        b2.setCarNumber(12);
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(bFinal.getId())).thenReturn(List.of(b1, b2));
 
         service().applyBumpUpResults(bFinal.getId(), List.of(501L, 502L, 503L));
 
         ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
         verify(raceEntryRepository, times(2)).save(captor.capture());
-        assertThat(captor.getAllValues()).extracting(RaceEntry::getCarNumber).containsExactly(12, 15);
+        assertThat(captor.getAllValues()).extracting(RaceEntry::getEntryId).containsExactly(501L, 502L);
+        assertThat(captor.getAllValues()).extracting(RaceEntry::getGridPosition).containsExactly(9, 10);
+        assertThat(captor.getAllValues()).extracting(RaceEntry::getCarNumber).containsExactly(9, 10);
     }
 
     @Test
