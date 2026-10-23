@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.boards;
 
-import dev.monkeypatch.rctiming.api.boards.dto.FinalsBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
@@ -10,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
+import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;

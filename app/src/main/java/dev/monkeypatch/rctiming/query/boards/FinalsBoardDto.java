@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.boards.dto;
+package dev.monkeypatch.rctiming.query.boards;
 
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;

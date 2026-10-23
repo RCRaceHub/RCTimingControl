@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.service;
 
-import dev.monkeypatch.rctiming.api.boards.dto.FinalsBoardDto;
+import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
