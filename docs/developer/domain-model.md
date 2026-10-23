@@ -117,6 +117,7 @@ classDiagram
         onLapPassing(LapPassingEvent)
         applyMarshalAdjustment()
         applyLapPenalty()
+        applyTimePenalty()
         releaseState(raceId)
     }
     class LiveRaceState {

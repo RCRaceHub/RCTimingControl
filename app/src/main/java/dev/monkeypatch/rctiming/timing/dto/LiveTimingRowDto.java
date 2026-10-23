@@ -7,8 +7,9 @@ package dev.monkeypatch.rctiming.timing.dto;
  * The gap fields are null where no time gap means anything: for the leader, and for a car on a different lap
  * from the one it is measured against, which shows as {@code lapsDown} or {@code intervalLapsDown} instead.
  * {@code totalTimeMs} is the time from the race's start (a rolling start's first crossing) to the car's last
- * crossing, the same figure the result keeps once the race finishes; null before the car has crossed or when the
- * start is not known.
+ * crossing plus its time penalties, the same figure the result keeps once the race finishes; null before the car has
+ * crossed or when the start is not known. {@code timePenaltyMs} is the time the referee has added so far, 0 for none;
+ * the order, the gaps and {@code totalTimeMs} already include it.
  */
 public record LiveTimingRowDto(
         long entryId,
@@ -27,6 +28,7 @@ public record LiveTimingRowDto(
         Long gapToAheadMs,
         Long totalTimeMs,
         /** The car has taken the flag: its time on the track is up and its last lap has counted. */
-        boolean finished
+        boolean finished,
+        long timePenaltyMs
 ) {
 }

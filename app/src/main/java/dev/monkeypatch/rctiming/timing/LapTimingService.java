@@ -307,6 +307,20 @@ public class LapTimingService {
     }
 
     /**
+     * Adds a time penalty to a car in live timing and rebroadcasts positions. Unlike {@link #applyLapPenalty} it makes
+     * the race's state if none exists yet, so a penalty given before the first car crosses is not lost; callers
+     * only call it for a race in progress. Called from a request thread by {@code RefereeService}, after its
+     * transaction commits.
+     *
+     * @param penaltyMs milliseconds to add to the car's total time
+     */
+    public void applyTimePenalty(long raceId, long entryId, long penaltyMs) {
+        LiveRaceState state = stateFor(raceId);
+        state.applyTimePenalty(entryId, penaltyMs);
+        liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+    }
+
+    /**
      * Releases in-memory state for a finished race, freeing memory, and drops any passing for the race until it
      * is running again.
      * Idempotent — no-op if no state is present.

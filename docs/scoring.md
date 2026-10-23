@@ -16,7 +16,8 @@ Ties on laps and total time keep the timed order. Corrections are applied before
 
 - A **lap penalty** (referee) or a marshal lap adjustment takes laps off (or adds them).
 - A **time penalty** adds its seconds to the driver's total time, so it only changes the order between drivers on
-  the same number of laps.
+  the same number of laps. Live timing adds it as soon as the referee gives it (to the order, the gaps and the
+  total), so the order on screen is already the order the result will have.
 - A **marshal penalty of kind "finals lap"** takes one lap off in the first final the driver races in their class
   (see section 4).
 

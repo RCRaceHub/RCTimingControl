@@ -119,7 +119,8 @@ public class ResultSnapshotService {
         Optional<LiveRaceState> stateOpt = lapTimingService.peek(raceId);
         if (stateOpt.isPresent()) {
             LiveRaceState state = stateOpt.get();
-            List<LiveTimingRowDto> rows = state.calculatePositions();
+            // As timed: time penalties are added once, by corrected()
+            List<LiveTimingRowDto> rows = state.calculateTimedPositions();
 
             Map<Long, EntryInfo> entryInfo = resolveEntryInfo(raceId);
 
@@ -204,10 +205,10 @@ public class ResultSnapshotService {
     }
 
     /**
-     * The timed result with corrections applied. Time penalties always add time: nothing applies them
-     * during the race. Lap penalties and marshal lap adjustments count only when given after the finish,
-     * since those given during the race changed the live laps the timed result came from. Corrections from
-     * before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
+     * The timed result with corrections applied. Time penalties always add time here: live timing shows them during
+     * the race, but the timed result it is built from leaves them out. Lap penalties and marshal lap adjustments
+     * count only when given after the finish, since those given during the race changed the live laps the timed
+     * result came from. Corrections from before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
      * finals takes its lap here whenever it was given, since nothing applies it during the race.
      */
     private List<ResultSnapshotDto.ResultRow> corrected(Race race, Instant finishedAt,

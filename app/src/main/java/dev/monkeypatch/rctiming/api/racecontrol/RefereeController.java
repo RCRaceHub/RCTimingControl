@@ -49,7 +49,8 @@ public class RefereeController {
                 raceId, req.entryId(), req.incidentType(), req.description(), CurrentOfficial.id())));
     }
 
-    /** A LAP penalty comes off live timing straight away; a TIME penalty is added when the result is worked out.
+    /** A LAP penalty comes off live timing straight away; a TIME penalty is added to a running
+     * race's live times at once, and to the result.
      * {@code POST /race/{raceId}/penalty}; REFEREE or ADMIN. 400 for a bad body, or a LAP penalty that is not a whole
      * number of laps within the limit. Audited as {@code PENALTY_APPLIED}; on a finished race its results are sent
      * again (#27). */

@@ -120,6 +120,19 @@ class RefereeServiceTest {
 
         verify(eventPublisher).publishEvent(new FinishedRaceCorrected(7L));
         verify(lapTimingService, never()).applyLapPenalty(anyLong(), anyLong(), anyInt());
+        verify(lapTimingService, never()).applyTimePenalty(anyLong(), anyLong(), anyLong());
+    }
+
+    @Test
+    void aTimePenaltyInARunningRace_isAddedToLiveTimingInMilliseconds() {
+        when(penaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(raceRepository.findById(7L)).thenReturn(Optional.of(race(RaceStatus.RUNNING)));
+
+        service().applyPenalty(7L, 11L, PenaltyType.TIME, new BigDecimal("5.5"), "Track limits", 3L);
+
+        verify(lapTimingService).applyTimePenalty(7L, 11L, 5500L);
+        verify(lapTimingService, never()).applyLapPenalty(anyLong(), anyLong(), anyInt());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
