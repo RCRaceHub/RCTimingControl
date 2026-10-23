@@ -139,6 +139,25 @@ class AutoRunServiceTest {
     }
 
     @Test
+    void refresh_movesARunningCountdownToTheNewGap() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        Instant began = clock.instant();
+        clock.advance(Duration.ofSeconds(40));
+
+        event.setAutoRunGapSeconds(60);
+        var state = service.refresh(EVENT_ID);
+
+        assertThat(state.startAt()).isEqualTo(began.plusSeconds(60));
+
+        event.setAutoRunGapSeconds(18);
+        state = service.refresh(EVENT_ID);
+
+        // 18 s from the start has passed: no sooner than the minimum from now
+        assertThat(state.startAt()).isEqualTo(clock.instant().plusSeconds(AutoRunService.MIN_RETIMED_SECONDS));
+    }
+
+    @Test
     void boardViewCountsDownWhileWaitingAndIsEmptyWhenOff() {
         addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
         assertThat(service.boardView(EVENT_ID)).isEmpty();
