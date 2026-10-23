@@ -70,6 +70,8 @@ public class LiveRaceState {
     final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
     /** Jump starts the referee has taken no action on. */
     final Set<Long> jumpStartDismissed = new HashSet<>();
+    /** Seconds the referee added to an entry's time, in milliseconds, summed; an entry with none has no key. */
+    final Map<Long, Long> timePenaltyMs = new HashMap<>();
 
     /**
      * Sets when the race started, for each row's total time. Called at state creation time.
@@ -292,22 +294,53 @@ public class LiveRaceState {
     }
 
     /**
-     * Calculate current positions and return a sorted snapshot.
-     * Sorted by: lapsCompleted DESC, lastPassingTimeMs ASC (earlier finish = better position on same lap).
-     * Gap to leader = |leaderLastPassingMs - myLastPassingMs| (same-logical-clock approximation).
+     * Adds a referee's time penalty to an entry's time, so the live order and gaps match the result the race will be
+     * given. Penalties add up. Synchronized.
+     *
+     * @param penaltyMs milliseconds to add to the entry's total time; zero or less is ignored
+     */
+    public synchronized void applyTimePenalty(long entryId, long penaltyMs) {
+        if (penaltyMs > 0) {
+            timePenaltyMs.merge(entryId, penaltyMs, Long::sum);
+        }
+    }
+
+    /** The entry's last passing time with its time penalties added, which is what it is ranked and gapped by. */
+    private long rankedPassingMs(LiveRacePosition pos, boolean withPenalties) {
+        long last = pos.getLastPassingTimeMs();
+        // A car that has not crossed has no time to add to
+        return withPenalties && last > 0 ? last + timePenaltyMs.getOrDefault(pos.getEntryId(), 0L) : last;
+    }
+
+    /**
+     * Calculate current positions and return a sorted snapshot, with time penalties added to each car's time.
+     * Sorted by: lapsCompleted DESC, penalised last passing time ASC (earlier finish = better position on same lap).
+     * Gap to leader = |leaderLastPassingMs - myLastPassingMs| (same-logical-clock approximation), also penalised.
      * Time gaps are only meaningful for cars on the same lap. Cars on fewer laps carry
      * lapsDown > 0; the frontend renders "+N Lap(s)" instead of a time for those rows.
      */
     public synchronized List<LiveTimingRowDto> calculatePositions() {
+        return calculatePositions(true);
+    }
+
+    /**
+     * The positions as timed, with no time penalties: the base the stored result's corrections are applied to
+     * ({@code ResultSnapshotService}), so a penalty is added once.
+     */
+    public synchronized List<LiveTimingRowDto> calculateTimedPositions() {
+        return calculatePositions(false);
+    }
+
+    private List<LiveTimingRowDto> calculatePositions(boolean withPenalties) {
         List<LiveRacePosition> sorted = positions.values().stream()
                 .sorted(Comparator
                         .comparingInt(LiveRacePosition::getLapsCompleted).reversed()
-                        .thenComparingLong(LiveRacePosition::getLastPassingTimeMs))
+                        .thenComparingLong(pos -> rankedPassingMs(pos, withPenalties)))
                 .toList();
 
         List<LiveTimingRowDto> result = new ArrayList<>(sorted.size());
         int leaderLaps = sorted.isEmpty() ? 0 : sorted.get(0).getLapsCompleted();
-        Long leaderLastPassing = sorted.isEmpty() ? null : sorted.get(0).getLastPassingTimeMs();
+        Long leaderLastPassing = sorted.isEmpty() ? null : rankedPassingMs(sorted.get(0), withPenalties);
         Long prevLastPassing = null;
         int prevLaps = leaderLaps;
 
@@ -319,9 +352,9 @@ public class LiveRaceState {
 
             // Time gaps only valid between cars on the same lap; null them when laps differ
             Long gapToLeader = (i == 0 || leaderLastPassing == null || lapsDown > 0) ? null
-                    : Math.abs(leaderLastPassing - pos.getLastPassingTimeMs());
+                    : Math.abs(leaderLastPassing - rankedPassingMs(pos, withPenalties));
             Long gapToAhead = (i == 0 || prevLastPassing == null || intervalLapsDown > 0) ? null
-                    : Math.abs(prevLastPassing - pos.getLastPassingTimeMs());
+                    : Math.abs(prevLastPassing - rankedPassingMs(pos, withPenalties));
 
             result.add(new LiveTimingRowDto(
                     pos.getEntryId(),
@@ -338,19 +371,24 @@ public class LiveRaceState {
                     intervalLapsDown,
                     gapToLeader,
                     gapToAhead,
-                    totalTimeMs(pos),
-                    flagged.contains(pos.getEntryId())
+                    totalTimeMs(pos, withPenalties),
+                    flagged.contains(pos.getEntryId()),
+                    withPenalties ? timePenaltyMs.getOrDefault(pos.getEntryId(), 0L) : 0L
             ));
-            prevLastPassing = pos.getLastPassingTimeMs();
+            prevLastPassing = rankedPassingMs(pos, withPenalties);
             prevLaps = pos.getLapsCompleted();
         }
         return result;
     }
 
-    /** Start to the car's last crossing, as the result keeps it; null before it has crossed or with no known start. */
-    private Long totalTimeMs(LiveRacePosition pos) {
+    /**
+     * Start to the car's last crossing plus its time penalties, as the result keeps it; null before it has crossed
+     * or with no known start.
+     */
+    private Long totalTimeMs(LiveRacePosition pos, boolean withPenalties) {
         long start = rollingStart ? firstCrossingMs : startedAtMs;
-        return start > 0 && pos.getLastPassingTimeMs() > start ? pos.getLastPassingTimeMs() - start : null;
+        return start > 0 && pos.getLastPassingTimeMs() > start
+                ? rankedPassingMs(pos, withPenalties) - start : null;
     }
 
     public List<LapPassingEvent> getLapHistory() {

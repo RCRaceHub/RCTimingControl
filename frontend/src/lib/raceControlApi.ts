@@ -95,10 +95,12 @@ export type LiveTimingRowDto = {
   intervalLapsDown: number;
   gapToLeaderMs: number | null;
   gapToAheadMs: number | null;
-  /** Start to the car's last crossing; null before it has crossed. */
+  /** Start to the car's last crossing plus its time penalties; null before it has crossed. */
   totalTimeMs: number | null;
   /** The car has taken the flag: its time is up and its last lap has counted. */
   finished?: boolean;
+  /** Time the referee has added so far, in milliseconds; the order, gaps and total already include it. */
+  timePenaltyMs?: number;
 };
 
 export type RaceStateChangeDto = {

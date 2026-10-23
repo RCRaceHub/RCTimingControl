@@ -4,6 +4,6 @@ package dev.monkeypatch.rctiming.domain.race;
 public enum PenaltyType {
     /** Whole laps taken off, straight away in live timing. */
     LAP,
-    /** Seconds added to the total time when the result is worked out. */
+    /** Seconds added to the total time, in live timing as soon as it is given and in the result. */
     TIME
 }

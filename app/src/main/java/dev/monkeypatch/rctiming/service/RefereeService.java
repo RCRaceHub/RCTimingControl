@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -128,8 +129,8 @@ public class RefereeService {
     }
 
     /**
-     * A LAP penalty comes off the car's laps in live timing straight away; a TIME penalty is only recorded, and is
-     * added to the total time when the result is worked out. On a finished race the results are sent again.
+     * A LAP penalty comes off the car's laps in live timing straight away; a TIME penalty is added to the car's
+     * total time in live timing of a race in progress, and again when the result is worked out. On a finished race the results are sent again.
      * Live timing is only told after the commit. An open jump start alert for the car is settled by it: dismissed, with
      * a {@code JUMP_START_PENALISED} audit row naming the penalty.
      *
@@ -186,6 +187,10 @@ public class RefereeService {
         if (type == PenaltyType.LAP) {
             int laps = value.intValueExact();
             AfterCommit.run(() -> lapTimingService.applyLapPenalty(raceId, entryId, laps));
+        } else if (raceRepository.findById(raceId)
+                .map(r -> r.getStatus() == RaceStatus.RUNNING || r.getStatus() == RaceStatus.STOPPED).orElse(false)) {
+            long penaltyMs = value.multiply(BigDecimal.valueOf(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact();
+            AfterCommit.run(() -> lapTimingService.applyTimePenalty(raceId, entryId, penaltyMs));
         }
         return saved;
     }
