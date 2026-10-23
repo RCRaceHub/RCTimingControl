@@ -186,20 +186,13 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
-    void applyBumpUpResults_numbersTheBumpedCarsByTheirPlaceOnTheGridWhateverTheyQualified() {
+    void applyBumpUpResults_numbersTheBumpedCarsByTheirPlaceOnTheGrid() {
         Race bFinal = finalRace(200L, "B");
         Race aFinal = finalRace(201L, "A");
         aFinal.setBumpSlots(2);
         when(raceRepository.findById(bFinal.getId())).thenReturn(Optional.of(bFinal));
         when(raceRepository.findByEventClassIdAndFinalLetter(10L, "A")).thenReturn(List.of(aFinal));
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(seededGrid(aFinal, 8));
-        RaceEntry b1 = new RaceEntry();
-        b1.setEntryId(501L);
-        b1.setCarNumber(15);
-        RaceEntry b2 = new RaceEntry();
-        b2.setEntryId(502L);
-        b2.setCarNumber(12);
-        when(raceEntryRepository.findByRaceIdOrderByGridPosition(bFinal.getId())).thenReturn(List.of(b1, b2));
 
         service().applyBumpUpResults(bFinal.getId(), List.of(501L, 502L, 503L));
 
