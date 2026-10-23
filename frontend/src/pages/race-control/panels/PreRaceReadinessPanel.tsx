@@ -130,7 +130,9 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
           <p className="text-xs text-muted-foreground mb-2">Everyone is assumed to be marshalling. Use these buttons only for a driver who was not.</p>
           {data.marshalDuty.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No marshals to list for this race.
+              {data.marshalsPending
+                ? 'Marshals to be confirmed: the drivers who move up from the final below race this final, so the list is made when it finishes.'
+                : 'No marshals to list for this race.'}
             </p>
           ) : (
             <Table>

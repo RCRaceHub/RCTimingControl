@@ -86,7 +86,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   for (const key of Object.keys(stompFrames)) delete stompFrames[key];
   vi.mocked(getBoardLiveTiming).mockResolvedValue([]);
-  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], topQualifiers: [] });
+  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getResultsBoard).mockResolvedValue({
     eventId: 7,
     eventName: 'Club Round 3',
@@ -145,6 +145,7 @@ describe('NowNextBoard', () => {
       nextRace: 'Qualifying 1 — Touring Stock — Heat 2',
       nextDrivers: ['Ann Next', 'Bob Next'],
       marshals: ['Cat Marshal'],
+      marshalsPending: false,
       topQualifiers: [],
     });
 
@@ -153,6 +154,27 @@ describe('NowNextBoard', () => {
     expect(await screen.findByText('Ann Next')).toBeInTheDocument();
     expect(screen.getByText('Bob Next')).toBeInTheDocument();
     expect(screen.getByTestId('board-next-marshals')).toHaveTextContent('Cat Marshal');
+  });
+
+  it('says the marshals are to be confirmed while a bump-up final waits on the final below', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(
+      nowNext({
+        currentRace: race({ raceId: 11 }),
+        nextRace: race({ raceId: 12, label: 'A Final', status: 'PENDING' }),
+      }),
+    );
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'A Final',
+      nextDrivers: ['Ann Next'],
+      marshals: [],
+      marshalsPending: true,
+      topQualifiers: [],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByText('Ann Next')).toBeInTheDocument();
+    expect(screen.getByTestId('board-next-marshals')).toHaveTextContent('To be confirmed');
   });
 
   it('seeds the live table from the public snapshot before the first STOMP frame', async () => {

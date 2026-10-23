@@ -114,13 +114,13 @@ describe('CockpitPage with the grid called', () => {
   });
 
   it('says drivers are called by name every interval for a staggered start', () => {
-    mockReadiness.mockReturnValue({ startType: 'STAGGER', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [] });
+    mockReadiness.mockReturnValue({ startType: 'STAGGER', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [], marshalsPending: false });
     renderCockpit();
     expect(screen.getByTestId('start-type-note')).toHaveTextContent(/called by name every 4 seconds in grid order/i);
   });
 
   it('says drivers are not called one by one for a rolling start', () => {
-    mockReadiness.mockReturnValue({ startType: 'ROLLING', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [] });
+    mockReadiness.mockReturnValue({ startType: 'ROLLING', staggerIntervalSeconds: 4, gridCall: [], marshalDuty: [], marshalsPending: false });
     renderCockpit();
     expect(screen.getByTestId('start-type-note')).toHaveTextContent(/not called one by one/i);
   });

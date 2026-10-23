@@ -3,12 +3,15 @@ package dev.monkeypatch.rctiming.query.racecontrol;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.competitor.SpeechName;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
@@ -23,7 +26,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
  * jOOQ read-side query for the pre-race readiness view (CTRL-02, CTRL-07).
  * Produces a PreRaceReadinessDto for a given raceId, containing:
  * - gridCall: drivers due on track in grid order for the target race, with RaceHub's arrival mark
- * - marshalDuty: drivers from the immediately preceding race with per-event absence counts
+ * - marshalDuty: drivers from the immediately preceding race with per-event absence counts, left out while a
+ *   bump-up final waits on the final below and without those who moved up once it has finished
  *
  * All reads go through DSLContext.
  */
@@ -41,7 +45,8 @@ public class PreRaceReadinessQuery {
      * Load the pre-race readiness data for the given race.
      *
      * <p>The grid call has a slot per entry on the race, in grid order with unseeded entries (position 0) last. The
-     * marshal duty is the drivers of the race before this one in the event's run order, or for the first race of the
+     * marshal duty (empty with {@code marshalsPending} while a bump-up final waits on the final below, and without
+     * the drivers who moved up once it has finished) is the drivers of the race before this one in the event's run order, or for the first race of the
      * event the last race of its own round. The returned {@code startType} is null and the stagger interval 0: the
      * caller adds the race's start details with {@link PreRaceReadinessDto#withStart}.
      *
@@ -59,6 +64,7 @@ public class PreRaceReadinessQuery {
                         RACES.STATUS,
                         RACES.SEQUENCE_IN_ROUND,
                         RACES.EVENT_CLASS_ID,
+                        RACES.BUMP_SLOTS,
                         ROUNDS.EVENT_ID,
                         ROUNDS.SEQUENCE_IN_EVENT,
                         ROUNDS.ROUND_NUMBER,
@@ -122,8 +128,21 @@ public class PreRaceReadinessQuery {
                 marshalRaceId = lastInRound.get(RACES.ID);
             }
         }
-        List<MarshalDutyRowDto> marshalDuty;
 
+        // A final that takes bump-ups from the final below can't say who marshals it until that final finishes: the
+        // drivers who move up race instead. So the list is held back until then, and then leaves them out.
+        boolean bumpUpFinal = marshalRaceId != null && targetRow.get(RACES.BUMP_SLOTS) > 0
+                && isLowerFinalOfSameClass(marshalRaceId, finalLetter, targetRow.get(RACES.EVENT_CLASS_ID));
+        boolean marshalsPending = bumpUpFinal && !isFinished(marshalRaceId);
+        if (marshalsPending) {
+            marshalRaceId = null;
+        }
+        Set<Long> bumpedIn = marshalRaceId == null || !bumpUpFinal ? Set.of()
+                : new HashSet<>(dsl.select(RACE_ENTRIES.ENTRY_ID).from(RACE_ENTRIES)
+                        .where(RACE_ENTRIES.RACE_ID.eq(raceId)).and(RACE_ENTRIES.BUMPED.isTrue())
+                        .fetch(RACE_ENTRIES.ENTRY_ID));
+
+        List<MarshalDutyRowDto> marshalDuty;
         if (marshalRaceId != null) {
             // Build marshalDuty from the marshalling race's entries + absence counts
 
@@ -143,6 +162,7 @@ public class PreRaceReadinessQuery {
                     .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                     .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
                     .where(RACE_ENTRIES.RACE_ID.eq(marshalRaceId))
+                    .and(bumpedIn.isEmpty() ? DSL.noCondition() : RACE_ENTRIES.ENTRY_ID.notIn(bumpedIn))
                     .orderBy(RACE_ENTRIES.GRID_POSITION.asc().nullsLast(), ENTRIES.ID.asc())
                     .fetch(r -> new MarshalDutyRowDto(
                             r.get(RACE_ENTRIES.ENTRY_ID),
@@ -184,6 +204,25 @@ public class PreRaceReadinessQuery {
                         r.get(ENTRIES.RACEHUB_ARRIVAL)
                 ));
 
-        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, null, 0);
+        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
+                marshalsPending, null, 0);
+    }
+
+    /**
+     * Whether {@code marshalRaceId} is a final of the same class lower than the one lettered {@code targetLetter}
+     * (B under A, and the zombie round's Z under A), so the drivers who move up from it are the target's bump-ups.
+     * Runs in the caller's read snapshot.
+     */
+    private boolean isLowerFinalOfSameClass(long marshalRaceId, String targetLetter, long eventClassId) {
+        return targetLetter != null && dsl.fetchExists(dsl.selectOne().from(RACES)
+                .where(RACES.ID.eq(marshalRaceId))
+                .and(RACES.EVENT_CLASS_ID.eq(eventClassId))
+                .and(RACES.FINAL_LETTER.gt(targetLetter)));
+    }
+
+    private boolean isFinished(long raceId) {
+        return dsl.fetchExists(dsl.selectOne().from(RACES)
+                .where(RACES.ID.eq(raceId))
+                .and(RACES.STATUS.eq(RaceStatus.FINISHED.name())));
     }
 }

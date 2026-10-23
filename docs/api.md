@@ -695,7 +695,7 @@ Content-Type: application/json
 
 `slot` is `PRIMARY` or `SECONDARY`. A blank number removes the secondary. **200 OK** with `{ "entryId": 101, "slot": "PRIMARY", "oldTransponderNumber": "1234567", "newTransponderNumber": "7654321" }`; the change is written to the entry audit log as `TRANSPONDER_SWAP`, and laps count on the new number from the next passing. **409** `transponder_already_assigned` if another competitor's entry in the event uses the number (the same competitor's other entries may share it), or `entry_withdrawn`. **400** `same_as_other_transponder` or `primary_required`.
 
-The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot.
+The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot. For a final with bump slots, `marshalDuty` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up.
 
 ## Race control — Race entries, transponder links and history
 
@@ -845,7 +845,7 @@ GET /boards/races/{raceId}/position-history
 ```http
 GET /boards/ticker?eventId={id}
 ```
-**200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
+**200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "marshalsPending": false, "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); for a final that takes bump-ups, `marshals` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up; `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
 
 **Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing` and `/topic/race/{raceId}/state`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
 

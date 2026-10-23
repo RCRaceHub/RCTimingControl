@@ -8,5 +8,7 @@ export function usePreRaceReadiness(raceId: number | null) {
     queryFn: () => getPreRaceReadiness(raceId!),
     enabled: raceId !== null,
     staleTime: 5_000,
+    // A bump-up final's marshals are not known until the final below finishes; check again until they are
+    refetchInterval: (query) => (query.state.data?.marshalsPending ? 5_000 : false),
   });
 }

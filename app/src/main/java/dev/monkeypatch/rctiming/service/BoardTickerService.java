@@ -49,6 +49,7 @@ public class BoardTickerService {
         Optional<BoardRaceDto> next = boardQuery.nextRace(eventId);
         List<String> drivers = List.of();
         List<String> marshals = List.of();
+        boolean marshalsPending = false;
         if (next.isPresent()) {
             PreRaceReadinessDto readiness = preRaceReadinessQuery.load(next.get().raceId());
             List<Long> entryIds = entryIds(readiness);
@@ -62,8 +63,10 @@ public class BoardTickerService {
             marshals = readiness.marshalDuty().stream()
                     .map(row -> names.of(competitors.get(row.entryId()), row.driverName(), carNumbers.get(row.entryId())))
                     .toList();
+            marshalsPending = readiness.marshalsPending();
         }
-        return new TickerDto(next.map(BoardRaceDto::label).orElse(null), drivers, marshals, topQualifiers(eventId));
+        return new TickerDto(next.map(BoardRaceDto::label).orElse(null), drivers, marshals, marshalsPending,
+                topQualifiers(eventId));
     }
 
     private static List<Long> entryIds(PreRaceReadinessDto readiness) {

@@ -14,6 +14,8 @@ import java.util.List;
  *                         race of its own round, if that is another race
  * @param gridCall         drivers due on track in grid position order (null positions last)
  * @param marshalDuty      drivers from the immediately preceding race in the event run order
+ * @param marshalsPending true while the final below this bump-up final is unfinished, so who moves up (and can't
+ *                         marshal) is not known and marshalDuty is empty
  * @param startType        how the race starts (STAGGER, GRID or ROLLING); null when not set
  * @param staggerIntervalSeconds the seconds between driver calls in a stagger start
  */
@@ -24,12 +26,13 @@ public record PreRaceReadinessDto(
         boolean firstRaceOfEvent,
         List<GridCallSlotDto> gridCall,
         List<MarshalDutyRowDto> marshalDuty,
+        boolean marshalsPending,
         String startType,
         int staggerIntervalSeconds
 ) {
     /** The same view with the race's start details, which come from the race and its format, not from SQL. */
     public PreRaceReadinessDto withStart(String startType, int staggerIntervalSeconds) {
         return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
-                startType, staggerIntervalSeconds);
+                marshalsPending, startType, staggerIntervalSeconds);
     }
 }
