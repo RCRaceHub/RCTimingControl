@@ -178,6 +178,8 @@ class BumpUpSeedingServiceTest {
         assertThat(saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).map(RaceEntry::getEntryId))
                 .containsExactly(5L, 6L, 7L, 8L);
         assertThat(saved).noneMatch(e -> e.getRaceId().equals(cFinal.getId()));
+        // The unused C final is dropped from the run order
+        verify(raceRepository).delete(cFinal);
     }
 
     @Test

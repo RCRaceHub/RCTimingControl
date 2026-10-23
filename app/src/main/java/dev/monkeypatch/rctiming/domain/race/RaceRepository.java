@@ -48,6 +48,16 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
                 dsl.fetchExists(DSL.table(DSL.name(table)), raceId.in(eventRaces)));
     }
 
+    /**
+     * Whether the race has marshal laps, absences, incidents, penalties or transponder links against it, which
+     * deleting the race would destroy or fail on (a foreign key without a cascade).
+     */
+    public boolean hasRecordsAgainstRace(Long raceId) {
+        Field<Long> column = DSL.field(DSL.name("race_id"), Long.class);
+        return RACE_RECORD_TABLES.stream().anyMatch(table ->
+                dsl.fetchExists(DSL.table(DSL.name(table)), column.eq(raceId)));
+    }
+
     /** Whether any race, of any round and status, belongs to the event class. */
     public boolean existsByEventClassId(Long eventClassId) {
         return dsl.fetchExists(RACES, RACES.EVENT_CLASS_ID.eq(eventClassId));

@@ -74,7 +74,8 @@ public class BumpUpSeedingService {
      * </pre>
      *
      * <p>When the field is too small to fill every final, the lowest finals are left empty (a field of 8 with 4 cars a
-     * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers.
+     * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers. The unused finals' races are deleted from the run order (kept,
+     * empty, only when something was recorded against one early).
      *
      * <p>A Shikabane zombie round (final letter {@value #ZOMBIE_LETTER}) is left out of the split, its old grid is
      * cleared, and the top final gets one more bump place for the zombie round's winner.
@@ -149,8 +150,13 @@ public class BumpUpSeedingService {
             while (finals.size() > needed) {
                 Race unused = finals.remove(0);
                 raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(unused.getId()));
-                unused.setBumpSlots(0);
-                raceRepository.save(unused);
+                if (raceRepository.hasRecordsAgainstRace(unused.getId())) {
+                    // A penalty or incident was raised against it early: keep the race rather than lose the record
+                    unused.setBumpSlots(0);
+                    raceRepository.save(unused);
+                } else {
+                    raceRepository.delete(unused);
+                }
             }
         }
         // Work out regular slot counts per final
