@@ -165,14 +165,18 @@ public class RefereeService {
                 .after(after).record();
         // A penalty settles an open jump start for the car, whatever its reason: say so in the log (the reason is in
         // the row), then drop the alert
-        lapTimingService.openJumpStart(raceId, entryId).ifPresent(jumpStart -> audit
-                .entry(Actor.official(userId), "JUMP_START_PENALISED").entity("race_entry", entryId)
-                .race(raceId).event(labels.eventOf(raceId))
-                .summary("Penalised the jump start by " + labels.driver(entryId) + " in " + labels.race(raceId)
-                        + " (" + type + " penalty of " + value.stripTrailingZeros().toPlainString() + ")")
-                .after(Map.of("entryId", entryId, "penaltyId", saved.getId(), "earlyMs", jumpStart.earlyMs(),
-                        "reason", reason))
-                .record());
+        lapTimingService.openJumpStart(raceId, entryId).ifPresent(jumpStart -> {
+            Map<String, Object> settled = new LinkedHashMap<>();
+            settled.put("entryId", entryId);
+            settled.put("penaltyId", saved.getId());
+            settled.put("earlyMs", jumpStart.earlyMs());
+            settled.put("reason", reason);
+            audit.entry(Actor.official(userId), "JUMP_START_PENALISED").entity("race_entry", entryId)
+                    .race(raceId).event(labels.eventOf(raceId))
+                    .summary("Penalised the jump start by " + labels.driver(entryId) + " in " + labels.race(raceId)
+                            + " (" + type + " penalty of " + value.stripTrailingZeros().toPlainString() + ")")
+                    .after(settled).record();
+        });
         AfterCommit.run(() -> lapTimingService.dismissJumpStart(raceId, entryId));
 
         if (raceRepository.findById(raceId).map(r -> r.getStatus() == RaceStatus.FINISHED).orElse(false)) {
