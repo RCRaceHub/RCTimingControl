@@ -15,6 +15,8 @@ export interface PracticeSessionDto {
   pauseSeconds: number;
   startedAt: string | null;
   stoppedAt: string | null;
+  /** A race is running, so the session can't be started: practice and a race share the decoder */
+  raceRunning: boolean;
 }
 
 export interface PracticeTimingRowDto {

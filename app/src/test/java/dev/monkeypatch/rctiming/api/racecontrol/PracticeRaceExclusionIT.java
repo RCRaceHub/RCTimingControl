@@ -99,6 +99,16 @@ class PracticeRaceExclusionIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void anIdleSessionReportsWhetherARaceIsRunning() {
+        Object practice = createPractice();
+        assertThat(getPractice(practice).get("raceRunning")).isEqualTo(false);
+
+        race("RUNNING");
+
+        assertThat(getPractice(practice).get("raceRunning")).isEqualTo(true);
+    }
+
+    @Test
     void startingARaceStopsARunningPracticeSession() {
         Object practice = createPractice();
         assertThat(practice("/" + practice + "/start").getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -161,6 +171,11 @@ class PracticeRaceExclusionIT extends AbstractIntegrationTest {
     private ResponseEntity<Map> practice(String path) {
         return restTemplate.exchange("/api/v1/practice-sessions" + path, HttpMethod.POST,
                 new HttpEntity<>(headers()), Map.class);
+    }
+
+    private Map getPractice(Object id) {
+        return restTemplate.exchange("/api/v1/practice-sessions/" + id, HttpMethod.GET,
+                new HttpEntity<>(headers()), Map.class).getBody();
     }
 
     private String practiceStatus(Object id) {

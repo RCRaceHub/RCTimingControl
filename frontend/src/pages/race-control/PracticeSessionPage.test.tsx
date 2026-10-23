@@ -34,6 +34,7 @@ const idleSession = {
   pauseSeconds: 180,
   startedAt: null,
   stoppedAt: null,
+  raceRunning: false,
 };
 
 const runningSession = {
@@ -88,6 +89,18 @@ describe('PracticeSessionPage', () => {
       expect(screen.getByText('Session not started')).toBeInTheDocument(),
     );
     expect(screen.getByText(/press start to begin timing/i)).toBeInTheDocument();
+  });
+
+  it('disables Start with a hint while a race is running', async () => {
+    vi.mocked(practiceApi.getSession).mockResolvedValue({ ...idleSession, raceRunning: true } as never);
+
+    render(<PracticeSessionPage />, { wrapper });
+
+    await waitFor(() => expect(screen.getByText('Session not started')).toBeInTheDocument());
+    expect(screen.getByRole('status')).toHaveTextContent(/a race is running/i);
+    for (const button of screen.getAllByRole('button', { name: /start practice/i })) {
+      expect(button).toBeDisabled();
+    }
   });
 
   it('offers to try again when the session cannot be loaded, rather than saying it does not exist', async () => {

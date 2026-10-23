@@ -191,7 +191,11 @@ public class PracticeSessionService {
         }
     }
 
-    /** The session as sent to the screens, with its event's name looked up. */
+    /**
+     * The session as sent to the screens, with its event's name looked up. {@code raceRunning} is a snapshot taken
+     * now and only looked up for an idle session, the one that can't start while a race runs (one extra read on the
+     * write connection, so the list stays cheap); it is false for any other status.
+     */
     public PracticeSessionDto toDto(PracticeSession session) {
         return new PracticeSessionDto(
                 session.getId(),
@@ -204,7 +208,9 @@ public class PracticeSessionService {
                 session.getBestLapN(),
                 session.getPauseSeconds(),
                 session.getStartedAt(),
-                session.getStoppedAt()
+                session.getStoppedAt(),
+                session.getStatus() == PracticeStatus.IDLE
+                        && raceRepository.findFirstByStatus(RaceStatus.RUNNING).isPresent()
         );
     }
 

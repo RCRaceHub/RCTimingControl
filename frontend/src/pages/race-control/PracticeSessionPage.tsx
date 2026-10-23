@@ -27,6 +27,9 @@ function statusBadgeVariant(
   return 'outline';
 }
 
+const RACE_RUNNING_HINT =
+  'A race is running, so practice can start once it has finished or been stopped.';
+
 function formatPause(seconds: number): string {
   return seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds} s`;
 }
@@ -50,8 +53,13 @@ export function PracticeSessionPage() {
     queryKey: raceControlQueryKeys.practice.session(id),
     queryFn: () => getSession(id),
     enabled: !isNaN(id),
-    // A race starting stops practice from the server's side, so keep a running session's view fresh
-    refetchInterval: (query) => (query.state.data?.status === 'RUNNING' ? 5000 : false),
+    // A race starting stops practice from the server's side, so keep a running session's view fresh; an idle
+    // session waits on a running race too, so Start enables when the race ends
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const waitingOnRace = data?.status === 'IDLE' && data.raceRunning;
+      return data?.status === 'RUNNING' || waitingOnRace ? 5000 : false;
+    },
   });
 
   const { rows, unknownTransponders } = usePracticeTiming(
@@ -67,6 +75,8 @@ export function PracticeSessionPage() {
     onError: (err) => {
       // The server says why, such as a race running (practice and a race share the decoder)
       toast.error(getApiErrorMessage(err, 'Failed to start session.'));
+      // Pick up the race that blocked it, so Start shows disabled with its hint
+      queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.practice.session(id) });
     },
   });
 
@@ -126,7 +136,8 @@ export function PracticeSessionPage() {
             <Button
               size="sm"
               onClick={() => startMutation.mutate()}
-              disabled={startMutation.isPending}
+              disabled={startMutation.isPending || session.raceRunning}
+              title={session.raceRunning ? RACE_RUNNING_HINT : undefined}
             >
               <PlayCircle className="mr-1 h-4 w-4" aria-hidden="true" />
               {startMutation.isPending ? 'Starting…' : 'Start Practice'}
@@ -179,11 +190,17 @@ export function PracticeSessionPage() {
             <Button
               className="mt-6"
               onClick={() => startMutation.mutate()}
-              disabled={startMutation.isPending}
+              disabled={startMutation.isPending || session.raceRunning}
+              title={session.raceRunning ? RACE_RUNNING_HINT : undefined}
             >
               <PlayCircle className="mr-2 h-4 w-4" aria-hidden="true" />
               Start Practice
             </Button>
+            {session.raceRunning && (
+              <p className="text-sm text-muted-foreground mt-2" role="status">
+                {RACE_RUNNING_HINT}
+              </p>
+            )}
           </div>
         )}
 
