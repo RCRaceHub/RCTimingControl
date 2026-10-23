@@ -177,6 +177,9 @@ class BumpUpSeedingServiceTest {
                 .containsExactly(1L, 2L, 3L, 4L);
         assertThat(saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).map(RaceEntry::getEntryId))
                 .containsExactly(5L, 6L, 7L, 8L);
+        // Each final numbers its cars 1 to n by grid place, not by qualifying position
+        assertThat(saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).map(RaceEntry::getCarNumber))
+                .containsExactly(1, 2, 3, 4);
         assertThat(saved).noneMatch(e -> e.getRaceId().equals(cFinal.getId()));
         // The unused C final is dropped from the run order
         verify(raceRepository).delete(cFinal);
