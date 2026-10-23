@@ -44,6 +44,7 @@ sequenceDiagram
         opt a stagger start and the car crossed before its start offset
             LTS->>LRS: recordJumpStart(entryId, earlyMs), first time only
             LTS->>Hub: broadcastJumpStarts(raceId, jumpStarts)
+            LTS-->>LTS: publish JumpStartDetectedEvent (JumpStartAudit writes JUMP_START_DETECTED)
             Hub-->>B: /topic/race/id/jump-start
         end
         LTS->>Hub: broadcastTimingUpdate(raceId, calculatePositions())
@@ -55,7 +56,7 @@ sequenceDiagram
     end
 ```
 
-A car that crosses the line before its turn in a stagger start is flagged to the referee, who decides on a penalty or takes no action; the passing is still timed. Taking no action (`RefereeService.dismissJumpStart`) writes a `JUMP_START_DISMISSED` audit row and marks the entry dismissed in `LiveRaceState`; the list is broadcast again, the alert goes and the entry keeps its lozenge. A penalty dismisses it the same way, without a second audit row.
+A car that crosses the line before its turn in a stagger start is flagged to the referee, who decides on a penalty or takes no action; the passing is still timed. The detection is audited as `JUMP_START_DETECTED`. Taking no action (`RefereeService.dismissJumpStart`) writes a `JUMP_START_DISMISSED` audit row and marks the entry dismissed in `LiveRaceState`; the list is broadcast again, the alert goes and the entry keeps its lozenge. A penalty dismisses it the same way and writes a `JUMP_START_PENALISED` row beside its `PENALTY_APPLIED` one.
 
 An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen.
 

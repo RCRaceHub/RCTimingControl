@@ -176,7 +176,8 @@ public class LapTimingService {
     /**
      * Tells the referee when a car crosses the line before its turn in a stagger start. The car's turn is its start
      * offset on the race clock, less {@link #JUMP_START_GRACE_MS} for the delay between the clock and the decoder.
-     * The passing is still timed as usual: whether it is a penalty is the referee's decision. Does nothing for any
+     * The passing is still timed as usual: whether it is a penalty is the referee's decision. The jump start is also
+     * published as a {@link JumpStartDetectedEvent} for the audit log. Does nothing for any
      * other start. Runs on the timing thread.
      */
     private void checkJumpStart(long raceId, LiveRaceState state, long entryId) {
@@ -190,6 +191,7 @@ public class LapTimingService {
         if (earlyMs > JUMP_START_GRACE_MS && state.recordJumpStart(entryId, earlyMs)) {
             log.info("Race {}: entry {} crossed the line {} ms before its start", raceId, entryId, earlyMs);
             liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts());
+            publisher.publishEvent(new JumpStartDetectedEvent(raceId, entryId, earlyMs));
         }
     }
 

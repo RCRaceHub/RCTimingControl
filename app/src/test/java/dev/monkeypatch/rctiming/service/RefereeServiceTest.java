@@ -73,7 +73,21 @@ class RefereeServiceTest {
         assertThat(penalty.getPenaltyType()).isEqualTo(PenaltyType.LAP);
         verify(lapTimingService).applyLapPenalty(7L, 11L, 2);
         verify(lapTimingService).dismissJumpStart(7L, 11L);
+        verify(audit, never()).entry(any(), eq("JUMP_START_PENALISED"));
         verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void aPenaltyForACarThatJumpedTheStart_isAuditedAsSettlingIt() {
+        when(penaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(raceRepository.findById(7L)).thenReturn(Optional.of(race(RaceStatus.RUNNING)));
+        when(lapTimingService.openJumpStart(7L, 11L))
+                .thenReturn(Optional.of(new JumpStartDto(11L, "Sam Fox", "12", 2400, false)));
+
+        service().applyPenalty(7L, 11L, PenaltyType.LAP, BigDecimal.valueOf(1), "Jump start", 3L);
+
+        verify(audit).entry(any(), eq("JUMP_START_PENALISED"));
+        verify(lapTimingService).dismissJumpStart(7L, 11L);
     }
 
     @Test

@@ -472,6 +472,7 @@ export type RaceHistoryKind =
   | 'MARSHAL_LAP'
   | 'MARSHAL_ABSENCE'
   | 'MARSHAL_PENALTY'
+  | 'JUMP_START'
   | 'TRANSPONDER_LINK'
   | 'OTHER';
 

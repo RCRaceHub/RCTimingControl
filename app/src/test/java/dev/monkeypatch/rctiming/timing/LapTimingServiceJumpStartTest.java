@@ -34,6 +34,7 @@ class LapTimingServiceJumpStartTest {
     private static final long INTERVAL_MS = 10_000;
 
     private LiveTimingHub hub;
+    private ApplicationEventPublisher publisher;
     private LapTimingService service;
     private long elapsedMs;
 
@@ -43,8 +44,9 @@ class LapTimingServiceJumpStartTest {
         RaceEntryRepository raceEntries = mock(RaceEntryRepository.class);
         EntryRepository entries = mock(EntryRepository.class);
         RaceClockService clock = mock(RaceClockService.class);
+        publisher = mock(ApplicationEventPublisher.class);
         service = new LapTimingService(hub, raceEntries, entries, mock(CompetitorRepository.class),
-                mock(LapThresholdQuery.class), clock, mock(ApplicationEventPublisher.class));
+                mock(LapThresholdQuery.class), clock, publisher);
 
         // Entry 10 is called first (offset 0), entry 20 second (offset 10 s)
         when(raceEntries.findByRaceIdOrderByGridPosition(RACE)).thenReturn(List.of(raceEntry(10L, 1), raceEntry(20L, 2)));
@@ -95,6 +97,7 @@ class LapTimingServiceJumpStartTest {
         assertThat(jumpStarts.get(0).entryId()).isEqualTo(20L);
         assertThat(jumpStarts.get(0).earlyMs()).isEqualTo(6_000);
         verify(hub, times(1)).broadcastJumpStarts(RACE, jumpStarts);
+        verify(publisher, times(1)).publishEvent(new JumpStartDetectedEvent(RACE, 20L, 6_000));
     }
 
     @Test
@@ -154,6 +157,7 @@ class LapTimingServiceJumpStartTest {
 
         assertThat(service.jumpStartsOf(RACE)).isEmpty();
         verify(hub, never()).broadcastJumpStarts(anyLong(), any());
+        verify(publisher, never()).publishEvent(any(JumpStartDetectedEvent.class));
     }
 
     @Test

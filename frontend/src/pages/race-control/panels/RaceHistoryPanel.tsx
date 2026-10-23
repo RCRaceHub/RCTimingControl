@@ -13,6 +13,7 @@ const KIND_LABEL: Record<RaceHistoryKind, string> = {
   MARSHAL_LAP: 'Marshal lap',
   MARSHAL_ABSENCE: 'Marshalling',
   MARSHAL_PENALTY: 'Marshalling penalty',
+  JUMP_START: 'Jump start',
   TRANSPONDER_LINK: 'Transponder',
   OTHER: 'Other',
 };

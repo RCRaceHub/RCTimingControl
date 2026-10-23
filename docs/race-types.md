@@ -90,7 +90,7 @@ over for everyone only when the last car to leave has had its full time (section
 
 A car that crosses the line before it has been called (its start offset has not yet come on the race clock) has jumped
 the start. A quarter of a second of slack is allowed for the gap between the clock and the decoder. The timing code
-reports the first early crossing of each car to the referee, who decides whether to give a penalty or to take no action. Either choice removes the alert box (so does a penalty given by any route), but the car keeps its JUMP START mark in the timing table, and taking no action is written to the audit log as `JUMP_START_DISMISSED`; the passing is
+reports the first early crossing of each car to the referee, who decides whether to give a penalty or to take no action. Either choice removes the alert box (so does a penalty given by any route), but the car keeps its JUMP START mark in the timing table, and the audit log (and the race history) records the jump start as `JUMP_START_DETECTED` when it happens and the referee's decision as `JUMP_START_DISMISSED` (no action) or `JUMP_START_PENALISED`; the passing is
 still timed as normal and nothing is applied automatically. An entry added after the race was set up has no slot and is never flagged. Other start types have no jump start. The list is kept
 with the race's live timing, so it is gone once the race finishes.
 

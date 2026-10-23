@@ -145,6 +145,9 @@ public class RaceHistoryQuery {
         if (action.startsWith("RACE_")) {
             return "LIFECYCLE";
         }
+        if (action.startsWith("JUMP_START_")) {
+            return "JUMP_START";
+        }
         return "MARSHAL_PENALTY_APPLIED".equals(action) ? "MARSHAL_PENALTY" : "OTHER";
     }
 
