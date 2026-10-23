@@ -76,7 +76,7 @@ Print from the browser (Ctrl+P, or the Print button), and choose **Save as PDF**
 | Qualifying standings | `/qualifying`, **Print** | Each class's overall table with each round's place, dropped rounds struck through, one class per page, and a QR code to the live page |
 | Championship standings | `/championships/{id}`, **Print** | One table per class with each round's points, dropped rounds struck through, one class per page, and a QR code to the live page. Names follow each competitor's public name setting |
 | Practice results | Race control, a practice session, **Print** | The session's results |
-| Race result (public) | `/results/{raceId}`, **Print Results** | One race with its lap times |
+| Race result (public) | `/results/{raceId}`, **Print Results** | One race with its lap times and a position-by-lap chart |
 | Meeting guide and admin guide | `/print/meeting-guide` and `/print/admin-guide` | The step-by-step guides for race day and for setting up the club |
 
 The sheets opened from race control (heat result, round summary, final results and meeting pack) show each driver's real name, because officials print them. Anything on a public page or the championship sheet follows the public name setting.

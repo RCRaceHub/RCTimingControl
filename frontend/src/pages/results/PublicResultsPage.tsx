@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePublicResultSnapshot } from '@/hooks/race-control/usePublicResultSnapshot';
 import type { PositionAtLap } from '@/lib/raceControlApi';
+import { positionSeries } from '@/lib/heatSheet';
+import { PositionChart } from '@/components/print/PositionChart';
 import { fmtMs } from '@/lib/format';
 import { formatDateTime } from '@/lib/dates';
 import { getApiErrorStatus } from '@/lib/errors';
@@ -82,6 +84,8 @@ export default function PublicResultsPage() {
 
   const hasPoints = data.positions.some((r) => r.points != null);
   const hasChampionshipPoints = data.positions.some((r) => r.championshipPoints != null);
+  // Only drawn when the race has recorded laps: a chart of nothing says nothing
+  const chartSeries = positionSeries(data.positions, data.lapHistory);
   const columns = 7 + (hasPoints ? 1 : 0) + (hasChampionshipPoints ? 1 : 0);
 
   return (
@@ -154,6 +158,13 @@ export default function PublicResultsPage() {
           ))}
         </tbody>
       </table>
+
+      {chartSeries.length > 0 && (
+        <section aria-label="Position chart" className="mt-6">
+          <h2 className="mb-2 text-sm font-semibold">Position by lap</h2>
+          <PositionChart series={chartSeries} />
+        </section>
+      )}
 
       <div className="mt-6 print:hidden">
         <button
