@@ -124,7 +124,8 @@ public class ChampionshipStandingsQuery {
      * round of finals, see {@link #overallFinalPositions}), and the points are the championship's points scale at
      * that place, nil for a driver excluded from the event. Bonuses are not included. A final is left out until it
      * is placed, and so is a class the championship does not score. Where several championships include the event,
-     * the lowest-numbered one that scores the class is used. Empty when the event is in no championship.
+     * the lowest-numbered one that scores the class is used. A final run in legs is left out, since its places come from the combined order. Each round of finals is paid on
+     * its own here, as the standings pay the driver's best. Empty when the event is in no championship.
      */
     public Map<Long, Map<Long, Integer>> finalPointsFor(Long eventId) {
         List<Long> championshipIds = dsl.select(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID)
@@ -143,19 +144,22 @@ public class ChampionshipStandingsQuery {
             }
             EventResults results = results(List.of(round)).getOrDefault(eventId, EventResults.NONE);
             Map<Long, Map<Long, Integer>> places = overallFinalPositions(results.races(), results.firstOpenFinal());
+            Set<RoundClass> inLegs = finalsInLegs(eventId);
             Set<Long> classesScored = new HashSet<>();
             for (FinishedRace race : results.races()) {
                 if (!race.scores() || classesDone.contains(race.racingClassId())
-                        || !rules.scores(race.racingClassId())) {
+                        || !rules.scores(race.racingClassId())
+                        || inLegs.contains(new RoundClass(race.roundId(), race.racingClassId()))) {
                     continue;
                 }
                 classesScored.add(race.racingClassId());
                 Map<Long, Integer> points = new HashMap<>();
                 places.getOrDefault(race.raceId(), Map.of()).forEach((entryId, place) -> {
                     EntryRef entry = results.scoringEntries().get(entryId);
-                    boolean excluded = entry != null && entry.driverId() != null
-                            && rules.excluded(entry.driverId(), eventId);
-                    points.put(entryId, excluded ? 0 : rules.points(place));
+                    if (entry == null || entry.driverId() == null) {
+                        return; // no driver, so the standings award nothing
+                    }
+                    points.put(entryId, rules.excluded(entry.driverId(), eventId) ? 0 : rules.points(place));
                 });
                 if (!points.isEmpty()) {
                     pointsByRace.put(race.raceId(), points);
@@ -164,6 +168,18 @@ public class ChampionshipStandingsQuery {
             classesDone.addAll(classesScored);
         }
         return pointsByRace;
+    }
+
+    /** The rounds of finals at the event, by class, that run their A final in legs (a final with a heat above 1). */
+    private Set<RoundClass> finalsInLegs(Long eventId) {
+        return new HashSet<>(dsl.select(RACES.ROUND_ID, EVENT_CLASSES.RACING_CLASS_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
+                .where(ROUNDS.EVENT_ID.eq(eventId))
+                .and(ROUNDS.TYPE.eq("FINAL"))
+                .and(RACES.HEAT_NUMBER.gt(1))
+                .fetch(r -> new RoundClass(r.get(RACES.ROUND_ID), r.get(EVENT_CLASSES.RACING_CLASS_ID))));
     }
 
     /** How the championship scores: everything but the results themselves. */

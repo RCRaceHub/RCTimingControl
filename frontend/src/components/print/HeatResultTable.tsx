@@ -5,8 +5,8 @@ import { fmtMs } from '@/lib/format';
 
 /**
  * One heat's result as it prints: position, driver, car, the grid position the driver started from, laps, total
- * time, best and average lap and the gap. A Points column follows when the round is scored by points,
- * and a Champ. pts column for a final that earns championship points. Names are
+ * time, best and average lap and the gap. A Points column follows when the round is scored by points, and a
+ * Champ. pts column for a final that earns championship points. Names are
  * the real ones; this is for officials' paper only.
  */
 export function HeatResultTable({ race }: { race: EventResultsRace }) {
