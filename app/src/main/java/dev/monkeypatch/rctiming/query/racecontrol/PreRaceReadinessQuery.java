@@ -8,7 +8,9 @@ import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
@@ -23,7 +25,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
  * jOOQ read-side query for the pre-race readiness view (CTRL-02, CTRL-07).
  * Produces a PreRaceReadinessDto for a given raceId, containing:
  * - gridCall: drivers due on track in grid order for the target race, with RaceHub's arrival mark
- * - marshalDuty: drivers from the immediately preceding race with per-event absence counts
+ * - marshalDuty: drivers from the immediately preceding race with per-event absence counts, left out while a
+ *   bump-up final waits on the final below and without those who moved up once it has finished
  *
  * All reads go through DSLContext.
  */
@@ -124,6 +127,18 @@ public class PreRaceReadinessQuery {
         }
         List<MarshalDutyRowDto> marshalDuty;
 
+        // A final that takes bump-ups from the final below can't say who marshals it until that final finishes: the
+        // drivers who move up race instead. So the list is held back until then, and then leaves them out.
+        boolean marshalsPending = marshalRaceId != null && marshalsAwaitBumpUps(
+                marshalRaceId, raceId, targetRow.get(RACES.EVENT_CLASS_ID));
+        if (marshalsPending) {
+            marshalRaceId = null;
+        }
+        Set<Long> bumpedIn = marshalRaceId == null ? Set.of()
+                : new HashSet<>(dsl.select(RACE_ENTRIES.ENTRY_ID).from(RACE_ENTRIES)
+                        .where(RACE_ENTRIES.RACE_ID.eq(raceId)).and(RACE_ENTRIES.BUMPED.isTrue())
+                        .fetch(RACE_ENTRIES.ENTRY_ID));
+
         if (marshalRaceId != null) {
             // Build marshalDuty from the marshalling race's entries + absence counts
 
@@ -143,6 +158,7 @@ public class PreRaceReadinessQuery {
                     .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                     .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
                     .where(RACE_ENTRIES.RACE_ID.eq(marshalRaceId))
+                    .and(bumpedIn.isEmpty() ? DSL.noCondition() : RACE_ENTRIES.ENTRY_ID.notIn(bumpedIn))
                     .orderBy(RACE_ENTRIES.GRID_POSITION.asc().nullsLast(), ENTRIES.ID.asc())
                     .fetch(r -> new MarshalDutyRowDto(
                             r.get(RACE_ENTRIES.ENTRY_ID),
@@ -184,6 +200,23 @@ public class PreRaceReadinessQuery {
                         r.get(ENTRIES.RACEHUB_ARRIVAL)
                 ));
 
-        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, null, 0);
+        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty, marshalsPending, null, 0);
+    }
+
+    /**
+     * Whether the race that would marshal {@code raceId} is a lower final of the same class that has not finished
+     * while {@code raceId} has bump slots, so who moves up (and so can't marshal) is still unknown.
+     */
+    private boolean marshalsAwaitBumpUps(long marshalRaceId, long raceId, long eventClassId) {
+        Integer bumpSlots = dsl.select(RACES.BUMP_SLOTS).from(RACES).where(RACES.ID.eq(raceId))
+                .fetchOne(RACES.BUMP_SLOTS);
+        if (bumpSlots == null || bumpSlots <= 0) {
+            return false;
+        }
+        return dsl.fetchExists(dsl.selectOne().from(RACES)
+                .where(RACES.ID.eq(marshalRaceId))
+                .and(RACES.EVENT_CLASS_ID.eq(eventClassId))
+                .and(RACES.FINAL_LETTER.isNotNull())
+                .and(RACES.STATUS.ne("FINISHED")));
     }
 }

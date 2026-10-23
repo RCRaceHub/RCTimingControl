@@ -30,6 +30,8 @@ export type PreRaceReadinessDto = {
   firstRaceOfEvent: boolean;
   gridCall: GridCallSlotDto[];
   marshalDuty: MarshalDutyRowDto[];
+  /** True while the final below a bump-up final is unfinished: who moves up, and so can't marshal, isn't known. */
+  marshalsPending: boolean;
   startType: 'STAGGER' | 'GRID' | 'ROLLING' | null;
   staggerIntervalSeconds: number;
 };

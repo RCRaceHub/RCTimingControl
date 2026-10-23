@@ -183,6 +183,54 @@ public class PreRaceReadinessControllerIT extends AbstractIntegrationTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void getPreRaceReadiness_bumpUpFinal_holdsMarshalsUntilTheFinalBelowFinishesThenLeavesOutBumpedDrivers() {
+        Instant now = Instant.now();
+        Event event = saveEvent("Bump Event " + UUID.randomUUID(), now);
+        RacingClass rc = saveRacingClass("Buggy " + UUID.randomUUID().toString().substring(0, 6), now);
+        EventClass ec = saveEventClass(event.getId(), rc.getId(), now);
+        Round round = saveRound(event.getId(), RoundType.FINAL, 1, 1, now);
+        Race bFinal = saveRace(round.getId(), ec.getId(), 1, 1, now);
+        bFinal.setFinalLetter("B");
+        bFinal.setStatus(RaceStatus.RUNNING);
+        raceRepository.save(bFinal);
+        Race aFinal = saveRace(round.getId(), ec.getId(), 2, 2, now);
+        aFinal.setFinalLetter("A");
+        aFinal.setBumpSlots(2);
+        raceRepository.save(aFinal);
+        List<Long> bEntries = new java.util.ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            Long id = saveEntry(event.getId(), ec.getId(), now).getId();
+            saveRaceEntry(bFinal.getId(), id, i);
+            bEntries.add(id);
+        }
+        String url = "/api/v1/race-control/race/" + aFinal.getId() + "/pre-race-readiness";
+
+        Map<String, Object> waiting = restTemplate.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(directorHeaders()), Map.class).getBody();
+        assertThat(waiting.get("marshalsPending")).isEqualTo(true);
+        assertThat((List<?>) waiting.get("marshalDuty")).isEmpty();
+
+        bFinal.setStatus(RaceStatus.FINISHED);
+        raceRepository.save(bFinal);
+        for (int i = 0; i < 2; i++) {
+            RaceEntry bumped = new RaceEntry();
+            bumped.setRaceId(aFinal.getId());
+            bumped.setEntryId(bEntries.get(i));
+            bumped.setGridPosition(i + 1);
+            bumped.setBumped(true);
+            raceEntryRepository.save(bumped);
+        }
+
+        Map<String, Object> done = restTemplate.exchange(url, HttpMethod.GET,
+                new HttpEntity<>(directorHeaders()), Map.class).getBody();
+        assertThat(done.get("marshalsPending")).isEqualTo(false);
+        assertThat(((List<Map<String, Object>>) done.get("marshalDuty")).stream()
+                .map(r -> ((Number) r.get("entryId")).longValue()))
+                .containsExactlyInAnyOrderElementsOf(bEntries.subList(2, 5));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void getPreRaceReadiness_secondRace_returnsPreviousRaceDriversAsMarshalDuty() {
         // Schema: marshal_absences has UNIQUE(race_id, entry_id) — one absence per (race, entry).
         // To get missedThisEvent == 2 for a driver, they must have absences in 2 distinct races

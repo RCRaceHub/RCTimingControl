@@ -38,7 +38,25 @@ function NextStart({ autoRun }: { autoRun: AutoRunBoardDto | null | undefined })
 }
 
 /** A names list under a heading, or nothing when there is no one to list. */
-function NameList({ title, names, testId }: { title: string; names: string[]; testId: string }) {
+function NameList({
+  title,
+  names,
+  testId,
+  pendingText,
+}: {
+  title: string;
+  names: string[];
+  testId: string;
+  pendingText?: string;
+}) {
+  if (pendingText) {
+    return (
+      <div data-testid={testId}>
+        <h3 className="text-lg text-slate-400 lg:text-2xl">{title}</h3>
+        <p className="mt-1 text-2xl text-slate-400 lg:text-4xl">{pendingText}</p>
+      </div>
+    );
+  }
   if (names.length === 0) return null;
   return (
     <div data-testid={testId}>
@@ -78,6 +96,8 @@ export default function NowNextBoard() {
   const tickerIsCurrent = nextRace !== null && ticker?.nextRace === nextRace.label;
   const nextDrivers = tickerIsCurrent ? ticker.nextDrivers : [];
   const nextMarshals = tickerIsCurrent ? ticker.marshals : [];
+  const marshalsPendingText =
+    tickerIsCurrent && ticker.marshalsPending ? 'To be confirmed when the final below finishes' : undefined;
 
   if (isPending) {
     return (
@@ -126,7 +146,7 @@ export default function NowNextBoard() {
             <NextStart autoRun={nowNext?.autoRun} />
             <div className="mt-4 flex flex-col gap-4">
               <NameList title="Next drivers" names={nextDrivers} testId="board-next-drivers" />
-              <NameList title="Next marshals" names={nextMarshals} testId="board-next-marshals" />
+              <NameList title="Next marshals" names={nextMarshals} testId="board-next-marshals" pendingText={marshalsPendingText} />
             </div>
           </div>
         )}
@@ -151,7 +171,7 @@ export default function NowNextBoard() {
           <NextStart autoRun={nowNext?.autoRun} />
           <div className="mt-4 flex flex-col gap-4">
             <NameList title="Next drivers" names={nextDrivers} testId="board-next-drivers" />
-            <NameList title="Next marshals" names={nextMarshals} testId="board-next-marshals" />
+            <NameList title="Next marshals" names={nextMarshals} testId="board-next-marshals" pendingText={marshalsPendingText} />
           </div>
         </div>
       )}

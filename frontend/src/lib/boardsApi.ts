@@ -175,6 +175,8 @@ export type TickerDto = {
   nextRace: string | null;
   nextDrivers: string[];
   marshals: string[];
+  /** True while a bump-up final waits on the final below, so who marshals it isn't known yet. */
+  marshalsPending: boolean;
   topQualifiers: { className: string; driverName: string; bestLapMs: number | null }[];
 };
 

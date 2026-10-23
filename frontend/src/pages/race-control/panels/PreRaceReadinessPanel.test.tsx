@@ -17,6 +17,7 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
       eventId: 5,
       raceLabel: 'Qualifying 1 — Stock — Heat 1',
       firstRaceOfEvent: true,
+      marshalsPending: false,
       marshalDuty: [
         { entryId: 20, driverName: 'Max Marshal', carNumber: null, missedThisEvent: 0 },
         { entryId: 21, driverName: 'Lazy Larry', carNumber: null, missedThisEvent: 1 },
