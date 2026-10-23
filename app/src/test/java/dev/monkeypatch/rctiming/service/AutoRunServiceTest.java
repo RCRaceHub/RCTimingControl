@@ -158,6 +158,35 @@ class AutoRunServiceTest {
     }
 
     @Test
+    void refresh_countsALengthenedGapFromTheRealStartAfterAClampedOne() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        Instant began = clock.instant();
+        clock.advance(Duration.ofSeconds(40));
+        event.setAutoRunGapSeconds(18);
+        service.refresh(EVENT_ID);
+
+        event.setAutoRunGapSeconds(120);
+        var state = service.refresh(EVENT_ID);
+
+        assertThat(state.startAt()).isEqualTo(began.plusSeconds(120));
+    }
+
+    @Test
+    void refresh_doesNotPushBackAStartOnceTheGridIsCalled() {
+        addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
+        service.go(Actor.system("test"), EVENT_ID);
+        clock.advance(Duration.ofSeconds(160));
+        service.tick();
+        Instant start = service.state(EVENT_ID).startAt();
+
+        event.setAutoRunGapSeconds(600);
+        var state = service.refresh(EVENT_ID);
+
+        assertThat(state.startAt()).isEqualTo(start);
+    }
+
+    @Test
     void boardViewCountsDownWhileWaitingAndIsEmptyWhenOff() {
         addRace(1, RoundType.QUALIFIER, RaceStatus.PENDING);
         assertThat(service.boardView(EVENT_ID)).isEmpty();

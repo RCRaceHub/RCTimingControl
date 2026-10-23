@@ -56,13 +56,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class AutoRunService {
 
-    /** The least time left after a changed gap moves a countdown, so the start is not instant. */
-    static final int MIN_RETIMED_SECONDS = 5;
-
     private static final Logger log = LoggerFactory.getLogger(AutoRunService.class);
 
     /** The grid is called this long before the start. */
     static final int GRID_CALL_SECONDS = 30;
+    /** The least time left after a changed gap moves a countdown, so the start is not instant. */
+    static final int MIN_RETIMED_SECONDS = 5;
     /** Seconds before the start at which the time to the next race is announced, longest first. */
     static final int[] WARNING_SECONDS = {600, 300, 120, 60};
     /** A warning is only made when the gap is at least this much longer, so it does not talk over the last race. */
@@ -119,8 +118,13 @@ public class AutoRunService {
         int totalSeconds;
         boolean gridCalled;
         boolean leadInSent;
-        /** Whether the countdown is the event's gap, so a changed gap moves it; a lead-in for a race on the grid is not. */
+        /**
+         * Whether the countdown is the event's gap, so a changed gap moves it; a lead-in for a race on the grid
+         * is not. Read only under the service's monitor, with {@link #countdownBegan}.
+         */
         boolean gapCountdown;
+        /** When the gap countdown began, so a changed gap can be counted from there. */
+        Instant countdownBegan;
         final Set<Integer> announced = new HashSet<>();
         volatile HeldReason heldReason;
         volatile String heldMessage;
@@ -232,19 +236,23 @@ public class AutoRunService {
      * Applies changed settings and pushes the event's state to open race control pages. Runs on the request thread
      * of the settings save. A countdown already running keeps the start it counted from but takes the new gap: it
      * now ends the new gap after it began, and no sooner than {@link #MIN_RETIMED_SECONDS} from now, so shortening
-     * the gap to less than has already passed starts the race shortly rather than at once. Warnings that would now
+     * the gap to less than the time already counted starts the race shortly rather than at once. Warnings that would now
      * be too early are marked as given.
      */
     public synchronized AutoRunState refresh(long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
         Plan plan = plans.get(eventId);
         if (plan != null && plan.phase == Phase.WAITING && plan.gapCountdown && plan.startAt != null
+                && plan.countdownBegan != null
                 && plan.totalSeconds != event.getAutoRunGapSeconds()) {
             Instant now = clock.instant();
-            Instant began = plan.startAt.minusSeconds(plan.totalSeconds);
-            Instant moved = began.plusSeconds(event.getAutoRunGapSeconds());
+            Instant moved = plan.countdownBegan.plusSeconds(event.getAutoRunGapSeconds());
             Instant earliest = now.plusSeconds(MIN_RETIMED_SECONDS);
-            plan.startAt = moved.isBefore(earliest) ? earliest : moved;
+            Instant target = moved.isBefore(earliest) ? earliest : moved;
+            // Once the grid is called or the lead-in sent, the start only comes forward, never goes back
+            if (!(plan.gridCalled || plan.leadInSent) || target.isBefore(plan.startAt)) {
+                plan.startAt = target;
+            }
             plan.totalSeconds = event.getAutoRunGapSeconds();
             long left = secondsLeft(plan);
             for (int warning : WARNING_SECONDS) {
@@ -452,7 +460,8 @@ public class AutoRunService {
         // A race already on the grid still gets its lead-in
         plan.gapCountdown = !"GRID".equals(item.status());
         plan.totalSeconds = plan.gapCountdown ? event.getAutoRunGapSeconds() : leadInSeconds();
-        plan.startAt = clock.instant().plusSeconds(plan.totalSeconds);
+        plan.countdownBegan = clock.instant();
+        plan.startAt = plan.countdownBegan.plusSeconds(plan.totalSeconds);
         plan.gridCalled = "GRID".equals(item.status());
         plan.leadInSent = false;
         plan.announced.clear();
