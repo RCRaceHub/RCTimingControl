@@ -77,6 +77,7 @@ function row(position: number, driverName: string, lastLapMs: number): LiveTimin
     intervalLapsDown: 0,
     gapToLeaderMs: null,
     gapToAheadMs: null,
+    totalTimeMs: null,
   };
 }
 

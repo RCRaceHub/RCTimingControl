@@ -39,4 +39,13 @@ class LastLapTimeoutTest {
         assertThat(LastLapTimeout.windowReached(89_000, 300_000, 390_000)).isFalse();
         assertThat(LastLapTimeout.windowReached(90_000, 300_000, 390_000)).isTrue();
     }
+
+    @Test
+    void theCountdownIsWhatIsLeftOfTheWaitTheTimeoutJudges() {
+        // Clock expired 10 s ago with no lap since: 20 s of a 30 s wait remain
+        assertThat(LastLapTimeout.waitLeftMs(10_000, null, 30_000)).isEqualTo(20_000);
+        // A lap 4 s ago puts the wait back to 26 s
+        assertThat(LastLapTimeout.waitLeftMs(60_000, 4_000L, 30_000)).isEqualTo(26_000);
+        assertThat(LastLapTimeout.waitLeftMs(60_000, 40_000L, 30_000)).isZero();
+    }
 }

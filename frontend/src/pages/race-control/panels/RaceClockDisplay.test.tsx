@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RaceClockDisplay } from './RaceClockDisplay';
 import type { RaceClockDto } from '@/lib/boardsApi';
+import { getForcedClose } from '@/lib/boardsApi';
+
+vi.mock('@/lib/boardsApi', async (orig) => ({
+  ...(await orig<typeof import('@/lib/boardsApi')>()),
+  getForcedClose: vi.fn(),
+}));
 
 const clock = (over: Partial<RaceClockDto>): RaceClockDto => ({
   raceId: 1, status: 'RUNNING', elapsedMs: 0, durationMs: 300_000, remainingMs: 300_000, running: true, ...over,
@@ -45,5 +52,22 @@ describe('RaceClockDisplay', () => {
   it('shows nothing until the clock is read', () => {
     render(<RaceClockDisplay clock={undefined} readAt={0} />);
     expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+  });
+
+  it('counts down to the forced close once the race time is up', async () => {
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: 18_000 });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RaceClockDisplay clock={clock({ remainingMs: 0, elapsedMs: 305_000 })} readAt={Date.now()} />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByRole('timer', { name: 'Time until the race is closed' })).toHaveTextContent(
+      'Closes in0:1',
+    );
+  });
+
+  it('shows no forced close countdown while there is race time left', () => {
+    render(<RaceClockDisplay clock={clock({ remainingMs: 60_000 })} readAt={Date.now()} />);
+    expect(screen.queryByText('Closes in')).not.toBeInTheDocument();
   });
 });

@@ -22,6 +22,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
           <th className="py-2 pr-4">Driver</th>
           <th className="py-2 pr-4">Car</th>
           <th className="py-2 pr-4 text-right">Laps</th>
+          <th className="py-2 pr-4 text-right">Total</th>
           <th className="py-2 pr-4 text-right">Best lap</th>
           <th className="py-2 text-right">Gap</th>
         </tr>
@@ -33,6 +34,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
             <td className="py-3 pr-4 font-semibold">{row.driverName}<FinishedFlag /></td>
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
+            <td className="py-3 pr-4 text-right tabular-nums">{row.totalTimeMs > 0 ? fmtMs(row.totalTimeMs) : '—'}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
             <td className="py-3 text-right tabular-nums text-slate-300">{gap(row, leaderLaps)}</td>
           </tr>

@@ -63,6 +63,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
               <TableHead>Car</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead className="text-right">Laps</TableHead>
+              <TableHead className="text-right">Total Time</TableHead>
               <TableHead className="text-right">Last Lap</TableHead>
               <TableHead className="text-right">Best Lap</TableHead>
               <TableHead className="text-right">Interval</TableHead>
@@ -113,6 +114,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   )}
                 </TableCell>
                 <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
+                <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.lastLapMs)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
                 <TableCell className="text-right font-mono text-muted-foreground">

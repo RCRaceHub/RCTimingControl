@@ -51,6 +51,10 @@ public class LiveRaceState {
     Long lastLapCreditedAtMs = null;
     /** Decoder time, in milliseconds, of the first passing from an entry in the race; 0 until one crosses. */
     private long firstCrossingMs;
+    /** When the race started, in epoch milliseconds; 0 until known. A rolling start counts from the first crossing. */
+    private long startedAtMs;
+    /** Whether the race starts rolling, so total times run from {@link #firstCrossingMs} rather than the start. */
+    private boolean rollingStart;
     /** Server time, in epoch milliseconds, when the first car took the flag; null until one has. */
     Long firstFlaggedAtMs = null;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
@@ -66,6 +70,17 @@ public class LiveRaceState {
     final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
     /** Jump starts the referee has taken no action on. */
     final Set<Long> jumpStartDismissed = new HashSet<>();
+
+    /**
+     * Sets when the race started, for each row's total time. Called at state creation time.
+     *
+     * @param startedAtMs epoch milliseconds the race started, 0 when unknown
+     * @param rolling     whether the start is rolling, which counts from the first car's crossing instead
+     */
+    public synchronized void putRaceStart(long startedAtMs, boolean rolling) {
+        this.startedAtMs = startedAtMs;
+        this.rollingStart = rolling;
+    }
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
@@ -318,12 +333,19 @@ public class LiveRaceState {
                     intervalLapsDown,
                     gapToLeader,
                     gapToAhead,
+                    totalTimeMs(pos),
                     flagged.contains(pos.getEntryId())
             ));
             prevLastPassing = pos.getLastPassingTimeMs();
             prevLaps = pos.getLapsCompleted();
         }
         return result;
+    }
+
+    /** Start to the car's last crossing, as the result keeps it; null before it has crossed or with no known start. */
+    private Long totalTimeMs(LiveRacePosition pos) {
+        long start = rollingStart ? firstCrossingMs : startedAtMs;
+        return start > 0 && pos.getLastPassingTimeMs() > start ? pos.getLastPassingTimeMs() - start : null;
     }
 
     public List<LapPassingEvent> getLapHistory() {

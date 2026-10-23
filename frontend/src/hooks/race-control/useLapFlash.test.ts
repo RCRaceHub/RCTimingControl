@@ -7,7 +7,7 @@ function row(entryId: number, overrides: Partial<LiveTimingRowDto> = {}): LiveTi
   return {
     entryId, driverName: `Driver ${entryId}`, carNumber: null, position: entryId, lapsCompleted: 0, lastPassingTimeMs: 0,
     lastLapMs: null, bestLapMs: null, avgLapMs: null, overallFastestLapMs: null, lapsDown: 0,
-    intervalLapsDown: 0, gapToLeaderMs: null, gapToAheadMs: null, ...overrides,
+    intervalLapsDown: 0, gapToLeaderMs: null, gapToAheadMs: null, totalTimeMs: null, ...overrides,
   };
 }
 

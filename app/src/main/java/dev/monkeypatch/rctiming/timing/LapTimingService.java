@@ -101,6 +101,7 @@ public class LapTimingService {
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
+            raceClockService.startOf(id).ifPresent(start -> state.putRaceStart(start.startedAtMs(), start.rolling()));
             return state;
         });
     }

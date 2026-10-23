@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.LastLapTimeout;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.RaceClockService;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -48,6 +49,7 @@ public class BoardController {
     private final AutoRunService autoRunService;
     private final BoardTickerService boardTickerService;
     private final FinalLegsService finalLegsService;
+    private final LastLapTimeout lastLapTimeout;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -57,7 +59,8 @@ public class BoardController {
                            QualifyingTableService qualifyingTableService,
                            AutoRunService autoRunService,
                            BoardTickerService boardTickerService,
-                           FinalLegsService finalLegsService) {
+                           FinalLegsService finalLegsService,
+                           LastLapTimeout lastLapTimeout) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -67,6 +70,7 @@ public class BoardController {
         this.autoRunService = autoRunService;
         this.boardTickerService = boardTickerService;
         this.finalLegsService = finalLegsService;
+        this.lastLapTimeout = lastLapTimeout;
     }
 
     /**
@@ -145,6 +149,19 @@ public class BoardController {
         return raceClockService.clock(raceId)
                 .orElseThrow(() -> new EntityNotFoundException("Race not found: " + raceId));
     }
+
+    /**
+     * Time left before the race is closed by force once its clock has run out, for the countdown on the cockpit and
+     * referee screens. {@code closesInMs} is null while no limit is counting down. A lap that counts puts it back,
+     * so the screen asks again every few seconds.
+     */
+    @GetMapping("/races/{raceId}/closes-in")
+    public ForcedCloseDto closesIn(@PathVariable long raceId) {
+        return new ForcedCloseDto(lastLapTimeout.closesInMs(raceId).orElse(null));
+    }
+
+    /** See {@link #closesIn}. */
+    public record ForcedCloseDto(Long closesInMs) {}
 
     /**
      * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the

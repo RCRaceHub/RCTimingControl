@@ -299,7 +299,7 @@ class RunningOrderAnnouncementServiceTest {
                 driverName,
                 null,
                 position,
-                0, 0L, null, null, null, null, 0, 0, null, null, false
+                0, 0L, null, null, null, null, 0, 0, null, null, null, false
         );
     }
 }

@@ -17,6 +17,7 @@ export function BoardLiveTable({ rows }: { rows: LiveTimingRowDto[] }) {
           <th className="py-2 pr-4">Car</th>
           <th className="py-2 pr-4">Driver</th>
           <th className="py-2 pr-4 text-right">Laps</th>
+          <th className="py-2 pr-4 text-right">Total</th>
           <th className="py-2 pr-4 text-right">Last</th>
           <th className="py-2 pr-4 text-right">Best</th>
           <th className="py-2 text-right">Gap</th>
@@ -29,6 +30,7 @@ export function BoardLiveTable({ rows }: { rows: LiveTimingRowDto[] }) {
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 font-semibold">{row.driverName}{row.finished && <FinishedFlag />}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
+            <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
             <td className="py-3 text-right tabular-nums text-slate-300">{gap(row)}</td>
