@@ -73,6 +73,7 @@ class RefereeServiceTest {
         assertThat(penalty.getPenaltyType()).isEqualTo(PenaltyType.LAP);
         verify(lapTimingService).applyLapPenalty(7L, 11L, 2);
         verify(lapTimingService).dismissJumpStart(7L, 11L);
+        verify(audit, never()).entry(any(), eq("JUMP_START_PENALISED"));
         verifyNoInteractions(eventPublisher);
     }
 
