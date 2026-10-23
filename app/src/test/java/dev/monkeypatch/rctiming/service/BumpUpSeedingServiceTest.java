@@ -211,6 +211,26 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
+    void applyBumpUpResults_takesTheNextFreeCarNumberWhenTheGridPlacesNumberIsTaken() {
+        Race bFinal = finalRace(200L, "B");
+        Race aFinal = finalRace(201L, "A");
+        aFinal.setBumpSlots(2);
+        when(raceRepository.findById(bFinal.getId())).thenReturn(Optional.of(bFinal));
+        when(raceRepository.findByEventClassIdAndFinalLetter(10L, "A")).thenReturn(List.of(aFinal));
+        List<RaceEntry> grid = new ArrayList<>(seededGrid(aFinal, 8));
+        grid.get(0).setCarNumber(9);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(grid);
+
+        service().applyBumpUpResults(bFinal.getId(), List.of(501L, 502L, 503L));
+
+        ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).extracting(RaceEntry::getGridPosition).containsExactly(9, 10);
+        assertThat(captor.getAllValues()).extracting(RaceEntry::getCarNumber).containsExactly(10, 11)
+                .doesNotHaveDuplicates();
+    }
+
+    @Test
     void zombieRound_takesOnePlaceFromTheMainBelowAIntoTheZombieGrid() {
         Race bFinal = finalRace(200L, "B");
         Race aFinal = finalRace(201L, "A");
