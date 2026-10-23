@@ -120,8 +120,8 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getEntryId)
                 .containsExactly(buggies.get(19), buggies.get(18));
         assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getGridPosition).containsExactly(9, 10);
-        // Bumped drivers keep their qualifying-position car numbers from the B final
-        assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getCarNumber).containsExactly(20, 19);
+        // The bump-ups are numbered by their place on the A grid, in finishing order, not by qualifying rank
+        assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getCarNumber).containsExactly(9, 10);
 
         // A repeat (race finished again after a resume) promotes nobody else
         assertThat(bumpUpSeedingService.applyBumpUpResults(bFinal.getId(), bFinishingOrder)).isEmpty();

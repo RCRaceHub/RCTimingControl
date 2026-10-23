@@ -5,11 +5,13 @@ import { FinalsLineupPanel } from './FinalsLineupPanel';
 
 const mockGet = vi.fn();
 const mockCalculate = vi.fn();
+const mockCalculateAll = vi.fn();
 const mockMove = vi.fn();
 const mockSwap = vi.fn();
 vi.mock('@/lib/raceControlApi', () => ({
   getFinalsLineup: (...args: unknown[]) => mockGet(...args),
   calculateFinals: (...args: unknown[]) => mockCalculate(...args),
+  calculateAllFinals: (...args: unknown[]) => mockCalculateAll(...args),
   moveFinalsDriver: (...args: unknown[]) => mockMove(...args),
   swapFinalsDrivers: (...args: unknown[]) => mockSwap(...args),
 }));
@@ -48,6 +50,7 @@ describe('FinalsLineupPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCalculate.mockResolvedValue(undefined);
+    mockCalculateAll.mockResolvedValue({ calculated: [7], skipped: {} });
     mockMove.mockResolvedValue(undefined);
     mockSwap.mockResolvedValue(undefined);
   });
@@ -67,6 +70,15 @@ describe('FinalsLineupPanel', () => {
     fireEvent.change(cars, { target: { value: '4' } });
     fireEvent.click(screen.getByRole('button', { name: 'Calculate finals' }));
     await waitFor(() => expect(mockCalculate).toHaveBeenCalledWith(1, 7, 4));
+  });
+
+  it('calculates the finals of every class at once', async () => {
+    mockGet.mockResolvedValue(lineup());
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderPanel();
+    fireEvent.click(await screen.findByRole('button', { name: 'Calculate finals for all classes' }));
+    await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(1));
+    confirm.mockRestore();
   });
 
   it('cannot calculate until qualifying is complete', async () => {

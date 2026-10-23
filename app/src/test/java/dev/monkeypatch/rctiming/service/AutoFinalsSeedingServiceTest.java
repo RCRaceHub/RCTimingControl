@@ -1,12 +1,29 @@
 package dev.monkeypatch.rctiming.service;
 
+import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
+import dev.monkeypatch.rctiming.domain.format.EventClass;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
 import dev.monkeypatch.rctiming.domain.format.ShikabaneConfig;
 import dev.monkeypatch.rctiming.domain.format.StartType;
+import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AutoFinalsSeedingServiceTest {
 
@@ -61,5 +78,42 @@ class AutoFinalsSeedingServiceTest {
         // 25 drivers, three finals: ten cars each fits, and the grid grows if the field would not
         assertThat(AutoFinalsSeedingService.layout(fixed, 25, 3, null)).containsExactly(10, 0);
         assertThat(AutoFinalsSeedingService.layout(fixed, 35, 3, null)).containsExactly(12, 0);
+    }
+
+    @Test
+    void reseedAll_leavesAloneTheClassesThatAreNotReadyAndSaysWhy() {
+        RaceRepository races = mock(RaceRepository.class);
+        EventClassRepository classes = mock(EventClassRepository.class);
+        BumpUpSeedingService bumpUp = mock(BumpUpSeedingService.class);
+        EventClass noFinals = eventClass(1L);
+        EventClass started = eventClass(2L);
+        EventClass unfinished = eventClass(3L);
+        when(classes.findByEventId(9L)).thenReturn(List.of(noFinals, started, unfinished));
+        when(races.findByEventClassIdAndRoundType(1L, RoundType.FINAL)).thenReturn(List.of());
+        when(races.findByEventClassIdAndRoundType(2L, RoundType.FINAL)).thenReturn(List.of(race(RaceStatus.RUNNING)));
+        when(races.findByEventClassIdAndRoundType(3L, RoundType.FINAL)).thenReturn(List.of(race(RaceStatus.PENDING)));
+        when(races.findByEventClassIdAndRoundType(3L, RoundType.QUALIFIER)).thenReturn(List.of(race(RaceStatus.RUNNING)));
+        var service = new AutoFinalsSeedingService(races, classes, null, bumpUp, null, null);
+
+        var result = service.reseedAll(Actor.system("test"), 9L);
+
+        assertThat(result.calculated()).isEmpty();
+        assertThat(result.skipped()).containsOnlyKeys(1L, 2L, 3L);
+        assertThat(result.skipped().get(3L)).contains("Qualifying");
+        verify(bumpUp, never()).seedFinals(any(), any(), anyInt(),
+                anyInt(), anyInt(),
+                anyBoolean());
+    }
+
+    private static EventClass eventClass(long id) {
+        EventClass eventClass = new EventClass();
+        eventClass.setId(id);
+        return eventClass;
+    }
+
+    private static Race race(RaceStatus status) {
+        Race race = new Race();
+        race.setStatus(status);
+        return race;
     }
 }

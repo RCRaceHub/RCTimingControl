@@ -579,6 +579,14 @@ export async function calculateFinals(
   await api.post(`/api/v1/race-control/event/${eventId}/qualifying/${eventClassId}/seed-finals`, { carsPerFinal });
 }
 
+export type CalculateAllFinalsResult = { calculated: number[]; skipped: Record<string, string> };
+
+/** Calculates the finals of every class of the event that is ready; the others are left alone and named in `skipped`. */
+export async function calculateAllFinals(eventId: number): Promise<CalculateAllFinalsResult> {
+  const { data } = await api.post<CalculateAllFinalsResult>(`/api/v1/race-control/event/${eventId}/seed-all-finals`);
+  return data;
+}
+
 export type FinalsLineupDriverDto = {
   entryId: number;
   driverName: string;

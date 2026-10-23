@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,6 @@ public class AutoFinalsSeedingService {
         this.audit = audit;
     }
 
-    /** Every qualifying heat is finished and at least one was not abandoned, so there are results to seed from. */
     /** Whether every qualifying heat is finished, as {@link FinalsLineupService} shows it. */
     boolean qualifyingComplete(Long eventClassId) {
         List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER);
@@ -66,9 +66,9 @@ public class AutoFinalsSeedingService {
 
     /**
      * Calculates the class's finals from the qualifying results, on an official's say, the first time or again after
-     * a result changed (a heat re-run or corrected), which also throws away any hand edits to the line-ups. Refused until every qualifying heat is finished,
-     * since a driver who is only
-     * in an unfinished heat would be left out of every final, and once a final has started.
+     * a result changed (a heat re-run or corrected), which also throws away any hand edits to the line-ups. Refused
+     * until every qualifying heat is finished, since a driver who is only in an unfinished heat would be left out of
+     * every final, and once a final has started.
      *
      * @param carsPerFinal cars on each final's grid, or null for the format's own grid size (an even split of the
      *                     field when the format has none); raised if the field would not fit
@@ -90,6 +90,59 @@ public class AutoFinalsSeedingService {
                 "Every qualifying heat for this class must be finished, and not all abandoned, before its finals are seeded");
         }
         seed(actor, eventClassId, carsPerFinal);
+    }
+
+    /**
+     * Calculates the finals of every class of the event that is ready, in one go, with each class's own default
+     * layout (the format's grid size, or an even split). A class is ready when it has finals, every qualifying heat is
+     * finished (not all abandoned) and no final has started; any other class is left alone and named in the result,
+     * so one class that is not ready never stops the rest. If a ready class then fails to calculate, the whole call is
+     * rolled back and nothing changes. Like {@link #reseed}, it throws away hand edits to the
+     * line-ups of the classes it calculates. Runs in one transaction on the request thread.
+     *
+     * @return the ids of the classes calculated and, for each class left alone, why
+     * @throws EntityNotFoundException if the event has no classes
+     */
+    @Transactional
+    public CalculateAllResult reseedAll(Actor actor, Long eventId) {
+        List<EventClass> classes = eventClassRepository.findByEventId(eventId);
+        if (classes.isEmpty()) {
+            throw new EntityNotFoundException("Event " + eventId + " has no classes");
+        }
+        List<Long> calculated = new ArrayList<>();
+        Map<Long, String> skipped = new LinkedHashMap<>();
+        for (EventClass eventClass : classes) {
+            Long classId = eventClass.getId();
+            List<Race> finals = raceRepository.findByEventClassIdAndRoundType(classId, RoundType.FINAL);
+            if (finals.isEmpty()) {
+                skipped.put(classId, "No finals to calculate");
+            } else if (finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
+                skipped.put(classId, "A final has already started");
+            } else if (raceRepository.findByEventClassIdAndRoundType(classId, RoundType.QUALIFIER).stream()
+                    .allMatch(q -> q.getStatus() == RaceStatus.FINISHED && q.getAbandonedAt() != null)
+                    && qualifyingRaceCount(classId) > 0) {
+                skipped.put(classId, "Every qualifying heat was abandoned");
+            } else if (!qualifyingComplete(classId)) {
+                skipped.put(classId, "Qualifying is not finished");
+            } else {
+                seed(actor, classId, null);
+                calculated.add(classId);
+            }
+        }
+        return new CalculateAllResult(calculated, skipped);
+    }
+
+    private int qualifyingRaceCount(Long eventClassId) {
+        return raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER).size();
+    }
+
+    /**
+     * What {@link #reseedAll} did.
+     *
+     * @param calculated ids of the event classes whose finals were calculated
+     * @param skipped    event class id to the reason that class was left alone
+     */
+    public record CalculateAllResult(List<Long> calculated, Map<Long, String> skipped) {
     }
 
     private void seed(Actor actor, Long eventClassId, Integer carsPerFinal) {
