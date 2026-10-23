@@ -120,15 +120,23 @@ public class QualifyingStandingsService {
     /**
      * The points each driver scored in every scored round of a round by round class, by round id and then entry id,
      * for showing a heat's points on its result. A round with a heat still to run, or whose heats were all
-     * abandoned, is left out; so is a driver who was not on the round's grid. Empty for any other qualifying type.
+     * abandoned, is left out; so is a driver who was not on the round's grid. Empty for any other qualifying type, or
+     * when the class's format cannot be read.
      * The points are the round's own, before any drop for "best X from Y".
      */
     public Map<Long, Map<Long, Integer>> roundPointsFor(Long eventClassId) {
-        Optional<RoundRules> rules = roundByRoundRules(eventClassId);
-        if (rules.isEmpty()) {
+        ScoredRounds scored;
+        try {
+            Optional<RoundRules> rules = roundByRoundRules(eventClassId);
+            if (rules.isEmpty()) {
+                return Map.of();
+            }
+            scored = scoreRounds(eventClassId, rules.get());
+        } catch (RuntimeException e) {
+            // Points are an extra on a result, so a class whose format cannot be read just shows none
+            log.warn("Could not score the rounds of class {} for its heat results: {}", eventClassId, e.getMessage());
             return Map.of();
         }
-        ScoredRounds scored = scoreRounds(eventClassId, rules.get());
         Map<Long, Map<Long, Integer>> points = new HashMap<>();
         for (int i = 0; i < scored.roundIds().size(); i++) {
             Map<Long, Integer> byEntry = new HashMap<>();
