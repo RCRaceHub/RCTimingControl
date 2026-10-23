@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.track;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DecoderLoopsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops.DECODE
 /** Repository for {@link DecoderLoop} ({@code decoder_loops}); {@link TrackRepository} saves them with their track. */
 @Repository
 public class DecoderLoopRepository extends JooqRepository<DecoderLoop, DecoderLoopsRecord> {
+
+    private static final DecoderLoopMapper MAPPER = Mappers.getMapper(DecoderLoopMapper.class);
 
     public DecoderLoopRepository(DSLContext dsl) {
         super(dsl, DECODER_LOOPS, DECODER_LOOPS.ID);
@@ -23,25 +26,12 @@ public class DecoderLoopRepository extends JooqRepository<DecoderLoop, DecoderLo
 
     @Override
     protected DecoderLoop toEntity(DecoderLoopsRecord r) {
-        DecoderLoop loop = new DecoderLoop();
-        loop.setId(r.getId());
-        loop.setTrackId(r.getTrackId());
-        loop.setLoopId(r.getLoopId());
-        loop.setDisplayName(r.getDisplayName());
-        loop.setLoopType(r.getLoopType() == null ? null : LoopType.valueOf(r.getLoopType()));
-        loop.setScoringLoop(r.getIsScoringLoop());
-        loop.setCreatedAt(r.getCreatedAt());
-        return loop;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(DecoderLoop loop, DecoderLoopsRecord r) {
-        r.setTrackId(loop.getTrackId());
-        r.setLoopId(loop.getLoopId());
-        r.setDisplayName(loop.getDisplayName());
-        r.setLoopType(loop.getLoopType() == null ? null : loop.getLoopType().name());
-        r.setIsScoringLoop(loop.isScoringLoop());
-        r.setCreatedAt(loop.getCreatedAt());
+        MAPPER.toRecord(loop, r);
     }
 
     @Override

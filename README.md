@@ -38,6 +38,7 @@ Then open **http://localhost:8080** and sign in as `admin@example.com` / `trial1
 | `frontend/` | React 18 + Vite + Tailwind + shadcn/ui — admin panel, race control, spectator boards and public results |
 | `decoder-simulator/` | Fake AMB decoder over TCP for development and trying the app out (generative and playback modes); the app runs it with `simulate` |
 | `decoder-protocol/` | Shared AMB/MyLaps decoder protocol parsing (RC-4 text; P3 binary is deferred) — used by `app/` and `decoder-simulator/` |
+| `mapstruct-jooq/` | Compile-time plugin that lets MapStruct map jOOQ records to entities ([docs/development.md](docs/development.md)) |
 | `docker-compose.yml` | Piper (TTS), optional, for announcer voices in development. The database is a SQLite file and club logos and TTS clips are stored on local disk, so nothing else needs Docker. |
 | `docker/`, `docker-compose.demo.yml`, `docker-compose.club.yml` | The app's Docker image, the demo with a simulated decoder, and the club's own server with announcer voices ([docs/docker.md](docs/docker.md)) |
 

@@ -189,7 +189,7 @@ app/src/main/java/dev/monkeypatch/rctiming/
 └── config/              # Async, SPA serving, storage, TTS, WebSocket (STOMP on /ws/timing)
 ```
 
-`decoder-protocol/` holds the pure RC-4 parser, and `decoder-simulator/` the fake decoder and the live feed test relay.
+`decoder-protocol/` holds the pure RC-4 parser, and `decoder-simulator/` the fake decoder and the live feed test relay. `mapstruct-jooq/` is a small compile-time plugin for MapStruct (see "Mapping rows to entities" below); it is not part of the running app.
 
 ---
 
@@ -329,6 +329,16 @@ With Hibernate gone, nothing checks the schema against the entities at startup (
 - **Generated sources.** Compiling `:app` runs Flyway's migrations into a scratch SQLite file and regenerates the jOOQ classes in `app/src/generated/jooq` from it. A renamed or removed column then breaks the build wherever a repository or query uses it. Commit the regenerated sources with the migration; CI builds with `-x generateJooq`, so it compiles against the committed copy.
 - **Save-and-reload tests.** Each repository has an integration test that saves an entity with every field set, reloads it and changes every field (`persistence/RoundTrip.assertSavedAndReloaded`). A column missing from `toRecord` or `toEntity` fails it. A new column needs a line in the repository and in its test.
 - **Real migrations in tests.** The integration tests run against a SQLite file built by the same migrations, so constraints and defaults are the real ones.
+
+### Mapping rows to entities
+
+A repository moves an entity to and from its table's record with a MapStruct mapper instead of a setter per column. The mapper is a package-private interface next to the repository, such as `ClubProfileMapper`; MapStruct generates its implementation during compilation, and the repository gets it from `Mappers.getMapper`.
+
+- `toEntity(record)` and `toRecord(entity, @MappingTarget record)` match properties by name. `id` is ignored in `toRecord`, because `JooqRepository` handles it.
+- `unmappedTargetPolicy = ERROR` makes a column with no entity property (or the reverse) a compile error, so the mapper keeps the safety the hand-written code had. The save-and-reload tests still apply.
+- Where names differ, add an `@Mapping` (`DecoderLoopMapper` maps `isScoringLoop` to `scoringLoop`). Enums stored as text convert on their own. A JSON column uses a `default` method in the mapper that calls its `JsonTextConverter`, as `ClubProfileMapper` does for the audio settings.
+- `mapstruct-jooq/` makes MapStruct ignore jOOQ's fluent `value1(..)` methods, which it would otherwise take for settable properties. It does this for every mapper in `:app`, so a mapper onto a fluent or builder-style target would need its own handling.
+- A repository that has not been moved still writes `toEntity` and `toRecord` by hand; the two styles can mix.
 
 Moving to another database means:
 

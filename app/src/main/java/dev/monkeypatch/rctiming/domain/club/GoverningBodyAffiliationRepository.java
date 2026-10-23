@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.club;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.GoverningBodyAffiliationsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffiliations.GOVERNING_BODY_AFFILIATIONS;
@@ -12,27 +13,20 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffili
 public class GoverningBodyAffiliationRepository
         extends JooqRepository<GoverningBodyAffiliation, GoverningBodyAffiliationsRecord> {
 
+    private static final GoverningBodyAffiliationMapper MAPPER = Mappers.getMapper(GoverningBodyAffiliationMapper.class);
+
     public GoverningBodyAffiliationRepository(DSLContext dsl) {
         super(dsl, GOVERNING_BODY_AFFILIATIONS, GOVERNING_BODY_AFFILIATIONS.ID);
     }
 
     @Override
     protected GoverningBodyAffiliation toEntity(GoverningBodyAffiliationsRecord r) {
-        GoverningBodyAffiliation a = new GoverningBodyAffiliation();
-        a.setId(r.getId());
-        a.setCode(r.getCode());
-        a.setDisplayName(r.getDisplayName());
-        a.setMembershipRequired(r.getMembershipRequired());
-        a.setCreatedAt(r.getCreatedAt());
-        return a;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(GoverningBodyAffiliation a, GoverningBodyAffiliationsRecord r) {
-        r.setCode(a.getCode());
-        r.setDisplayName(a.getDisplayName());
-        r.setMembershipRequired(a.isMembershipRequired());
-        r.setCreatedAt(a.getCreatedAt());
+        MAPPER.toRecord(a, r);
     }
 
     @Override

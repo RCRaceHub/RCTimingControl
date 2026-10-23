@@ -60,6 +60,11 @@ dependencies {
     // Checks Results Export v1 documents against their published JSON schema (#27)
     testImplementation("com.networknt:json-schema-validator:1.5.8")
 
+    // Generates the record <-> entity mappers at compile time (see docs/development.md, "Mapping")
+    implementation("org.mapstruct:mapstruct:1.6.3")
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
+    annotationProcessor(project(":mapstruct-jooq"))
+
     jooqGenerator("org.xerial:sqlite-jdbc:3.53.4.0")
     jooqGenerator("org.slf4j:slf4j-simple:2.0.20")
 }
