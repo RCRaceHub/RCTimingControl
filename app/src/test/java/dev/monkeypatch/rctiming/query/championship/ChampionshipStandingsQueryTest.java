@@ -325,6 +325,31 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     }
 
     /** One finished A final at a new event linked as round {@code roundNum}, with a driver in the given place. */
+    @Test
+    void finalPointsForGivesEachFinalistThePointsOfTheirPlaceAndNothingForAnEventOutsideAChampionship() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        User winner = makeUser("Final", "Winner");
+        User second = makeUser("Final", "Second");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Final-points-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round finalRound = makeRound(event.getId(), RoundType.FINAL, 1);
+        Race fin = makeRace(finalRound.getId(), ecId, "A", 1);
+        Entry first = makeEntry(winner.getId(), event.getId(), ecId);
+        Entry other = makeEntry(second.getId(), event.getId(), ecId);
+        makeRaceEntry(fin.getId(), first.getId());
+        makeRaceEntry(fin.getId(), other.getId());
+        makeSnapshot(fin.getId(), "[" + resultRow(first.getId(), 1, 10, 6000) + ","
+                + resultRow(other.getId(), 2, 10, 6100) + "]");
+
+        Map<Long, Map<Long, Integer>> points = query.finalPointsFor(event.getId());
+
+        assertThat(points.get(fin.getId())).containsEntry(first.getId(), 10).containsEntry(other.getId(), 8);
+        assertThat(query.finalPointsFor(makeEvent("No-championship-event").getId())).isEmpty();
+    }
+
     private void finishRound(Championship champ, int roundNum, User driver, int position) {
         Event event = makeEvent("Event-" + roundNum + "-" + UUID.randomUUID().toString().substring(0, 6));
         linkEventToChampionship(champ.getId(), event.getId(), roundNum);

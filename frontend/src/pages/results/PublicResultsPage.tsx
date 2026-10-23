@@ -81,6 +81,8 @@ export default function PublicResultsPage() {
   }
 
   const hasPoints = data.positions.some((r) => r.points != null);
+  const hasChampionshipPoints = data.positions.some((r) => r.championshipPoints != null);
+  const columns = 7 + (hasPoints ? 1 : 0) + (hasChampionshipPoints ? 1 : 0);
 
   return (
     <div className="p-8 max-w-3xl mx-auto print:p-4">
@@ -113,6 +115,7 @@ export default function PublicResultsPage() {
             <th className="text-right text-sm font-semibold py-2 pr-4">Time</th>
             <th className="text-right text-sm font-semibold py-2 pr-4">Best</th>
             {hasPoints && <th className="text-right text-sm font-semibold py-2 pr-4">Points</th>}
+            {hasChampionshipPoints && <th className="text-right text-sm font-semibold py-2 pr-4">Champ. pts</th>}
             <th className="w-6" />
           </tr>
         </thead>
@@ -133,13 +136,16 @@ export default function PublicResultsPage() {
                 </td>
                 <td className="py-2 pr-4 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
                 {hasPoints && <td className="py-2 pr-4 text-right font-mono">{row.points ?? '—'}</td>}
+                {hasChampionshipPoints && (
+                  <td className="py-2 pr-4 text-right font-mono">{row.championshipPoints ?? '—'}</td>
+                )}
                 <td className="py-2 pl-2 text-right text-muted-foreground text-xs">
                   {expandedEntryId === row.entryId ? '▲' : '▼'}
                 </td>
               </tr>
               {expandedEntryId === row.entryId && (
                 <tr key={`${row.entryId}-laps`} className="bg-muted/30">
-                  <td colSpan={hasPoints ? 8 : 7} className="px-4 py-2">
+                  <td colSpan={columns} className="px-4 py-2">
                     <LapTimesPanel entryId={row.entryId} lapHistory={data.lapHistory} />
                   </td>
                 </tr>

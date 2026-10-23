@@ -18,8 +18,9 @@ public record ResultSnapshotDto(
 ) {
     /**
      * One driver's line in a result. {@code points} is the driver's points for the race when its round is scored by
-     * points (a qualifying heat of a low-points class); it is never stored, only filled in when a result is read
-     * ({@code ResultSnapshotQuery}), and is null otherwise.
+     * points (a qualifying heat of a low-points class), and {@code championshipPoints} is what the driver's place in
+     * the event's finals is worth in the championship the event belongs to (a final of a class that scores). Neither
+     * is stored: both are filled in when a result is read ({@code ResultSnapshotQuery}) and are null otherwise.
      */
     public record ResultRow(
             int position,
@@ -31,19 +32,26 @@ public record ResultSnapshotDto(
             long totalTimeMs,
             Long bestLapMs,
             Long gapToLeaderMs,
-            Integer points
+            Integer points,
+            Integer championshipPoints
     ) {
         /** A row with no points, as a race is stored. */
         public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
                          int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs) {
             this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
-                    gapToLeaderMs, null);
+                    gapToLeaderMs, null, null);
         }
 
-        /** This row with the given points. */
+        /** This row with the given round points. */
         public ResultRow withPoints(Integer points) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints);
+        }
+
+        /** This row with the given championship points. */
+        public ResultRow withChampionshipPoints(Integer championshipPoints) {
+            return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints);
         }
     }
 

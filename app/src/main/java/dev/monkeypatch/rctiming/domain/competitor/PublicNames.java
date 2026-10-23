@@ -42,7 +42,8 @@ public class PublicNames {
         return rows.stream()
                 .map(r -> new ResultRow(r.position(), r.entryId(), r.competitorId(),
                         snapshot.of(r.competitorId(), r.driverName(), r.carNumber()), r.carNumber(),
-                        r.lapsCompleted(), r.totalTimeMs(), r.bestLapMs(), r.gapToLeaderMs(), r.points()))
+                        r.lapsCompleted(), r.totalTimeMs(), r.bestLapMs(), r.gapToLeaderMs(), r.points(),
+                        r.championshipPoints()))
                 .toList();
     }
 
