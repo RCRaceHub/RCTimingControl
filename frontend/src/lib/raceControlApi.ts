@@ -59,6 +59,8 @@ export type ResultRow = {
   totalTimeMs: number;
   bestLapMs: number | null;
   gapToLeaderMs: number | null;
+  /** Points scored in the race's round, for a qualifying heat of a low-points class; absent or null otherwise. */
+  points?: number | null;
 };
 
 export type PositionAtLap = {

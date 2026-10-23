@@ -118,6 +118,27 @@ public class QualifyingStandingsService {
     }
 
     /**
+     * The points each driver scored in every scored round of a round by round class, by round id and then entry id,
+     * for showing a heat's points on its result. A round with a heat still to run, or whose heats were all
+     * abandoned, is left out; so is a driver who was not on the round's grid. Empty for any other qualifying type.
+     * The points are the round's own, before any drop for "best X from Y".
+     */
+    public Map<Long, Map<Long, Integer>> roundPointsFor(Long eventClassId) {
+        Optional<RoundRules> rules = roundByRoundRules(eventClassId);
+        if (rules.isEmpty()) {
+            return Map.of();
+        }
+        ScoredRounds scored = scoreRounds(eventClassId, rules.get());
+        Map<Long, Map<Long, Integer>> points = new HashMap<>();
+        for (int i = 0; i < scored.roundIds().size(); i++) {
+            Map<Long, Integer> byEntry = new HashMap<>();
+            scored.rounds().get(i).forEach((entryId, score) -> byEntry.put(entryId, score.points()));
+            points.put(scored.roundIds().get(i), byEntry);
+        }
+        return points;
+    }
+
+    /**
      * How a round by round class is scored: {@code bestRounds} is the number of rounds that count (0 for all of
      * them), {@code splitTiedPlaces} gives each car its own place in a round even on identical laps and time, and
      * {@code brca} applies the BRCA rules (flat points for a driver with no laps, and its tie-break).
@@ -175,6 +196,43 @@ public class QualifyingStandingsService {
      */
     private List<QualifyingResult> roundByRound(Long eventClassId, RoundRules rules, Map<Long, Integer> lostBest) {
         int bestRounds = rules.bestRounds();
+        ScoredRounds scoredRounds = scoreRounds(eventClassId, rules);
+        List<Map<Long, RoundScore>> rounds = scoredRounds.rounds();
+        List<Integer> missingPoints = scoredRounds.missingPoints();
+        Map<Long, Integer> heatOf = scoredRounds.heatOf();
+        boolean shikabane = scoredRounds.shikabane();
+
+        Set<Long> drivers = new LinkedHashSet<>();
+        rounds.forEach(r -> drivers.addAll(r.keySet()));
+        List<QualifyingResult> results = new ArrayList<>();
+        Map<Long, CountingRounds> counting = new HashMap<>();
+        for (Long entryId : drivers) {
+            QualifyingResult total = totalFor(entryId, rounds, missingPoints, bestRounds,
+                    lostBest.getOrDefault(entryId, 0), counting);
+            results.add(!shikabane ? total : new QualifyingResult(total.entryId(), total.bestLapMs(),
+                    total.lapsCompleted(), total.points(), total.rounds(), heatOf.get(entryId)));
+        }
+        if (rules.brca()) {
+            results.sort(brcaOrder(counting));
+            return results;
+        }
+        results.sort(Comparator
+                .comparingInt(QualifyingResult::points)
+                .thenComparing(Comparator.comparingInt(QualifyingResult::lapsCompleted).reversed())
+                .thenComparingLong(QualifyingResult::bestLapMs)
+                .thenComparing(QualifyingResult::entryId));
+        return results;
+    }
+
+    /** The finished rounds of a round by round class, scored (see {@link #scoreRounds}). */
+    private record ScoredRounds(List<Long> roundIds, List<Map<Long, RoundScore>> rounds, List<Integer> missingPoints,
+                                Map<Long, Integer> heatOf, boolean shikabane) {}
+
+    /**
+     * Scores every round of the class that is fully finished and not wholly abandoned, in run order; the shared
+     * first half of {@link #roundByRound} and {@link #roundPointsFor}.
+     */
+    private ScoredRounds scoreRounds(Long eventClassId, RoundRules rules) {
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
                 .stream().map(Entry::getId).collect(Collectors.toSet());
         Map<Long, List<Race>> heatsByRound = new LinkedHashMap<>();
@@ -189,9 +247,11 @@ public class QualifyingStandingsService {
                 .flatMap(raceFormatService::shikabaneConfig).orElse(null);
         // Shikabane heats are separate overall races: a driver is ranked only against the others in their heat
         Map<Long, Integer> heatOf = new HashMap<>();
+        List<Long> roundIds = new ArrayList<>();
         List<Map<Long, RoundScore>> rounds = new ArrayList<>();
         List<Integer> missingPoints = new ArrayList<>();
-        for (List<Race> heats : heatsByRound.values()) {
+        for (Map.Entry<Long, List<Race>> inRound : heatsByRound.entrySet()) {
+            List<Race> heats = inRound.getValue();
             boolean finished = heats.stream().allMatch(h -> h.getStatus() == RaceStatus.FINISHED);
             boolean anyRun = heats.stream().anyMatch(h -> h.getAbandonedAt() == null);
             if (!finished || !anyRun) {
@@ -206,30 +266,11 @@ public class QualifyingStandingsService {
                             .forEach(e -> heatOf.putIfAbsent(e.getEntryId(), heat.getHeatNumber()));
                 }
             }
+            roundIds.add(inRound.getKey());
             rounds.add(scored);
             missingPoints.add(rules.brca() ? Math.max(dnsPoints, scored.size() + 1) : scored.size() + 1);
         }
-
-        Set<Long> drivers = new LinkedHashSet<>();
-        rounds.forEach(r -> drivers.addAll(r.keySet()));
-        List<QualifyingResult> results = new ArrayList<>();
-        Map<Long, CountingRounds> counting = new HashMap<>();
-        for (Long entryId : drivers) {
-            QualifyingResult total = totalFor(entryId, rounds, missingPoints, bestRounds,
-                    lostBest.getOrDefault(entryId, 0), counting);
-            results.add(shikabane == null ? total : new QualifyingResult(total.entryId(), total.bestLapMs(),
-                    total.lapsCompleted(), total.points(), total.rounds(), heatOf.get(entryId)));
-        }
-        if (rules.brca()) {
-            results.sort(brcaOrder(counting));
-            return results;
-        }
-        results.sort(Comparator
-                .comparingInt(QualifyingResult::points)
-                .thenComparing(Comparator.comparingInt(QualifyingResult::lapsCompleted).reversed())
-                .thenComparingLong(QualifyingResult::bestLapMs)
-                .thenComparing(QualifyingResult::entryId));
-        return results;
+        return new ScoredRounds(roundIds, rounds, missingPoints, heatOf, shikabane != null);
     }
 
     /**

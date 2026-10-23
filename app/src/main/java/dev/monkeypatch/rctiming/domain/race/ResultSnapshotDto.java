@@ -16,6 +16,11 @@ public record ResultSnapshotDto(
         List<PositionAtLap> lapHistory,
         ClubBrandingDto clubBranding
 ) {
+    /**
+     * One driver's line in a result. {@code points} is the driver's points for the race when its round is scored by
+     * points (a qualifying heat of a low-points class); it is never stored, only filled in when a result is read
+     * ({@code ResultSnapshotQuery}), and is null otherwise.
+     */
     public record ResultRow(
             int position,
             long entryId,
@@ -25,8 +30,22 @@ public record ResultSnapshotDto(
             int lapsCompleted,
             long totalTimeMs,
             Long bestLapMs,
-            Long gapToLeaderMs
-    ) {}
+            Long gapToLeaderMs,
+            Integer points
+    ) {
+        /** A row with no points, as a race is stored. */
+        public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
+                         int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs) {
+            this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
+                    gapToLeaderMs, null);
+        }
+
+        /** This row with the given points. */
+        public ResultRow withPoints(Integer points) {
+            return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points);
+        }
+    }
 
     public record PositionAtLap(int lapNumber, long entryId, int position, Long lapTimeMs) {}
 

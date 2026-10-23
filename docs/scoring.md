@@ -67,6 +67,8 @@ Example: five drivers, three rounds, best 2 count.
 | Dan | 4, 3, 5 | 3 + 4 | 7 |
 | Eve | 5, 4, 4 | 4 + 4 | 8 |
 
+Each heat's result shows the driver's points for its round (the place in the table above), once every heat of the round has finished. See [Screens and printouts](screens-and-printouts.md).
+
 Ann and Bob tie on 3. If Ann's counting rounds (round 1 and the second place with more laps) add up to 61 laps and Bob's (2 and 1) to 60, Ann is
 ahead. The drop is worth knowing: Dan's 5 in round 3 does not count against him.
 
