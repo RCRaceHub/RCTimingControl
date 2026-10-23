@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -28,38 +28,50 @@ function heldText(state: AutoRunStateDto): string {
 export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canControl: boolean }) {
   const { state } = autoRun;
   const left = useCountdown(state?.phase === 'WAITING' ? state.startAt : null, state?.serverTime);
+  // What has been typed or ticked and not yet shown back by the server; null means "as the server has it"
   const [gap, setGap] = useState<string | null>(null);
+  const [hold, setHold] = useState<boolean | null>(null);
+  const [autoStart, setAutoStart] = useState<boolean | null>(null);
+  const { mutate: saveSettings } = autoRun.settings;
 
   const gapValue = gap ?? String(state?.gapSeconds ?? '');
   const gapSeconds = Number(gapValue);
   const gapValid = gapValue !== '' && Number.isInteger(gapSeconds) && gapSeconds >= 0 && gapSeconds <= 3600;
-  const { mutate: saveSettings } = autoRun.settings;
-  const savedGap = state?.gapSeconds;
-  const savedHold = state?.holdBeforeFinals;
-  const savedAutoStart = state?.autoStart;
+  const wanted = state && gapValid
+    ? { gapSeconds, holdBeforeFinals: hold ?? state.holdBeforeFinals, autoStart: autoStart ?? state.autoStart }
+    : null;
+  const differs = wanted != null && state != null && (wanted.gapSeconds !== state.gapSeconds
+    || wanted.holdBeforeFinals !== state.holdBeforeFinals || wanted.autoStart !== state.autoStart);
+  // The unsent change, so it can still be sent when the panel goes away
+  const pending = useRef<typeof wanted>(null);
+  pending.current = differs ? wanted : null;
 
-  // The settings live on the server, so a typed gap is saved a moment after the last keystroke instead of
-  // waiting for a button: a browser closed mid-race then finds the gap as it was left.
+  // Once the server shows what was typed or ticked, go back to showing the server's value
   useEffect(() => {
-    if (gap === null || !gapValid || savedGap === undefined || gapSeconds === savedGap) return;
+    if (!state) return;
+    if (gap !== null && Number(gap) === state.gapSeconds) setGap(null);
+    if (hold === state.holdBeforeFinals) setHold(null);
+    if (autoStart === state.autoStart) setAutoStart(null);
+  }, [state, gap, hold, autoStart]);
+
+  // The settings live on the server, so a change is sent on its own: a tick straight away, the gap a moment
+  // after the last keystroke. A browser closed mid-race then finds them as they were left.
+  const gapEdited = gap !== null;
+  useEffect(() => {
+    if (!differs || !wanted) return;
     const timer = setTimeout(() => {
-      saveSettings(
-        { gapSeconds, holdBeforeFinals: savedHold!, autoStart: savedAutoStart! },
-        { onSuccess: () => setGap(null) },
-      );
-    }, 800);
+      saveSettings(wanted, {
+        onError: () => { setGap(null); setHold(null); setAutoStart(null); },
+      });
+    }, gapEdited ? 800 : 0);
     return () => clearTimeout(timer);
-  }, [gap, gapValid, gapSeconds, savedGap, savedHold, savedAutoStart, saveSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [differs, wanted?.gapSeconds, wanted?.holdBeforeFinals, wanted?.autoStart, gapEdited, saveSettings]);
+  // A gap typed just before the panel goes away is still saved
+  useEffect(() => () => { if (pending.current) saveSettings(pending.current); }, [saveSettings]);
 
   if (!state) return null;
   const busy = autoRun.go.isPending || autoRun.stop.isPending;
-  const saveFlag = (change: { holdBeforeFinals?: boolean; autoStart?: boolean }) =>
-    saveSettings({
-      gapSeconds: gapValid ? gapSeconds : state.gapSeconds,
-      holdBeforeFinals: state.holdBeforeFinals,
-      autoStart: state.autoStart,
-      ...change,
-    });
 
   return (
     <section className="border-b px-3 py-3 flex flex-col gap-2" aria-label="Auto run" data-testid="auto-run-panel">
@@ -122,21 +134,22 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
               className="h-8 w-20"
               value={gapValue}
               onChange={(e) => setGap(e.target.value)}
+              onBlur={() => { if (!gapValid) setGap(null); }}
             />
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="auto-run-hold"
-              checked={state.holdBeforeFinals}
-              onCheckedChange={(checked) => saveFlag({ holdBeforeFinals: checked === true })}
+              checked={hold ?? state.holdBeforeFinals}
+              onCheckedChange={(checked) => setHold(checked === true)}
             />
             <Label htmlFor="auto-run-hold" className="text-xs">Hold after qualifying, before the finals</Label>
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="auto-run-auto-start"
-              checked={state.autoStart}
-              onCheckedChange={(checked) => saveFlag({ autoStart: checked === true })}
+              checked={autoStart ?? state.autoStart}
+              onCheckedChange={(checked) => setAutoStart(checked === true)}
             />
             <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on by itself when a race is started by hand (otherwise only Go starts it)</Label>
           </div>

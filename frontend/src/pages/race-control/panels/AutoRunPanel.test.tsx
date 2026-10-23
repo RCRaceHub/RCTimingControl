@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AutoRunPanel } from './AutoRunPanel';
 import type { AutoRunStateDto } from '@/lib/raceControlApi';
@@ -33,6 +33,8 @@ function autoRunOf(state: AutoRunStateDto) {
 }
 
 describe('AutoRunPanel', () => {
+  afterEach(() => { vi.useRealTimers(); });
+
   it('offers Go when auto run is off', () => {
     const autoRun = autoRunOf(stateOf());
     render(<AutoRunPanel autoRun={autoRun} canControl />);
@@ -81,16 +83,33 @@ describe('AutoRunPanel', () => {
       { gapSeconds: 240, holdBeforeFinals: true, autoStart: true },
       expect.anything(),
     );
-    vi.useRealTimers();
   });
 
   it('saves a ticked box straight away', () => {
+    vi.useFakeTimers();
     const autoRun = autoRunOf(stateOf());
     render(<AutoRunPanel autoRun={autoRun} canControl />);
 
     fireEvent.click(screen.getByLabelText(/Hold after qualifying/));
+    fireEvent.click(screen.getByLabelText(/Switch on by itself/));
+    act(() => { vi.advanceTimersByTime(10); });
 
-    expect(autoRun.settings.mutate).toHaveBeenCalledWith({ gapSeconds: 180, holdBeforeFinals: false, autoStart: true });
+    expect(autoRun.settings.mutate).toHaveBeenCalledTimes(1);
+    expect(autoRun.settings.mutate).toHaveBeenCalledWith(
+      { gapSeconds: 180, holdBeforeFinals: false, autoStart: false },
+      expect.anything(),
+    );
+  });
+
+  it('does not save an invalid gap', () => {
+    vi.useFakeTimers();
+    const autoRun = autoRunOf(stateOf());
+    render(<AutoRunPanel autoRun={autoRun} canControl />);
+
+    fireEvent.change(screen.getByLabelText('Gap between races (seconds)'), { target: { value: '5000' } });
+    act(() => { vi.advanceTimersByTime(2000); });
+
+    expect(autoRun.settings.mutate).not.toHaveBeenCalled();
   });
 
   it('shows the state but no controls to an official who cannot run the event', () => {
