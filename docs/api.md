@@ -824,6 +824,11 @@ GET /boards/qualifying?eventId=7
 **200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "tables": [QualifyingTable] }`: the qualifying standings per class, in the same shape as the race control qualifying table, for the public page at `/qualifying`. Event resolution is the same as the other boards. Names follow the public name rule. `tables` is empty when no event is found. Each row has `rounds`, the driver's place in each finished round in round order as `{ "place": 2, "counted": false }` (`counted` is false for a dropped round), and is empty unless the class ranks round by round.
 
 ```http
+GET /boards/finals?eventId=7
+```
+**200 OK** — `{ "eventId": 7, "eventName": "Club Round 3", "classes": [ { "eventClassId": 1, "className": "1/10 Buggy", "finalsFinished": 2, "finalsTotal": 3, "finals": [ { "letter": "A", "status": "FINISHED", "results": [ResultRow], "legs": {...} | null } ] } ] }`, for the public page at `/finals`. Each class lists its finals in letter order (the zombie round is not one); a class with no finals yet is left out. `results` is the finished final's result rows, empty until it has finished. `legs` is the A final's combined result (the same shape as `GET /race-control/event/{eventId}/final-legs`) when it is run in legs, and is then the final's order; `results` holds leg 1's. Event resolution is the same as the other boards, and names follow the public name rule. `classes` is empty when no event is found.
+
+```http
 GET /boards/races/{raceId}/live-timing
 ```
 **200 OK** — the race's current live timing rows (the same shape as the `/topic/race/{raceId}/timing` frames), or `[]` before the first passing. Boards, and the race control and referee live timing panels, use it once to fill the table, then follow STOMP.

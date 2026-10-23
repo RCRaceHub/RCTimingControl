@@ -67,6 +67,28 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void finalsBoard_listsFinalsInLetterOrderAndLeavesQualifiersOut() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        fx.race(q1, 1, RaceStatus.FINISHED);
+        Round finals = fx.round(RoundType.FINAL, 1, 2);
+        Race b = fx.race(finals, 1, RaceStatus.PENDING);
+        b.setFinalLetter("B");
+        fx.save(b);
+        Race a = fx.race(finals, 1, RaceStatus.PENDING);
+        a.setFinalLetter("A");
+        fx.save(a);
+
+        Map body = get("/api/v1/boards/finals?eventId=" + fx.event.getId());
+
+        List<Map> classes = (List<Map>) body.get("classes");
+        assertThat(classes).hasSize(1);
+        assertThat(((Number) classes.get(0).get("finalsTotal")).intValue()).isEqualTo(2);
+        List<Map> shown = (List<Map>) classes.get(0).get("finals");
+        assertThat(shown).extracting(f -> f.get("letter")).containsExactly("A", "B");
+        assertThat((List) shown.get(0).get("results")).isEmpty();
+    }
+
+    @Test
     void nothingFinished_resultsBoardHasNoRaceAndNoRows() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         fx.race(q1, 1, RaceStatus.PENDING);

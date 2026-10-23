@@ -15,6 +15,7 @@ export const publicQueryKeys = {
     liveTiming: (raceId: number | null) => ['boards', 'live-timing', raceId] as const,
     results: (eventId: number | null) => ['boards', 'results', eventId] as const,
     qualifying: (eventId: number | null) => ['boards', 'qualifying', eventId] as const,
+    finals: (eventId: number | null) => ['boards', 'finals', eventId] as const,
     clock: (raceId: number | null) => ['boards', 'clock', raceId] as const,
     positionHistory: (raceId: number | null, laps: number) => ['boards', 'position-history', raceId, laps] as const,
     ticker: (eventId: number | null) => ['boards', 'ticker', eventId] as const,
