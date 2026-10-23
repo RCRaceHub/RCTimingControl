@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RefereePage from './RefereePage';
@@ -19,7 +19,11 @@ vi.mock('@/hooks/race-control/useRaceClock', () => ({ useRaceClock: () => mockRa
 vi.mock('@/hooks/race-control/useJumpStarts', () => ({ useJumpStarts: () => [] }));
 vi.mock('./referee/useProximityAlerts', () => ({ useProximityAlerts: () => new Set<number>() }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
-vi.mock('./panels/RunOrderPanel', () => ({ RunOrderPanel: () => null }));
+vi.mock('./panels/RunOrderPanel', () => ({
+  RunOrderPanel: (props: { onSelect: (id: number) => void }) => (
+    <button onClick={() => props.onSelect(5)}>pick race 5</button>
+  ),
+}));
 vi.mock('./panels/RaceHistoryPanel', () => ({ RaceHistoryPanel: () => null }));
 
 type Driver = { entryId: number; driverName: string };
@@ -49,15 +53,17 @@ import { getRaceEntries } from '@/lib/raceControlApi';
 
 function renderReferee() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const ui = (
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/race-control/event/7/referee']}>
         <Routes>
           <Route path="/race-control/event/:eventId/referee" element={<RefereePage />} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(ui);
+  return { ...view, rerenderPage: () => view.rerender(ui) };
 }
 
 const EXPECTED = [
@@ -105,5 +111,32 @@ describe('RefereePage driver list (#107)', () => {
     renderReferee();
 
     expect(await screen.findByRole('timer')).toHaveTextContent('Time left4:00');
+  });
+
+  it('moves to the next race when it goes live', async () => {
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'RUNNING' }, { raceId: 6, status: 'PENDING' }] });
+    const view = renderReferee();
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(5));
+
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'FINISHED' }, { raceId: 6, status: 'RUNNING' }] });
+    view.rerenderPage();
+
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(6));
+    expect(screen.getByText('Following the live race')).toBeInTheDocument();
+  });
+
+  it('stays on a race picked by hand until asked to follow the live race again', async () => {
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'FINISHED' }, { raceId: 6, status: 'RUNNING' }] });
+    const view = renderReferee();
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(6));
+
+    fireEvent.click(screen.getByText('pick race 5'));
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(5));
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'FINISHED' }, { raceId: 7, status: 'RUNNING' }] });
+    view.rerenderPage();
+    expect(getRaceEntries).toHaveBeenLastCalledWith(5);
+
+    fireEvent.click(screen.getByText('Follow the live race'));
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(7));
   });
 });

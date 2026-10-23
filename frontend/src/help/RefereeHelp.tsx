@@ -5,12 +5,12 @@ export function RefereeHelp() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         The Referee View shows the live timing table for one race, with controls for raising incident
-        reports and applying penalties. It opens on the race that is running or stopped; if none is, on the first race not yet finished (or the first in the list when all are finished), so check the selected race before you act. Rows that tint are cars
+        reports and applying penalties. It follows the live race: when a race is running or stopped it moves to that race on its own, and between races it stays on the last one. Before any race has started it opens on the first race not yet finished (or the first in the list when all are finished). Check the selected race before you act. Rows that tint are cars
         closing quickly on the car ahead.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">
-        <li><span className="font-semibold">Select a race:</span> Click any race in the Run Order sidebar and the table shows that race.</li>
+        <li><span className="font-semibold">Select a race:</span> Click any race in the Run Order sidebar and the table shows that race and stays on it, even when another race goes live, so you can work on an earlier race. Click &quot;Follow the live race&quot; to go back to following.</li>
         <li><span className="font-semibold">Raise Incident:</span> Click &quot;Raise Incident&quot;, choose the Driver, the Type (Jump start, Collision, Shortcut, Dangerous driving or Other) and a short Description. The report is logged with who raised it and when.</li>
         <li><span className="font-semibold">Apply Penalty:</span> Click &quot;Apply Penalty&quot;, choose the Driver, then &quot;Lap deduction&quot; (whole laps) or &quot;Time penalty (s)&quot; (seconds), the amount and a Reason. A lap deduction takes the laps off the live count straight away. A time penalty is added to the driver&apos;s total time in the result when the race finishes.</li>
         <li><span className="font-semibold">What happened:</span> Under the timing table, oldest first, is everything recorded for the selected race: the start, stops and finish, penalties, incident reports, marshal lap changes, marshalling absences and penalties, and transponder links, each with who did it and who it was about. It is read-only and keeps updating while the race is live.</li>
