@@ -223,12 +223,11 @@ public class BumpUpSeedingService {
             // Create regular slot entries
             for (int i = 0; i < slotEntries.size(); i++) {
                 long entryId = slotEntries.get(i);
-                int carNum = qualifyingStandings.indexOf(entryId) + 1;
                 RaceEntry entry = new RaceEntry();
                 entry.setRaceId(finalRace.getId());
                 entry.setEntryId(entryId);
                 entry.setGridPosition(i + 1);
-                entry.setCarNumber(carNum > 0 ? carNum : null);  // car_number from qualifying standing position
+                entry.setCarNumber(i + 1);  // each final numbers its cars 1..n by grid place, as each heat does
                 entry.setBumped(false);
                 raceEntryRepository.save(entry);
             }
