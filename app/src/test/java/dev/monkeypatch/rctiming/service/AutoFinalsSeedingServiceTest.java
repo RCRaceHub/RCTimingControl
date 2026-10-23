@@ -18,6 +18,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -98,9 +100,9 @@ class AutoFinalsSeedingServiceTest {
         assertThat(result.calculated()).isEmpty();
         assertThat(result.skipped()).containsOnlyKeys(1L, 2L, 3L);
         assertThat(result.skipped().get(3L)).contains("Qualifying");
-        verify(bumpUp, never()).seedFinals(any(), any(), org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyBoolean());
+        verify(bumpUp, never()).seedFinals(any(), any(), anyInt(),
+                anyInt(), anyInt(),
+                anyBoolean());
     }
 
     private static EventClass eventClass(long id) {

@@ -73,10 +73,12 @@ describe('FinalsLineupPanel', () => {
   });
 
   it('calculates the finals of every class at once', async () => {
-    mockGet.mockResolvedValue(lineup({ calculated: false, finals: [] }));
+    mockGet.mockResolvedValue(lineup());
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPanel();
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate finals for all classes' }));
     await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(1));
+    confirm.mockRestore();
   });
 
   it('cannot calculate until qualifying is complete', async () => {

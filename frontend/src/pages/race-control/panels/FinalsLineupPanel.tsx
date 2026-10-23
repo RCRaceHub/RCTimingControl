@@ -49,11 +49,11 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
   const calculateAll = useMutation({
     mutationFn: () => calculateAllFinals(eventId),
     onSuccess: (result) => {
-      const left = Object.keys(result.skipped).length;
-      toast.success(
-        `Finals calculated for ${result.calculated.length} ${result.calculated.length === 1 ? 'class' : 'classes'}`
-          + (left > 0 ? `; ${left} not ready or without finals were left alone` : ''),
-      );
+      const left = Object.values(result.skipped);
+      const message = `Finals calculated for ${result.calculated.length} ${result.calculated.length === 1 ? 'class' : 'classes'}`
+        + (left.length > 0 ? `; ${left.length} left alone (${[...new Set(left)].join(', ').toLowerCase()})` : '');
+      if (result.calculated.length === 0) toast.info(message);
+      else toast.success(message);
       refresh();
     },
     onError: onError('Could not calculate the finals'),
@@ -87,7 +87,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
   const canCalculate = canEdit && lineup.qualifyingComplete && !lineup.started && !calculate.isPending
     && (carsNumber === null || (Number.isInteger(carsNumber) && carsNumber >= 1));
 
-  const readyClasses = (data ?? []).filter((l) => l.qualifyingComplete && !l.started);
+  const readyClasses = (data ?? []).filter((l) => l.qualifyingComplete && !l.started && l.finals.length > 0);
   const anyCalculated = (data ?? []).some((l) => l.calculated);
 
   function onCalculateAll() {
