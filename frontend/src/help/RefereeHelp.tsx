@@ -5,7 +5,7 @@ export function RefereeHelp() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         The Referee View shows the live timing table for one race, with controls for raising incident
-        reports and applying penalties. It follows the live race: when a race is running or stopped it moves to that race on its own, and between races it stays on the last one. Before any race has started it opens on the first race not yet finished (or the first in the list when all are finished). Check the selected race before you act. Rows that tint are cars
+        reports and applying penalties. It follows the live race: when a race is running or stopped it moves to that race on its own, and between races it stays on the last one. When you open the page with no race live, it starts on the first race not yet finished (or the first in the list when all are finished). It does not move while the incident or penalty form is open, and it does not follow a race that is only on the grid. Check the selected race before you act. Rows that tint are cars
         closing quickly on the car ahead.
       </p>
 

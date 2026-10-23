@@ -34,7 +34,7 @@ export default function RefereePage() {
     data: runOrder = [],
     isLoading: runOrderLoading,
     isError: runOrderFailed,
-  } = useRunOrder(eventId || null);
+  } = useRunOrder(eventId || null, true);
   // The race the referee picked by hand; while null the page follows the live race
   const [pinnedRaceId, setPinnedRaceId] = useState<number | null>(null);
   // The race being followed; stays on the last one between races so the screen does not go blank
@@ -45,14 +45,23 @@ export default function RefereePage() {
   const [penaltyEntryId, setPenaltyEntryId] = useState<number | undefined>(undefined);
 
   // Follow the race in progress as the run order moves on (adjusting state while rendering rather than
-  // in an effect). Before any race is live, open on the first race not yet finished.
-  if (runOrder.length > 0) {
-    const live = runOrder.find((r) => r.status === 'RUNNING' || r.status === 'STOPPED');
-    const next = live ?? (followedRaceId === null ? (runOrder.find((r) => r.status !== 'FINISHED') ?? runOrder[0]) : undefined);
-    if (next && next.raceId !== followedRaceId) setFollowedRaceId(next.raceId);
+  // in an effect). Before any race is live, open on the first race not yet finished. The followed race
+  // holds still while a dialog is open, so a half-written penalty or incident is never moved to another race.
+  const live = runOrder.find((r) => r.status === 'RUNNING' || r.status === 'STOPPED');
+  const firstOpen = runOrder.find((r) => r.status !== 'FINISHED') ?? runOrder[0];
+  const next = live ?? (followedRaceId === null ? firstOpen : undefined);
+  if (next && next.raceId !== followedRaceId && !incidentOpen && !penaltyOpen) {
+    setFollowedRaceId(next.raceId);
   }
-  const selectedRaceId = pinnedRaceId ?? followedRaceId;
-  const following = pinnedRaceId === null;
+  // A pin on a race that has left the run order (rounds regenerated) no longer holds
+  const pinnedValid = pinnedRaceId !== null && runOrder.some((r) => r.raceId === pinnedRaceId);
+  const selectedRaceId = pinnedValid ? pinnedRaceId : followedRaceId;
+  const following = !pinnedValid;
+
+  // Picking the race that is already being followed keeps following it
+  function onSelectRace(raceId: number) {
+    setPinnedRaceId(raceId === live?.raceId ? null : raceId);
+  }
 
   const { rows: current } = useLiveTiming(selectedRaceId);
 
@@ -122,7 +131,7 @@ export default function RefereePage() {
           <RunOrderPanel
             items={runOrder}
             selectedRaceId={selectedRaceId}
-            onSelect={setPinnedRaceId}
+            onSelect={onSelectRace}
           />
         )}
       </aside>
@@ -134,7 +143,9 @@ export default function RefereePage() {
           <h1 className="text-lg font-semibold">Referee View</h1>
           <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
           {following ? (
-            <span className="text-xs text-muted-foreground">Following the live race</span>
+            <span className="text-xs text-muted-foreground">
+              {live ? 'Following the live race' : 'No race is live; showing the last one'}
+            </span>
           ) : (
             <Button variant="link" size="sm" onClick={() => setPinnedRaceId(null)}>
               Follow the live race

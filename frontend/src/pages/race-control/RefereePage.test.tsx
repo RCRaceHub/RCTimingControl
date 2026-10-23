@@ -139,4 +139,15 @@ describe('RefereePage driver list (#107)', () => {
     fireEvent.click(screen.getByText('Follow the live race'));
     await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(7));
   });
+
+  it('stays on the last race between races, and keeps following when the live race is clicked', async () => {
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'RUNNING' }, { raceId: 6, status: 'PENDING' }] });
+    const view = renderReferee();
+    await waitFor(() => expect(getRaceEntries).toHaveBeenLastCalledWith(5));
+
+    mockRunOrder.mockReturnValue({ data: [{ raceId: 5, status: 'FINISHED' }, { raceId: 6, status: 'PENDING' }] });
+    view.rerenderPage();
+    expect(getRaceEntries).toHaveBeenLastCalledWith(5);
+    expect(screen.getByText('No race is live; showing the last one')).toBeInTheDocument();
+  });
 });
