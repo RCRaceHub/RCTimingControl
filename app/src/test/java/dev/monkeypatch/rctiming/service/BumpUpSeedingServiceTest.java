@@ -339,6 +339,18 @@ class BumpUpSeedingServiceTest {
         verify(raceEntryRepository, never()).save(any());
     }
 
+    @Test
+    void finalsNeeded_countsTheLowestFinalInFullAndTheUpperOnesLessTheirBumpPlaces() {
+        // Cars 10, bump 2: the lowest final holds 10, each one above holds 8 regular places
+        assertThat(BumpUpSeedingService.finalsNeeded(0, 10, 2)).isEqualTo(1);
+        assertThat(BumpUpSeedingService.finalsNeeded(10, 10, 2)).isEqualTo(1);
+        assertThat(BumpUpSeedingService.finalsNeeded(11, 10, 2)).isEqualTo(2);
+        assertThat(BumpUpSeedingService.finalsNeeded(18, 10, 2)).isEqualTo(2);
+        assertThat(BumpUpSeedingService.finalsNeeded(19, 10, 2)).isEqualTo(3);
+        // Bump places as big as the grid can't divide by zero
+        assertThat(BumpUpSeedingService.finalsNeeded(25, 4, 4)).isEqualTo(22);
+    }
+
     private static Race finalRace(long id, String letter) {
         Race race = new Race();
         race.setId(id);

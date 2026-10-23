@@ -145,9 +145,7 @@ public class BumpUpSeedingService {
         // A field too small for every final leaves the lowest finals empty, not one in the middle: B between a full A
         // and C would be skipped over. Only as many finals as the field needs are used, counting from the top.
         if (!fillTopFirst) {
-            int perUpperFinal = Math.max(1, carsPerFinal - bumpCount);
-            int field = qualifyingStandings.size();
-            int needed = field <= carsPerFinal ? 1 : 1 + (field - carsPerFinal + perUpperFinal - 1) / perUpperFinal;
+            int needed = finalsNeeded(qualifyingStandings.size(), carsPerFinal, bumpCount);
             while (finals.size() > needed) {
                 Race unused = finals.remove(0);
                 raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(unused.getId()));
@@ -233,6 +231,15 @@ public class BumpUpSeedingService {
             raceRepository.save(finalRace);
         }
         FinalLegs.syncGrids(raceRepository, raceEntryRepository, eventClassId);
+    }
+
+    /**
+     * The fewest finals that hold a field of {@code field} drivers: the lowest takes {@code carsPerFinal}, each one
+     * above it {@code carsPerFinal - bumpCount} regular places (the rest are bump places). At least 1.
+     */
+    static int finalsNeeded(int field, int carsPerFinal, int bumpCount) {
+        int perUpperFinal = Math.max(1, carsPerFinal - bumpCount);
+        return field <= carsPerFinal ? 1 : 1 + (field - carsPerFinal + perUpperFinal - 1) / perUpperFinal;
     }
 
     /**
