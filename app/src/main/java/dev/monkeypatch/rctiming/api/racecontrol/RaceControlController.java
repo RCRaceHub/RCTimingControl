@@ -182,6 +182,21 @@ public class RaceControlController {
     }
 
     /**
+     * Calculates the finals of every class of the event that is ready, once qualifying is done. Classes that are not
+     * ready (qualifying unfinished, a final started, no finals) are left alone and listed in the answer.
+     *
+     * <p>{@code POST /event/{eventId}/seed-all-finals}; no body. 200 with {@code calculated} (event class ids) and
+     * {@code skipped} (event class id to reason). 404 if the event has no classes. Recorded in the audit log, one
+     * entry for each class calculated.
+     */
+    @Audited("audit_log")
+    @PostMapping("/event/{eventId}/seed-all-finals")
+    @Transactional
+    public AutoFinalsSeedingService.CalculateAllResult seedAllFinals(@PathVariable long eventId) {
+        return finalsSeedingService.reseedAll(CurrentOfficial.actor(), eventId);
+    }
+
+    /**
      * Each class's finals line-up: who is on every final's grid, and whether the finals can be calculated yet.
      * {@code GET /event/{eventId}/finals-lineup}. Read only.
      */

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
+  calculateAllFinals,
   calculateFinals,
   getFinalsLineup,
   moveFinalsDriver,
@@ -45,6 +46,18 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
     },
     onError: onError('Could not calculate the finals'),
   });
+  const calculateAll = useMutation({
+    mutationFn: () => calculateAllFinals(eventId),
+    onSuccess: (result) => {
+      const left = Object.keys(result.skipped).length;
+      toast.success(
+        `Finals calculated for ${result.calculated.length} ${result.calculated.length === 1 ? 'class' : 'classes'}`
+          + (left > 0 ? `; ${left} not ready or without finals were left alone` : ''),
+      );
+      refresh();
+    },
+    onError: onError('Could not calculate the finals'),
+  });
   const move = useMutation({
     mutationFn: (v: { raceId: number; entryId: number; targetRaceId: number }) =>
       moveFinalsDriver(v.raceId, { entryId: v.entryId, targetRaceId: v.targetRaceId, targetPosition: null }),
@@ -74,6 +87,17 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
   const canCalculate = canEdit && lineup.qualifyingComplete && !lineup.started && !calculate.isPending
     && (carsNumber === null || (Number.isInteger(carsNumber) && carsNumber >= 1));
 
+  const readyClasses = (data ?? []).filter((l) => l.qualifyingComplete && !l.started);
+  const anyCalculated = (data ?? []).some((l) => l.calculated);
+
+  function onCalculateAll() {
+    if (anyCalculated
+      && !window.confirm('Calculate the finals of every class again? Any changes you made to the line-ups will be lost.')) {
+      return;
+    }
+    calculateAll.mutate();
+  }
+
   function onCalculate() {
     if (lineup?.calculated
       && !window.confirm('Calculate the finals again? Any changes you made to the line-ups will be lost.')) {
@@ -100,6 +124,13 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
           </label>
           <Button variant="outline" onClick={onCalculate} disabled={!canCalculate}>
             {calculate.isPending ? 'Calculating…' : lineup.calculated ? 'Recalculate finals' : 'Calculate finals'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={onCalculateAll}
+            disabled={readyClasses.length === 0 || calculateAll.isPending}
+          >
+            {calculateAll.isPending ? 'Calculating…' : 'Calculate finals for all classes'}
           </Button>
           {!lineup.qualifyingComplete && !lineup.started && (
             <span className="text-sm text-muted-foreground">Finish or abandon every qualifying heat first.</span>

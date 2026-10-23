@@ -184,7 +184,8 @@ How the finals run:
 
 1. When the last qualifying heat of a class finishes, press **Calculate finals** in the **Finals line-up** panel of a
    final in race control (nothing is calculated for you). Set **Cars per final** first; it starts at the size of a
-   qualifying heat, so the marshalling is the same as in qualifying. The lowest final is filled first from the bottom
+   qualifying heat, so the marshalling is the same as in qualifying. **Calculate finals for all classes** does every
+   class that is ready in one go with each class's default. The lowest final is filled first from the bottom
    of the qualifying order with a full grid; each higher final takes what is left, with the bump spots left empty.
    Worked examples are in [Scoring, section 3](scoring.md#3-seeding-the-finals). The panel then shows who is in each
    final, and you can move a driver to another final, or move a driver up or down the grid, until the final is called
