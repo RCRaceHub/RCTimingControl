@@ -78,21 +78,23 @@ class RefereeServiceTest {
 
     @Test
     void takingNoActionOnAJumpStart_isAuditedAndTellsLiveTiming() {
-        when(lapTimingService.dismissJumpStart(7L, 11L))
+        when(lapTimingService.openJumpStart(7L, 11L))
                 .thenReturn(Optional.of(new JumpStartDto(11L, "Sam Fox", "12", 2400, true)));
 
         service().dismissJumpStart(7L, 11L, 3L);
 
         verify(audit).entry(any(), eq("JUMP_START_DISMISSED"));
+        verify(lapTimingService).dismissJumpStart(7L, 11L);
     }
 
     @Test
     void takingNoActionOnACarThatDidNotJump_isAConflict() {
-        when(lapTimingService.dismissJumpStart(7L, 11L)).thenReturn(Optional.empty());
+        when(lapTimingService.openJumpStart(7L, 11L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service().dismissJumpStart(7L, 11L, 3L))
                 .isInstanceOf(StateConflictException.class);
         verifyNoInteractions(audit);
+        verify(lapTimingService, never()).dismissJumpStart(anyLong(), anyLong());
     }
 
     @Test

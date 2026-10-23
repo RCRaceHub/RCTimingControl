@@ -201,17 +201,21 @@ public class LapTimingService {
         return peek(raceId).map(LiveRaceState::jumpStarts).orElse(List.of());
     }
 
+    /** The entry's jump start in a race in progress if the referee has not yet dealt with it; otherwise empty. */
+    public Optional<JumpStartDto> openJumpStart(long raceId, long entryId) {
+        return peek(raceId).flatMap(state -> state.openJumpStart(entryId));
+    }
+
     /**
-     * Records that the referee took no action on an entry's jump start and tells the referee screens, which drop the
-     * alert but keep the entry's lozenge. Called from a request thread by {@code RefereeService}.
-     *
-     * @return the jump start as it now stands, empty if the race has no live state or the entry has not jumped the start
+     * Dismisses an entry's jump start, because the referee took no action or gave a penalty, and tells the referee
+     * screens, which drop the alert but keep the entry's lozenge. Called from a request thread by
+     * {@code RefereeService}, after its transaction commits. Does nothing if there is nothing open to dismiss.
      */
-    public Optional<JumpStartDto> dismissJumpStart(long raceId, long entryId) {
-        return peek(raceId).flatMap(state -> {
-            Optional<JumpStartDto> dismissed = state.dismissJumpStart(entryId);
-            dismissed.ifPresent(j -> liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts()));
-            return dismissed;
+    public void dismissJumpStart(long raceId, long entryId) {
+        peek(raceId).ifPresent(state -> {
+            if (state.dismissJumpStart(entryId)) {
+                liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts());
+            }
         });
     }
 

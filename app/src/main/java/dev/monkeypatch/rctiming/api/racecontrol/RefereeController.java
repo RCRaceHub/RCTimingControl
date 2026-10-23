@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST endpoints for referee actions: incident reports, penalties and marshal absences (OFFICIAL-03, OFFICIAL-04).
  * All endpoints require the REFEREE or ADMIN role (a race director does not get them unless also a referee).
  * {@link RefereeService} does the work and writes the audit rows. Under {@code /api/v1/race-control/referee}; each
- * answers 200 with the record it saved.
+ * answers 200 with the record it saved, except a jump start dismissal, which answers 204.
  */
 @RestController
 @RequestMapping("/api/v1/race-control/referee")
@@ -63,7 +63,7 @@ public class RefereeController {
 
     /**
      * Takes no action on a car's jump start: the alert goes from the referee screens and the car keeps its lozenge.
-     * {@code POST /race/{raceId}/jump-start/{entryId}/dismiss}; REFEREE or ADMIN. 409 if the entry has no jump start in
+     * {@code POST /race/{raceId}/jump-start/{entryId}/dismiss}; REFEREE or ADMIN. 409 if the entry has no open jump start in
      * the race in progress. Audited as {@code JUMP_START_DISMISSED}.
      */
     @Audited("audit_log")
