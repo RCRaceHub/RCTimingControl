@@ -73,6 +73,9 @@ public class BumpUpSeedingService {
      *                           filled by applyBumpUpResults after the B-Final finishes
      * </pre>
      *
+     * <p>When the field is too small to fill every final, the lowest finals are left empty (a field of 8 with 4 cars a
+     * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers.
+     *
      * <p>A Shikabane zombie round (final letter {@value #ZOMBIE_LETTER}) is left out of the split, its old grid is
      * cleared, and the top final gets one more bump place for the zombie round's winner.
      *
@@ -138,6 +141,17 @@ public class BumpUpSeedingService {
 
         if (fillTopFirst) {
             bumpCount = 0;
+        }
+        // A field too small for every final leaves the lowest finals empty, not one in the middle: B between a full A
+        // and C would be skipped over. Only as many finals as the field needs are used, counting from the top.
+        if (!fillTopFirst) {
+            int needed = finalsNeeded(qualifyingStandings.size(), carsPerFinal, bumpCount);
+            while (finals.size() > needed) {
+                Race unused = finals.remove(0);
+                raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(unused.getId()));
+                unused.setBumpSlots(0);
+                raceRepository.save(unused);
+            }
         }
         // Work out regular slot counts per final
         int[] regularSlots = new int[finals.size()];
@@ -217,6 +231,15 @@ public class BumpUpSeedingService {
             raceRepository.save(finalRace);
         }
         FinalLegs.syncGrids(raceRepository, raceEntryRepository, eventClassId);
+    }
+
+    /**
+     * The fewest finals that hold a field of {@code field} drivers: the lowest takes {@code carsPerFinal}, each one
+     * above it {@code carsPerFinal - bumpCount} regular places (the rest are bump places). At least 1.
+     */
+    static int finalsNeeded(int field, int carsPerFinal, int bumpCount) {
+        int perUpperFinal = Math.max(1, carsPerFinal - bumpCount);
+        return field <= carsPerFinal ? 1 : 1 + (field - carsPerFinal + perUpperFinal - 1) / perUpperFinal;
     }
 
     /**

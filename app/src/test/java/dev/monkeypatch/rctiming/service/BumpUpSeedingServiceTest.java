@@ -144,24 +144,40 @@ class BumpUpSeedingServiceTest {
         service().seedFinals(eventClassId, standings, 2, 10, 2);
 
         ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
-        // 5 B-final regular slots + 0 A-final regular slots = 5 saves.
+        // Five drivers fit one final, so only the A final is used and the B final stays empty
         verify(raceEntryRepository, times(5)).save(captor.capture());
         List<RaceEntry> saved = captor.getAllValues();
 
-        List<RaceEntry> bEntries = saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).toList();
-        List<RaceEntry> aRegular = saved.stream()
-                .filter(e -> e.getRaceId().equals(aFinal.getId()) && !e.isBumped()).toList();
+        assertThat(saved).allMatch(e -> e.getRaceId().equals(aFinal.getId()));
+        assertThat(saved).extracting(RaceEntry::getEntryId).containsExactly(1L, 2L, 3L, 4L, 5L);
+        assertThat(aFinal.getBumpSlots()).isZero();
+        assertThat(bFinal.getBumpSlots()).isZero();
+    }
 
-        // Lowest final (B) draws from the bottom: with only 5 standings and 10 lowest-final
-        // slots, all 5 land in B.
-        assertThat(bEntries).hasSize(5);
-        assertThat(bEntries).extracting(RaceEntry::getEntryId)
-                .containsExactlyInAnyOrder(1L, 2L, 3L, 4L, 5L);
-        // Top-down pass for A starts after the bottom pass has already consumed everything
-        // (both pointers walk the same list), so no regular slots remain for A here.
-        assertThat(aRegular).isEmpty();
-        // The A-final still keeps its bump slots even though no regular qualifiers were seated there.
-        assertThat(aFinal.getBumpSlots()).isEqualTo(2);
+    @Test
+    void seedFinals_aFieldThatFitsTwoOfThreeFinals_leavesTheLowestFinalEmptyNotTheMiddleOne() {
+        Long eventClassId = 31L;
+        Race cFinal = finalRace(500L, "C");
+        Race bFinal = finalRace(501L, "B");
+        Race aFinal = finalRace(502L, "A");
+        cFinal.setEventClassId(eventClassId);
+        bFinal.setEventClassId(eventClassId);
+        aFinal.setEventClassId(eventClassId);
+        when(raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL))
+                .thenReturn(new ArrayList<>(List.of(aFinal, bFinal, cFinal)));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(any())).thenReturn(List.of());
+
+        // 8 drivers, 4 cars a final, no bumping: A takes Q1-Q4, B takes Q5-Q8, C has nobody
+        service().seedFinals(eventClassId, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L), 3, 4, 0);
+
+        ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository, times(8)).save(captor.capture());
+        List<RaceEntry> saved = captor.getAllValues();
+        assertThat(saved.stream().filter(e -> e.getRaceId().equals(aFinal.getId())).map(RaceEntry::getEntryId))
+                .containsExactly(1L, 2L, 3L, 4L);
+        assertThat(saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).map(RaceEntry::getEntryId))
+                .containsExactly(5L, 6L, 7L, 8L);
+        assertThat(saved).noneMatch(e -> e.getRaceId().equals(cFinal.getId()));
     }
 
     @Test
@@ -321,6 +337,18 @@ class BumpUpSeedingServiceTest {
         assertThat(service().applyBumpUpResults(aFinal.getId(), List.of(501L))).isEmpty();
         assertThat(service().applyBumpUpResults(bFinal.getId(), List.of(501L))).as("no A final in the class").isEmpty();
         verify(raceEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void finalsNeeded_countsTheLowestFinalInFullAndTheUpperOnesLessTheirBumpPlaces() {
+        // Cars 10, bump 2: the lowest final holds 10, each one above holds 8 regular places
+        assertThat(BumpUpSeedingService.finalsNeeded(0, 10, 2)).isEqualTo(1);
+        assertThat(BumpUpSeedingService.finalsNeeded(10, 10, 2)).isEqualTo(1);
+        assertThat(BumpUpSeedingService.finalsNeeded(11, 10, 2)).isEqualTo(2);
+        assertThat(BumpUpSeedingService.finalsNeeded(18, 10, 2)).isEqualTo(2);
+        assertThat(BumpUpSeedingService.finalsNeeded(19, 10, 2)).isEqualTo(3);
+        // Bump places as big as the grid can't divide by zero
+        assertThat(BumpUpSeedingService.finalsNeeded(25, 4, 4)).isEqualTo(22);
     }
 
     private static Race finalRace(long id, String letter) {
