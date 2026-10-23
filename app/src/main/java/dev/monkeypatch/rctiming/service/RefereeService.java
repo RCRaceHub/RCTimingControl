@@ -21,6 +21,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -103,9 +105,32 @@ public class RefereeService {
     }
 
     /**
+     * Records that the referee took no action on a car's jump start. The alert goes from the referee screens; the car
+     * keeps its lozenge in the listing. Audited as {@code JUMP_START_DISMISSED}, saying how early the car left, so the
+     * log shows the jump start happened and was let go. The referee screens are told once the change commits.
+     *
+     * @throws StateConflictException if the entry has no open jump start in a race in progress, which includes one
+     *                                already dismissed or settled by a penalty (HTTP 409)
+     */
+    public void dismissJumpStart(long raceId, long entryId, long userId) {
+        JumpStartDto jumpStart = lapTimingService.openJumpStart(raceId, entryId)
+                .orElseThrow(() -> new StateConflictException("That entry has no open jump start in this race"));
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("entryId", entryId);
+        after.put("earlyMs", jumpStart.earlyMs());
+        audit.entry(Actor.official(userId), "JUMP_START_DISMISSED").entity("race_entry", entryId)
+                .race(raceId).event(labels.eventOf(raceId))
+                .summary("Took no action on a jump start by " + labels.driver(entryId) + " in "
+                        + labels.race(raceId) + " (left "
+                        + String.format(Locale.ROOT, "%.1f", jumpStart.earlyMs() / 1000.0) + " s early)")
+                .after(after).record();
+        AfterCommit.run(() -> lapTimingService.dismissJumpStart(raceId, entryId));
+    }
+
+    /**
      * A LAP penalty comes off the car's laps in live timing straight away; a TIME penalty is only recorded, and is
      * added to the total time when the result is worked out. On a finished race the results are sent again.
-     * Live timing is only told after the commit.
+     * Live timing is only told after the commit. Any jump start alert for the car is dismissed.
      *
      * @throws IllegalArgumentException for a LAP penalty that is not a whole number of laps up to
      *                                  {@link #MAX_LAP_PENALTY}
@@ -137,6 +162,8 @@ public class RefereeService {
                 .summary("Gave " + labels.driver(entryId) + " a " + type + " penalty of "
                         + value.stripTrailingZeros().toPlainString() + " in " + labels.race(raceId))
                 .after(after).record();
+        // A penalty settles the car's jump start alert (its lozenge stays); the penalty's own audit row is the record
+        AfterCommit.run(() -> lapTimingService.dismissJumpStart(raceId, entryId));
 
         if (raceRepository.findById(raceId).map(r -> r.getStatus() == RaceStatus.FINISHED).orElse(false)) {
             // The race's results have gone out already; send them again with the penalty (#27)

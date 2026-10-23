@@ -72,6 +72,13 @@ export default function RefereePage() {
   const mutations = useRaceStateMutations(selectedRaceId ?? 0, eventId);
   const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
 
+  function onDismissJumpStart(entryId: number) {
+    mutations.dismissJumpStart.mutate(entryId, {
+      onSuccess: () => toast.success('Jump start dismissed; no action taken'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'The jump start could not be dismissed. Try again.')),
+    });
+  }
+
   function onIncident(req: IncidentReportRequest) {
     mutations.incident.mutate(req, {
       onSuccess: () => { toast.success('Incident report raised'); setIncidentOpen(false); },
@@ -149,6 +156,7 @@ export default function RefereePage() {
             <JumpStartAlert
               jumpStarts={jumpStarts}
               onPenalty={(entryId) => { setPenaltyEntryId(entryId); setPenaltyOpen(true); }}
+              onDismiss={onDismissJumpStart}
             />
             <LiveTimingPanel
               raceId={selectedRaceId}

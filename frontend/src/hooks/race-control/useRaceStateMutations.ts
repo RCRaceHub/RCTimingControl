@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  dismissJumpStart,
   callGrid,
   startRace,
   stopRace,
@@ -77,6 +78,11 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
     penalty: useMutation({
       mutationFn: (req: PenaltyRequest) => applyPenalty(raceId, req),
       onSuccess: () => { invalidateSnapshot(); invalidateHistory(); },
+    }),
+    // Live timing is told by the server, which pushes the new jump start list; the history gains the audit row
+    dismissJumpStart: useMutation({
+      mutationFn: (entryId: number) => dismissJumpStart(raceId, entryId),
+      onSuccess: invalidateHistory,
     }),
     marshalAbsent: useMutation({
       mutationFn: (req: MarshalAbsenceRequest) => recordMarshalAbsent(raceId, req),

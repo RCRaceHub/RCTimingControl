@@ -19,6 +19,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -70,7 +72,29 @@ class RefereeServiceTest {
 
         assertThat(penalty.getPenaltyType()).isEqualTo(PenaltyType.LAP);
         verify(lapTimingService).applyLapPenalty(7L, 11L, 2);
+        verify(lapTimingService).dismissJumpStart(7L, 11L);
         verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void takingNoActionOnAJumpStart_isAuditedAndTellsLiveTiming() {
+        when(lapTimingService.openJumpStart(7L, 11L))
+                .thenReturn(Optional.of(new JumpStartDto(11L, "Sam Fox", "12", 2400, true)));
+
+        service().dismissJumpStart(7L, 11L, 3L);
+
+        verify(audit).entry(any(), eq("JUMP_START_DISMISSED"));
+        verify(lapTimingService).dismissJumpStart(7L, 11L);
+    }
+
+    @Test
+    void takingNoActionOnACarThatDidNotJump_isAConflict() {
+        when(lapTimingService.openJumpStart(7L, 11L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service().dismissJumpStart(7L, 11L, 3L))
+                .isInstanceOf(StateConflictException.class);
+        verifyNoInteractions(audit);
+        verify(lapTimingService, never()).dismissJumpStart(anyLong(), anyLong());
     }
 
     @Test

@@ -201,6 +201,24 @@ public class LapTimingService {
         return peek(raceId).map(LiveRaceState::jumpStarts).orElse(List.of());
     }
 
+    /** The entry's jump start in a race in progress if the referee has not yet dealt with it; otherwise empty. */
+    public Optional<JumpStartDto> openJumpStart(long raceId, long entryId) {
+        return peek(raceId).flatMap(state -> state.openJumpStart(entryId));
+    }
+
+    /**
+     * Dismisses an entry's jump start, because the referee took no action or gave a penalty, and tells the referee
+     * screens, which drop the alert but keep the entry's lozenge. Called from a request thread by
+     * {@code RefereeService}, after its transaction commits. Does nothing if there is nothing open to dismiss.
+     */
+    public void dismissJumpStart(long raceId, long entryId) {
+        peek(raceId).ifPresent(state -> {
+            if (state.dismissJumpStart(entryId)) {
+                liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts());
+            }
+        });
+    }
+
     /**
      * Whether the entry's time on the track has run out, so the next lap it counts is its last. A timed race gives
      * each car the race's length from its own start; in a stagger start the cars leave one after another, so the

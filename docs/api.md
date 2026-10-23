@@ -706,7 +706,7 @@ GET  /race-control/race/{raceId}/history
 GET  /race-control/race/{raceId}/jump-starts
 ```
 
-`entries` lists everyone in the race, in any state, for linking a transponder or picking a driver for an incident or penalty (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `transponders/link` links an unknown transponder to an entry, credits the laps it has already done and saves the number on the entry (a swap: it replaces a number that has not passed in this race, otherwise it becomes the secondary), so later races at the event need no relinking, answering `{ "lapsCredited": 3 }` (`RACE_DIRECTOR` or `ADMIN`). `history` is the race's own audit log rows (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `jump-starts` lists the cars that crossed the line before their turn in a staggered start, as `[{ "entryId": 101, "driverName": "...", "carNumber": "12", "earlyMs": 2400 }]`, empty for other starts and once the race has finished (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`); later ones arrive on `/topic/race/{raceId}/jump-start`. A race's results come from the public `GET /results/{raceId}`, and its live timing from `GET /boards/races/{raceId}/live-timing`.
+`entries` lists everyone in the race, in any state, for linking a transponder or picking a driver for an incident or penalty (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `transponders/link` links an unknown transponder to an entry, credits the laps it has already done and saves the number on the entry (a swap: it replaces a number that has not passed in this race, otherwise it becomes the secondary), so later races at the event need no relinking, answering `{ "lapsCredited": 3 }` (`RACE_DIRECTOR` or `ADMIN`). `history` is the race's own audit log rows (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`). `jump-starts` lists the cars that crossed the line before their turn in a staggered start, as `[{ "entryId": 101, "driverName": "...", "carNumber": "12", "earlyMs": 2400, "dismissed": false }]`, empty for other starts and once the race has finished (`RACE_DIRECTOR`, `REFEREE` or `ADMIN`); later ones arrive on `/topic/race/{raceId}/jump-start`. A race's results come from the public `GET /results/{raceId}`, and its live timing from `GET /boards/races/{raceId}/live-timing`.
 
 ---
 
@@ -717,12 +717,14 @@ Open to `REFEREE` and `ADMIN`. A race director who is not also a referee gets **
 ```
 POST /race-control/referee/race/{raceId}/incident-report
 POST /race-control/referee/race/{raceId}/penalty
+POST /race-control/referee/race/{raceId}/jump-start/{entryId}/dismiss
 POST /race-control/referee/race/{raceId}/marshal-absent
 POST /race-control/referee/race/{raceId}/apply-marshal-penalty
 ```
 
 - `incident-report` takes `{ "entryId", "incidentType", "description" }`, all required (the type is free text; the screen offers Jump start, Collision, Shortcut, Dangerous driving and Other). Audited as `INCIDENT_RAISED`.
 - `penalty` takes `{ "entryId", "penaltyType": "LAP", "value": 1, "reason" }`. `LAP` takes whole laps off the live timing straight away (at most 100); `TIME` adds seconds when the result is worked out. **400** for a bad body or a non-whole lap count. Audited as `PENALTY_APPLIED`; on a finished race its result is rebuilt and, for a RaceHub event, queued to be sent again.
+- `jump-start/{entryId}/dismiss` takes no body and records that the referee took no action on the entry's jump start (see `jump-starts` above): the alert goes, the entry stays listed with `"dismissed": true`. **204**; **409** if the entry has no jump start in the race in progress. Applying a penalty to the entry dismisses it too. Audited as `JUMP_START_DISMISSED`.
 - `marshal-absent` takes `{ "entryId", "eventId" }` and records that the entry missed its marshal duty. It does not penalise. Everyone is assumed to be marshalling, so this is only for a driver who was not.
 - `apply-marshal-penalty` takes `{ "entryId", "eventId", "kind", "absenceId", "notes" }`, where `kind` is `QUALIFYING_SCORE` (loses the best qualifying round) or `FINALS_LAP` (a lap off in the first final). `absenceId` is optional: left out, the entry's latest absence without a penalty is used, and if there is none the miss is recorded by this call. **409** if the entry is not in the event or the absence already has a penalty. Audited as `MARSHAL_PENALTY_APPLIED`.
 

@@ -64,6 +64,8 @@ public class LiveRaceState {
     boolean finishRequested = false;
     /** Entries that crossed the line before their turn in a stagger start: entryId → how early the first crossing was. */
     final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
+    /** Jump starts the referee has taken no action on. */
+    final Set<Long> jumpStartDismissed = new HashSet<>();
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
@@ -101,11 +103,29 @@ public class LiveRaceState {
         return jumpStartEarlyMs.putIfAbsent(entryId, earlyMs) == null;
     }
 
+    /** The entry's jump start if it has one the referee has not yet dealt with; empty if none, or already dismissed. */
+    public synchronized Optional<JumpStartDto> openJumpStart(long entryId) {
+        if (jumpStartDismissed.contains(entryId)) {
+            return Optional.empty();
+        }
+        return jumpStarts().stream().filter(j -> j.entryId() == entryId).findFirst();
+    }
+
+    /**
+     * Notes that the referee dealt with an entry's jump start, so the alert goes but the entry stays listed.
+     *
+     * @return true if the entry had an open jump start; false if it has none, or it was already dismissed
+     */
+    public synchronized boolean dismissJumpStart(long entryId) {
+        return jumpStartEarlyMs.containsKey(entryId) && jumpStartDismissed.add(entryId);
+    }
+
     /** The entries that have jumped the start so far, in the order they did, with names and car numbers. */
     public synchronized List<JumpStartDto> jumpStarts() {
         List<JumpStartDto> result = new ArrayList<>(jumpStartEarlyMs.size());
         jumpStartEarlyMs.forEach((entryId, earlyMs) -> result.add(new JumpStartDto(entryId,
-                entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs)));
+                entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs,
+                jumpStartDismissed.contains(entryId))));
         return result;
     }
 

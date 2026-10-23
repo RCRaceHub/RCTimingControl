@@ -20,6 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -94,6 +95,43 @@ class LapTimingServiceJumpStartTest {
         assertThat(jumpStarts.get(0).entryId()).isEqualTo(20L);
         assertThat(jumpStarts.get(0).earlyMs()).isEqualTo(6_000);
         verify(hub, times(1)).broadcastJumpStarts(RACE, jumpStarts);
+    }
+
+    @Test
+    void takingNoActionKeepsTheCarListedButMarksItDismissed() {
+        elapsedMs = 4_000;
+        pass("2000", 100);
+
+        assertThat(service.openJumpStart(RACE, 20L)).isPresent();
+        service.dismissJumpStart(RACE, 20L);
+
+        List<JumpStartDto> jumpStarts = service.jumpStartsOf(RACE);
+        assertThat(jumpStarts).hasSize(1);
+        assertThat(jumpStarts.get(0).dismissed()).isTrue();
+        assertThat(service.openJumpStart(RACE, 20L)).isEmpty();
+        verify(hub, times(2)).broadcastJumpStarts(eq(RACE), any());
+    }
+
+    @Test
+    void dismissingTwiceBroadcastsOnce() {
+        elapsedMs = 4_000;
+        pass("2000", 100);
+
+        service.dismissJumpStart(RACE, 20L);
+        service.dismissJumpStart(RACE, 20L);
+
+        verify(hub, times(2)).broadcastJumpStarts(eq(RACE), any());
+    }
+
+    @Test
+    void aCarThatDidNotJumpHasNothingToDismiss() {
+        elapsedMs = 12_000;
+        pass("2000", 100);
+
+        assertThat(service.openJumpStart(RACE, 20L)).isEmpty();
+        assertThat(service.openJumpStart(RACE, 99L)).isEmpty();
+        service.dismissJumpStart(RACE, 20L);
+        verify(hub, never()).broadcastJumpStarts(anyLong(), any());
     }
 
     @Test

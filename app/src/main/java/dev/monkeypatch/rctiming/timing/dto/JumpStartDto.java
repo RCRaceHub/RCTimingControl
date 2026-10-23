@@ -8,6 +8,7 @@ package dev.monkeypatch.rctiming.timing.dto;
  * @param driverName the public name live timing shows for the entry
  * @param carNumber  the entry's car number in the race, null if none is recorded
  * @param earlyMs    how long before its start the car's first early crossing came, in milliseconds
+ * @param dismissed  whether the referee has taken no action on it; it stays listed so the row keeps its lozenge
  */
-public record JumpStartDto(long entryId, String driverName, String carNumber, long earlyMs) {
+public record JumpStartDto(long entryId, String driverName, String carNumber, long earlyMs, boolean dismissed) {
 }
