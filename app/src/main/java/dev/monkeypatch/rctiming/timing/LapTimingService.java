@@ -148,6 +148,11 @@ public class LapTimingService {
             return;
         }
 
+        if (!state.hasRaceStart()) {
+            // The state was made before the race started (a link or marshal call on the grid): take the start now
+            raceClockService.startOf(raceId).ifPresent(start -> state.putRaceStart(start.startedAtMs(), start.rolling()));
+        }
+
         // Check runtime links first — these take priority over transponderNumberSnapshot
         Long entryId = state.getRuntimeLink(transponderNumber);
         if (entryId == null) {

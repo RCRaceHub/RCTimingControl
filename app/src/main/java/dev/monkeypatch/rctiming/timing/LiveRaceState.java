@@ -82,6 +82,11 @@ public class LiveRaceState {
         this.rollingStart = rolling;
     }
 
+    /** Whether {@link #putRaceStart} has been given a start, so a state made before the race started can be topped up. */
+    public synchronized boolean hasRaceStart() {
+        return startedAtMs > 0;
+    }
+
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
         return runtimeLinks.get(transponderNumber);

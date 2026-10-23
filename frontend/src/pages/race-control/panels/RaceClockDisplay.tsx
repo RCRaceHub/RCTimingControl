@@ -9,7 +9,7 @@ import { fmtClock } from '@/pages/boards/boardFormat';
  * answers it counts down here. Shown only while the race is running.
  */
 function ForcedCloseCountdown({ raceId }: { raceId: number }) {
-  const { data, dataUpdatedAt } = useQuery({
+  const { data, dataUpdatedAt, isError } = useQuery({
     queryKey: ['forced-close', raceId],
     queryFn: () => getForcedClose(raceId),
     refetchInterval: 3000,
@@ -20,7 +20,7 @@ function ForcedCloseCountdown({ raceId }: { raceId: number }) {
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
   }, []);
-  if (data?.closesInMs == null) return null;
+  if (isError || data?.closesInMs == null) return null;
   const left = Math.max(0, data.closesInMs - Math.max(0, now - dataUpdatedAt));
   return (
     <div className="flex items-baseline gap-2" role="timer" aria-label="Time until the race is closed">
@@ -49,7 +49,8 @@ export function RaceClockDisplay({ clock, readAt }: { clock: RaceClockDto | unde
   const timed = clock.remainingMs != null;
   const text = timed ? fmtClock(clock.remainingMs! - sinceRead) : fmtClock(clock.elapsedMs + sinceRead);
 
-  const overrun = timed && running && clock.remainingMs! - sinceRead <= 0;
+  // A timed race counts down once its time is up; a lap-count race once a car has taken the flag (the app says when)
+  const overrun = running && (timed ? clock.remainingMs! - sinceRead <= 0 : true);
 
   return (
     <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">

@@ -222,12 +222,15 @@ public class RaceClockService {
      */
     public record RaceStart(long startedAtMs, boolean rolling) {}
 
-    /** The race's start, read by {@code LapTimingService} once when it makes the race's state. */
+    /**
+     * The race's start, read by {@code LapTimingService} until the race's state has it. Rolling is the race's own
+     * start type, the rule the stored result uses, so live and final total times agree.
+     */
     @Transactional(readOnly = true)
     public Optional<RaceStart> startOf(long raceId) {
         return raceRepository.findById(raceId)
                 .filter(race -> race.getStartedAt() != null)
-                .map(race -> new RaceStart(race.getStartedAt().toEpochMilli(), startTypeOf(race) == StartType.ROLLING));
+                .map(race -> new RaceStart(race.getStartedAt().toEpochMilli(), race.getStartType() == StartType.ROLLING));
     }
 
     private Long durationMs(Race race) {

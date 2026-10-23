@@ -45,8 +45,13 @@ describe('RaceClockDisplay', () => {
 
   it('shows the time so far for a race with no set length', () => {
     const untimed = clock({ durationMs: null, remainingMs: null, elapsedMs: 61_000 });
-    render(<RaceClockDisplay clock={untimed} readAt={Date.now()} />);
-    expect(screen.getByRole('timer')).toHaveTextContent('Race time1:01');
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: null });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <RaceClockDisplay clock={untimed} readAt={Date.now()} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole('timer', { name: 'Race time' })).toHaveTextContent('Race time1:01');
   });
 
   it('shows nothing until the clock is read', () => {
