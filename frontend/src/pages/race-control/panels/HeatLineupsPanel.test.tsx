@@ -50,6 +50,15 @@ describe('HeatLineupsPanel', () => {
     await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: true }));
   });
 
+  it('can limit a move to just this round, and highlights the selected heat', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    fireEvent.click(await screen.findByLabelText(/^Just /));
+    fireEvent.change(await screen.findByLabelText('Move Driver 1 to'), { target: { value: '2' } });
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: false }));
+    expect(screen.getByRole('region', { name: 'Heat 1' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('region', { name: 'Heat 2' })).not.toHaveAttribute('aria-current');
+  });
+
   it('offers no moves without permission', async () => {
     renderPanel([heat(1, 1), heat(2, 2)]);
     await screen.findByText('Driver 1');

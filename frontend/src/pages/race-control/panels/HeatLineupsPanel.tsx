@@ -15,15 +15,16 @@ type Props = {
 };
 
 /**
- * Who is in which heat of the selected practice or qualifying heat's round and class, so the line-ups can be checked
- * at the start of practice and before qualifying begins. A driver in a heat that has not been called can be moved to
- * another such heat of the round to balance them (the heats need not stay the same size), in this round or in every
- * round where both heats are still pending, which is how qualifying is evened up after practice. The heat names
- * select that heat.
+ * The one place to see and change who is in which heat of the selected practice or qualifying heat's round and
+ * class, so the line-ups can be checked at the start of practice and before qualifying begins. The selected heat is
+ * highlighted. A driver in a heat that has not been called can be moved to another such heat to balance them (the
+ * heats need not stay the same size), either in this round only or in every round where both heats are still
+ * waiting, which is how qualifying is evened up after practice. The heat names select that heat.
  */
 export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: Props) {
   const queryClient = useQueryClient();
   const [allRounds, setAllRounds] = useState(true);
+  const roundLabel = roundName(race, true);
   const move = useMutation({
     mutationFn: (v: { raceId: number; entryId: number; targetRaceId: number }) =>
       moveEntryToHeat(v.raceId, { entryId: v.entryId, targetRaceId: v.targetRaceId, allRounds }),
@@ -50,13 +51,18 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
   return (
     <Card className="p-4 space-y-2" aria-label="Heat line-ups">
       <h3 className="text-sm font-semibold">
-        {roundName(race, true)} line-ups: {race.className}
+        {roundLabel} line-ups: {race.className}
       </h3>
       <div className="grid gap-3 md:grid-cols-2">
         {heats.map((h, i) => {
           const drivers = results[i]?.data ?? [];
           return (
-            <section key={h.raceId} aria-label={`Heat ${h.heatNumber}`} className="rounded border p-2 space-y-1">
+            <section
+              key={h.raceId}
+              aria-label={`Heat ${h.heatNumber}`}
+              aria-current={h.raceId === race.raceId ? 'true' : undefined}
+              className={`rounded border p-2 space-y-1 ${h.raceId === race.raceId ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''}`}
+            >
               <button
                 type="button"
                 className="text-sm font-medium underline-offset-2 hover:underline"
@@ -100,10 +106,18 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
         })}
       </div>
       {canMove && (
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          <input type="checkbox" checked={allRounds} onChange={(ev) => setAllRounds(ev.target.checked)} />
-          Also move them in the other rounds where both heats haven't been called
-        </label>
+        <fieldset className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <legend className="sr-only">Where a move applies</legend>
+          <span>Moves apply to:</span>
+          <label className="flex items-center gap-1">
+            <input type="radio" name="move-scope" checked={!allRounds} onChange={() => setAllRounds(false)} />
+            Just {roundLabel}
+          </label>
+          <label className="flex items-center gap-1">
+            <input type="radio" name="move-scope" checked={allRounds} onChange={() => setAllRounds(true)} />
+            Every round where both heats are still waiting
+          </label>
+        </fieldset>
       )}
     </Card>
   );

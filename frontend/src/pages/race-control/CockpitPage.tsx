@@ -36,7 +36,6 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
-import { HeatDriversPanel } from './panels/HeatDriversPanel';
 import { Button } from '@/components/ui/button';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
@@ -418,7 +417,6 @@ export default function CockpitPage() {
                 Abandon heat
               </Button>
             )}
-            {canControlRace && <HeatDriversPanel race={selectedRace} runOrder={runOrder} />}
             {finalBlocked && (
               <p className="text-sm text-destructive">
                 {unfinishedQualifiers} qualifying {unfinishedQualifiers === 1 ? 'heat' : 'heats'} for{' '}
