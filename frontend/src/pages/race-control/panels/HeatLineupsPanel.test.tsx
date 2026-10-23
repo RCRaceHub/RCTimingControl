@@ -47,6 +47,19 @@ describe('HeatLineupsPanel', () => {
     expect(screen.queryByLabelText('Move Driver 1 to')).not.toBeInTheDocument();
   });
 
+  it('shows the line-up of the selected heat on the first tab', async () => {
+    const runOrder = [heat(1, 1), heat(2, 2)];
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <HeatLineupsPanel race={runOrder[1]} runOrder={runOrder} onSelect={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('Driver 2')).toBeInTheDocument();
+    expect(screen.queryByText('Driver 1')).not.toBeInTheDocument();
+    expect(await screen.findByText('1 driver')).toBeInTheDocument();
+  });
+
   it('lists the drivers of every heat in the round and selects a heat by name', async () => {
     const onSelect = renderPanel([heat(1, 1), heat(2, 2)]);
     openMoveTab();
