@@ -53,11 +53,12 @@ export function PracticeSessionPage() {
     queryKey: raceControlQueryKeys.practice.session(id),
     queryFn: () => getSession(id),
     enabled: !isNaN(id),
-    // A race starting stops practice from the server's side, so keep a running session's view fresh
-    // An idle session waits on a running race too, so Start enables when the race ends
+    // A race starting stops practice from the server's side, so keep a running session's view fresh; an idle
+    // session waits on a running race too, so Start enables when the race ends
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data?.status === 'RUNNING' || (data?.status === 'IDLE' && data.raceRunning) ? 5000 : false;
+      const waitingOnRace = data?.status === 'IDLE' && data.raceRunning;
+      return data?.status === 'RUNNING' || waitingOnRace ? 5000 : false;
     },
   });
 
@@ -74,6 +75,8 @@ export function PracticeSessionPage() {
     onError: (err) => {
       // The server says why, such as a race running (practice and a race share the decoder)
       toast.error(getApiErrorMessage(err, 'Failed to start session.'));
+      // Pick up the race that blocked it, so Start shows disabled with its hint
+      queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.practice.session(id) });
     },
   });
 
