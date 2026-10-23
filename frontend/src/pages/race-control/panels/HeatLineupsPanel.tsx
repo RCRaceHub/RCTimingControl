@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getRaceEntries, moveEntryToHeat, type RunOrderItemDto } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { roundName } from '@/lib/format';
@@ -16,8 +17,9 @@ type Props = {
 
 /**
  * The one place to see and change who is in which heat of the selected practice or qualifying heat's round and
- * class, so the line-ups can be checked at the start of practice and before qualifying begins. The selected heat is
- * highlighted. A driver in a heat that has not been called can be moved to another such heat to balance them (the
+ * class, so the line-ups can be checked at the start of practice and before qualifying begins. It opens on a
+ * "Next heat" tab showing only the selected (proposed next) heat's line-up; the "Move drivers" tab holds every heat of
+ * the round with the move controls, with the selected heat highlighted. A driver in a heat that has not been called can be moved to another such heat to balance them (the
  * heats need not stay the same size), either in this round only or in every round where both heats are still
  * waiting, which is how qualifying is evened up after practice. The heat names select that heat.
  */
@@ -48,11 +50,36 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
 
   if (heats.length < 2) return null;
 
+  const selected = heats.find((h) => h.raceId === race.raceId) ?? heats[0];
+  const selectedDrivers = results[heats.indexOf(selected)]?.data ?? [];
+
   return (
     <Card className="p-4 space-y-2" aria-label="Heat line-ups">
       <h3 className="text-sm font-semibold">
         {roundLabel} line-ups: {race.className}
       </h3>
+      <Tabs defaultValue="next">
+        <TabsList>
+          <TabsTrigger value="next">Next heat</TabsTrigger>
+          <TabsTrigger value="move">Move drivers</TabsTrigger>
+        </TabsList>
+        <TabsContent value="next" className="pt-2">
+          <p className="text-sm font-medium">
+            Heat {selected.heatNumber}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              {selectedDrivers.length} {selectedDrivers.length === 1 ? 'driver' : 'drivers'}
+            </span>
+          </p>
+          <ol className="space-y-0.5 text-sm" aria-label={`Heat ${selected.heatNumber} line-up`}>
+            {selectedDrivers.map((d) => (
+              <li key={d.entryId}>
+                {d.racerName}
+                {d.carNumber && <span className="ml-1 text-muted-foreground">#{d.carNumber}</span>}
+              </li>
+            ))}
+          </ol>
+        </TabsContent>
+        <TabsContent value="move" className="pt-2 space-y-2">
       <div className="grid gap-3 md:grid-cols-2">
         {heats.map((h, i) => {
           const drivers = results[i]?.data ?? [];
@@ -119,6 +146,8 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
           </label>
         </fieldset>
       )}
+        </TabsContent>
+      </Tabs>
     </Card>
   );
 }

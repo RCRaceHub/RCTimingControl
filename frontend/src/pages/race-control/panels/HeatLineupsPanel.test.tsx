@@ -36,8 +36,20 @@ describe('HeatLineupsPanel', () => {
     return onSelect;
   }
 
+  function openMoveTab() {
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Move drivers' }));
+  }
+
+  it('opens on the selected heat only, with the other heats behind the Move drivers tab', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    expect(await screen.findByText('Driver 1')).toBeInTheDocument();
+    expect(screen.queryByText('Driver 2')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Move Driver 1 to')).not.toBeInTheDocument();
+  });
+
   it('lists the drivers of every heat in the round and selects a heat by name', async () => {
     const onSelect = renderPanel([heat(1, 1), heat(2, 2)]);
+    openMoveTab();
     expect(await screen.findByText('Driver 1')).toBeInTheDocument();
     expect(await screen.findByText('Driver 2')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Heat 2' }));
@@ -46,12 +58,14 @@ describe('HeatLineupsPanel', () => {
 
   it('moves a driver to another heat in every round where both are pending, to balance the heats', async () => {
     renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    openMoveTab();
     fireEvent.change(await screen.findByLabelText('Move Driver 1 to'), { target: { value: '2' } });
     await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: true }));
   });
 
   it('can limit a move to just this round, and highlights the selected heat', async () => {
     renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    openMoveTab();
     fireEvent.click(await screen.findByLabelText(/^Just /));
     fireEvent.change(await screen.findByLabelText('Move Driver 1 to'), { target: { value: '2' } });
     await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: false }));
@@ -61,6 +75,7 @@ describe('HeatLineupsPanel', () => {
 
   it('offers no moves without permission', async () => {
     renderPanel([heat(1, 1), heat(2, 2)]);
+    openMoveTab();
     await screen.findByText('Driver 1');
     expect(screen.queryByLabelText('Move Driver 1 to')).not.toBeInTheDocument();
   });
