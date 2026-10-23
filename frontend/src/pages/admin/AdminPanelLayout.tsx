@@ -105,7 +105,7 @@ function NavItem({
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin } = useRoles();
-  const eventId = useMatch('/admin/events/:id')?.params.id;
+  const eventId = useMatch('/admin/events/:id/*')?.params.id;
 
   return (
     <div className="flex flex-col h-full">
@@ -161,7 +161,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <BookOpen className="h-4 w-4 shrink-0" />
           Docs
         </a>
-        <BoardsMenu placement="beside" eventId={eventId} />
+        <BoardsMenu side="right" eventId={eventId} />
         <HelpSidebarButton onOpen={onNavClick} />
       </div>
 

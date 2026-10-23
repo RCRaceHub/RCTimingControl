@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { DropdownMenu } from 'radix-ui';
 import { ChevronDown, Tv } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -10,7 +10,7 @@ interface BoardLink {
 }
 
 /** The public boards and results pages, none of which need a sign-in. */
-export const BOARD_LINKS: BoardLink[] = [
+const BOARD_LINKS: BoardLink[] = [
   { path: '/boards/now-next', label: 'Now and next', takesEvent: true },
   { path: '/boards/live-race', label: 'Live race', takesEvent: true },
   { path: '/boards/results', label: 'Race results', takesEvent: true },
@@ -23,72 +23,50 @@ export const BOARD_LINKS: BoardLink[] = [
 /**
  * A dropdown of every board and results page, each opening in a new tab so the official keeps their place.
  * With an `eventId` the links are pinned to that event; without one the boards pick the event on track.
+ * Built on Radix so it handles focus, arrow keys, Escape (without closing a drawer behind it) and screen edges.
  */
 export function BoardsMenu({
   eventId,
-  placement = 'below',
+  side = 'bottom',
 }: {
   eventId?: number | string | null;
-  /** `below` drops under the button (top bar); `beside` opens to its right (side bar). */
-  placement?: 'below' | 'beside';
+  /** Which side of the button the list opens on: `bottom` in the top bar, `right` from the side bar. */
+  side?: 'bottom' | 'right';
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
-
-  const position = placement === 'beside' ? 'left-full bottom-0 ml-2' : 'right-0 top-full mt-1';
+  const pinned = eventId && /^\d+$/.test(String(eventId)) ? `?event=${eventId}` : '';
 
   return (
-    <div ref={ref} className="relative">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start gap-2 text-muted-foreground"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(o => !o)}
-      >
-        <Tv className="h-4 w-4" />
-        Boards
-        <ChevronDown className="h-3.5 w-3.5" />
-      </Button>
-      {open && (
-        <ul
-          role="menu"
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+          <Tv className="h-4 w-4" />
+          Boards
+          <ChevronDown className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side={side}
+          align="end"
+          sideOffset={6}
+          collisionPadding={8}
           aria-label="Results boards"
-          className={`absolute z-50 w-52 rounded-md border bg-popover p-1 text-popover-foreground shadow-md ${position}`}
+          className="z-50 w-52 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
         >
           {BOARD_LINKS.map(({ path, label, takesEvent }) => (
-            <li key={path} role="none">
+            <DropdownMenu.Item key={path} asChild>
               <a
-                role="menuitem"
-                href={eventId && takesEvent ? `${path}?event=${eventId}` : path}
+                href={takesEvent ? `${path}${pinned}` : path}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setOpen(false)}
-                className="block rounded px-3 py-1.5 text-sm hover:bg-muted"
+                className="block cursor-pointer rounded px-3 py-1.5 text-sm outline-none transition-colors data-[highlighted]:bg-muted"
               >
                 {label}
               </a>
-            </li>
+            </DropdownMenu.Item>
           ))}
-        </ul>
-      )}
-    </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
