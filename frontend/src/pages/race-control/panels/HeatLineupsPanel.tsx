@@ -51,7 +51,7 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
 
   if (heats.length < 2) return null;
 
-  const selected = heats.find((h) => h.raceId === selected.raceId) ?? heats[0];
+  const selected = heats.find((h) => h.raceId === race.raceId) ?? heats[0];
   const selectedResult = results[heats.indexOf(selected)];
   const selectedDrivers = selectedResult?.data ?? [];
 
