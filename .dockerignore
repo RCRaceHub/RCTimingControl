@@ -7,6 +7,7 @@ app/build
 buildSrc/build
 decoder-protocol/build
 decoder-simulator/build
+mapstruct-jooq/build
 frontend/node_modules
 frontend/dist
 app/data

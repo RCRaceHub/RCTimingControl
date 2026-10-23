@@ -9,12 +9,14 @@ on:
     paths:
       - 'app/src/main/java/**'
       - 'app/build.gradle.kts'
+      - 'mapstruct-jooq/**'
       - '.github/workflows/javadoc.yml'
       - '.github/scripts/check-class-javadoc.py'
   pull_request:
     paths:
       - 'app/src/main/java/**'
       - 'app/build.gradle.kts'
+      - 'mapstruct-jooq/**'
       - '.github/workflows/javadoc.yml'
       - '.github/scripts/check-class-javadoc.py'
   workflow_dispatch:
