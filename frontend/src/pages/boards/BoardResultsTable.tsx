@@ -14,6 +14,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
     return <p className="text-2xl text-slate-400">No results recorded for this race.</p>;
   }
   const hasPoints = results.some((r) => r.points != null);
+  const hasChampionshipPoints = results.some((r) => r.championshipPoints != null);
   const leaderLaps = Math.max(...results.map((r) => r.lapsCompleted));
   return (
     <table className="w-full text-2xl lg:text-4xl" aria-label="Results">
@@ -27,6 +28,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
           <th className="py-2 pr-4 text-right">Best lap</th>
           <th className={`py-2 text-right ${hasPoints ? 'pr-4' : ''}`}>Gap</th>
           {hasPoints && <th className="py-2 text-right">Points</th>}
+          {hasChampionshipPoints && <th className="py-2 pl-4 text-right">Champ. pts</th>}
         </tr>
       </thead>
       <tbody>
@@ -40,6 +42,9 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
             <td className={`py-3 text-right tabular-nums text-slate-300 ${hasPoints ? 'pr-4' : ''}`}>{gap(row, leaderLaps)}</td>
             {hasPoints && <td className="py-3 text-right font-semibold tabular-nums">{row.points ?? '—'}</td>}
+            {hasChampionshipPoints && (
+              <td className="py-3 pl-4 text-right font-semibold tabular-nums">{row.championshipPoints ?? '—'}</td>
+            )}
           </tr>
         ))}
       </tbody>

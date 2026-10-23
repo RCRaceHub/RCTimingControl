@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
+import dev.monkeypatch.rctiming.query.racecontrol.ResultPointsCache;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +67,8 @@ public class FinalsBoardService {
         Map<Long, FinalLegsDto> legsByClass = finalLegsService.forEventPublic(eventId).stream()
                 .collect(Collectors.toMap(FinalLegsDto::eventClassId, Function.identity()));
         PublicNames.Snapshot names = publicNames.snapshot();
+        // The event's championship points are worked out once for all its finals
+        ResultPointsCache pointsCache = new ResultPointsCache();
         List<FinalsBoardDto.ClassFinals> classes = new ArrayList<>();
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
             List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL)
@@ -90,7 +93,7 @@ public class FinalsBoardService {
                 boolean done = status == RaceStatus.FINISHED;
                 finished += done ? 1 : 0;
                 rows.add(new FinalsBoardDto.Final(race.getFinalLetter(), status, abandoned,
-                        done && !abandoned ? resultRows(race.getId(), names) : List.of(), legs));
+                        done && !abandoned ? resultRows(race.getId(), names, pointsCache) : List.of(), legs));
             }
             String className = racingClassRepository.findById(eventClass.getRacingClassId())
                     .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
@@ -99,12 +102,14 @@ public class FinalsBoardService {
         return classes;
     }
 
-    private List<ResultSnapshotDto.ResultRow> resultRows(long raceId, PublicNames.Snapshot names) {
+    private List<ResultSnapshotDto.ResultRow> resultRows(long raceId, PublicNames.Snapshot names,
+                                                         ResultPointsCache pointsCache) {
         try {
-            return resultSnapshotQuery.load(raceId).positions().stream()
+            return resultSnapshotQuery.load(raceId, pointsCache).positions().stream()
                     .map(r -> new ResultSnapshotDto.ResultRow(r.position(), r.entryId(), r.competitorId(),
                             names.of(r.competitorId(), r.driverName(), r.carNumber()), r.carNumber(),
-                            r.lapsCompleted(), r.totalTimeMs(), r.bestLapMs(), r.gapToLeaderMs()))
+                            r.lapsCompleted(), r.totalTimeMs(), r.bestLapMs(), r.gapToLeaderMs(), r.points(),
+                            r.championshipPoints()))
                     .toList();
         } catch (EntityNotFoundException e) {
             // Finished but not yet snapshotted

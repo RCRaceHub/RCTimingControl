@@ -213,6 +213,7 @@ How a round is scored:
   bumped up has their A final place. A class with no finals scores from its **overall qualifying order** (section 2),
   placed across all its heats, once every qualifying heat is finished. Practice never scores. The points are the
   points scale at that place.
+- Each final's result shows these points beside the place (see [Screens and printouts](screens-and-printouts.md)).
 - A final is not placed until every final above it has finished, since its drivers may still bump up. A driver who bumped up and did not start the higher final is classed last in it, ahead of everyone from the final below, in the order they finished that final. If nobody raced the higher final, the final below keeps its own places.
 - Example of stacked finals: the A final finishes Ann, Bob, Cat and the B final Cat (who bumped up), Dan, Eve.
   The round's places are Ann 1, Bob 2, Cat 3, Dan 4, Eve 5. Cat's B final win does not count.

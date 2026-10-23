@@ -66,6 +66,24 @@ describe('FinalsResultsPage', () => {
     expect(screen.getByText('Not run yet.')).toBeInTheDocument();
   });
 
+  it('shows the championship points a final earns when the event is in a championship', async () => {
+    vi.mocked(getFinalsBoard).mockResolvedValue({
+      eventId: 7,
+      eventName: 'Club Round 3',
+      classes: [{
+        eventClassId: 1, className: '1/10 Buggy', finalsFinished: 1, finalsTotal: 1,
+        finals: [{
+          letter: 'A', status: 'FINISHED', abandoned: false, legs: null,
+          results: [{ ...row(1, 1, 'Winner'), championshipPoints: 100 }, { ...row(2, 2, 'Runner'), championshipPoints: 95 }],
+        }],
+      }],
+    });
+    renderPage();
+
+    expect(await screen.findByRole('columnheader', { name: 'Champ. pts' })).toBeInTheDocument();
+    expect(screen.getByText('95')).toBeInTheDocument();
+  });
+
   it('says so when there are no finals', async () => {
     vi.mocked(getFinalsBoard).mockResolvedValue({ eventId: 7, eventName: 'Club Round 3', classes: [] });
     renderPage();

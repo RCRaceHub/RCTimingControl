@@ -118,6 +118,54 @@ public class ChampionshipStandingsQuery {
         return rank(rows(tally, rules));
     }
 
+    /**
+     * What each finalist's place in the event's finals is worth in the championship the event belongs to, by race id
+     * and then entry id, for showing on a final's result. The place is the one the standings use (across the whole
+     * round of finals, see {@link #overallFinalPositions}), and the points are the championship's points scale at
+     * that place, nil for a driver excluded from the event. Bonuses are not included. A final is left out until it
+     * is placed, and so is a class the championship does not score. Where several championships include the event,
+     * the lowest-numbered one that scores the class is used. Empty when the event is in no championship.
+     */
+    public Map<Long, Map<Long, Integer>> finalPointsFor(Long eventId) {
+        List<Long> championshipIds = dsl.select(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID)
+                .from(CHAMPIONSHIP_EVENT_LINKS)
+                .where(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID.eq(eventId))
+                .orderBy(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID.asc())
+                .fetch(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID);
+        Map<Long, Map<Long, Integer>> pointsByRace = new HashMap<>();
+        Set<Long> classesDone = new HashSet<>();
+        for (Long championshipId : championshipIds) {
+            Rules rules = rules(championshipId);
+            ChampionshipRound round = rounds(championshipId).stream()
+                    .filter(r -> r.eventId().equals(eventId)).findFirst().orElse(null);
+            if (round == null) {
+                continue;
+            }
+            EventResults results = results(List.of(round)).getOrDefault(eventId, EventResults.NONE);
+            Map<Long, Map<Long, Integer>> places = overallFinalPositions(results.races(), results.firstOpenFinal());
+            Set<Long> classesScored = new HashSet<>();
+            for (FinishedRace race : results.races()) {
+                if (!race.scores() || classesDone.contains(race.racingClassId())
+                        || !rules.scores(race.racingClassId())) {
+                    continue;
+                }
+                classesScored.add(race.racingClassId());
+                Map<Long, Integer> points = new HashMap<>();
+                places.getOrDefault(race.raceId(), Map.of()).forEach((entryId, place) -> {
+                    EntryRef entry = results.scoringEntries().get(entryId);
+                    boolean excluded = entry != null && entry.driverId() != null
+                            && rules.excluded(entry.driverId(), eventId);
+                    points.put(entryId, excluded ? 0 : rules.points(place));
+                });
+                if (!points.isEmpty()) {
+                    pointsByRace.put(race.raceId(), points);
+                }
+            }
+            classesDone.addAll(classesScored);
+        }
+        return pointsByRace;
+    }
+
     /** How the championship scores: everything but the results themselves. */
     private record Rules(boolean showOverall, BestXFromY bestXFromY, Map<Long, BestXFromY> classBestXFromY,
                          Map<Integer, Integer> pointsScale, int tqBonus, int aFinalBonus,

@@ -61,6 +61,8 @@ export type ResultRow = {
   gapToLeaderMs: number | null;
   /** Points scored in the race's round, for a qualifying heat of a low-points class; absent or null otherwise. */
   points?: number | null;
+  /** What the place in the event's finals earns in its championship, for a final of a scoring class; absent or null otherwise. */
+  championshipPoints?: number | null;
 };
 
 export type PositionAtLap = {

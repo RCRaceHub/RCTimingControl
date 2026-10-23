@@ -58,6 +58,7 @@ function LegsTable({ legs }: { legs: FinalLegs }) {
 }
 
 function ResultsTable({ final }: { final: FinalsBoardFinal }) {
+  const hasPoints = final.results.some((r) => r.championshipPoints != null);
   return (
     <table className="w-full text-sm" aria-label={`Final ${final.letter}`}>
       <thead>
@@ -68,6 +69,7 @@ function ResultsTable({ final }: { final: FinalsBoardFinal }) {
           <th className={`${TH} text-right`}>Laps</th>
           <th className={`${TH} text-right`}>Time</th>
           <th className={`${TH} text-right`}>Best lap</th>
+          {hasPoints && <th className={`${TH} text-right`}>Champ. pts</th>}
         </tr>
       </thead>
       <tbody>
@@ -79,6 +81,7 @@ function ResultsTable({ final }: { final: FinalsBoardFinal }) {
             <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}</td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.totalTimeMs)}</td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.bestLapMs)}</td>
+            {hasPoints && <td className="px-3 py-2 text-right tabular-nums">{row.championshipPoints ?? '—'}</td>}
           </tr>
         ))}
       </tbody>
