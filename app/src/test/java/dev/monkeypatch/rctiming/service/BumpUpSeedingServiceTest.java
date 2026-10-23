@@ -178,6 +178,8 @@ class BumpUpSeedingServiceTest {
         assertThat(saved.stream().filter(e -> e.getRaceId().equals(bFinal.getId())).map(RaceEntry::getEntryId))
                 .containsExactly(5L, 6L, 7L, 8L);
         assertThat(saved).noneMatch(e -> e.getRaceId().equals(cFinal.getId()));
+        // The unused C final is dropped from the run order
+        verify(raceRepository).delete(cFinal);
     }
 
     @Test
@@ -337,6 +339,25 @@ class BumpUpSeedingServiceTest {
         assertThat(service().applyBumpUpResults(aFinal.getId(), List.of(501L))).isEmpty();
         assertThat(service().applyBumpUpResults(bFinal.getId(), List.of(501L))).as("no A final in the class").isEmpty();
         verify(raceEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void seedFinals_keepsAnUnusedFinalThatHasRecordsAgainstIt_emptyAndWithoutBumpSlots() {
+        Long eventClassId = 32L;
+        Race bFinal = finalRace(510L, "B");
+        Race aFinal = finalRace(511L, "A");
+        bFinal.setEventClassId(eventClassId);
+        aFinal.setEventClassId(eventClassId);
+        bFinal.setBumpSlots(2);
+        when(raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL))
+                .thenReturn(new ArrayList<>(List.of(aFinal, bFinal)));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(any())).thenReturn(List.of());
+        when(raceRepository.hasRecordsAgainstRace(bFinal.getId())).thenReturn(true);
+
+        service().seedFinals(eventClassId, List.of(1L, 2L, 3L), 2, 10, 2);
+
+        verify(raceRepository, never()).delete(bFinal);
+        assertThat(bFinal.getBumpSlots()).isZero();
     }
 
     @Test

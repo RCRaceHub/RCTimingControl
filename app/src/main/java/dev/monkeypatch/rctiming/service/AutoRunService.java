@@ -393,7 +393,8 @@ public class AutoRunService {
             return;
         }
         Optional<RunOrderItemDto> next = items.stream()
-                .filter(i -> "GRID".equals(i.status()) || "PENDING".equals(i.status())).findFirst();
+                .filter(i -> "GRID".equals(i.status()) || "PENDING".equals(i.status()))
+                .filter(i -> !isUnusedFinal(items, i)).findFirst();
         if (next.isEmpty()) {
             plans.remove(event.getId());
             log.info("Auto run for event {} finished: nothing left to run", event.getId());
@@ -426,6 +427,22 @@ public class AutoRunService {
         plan.gridCalled = "GRID".equals(item.status());
         plan.leadInSent = false;
         plan.announced.clear();
+    }
+
+    /**
+     * Whether {@code item} is a final the calculation left with nobody, because the field was too small for all the
+     * finals (the lowest ones stay empty): a pending final with an empty grid while another final of its class has
+     * drivers. Auto run steps over it, since there is nothing to run and no one to fix. A final with an empty grid
+     * and no calculated sibling is not this: the finals have not been calculated yet, so auto run holds for them.
+     */
+    private boolean isUnusedFinal(List<RunOrderItemDto> items, RunOrderItemDto item) {
+        if (!"FINAL".equals(item.roundType()) || !"PENDING".equals(item.status())
+                || !raceEntryRepository.findByRaceIdOrderByGridPosition(item.raceId()).isEmpty()) {
+            return false;
+        }
+        return items.stream().anyMatch(other -> other.eventClassId() == item.eventClassId()
+                && "FINAL".equals(other.roundType()) && other.raceId() != item.raceId()
+                && !raceEntryRepository.findByRaceIdOrderByGridPosition(other.raceId()).isEmpty());
     }
 
     private void setRace(Plan plan, RunOrderItemDto item) {
