@@ -98,6 +98,29 @@ export type QualifyingBoardDto = {
   tables: QualifyingBoardTable[];
 };
 
+export type FinalsBoardFinal = {
+  letter: string;
+  status: BoardRaceDto['status'];
+  /** The finished final's result, best first; the first leg's when the A final is run in legs. */
+  results: ResultRow[];
+  /** The A final's combined result when it is run in legs; it is the final's order. */
+  legs: FinalLegs | null;
+};
+
+export type FinalsBoardClass = {
+  eventClassId: number;
+  className: string;
+  finalsFinished: number;
+  finalsTotal: number;
+  finals: FinalsBoardFinal[];
+};
+
+export type FinalsBoardDto = {
+  eventId: number | null;
+  eventName: string | null;
+  classes: FinalsBoardClass[];
+};
+
 function eventParams(eventId: number | null | undefined) {
   return eventId ? { params: { eventId } } : undefined;
 }
@@ -114,6 +137,11 @@ export async function getResultsBoard(eventId?: number | null): Promise<ResultsB
 
 export async function getQualifyingBoard(eventId?: number | null): Promise<QualifyingBoardDto> {
   const { data } = await api.get<QualifyingBoardDto>('/api/v1/boards/qualifying', eventParams(eventId));
+  return data;
+}
+
+export async function getFinalsBoard(eventId?: number | null): Promise<FinalsBoardDto> {
+  const { data } = await api.get<FinalsBoardDto>('/api/v1/boards/finals', eventParams(eventId));
   return data;
 }
 

@@ -102,6 +102,13 @@ export default function EventSchedulePage() {
                       </Link>
                     </Button>
                   )}
+                  {event.finishedRaces.some((r) => r.isFinal) && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/finals?event=${event.id}`}>
+                        Finals Results
+                      </Link>
+                    </Button>
+                  )}
                   {event.championshipId !== null && (
                     <Button variant="outline" size="sm" asChild>
                       <Link to={`/championships/${event.championshipId}`}>

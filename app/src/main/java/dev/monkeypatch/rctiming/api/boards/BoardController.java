@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.api.boards.dto.FinalsBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
@@ -15,6 +16,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
+import dev.monkeypatch.rctiming.service.FinalsBoardService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -49,6 +51,7 @@ public class BoardController {
     private final AutoRunService autoRunService;
     private final BoardTickerService boardTickerService;
     private final FinalLegsService finalLegsService;
+    private final FinalsBoardService finalsBoardService;
     private final LastLapTimeout lastLapTimeout;
 
     public BoardController(BoardQuery boardQuery,
@@ -60,6 +63,7 @@ public class BoardController {
                            AutoRunService autoRunService,
                            BoardTickerService boardTickerService,
                            FinalLegsService finalLegsService,
+                           FinalsBoardService finalsBoardService,
                            LastLapTimeout lastLapTimeout) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
@@ -70,6 +74,7 @@ public class BoardController {
         this.autoRunService = autoRunService;
         this.boardTickerService = boardTickerService;
         this.finalLegsService = finalLegsService;
+        this.finalsBoardService = finalsBoardService;
         this.lastLapTimeout = lastLapTimeout;
     }
 
@@ -110,6 +115,14 @@ public class BoardController {
                 .map(event -> new QualifyingBoardDto(event.id(), event.name(),
                         qualifyingTableService.forEventPublic(event.id())))
                 .orElse(new QualifyingBoardDto(null, null, List.of()));
+    }
+
+    /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */
+    @GetMapping("/finals")
+    public FinalsBoardDto finals(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId)
+                .map(event -> new FinalsBoardDto(event.id(), event.name(), finalsBoardService.forEvent(event.id())))
+                .orElse(new FinalsBoardDto(null, null, List.of()));
     }
 
     /**
