@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.MarshalPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Penalty;
 import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.PenaltyType;
+import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -130,7 +131,8 @@ public class RefereeService {
 
     /**
      * A LAP penalty comes off the car's laps in live timing straight away; a TIME penalty is added to the car's
-     * total time in live timing of a race in progress, and again when the result is worked out. On a finished race the results are sent again.
+     * total time in live timing of a race in progress (the same figure the result will show). On a finished race
+     * the results are sent again.
      * Live timing is only told after the commit. An open jump start alert for the car is settled by it: dismissed, with
      * a {@code JUMP_START_PENALISED} audit row naming the penalty.
      *
@@ -180,16 +182,17 @@ public class RefereeService {
         });
         AfterCommit.run(() -> lapTimingService.dismissJumpStart(raceId, entryId));
 
-        if (raceRepository.findById(raceId).map(r -> r.getStatus() == RaceStatus.FINISHED).orElse(false)) {
+        RaceStatus status = raceRepository.findById(raceId).map(Race::getStatus).orElse(null);
+        if (status == RaceStatus.FINISHED) {
             // The race's results have gone out already; send them again with the penalty (#27)
             eventPublisher.publishEvent(new FinishedRaceCorrected(raceId));
         }
         if (type == PenaltyType.LAP) {
             int laps = value.intValueExact();
             AfterCommit.run(() -> lapTimingService.applyLapPenalty(raceId, entryId, laps));
-        } else if (raceRepository.findById(raceId)
-                .map(r -> r.getStatus() == RaceStatus.RUNNING || r.getStatus() == RaceStatus.STOPPED).orElse(false)) {
-            long penaltyMs = value.multiply(BigDecimal.valueOf(1000)).setScale(0, RoundingMode.HALF_UP).longValueExact();
+        } else if (status == RaceStatus.RUNNING || status == RaceStatus.STOPPED) {
+            long penaltyMs = value.multiply(BigDecimal.valueOf(1000))
+                    .setScale(0, RoundingMode.HALF_UP).longValueExact();
             AfterCommit.run(() -> lapTimingService.applyTimePenalty(raceId, entryId, penaltyMs));
         }
         return saved;

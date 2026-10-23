@@ -313,7 +313,7 @@ export default function MeetingGuidePage() {
             dialog. Select the driver and specify whether the penalty is a time addition
             or a lap deduction. A lap deduction takes laps off straight away and positions
             recalculate. A time penalty is added to the driver&apos;s total time straight away, so live
-            timing orders and gaps include it, and it is added again in the result when the race finishes.
+            timing orders and gaps include it, and the result when the race finishes shows the same time.
           </li>
           <li>
             <span className="font-semibold">Link an unknown transponder:</span> If a

@@ -206,9 +206,9 @@ public class ResultSnapshotService {
 
     /**
      * The timed result with corrections applied. Time penalties always add time here: live timing shows them during
-     * the race, but the timed result it is built from leaves them out. Lap penalties and marshal lap adjustments count only when given after the finish,
-     * since those given during the race changed the live laps the timed result came from. Corrections from
-     * before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
+     * the race, but the timed result it is built from leaves them out. Lap penalties and marshal lap adjustments
+     * count only when given after the finish, since those given during the race changed the live laps the timed
+     * result came from. Corrections from before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
      * finals takes its lap here whenever it was given, since nothing applies it during the race.
      */
     private List<ResultSnapshotDto.ResultRow> corrected(Race race, Instant finishedAt,
