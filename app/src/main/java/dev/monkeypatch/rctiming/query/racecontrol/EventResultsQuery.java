@@ -101,6 +101,8 @@ public class EventResultsQuery {
         Map<Long, Map<Long, Integer>> grids = startPositions(raceIds);
         Map<Long, String> scoringSystems = scoringSystemNames(finished.getValues(RACES.EVENT_CLASS_ID));
 
+        // Each class's round points are worked out once, not once per race
+        Map<Long, Map<Long, Map<Long, Integer>>> roundPoints = new HashMap<>();
         List<EventResultsDto.Race> races = finished.map(r -> {
             long raceId = r.get(RACES.ID);
             return new EventResultsDto.Race(
@@ -111,7 +113,8 @@ public class EventResultsQuery {
                     r.get(ROUNDS.TYPE),
                     r.get(RACES.HEAT_NUMBER),
                     r.get(RACES.FINAL_LETTER),
-                    withLaps ? snapshotQuery.load(raceId) : withoutLaps(snapshotQuery.load(raceId)),
+                    withLaps ? snapshotQuery.load(raceId, roundPoints)
+                            : withoutLaps(snapshotQuery.load(raceId, roundPoints)),
                     grids.getOrDefault(raceId, Map.of()),
                     scoringSystems.get(r.get(RACES.EVENT_CLASS_ID)));
         });

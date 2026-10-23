@@ -22,6 +22,19 @@ class ResultSnapshotJsonTest {
     }
 
     @Test
+    void readsARowStoredBeforeRowsHadPointsAsOneWithNoPoints() {
+        String stored = "[{\"position\":1,\"entryId\":7,\"competitorId\":3,\"driverName\":\"Sam Driver\","
+                + "\"carNumber\":\"4\",\"lapsCompleted\":12,\"totalTimeMs\":31500,\"bestLapMs\":2400,"
+                + "\"gapToLeaderMs\":null}]";
+
+        List<ResultSnapshotDto.ResultRow> read = json.positions(5L, stored);
+
+        assertThat(read).hasSize(1);
+        assertThat(read.get(0).points()).isNull();
+        assertThat(read.get(0).withPoints(3).points()).isEqualTo(3);
+    }
+
+    @Test
     void readsBackLapHistory() {
         var lap = new ResultSnapshotDto.PositionAtLap(3, 7L, 2, 31_000L);
 

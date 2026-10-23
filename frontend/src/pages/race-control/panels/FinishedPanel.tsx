@@ -55,6 +55,8 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
     );
   }
 
+  const hasPoints = data.positions.some((r) => r.points != null);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -89,6 +91,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
             <TableHead className="text-right">Total Time</TableHead>
             <TableHead className="text-right">Best Lap</TableHead>
             <TableHead className="text-right">Gap</TableHead>
+            {hasPoints && <TableHead className="text-right">Points</TableHead>}
             {elim.shikabane && <TableHead className="text-right">Shikabane</TableHead>}
           </TableRow>
         </TableHeader>
@@ -111,6 +114,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
               <TableCell className="text-right font-mono text-muted-foreground">
                 {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
               </TableCell>
+              {hasPoints && <TableCell className="text-right font-mono">{row.points ?? '—'}</TableCell>}
               {elim.shikabane && (
                 <TableCell className="text-right">
                   {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}

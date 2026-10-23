@@ -65,7 +65,7 @@ Print from the browser (Ctrl+P, or the Print button), and choose **Save as PDF**
 
 | Printout | Where to open it | Contents |
 |----------|------------------|----------|
-| Heat result | Race control, a finished race, **Print** | Position, driver, car, the grid position the driver started from, laps, total time, best lap, average lap and gap, with the event name and date at the top. The penalties given in the heat are listed under the table, and a position chart (lap across, place down, one line per car, each labelled with the driver's name) sits under that unless you clear **Include position chart**. Names are the real ones |
+| Heat result | Race control, a finished race, **Print** | Position, driver, car, the grid position the driver started from, laps, total time, best lap, average lap and gap, then **Points** (see below), with the event name and date at the top. The penalties given in the heat are listed under the table, and a position chart (lap across, place down, one line per car, each labelled with the driver's name) sits under that unless you clear **Include position chart**. Names are the real ones |
 | Lap-by-lap sheet | The heat result page, tick **Include lap-by-lap times** | Every lap time, one column per driver in finishing order, each driver's quickest lap in bold. It prints on its own page. The tick is kept in the page address (`?laps=1`) so a reload keeps it |
 | Round summary | Race control, **Print**, then a qualifier | Every heat of that round, one class to a page, each with the full heat table |
 | Final results | Race control, **Print**, then **Final results** | Every final of each class, one class to a page, the A final first, each with the full heat table. A bump-up class's drivers appear in each final they raced |
@@ -91,3 +91,7 @@ Planned, tracked in issue #359:
 - A fixed network name for the laptop (for example `rctiming.local`) so printed QR codes survive an address change.
 - A results site for clubs without RaceHub. The choice of where results are published (nothing, RaceHub, a results site or both) is made under **Admin → Results to RaceHub**, but choosing the results site sends nothing yet.
 - QR codes that link to RaceHub's public pages instead of this laptop (#316).
+
+### Points on a heat result
+
+In a qualifying heat of a class that ranks qualifying by low points (round by round), every heat result shows a **Points** column: the heat result in race control, the heat result and round summary printouts, the results board and the public results page. It holds the points the driver scored in that heat's round, which is their place across all the class's heats in the round (1 for the best), or the BRCA no-show score where that setting is on. Because a round is ranked across all its heats, a driver who wins heat 2 may not have 1 point. The column appears once every heat of the round has finished, since the places are not settled before then, and is left out for practice, finals and classes ranked another way. It is the round's own score before any drop for best X from Y; the qualifying standings show which rounds count. In a Shikabane class the points are the driver's place in their own heat, since its heats are scored separately. Championship points are on the championship standings.

@@ -5,10 +5,12 @@ import { fmtMs } from '@/lib/format';
 
 /**
  * One heat's result as it prints: position, driver, car, the grid position the driver started from, laps, total
- * time, best and average lap and the gap. Names are the real ones; this is for officials' paper only.
+ * time, best and average lap and the gap. A Points column follows when the round is scored by points. Names are
+ * the real ones; this is for officials' paper only.
  */
 export function HeatResultTable({ race }: { race: EventResultsRace }) {
   const { positions, lapHistory } = race.result;
+  const hasPoints = positions.some((r) => r.points != null);
   return (
     <table className="w-full border-collapse text-sm">
       <thead>
@@ -22,6 +24,7 @@ export function HeatResultTable({ race }: { race: EventResultsRace }) {
           <th scope="col" className="py-2 pr-4 text-right">Best Lap</th>
           <th scope="col" className="py-2 pr-4 text-right">Avg Lap</th>
           <th scope="col" className="py-2 text-right">Gap</th>
+          {hasPoints && <th scope="col" className="py-2 pl-4 text-right">Points</th>}
         </tr>
       </thead>
       <tbody>
@@ -40,6 +43,7 @@ export function HeatResultTable({ race }: { race: EventResultsRace }) {
             <td className="py-1.5 text-right font-mono text-muted-foreground">
               {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
             </td>
+            {hasPoints && <td className="py-1.5 pl-4 text-right font-mono">{row.points ?? '—'}</td>}
           </tr>
         ))}
       </tbody>

@@ -81,6 +81,34 @@ describe('ResultsBoard', () => {
     expect(screen.getByText('+2 laps')).toBeInTheDocument();
   });
 
+  it('shows the points each driver scored when the heat is scored by points', async () => {
+    vi.mocked(getResultsBoard).mockResolvedValue({
+      eventId: 7,
+      eventName: 'Club Round 3',
+      race: {
+        raceId: 11,
+        label: 'Qualifier 1 — 1/10 Buggy — Heat 1',
+        roundType: 'QUALIFIER',
+        roundNumber: 1,
+        className: '1/10 Buggy',
+        heatNumber: 1,
+        finalLetter: null,
+        status: 'FINISHED',
+      },
+      results: [
+        { position: 1, entryId: 1, driverName: 'Winner Person', carNumber: '7', lapsCompleted: 20,
+          totalTimeMs: 300_000, bestLapMs: 14_500, gapToLeaderMs: null, points: 1 },
+        { position: 2, entryId: 2, driverName: 'Close Second', carNumber: '2', lapsCompleted: 20,
+          totalTimeMs: 301_250, bestLapMs: 14_600, gapToLeaderMs: 1_250, points: 4 },
+      ],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByRole('columnheader', { name: 'Points' })).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+  });
+
   it('says so when nothing has finished', async () => {
     vi.mocked(getResultsBoard).mockResolvedValue({
       eventId: null,
