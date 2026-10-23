@@ -92,6 +92,59 @@ public class LastLapTimeout {
         }
     }
 
+    /**
+     * How long until this timeout or the maximum race window would finish the running race, for the countdown on
+     * the cockpit and referee screens. It uses the same figures as {@link #checkRace}: once the clock has run out
+     * (or, for a lap-count race, the first car has taken the flag) the race closes when no lap has counted for the
+     * track's max last lap, or when the window is reached, whichever is first. A lap that counts puts the first
+     * back, so the answer is read fresh rather than counted on by the viewer for long.
+     *
+     * <p>Runs on a request thread and only reads. Empty when the race is not running, its clock has not run out,
+     * or neither limit applies, so the screen shows nothing.
+     *
+     * @return milliseconds left, never below 0
+     */
+    public Optional<Long> closesInMs(long raceId) {
+        Optional<Race> found = raceRepository.findById(raceId).filter(r -> r.getStatus() == RaceStatus.RUNNING);
+        Optional<RaceClockDto> clockFound = found.flatMap(r -> raceClockService.clock(r.getId()));
+        if (clockFound.isEmpty()) {
+            return Optional.empty();
+        }
+        Race race = found.get();
+        RaceClockDto clock = clockFound.get();
+        Optional<LiveRaceState> state = lapTimingService.peek(raceId);
+        Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(raceId);
+        long now = System.currentTimeMillis();
+        Long quietMs = state.flatMap(LiveRaceState::lastLapCreditedAtMs).map(at -> now - at).orElse(null);
+        if (clock.durationMs() == null) {
+            Optional<Long> firstFlaggedAtMs = state.flatMap(LiveRaceState::firstFlaggedAtMs);
+            if (firstFlaggedAtMs.isEmpty() || maxLastLapMs.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(waitLeftMs(now - firstFlaggedAtMs.get(), quietMs, maxLastLapMs.get()));
+        }
+        if (clock.remainingMs() > 0) {
+            return Optional.empty();
+        }
+        long lastStartMs = state.map(LiveRaceState::lastStartOffsetMs).orElse(0L);
+        long overrunMs = clock.elapsedMs() - clock.durationMs() - lastStartMs;
+        if (overrunMs < 0) {
+            return Optional.empty();
+        }
+        Optional<Long> windowMs = race.getEventClassId() == null ? Optional.empty()
+                : eventClassRepository.findById(race.getEventClassId()).flatMap(raceFormatService::maxRaceWindowMs);
+        Optional<Long> byWindow = windowMs.map(w -> Math.max(0, Math.max(0, w - clock.durationMs()) - overrunMs));
+        Optional<Long> byQuiet = maxLastLapMs.map(max -> waitLeftMs(overrunMs, quietMs, max));
+        return byWindow.isPresent() && byQuiet.isPresent() ? Optional.of(Math.min(byWindow.get(), byQuiet.get()))
+                : byWindow.isPresent() ? byWindow : byQuiet;
+    }
+
+    /** What is left of the wait that {@link #timedOut} judges, never below 0. */
+    static long waitLeftMs(long overrunMs, Long quietMs, long maxLastLapMs) {
+        long idleMs = quietMs == null ? overrunMs : Math.min(overrunMs, quietMs);
+        return Math.max(0, maxLastLapMs - idleMs);
+    }
+
     private void checkRace(Race race) {
         Optional<RaceClockDto> found = raceClockService.clock(race.getId());
         if (found.isPresent() && found.get().durationMs() == null) {

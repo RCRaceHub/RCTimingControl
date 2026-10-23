@@ -6,6 +6,9 @@ package dev.monkeypatch.rctiming.timing.dto;
  * time. {@code carNumber} is the entry's car number for this race, null when none was recorded.
  * The gap fields are null where no time gap means anything: for the leader, and for a car on a different lap
  * from the one it is measured against, which shows as {@code lapsDown} or {@code intervalLapsDown} instead.
+ * {@code totalTimeMs} is the time from the race's start (a rolling start's first crossing) to the car's last
+ * crossing, the same figure the result keeps once the race finishes; null before the car has crossed or when the
+ * start is not known.
  */
 public record LiveTimingRowDto(
         long entryId,
@@ -22,6 +25,7 @@ public record LiveTimingRowDto(
         int intervalLapsDown,
         Long gapToLeaderMs,
         Long gapToAheadMs,
+        Long totalTimeMs,
         /** The car has taken the flag: its time on the track is up and its last lap has counted. */
         boolean finished
 ) {

@@ -101,6 +101,7 @@ public class LapTimingService {
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
+            raceClockService.startOf(id).ifPresent(start -> state.putRaceStart(start.startedAtMs(), start.rolling()));
             return state;
         });
     }
@@ -145,6 +146,11 @@ public class LapTimingService {
             // Released between the check above and stateFor, which then made a new state: take it away again
             states.remove(raceId);
             return;
+        }
+
+        if (!state.hasRaceStart()) {
+            // The state was made before the race started (a link or marshal call on the grid): take the start now
+            raceClockService.startOf(raceId).ifPresent(start -> state.putRaceStart(start.startedAtMs(), start.rolling()));
         }
 
         // Check runtime links first — these take priority over transponderNumberSnapshot

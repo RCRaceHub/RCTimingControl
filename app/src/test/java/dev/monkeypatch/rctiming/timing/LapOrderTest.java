@@ -14,7 +14,7 @@ class LapOrderTest {
 
     private static LiveTimingRowDto row(long entryId, int finalPosition, int laps, long lastPassing) {
         return new LiveTimingRowDto(entryId, "Driver " + entryId, String.valueOf(entryId), finalPosition, laps,
-                lastPassing, null, null, null, null, 0, 0, null, null, true);
+                lastPassing, null, null, null, null, 0, 0, null, null, null, true);
     }
 
     @Test

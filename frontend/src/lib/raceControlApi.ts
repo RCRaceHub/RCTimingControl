@@ -95,6 +95,8 @@ export type LiveTimingRowDto = {
   intervalLapsDown: number;
   gapToLeaderMs: number | null;
   gapToAheadMs: number | null;
+  /** Start to the car's last crossing; null before it has crossed. */
+  totalTimeMs: number | null;
   /** The car has taken the flag: its time is up and its last lap has counted. */
   finished?: boolean;
 };

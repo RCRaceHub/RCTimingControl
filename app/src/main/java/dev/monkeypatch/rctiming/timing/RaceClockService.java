@@ -213,6 +213,26 @@ public class RaceClockService {
         });
     }
 
+    /**
+     * When a race started and whether it starts rolling, for the total times in live timing. Empty for an unknown
+     * race or one not started. On the write connection, like {@link #planOf}.
+     *
+     * @param startedAtMs epoch milliseconds the race started
+     * @param rolling     whether the clock waits for the first car, so times count from its first crossing
+     */
+    public record RaceStart(long startedAtMs, boolean rolling) {}
+
+    /**
+     * The race's start, read by {@code LapTimingService} until the race's state has it. Rolling is the race's own
+     * start type, the rule the stored result uses, so live and final total times agree.
+     */
+    @Transactional(readOnly = true)
+    public Optional<RaceStart> startOf(long raceId) {
+        return raceRepository.findById(raceId)
+                .filter(race -> race.getStartedAt() != null)
+                .map(race -> new RaceStart(race.getStartedAt().toEpochMilli(), race.getStartType() == StartType.ROLLING));
+    }
+
     private Long durationMs(Race race) {
         if (race.getEventClassId() == null) {
             return null;

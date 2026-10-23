@@ -137,6 +137,16 @@ export async function getRaceClock(raceId: number): Promise<RaceClockDto> {
   return data;
 }
 
+/** Time left before the race is closed by force; null while no limit is counting down. */
+export type ForcedCloseDto = {
+  closesInMs: number | null;
+};
+
+export async function getForcedClose(raceId: number): Promise<ForcedCloseDto> {
+  const { data } = await api.get<ForcedCloseDto>(`/api/v1/boards/races/${raceId}/closes-in`);
+  return data;
+}
+
 /** The fastest lap so far in the other finished heats of a race's round and class; both null when there is none. */
 export type RoundFastestLapDto = {
   lapMs: number | null;

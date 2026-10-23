@@ -9,7 +9,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 | Screen | Address | What it shows | Good for |
 |--------|---------|---------------|----------|
 | Now and next | `/boards/now-next` | The line-up of the race on track in running order, with its status (Racing or Stopped), then the next race with the drivers on its grid and the marshals. Between races it shows the next race, its drivers and marshals, and the last finished race's results. When auto run is on it also shows a large countdown to the next start, or "Waiting for the finals to be released" while it is holding. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
-| Live race | `/boards/live-race` | The race on track with its live timing table (laps, last and best lap, gap) and the position chart | A second TV, or the one TV when the timing matters more than the line-up |
+| Live race | `/boards/live-race` | The race on track with its live timing table (laps, total time, last and best lap, gap) and the position chart | A second TV, or the one TV when the timing matters more than the line-up |
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
 | Event schedule | `/events` | The events, with each finished race's results linked under its round and class (Heat 1, Heat 2, or Results for a final), plus the qualifying and championship standings | Phones |
@@ -29,12 +29,13 @@ A few things help at the track:
 
 - Use the laptop's network address from the About page. `localhost` only works on the laptop itself.
 - The QR codes on the boards and printouts hold the same address, so a phone on the venue wifi opens the live page. A phone that is not on the venue wifi can't reach it.
+- Live timing, the pit boards, the overlay and the results screens also show each driver's **total time**: the time from the start (the first car's crossing, for a rolling start) to the driver's last crossing. It reads a dash before the driver has crossed the line.
 - Every screen that shows a position also shows the car number beside it: live timing and the pit boards, the overlay, the qualifying tables, the race control, referee and cockpit screens, and the driver pickers for incidents and penalties. A car with no number recorded shows a dash.
 - Names on every public screen follow each competitor's public name setting (full name, initials only, or hidden with the car number standing in), so a junior's name can be kept off the screens.
 
 ## The streaming overlay for OBS
 
-The overlay shows the race on track over your video on a transparent background: the running order, laps, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A small stats line under the order rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. A **position chart** (lap across, place down, one line per car, each labelled with the driver's name) sits at the bottom right, and a **ticker** scrolls along the foot of the page with the next race, who is on its grid, who marshals it, each class's top qualifier and the fastest lap of the round. The ticker stays up between races, when the next race is the useful part. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
+The overlay shows the race on track over your video on a transparent background: the running order, laps, total time, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A small stats line under the order rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. A **position chart** (lap across, place down, one line per car, each labelled with the driver's name) sits at the bottom right, and a **ticker** scrolls along the foot of the page with the next race, who is on its grid, who marshals it, each class's top qualifier and the fastest lap of the round. The ticker stays up between races, when the next race is the useful part. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
 
 To use it in OBS:
 

@@ -66,6 +66,7 @@ function liveRow(overrides: Partial<LiveTimingRowDto>): LiveTimingRowDto {
     intervalLapsDown: 0,
     gapToLeaderMs: null,
     gapToAheadMs: null,
+    totalTimeMs: null,
     ...overrides,
   };
 }
