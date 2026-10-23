@@ -17,6 +17,7 @@ COPY buildSrc/ buildSrc/
 COPY app/ app/
 COPY decoder-protocol/ decoder-protocol/
 COPY decoder-simulator/ decoder-simulator/
+COPY mapstruct-jooq/ mapstruct-jooq/
 COPY frontend/ frontend/
 # The docs site bundles the user-facing guides at build time
 COPY docs/ docs/
