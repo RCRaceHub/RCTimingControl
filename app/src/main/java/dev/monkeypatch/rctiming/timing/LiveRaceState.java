@@ -64,6 +64,8 @@ public class LiveRaceState {
     boolean finishRequested = false;
     /** Entries that crossed the line before their turn in a stagger start: entryId → how early the first crossing was. */
     final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
+    /** Jump starts the referee has taken no action on. */
+    final Set<Long> jumpStartDismissed = new HashSet<>();
 
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
@@ -101,11 +103,25 @@ public class LiveRaceState {
         return jumpStartEarlyMs.putIfAbsent(entryId, earlyMs) == null;
     }
 
+    /**
+     * Notes that the referee took no action on an entry's jump start, so the alert goes but the entry stays listed.
+     *
+     * @return the entry's jump start with the dismissal applied, empty if the entry has not jumped the start;
+     *         dismissing twice returns it again
+     */
+    public synchronized Optional<JumpStartDto> dismissJumpStart(long entryId) {
+        if (!jumpStartEarlyMs.containsKey(entryId)) {
+            return Optional.empty();
+        }
+        jumpStartDismissed.add(entryId);
+        return jumpStarts().stream().filter(j -> j.entryId() == entryId).findFirst();
+    }
+
     /** The entries that have jumped the start so far, in the order they did, with names and car numbers. */
     public synchronized List<JumpStartDto> jumpStarts() {
         List<JumpStartDto> result = new ArrayList<>(jumpStartEarlyMs.size());
         jumpStartEarlyMs.forEach((entryId, earlyMs) -> result.add(new JumpStartDto(entryId,
-                entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs)));
+                entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs, jumpStartDismissed.contains(entryId))));
         return result;
     }
 

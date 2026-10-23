@@ -62,6 +62,18 @@ public class RefereeController {
     }
 
     /**
+     * Takes no action on a car's jump start: the alert goes from the referee screens and the car keeps its lozenge.
+     * {@code POST /race/{raceId}/jump-start/{entryId}/dismiss}; REFEREE or ADMIN. 409 if the entry has no jump start in
+     * the race in progress. Audited as {@code JUMP_START_DISMISSED}.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/jump-start/{entryId}/dismiss")
+    public ResponseEntity<Void> dismissJumpStart(@PathVariable long raceId, @PathVariable long entryId) {
+        refereeService.dismissJumpStart(raceId, entryId, CurrentOfficial.id());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Record that an entry missed their marshal duty.
      * Does NOT auto-create a penalty — use /apply-marshal-penalty for that (which also records the miss itself).
      * {@code POST /race/{raceId}/marshal-absent}; REFEREE or ADMIN. Audited.

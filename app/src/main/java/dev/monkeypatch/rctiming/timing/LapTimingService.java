@@ -202,6 +202,20 @@ public class LapTimingService {
     }
 
     /**
+     * Records that the referee took no action on an entry's jump start and tells the referee screens, which drop the
+     * alert but keep the entry's lozenge. Called from a request thread by {@code RefereeService}.
+     *
+     * @return the jump start as it now stands, empty if the race has no live state or the entry has not jumped the start
+     */
+    public Optional<JumpStartDto> dismissJumpStart(long raceId, long entryId) {
+        return peek(raceId).flatMap(state -> {
+            Optional<JumpStartDto> dismissed = state.dismissJumpStart(entryId);
+            dismissed.ifPresent(j -> liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts()));
+            return dismissed;
+        });
+    }
+
+    /**
      * Whether the entry's time on the track has run out, so the next lap it counts is its last. A timed race gives
      * each car the race's length from its own start; in a stagger start the cars leave one after another, so the
      * last car's window ends after the first car's.

@@ -239,11 +239,18 @@ export type JumpStartDto = {
   driverName: string;
   carNumber: string | null;
   earlyMs: number;
+  /** The referee took no action: the alert is gone but the entry keeps its lozenge. */
+  dismissed: boolean;
 };
 
 export async function getJumpStarts(raceId: number): Promise<JumpStartDto[]> {
   const { data } = await api.get<JumpStartDto[]>(`/api/v1/race-control/race/${raceId}/jump-starts`);
   return data;
+}
+
+/** Takes no action on a car's jump start: its alert goes, its lozenge stays. */
+export async function dismissJumpStart(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/referee/race/${raceId}/jump-start/${entryId}/dismiss`);
 }
 
 export async function moveEntryToHeat(
