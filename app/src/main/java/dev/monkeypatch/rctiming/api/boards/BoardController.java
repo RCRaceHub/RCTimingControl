@@ -121,7 +121,7 @@ public class BoardController {
     @GetMapping("/finals")
     public FinalsBoardDto finals(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
-                .map(event -> new FinalsBoardDto(event.id(), event.name(), finalsBoardService.forEvent(event.id())))
+                .map(event -> new FinalsBoardDto(event.id(), event.name(), finalsBoardService.forEventPublic(event.id())))
                 .orElse(new FinalsBoardDto(null, null, List.of()));
     }
 

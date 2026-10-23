@@ -42,7 +42,7 @@ describe('FinalsResultsPage', () => {
         finalsTotal: 3,
         finals: [
           {
-            letter: 'A', status: 'FINISHED', results: [row(1, 1, 'Leg Leader')],
+            letter: 'A', status: 'FINISHED', abandoned: false, results: [row(1, 1, 'Leg Leader')],
             legs: {
               eventClassId: 1, className: '1/10 Buggy', legs: 3, legsFinished: 3, legsCounted: 2, complete: true,
               rows: [{
@@ -51,8 +51,8 @@ describe('FinalsResultsPage', () => {
               }],
             },
           },
-          { letter: 'B', status: 'FINISHED', results: [row(1, 3, 'B Winner')], legs: null },
-          { letter: 'C', status: 'PENDING', results: [], legs: null },
+          { letter: 'B', status: 'FINISHED', abandoned: false, results: [row(1, 3, 'B Winner')], legs: null },
+          { letter: 'C', status: 'PENDING', abandoned: false, results: [], legs: null },
         ],
       }],
     });

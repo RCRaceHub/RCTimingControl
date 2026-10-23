@@ -29,11 +29,12 @@ public record FinalsBoardDto(Long eventId, String eventName, List<ClassFinals> c
      * One final.
      *
      * @param letter the final's letter, "A" for the top final
-     * @param status where the final stands
+     * @param status where the final stands; an A final in legs is FINISHED only when every leg is
+     * @param abandoned whether the final was abandoned, so it has no result and none is coming
      * @param results the finished final's result rows, best first; empty until it has finished. For an A final run in
      *                legs these are the first leg's
      * @param legs   the A final's combined result when it is run in legs, else null; it is the final's result
      */
-    public record Final(String letter, RaceStatus status, List<ResultSnapshotDto.ResultRow> results,
+    public record Final(String letter, RaceStatus status, boolean abandoned, List<ResultSnapshotDto.ResultRow> results,
                         FinalLegsDto legs) {}
 }

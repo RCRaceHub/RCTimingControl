@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
-import { getFinalsBoard, type FinalsBoardClass, type FinalsBoardFinal } from '@/lib/boardsApi';
+import { getFinalsBoard, type FinalLegs, type FinalsBoardClass, type FinalsBoardFinal } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
@@ -15,8 +15,7 @@ import { Button } from '@/components/ui/button';
 const TH = 'px-3 py-2';
 
 /** The A final run in legs: points in each leg (a dropped leg struck through) and the total, lowest first. */
-function LegsTable({ final }: { final: FinalsBoardFinal }) {
-  const legs = final.legs!;
+function LegsTable({ legs }: { legs: FinalLegs }) {
   const legNumbers = Array.from({ length: legs.rows[0]?.legPoints.length ?? 0 }, (_, i) => i + 1);
   return (
     <>
@@ -88,17 +87,18 @@ function ResultsTable({ final }: { final: FinalsBoardFinal }) {
 }
 
 function FinalBlock({ final }: { final: FinalsBoardFinal }) {
-  const hasOrder = final.legs ? final.legs.rows.length > 0 : final.results.length > 0;
+  const legs = final.legs && final.legs.rows.length > 0 ? final.legs : null;
+  const hasOrder = legs !== null || final.results.length > 0;
   return (
     <div className="space-y-1">
       <h3 className="font-semibold">Final {final.letter}</h3>
       {!hasOrder ? (
         <p className="text-sm text-muted-foreground">
-          {final.status === 'PENDING' || final.status === 'GRID' ? 'Not run yet.' : 'No result yet.'}
+          {final.abandoned ? 'Abandoned.' : final.status === 'PENDING' || final.status === 'GRID' ? 'Not run yet.' : 'No result yet.'}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
-          {final.legs ? <LegsTable final={final} /> : <ResultsTable final={final} />}
+          {legs ? <LegsTable legs={legs} /> : <ResultsTable final={final} />}
         </div>
       )}
     </div>

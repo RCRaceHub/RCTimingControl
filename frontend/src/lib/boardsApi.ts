@@ -101,6 +101,8 @@ export type QualifyingBoardDto = {
 export type FinalsBoardFinal = {
   letter: string;
   status: BoardRaceDto['status'];
+  /** The final was abandoned: no result is coming. */
+  abandoned: boolean;
   /** The finished final's result, best first; the first leg's when the A final is run in legs. */
   results: ResultRow[];
   /** The A final's combined result when it is run in legs; it is the final's order. */
