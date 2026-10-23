@@ -342,6 +342,25 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
+    void seedFinals_keepsAnUnusedFinalThatHasRecordsAgainstIt_emptyAndWithoutBumpSlots() {
+        Long eventClassId = 32L;
+        Race bFinal = finalRace(510L, "B");
+        Race aFinal = finalRace(511L, "A");
+        bFinal.setEventClassId(eventClassId);
+        aFinal.setEventClassId(eventClassId);
+        bFinal.setBumpSlots(2);
+        when(raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL))
+                .thenReturn(new ArrayList<>(List.of(aFinal, bFinal)));
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(any())).thenReturn(List.of());
+        when(raceRepository.hasRecordsAgainstRace(bFinal.getId())).thenReturn(true);
+
+        service().seedFinals(eventClassId, List.of(1L, 2L, 3L), 2, 10, 2);
+
+        verify(raceRepository, never()).delete(bFinal);
+        assertThat(bFinal.getBumpSlots()).isZero();
+    }
+
+    @Test
     void finalsNeeded_countsTheLowestFinalInFullAndTheUpperOnesLessTheirBumpPlaces() {
         // Cars 10, bump 2: the lowest final holds 10, each one above holds 8 regular places
         assertThat(BumpUpSeedingService.finalsNeeded(0, 10, 2)).isEqualTo(1);

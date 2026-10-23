@@ -74,8 +74,10 @@ public class BumpUpSeedingService {
      * </pre>
      *
      * <p>When the field is too small to fill every final, the lowest finals are left empty (a field of 8 with 4 cars a
-     * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers. The unused finals' races are deleted from the run order (kept,
-     * empty, only when something was recorded against one early).
+     * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers.
+     * The unused finals' races are deleted from the run order (kept, empty, only when something was recorded against
+     * one early). The top final is never unused, so a final in legs never loses its later legs. A later calculation
+     * with fewer cars per final than the field needs can't bring a deleted final back: the grids grow to fit instead.
      *
      * <p>A Shikabane zombie round (final letter {@value #ZOMBIE_LETTER}) is left out of the split, its old grid is
      * cleared, and the top final gets one more bump place for the zombie round's winner.
