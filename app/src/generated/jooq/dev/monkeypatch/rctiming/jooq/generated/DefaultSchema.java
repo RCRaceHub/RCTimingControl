@@ -5,6 +5,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -72,6 +73,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>audit_log</code>.
      */
     public final AuditLog AUDIT_LOG = AuditLog.AUDIT_LOG;
+
+    /**
+     * The table <code>board_views</code>.
+     */
+    public final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
 
     /**
      * The table <code>championship_classes</code>.
@@ -295,6 +301,7 @@ public class DefaultSchema extends SchemaImpl {
     public final List<Table<?>> getTables() {
         return Arrays.asList(
             AuditLog.AUDIT_LOG,
+            BoardViews.BOARD_VIEWS,
             ChampionshipClasses.CHAMPIONSHIP_CLASSES,
             ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS,
             ChampionshipExclusions.CHAMPIONSHIP_EXCLUSIONS,
