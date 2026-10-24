@@ -8,6 +8,7 @@ import java.time.Instant;
  * @param sequenceInEvent the round's place in the event's run order
  * @param sequenceInRound the race's place within its round, which orders the heats of all classes in the round
  * @param startedAt       when the race started, or null until it has
+ * @param classColour     the colour the club picked for the class as {@code #rrggbb}, or null for none (#482)
  */
 public record RunOrderItemDto(
         long raceId,
@@ -20,6 +21,7 @@ public record RunOrderItemDto(
         String finalLetter,     // null for practice/qualifier
         String status,
         int sequenceInRound,
-        Instant startedAt  // null until race starts
+        Instant startedAt,  // null until race starts
+        String classColour
 ) {
 }

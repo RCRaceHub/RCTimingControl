@@ -37,11 +37,12 @@ public class RacingClassService {
         return getRacingClassOrThrow(id);
     }
 
-    /** Adds a class and records {@code CLASS_CREATED}. */
-    public RacingClass create(Actor actor, String name, String description) {
+    /** Adds a class ({@code colour} is {@code #rrggbb} or blank for none) and records {@code CLASS_CREATED}. */
+    public RacingClass create(Actor actor, String name, String description, String colour) {
         RacingClass racingClass = new RacingClass();
         racingClass.setName(name);
         racingClass.setDescription(description);
+        racingClass.setColour(blankToNull(colour));
         RacingClass saved = racingClassRepository.save(racingClass);
         audit.entry(actor, "CLASS_CREATED").entity("racing_class", saved.getId())
                 .summary("Added the class " + saved.getName())
@@ -49,12 +50,13 @@ public class RacingClassService {
         return saved;
     }
 
-    /** Renames or re-describes a class and records {@code CLASS_UPDATED}; a 404 if there is none. */
-    public RacingClass update(Actor actor, Long id, String name, String description) {
+    /** Renames, re-describes or recolours a class and records {@code CLASS_UPDATED}; a 404 if there is none. */
+    public RacingClass update(Actor actor, Long id, String name, String description, String colour) {
         RacingClass racingClass = getRacingClassOrThrow(id);
         Map<String, Object> before = values(racingClass);
         racingClass.setName(name);
         racingClass.setDescription(description);
+        racingClass.setColour(blankToNull(colour));
         RacingClass saved = racingClassRepository.save(racingClass);
         audit.entry(actor, "CLASS_UPDATED").entity("racing_class", id)
                 .summary("Changed the class " + saved.getName())
@@ -75,7 +77,12 @@ public class RacingClassService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name", c.getName());
         m.put("description", c.getDescription());
+        m.put("colour", c.getColour());
         return m;
+    }
+
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private RacingClass getRacingClassOrThrow(Long id) {

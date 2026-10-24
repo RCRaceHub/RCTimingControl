@@ -14,6 +14,7 @@ public class RacingClass implements CreatedAt, UpdatedAt {
     private Long id;
     private String name;
     private String description;
+    private String colour;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -25,6 +26,10 @@ public class RacingClass implements CreatedAt, UpdatedAt {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    /** The colour that marks this class on line-ups and live timing, as {@code #rrggbb}, or null for none (#482). */
+    public String getColour() { return colour; }
+    public void setColour(String colour) { this.colour = colour; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

@@ -7,6 +7,7 @@ package dev.monkeypatch.rctiming.query.boards;
  * @param roundType   the round's type name
  * @param finalLetter the final's letter (such as A), or null for a race that is not a final
  * @param status      the race's lifecycle status name
+ * @param classColour the colour the club picked for the class as {@code #rrggbb}, or null for none (#482)
  */
 public record BoardRaceDto(
         long raceId,
@@ -16,5 +17,6 @@ public record BoardRaceDto(
         String className,
         int heatNumber,
         String finalLetter,
-        String status
+        String status,
+        String classColour
 ) {}

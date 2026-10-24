@@ -43,8 +43,19 @@ import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { ClassSwatch } from '@/components/ClassSwatch';
 import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
+
+/** The heading for the selected race, led by the class colour when the club picked one. */
+function RaceTitle({ item }: { item: RunOrderItemDto | undefined }) {
+  return (
+    <>
+      <ClassSwatch colour={item?.classColour} className="mr-2" />
+      {raceTitle(item)}
+    </>
+  );
+}
 
 function raceTitle(item: RunOrderItemDto | undefined) {
   if (!item) return 'No race selected';
@@ -400,7 +411,7 @@ export default function CockpitPage() {
       case 'PENDING':
         return (
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+            <h2 className="text-lg font-semibold"><RaceTitle item={selectedRace} /></h2>
             <p className="text-sm text-muted-foreground">Race is pending. Call the grid when ready.</p>
             <Button
               onClick={onCallGrid}
@@ -482,7 +493,7 @@ export default function CockpitPage() {
         return (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <h2 className="text-lg font-semibold"><RaceTitle item={selectedRace} /></h2>
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
@@ -534,7 +545,7 @@ export default function CockpitPage() {
         return (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">{raceTitle(selectedRace)}</h2>
+              <h2 className="text-lg font-semibold"><RaceTitle item={selectedRace} /></h2>
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 <Button onClick={onStart} disabled={mutations.start.isPending}>

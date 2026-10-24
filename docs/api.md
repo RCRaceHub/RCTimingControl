@@ -228,7 +228,8 @@ Request body:
 ```json
 {
   "name": "1:10 Electric Touring Car",
-  "description": "17.5T blinky spec"
+  "description": "17.5T blinky spec",
+  "colour": "#2563eb"
 }
 ```
 

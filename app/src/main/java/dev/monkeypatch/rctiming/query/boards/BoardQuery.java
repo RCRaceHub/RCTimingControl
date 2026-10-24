@@ -145,7 +145,8 @@ public class BoardQuery {
                         RACING_CLASSES.NAME.as("className"),
                         RACES.HEAT_NUMBER,
                         RACES.FINAL_LETTER,
-                        RACES.STATUS)
+                        RACES.STATUS,
+                        RACING_CLASSES.COLOUR)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
@@ -171,6 +172,7 @@ public class BoardQuery {
                 className,
                 heatNumber,
                 finalLetter,
-                r.get(RACES.STATUS));
+                r.get(RACES.STATUS),
+                r.get(RACING_CLASSES.COLOUR));
     }
 }

@@ -8,9 +8,10 @@ import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 public record RacingClassDto(
         Long id,
         String name,
-        String description) {
+        String description,
+        String colour) {
 
     public static RacingClassDto from(RacingClass rc) {
-        return new RacingClassDto(rc.getId(), rc.getName(), rc.getDescription());
+        return new RacingClassDto(rc.getId(), rc.getName(), rc.getDescription(), rc.getColour());
     }
 }

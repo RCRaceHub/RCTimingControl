@@ -100,7 +100,7 @@ class AutoRunServiceTest {
         race.setStatus(status);
         races.add(race);
         items.add(new RunOrderItemDto(id, 1, (int) id, 1, type.name(), "Buggy", 1,
-                type == RoundType.FINAL ? "A" : null, status.name(), 1, null));
+                type == RoundType.FINAL ? "A" : null, status.name(), 1, null, null));
         return race;
     }
 
@@ -111,7 +111,7 @@ class AutoRunServiceTest {
             if (it.raceId() == race.getId()) {
                 items.set(i, new RunOrderItemDto(it.raceId(), it.eventClassId(), it.sequenceInEvent(),
                         it.roundNumber(), it.roundType(), it.className(), it.heatNumber(), it.finalLetter(),
-                        race.getStatus().name(), it.sequenceInRound(), null));
+                        race.getStatus().name(), it.sequenceInRound(), null, it.classColour()));
             }
         }
     }

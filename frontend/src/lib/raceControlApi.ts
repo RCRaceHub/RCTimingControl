@@ -48,6 +48,8 @@ export type RunOrderItemDto = {
   status: 'PENDING' | 'GRID' | 'RUNNING' | 'STOPPED' | 'FINISHED';
   sequenceInRound: number;
   startedAt: string | null;
+  /** The colour the club picked for the class as #rrggbb, or null for none. */
+  classColour?: string | null;
 };
 
 export type ResultRow = {
