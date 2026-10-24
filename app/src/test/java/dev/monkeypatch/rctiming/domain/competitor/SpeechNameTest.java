@@ -103,4 +103,12 @@ class SpeechNameTest {
         assertThat(c.speechName()).isEqualTo("Alex Rowe");
         assertThat(c.getDisplayName()).isEqualTo("ALEX ROWE (Wyvern)");
     }
+
+    @Test
+    void firstNameIsTheWordBeforeTheFirstSpace() {
+        assertThat(SpeechName.firstName("Alex Rowe")).isEqualTo("Alex");
+        assertThat(SpeechName.firstName("  Mary Jane Watson ")).isEqualTo("Mary");
+        assertThat(SpeechName.firstName("Zoe")).isEqualTo("Zoe");
+        assertThat(SpeechName.firstName(null)).isEmpty();
+    }
 }

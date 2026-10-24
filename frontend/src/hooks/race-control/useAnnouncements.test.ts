@@ -80,6 +80,8 @@ describe('grid call helpers', () => {
   it('says what the server says to say, when it sends it', () => {
     expect(gridFallbackText({ ...grid[0], speechName: 'Al-ex Roe' })).toBe('Al-ex Roe.');
     expect(gridFallbackText({ ...grid[0], speechName: '  ' })).toBe('Alex Rowe.');
+    expect(gridFallbackText({ ...grid[0], carNumber: '7' }, true)).toBe('Car 7, Alex.');
+    expect(gridFallbackText({ ...grid[0], speechName: 'Zoe' }, true)).toBe('Zoe.');
   });
 });
 

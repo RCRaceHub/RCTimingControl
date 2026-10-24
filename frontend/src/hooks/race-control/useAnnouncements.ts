@@ -41,8 +41,9 @@ export function gridClipKey(entry: GridEntry): string {
 }
 
 /** What the browser says for a grid call when no clip is available. */
-export function gridFallbackText(entry: GridEntry): string {
-  const name = entry.speechName?.trim() || entry.driverName;
+export function gridFallbackText(entry: GridEntry, firstNamesOnly = false): string {
+  const whole = entry.speechName?.trim() || entry.driverName;
+  const name = firstNamesOnly ? whole.split(' ')[0] : whole;
   return entry.carNumber ? `Car ${entry.carNumber}, ${name}.` : `${name}.`;
 }
 
@@ -388,7 +389,8 @@ export function useAnnouncements({
       const t = setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceStagger) return;
-        playClip(gridClipKey(entry), gridFallbackText(entry), 'stagger');
+        playClip(gridClipKey(entry),
+          gridFallbackText(entry, tuningOf(settingsRef.current).firstNamesOnly), 'stagger');
       }, startAfterMs + index * stepMs);
 
       staggerTimeoutsRef.current.push(t);

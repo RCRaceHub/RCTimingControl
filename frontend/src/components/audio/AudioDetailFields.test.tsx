@@ -26,6 +26,16 @@ describe('AudioDetailFields', () => {
     expect(screen.getByLabelText('Seconds before the end of a timed race')).toHaveValue('600, 300, 120, 60, 30');
   });
 
+  it('saves the first-names switch with the rest of the tuning', () => {
+    const onChange = vi.fn();
+    render(<AudioDetailFields settings={settings} onChange={onChange} idPrefix="t" />);
+
+    fireEvent.click(screen.getByLabelText('Say first names only when calling drivers to start'));
+
+    expect(onChange.mock.calls[0][0].tuning.firstNamesOnly).toBe(true);
+    expect(onChange.mock.calls[0][0].tuning.finalSeconds).toBe(5);
+  });
+
   it('saves a reworded line when the box loses focus', () => {
     const onChange = vi.fn();
     render(<AudioDetailFields settings={settings} onChange={onChange} idPrefix="t" />);

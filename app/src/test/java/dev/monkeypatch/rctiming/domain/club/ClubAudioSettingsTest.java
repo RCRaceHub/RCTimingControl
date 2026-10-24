@@ -157,4 +157,19 @@ class ClubAudioSettingsTest {
         assertThat(read.finalBeeps()).isFalse();
         assertThat(read.hornSounds().tickMs()).isEqualTo(250);
     }
+
+    @Test
+    void firstNamesOnlyIsOffUntilSwitchedOnAndChangesTheClips() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        ClubAudioSettings standard = ClubAudioSettings.defaults();
+        ClubAudioSettings firstNames = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null,
+                null, null, standard.hornSounds(), null, null, false, false, null,
+                new ClubAudioSettings.Tuning(null, null, null, null, null, null, true));
+
+        ClubAudioSettings read = mapper.readValue(mapper.writeValueAsString(firstNames), ClubAudioSettings.class);
+
+        assertThat(standard.tuning().firstNamesOnly()).isFalse();
+        assertThat(read.tuning().firstNamesOnly()).isTrue();
+        assertThat(standard.clipsDifferFrom(read)).isTrue();
+    }
 }
