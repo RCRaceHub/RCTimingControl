@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RefreshTokensRecor
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens.REFRE
  */
 @Repository
 public class RefreshTokenRepository extends JooqRepository<RefreshToken, RefreshTokensRecord> {
+
+    private static final RefreshTokenMapper MAPPER = Mappers.getMapper(RefreshTokenMapper.class);
 
     public RefreshTokenRepository(DSLContext dsl) {
         super(dsl, REFRESH_TOKENS, REFRESH_TOKENS.ID);
@@ -99,25 +102,12 @@ public class RefreshTokenRepository extends JooqRepository<RefreshToken, Refresh
 
     @Override
     protected RefreshToken toEntity(RefreshTokensRecord r) {
-        RefreshToken t = new RefreshToken();
-        t.setId(r.getId());
-        t.setUserId(r.getUserId());
-        t.setTokenHash(r.getTokenHash());
-        t.setExpiresAt(r.getExpiresAt());
-        t.setCreatedAt(r.getCreatedAt());
-        t.setRevoked(r.getRevoked());
-        t.setFamilyId(r.getFamilyId());
-        return t;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RefreshToken t, RefreshTokensRecord r) {
-        r.setUserId(t.getUserId());
-        r.setTokenHash(t.getTokenHash());
-        r.setExpiresAt(t.getExpiresAt());
-        r.setCreatedAt(t.getCreatedAt());
-        r.setRevoked(t.isRevoked());
-        r.setFamilyId(t.getFamilyId());
+        MAPPER.toRecord(t, r);
     }
 
     @Override

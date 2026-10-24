@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryFeedsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds.ENTRY_FE
 /** Repository for {@link EntryFeed} ({@code entry_feeds}); an event has at most one. */
 @Repository
 public class EntryFeedRepository extends JooqRepository<EntryFeed, EntryFeedsRecord> {
+
+    private static final EntryFeedMapper MAPPER = Mappers.getMapper(EntryFeedMapper.class);
 
     public EntryFeedRepository(DSLContext dsl) {
         super(dsl, ENTRY_FEEDS, ENTRY_FEEDS.ID);
@@ -40,39 +43,12 @@ public class EntryFeedRepository extends JooqRepository<EntryFeed, EntryFeedsRec
 
     @Override
     protected EntryFeed toEntity(EntryFeedsRecord r) {
-        EntryFeed f = new EntryFeed();
-        f.setId(r.getId());
-        f.setEventId(r.getEventId());
-        f.setUrl(r.getUrl());
-        f.setTokenEncrypted(r.getTokenEncrypted());
-        f.setTokenHint(r.getTokenHint());
-        f.setAutoFetch(Boolean.TRUE.equals(r.getAutoFetch()));
-        f.setLastFetchAt(r.getLastFetchAt());
-        f.setLastStatus(r.getLastStatus() == null ? null : EntryFeedStatus.valueOf(r.getLastStatus()));
-        f.setLastError(r.getLastError());
-        f.setAppliedRevision(r.getAppliedRevision());
-        f.setHeldDocument(r.getHeldDocument());
-        f.setHeldRevision(r.getHeldRevision());
-        f.setCreatedAt(r.getCreatedAt());
-        f.setUpdatedAt(r.getUpdatedAt());
-        return f;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(EntryFeed f, EntryFeedsRecord r) {
-        r.setEventId(f.getEventId());
-        r.setUrl(f.getUrl());
-        r.setTokenEncrypted(f.getTokenEncrypted());
-        r.setTokenHint(f.getTokenHint());
-        r.setAutoFetch(f.isAutoFetch());
-        r.setLastFetchAt(f.getLastFetchAt());
-        r.setLastStatus(f.getLastStatus() == null ? null : f.getLastStatus().name());
-        r.setLastError(f.getLastError());
-        r.setAppliedRevision(f.getAppliedRevision());
-        r.setHeldDocument(f.getHeldDocument());
-        r.setHeldRevision(f.getHeldRevision());
-        r.setCreatedAt(f.getCreatedAt());
-        r.setUpdatedAt(f.getUpdatedAt());
+        MAPPER.toRecord(f, r);
     }
 
     @Override

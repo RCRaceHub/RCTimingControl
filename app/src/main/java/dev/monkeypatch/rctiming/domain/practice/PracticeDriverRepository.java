@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeDriversRec
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +16,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers.PRA
 /** Repository for {@link PracticeDriver} ({@code practice_drivers}). */
 @Repository
 public class PracticeDriverRepository extends JooqRepository<PracticeDriver, PracticeDriversRecord> {
+
+    private static final PracticeDriverMapper MAPPER = Mappers.getMapper(PracticeDriverMapper.class);
 
     public PracticeDriverRepository(DSLContext dsl) {
         super(dsl, PRACTICE_DRIVERS, PRACTICE_DRIVERS.ID);
@@ -49,21 +52,12 @@ public class PracticeDriverRepository extends JooqRepository<PracticeDriver, Pra
 
     @Override
     protected PracticeDriver toEntity(PracticeDriversRecord r) {
-        PracticeDriver d = new PracticeDriver();
-        d.setId(r.getId());
-        d.setPracticeSessionId(r.getPracticeSessionId());
-        d.setTransponderNumber(r.getTransponderNumber());
-        d.setCompetitorId(r.getCompetitorId());
-        d.setCreatedAt(r.getCreatedAt());
-        return d;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(PracticeDriver d, PracticeDriversRecord r) {
-        r.setPracticeSessionId(d.getPracticeSessionId());
-        r.setTransponderNumber(d.getTransponderNumber());
-        r.setCompetitorId(d.getCompetitorId());
-        r.setCreatedAt(d.getCreatedAt());
+        MAPPER.toRecord(d, r);
     }
 
     @Override

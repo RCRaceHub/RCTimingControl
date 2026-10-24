@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESUL
  */
 @Repository
 public class ResultsOutboxRepository extends JooqRepository<ResultsOutboxItem, ResultsOutboxRecord> {
+
+    private static final ResultsOutboxItemMapper MAPPER = Mappers.getMapper(ResultsOutboxItemMapper.class);
 
     public ResultsOutboxRepository(DSLContext dsl) {
         super(dsl, RESULTS_OUTBOX, RESULTS_OUTBOX.ID);
@@ -107,33 +110,12 @@ public class ResultsOutboxRepository extends JooqRepository<ResultsOutboxItem, R
 
     @Override
     protected ResultsOutboxItem toEntity(ResultsOutboxRecord r) {
-        ResultsOutboxItem i = new ResultsOutboxItem();
-        i.setId(r.getId());
-        i.setEventId(r.getEventId());
-        i.setRevision(r.getRevision());
-        i.setReason(r.getReason() == null ? null : ExportReason.valueOf(r.getReason()));
-        i.setPayload(r.getPayload());
-        i.setStatus(r.getStatus() == null ? null : OutboxStatus.valueOf(r.getStatus()));
-        i.setAttempts(r.getAttempts());
-        i.setNextAttemptAt(r.getNextAttemptAt());
-        i.setLastError(r.getLastError());
-        i.setCreatedAt(r.getCreatedAt());
-        i.setSentAt(r.getSentAt());
-        return i;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(ResultsOutboxItem i, ResultsOutboxRecord r) {
-        r.setEventId(i.getEventId());
-        r.setRevision(i.getRevision());
-        r.setReason(i.getReason() == null ? null : i.getReason().name());
-        r.setPayload(i.getPayload());
-        r.setStatus(i.getStatus() == null ? null : i.getStatus().name());
-        r.setAttempts(i.getAttempts());
-        r.setNextAttemptAt(i.getNextAttemptAt());
-        r.setLastError(i.getLastError());
-        r.setCreatedAt(i.getCreatedAt());
-        r.setSentAt(i.getSentAt());
+        MAPPER.toRecord(i, r);
     }
 
     @Override

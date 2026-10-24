@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipsRecor
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,6 +14,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Championships.CHAMP
 /** Repository for {@link Championship} ({@code championships}). */
 @Repository
 public class ChampionshipRepository extends JooqRepository<Championship, ChampionshipsRecord> {
+
+    private static final ChampionshipMapper MAPPER = Mappers.getMapper(ChampionshipMapper.class);
 
     public ChampionshipRepository(DSLContext dsl) {
         super(dsl, CHAMPIONSHIPS, CHAMPIONSHIPS.ID);
@@ -25,31 +28,12 @@ public class ChampionshipRepository extends JooqRepository<Championship, Champio
 
     @Override
     protected Championship toEntity(ChampionshipsRecord r) {
-        Championship c = new Championship();
-        c.setId(r.getId());
-        c.setName(r.getName());
-        c.setBestXFromYX(r.getBestXFromYX());
-        c.setBestXFromYY(r.getBestXFromYY());
-        c.setScoringSource(r.getScoringSource() == null ? null : ScoringSource.valueOf(r.getScoringSource()));
-        c.setTqBonusPoints(r.getTqBonusPoints());
-        c.setAfinalWinnerBonusPoints(r.getAfinalWinnerBonusPoints());
-        c.setShowOverallTable(r.getShowOverallTable());
-        c.setCreatedAt(r.getCreatedAt());
-        c.setUpdatedAt(r.getUpdatedAt());
-        return c;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Championship c, ChampionshipsRecord r) {
-        r.setName(c.getName());
-        r.setBestXFromYX(c.getBestXFromYX());
-        r.setBestXFromYY(c.getBestXFromYY());
-        r.setScoringSource(c.getScoringSource() == null ? null : c.getScoringSource().name());
-        r.setTqBonusPoints(c.getTqBonusPoints());
-        r.setAfinalWinnerBonusPoints(c.getAfinalWinnerBonusPoints());
-        r.setShowOverallTable(c.isShowOverallTable());
-        r.setCreatedAt(c.getCreatedAt());
-        r.setUpdatedAt(c.getUpdatedAt());
+        MAPPER.toRecord(c, r);
     }
 
     @Override

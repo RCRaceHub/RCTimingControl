@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.UsersRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 /** Officials, with their roles from {@code user_roles}. */
 @Repository
 public class UserRepository extends JooqRepository<User, UsersRecord> {
+
+    private static final UserMapper MAPPER = Mappers.getMapper(UserMapper.class);
 
     public UserRepository(DSLContext dsl) {
         super(dsl, USERS, USERS.ID);
@@ -67,16 +70,8 @@ public class UserRepository extends JooqRepository<User, UsersRecord> {
 
     @Override
     protected User toEntity(UsersRecord r) {
-        User u = new User();
-        u.setId(r.getId());
-        u.setEmail(r.getEmail());
-        u.setPasswordHash(r.getPasswordHash());
-        u.setFirstName(r.getFirstName());
-        u.setLastName(r.getLastName());
+        User u = MAPPER.toEntity(r);
         u.setRoles(rolesOf(r.getId()));
-        u.setCreatedAt(r.getCreatedAt());
-        u.setUpdatedAt(r.getUpdatedAt());
-        u.setDisabledAt(r.getDisabledAt());
         return u;
     }
 
@@ -89,13 +84,7 @@ public class UserRepository extends JooqRepository<User, UsersRecord> {
 
     @Override
     protected void toRecord(User u, UsersRecord r) {
-        r.setEmail(u.getEmail());
-        r.setPasswordHash(u.getPasswordHash());
-        r.setFirstName(u.getFirstName());
-        r.setLastName(u.getLastName());
-        r.setCreatedAt(u.getCreatedAt());
-        r.setUpdatedAt(u.getUpdatedAt());
-        r.setDisabledAt(u.getDisabledAt());
+        MAPPER.toRecord(u, r);
     }
 
     @Override

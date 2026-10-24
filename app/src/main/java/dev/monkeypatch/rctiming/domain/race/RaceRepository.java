@@ -8,6 +8,7 @@ import org.jooq.Field;
 import org.jooq.Record1;
 import org.jooq.Select;
 import org.jooq.impl.DSL;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /** Repository for {@link Race} ({@code races}). */
 @Repository
 public class RaceRepository extends JooqRepository<Race, RacesRecord> {
+
+    private static final RaceMapper MAPPER = Mappers.getMapper(RaceMapper.class);
 
     public RaceRepository(DSLContext dsl) {
         super(dsl, RACES, RACES.ID);
@@ -91,39 +94,12 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
 
     @Override
     protected Race toEntity(RacesRecord r) {
-        Race race = new Race();
-        race.setId(r.getId());
-        race.setRoundId(r.getRoundId());
-        race.setEventClassId(r.getEventClassId());
-        race.setHeatNumber(r.getHeatNumber());
-        race.setSequenceInRound(r.getSequenceInRound());
-        race.setFinalLetter(r.getFinalLetter());
-        race.setStartType(r.getStartType() == null ? null : StartType.valueOf(r.getStartType()));
-        race.setStatus(r.getStatus() == null ? null : RaceStatus.valueOf(r.getStatus()));
-        race.setStartedAt(r.getStartedAt());
-        race.setFinishedAt(r.getFinishedAt());
-        race.setAbandonedAt(r.getAbandonedAt());
-        race.setBumpSlots(r.getBumpSlots() == null ? 0 : r.getBumpSlots());
-        race.setCreatedAt(r.getCreatedAt());
-        race.setUpdatedAt(r.getUpdatedAt());
-        return race;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Race race, RacesRecord r) {
-        r.setRoundId(race.getRoundId());
-        r.setEventClassId(race.getEventClassId());
-        r.setHeatNumber(race.getHeatNumber());
-        r.setSequenceInRound(race.getSequenceInRound());
-        r.setFinalLetter(race.getFinalLetter());
-        r.setStartType(race.getStartType() == null ? null : race.getStartType().name());
-        r.setStatus(race.getStatus() == null ? null : race.getStatus().name());
-        r.setStartedAt(race.getStartedAt());
-        r.setFinishedAt(race.getFinishedAt());
-        r.setAbandonedAt(race.getAbandonedAt());
-        r.setBumpSlots(race.getBumpSlots());
-        r.setCreatedAt(race.getCreatedAt());
-        r.setUpdatedAt(race.getUpdatedAt());
+        MAPPER.toRecord(race, r);
     }
 
     @Override

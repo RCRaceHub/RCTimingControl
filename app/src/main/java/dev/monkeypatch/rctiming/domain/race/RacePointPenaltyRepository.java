@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacePointPenaltiesRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties.
 /** Repository for {@link RacePointPenalty} ({@code race_point_penalties}). */
 @Repository
 public class RacePointPenaltyRepository extends JooqRepository<RacePointPenalty, RacePointPenaltiesRecord> {
+
+    private static final RacePointPenaltyMapper MAPPER = Mappers.getMapper(RacePointPenaltyMapper.class);
 
     public RacePointPenaltyRepository(DSLContext dsl) {
         super(dsl, RACE_POINT_PENALTIES, RACE_POINT_PENALTIES.ID);
@@ -29,25 +32,12 @@ public class RacePointPenaltyRepository extends JooqRepository<RacePointPenalty,
 
     @Override
     protected RacePointPenalty toEntity(RacePointPenaltiesRecord r) {
-        RacePointPenalty p = new RacePointPenalty();
-        p.setId(r.getId());
-        p.setRaceId(r.getRaceId());
-        p.setEntryId(r.getEntryId());
-        p.setPoints(r.getPoints());
-        p.setReason(r.getReason());
-        p.setAppliedBy(r.getAppliedBy());
-        p.setAppliedAt(r.getAppliedAt());
-        return p;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RacePointPenalty p, RacePointPenaltiesRecord r) {
-        r.setRaceId(p.getRaceId());
-        r.setEntryId(p.getEntryId());
-        r.setPoints(p.getPoints());
-        r.setReason(p.getReason());
-        r.setAppliedBy(p.getAppliedBy());
-        r.setAppliedAt(p.getAppliedAt());
+        MAPPER.toRecord(p, r);
     }
 
     @Override

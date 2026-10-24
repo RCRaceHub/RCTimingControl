@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.ScoringSystemsReco
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,7 +15,9 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems.SCOR
 @Repository
 public class ScoringSystemRepository extends JooqRepository<ScoringSystem, ScoringSystemsRecord> {
 
-    private static final ScoringConfigConverter CONFIG = new ScoringConfigConverter();
+    static final ScoringConfigConverter CONFIG = new ScoringConfigConverter();
+
+    private static final ScoringSystemMapper MAPPER = Mappers.getMapper(ScoringSystemMapper.class);
 
     public ScoringSystemRepository(DSLContext dsl) {
         super(dsl, SCORING_SYSTEMS, SCORING_SYSTEMS.ID);
@@ -30,25 +33,12 @@ public class ScoringSystemRepository extends JooqRepository<ScoringSystem, Scori
 
     @Override
     protected ScoringSystem toEntity(ScoringSystemsRecord r) {
-        ScoringSystem s = new ScoringSystem();
-        s.setId(r.getId());
-        s.setKind(ScoringKind.valueOf(r.getKind()));
-        s.setName(r.getName());
-        s.setBuiltIn(Boolean.TRUE.equals(r.getBuiltIn()));
-        s.setConfig(CONFIG.convertToEntityAttribute(r.getConfig()));
-        s.setCreatedAt(r.getCreatedAt());
-        s.setUpdatedAt(r.getUpdatedAt());
-        return s;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(ScoringSystem s, ScoringSystemsRecord r) {
-        r.setKind(s.getKind().name());
-        r.setName(s.getName());
-        r.setBuiltIn(s.isBuiltIn());
-        r.setConfig(CONFIG.convertToDatabaseColumn(s.getConfig()));
-        r.setCreatedAt(s.getCreatedAt());
-        r.setUpdatedAt(s.getUpdatedAt());
+        MAPPER.toRecord(s, r);
     }
 
     /** The creation time is set once, on insert. */

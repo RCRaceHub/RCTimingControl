@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipExclus
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusi
  */
 @Repository
 public class ChampionshipExclusionRepository extends JooqRepository<ChampionshipExclusion, ChampionshipExclusionsRecord> {
+
+    private static final ChampionshipExclusionMapper MAPPER = Mappers.getMapper(ChampionshipExclusionMapper.class);
 
     public ChampionshipExclusionRepository(DSLContext dsl) {
         super(dsl, CHAMPIONSHIP_EXCLUSIONS, CHAMPIONSHIP_EXCLUSIONS.ID);
@@ -53,25 +56,12 @@ public class ChampionshipExclusionRepository extends JooqRepository<Championship
 
     @Override
     protected ChampionshipExclusion toEntity(ChampionshipExclusionsRecord r) {
-        ChampionshipExclusion c = new ChampionshipExclusion();
-        c.setId(r.getId());
-        c.setChampionshipId(r.getChampionshipId());
-        c.setDriverId(r.getDriverId());
-        c.setEventId(r.getEventId());
-        c.setReason(r.getReason());
-        c.setCreatedBy(r.getCreatedBy());
-        c.setCreatedAt(r.getCreatedAt());
-        return c;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(ChampionshipExclusion c, ChampionshipExclusionsRecord r) {
-        r.setChampionshipId(c.getChampionshipId());
-        r.setDriverId(c.getDriverId());
-        r.setEventId(c.getEventId());
-        r.setReason(c.getReason());
-        r.setCreatedBy(c.getCreatedBy());
-        r.setCreatedAt(c.getCreatedAt());
+        MAPPER.toRecord(c, r);
     }
 
     @Override

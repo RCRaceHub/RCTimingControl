@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.SortField;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,8 @@ public class TrackRepository extends JooqRepository<Track, TracksRecord> {
 
     private final DecoderLoopRepository decoderLoops;
     private final TrackLapThresholdRepository lapThresholds;
+
+    private static final TrackMapper MAPPER = Mappers.getMapper(TrackMapper.class);
 
     public TrackRepository(DSLContext dsl, DecoderLoopRepository decoderLoops,
                            TrackLapThresholdRepository lapThresholds) {
@@ -72,23 +75,12 @@ public class TrackRepository extends JooqRepository<Track, TracksRecord> {
 
     @Override
     protected Track toEntity(TracksRecord r) {
-        Track t = new Track();
-        t.setId(r.getId());
-        t.setName(r.getName());
-        t.setVenueNotes(r.getVenueNotes());
-        t.setTrackLength(r.getTrackLength());
-        t.setCreatedAt(r.getCreatedAt());
-        t.setUpdatedAt(r.getUpdatedAt());
-        return t;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Track t, TracksRecord r) {
-        r.setName(t.getName());
-        r.setVenueNotes(t.getVenueNotes());
-        r.setTrackLength(t.getTrackLength());
-        r.setCreatedAt(t.getCreatedAt());
-        r.setUpdatedAt(t.getUpdatedAt());
+        MAPPER.toRecord(t, r);
     }
 
     @Override

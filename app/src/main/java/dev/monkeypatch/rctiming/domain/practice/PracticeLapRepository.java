@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -15,6 +16,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps.PRACTI
 /** Repository for {@link PracticeLap} ({@code practice_laps}); each finder orders its laps as its name says. */
 @Repository
 public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeLapsRecord> {
+
+    private static final PracticeLapMapper MAPPER = Mappers.getMapper(PracticeLapMapper.class);
 
     public PracticeLapRepository(DSLContext dsl) {
         super(dsl, PRACTICE_LAPS, PRACTICE_LAPS.ID);
@@ -55,29 +58,12 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
 
     @Override
     protected PracticeLap toEntity(PracticeLapsRecord r) {
-        PracticeLap l = new PracticeLap();
-        l.setId(r.getId());
-        l.setPracticeSessionId(r.getPracticeSessionId());
-        l.setTransponderNumber(r.getTransponderNumber());
-        l.setUserId(r.getUserId());
-        l.setLapNumber(r.getLapNumber());
-        l.setRunNumber(r.getRunNumber());
-        l.setLapTimeMs(r.getLapTimeMs());
-        l.setCrossingTime(r.getCrossingTime());
-        l.setCreatedAt(r.getCreatedAt());
-        return l;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(PracticeLap l, PracticeLapsRecord r) {
-        r.setPracticeSessionId(l.getPracticeSessionId());
-        r.setTransponderNumber(l.getTransponderNumber());
-        r.setUserId(l.getUserId());
-        r.setLapNumber(l.getLapNumber());
-        r.setRunNumber(l.getRunNumber());
-        r.setLapTimeMs(l.getLapTimeMs());
-        r.setCrossingTime(l.getCrossingTime());
-        r.setCreatedAt(l.getCreatedAt());
+        MAPPER.toRecord(l, r);
     }
 
     @Override

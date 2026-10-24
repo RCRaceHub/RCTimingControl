@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.entry;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,6 +16,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
  */
 @Repository
 public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
+
+    private static final EntryMapper MAPPER = Mappers.getMapper(EntryMapper.class);
 
     public EntryRepository(DSLContext dsl) {
         super(dsl, ENTRIES, ENTRIES.ID);
@@ -55,47 +58,12 @@ public class EntryRepository extends JooqRepository<Entry, EntriesRecord> {
 
     @Override
     protected Entry toEntity(EntriesRecord r) {
-        Entry e = new Entry();
-        e.setId(r.getId());
-        e.setCompetitorId(r.getCompetitorId());
-        e.setEventId(r.getEventId());
-        e.setEventClassId(r.getEventClassId());
-        e.setTransponderNumberSnapshot(r.getTransponderNumber());
-        e.setSecondaryTransponderNumber(r.getSecondaryTransponderNumber());
-        e.setImportedTransponderNumber(r.getImportedTransponderNumber());
-        e.setImportedSecondaryTransponderNumber(r.getImportedSecondaryTransponderNumber());
-        e.setStatus(r.getStatus() == null ? null : EntryStatus.valueOf(r.getStatus()));
-        e.setSubmittedAt(r.getSubmittedAt());
-        e.setConfirmedAt(r.getConfirmedAt());
-        e.setWithdrawnAt(r.getWithdrawnAt());
-        e.setUpdatedAt(r.getUpdatedAt());
-        e.setExternalSource(r.getExternalSource());
-        e.setExternalEntryId(r.getExternalEntryId());
-        e.setExternalEntryVersion(r.getExternalEntryVersion());
-        e.setRacehubArrival(r.getRacehubArrival());
-        e.setRacehubEventClassId(r.getRacehubEventClassId());
-        return e;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Entry e, EntriesRecord r) {
-        r.setCompetitorId(e.getCompetitorId());
-        r.setEventId(e.getEventId());
-        r.setEventClassId(e.getEventClassId());
-        r.setTransponderNumber(e.getTransponderNumberSnapshot());
-        r.setSecondaryTransponderNumber(e.getSecondaryTransponderNumber());
-        r.setImportedTransponderNumber(e.getImportedTransponderNumber());
-        r.setImportedSecondaryTransponderNumber(e.getImportedSecondaryTransponderNumber());
-        r.setStatus(e.getStatus() == null ? null : e.getStatus().name());
-        r.setSubmittedAt(e.getSubmittedAt());
-        r.setConfirmedAt(e.getConfirmedAt());
-        r.setWithdrawnAt(e.getWithdrawnAt());
-        r.setUpdatedAt(e.getUpdatedAt());
-        r.setExternalSource(e.getExternalSource());
-        r.setExternalEntryId(e.getExternalEntryId());
-        r.setExternalEntryVersion(e.getExternalEntryVersion());
-        r.setRacehubArrival(e.getRacehubArrival());
-        r.setRacehubEventClassId(e.getRacehubEventClassId());
+        MAPPER.toRecord(e, r);
     }
 
     @Override
