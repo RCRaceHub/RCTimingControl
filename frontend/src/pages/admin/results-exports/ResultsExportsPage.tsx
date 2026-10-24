@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useResultsExports, useRetryResultsExport, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
+import { useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
 import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus, ResultsPublishTarget } from '@/lib/adminApi';
@@ -36,9 +36,30 @@ const STATUS_COLOR: Record<ResultsExportStatus, string> = {
 const TARGETS: { value: ResultsPublishTarget; label: string }[] = [
   { value: 'NONE', label: 'Nowhere' },
   { value: 'RACEHUB', label: 'RaceHub' },
-  { value: 'SITE', label: 'A results site (not available yet)' },
-  { value: 'BOTH', label: 'RaceHub and a results site (not available yet)' },
+  { value: 'SITE', label: 'A results site' },
+  { value: 'BOTH', label: 'RaceHub and a results site' },
 ];
+
+/** The results site (#359): static pages for a club's own web space, downloaded as a zip. */
+function SiteDownload() {
+  const download = useDownloadResultsSite();
+  return (
+    <div className="space-y-1">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={download.isPending}
+        onClick={() => download.mutate(undefined, { onError: () => toast.error('Could not build the results site.') })}
+      >
+        Download results site (zip)
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        Plain web pages for every event, to upload to the club&apos;s own web space. Names follow each
+        competitor&apos;s public name setting, and no lap-by-lap times or penalty reasons are included.
+      </p>
+    </div>
+  );
+}
 
 function TargetForm({ target, chosen }: { target: ResultsPublishTarget; chosen: ResultsPublishTarget | null }) {
   const setTarget = useSetResultsTarget();
@@ -165,6 +186,8 @@ export default function ResultsExportsPage() {
       </div>
 
       {data && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
+
+      {data && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
 
       {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
 

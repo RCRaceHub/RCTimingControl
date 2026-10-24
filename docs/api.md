@@ -971,7 +971,7 @@ Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — t
 ```http
 PUT /api/v1/admin/results-exports/target
 ```
-Body `{ "target": "RACEHUB" }`, where `target` is `NONE`, `RACEHUB`, `SITE` or `BOTH`, or null to clear the choice. **200 OK** — the same body as the list. With no choice, results go to RaceHub when a RaceHub address is set (in this panel or the settings file) and nowhere otherwise. Only `RACEHUB` and `BOTH` queue exports for RaceHub; `SITE` is reserved for the results site and queues nothing yet. Exports already waiting are still sent. **400** for any other value. Audited as `RESULTS_PUBLISH_TARGET_CHANGED`.
+Body `{ "target": "RACEHUB" }`, where `target` is `NONE`, `RACEHUB`, `SITE` or `BOTH`, or null to clear the choice. **200 OK** — the same body as the list. With no choice, results go to RaceHub when a RaceHub address is set (in this panel or the settings file) and nowhere otherwise. Only `RACEHUB` and `BOTH` queue exports for RaceHub; `SITE` is the results site: it queues nothing for RaceHub, and the pages are built from `GET /api/v1/admin/results-site.zip` or written to `rctiming.results-site.directory`. Exports already waiting are still sent. **400** for any other value. Audited as `RESULTS_PUBLISH_TARGET_CHANGED`.
 
 ```http
 POST /api/v1/admin/results-exports/{id}/retry
@@ -984,6 +984,11 @@ GET /api/v1/admin/events/{eventId}/results-export
 **200 OK** — the event's results as they stand now, as a Results Export v1 document, with `Content-Disposition: attachment; filename="results-event-{eventId}-r{revision}.json"`. Works for any event, imported from RaceHub or not, and queues nothing. **404** for an unknown event.
 
 ---
+
+```http
+GET /api/v1/admin/results-site.zip
+```
+`ADMIN` only. The results site (#359) as a zip of static web pages (`index.html` and `events/<id>.html`), built now from every event's Results Export v1 document, so it carries display names, positions, laps, times, penalties and championship standings but no lap-by-lap times. Available whatever the publish choice is. **200 OK** with `application/zip`.
 
 ## Race control — Live feed
 

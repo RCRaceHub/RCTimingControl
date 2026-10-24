@@ -1,8 +1,9 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
 /**
- * Where a club publishes its results (#319). {@link #SITE} is the results site for clubs without RaceHub;
- * until it exists, choosing it queues nothing.
+ * Where a club publishes its results (#319). {@link #SITE} is the results site for clubs without RaceHub:
+ * static pages from {@link ResultsSiteService}, written to a folder or downloaded as a zip. It queues nothing in the
+ * outbox.
  */
 public enum ResultsPublishTarget {
     NONE(false, false),

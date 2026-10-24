@@ -172,6 +172,15 @@ public class MdnsAdvertiser {
         }
     }
 
+    /**
+     * The announced name, such as {@code timing.local}, once at least one interface has taken the announcement; empty
+     * when the setting is off, while the first announcement is still being set up, and when none could be made. Read
+     * by request threads for the About page, so QR codes only use a name that is really being announced.
+     */
+    public synchronized Optional<String> announcedHost() {
+        return announcers.isEmpty() ? Optional.empty() : label.map(l -> l + ".local");
+    }
+
     /** Withdraws the announcements at shutdown so the name stops answering at once. */
     @PreDestroy
     public void stop() {

@@ -87,6 +87,18 @@ rctiming.racehub.token=the-key-from-racehub
 
 The address must start with `https://`, since the key goes with every request. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **Results to RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand.
 
+## Publishing a results site
+
+A club without RaceHub can still put its results on the web. Choose **A results site** (or both) under **Publish results to** in **Results to RaceHub**, then press **Download results site (zip)** and upload the files to the club's web space; they are plain pages with no scripts. To have the app keep a folder up to date by itself after each race, correction and day close, set the folder in `application.properties` and point a sync tool at it:
+
+```
+rctiming.results-site.directory=C:/Users/club/results-site
+```
+
+The folder is also rewritten every 5 minutes (`rctiming.results-site.refresh-minutes`), which picks up changes that raise no signal of their own, such as a restarted race or a competitor's public name setting.
+
+The pages show the same names as the public screens (each competitor's public name setting) and no lap-by-lap times or penalty reasons.
+
 ## Sending a live feed
 
 The app can send each race as it runs to a relay on the internet, so people away from the track can follow it (see [live-feed-v1.md](live-feed-v1.md)). The laptop connects out to the relay; nothing connects in to it. Give it the relay's address and the club's key in `application.properties`:

@@ -8,11 +8,13 @@ import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
+import dev.monkeypatch.rctiming.resultsexport.ResultsSiteService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -39,15 +41,17 @@ public class ResultsExportController {
     private final RaceHubResultsEndpoint endpoint;
     private final ClubProfileService clubProfileService;
     private final ResultsPublishSettings publishSettings;
+    private final ResultsSiteService siteService;
 
     public ResultsExportController(ResultsExportService exportService, ResultsOutboxQuery outboxQuery,
                                    RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService,
-                                   ResultsPublishSettings publishSettings) {
+                                   ResultsPublishSettings publishSettings, ResultsSiteService siteService) {
         this.exportService = exportService;
         this.outboxQuery = outboxQuery;
         this.endpoint = endpoint;
         this.clubProfileService = clubProfileService;
         this.publishSettings = publishSettings;
+        this.siteService = siteService;
     }
 
     /**
@@ -108,6 +112,19 @@ public class ResultsExportController {
     public ResponseEntity<Void> retry(Authentication auth, @PathVariable long id) {
         exportService.retryNow(CurrentOfficial.actor(auth), id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * The results site (#359) as a zip of static pages, built now from every event's results, for the club to upload
+     * to its own web space. Available whatever the publish choice is.
+     */
+    @GetMapping("/results-site.zip")
+    public ResponseEntity<byte[]> downloadSite() {
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename("results-site.zip").build().toString())
+                .body(siteService.zip());
     }
 
     /** The event's results as they stand now, as a Results Export v1 file. */

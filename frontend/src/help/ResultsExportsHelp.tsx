@@ -16,6 +16,7 @@ export function ResultsExportsHelp() {
         <li><span className="font-semibold">Sent:</span> RaceHub has the results.</li>
         <li><span className="font-semibold">Replaced by a newer export:</span> Each send carries the whole event, so a newer one makes an older, unsent one unnecessary.</li>
         <li><span className="font-semibold">Send now:</span> Click it on a waiting or failed row to try again straight away.</li>
+        <li><span className="font-semibold">Download results site:</span> When results are published to a results site, a button builds plain web pages for every event as a zip, to upload to the club&apos;s own web space. Setting <code>rctiming.results-site.directory</code> makes the app keep a folder of the same pages up to date by itself.</li>
         <li><span className="font-semibold">Download results:</span> Each event&apos;s page has a &quot;Download results&quot; button for taking the results across by hand.</li>
       </ul>
 

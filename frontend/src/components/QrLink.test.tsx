@@ -16,6 +16,14 @@ describe('shareableUrl', () => {
     );
   });
 
+  it('prefers the announced mDNS name so printed codes survive an address change', () => {
+    setLocation('http://localhost:3000/boards/results');
+
+    expect(shareableUrl('/qualifying?event=3', ['http://192.168.1.20:8080/'], 'http://timing.local:8080/')).toBe(
+      'http://timing.local:8080/qualifying?event=3',
+    );
+  });
+
   it('keeps localhost when no network address is known', () => {
     setLocation('http://localhost:3000/boards/results');
 
