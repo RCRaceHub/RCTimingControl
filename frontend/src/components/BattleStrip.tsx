@@ -17,7 +17,7 @@ export function BattleStrip({ groups, className }: { groups: BattleGroup[]; clas
   const cycling = groups.length > BATTLES_SHOWN;
   useEffect(() => {
     if (!cycling) return;
-    const timer = setInterval(() => setTick(t => t + 1), CYCLE_MS);
+    const timer = setInterval(() => setTick((t) => t + 1), CYCLE_MS);
     return () => clearInterval(timer);
   }, [cycling]);
   if (groups.length === 0) return null;
@@ -25,7 +25,7 @@ export function BattleStrip({ groups, className }: { groups: BattleGroup[]; clas
   const start = (tick % pages) * BATTLES_SHOWN;
   return (
     <div className={className} aria-label="Battles">
-      {groups.slice(start, start + BATTLES_SHOWN).map(group => (
+      {groups.slice(start, start + BATTLES_SHOWN).map((group) => (
         <BattleGroupLine key={group.cars[0].entryId} group={group} />
       ))}
     </div>

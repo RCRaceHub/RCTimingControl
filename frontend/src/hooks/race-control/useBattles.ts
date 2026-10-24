@@ -4,7 +4,8 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 /**
  * The on-track battles in a race (#505), judged afresh with each timing update. Changing race, or the threshold,
- * starts the history again, so a trend never carries over from another race.
+ * starts the history again, so a trend never carries over from another race. {@code rows} must be the same array
+ * between updates (not rebuilt on each render), or this re-renders without end.
  */
 export function useBattles(raceId: number | null, rows: LiveTimingRowDto[], thresholdMs: number): Battle[] {
   const [seen, setSeen] = useState<{

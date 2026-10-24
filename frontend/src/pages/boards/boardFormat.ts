@@ -27,7 +27,8 @@ const LIVE_RACE_DEFAULT_CLOSE_MS = 1000;
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
- * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars, {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, and
+ * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
+ * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, and
  * {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
  * that is empty or not a number takes the default.
  */
@@ -56,10 +57,9 @@ function parseTickerItems(value: string | null): Set<TickerItem> {
 const BATTLE_MAX_GAP_S = 10;
 
 /**
- * The battle strip (#505): on the overlay {@code battles=show} (or {@code 1}) switches it on, and on the live
- * race board {@code battles=hide} switches it off. {@code battleGap=SECONDS} sets how near the car ahead starts a battle, and
- * {@code battleGap=SECONDS} sets how near the car ahead starts a battle. A gap that is empty or not a number
- * takes the default.
+ * The battle strip's options (#505): {@code battles=show} (or {@code 1}) switches it on for the overlay,
+ * {@code battles=hide} switches it off on the live race board, and {@code battleGap=SECONDS} sets how near the car
+ * ahead starts a battle. A gap that is empty or not a number takes the default.
  */
 export function parseBattleOptions(params: URLSearchParams) {
   const on = params.get('battles')?.toLowerCase();

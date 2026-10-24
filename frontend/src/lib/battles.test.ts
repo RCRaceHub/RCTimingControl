@@ -46,6 +46,14 @@ describe('advanceBattles', () => {
     expect(run([lap(0, 1500), lap(1, 2500), lap(2, 3000), lap(3, 3500)]).battles).toHaveLength(0);
   });
 
+  it('starts the trend again when a pair returns after a long gap, or the lap count goes back', () => {
+    const lap = (i: number, gap: number) => [row(1, 1, 3 + i, null), row(2, 2, 3 + i, gap)];
+    const back = run([lap(0, 1500), lap(1, 4000), lap(2, 4000), lap(3, 4000), lap(4, 4000), lap(5, 1800), lap(6, 1400)]);
+    expect(back.battles[0].ratePerLapMs).toBeCloseTo(-400);
+    const marshalled = run([lap(0, 1500), lap(1, 1400), [row(1, 1, 5, null), row(2, 2, 3, 1300)]]);
+    expect(marshalled.battles[0].trend).toBe('unknown');
+  });
+
   it('ignores a lapped car, a finished car and a zero threshold', () => {
     expect(run([[row(1, 1, 3, null), row(2, 2, 2, 500, { intervalLapsDown: 1 })]]).battles).toHaveLength(0);
     expect(run([[row(1, 1, 3, null), row(2, 2, 3, 500, { finished: true })]]).battles).toHaveLength(0);

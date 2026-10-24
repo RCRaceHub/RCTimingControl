@@ -40,13 +40,22 @@ interface PairHistory {
 /** What the battle detector remembers between timing updates, keyed by `aheadEntryId:chaserEntryId`. */
 export type BattleHistory = Map<string, PairHistory>;
 
+function trendOf(ratePerLapMs: number | null): BattleTrend {
+  if (ratePerLapMs === null) return 'unknown';
+  if (ratePerLapMs <= -TREND_MS_PER_LAP) return 'closing';
+  return ratePerLapMs >= TREND_MS_PER_LAP ? 'growing' : 'holding';
+}
+
+/** Stands in for the rows while battles are switched off, so a hook's input stays the same array between renders. */
+export const NO_ROWS: LiveTimingRowDto[] = [];
+
 /**
  * Takes one timing update into the history and works out the battles from it. Pure: the caller keeps the history.
  *
  * <p>A battle is a pair of adjacent cars on the same lap, within {@code thresholdMs}. The gap changes only as cars
  * cross the line, so it is sampled once per lap of the chaser, and the trend is the average change per lap over its
  * last few laps. A pair stays a battle for a couple of laps after it drops outside the threshold, so it does not
- * flicker on and off. A threshold of 0 or less switches battles off.
+ * flicker on and off. A lap count that goes back (a marshal's -1) starts the trend again. A threshold of 0 or less switches battles off.
  *
  * @param history what the last update left, or an empty map at the start of a race
  * @param rows every row of the race, in running order
@@ -70,35 +79,29 @@ export function advanceBattles(
     }
     const key = `${ahead.entryId}:${chaser.entryId}`;
     const previous = history.get(key);
-    const samples = previous ? [...previous.samples] : [];
+    // A lap count that goes back (a marshal's -1) makes the old laps meaningless for the trend
+    const lastSample = previous?.samples[previous.samples.length - 1];
+    const samples = previous && lastSample && lastSample.chaserLaps <= chaser.lapsCompleted ? [...previous.samples] : [];
     if (samples.length === 0 || samples[samples.length - 1].chaserLaps !== chaser.lapsCompleted) {
       samples.push({ chaserLaps: chaser.lapsCompleted, gapMs: chaser.gapToAheadMs });
     }
     const inRange = chaser.gapToAheadMs <= thresholdMs;
     const lastCloseLaps = inRange ? chaser.lapsCompleted : (previous?.lastCloseLaps ?? null);
     // A pair never inside the threshold is not worth remembering
-    if (lastCloseLaps === null) continue;
+    if (lastCloseLaps === null || chaser.lapsCompleted - lastCloseLaps > HOLD_LAPS) continue;
     const trimmed = samples.slice(-TREND_SAMPLES);
     next.set(key, { samples: trimmed, lastCloseLaps });
-    if (chaser.lapsCompleted - lastCloseLaps > HOLD_LAPS) continue;
 
     const first = trimmed[0];
     const last = trimmed[trimmed.length - 1];
-    const ratePerLapMs = last.chaserLaps > first.chaserLaps ? (last.gapMs - first.gapMs) / (last.chaserLaps - first.chaserLaps) : null;
-    const trend: BattleTrend =
-      ratePerLapMs === null
-        ? 'unknown'
-        : ratePerLapMs <= -TREND_MS_PER_LAP
-          ? 'closing'
-          : ratePerLapMs >= TREND_MS_PER_LAP
-            ? 'growing'
-            : 'holding';
+    const ratePerLapMs =
+      last.chaserLaps > first.chaserLaps ? (last.gapMs - first.gapMs) / (last.chaserLaps - first.chaserLaps) : null;
     battles.push({
       ahead,
       chaser,
       gapMs: chaser.gapToAheadMs,
       ratePerLapMs,
-      trend,
+      trend: trendOf(ratePerLapMs),
       gainingFast: ratePerLapMs !== null && ratePerLapMs <= -GAINING_FAST_MS_PER_LAP,
     });
   }

@@ -22,18 +22,17 @@ function describe(link: Battle): string {
 }
 
 /** The gap between two cars with an arrow for whether it is closing or growing (#505). */
-function Link({ link }: { link: Battle }) {
+function GapLink({ link }: { link: Battle }) {
   const trend = link.trend === 'unknown' ? null : TREND_TEXT[link.trend];
   return (
     <span
       className={cn('whitespace-nowrap font-semibold tabular-nums', trend?.className, link.gainingFast && 'underline')}
       data-trend={link.trend}
       data-gaining-fast={link.gainingFast || undefined}
-      role="img"
-      aria-label={describe(link)}
       title={describe(link)}
     >
-      {fmtGap(link.gapMs)}
+      <span className="sr-only">{describe(link)}</span>
+      <span aria-hidden="true">{fmtGap(link.gapMs)}</span>
       {trend && ` ${trend.arrow}`}
       {trend && link.ratePerLapMs !== null && link.trend !== 'holding' && (
         <span className="ml-0.5 text-[0.75em] font-normal">{fmtGap(Math.abs(link.ratePerLapMs))}/lap</span>
@@ -64,7 +63,7 @@ export function BattleGroupLine({ group, className }: { group: BattleGroup; clas
             <span className="mr-1 text-[0.75em] opacity-70">P{car.position}</span>
             {car.driverName}
           </span>
-          {i < group.links.length && <Link link={group.links[i]} />}
+          {i < group.links.length && <GapLink link={group.links[i]} />}
         </Fragment>
       ))}
     </div>

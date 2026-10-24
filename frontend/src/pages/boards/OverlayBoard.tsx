@@ -26,7 +26,7 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
-import { groupBattles } from '@/lib/battles';
+import { groupBattles, NO_ROWS } from '@/lib/battles';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
@@ -122,9 +122,6 @@ function StatsTicker({
     </div>
   );
 }
-
-/** Stands in for the rows while the battle strip is off, so the detector's input stays the same array. */
-const NO_ROWS: LiveTimingRowDto[] = [];
 
 /** Seconds a ticker takes per character to cross the screen: slow enough to read, long text just takes longer. */
 const TICKER_SECONDS_PER_CHAR = 0.18;

@@ -19,8 +19,8 @@ describe('BattleStrip', () => {
 
   it('says whether the gap is closing or growing', () => {
     render(<BattleStrip groups={[pair(1, 2, 'closing', -400, true), pair(3, 4, 'growing', 300)]} />);
-    expect(screen.getByLabelText(/Driver 2 is 0.8s behind Driver 1, closing by 0.4s a lap/)).toHaveAttribute('data-gaining-fast', 'true');
-    expect(screen.getByLabelText(/Driver 4 is 0.8s behind Driver 3, pulling away by 0.3s a lap/)).toHaveAttribute('data-trend', 'growing');
+    expect(screen.getByText(/Driver 2 is 0.8s behind Driver 1, closing by 0.4s a lap/).parentElement!).toHaveAttribute('data-gaining-fast', 'true');
+    expect(screen.getByText(/Driver 4 is 0.8s behind Driver 3, pulling away by 0.3s a lap/).parentElement!).toHaveAttribute('data-trend', 'growing');
   });
 
   it('labels a pair by the place it is fighting for', () => {
