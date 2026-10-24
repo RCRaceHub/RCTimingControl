@@ -116,6 +116,16 @@ describe('HeatLineupsPanel', () => {
     expect(mockMove).not.toHaveBeenCalled();
   });
 
+  it('ignores a drop whose source is not a waiting heat of this round', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    openMoveTab();
+    await screen.findByText('Driver 1');
+    const foreign = fakeTransfer();
+    foreign.setData('application/x-rctc-entry', JSON.stringify({ raceId: 999, entryId: 10 }));
+    fireEvent.drop(screen.getByRole('region', { name: 'Heat 2' }), { dataTransfer: foreign });
+    expect(mockMove).not.toHaveBeenCalled();
+  });
+
   it('offers no moves without permission', async () => {
     renderPanel([heat(1, 1), heat(2, 2)]);
     openMoveTab();

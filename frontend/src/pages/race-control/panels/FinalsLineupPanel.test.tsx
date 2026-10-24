@@ -141,6 +141,21 @@ describe('FinalsLineupPanel', () => {
     expect(mockMove).not.toHaveBeenCalled();
   });
 
+  it('ignores a drag that started in a locked final or came from elsewhere', async () => {
+    const locked = lineup()[0].finals.map((f) => (f.raceId === 100 ? { ...f, editable: false } : f));
+    mockGet.mockResolvedValue(lineup({ finals: locked }));
+    renderPanel();
+    const dataTransfer = fakeTransfer();
+    fireEvent.dragStart(await screen.findByText('Ann Racer'), { dataTransfer });
+    expect(dataTransfer.types).toEqual([]);
+    const foreign = fakeTransfer();
+    foreign.setData('application/x-rctc-entry', JSON.stringify({ raceId: 999, entryId: 11 }));
+    fireEvent.drop(screen.getByRole('region', { name: 'B final' }), { dataTransfer: foreign });
+    fireEvent.drop(screen.getByText('Cat Racer'), { dataTransfer: foreign });
+    expect(mockMove).not.toHaveBeenCalled();
+    expect(mockSwap).not.toHaveBeenCalled();
+  });
+
   it('locks the edits once a final has been called', async () => {
     mockGet.mockResolvedValue(lineup({ started: true, finals: lineup()[0].finals.map((f) => ({ ...f, editable: false })) }));
     renderPanel();

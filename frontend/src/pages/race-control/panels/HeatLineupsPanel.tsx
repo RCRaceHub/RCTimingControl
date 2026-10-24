@@ -92,23 +92,29 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
           <div className="grid gap-3 md:grid-cols-2">
             {heats.map((h, i) => {
               const drivers = results[i]?.data ?? [];
+              const movable = canMove && h.status === 'PENDING';
               return (
                 <section
                   key={h.raceId}
                   aria-label={`Heat ${h.heatNumber}`}
                   aria-current={h.raceId === selected.raceId ? 'true' : undefined}
                   className={`rounded border p-2 space-y-1 ${h.raceId === selected.raceId ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''} ${dropTarget === h.raceId ? 'outline outline-2 outline-primary' : ''}`}
-                  onDragOver={canMove && h.status === 'PENDING' ? (ev) => {
+                  onDragOver={movable ? (ev) => {
                     if (!isEntryDrag(ev)) return;
                     ev.preventDefault();
                     setDropTarget(h.raceId);
                   } : undefined}
-                  onDragLeave={() => setDropTarget((t) => (t === h.raceId ? null : t))}
-                  onDrop={canMove && h.status === 'PENDING' ? (ev) => {
+                  onDragLeave={(ev) => {
+                    if (ev.currentTarget.contains(ev.relatedTarget as Node | null)) return;
+                    setDropTarget((t) => (t === h.raceId ? null : t));
+                  }}
+                  onDrop={movable ? (ev) => {
                     ev.preventDefault();
                     setDropTarget(null);
                     const dragged = readEntryDrag(ev);
-                    if (dragged && dragged.raceId !== h.raceId) {
+                    // The source must be a waiting heat of this round: a drag can come from another tab or a stale page
+                    const fromHere = dragged && heats.some((x) => x.raceId === dragged.raceId && x.status === 'PENDING');
+                    if (dragged && fromHere && dragged.raceId !== h.raceId && !move.isPending) {
                       move.mutate({ raceId: dragged.raceId, entryId: dragged.entryId, targetRaceId: h.raceId });
                     }
                   } : undefined}
@@ -127,9 +133,12 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
                     {drivers.map((d) => (
                       <li
                         key={d.entryId}
-                        className={`flex items-center justify-between gap-2 ${canMove && h.status === 'PENDING' ? 'cursor-grab' : ''}`}
-                        draggable={canMove && h.status === 'PENDING'}
-                        onDragStart={(ev) => startEntryDrag(ev, { raceId: h.raceId, entryId: d.entryId })}
+                        className={`flex items-center justify-between gap-2 ${movable ? 'cursor-grab' : ''}`}
+                        draggable={movable}
+                        onDragStart={(ev) => {
+                          if (!movable) { ev.preventDefault(); return; }
+                          startEntryDrag(ev, { raceId: h.raceId, entryId: d.entryId });
+                        }}
                         onDragEnd={() => setDropTarget(null)}
                       >
                         <span>

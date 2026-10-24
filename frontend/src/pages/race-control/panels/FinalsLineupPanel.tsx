@@ -146,23 +146,31 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
         <p className="text-sm text-muted-foreground">The finals have not been calculated yet.</p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          {lineup.finals.map((fin) => (
+          {lineup.finals.map((fin) => {
+            const editable = canEdit && fin.editable && fin.letter !== 'Z';
+            // A drag may come from another tab or a stale page: the source must be an editable final listed here
+            const ownsDrag = (d: { raceId: number; entryId: number }) => lineup.finals.some((f) => f.raceId === d.raceId
+              && canEdit && f.editable && f.letter !== 'Z' && f.drivers.some((x) => x.entryId === d.entryId));
+            return (
             <section
               key={fin.raceId}
               aria-label={`${fin.letter} final`}
               className={`rounded border p-2 space-y-1 ${dropTarget === fin.raceId ? 'outline outline-2 outline-primary' : ''}`}
-              onDragOver={canEdit && fin.editable && fin.letter !== 'Z' ? (ev) => {
+              onDragOver={editable ? (ev) => {
                 if (!isEntryDrag(ev)) return;
                 ev.preventDefault();
                 setDropTarget(fin.raceId);
               } : undefined}
-              onDragLeave={() => setDropTarget((t) => (t === fin.raceId ? null : t))}
-              onDrop={canEdit && fin.editable && fin.letter !== 'Z' ? (ev) => {
+              onDragLeave={(ev) => {
+                if (ev.currentTarget.contains(ev.relatedTarget as Node | null)) return;
+                setDropTarget((t) => (t === fin.raceId ? null : t));
+              }}
+              onDrop={editable ? (ev) => {
                 ev.preventDefault();
                 setDropTarget(null);
                 const dragged = readEntryDrag(ev);
                 // Dropped on empty room in another final: the driver moves there. Dropped on a driver: see below.
-                if (dragged && dragged.raceId !== fin.raceId) {
+                if (dragged && ownsDrag(dragged) && dragged.raceId !== fin.raceId && !move.isPending && !swap.isPending) {
                   move.mutate({ raceId: dragged.raceId, entryId: dragged.entryId, targetRaceId: fin.raceId });
                 }
               } : undefined}
@@ -178,14 +186,17 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
                 {fin.drivers.map((d, i) => (
                   <li
                     key={d.entryId}
-                    className={`flex items-center justify-between gap-2 text-sm ${canEdit && fin.editable && fin.letter !== 'Z' ? 'cursor-grab' : ''}`}
-                    draggable={canEdit && fin.editable && fin.letter !== 'Z'}
-                    onDragStart={(ev) => startEntryDrag(ev, { raceId: fin.raceId, entryId: d.entryId })}
+                    className={`flex items-center justify-between gap-2 text-sm ${editable ? 'cursor-grab' : ''}`}
+                    draggable={editable}
+                    onDragStart={(ev) => {
+                      if (!editable) { ev.preventDefault(); return; }
+                      startEntryDrag(ev, { raceId: fin.raceId, entryId: d.entryId });
+                    }}
                     onDragEnd={() => setDropTarget(null)}
-                    onDrop={canEdit && fin.editable && fin.letter !== 'Z' ? (ev) => {
+                    onDrop={editable ? (ev) => {
                       // Dropped on a driver: the two swap places, in this final or across finals
                       const dragged = readEntryDrag(ev);
-                      if (!dragged || dragged.entryId === d.entryId) return;
+                      if (!dragged || dragged.entryId === d.entryId || !ownsDrag(dragged) || move.isPending || swap.isPending) return;
                       ev.preventDefault();
                       ev.stopPropagation();
                       setDropTarget(null);
@@ -252,7 +263,8 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
                 ))}
               </ol>
             </section>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>
