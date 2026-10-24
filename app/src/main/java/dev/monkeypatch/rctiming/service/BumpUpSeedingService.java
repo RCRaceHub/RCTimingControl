@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -10,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +79,8 @@ public class BumpUpSeedingService {
      * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers.
      * The unused finals' races are deleted from the run order (kept, empty, only when something was recorded against
      * one early). The top final is never unused, so a final in legs never loses its later legs. A later calculation
-     * with fewer cars per final than the field needs can't bring a deleted final back: the grids grow to fit instead.
+     * with fewer cars per final than the field needs brings a deleted final back first, see
+     * {@link #restoreFinals}.
      *
      * <p>A Shikabane zombie round (final letter {@value #ZOMBIE_LETTER}) is left out of the split, its old grid is
      * cleared, and the top final gets one more bump place for the zombie round's winner.
@@ -97,6 +100,65 @@ public class BumpUpSeedingService {
                            int carsPerFinal,
                            int bumpCount) {
         seedFinals(eventClassId, qualifyingStandings, finalsCount, carsPerFinal, bumpCount, false);
+    }
+
+    /**
+     * Puts back the A, B, C... finals a class had when its rounds were generated but that an earlier calculation
+     * deleted as unused, so a recalculation with fewer cars per final can use them again. Each missing final gets a
+     * round of its own, with an empty grid, just before the next final above it in the run order; the rounds after
+     * shift down one place. Nothing happens when no final is missing.
+     *
+     * @param intendedCount the number of finals the class was generated with ({@code EventClass.finalsCount})
+     * @param startType     the start type of the class's finals
+     * @return the number of A, B, C finals the class has afterwards
+     */
+    public int restoreFinals(Long eventClassId, int intendedCount, StartType startType) {
+        List<Race> all = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
+        Map<String, Race> byLetter = new HashMap<>();
+        for (Race race : all) {
+            if (!ZOMBIE_LETTER.equals(race.getFinalLetter()) && !FinalLegs.isExtraLeg(race)) {
+                byLetter.put(race.getFinalLetter(), race);
+            }
+        }
+        if (byLetter.isEmpty()) {
+            return 0;
+        }
+        // Highest missing letter first, so the final above it already has its place in the run order
+        for (int f = Math.min(intendedCount, 26) - 1; f >= 1; f--) {
+            String letter = String.valueOf((char) ('A' + f));
+            if (byLetter.containsKey(letter)) {
+                continue;
+            }
+            Race above = byLetter.get(String.valueOf((char) ('A' + f - 1)));
+            if (above == null) {
+                continue;
+            }
+            Round aboveRound = roundRepository.findById(above.getRoundId()).orElseThrow();
+            int sequence = aboveRound.getSequenceInEvent();
+            for (Round later : roundRepository.findByEventIdOrderBySequenceInEvent(aboveRound.getEventId())) {
+                if (later.getSequenceInEvent() >= sequence) {
+                    later.setSequenceInEvent(later.getSequenceInEvent() + 1);
+                    roundRepository.save(later);
+                }
+            }
+            Round round = new Round();
+            round.setEventId(aboveRound.getEventId());
+            round.setType(RoundType.FINAL);
+            round.setRoundNumber(f + 1);
+            round.setSequenceInEvent(sequence);
+            round.setStatus(RoundStatus.PENDING);
+            round = roundRepository.save(round);
+            Race race = new Race();
+            race.setRoundId(round.getId());
+            race.setEventClassId(eventClassId);
+            race.setHeatNumber(1);
+            race.setSequenceInRound(1);
+            race.setFinalLetter(letter);
+            race.setStartType(startType);
+            race.setStatus(RaceStatus.PENDING);
+            byLetter.put(letter, raceRepository.save(race));
+        }
+        return byLetter.size();
     }
 
     /**
@@ -157,7 +219,11 @@ public class BumpUpSeedingService {
                     unused.setBumpSlots(0);
                     raceRepository.save(unused);
                 } else {
+                    Long roundId = unused.getRoundId();
                     raceRepository.delete(unused);
+                    if (raceRepository.findByRoundIdOrderBySequenceInRound(roundId).isEmpty()) {
+                        roundRepository.deleteById(roundId);
+                    }
                 }
             }
         }

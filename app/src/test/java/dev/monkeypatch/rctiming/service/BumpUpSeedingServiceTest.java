@@ -401,4 +401,49 @@ class BumpUpSeedingServiceTest {
         e.setBumped(bumped);
         return e;
     }
+
+    @Test
+    void restoreFinals_bringsBackTheLowerFinalsAnEarlierCalculationDeleted() {
+        var rounds = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.domain.race.RoundRepository.class);
+        var svc = new BumpUpSeedingService(raceRepository, raceEntryRepository, rounds,
+                org.mockito.Mockito.mock(dev.monkeypatch.rctiming.domain.audit.AuditService.class,
+                        org.mockito.Mockito.RETURNS_DEEP_STUBS));
+        Race aFinal = new Race();
+        aFinal.setId(1L);
+        aFinal.setRoundId(50L);
+        aFinal.setHeatNumber(1);
+        aFinal.setFinalLetter("A");
+        var aRound = new dev.monkeypatch.rctiming.domain.race.Round();
+        aRound.setId(50L);
+        aRound.setEventId(7L);
+        aRound.setSequenceInEvent(3);
+        var laterRound = new dev.monkeypatch.rctiming.domain.race.Round();
+        laterRound.setId(51L);
+        laterRound.setEventId(7L);
+        laterRound.setSequenceInEvent(4);
+        org.mockito.Mockito.when(raceRepository.findByEventClassIdAndRoundType(10L,
+                dev.monkeypatch.rctiming.domain.race.RoundType.FINAL)).thenReturn(List.of(aFinal));
+        org.mockito.Mockito.when(rounds.findById(50L)).thenReturn(java.util.Optional.of(aRound));
+        org.mockito.Mockito.when(rounds.findByEventIdOrderBySequenceInEvent(7L)).thenReturn(List.of(aRound, laterRound));
+        org.mockito.Mockito.when(rounds.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> {
+            var r = (dev.monkeypatch.rctiming.domain.race.Round) inv.getArgument(0);
+            if (r.getId() == null) {
+                r.setId(99L);
+            }
+            return r;
+        });
+        org.mockito.Mockito.when(raceRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        int count = svc.restoreFinals(10L, 2, null);
+
+        org.junit.jupiter.api.Assertions.assertEquals(2, count);
+        // B's round takes A's place in the run order, and A and everything after it move down one
+        org.junit.jupiter.api.Assertions.assertEquals(4, aRound.getSequenceInEvent());
+        org.junit.jupiter.api.Assertions.assertEquals(5, laterRound.getSequenceInEvent());
+        org.mockito.ArgumentCaptor<Race> saved = org.mockito.ArgumentCaptor.forClass(Race.class);
+        org.mockito.Mockito.verify(raceRepository).save(saved.capture());
+        org.junit.jupiter.api.Assertions.assertEquals("B", saved.getValue().getFinalLetter());
+        org.junit.jupiter.api.Assertions.assertEquals(99L, saved.getValue().getRoundId());
+    }
 }

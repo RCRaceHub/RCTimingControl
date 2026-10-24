@@ -27,7 +27,8 @@ import java.util.Map;
  * Calculates a class's finals from its qualifying results when an official asks for it from the finals line-up
  * panel. The layout comes from the class's format: a bump-up format's bump spots, otherwise no bumps, with the
  * official's cars per final or, when none is given, the format's grid size (else an even split of the field). The
- * number of finals is the number the generator made for the class.
+ * number of finals is the number the generator made for the class; any an earlier calculation dropped as unused are
+ * put back.
  *
  * <p>Nothing is calculated by itself when qualifying ends: the official reviews and edits the line-ups first
  * ({@link FinalsLineupService}). It refuses while a qualifying heat is still to run, when there are no finals, and
@@ -153,9 +154,14 @@ public class AutoFinalsSeedingService {
         List<Long> standings = qualifyingStandingsService.standingsFor(eventClassId);
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
         // The zombie round is not one of the A, B, C mains the field is split over
-        int finalsCount = (int) finals.stream()
+        int existing = (int) finals.stream()
                 .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter()))
                 .filter(f -> !FinalLegs.isExtraLeg(f)).count();
+        // Finals an earlier calculation dropped as unused come back, so fewer cars per final can use them again
+        int finalsCount = eventClass.getFinalsCount() != null && eventClass.getFinalsCount() > existing
+                ? bumpUpSeedingService.restoreFinals(eventClassId, eventClass.getFinalsCount(),
+                        raceFormatService.startType(eventClass, RoundType.FINAL))
+                : existing;
         int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount, carsPerFinal);
         boolean fillTopFirst = raceFormatService.getEffectiveConfig(eventClass) instanceof PointsFinalsConfig points
                 && points.fillTopFirst();
