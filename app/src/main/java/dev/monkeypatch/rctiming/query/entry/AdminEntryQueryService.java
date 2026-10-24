@@ -35,7 +35,9 @@ public class AdminEntryQueryService {
                         ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER,
                         ENTRIES.STATUS,
                         ENTRIES.SUBMITTED_AT,
-                        ENTRIES.WITHDRAWN_AT)
+                        ENTRIES.WITHDRAWN_AT,
+                        ENTRIES.THIRD_TRANSPONDER_NUMBER,
+                        ENTRIES.FOURTH_TRANSPONDER_NUMBER)
                 .from(ENTRIES)
                 .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
                 .where(ENTRIES.EVENT_ID.eq(eventId))
@@ -51,6 +53,8 @@ public class AdminEntryQueryService {
                         r.get(ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER),
                         r.get(ENTRIES.STATUS),
                         r.get(ENTRIES.SUBMITTED_AT),
-                        r.get(ENTRIES.WITHDRAWN_AT)));
+                        r.get(ENTRIES.WITHDRAWN_AT),
+                        r.get(ENTRIES.THIRD_TRANSPONDER_NUMBER),
+                        r.get(ENTRIES.FOURTH_TRANSPONDER_NUMBER)));
     }
 }

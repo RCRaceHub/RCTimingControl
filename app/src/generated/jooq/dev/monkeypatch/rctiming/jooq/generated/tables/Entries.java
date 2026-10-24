@@ -163,6 +163,16 @@ public class Entries extends TableImpl<EntriesRecord> {
      */
     public final TableField<EntriesRecord, String> IMPORTED_SECONDARY_TRANSPONDER_NUMBER = createField(DSL.name("imported_secondary_transponder_number"), SQLDataType.VARCHAR(20), this, "");
 
+    /**
+     * The column <code>entries.third_transponder_number</code>.
+     */
+    public final TableField<EntriesRecord, String> THIRD_TRANSPONDER_NUMBER = createField(DSL.name("third_transponder_number"), SQLDataType.VARCHAR(20), this, "");
+
+    /**
+     * The column <code>entries.fourth_transponder_number</code>.
+     */
+    public final TableField<EntriesRecord, String> FOURTH_TRANSPONDER_NUMBER = createField(DSL.name("fourth_transponder_number"), SQLDataType.VARCHAR(20), this, "");
+
     private Entries(Name alias, Table<EntriesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

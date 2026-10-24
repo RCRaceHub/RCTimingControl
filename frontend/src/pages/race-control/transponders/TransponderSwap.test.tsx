@@ -83,7 +83,7 @@ describe('TransponderSwap', () => {
     fireEvent.click(screen.getByLabelText('Secondary'));
     submit('');
 
-    await screen.findByText(/removed secondary #2222/i);
+    await screen.findByText(/Removed transponder #2222/i);
     expect(swapTransponder).toHaveBeenCalledWith(EVENT_ID, 5, 'SECONDARY', '');
   });
 

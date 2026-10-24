@@ -85,7 +85,8 @@ public class AdminEntryController {
     public EntryResult createEntry(Authentication auth, @RequestBody @Valid AdminCreateEntryRequest req) {
         EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(auth),
                 new EntryService.WalkIn(req.eventId(), req.eventClassId(), req.competitorId(), req.competitorName(),
-                        req.primaryTransponder(), req.secondaryTransponder(), req.confirmNewCompetitor()));
+                        req.primaryTransponder(), req.secondaryTransponder(), req.confirmNewCompetitor(),
+                        req.thirdTransponder(), req.fourthTransponder()));
         return new EntryResult(EntryDto.from(result.entry()), result.warnings());
     }
 

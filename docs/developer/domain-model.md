@@ -32,6 +32,8 @@ classDiagram
         eventClassId
         transponderNumberSnapshot
         secondaryTransponderNumber
+        thirdTransponderNumber
+        fourthTransponderNumber
         externalEntryId
         externalEntryVersion
         withdrawnAt

@@ -14,6 +14,8 @@ import java.time.Instant;
  * @param status                            the entry's status name
  * @param submittedAt                       when the entry was made or imported
  * @param withdrawnAt                       when it was withdrawn, or null
+ * @param thirdTransponderNumber            the optional third number, or null (#482)
+ * @param fourthTransponderNumber           the optional fourth number, or null
  */
 public record AdminEntryDto(
         Long id,
@@ -25,5 +27,7 @@ public record AdminEntryDto(
         String importedSecondaryTransponderNumber,
         String status,
         Instant submittedAt,
-        Instant withdrawnAt) {
+        Instant withdrawnAt,
+        String thirdTransponderNumber,
+        String fourthTransponderNumber) {
 }

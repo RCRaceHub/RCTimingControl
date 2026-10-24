@@ -418,8 +418,7 @@ public class LapTimingService {
         Set<Long> matches = new LinkedHashSet<>();
         for (Entry entry : entryRepository.findAllById(entryIds)) {
             if (entry.getStatus() != EntryStatus.WITHDRAWN
-                    && (transponderNumber.equals(entry.getTransponderNumberSnapshot())
-                        || transponderNumber.equals(entry.getSecondaryTransponderNumber()))) {
+                    && entry.hasTransponder(transponderNumber)) {
                 matches.add(entry.getId());
             }
         }

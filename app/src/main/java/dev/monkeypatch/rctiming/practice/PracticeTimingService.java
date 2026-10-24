@@ -250,8 +250,7 @@ public class PracticeTimingService {
         }
         return entryRepository.findByEventId(session.getEventId()).stream()
                 .filter(e -> e.getStatus() != EntryStatus.WITHDRAWN)
-                .filter(e -> transponderNumber.equals(e.getTransponderNumberSnapshot())
-                        || transponderNumber.equals(e.getSecondaryTransponderNumber()))
+                .filter(e -> e.hasTransponder(transponderNumber))
                 .map(Entry::getCompetitorId)
                 .filter(java.util.Objects::nonNull)
                 .findFirst()

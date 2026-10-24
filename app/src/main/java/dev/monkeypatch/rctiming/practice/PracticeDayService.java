@@ -104,8 +104,7 @@ public class PracticeDayService {
                 if (eventId != null) {
                     competitorId = entriesByEvent.computeIfAbsent(eventId, entryRepository::findByEventId).stream()
                             .filter(e -> e.getStatus() != EntryStatus.WITHDRAWN)
-                            .filter(e -> transponder.equals(e.getTransponderNumberSnapshot())
-                                    || transponder.equals(e.getSecondaryTransponderNumber()))
+                            .filter(e -> e.hasTransponder(transponder))
                             .map(Entry::getCompetitorId)
                             .filter(Objects::nonNull)
                             .findFirst().orElse(null);

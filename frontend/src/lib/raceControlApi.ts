@@ -445,9 +445,12 @@ export type EntrySearchResult = {
   /** The imported file's numbers where they differ from a transponder swapped on the day (#50) */
   importedTransponderNumber: string | null;
   importedSecondaryTransponderNumber: string | null;
+  /** Optional third and fourth transponders (#482) */
+  thirdTransponderNumber?: string | null;
+  fourthTransponderNumber?: string | null;
 };
 
-export type TransponderSlot = 'PRIMARY' | 'SECONDARY';
+export type TransponderSlot = 'PRIMARY' | 'SECONDARY' | 'THIRD' | 'FOURTH';
 
 export type TransponderSwapResponse = {
   entryId: number;
@@ -465,7 +468,7 @@ export async function searchEntries(eventId: number, query: string): Promise<Ent
   return data;
 }
 
-/** A blank number removes the secondary transponder. */
+/** A blank number removes a secondary, third or fourth transponder. */
 export async function swapTransponder(
   eventId: number,
   entryId: number,

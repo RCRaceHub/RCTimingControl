@@ -2,6 +2,8 @@ package dev.monkeypatch.rctiming.domain.entry;
 
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * One driver's entry in one class of one event (table {@code entries}); it points at a {@link
@@ -29,6 +31,10 @@ public class Entry implements UpdatedAt {
 
     /** Optional second transponder for this entry (L6). Laps from either number count. */
     private String secondaryTransponderNumber;
+
+    /** Optional third and fourth transponders (#482). Laps from any of the four numbers count. */
+    private String thirdTransponderNumber;
+    private String fourthTransponderNumber;
     private EntryStatus status = EntryStatus.PENDING;
     private Instant submittedAt;
     private Instant confirmedAt;
@@ -72,6 +78,29 @@ public class Entry implements UpdatedAt {
 
     public String getSecondaryTransponderNumber() { return secondaryTransponderNumber; }
     public void setSecondaryTransponderNumber(String secondaryTransponderNumber) { this.secondaryTransponderNumber = secondaryTransponderNumber; }
+
+    public String getThirdTransponderNumber() { return thirdTransponderNumber; }
+    public void setThirdTransponderNumber(String thirdTransponderNumber) { this.thirdTransponderNumber = thirdTransponderNumber; }
+
+    public String getFourthTransponderNumber() { return fourthTransponderNumber; }
+    public void setFourthTransponderNumber(String fourthTransponderNumber) { this.fourthTransponderNumber = fourthTransponderNumber; }
+
+    /** Every transponder number this entry races on, primary first, without the empty slots. */
+    public List<String> allTransponderNumbers() {
+        List<String> numbers = new ArrayList<>(4);
+        for (String n : new String[] {transponderNumberSnapshot, secondaryTransponderNumber,
+                thirdTransponderNumber, fourthTransponderNumber}) {
+            if (n != null && !n.isBlank()) {
+                numbers.add(n);
+            }
+        }
+        return numbers;
+    }
+
+    /** True when {@code number} is any of this entry's transponders. */
+    public boolean hasTransponder(String number) {
+        return number != null && allTransponderNumbers().contains(number);
+    }
 
     public EntryStatus getStatus() { return status; }
     public void setStatus(EntryStatus status) { this.status = status; }

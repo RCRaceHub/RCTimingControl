@@ -56,7 +56,9 @@ public class EntrySearchQuery {
                         ENTRIES.TRANSPONDER_NUMBER,
                         ENTRIES.SECONDARY_TRANSPONDER_NUMBER,
                         ENTRIES.IMPORTED_TRANSPONDER_NUMBER,
-                        ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER)
+                        ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER,
+                        ENTRIES.THIRD_TRANSPONDER_NUMBER,
+                        ENTRIES.FOURTH_TRANSPONDER_NUMBER)
                 .from(ENTRIES)
                 .leftJoin(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
                 .leftJoin(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(ENTRIES.EVENT_CLASS_ID))
@@ -80,7 +82,9 @@ public class EntrySearchQuery {
                 r.get(ENTRIES.TRANSPONDER_NUMBER),
                 r.get(ENTRIES.SECONDARY_TRANSPONDER_NUMBER),
                 r.get(ENTRIES.IMPORTED_TRANSPONDER_NUMBER),
-                r.get(ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER));
+                r.get(ENTRIES.IMPORTED_SECONDARY_TRANSPONDER_NUMBER),
+                r.get(ENTRIES.THIRD_TRANSPONDER_NUMBER),
+                r.get(ENTRIES.FOURTH_TRANSPONDER_NUMBER));
     }
 
     private static String escapeLike(String s) {
