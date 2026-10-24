@@ -1,11 +1,11 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.api.admin.dto.BattleSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ClubProfileDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateClubProfileRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateGoverningBodyRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.GoverningBodyAffiliationDto;
+import dev.monkeypatch.rctiming.api.admin.dto.LiveTimingSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.LogoUploadResponse;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LogoUploadService;
@@ -92,21 +92,23 @@ public class ClubProfileController {
                 clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
     }
 
-    /** The gap that makes an on-track battle (#505). {@code GET /battle-settings}; read only. */
-    @GetMapping("/battle-settings")
-    public BattleSettingsDto getBattleSettings() {
-        return new BattleSettingsDto(clubProfileService.battleGapMs());
+    /** The live timing thresholds (#505). {@code GET /live-timing-settings}; read only. */
+    @GetMapping("/live-timing-settings")
+    public LiveTimingSettingsDto getLiveTimingSettings() {
+        return LiveTimingSettingsDto.from(clubProfileService.liveTimingSettings());
     }
 
     /**
-     * Saves the battle gap, in milliseconds; 0 switches battles off. {@code PUT /battle-settings}; ADMIN; 400 outside 0
-     * to 10000. Races in progress take it from their next update. Audited.
+     * Saves the live timing thresholds. {@code PUT /live-timing-settings}; ADMIN; 400 for a value out of range or a
+     * gaining-fast limit below the trend limit. Races in progress take them from their next update. Audited.
      */
     @Audited("audit_log")
-    @PutMapping("/battle-settings")
+    @PutMapping("/live-timing-settings")
     @PreAuthorize("hasRole('ADMIN')")
-    public BattleSettingsDto changeBattleSettings(Authentication auth, @RequestBody @Valid BattleSettingsDto request) {
-        return new BattleSettingsDto(clubProfileService.changeBattleGap(CurrentOfficial.actor(auth), request.gapMs()));
+    public LiveTimingSettingsDto changeLiveTimingSettings(Authentication auth,
+                                                          @RequestBody @Valid LiveTimingSettingsDto request) {
+        return LiveTimingSettingsDto.from(
+                clubProfileService.changeLiveTimingSettings(CurrentOfficial.actor(auth), request.toSettings()));
     }
 
     /** The governing bodies the club is affiliated to. {@code GET /affiliations}; read only. */

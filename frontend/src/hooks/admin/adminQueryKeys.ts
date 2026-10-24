@@ -21,7 +21,7 @@ export const adminQueryKeys = {
   club: {
     profile: () => ['admin', 'club', 'profile'] as const,
     privacyNotice: () => ['admin', 'club', 'privacy-notice'] as const,
-    battleSettings: () => ['admin', 'club', 'battle-settings'] as const,
+    liveTimingSettings: () => ['admin', 'club', 'live-timing-settings'] as const,
   },
   boardViews: {
     all: () => ['admin', 'board-views'] as const,

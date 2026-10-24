@@ -669,9 +669,14 @@ export interface PrivacyNoticeEditDto {
   customised: boolean;
 }
 
-/** {@code gapMs}: how near the car ahead, in milliseconds, makes an on-track battle; 0 switches battles off (#505) */
-export interface BattleSettingsDto {
-  gapMs: number;
+/** The club's live timing thresholds, in milliseconds except the lap count (#505); see the Club page for what each does */
+export interface LiveTimingSettingsDto {
+  battleGapMs: number;
+  battleTrendMsPerLap: number;
+  battleFastMsPerLap: number;
+  battleHoldLaps: number;
+  closeGapMs: number;
+  lateMarginMs: number;
 }
 
 export const adminApi = {
@@ -870,10 +875,10 @@ export const adminApi = {
     /** A blank text goes back to the default notice */
     setPrivacyNotice: (text: string) =>
       api.put<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice', { text }).then(r => r.data),
-    getBattleSettings: () =>
-      api.get<BattleSettingsDto>('/api/v1/admin/club/battle-settings').then(r => r.data),
-    setBattleSettings: (gapMs: number) =>
-      api.put<BattleSettingsDto>('/api/v1/admin/club/battle-settings', { gapMs }).then(r => r.data),
+    getLiveTimingSettings: () =>
+      api.get<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings').then(r => r.data),
+    setLiveTimingSettings: (settings: LiveTimingSettingsDto) =>
+      api.put<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings', settings).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);

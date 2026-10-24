@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.timing;
 
-import dev.monkeypatch.rctiming.domain.club.BattleGapChangedEvent;
-import dev.monkeypatch.rctiming.domain.club.ClubProfile;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettingsChangedEvent;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.competitor.NameVisibilityChangedEvent;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
+import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -118,7 +119,7 @@ public class LapTimingService {
      */
     public LiveRaceState stateFor(long raceId) {
         return states.computeIfAbsent(raceId, id -> {
-            LiveRaceState state = new LiveRaceState(battleGapMs());
+            LiveRaceState state = new LiveRaceState(battleSettings());
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
@@ -127,15 +128,22 @@ public class LapTimingService {
         });
     }
 
-    /** The club's battle gap, read once as a race's state is made so a passing never queries for it. */
-    private long battleGapMs() {
-        return clubProfileService == null ? ClubProfile.DEFAULT_BATTLE_GAP_MS : clubProfileService.battleGapMs();
+    /** The club's battle thresholds, read once as a race's state is made so a passing never queries for them. */
+    private BattleTracker.Settings battleSettings() {
+        return clubProfileService == null ? BattleTracker.Settings.defaults()
+                : battleSettings(clubProfileService.liveTimingSettings());
     }
 
-    /** The club changed its battle gap (#505): races in progress take it from their next update. */
+    private static BattleTracker.Settings battleSettings(LiveTimingSettings s) {
+        return new BattleTracker.Settings(s.battleGapMs(), s.battleTrendMsPerLap(), s.battleFastMsPerLap(),
+                s.battleHoldLaps());
+    }
+
+    /** The club changed its live timing thresholds (#505): races in progress take them from their next update. */
     @EventListener
-    public void onBattleGapChanged(BattleGapChangedEvent event) {
-        states.values().forEach(state -> state.setBattleGapMs(event.gapMs()));
+    public void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
+        BattleTracker.Settings settings = battleSettings(event.settings());
+        states.values().forEach(state -> state.setBattleSettings(settings));
     }
 
     /** A competitor's public name changed (#265): races in progress take the new names from the next row. */

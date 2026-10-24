@@ -69,34 +69,43 @@ public class ClubProfileService {
                 .orElseGet(ClubAudioSettings::defaults);
     }
 
-    /** The gap, in milliseconds, between adjacent cars that makes an on-track battle; the default before a profile exists. */
+    /** The club's live timing thresholds, or the defaults before a profile exists. */
     @Transactional(readOnly = true)
-    public int battleGapMs() {
+    public LiveTimingSettings liveTimingSettings() {
         return clubProfileRepository.findCurrent()
-                .map(ClubProfile::getBattleGapMs)
-                .orElse(ClubProfile.DEFAULT_BATTLE_GAP_MS);
+                .map(ClubProfile::getLiveTimingSettings)
+                .orElseGet(LiveTimingSettings::defaults);
     }
 
     /**
-     * Saves the battle gap (#505) and records {@code BATTLE_GAP_CHANGED}. Once the change commits a
-     * {@link BattleGapChangedEvent} lets live timing apply it to races in progress.
+     * Saves the live timing thresholds (#505) and records {@code LIVE_TIMING_SETTINGS_CHANGED} with the values
+     * before and after. Once the change commits a {@link LiveTimingSettingsChangedEvent} lets live timing apply them to
+     * races in progress.
      *
-     * @param gapMs milliseconds, 0 to switch battles off
-     * @throws IllegalArgumentException if it is negative or over {@link ClubProfile#MAX_BATTLE_GAP_MS}
+     * @throws IllegalArgumentException if a value is out of range, see {@link LiveTimingSettings#validated()}
      */
-    public int changeBattleGap(Actor actor, int gapMs) {
-        if (gapMs < 0 || gapMs > ClubProfile.MAX_BATTLE_GAP_MS) {
-            throw new IllegalArgumentException("The battle gap must be from 0 to " + ClubProfile.MAX_BATTLE_GAP_MS + " ms");
-        }
+    public LiveTimingSettings changeLiveTimingSettings(Actor actor, LiveTimingSettings settings) {
+        settings.validated();
         ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
-        int before = profile.getBattleGapMs();
-        profile.setBattleGapMs(gapMs);
+        LiveTimingSettings before = profile.getLiveTimingSettings();
+        profile.setLiveTimingSettings(settings);
         ClubProfile saved = clubProfileRepository.save(profile);
-        audit.entry(actor, "BATTLE_GAP_CHANGED").entity("club_profile", saved.getId())
-                .summary(gapMs == 0 ? "Switched battles off" : "Set the battle gap to " + gapMs + " ms")
-                .before(Map.of("gapMs", before)).after(Map.of("gapMs", gapMs)).record();
-        AfterCommit.run(() -> eventPublisher.publishEvent(new BattleGapChangedEvent(gapMs)));
-        return gapMs;
+        audit.entry(actor, "LIVE_TIMING_SETTINGS_CHANGED").entity("club_profile", saved.getId())
+                .summary("Changed the live timing thresholds")
+                .before(settingsValues(before)).after(settingsValues(settings)).record();
+        AfterCommit.run(() -> eventPublisher.publishEvent(new LiveTimingSettingsChangedEvent(settings)));
+        return settings;
+    }
+
+    private static Map<String, Object> settingsValues(LiveTimingSettings s) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("battleGapMs", s.battleGapMs());
+        values.put("battleTrendMsPerLap", s.battleTrendMsPerLap());
+        values.put("battleFastMsPerLap", s.battleFastMsPerLap());
+        values.put("battleHoldLaps", s.battleHoldLaps());
+        values.put("closeGapMs", s.closeGapMs());
+        values.put("lateMarginMs", s.lateMarginMs());
+        return values;
     }
 
     /** The club's chosen announcer voice, or empty to use the Piper default. */

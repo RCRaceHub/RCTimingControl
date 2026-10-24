@@ -84,17 +84,17 @@ public class LiveRaceState {
     final Map<Long, Long> timePenaltyMs = new HashMap<>();
 
     public LiveRaceState() {
-        this(BattleTracker.DEFAULT_GAP_MS);
+        this(BattleTracker.Settings.defaults());
     }
 
-    /** @param battleGapMs the club's battle gap in milliseconds (#505); 0 switches battles off */
-    public LiveRaceState(long battleGapMs) {
-        this.battleTracker = new BattleTracker(battleGapMs);
+    /** @param battleSettings the club's battle thresholds (#505) */
+    public LiveRaceState(BattleTracker.Settings battleSettings) {
+        this.battleTracker = new BattleTracker(battleSettings);
     }
 
-    /** Applies a changed battle gap from the next update. */
-    public void setBattleGapMs(long battleGapMs) {
-        battleTracker.setGapMs(battleGapMs);
+    /** Applies changed battle thresholds from the next update. */
+    public void setBattleSettings(BattleTracker.Settings battleSettings) {
+        battleTracker.setSettings(battleSettings);
     }
 
     /**

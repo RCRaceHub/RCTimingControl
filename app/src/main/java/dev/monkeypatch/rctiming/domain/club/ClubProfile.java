@@ -6,18 +6,13 @@ import java.time.Instant;
 
 /**
  * The club's own details (table {@code club_profiles}): name and contact, time zone, logo, the announcer settings,
- * where its decoder is, its privacy notice, the RaceHub results address and the gap that makes an on-track battle. RCTC runs for one club at one venue, so
+ * where its decoder is, its privacy notice, the RaceHub results address and its live timing thresholds. RCTC runs for one club at one venue, so
  * there is at most one row; {@link ClubProfileService} keeps it that way.
  *
  * The decoder host, port and protocol are null until the setup wizard has set them, and the decoder listener reads them
  * from here. {@code audioSettings} is stored as JSON text (see {@link ClubAudioSettingsConverter}).
  */
 public class ClubProfile implements CreatedAt, UpdatedAt {
-
-    /** The battle gap, in milliseconds, until the club sets another. */
-    public static final int DEFAULT_BATTLE_GAP_MS = 2000;
-    /** The largest battle gap the club may set, in milliseconds. */
-    public static final int MAX_BATTLE_GAP_MS = 10_000;
 
     private Long id;
     private String name;
@@ -42,8 +37,8 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
      */
     private String racehubResultsUrl;
     private String resultsPublishTarget;
-    /** How near the car ahead, in milliseconds, makes an on-track battle (#505); 0 switches battles off. */
-    private int battleGapMs = DEFAULT_BATTLE_GAP_MS;
+    /** The club's live timing thresholds (#505); stored as one column each, see {@link LiveTimingSettings}. */
+    private LiveTimingSettings liveTimingSettings = LiveTimingSettings.defaults();
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -104,8 +99,8 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     public String getResultsPublishTarget() { return resultsPublishTarget; }
     public void setResultsPublishTarget(String resultsPublishTarget) { this.resultsPublishTarget = resultsPublishTarget; }
 
-    public int getBattleGapMs() { return battleGapMs; }
-    public void setBattleGapMs(int battleGapMs) { this.battleGapMs = battleGapMs; }
+    public LiveTimingSettings getLiveTimingSettings() { return liveTimingSettings; }
+    public void setLiveTimingSettings(LiveTimingSettings liveTimingSettings) { this.liveTimingSettings = liveTimingSettings; }
 
     public String getPrivacyNotice() { return privacyNotice; }
     public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }

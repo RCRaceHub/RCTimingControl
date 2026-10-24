@@ -28,6 +28,7 @@ import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useBattles } from '@/hooks/race-control/useBattles';
+import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -181,7 +182,8 @@ function OverlayTicker({
 
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
-  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams);
+  const settings = useBoardSettings();
+  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -194,7 +196,7 @@ export default function OverlayBoard() {
   });
 
   const battleGroups = useBattles(showBattles ? raceId : null);
-  const barClock = useLapBarClock(allRows, race?.status);
+  const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history

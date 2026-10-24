@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getRaceClock } from '@/lib/boardsApi';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { getBoardView } from '@/lib/boardViewsApi';
+import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
@@ -17,7 +18,8 @@ export default function BoardViewPage() {
   const { slug = '' } = useParams();
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
-  const { showBars, showArrows, showPredicted, closeMs } = parseLiveRaceOptions(searchParams);
+  const settings = useBoardSettings();
+  const { showBars, showArrows, showPredicted, closeMs } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
 
   const { data: view, isPending, isError, error } = useQuery({
     queryKey: publicQueryKeys.boards.view(slug),
@@ -26,7 +28,7 @@ export default function BoardViewPage() {
     retry: false,
   });
   const { nowNext, currentRace, rows } = useBoardRace(eventId);
-  const barClock = useLapBarClock(rows, currentRace?.status);
+  const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const raceId = currentRace?.raceId ?? null;
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),

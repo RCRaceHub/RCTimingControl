@@ -45,26 +45,33 @@ class ClubProfileServiceTest {
     }
 
     @Test
-    void beforeAProfileExists_theBattleGapIsTheDefault() {
+    void beforeAProfileExists_theLiveTimingSettingsAreTheDefaults() {
         when(repository.findCurrent()).thenReturn(Optional.empty());
 
-        assertThat(service.battleGapMs()).isEqualTo(ClubProfile.DEFAULT_BATTLE_GAP_MS);
+        assertThat(service.liveTimingSettings()).isEqualTo(LiveTimingSettings.defaults());
     }
 
     @Test
-    void aSavedBattleGap_isTheClubs() {
+    void savedLiveTimingSettings_areTheClubs() {
         ClubProfile profile = new ClubProfile();
-        profile.setBattleGapMs(1500);
+        LiveTimingSettings own = new LiveTimingSettings(1500, 100, 250, 3, 800, 500);
+        profile.setLiveTimingSettings(own);
         when(repository.findCurrent()).thenReturn(Optional.of(profile));
 
-        assertThat(service.battleGapMs()).isEqualTo(1500);
+        assertThat(service.liveTimingSettings()).isEqualTo(own);
     }
 
     @Test
-    void aBattleGapOutsideTheRange_isRefusedAndSavesNothing() {
-        assertThatThrownBy(() -> service.changeBattleGap(null, -1)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> service.changeBattleGap(null, ClubProfile.MAX_BATTLE_GAP_MS + 1))
-                .isInstanceOf(IllegalArgumentException.class);
+    void liveTimingSettingsOutOfRange_areRefusedAndSaveNothing() {
+        LiveTimingSettings defaults = LiveTimingSettings.defaults();
+        assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
+                new LiveTimingSettings(-1, 150, 300, 2, 1000, 1000))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
+                new LiveTimingSettings(defaults.battleGapMs(), 400, 300, 2, 1000, 1000)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("gaining-fast");
+        assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
+                new LiveTimingSettings(2000, 150, 300, 11, 1000, 1000))).isInstanceOf(IllegalArgumentException.class);
         verify(repository, never()).save(any());
     }
 

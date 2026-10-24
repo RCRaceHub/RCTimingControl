@@ -8,10 +8,11 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClubProfile, useUpdateClubProfile, useUploadClubLogo } from '@/hooks/admin/useAdminClub';
 import type { UpdateClubProfileRequest } from '@/lib/adminApi';
 import axios from 'axios';
-import BattleSettingsCard from './BattleSettingsCard';
+import LiveTimingSettingsCard from './LiveTimingSettingsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 
 const schema = z.object({
@@ -110,8 +111,16 @@ export default function ClubProfilePage() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <h1 className="text-2xl font-semibold">Club Profile</h1>
+      <h1 className="text-2xl font-semibold">Club</h1>
 
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="live-timing">Live timing</TabsTrigger>
+          <TabsTrigger value="privacy">Privacy notice</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-8">
       <div className="rounded-lg border p-4 space-y-3">
         <h2 className="text-sm font-semibold">Club Logo</h2>
         {data?.logoUrl ? (
@@ -191,10 +200,16 @@ export default function ClubProfilePage() {
           {updateMutation.isPending ? 'Saving…' : 'Save Profile'}
         </Button>
       </form>
+        </TabsContent>
 
-      <BattleSettingsCard />
+        <TabsContent value="live-timing">
+          <LiveTimingSettingsCard />
+        </TabsContent>
 
-      <PrivacyNoticeEditor />
+        <TabsContent value="privacy">
+          <PrivacyNoticeEditor />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

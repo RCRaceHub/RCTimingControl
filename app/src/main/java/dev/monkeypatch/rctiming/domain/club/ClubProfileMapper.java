@@ -14,11 +14,23 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
 interface ClubProfileMapper {
 
+    @Mapping(target = "liveTimingSettings", source = "record")
     ClubProfile toEntity(ClubProfilesRecord record);
 
     /** Copies every column except the id, which the repository handles, into the record. */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "battleGapMs", source = "liveTimingSettings.battleGapMs")
+    @Mapping(target = "battleTrendMs", source = "liveTimingSettings.battleTrendMsPerLap")
+    @Mapping(target = "battleFastMs", source = "liveTimingSettings.battleFastMsPerLap")
+    @Mapping(target = "battleHoldLaps", source = "liveTimingSettings.battleHoldLaps")
+    @Mapping(target = "closeGapMs", source = "liveTimingSettings.closeGapMs")
+    @Mapping(target = "lateMarginMs", source = "liveTimingSettings.lateMarginMs")
     void toRecord(ClubProfile profile, @MappingTarget ClubProfilesRecord record);
+
+    default LiveTimingSettings liveTimingSettings(ClubProfilesRecord r) {
+        return new LiveTimingSettings(r.getBattleGapMs(), r.getBattleTrendMs(), r.getBattleFastMs(),
+                r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs());
+    }
 
     default ClubAudioSettings audioSettings(String json) {
         return ClubProfileRepository.AUDIO_SETTINGS.convertToEntityAttribute(json);

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
-import type { UpdateClubProfileRequest } from '@/lib/adminApi';
+import type { LiveTimingSettingsDto, UpdateClubProfileRequest } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
 export function useClubProfile() {
@@ -45,18 +45,22 @@ export function useSetPrivacyNotice() {
   });
 }
 
-export function useBattleSettings() {
+export function useLiveTimingSettings() {
   return useQuery({
-    queryKey: adminQueryKeys.club.battleSettings(),
-    queryFn: adminApi.club.getBattleSettings,
+    queryKey: adminQueryKeys.club.liveTimingSettings(),
+    queryFn: adminApi.club.getLiveTimingSettings,
   });
 }
 
-/** Saves the battle gap in milliseconds (#505); races in progress take it from their next update. */
-export function useSetBattleSettings() {
+/** Saves the live timing thresholds (#505); races in progress take them from their next update. */
+export function useSetLiveTimingSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (gapMs: number) => adminApi.club.setBattleSettings(gapMs),
-    onSuccess: (saved) => qc.setQueryData(adminQueryKeys.club.battleSettings(), saved),
+    mutationFn: (settings: LiveTimingSettingsDto) => adminApi.club.setLiveTimingSettings(settings),
+    onSuccess: (saved) => {
+      qc.setQueryData(adminQueryKeys.club.liveTimingSettings(), saved);
+      // The boards draw with the close gap and the late margin
+      void qc.invalidateQueries({ queryKey: ['boards', 'settings'] });
+    },
   });
 }
