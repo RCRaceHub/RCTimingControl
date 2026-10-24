@@ -6,7 +6,7 @@ import java.time.Instant;
 
 /**
  * The club's own details (table {@code club_profiles}): name and contact, time zone, logo, the announcer settings,
- * where its decoder is, its privacy notice and the RaceHub results address. RCTC runs for one club at one venue, so
+ * where its decoder is, its privacy notice, the RaceHub results address and its live timing thresholds. RCTC runs for one club at one venue, so
  * there is at most one row; {@link ClubProfileService} keeps it that way.
  *
  * The decoder host, port and protocol are null until the setup wizard has set them, and the decoder listener reads them
@@ -37,6 +37,8 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
      */
     private String racehubResultsUrl;
     private String resultsPublishTarget;
+    /** The club's live timing thresholds (#505); stored as one column each, see {@link LiveTimingSettings}. */
+    private LiveTimingSettings liveTimingSettings = LiveTimingSettings.defaults();
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -96,6 +98,9 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getResultsPublishTarget() { return resultsPublishTarget; }
     public void setResultsPublishTarget(String resultsPublishTarget) { this.resultsPublishTarget = resultsPublishTarget; }
+
+    public LiveTimingSettings getLiveTimingSettings() { return liveTimingSettings; }
+    public void setLiveTimingSettings(LiveTimingSettings liveTimingSettings) { this.liveTimingSettings = liveTimingSettings; }
 
     public String getPrivacyNotice() { return privacyNotice; }
     public void setPrivacyNotice(String privacyNotice) { this.privacyNotice = privacyNotice; }

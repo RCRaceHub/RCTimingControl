@@ -1,5 +1,6 @@
 import { fmtMs } from '@/lib/format';
 import type { TickerDto } from '@/lib/boardsApi';
+import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 /** How often the boards re-poll their public endpoints. */
@@ -21,17 +22,16 @@ export function parseTopParam(value: string | null): number {
   return Number.isInteger(top) && top > 0 ? Math.min(top, MAX_TOP) : DEFAULT_TOP;
 }
 
-/** How near the car ahead counts as close on the live race board, until the address says otherwise. */
-const LIVE_RACE_DEFAULT_CLOSE_MS = 1000;
+/** The most seconds `close=` may ask for on a board address. */
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), and {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
- * that is empty or not a number takes the default.
+ * {@code battles=hide} the battles strip (#505), and {@code close=SECONDS} sets how near the car ahead counts as
+ * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  */
-export function parseLiveRaceOptions(params: URLSearchParams) {
+export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
   const raw = params.get('close');
   const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
   return {
@@ -41,7 +41,7 @@ export function parseLiveRaceOptions(params: URLSearchParams) {
     showBattles: params.get('battles')?.toLowerCase() !== 'hide',
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
-      : LIVE_RACE_DEFAULT_CLOSE_MS,
+      : defaultCloseMs,
   };
 }
 
@@ -58,7 +58,7 @@ const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
 /** The streaming overlay's options from its query string; anything unrecognised falls back to the default. */
-export function parseOverlayOptions(params: URLSearchParams) {
+export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
   const top = Number(params.get('top'));
   return {
     eventId: parseEventParam(params.get('event')),
@@ -67,7 +67,7 @@ export function parseOverlayOptions(params: URLSearchParams) {
     theme: params.get('theme') === 'light' ? ('light' as const) : ('dark' as const),
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
-    ...parseLiveRaceOptions(params),
+    ...parseLiveRaceOptions(params, defaultCloseMs),
   };
 }
 

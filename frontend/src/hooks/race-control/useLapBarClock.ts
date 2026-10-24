@@ -13,8 +13,13 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
  *
  * @param rows the live timing rows
  * @param status the race's status
+ * @param lateMarginMs how far past its average a lap runs before its bar turns red: the club's setting
  */
-export function useLapBarClock(rows: LiveTimingRowDto[], status: string | undefined): LapBarClock {
+export function useLapBarClock(
+  rows: LiveTimingRowDto[],
+  status: string | undefined,
+  lateMarginMs?: number,
+): LapBarClock {
   const [initial] = useState(() => ({
     estimator: new ClockOffsetEstimator(),
     clock: { offsetMs: 0, resumedAtMs: null } as LapBarClock,
@@ -40,6 +45,10 @@ export function useLapBarClock(rows: LiveTimingRowDto[], status: string | undefi
     state.clock.resumedAtMs = state.resumedAtLocal === null ? null : state.resumedAtLocal + state.clock.offsetMs;
     state.status = status;
   }, [status]);
+
+  useEffect(() => {
+    held.current.clock.lateMarginMs = lateMarginMs;
+  }, [lateMarginMs]);
 
   return initial.clock;
 }

@@ -669,6 +669,16 @@ export interface PrivacyNoticeEditDto {
   customised: boolean;
 }
 
+/** The club's live timing thresholds, in milliseconds except the lap count (#505); see the Club page for what each does */
+export interface LiveTimingSettingsDto {
+  battleGapMs: number;
+  battleTrendMsPerLap: number;
+  battleFastMsPerLap: number;
+  battleHoldLaps: number;
+  closeGapMs: number;
+  lateMarginMs: number;
+}
+
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
   importRaceHubEntries: (eventId: number, exportDocument: unknown, dryRun: boolean) =>
@@ -865,6 +875,10 @@ export const adminApi = {
     /** A blank text goes back to the default notice */
     setPrivacyNotice: (text: string) =>
       api.put<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice', { text }).then(r => r.data),
+    getLiveTimingSettings: () =>
+      api.get<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings').then(r => r.data),
+    setLiveTimingSettings: (settings: LiveTimingSettingsDto) =>
+      api.put<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings', settings).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);

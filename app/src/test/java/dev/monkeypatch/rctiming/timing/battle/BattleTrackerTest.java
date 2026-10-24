@@ -9,6 +9,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BattleTrackerTest {
 
+    private static BattleTracker.Settings settings(long gapMs) {
+        return new BattleTracker.Settings(gapMs, 150, 300, 2);
+    }
+
     private static LiveTimingRowDto row(long entryId, int position, int laps, Long gapToAheadMs) {
         return row(entryId, position, laps, gapToAheadMs, 0, false);
     }
@@ -30,7 +34,7 @@ class BattleTrackerTest {
 
     @Test
     void findsAPairWithinTheGapAndIgnoresTheLeaderAndWideGaps() {
-        BattleTracker tracker = new BattleTracker(2000);
+        BattleTracker tracker = new BattleTracker(settings(2000));
 
         List<BattleGroupDto> groups = tracker.advance(
                 List.of(row(1, 1, 3, null), row(2, 2, 3, 1500L), row(3, 3, 3, 4000L)));
@@ -42,7 +46,7 @@ class BattleTrackerTest {
 
     @Test
     void reportsClosingAndGainingFastFromTheAverageChangePerLap() {
-        BattleLinkDto link = lapsOfPair(new BattleTracker(2000), 1800, 1500, 1200, 900).get(0).links().get(0);
+        BattleLinkDto link = lapsOfPair(new BattleTracker(settings(2000)), 1800, 1500, 1200, 900).get(0).links().get(0);
 
         assertThat(link.ratePerLapMs()).isEqualTo(-300L);
         assertThat(link.trend()).isEqualTo(BattleTrend.CLOSING);
@@ -51,21 +55,21 @@ class BattleTrackerTest {
 
     @Test
     void reportsGrowingAndHolding() {
-        assertThat(lapsOfPair(new BattleTracker(2000), 900, 1100, 1400).get(0).links().get(0).trend())
+        assertThat(lapsOfPair(new BattleTracker(settings(2000)), 900, 1100, 1400).get(0).links().get(0).trend())
                 .isEqualTo(BattleTrend.GROWING);
-        assertThat(lapsOfPair(new BattleTracker(2000), 1000, 1050, 1000).get(0).links().get(0).trend())
+        assertThat(lapsOfPair(new BattleTracker(settings(2000)), 1000, 1050, 1000).get(0).links().get(0).trend())
                 .isEqualTo(BattleTrend.HOLDING);
     }
 
     @Test
     void keepsAPairForTwoLapsAfterItDropsOutThenLetsItGo() {
-        assertThat(lapsOfPair(new BattleTracker(2000), 1500, 2500, 3000)).hasSize(1);
-        assertThat(lapsOfPair(new BattleTracker(2000), 1500, 2500, 3000, 3500)).isEmpty();
+        assertThat(lapsOfPair(new BattleTracker(settings(2000)), 1500, 2500, 3000)).hasSize(1);
+        assertThat(lapsOfPair(new BattleTracker(settings(2000)), 1500, 2500, 3000, 3500)).isEmpty();
     }
 
     @Test
     void startsTheTrendAgainWhenAPairReturnsAfterALongGap() {
-        List<BattleGroupDto> groups = lapsOfPair(new BattleTracker(2000),
+        List<BattleGroupDto> groups = lapsOfPair(new BattleTracker(settings(2000)),
                 1500, 4000, 4000, 4000, 4000, 1800, 1400);
 
         assertThat(groups.get(0).links().get(0).ratePerLapMs()).isEqualTo(-400L);
@@ -73,7 +77,7 @@ class BattleTrackerTest {
 
     @Test
     void startsTheTrendAgainWhenTheLapCountGoesBack() {
-        BattleTracker tracker = new BattleTracker(2000);
+        BattleTracker tracker = new BattleTracker(settings(2000));
         tracker.advance(List.of(row(1, 1, 3, null), row(2, 2, 3, 1500L)));
         tracker.advance(List.of(row(1, 1, 4, null), row(2, 2, 4, 1400L)));
 
@@ -84,7 +88,7 @@ class BattleTrackerTest {
 
     @Test
     void keepsAPairThroughTheMomentTheCarAheadHasCrossedAndTheChaserHasNot() {
-        BattleTracker tracker = new BattleTracker(2000);
+        BattleTracker tracker = new BattleTracker(settings(2000));
         long[] gaps = {1800, 1500, 1200, 900};
         List<BattleGroupDto> last = List.of();
         for (int i = 0; i < gaps.length; i++) {
@@ -101,16 +105,38 @@ class BattleTrackerTest {
 
     @Test
     void ignoresALappedCarAFinishedCarAndAZeroGap() {
-        assertThat(new BattleTracker(2000).advance(
+        assertThat(new BattleTracker(settings(2000)).advance(
                 List.of(row(1, 1, 3, null), row(2, 2, 2, 500L, 1, false)))).isEmpty();
-        assertThat(new BattleTracker(2000).advance(
+        assertThat(new BattleTracker(settings(2000)).advance(
                 List.of(row(1, 1, 3, null), row(2, 2, 3, 500L, 0, true)))).isEmpty();
-        assertThat(new BattleTracker(0).advance(List.of(row(1, 1, 3, null), row(2, 2, 3, 500L)))).isEmpty();
+        assertThat(new BattleTracker(settings(0)).advance(List.of(row(1, 1, 3, null), row(2, 2, 3, 500L)))).isEmpty();
+    }
+
+    @Test
+    void takesAChangedGapFromTheNextUpdate() {
+        BattleTracker tracker = new BattleTracker(settings(2000));
+        List<LiveTimingRowDto> rows = List.of(row(1, 1, 3, null), row(2, 2, 3, 1500L));
+        assertThat(tracker.advance(rows)).hasSize(1);
+
+        // No hold laps, so a pair a lap later does not linger outside the new, smaller gap
+        tracker.setSettings(new BattleTracker.Settings(1000, 150, 300, 0));
+
+        assertThat(tracker.advance(List.of(row(1, 1, 4, null), row(2, 2, 4, 1500L)))).isEmpty();
+    }
+
+    @Test
+    void usesTheClubsTrendAndHoldLimits() {
+        BattleTracker.Settings strict = new BattleTracker.Settings(2000, 400, 600, 0);
+
+        BattleLinkDto link = lapsOfPair(new BattleTracker(strict), 1800, 1500, 1200, 900).get(0).links().get(0);
+        assertThat(link.trend()).isEqualTo(BattleTrend.HOLDING);
+        assertThat(link.gainingFast()).isFalse();
+        assertThat(lapsOfPair(new BattleTracker(strict), 1500, 2500)).isEmpty();
     }
 
     @Test
     void joinsChainedPairsIntoATrainAndKeepsSeparateFightsApart() {
-        List<BattleGroupDto> groups = new BattleTracker(2000).advance(List.of(
+        List<BattleGroupDto> groups = new BattleTracker(settings(2000)).advance(List.of(
                 row(1, 1, 3, null), row(2, 2, 3, 800L), row(3, 3, 3, 1200L), row(4, 4, 3, 6000L), row(5, 5, 3, 900L)));
 
         assertThat(groups).hasSize(2);
@@ -121,7 +147,7 @@ class BattleTrackerTest {
 
     @Test
     void putsAGroupGainingFastFirst() {
-        BattleTracker tracker = new BattleTracker(2000);
+        BattleTracker tracker = new BattleTracker(settings(2000));
         List<BattleGroupDto> groups = List.of();
         long[] fast = {1800, 1500, 1200};
         long[] tight = {600, 600, 600};

@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettingsChangedEvent;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.competitor.NameVisibilityChangedEvent;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
@@ -12,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
+import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -72,8 +76,22 @@ public class LapTimingService {
     private final LapThresholdQuery lapThresholdQuery;
     private final RaceClockService raceClockService;
     private final ApplicationEventPublisher publisher;
+    /** Where the club's battle gap is read from; null in tests that do not need it. */
+    private final ClubProfileService clubProfileService;
     /** Each running race's length and stagger, read once so a passing never queries for them. */
     private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
+
+    /** Without a club profile service the battle gap stays at its default. */
+    public LapTimingService(LiveTimingHub liveTimingHub,
+                            RaceEntryRepository raceEntryRepository,
+                            EntryRepository entryRepository,
+                            CompetitorRepository competitorRepository,
+                            LapThresholdQuery lapThresholdQuery,
+                            RaceClockService raceClockService,
+                            ApplicationEventPublisher publisher) {
+        this(liveTimingHub, raceEntryRepository, entryRepository, competitorRepository, lapThresholdQuery,
+                raceClockService, publisher, null);
+    }
 
     @Autowired
     public LapTimingService(LiveTimingHub liveTimingHub,
@@ -82,7 +100,9 @@ public class LapTimingService {
                             CompetitorRepository competitorRepository,
                             LapThresholdQuery lapThresholdQuery,
                             RaceClockService raceClockService,
-                            ApplicationEventPublisher publisher) {
+                            ApplicationEventPublisher publisher,
+                            ClubProfileService clubProfileService) {
+        this.clubProfileService = clubProfileService;
         this.liveTimingHub = liveTimingHub;
         this.raceEntryRepository = raceEntryRepository;
         this.entryRepository = entryRepository;
@@ -99,13 +119,31 @@ public class LapTimingService {
      */
     public LiveRaceState stateFor(long raceId) {
         return states.computeIfAbsent(raceId, id -> {
-            LiveRaceState state = new LiveRaceState();
+            LiveRaceState state = new LiveRaceState(battleSettings());
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
             raceClockService.startOf(id).ifPresent(start -> state.putRaceStart(start.startedAtMs(), start.rolling()));
             return state;
         });
+    }
+
+    /** The club's battle thresholds, read once as a race's state is made so a passing never queries for them. */
+    private BattleTracker.Settings battleSettings() {
+        return clubProfileService == null ? BattleTracker.Settings.defaults()
+                : battleSettings(clubProfileService.liveTimingSettings());
+    }
+
+    private static BattleTracker.Settings battleSettings(LiveTimingSettings s) {
+        return new BattleTracker.Settings(s.battleGapMs(), s.battleTrendMsPerLap(), s.battleFastMsPerLap(),
+                s.battleHoldLaps());
+    }
+
+    /** The club changed its live timing thresholds (#505): races in progress take them from their next update. */
+    @EventListener
+    public void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
+        BattleTracker.Settings settings = battleSettings(event.settings());
+        states.values().forEach(state -> state.setBattleSettings(settings));
     }
 
     /** A competitor's public name changed (#265): races in progress take the new names from the next row. */

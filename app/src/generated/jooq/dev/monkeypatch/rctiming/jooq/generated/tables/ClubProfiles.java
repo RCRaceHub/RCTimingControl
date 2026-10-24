@@ -151,6 +151,36 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, String> RESULTS_PUBLISH_TARGET = createField(DSL.name("results_publish_target"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>club_profiles.battle_gap_ms</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> BATTLE_GAP_MS = createField(DSL.name("battle_gap_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("2000"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>club_profiles.battle_trend_ms</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> BATTLE_TREND_MS = createField(DSL.name("battle_trend_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("150"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>club_profiles.battle_fast_ms</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> BATTLE_FAST_MS = createField(DSL.name("battle_fast_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("300"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>club_profiles.battle_hold_laps</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> BATTLE_HOLD_LAPS = createField(DSL.name("battle_hold_laps"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("2"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>club_profiles.close_gap_ms</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> CLOSE_GAP_MS = createField(DSL.name("close_gap_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1000"), SQLDataType.INTEGER)), this, "");
+
+    /**
+     * The column <code>club_profiles.late_margin_ms</code>.
+     */
+    public final TableField<ClubProfilesRecord, Integer> LATE_MARGIN_MS = createField(DSL.name("late_margin_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1000"), SQLDataType.INTEGER)), this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

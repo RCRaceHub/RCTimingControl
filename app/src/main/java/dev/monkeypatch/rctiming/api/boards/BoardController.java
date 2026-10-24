@@ -1,10 +1,13 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
@@ -57,6 +60,7 @@ public class BoardController {
     private final FinalsBoardService finalsBoardService;
     private final LastLapTimeout lastLapTimeout;
     private final LiveQualifyingService liveQualifyingService;
+    private final ClubProfileService clubProfileService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -69,7 +73,9 @@ public class BoardController {
                            FinalLegsService finalLegsService,
                            FinalsBoardService finalsBoardService,
                            LastLapTimeout lastLapTimeout,
-                           LiveQualifyingService liveQualifyingService) {
+                           LiveQualifyingService liveQualifyingService,
+                           ClubProfileService clubProfileService) {
+        this.clubProfileService = clubProfileService;
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -173,6 +179,17 @@ public class BoardController {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> boardTickerService.forEvent(event.id()))
                 .orElse(new TickerDto(null, List.of(), List.of(), List.of(), false, List.of()));
+    }
+
+    /**
+     * The club's thresholds the boards draw with (#505): how near the car ahead is shown as close, and how far past its
+     * average lap a car is before its lap bar turns red. The battle thresholds are applied on the server, so they are
+     * not here. The address options such as {@code close=} still override these on a board.
+     */
+    @GetMapping("/settings")
+    public BoardSettingsDto settings() {
+        LiveTimingSettings s = clubProfileService.liveTimingSettings();
+        return new BoardSettingsDto(s.closeGapMs(), s.lateMarginMs());
     }
 
     /** Seeds a board's live table before the first STOMP frame arrives. */

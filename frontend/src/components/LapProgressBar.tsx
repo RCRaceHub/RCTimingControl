@@ -10,6 +10,8 @@ export interface LapBarClock {
   offsetMs: number;
   /** In the timing laptop's clock; null when the race has not been stopped and resumed. */
   resumedAtMs: number | null;
+  /** How far past its average a lap runs before the bar turns red, in milliseconds: the club's setting. */
+  lateMarginMs?: number;
 }
 
 /**
@@ -19,7 +21,7 @@ export interface LapBarClock {
  */
 export function LapProgressBar({ row, clock, className }: { row: LiveTimingRowDto; clock: LapBarClock; className?: string }) {
   const nowMs = useTick() + clock.offsetMs;
-  const progress = lapProgress(row, nowMs, clock.resumedAtMs);
+  const progress = lapProgress(row, nowMs, clock.resumedAtMs, clock.lateMarginMs);
   return (
     <div className={cn('h-2 w-full overflow-hidden rounded bg-slate-700/60', className)} aria-hidden="true">
       {progress && (

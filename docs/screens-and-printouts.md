@@ -40,15 +40,19 @@ A few things help at the track:
 
 ## The Live race screen
 
-Each driver has a thin **lap bar** under the name: it fills as the car goes round, measured against that driver's own average lap since they last crossed the line. It is green while the lap is shorter than the average, yellow once it reaches the average, and red a second after. After a stop the bars count from the resume, so a stoppage is not counted against anyone. The bars compare the timing laptop's passing times with the clock of the device showing the board; the board works out the difference from the passings as they arrive, so a TV with a wrong clock settles after the first lap or two.
+Each driver has a thin **lap bar** under the name: it fills as the car goes round, measured against that driver's own average lap since they last crossed the line. It is green while the lap is shorter than the average, yellow once it reaches the average, and red once it is the club's late margin past it (1 s unless changed on the Club page, Live timing tab). After a stop the bars count from the resume, so a stoppage is not counted against anyone. The bars compare the timing laptop's passing times with the clock of the device showing the board; the board works out the difference from the passings as they arrive, so a TV with a wrong clock settles after the first lap or two.
 
 A car on the same lap within one second of the car ahead gets an amber row. This follows the scored order (the gap between the two cars' last crossings, penalties included), so it changes only at the line. The **Ahead** column is that gap, and **Gap** is the gap to the leader.
 
 In a **final**, a small green ▲ or red ▼ beside the position shows the places a car has gained or lost against its grid place (nothing when it has held its place). Race control's live timing shows the same arrows for a final. In a race with a set length, a **Pred** column shows the laps each car is on course to finish with, worked out from its average lap and the time left; the race ends for a car on its first crossing after time is up, so that lap is counted.
 
-Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
+Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, using the club's close gap (the Club page, Live timing tab).
 
-**Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within 2 seconds of each other, labelled "Battle for P4", with the gap and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, and the change per lap. A chain of close cars shows as one line, "Train P4–P7". An underlined gap means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles through any more every five seconds. The timing laptop works the battles out (see the API guide), so every screen agrees; the referee's screen has the same Battles panel. A pair stays a battle for two laps after it drops outside 2 seconds, and a lap taken away by a marshal starts its trend again.
+**Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within the club's battle gap (2 seconds unless an admin changes it under Club, Live timing; 0 switches battles off everywhere), labelled "Battle for P4", with the gap and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, and the change per lap. A chain of close cars shows as one line, "Train P4–P7". An underlined gap means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles through any more every five seconds. The timing laptop works the battles out (see the API guide), so every screen agrees; the referee's screen has the same Battles panel. A pair stays a battle for two laps after it drops outside the gap, and a lap taken away by a marshal starts its trend again.
+
+### Live timing thresholds
+
+An admin sets the thresholds under **Club**, on the **Live timing** tab; they apply to every timing screen and take effect in a race in progress at its next update. There are six, and each shows what it does on the page: the **battle gap** (default 2 s; 0 switches battles off), the **closing or growing** limit (0.15 s a lap), the **gaining fast** limit (0.3 s a lap, never below the previous one), the **battle hold** (2 laps), the **close car tint** (1 s; 0 switches the amber row off) and the **late lap bar** margin (1 s past the car's average lap before the bar turns red). The Club page has three tabs: Profile (details and logo), Live timing and Privacy notice.
 
 ### Options on the Live race screen and board views
 
@@ -60,7 +64,7 @@ Options go on the end of the address. They also work on a [board view](#board-vi
 | `bars=hide` | Leave out the lap bars under each name |
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `predict=hide` | Leave out the **Pred** column in a race with a set length |
-| `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; `close=0` turns the tint off) |
+| `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; `close=0` turns the tint off) |
 | `battles=hide` | Leave out the battles strip |
 
 ## The Live top screen
@@ -107,7 +111,7 @@ Options go on the end of the address:
 | `event=ID` | Follow one event |
 | `bars=hide` | Leave out the lap bars under each name |
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
-| `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; 0 turns it off) |
+| `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; 0 turns it off) |
 | `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |

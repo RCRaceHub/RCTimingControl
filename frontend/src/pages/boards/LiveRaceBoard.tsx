@@ -9,6 +9,7 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { PositionChart } from '@/components/print/PositionChart';
 import { ClassSwatch } from '@/components/ClassSwatch';
+import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { BattleStrip } from '@/components/BattleStrip';
@@ -24,9 +25,10 @@ export default function LiveRaceBoard() {
   const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
   const series = useLivePositionSeries(raceId, rows);
 
-  const { showBars, showArrows, showPredicted, closeMs, showBattles } = parseLiveRaceOptions(searchParams);
+  const settings = useBoardSettings();
+  const { showBars, showArrows, showPredicted, closeMs, showBattles } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
   const battleGroups = useBattles(showBattles ? raceId : null);
-  const barClock = useLapBarClock(rows, currentRace?.status);
+  const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
     queryFn: () => getRaceClock(raceId!),

@@ -1,8 +1,8 @@
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
-/** How far past its average lap a car is before its lap bar turns red, in milliseconds. */
+/** How far past its average lap a car is before its lap bar turns red, in milliseconds, until the club sets another. */
 export const LATE_AFTER_AVERAGE_MS = 1000;
-/** Cars this close behind the one ahead, in milliseconds, are shown as running close. */
+/** Cars this close behind the one ahead, in milliseconds, are shown as running close, until the club sets another. */
 export const DEFAULT_CLOSE_MS = 1000;
 
 /** Where a car is in its current lap, judged against its own average lap (#479). */
@@ -24,12 +24,18 @@ export interface LapProgress {
  * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
  * @param notBeforeMs when the race was last resumed, in the same clock; the lap is counted from then if the car
  *     has not crossed the line since, so a stoppage is not counted against it
+ * @param lateMarginMs how far past its average a lap runs before the bar turns red, the club's setting
  */
-export function lapProgress(row: LiveTimingRowDto, nowMs: number, notBeforeMs?: number | null): LapProgress | null {
+export function lapProgress(
+  row: LiveTimingRowDto,
+  nowMs: number,
+  notBeforeMs?: number | null,
+  lateMarginMs: number = LATE_AFTER_AVERAGE_MS,
+): LapProgress | null {
   const average = row.avgLapMs;
   if (row.finished || !average || !Number.isFinite(average) || !row.lastPassingTimeMs) return null;
   const elapsed = Math.max(0, nowMs - Math.max(row.lastPassingTimeMs, notBeforeMs ?? 0));
-  const state = elapsed < average ? 'under' : elapsed < average + LATE_AFTER_AVERAGE_MS ? 'at' : 'late';
+  const state = elapsed < average ? 'under' : elapsed < average + lateMarginMs ? 'at' : 'late';
   return { fraction: Math.min(1, elapsed / average), state };
 }
 

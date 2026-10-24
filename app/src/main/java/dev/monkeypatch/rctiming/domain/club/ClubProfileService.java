@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.club;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,48 @@ public class ClubProfileService {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getAudioSettings)
                 .orElseGet(ClubAudioSettings::defaults);
+    }
+
+    /**
+     * The club's live timing thresholds, or the defaults before a profile exists. Read on the read pool, so the
+     * timing thread and the anonymous boards never queue behind a write.
+     */
+    @ReadTransaction
+    public LiveTimingSettings liveTimingSettings() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getLiveTimingSettings)
+                .orElseGet(LiveTimingSettings::defaults);
+    }
+
+    /**
+     * Saves the live timing thresholds (#505) and records {@code LIVE_TIMING_SETTINGS_CHANGED} with the values
+     * before and after. Once the change commits a {@link LiveTimingSettingsChangedEvent} lets live timing apply them to
+     * races in progress.
+     *
+     * @throws IllegalArgumentException if a value is out of range, see {@link LiveTimingSettings#validated()}
+     */
+    public LiveTimingSettings changeLiveTimingSettings(Actor actor, LiveTimingSettings settings) {
+        settings.validated();
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        LiveTimingSettings before = profile.getLiveTimingSettings();
+        profile.setLiveTimingSettings(settings);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        audit.entry(actor, "LIVE_TIMING_SETTINGS_CHANGED").entity("club_profile", saved.getId())
+                .summary("Changed the live timing thresholds")
+                .before(settingsValues(before)).after(settingsValues(settings)).record();
+        AfterCommit.run(() -> eventPublisher.publishEvent(new LiveTimingSettingsChangedEvent(settings)));
+        return settings;
+    }
+
+    private static Map<String, Object> settingsValues(LiveTimingSettings s) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("battleGapMs", s.battleGapMs());
+        values.put("battleTrendMsPerLap", s.battleTrendMsPerLap());
+        values.put("battleFastMsPerLap", s.battleFastMsPerLap());
+        values.put("battleHoldLaps", s.battleHoldLaps());
+        values.put("closeGapMs", s.closeGapMs());
+        values.put("lateMarginMs", s.lateMarginMs());
+        return values;
     }
 
     /** The club's chosen announcer voice, or empty to use the Piper default. */

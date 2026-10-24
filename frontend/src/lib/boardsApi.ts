@@ -188,6 +188,14 @@ export async function getBoardLiveTiming(raceId: number): Promise<LiveTimingRowD
   return data;
 }
 
+/** The club's thresholds a board draws with, in milliseconds (#505). */
+export type BoardSettingsDto = { closeGapMs: number; lateMarginMs: number };
+
+export async function getBoardSettings(): Promise<BoardSettingsDto> {
+  const { data } = await api.get<BoardSettingsDto>('/api/v1/boards/settings');
+  return data;
+}
+
 /** The cars running close together in a race on track (#505); empty when none are close. */
 export async function getBoardBattles(raceId: number): Promise<BattleGroup[]> {
   const { data } = await api.get<BattleGroup[]>(`/api/v1/boards/races/${raceId}/battles`);

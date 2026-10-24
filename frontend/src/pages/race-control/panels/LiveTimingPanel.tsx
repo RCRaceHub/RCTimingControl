@@ -19,7 +19,8 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
-import { DEFAULT_CLOSE_MS, isClose } from '@/lib/lapProgress';
+import { isClose } from '@/lib/lapProgress';
+import { useBoardSettings } from '@/hooks/useBoardSettings';
 
 type Props = {
   raceId: number;
@@ -37,7 +38,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);
-  const barClock = useLapBarClock(sorted, status);
+  const settings = useBoardSettings();
+  const barClock = useLapBarClock(sorted, status, settings.lateMarginMs);
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
@@ -81,7 +83,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
           <TableBody>
             {sorted.map((row) => {
               const flash = lapFlash.get(row.entryId);
-              const close = isClose(row, DEFAULT_CLOSE_MS);
+              const close = isClose(row, settings.closeGapMs);
               return (
               <TableRow
                 key={row.entryId}

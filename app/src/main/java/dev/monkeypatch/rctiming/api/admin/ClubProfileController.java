@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.api.admin.dto.ClubProfileDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateClubProfileRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateGoverningBodyRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.GoverningBodyAffiliationDto;
+import dev.monkeypatch.rctiming.api.admin.dto.LiveTimingSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.LogoUploadResponse;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LogoUploadService;
@@ -89,6 +90,25 @@ public class ClubProfileController {
                                                     @RequestBody @Valid PrivacyNoticeRequest request) {
         return PrivacyNoticeEditDto.from(
                 clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
+    }
+
+    /** The live timing thresholds (#505). {@code GET /live-timing-settings}; read only. */
+    @GetMapping("/live-timing-settings")
+    public LiveTimingSettingsDto getLiveTimingSettings() {
+        return LiveTimingSettingsDto.from(clubProfileService.liveTimingSettings());
+    }
+
+    /**
+     * Saves the live timing thresholds. {@code PUT /live-timing-settings}; ADMIN; 400 for a value out of range or a
+     * gaining-fast limit below the trend limit. Races in progress take them from their next update. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/live-timing-settings")
+    @PreAuthorize("hasRole('ADMIN')")
+    public LiveTimingSettingsDto changeLiveTimingSettings(Authentication auth,
+                                                          @RequestBody @Valid LiveTimingSettingsDto request) {
+        return LiveTimingSettingsDto.from(
+                clubProfileService.changeLiveTimingSettings(CurrentOfficial.actor(auth), request.toSettings()));
     }
 
     /** The governing bodies the club is affiliated to. {@code GET /affiliations}; read only. */
