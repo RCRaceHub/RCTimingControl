@@ -126,14 +126,11 @@ The buttons and tick boxes on these pages are hidden on paper.
 
 The qualifying standings page (`/qualifying`) is the standings after each round: it updates as each round's last heat finishes, and a printout taken then is the standings so far. For low-points qualifying ("best X of Y rounds"), each round shows the driver's place in it, and a round that doesn't count towards the total is struck through. A round lost to a marshal penalty counts as the worst place.
 
-## QR codes and the laptop's network name
-
-A QR code on a board or printout holds the address of the page on this laptop. When the laptop announces a network name (an mDNS name such as `timing.local`, set in the install settings) the code carries that name, whichever way the screen was opened, so a printed sheet still works after the laptop's address changes. Without a name, a screen opened on the laptop itself (`localhost`) uses the laptop's first network address, and any other screen keeps the address it was opened at. Phones that cannot look up `.local` names can still type one of the addresses on the About page.
-
 ## Not built yet
 
 Planned, tracked in issue #359:
 
+- A fixed network name for the laptop (for example `rctiming.local`) so printed QR codes survive an address change.
 - A results site for clubs without RaceHub. The choice of where results are published (nothing, RaceHub, a results site or both) is made under **Admin → Results to RaceHub**, but choosing the results site sends nothing yet.
 - QR codes that link to RaceHub's public pages instead of this laptop (#316).
 

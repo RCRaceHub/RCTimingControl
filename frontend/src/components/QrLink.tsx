@@ -5,23 +5,15 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-/** An address by the laptop's mDNS name, such as {@code http://timing.local:8080/}. */
-const MDNS_ADDRESS = /^https?:\/\/[^/:]+\.local(:\d+)?\/?$/i;
-
 /**
- * The address a phone on the venue network can open for {@code path}. When the laptop advertises an mDNS name (such as
- * {@code timing.local}) the code carries it whichever way the screen was opened, since a printed code then survives a
- * change of the laptop's address. Otherwise a screen opened on the timing laptop itself is at "localhost", which means
- * nothing to a phone, so the laptop's network address stands in for it.
+ * The address a phone on the venue network can open for {@code path}. A screen opened on the timing laptop itself
+ * is at "localhost", which means nothing to a phone, so the laptop's network address stands in for it.
  */
 export function shareableUrl(path: string, networkAddresses: string[] | undefined): string {
   const { origin, hostname } = window.location;
-  const mdns = networkAddresses?.find((address) => MDNS_ADDRESS.test(address));
-  const base = mdns
-    ? mdns.replace(/\/+$/, '')
-    : LOCAL_HOSTS.has(hostname) && networkAddresses && networkAddresses.length > 0
-      ? networkAddresses[0].replace(/\/+$/, '')
-      : origin;
+  const base = LOCAL_HOSTS.has(hostname) && networkAddresses && networkAddresses.length > 0
+    ? networkAddresses[0].replace(/\/+$/, '')
+    : origin;
   return `${base}${path}`;
 }
 
