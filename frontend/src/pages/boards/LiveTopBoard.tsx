@@ -1,0 +1,113 @@
+// Anonymous spectator board: the top of the qualifying table for the class on track, with the running heat counted
+// from its live positions (#480). While a heat runs the order is a projection; once it ends the settled order stays
+// up, with who moved, until the next race starts.
+import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getLiveQualifying, type LiveQualifyingRow } from '@/lib/boardsApi';
+import { fmtMs } from '@/lib/format';
+import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
+import { parseEventParam, parseTopParam } from './boardFormat';
+import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+
+/** The table changes with every lap, so it polls faster than the other boards. */
+const LIVE_TOP_POLL_MS = 3000;
+
+/** How a driver's place changed: positive is up the table, null when they had no earlier place. */
+function placesGained(row: LiveQualifyingRow): number | null {
+  return row.previousPosition === null ? null : row.previousPosition - row.position;
+}
+
+function Movement({ row, hasBaseline }: { row: LiveQualifyingRow; hasBaseline: boolean }) {
+  const gained = placesGained(row);
+  // The first heat of the event has nothing to compare with, so nobody is "new"
+  if (gained === null) return !hasBaseline ? null : <span className="text-sky-300">New</span>;
+  if (gained > 0) return <span className="text-emerald-400">▲ {gained}</span>;
+  if (gained < 0) return <span className="text-rose-400">▼ {-gained}</span>;
+  return <span className="text-slate-600">–</span>;
+}
+
+function rowTint(row: LiveQualifyingRow, live: boolean, hasBaseline: boolean): string {
+  // The heat on track in amber while it runs; once it ends, whoever it moved stays lit green or red
+  if (live && row.live) return 'bg-amber-500/20';
+  if (!live && row.previousPosition !== null && row.previousPosition !== row.position) {
+    return row.position < row.previousPosition ? 'bg-emerald-500/15' : 'bg-rose-500/15';
+  }
+  if (!live && hasBaseline && row.previousPosition === null) return 'bg-sky-500/15';
+  return '';
+}
+
+export default function LiveTopBoard() {
+  const [searchParams] = useSearchParams();
+  const eventId = parseEventParam(searchParams.get('event'));
+  const top = parseTopParam(searchParams.get('top'));
+
+  const { data, isPending, isError } = useQuery({
+    queryKey: publicQueryKeys.boards.liveQualifying(eventId),
+    queryFn: () => getLiveQualifying(eventId),
+    refetchInterval: LIVE_TOP_POLL_MS,
+  });
+
+  if (isPending) {
+    return (
+      <BoardShell>
+        <BoardMessage>Loading…</BoardMessage>
+      </BoardShell>
+    );
+  }
+
+  if (isError && !data) {
+    return <BoardUnreachable />;
+  }
+
+  if (!data || data.phase === 'NONE' || data.rows.length === 0) {
+    return (
+      <BoardShell eventName={data?.eventName}>
+        <BoardMessage>No qualifying table yet.</BoardMessage>
+      </BoardShell>
+    );
+  }
+
+  const live = data.phase === 'LIVE';
+  const rows = data.rows.slice(0, top);
+  const hasBaseline = data.rows.some((r) => r.previousPosition !== null);
+  return (
+    <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <h1 className="text-4xl font-bold lg:text-6xl">{data.className} qualifying</h1>
+        <p className="text-2xl text-slate-400 lg:text-3xl">
+          {live ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}
+        </p>
+      </div>
+      <table className="w-full text-2xl lg:text-4xl" aria-label="Qualifying order">
+        <thead>
+          <tr className="border-b border-slate-700 text-left text-lg text-slate-400 lg:text-2xl">
+            <th className="py-2 pr-4">Pos</th>
+            <th className="py-2 pr-4">Driver</th>
+            <th className="py-2 pr-4">Car</th>
+            <th className="py-2 pr-4 text-right">Points</th>
+            <th className="py-2 pr-4 text-right">Best lap</th>
+            <th className="py-2 text-right">Moved</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.entryId} className={`border-b border-slate-800 ${rowTint(row, live, hasBaseline)}`}>
+              <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
+              <td className="py-3 pr-4 font-semibold">
+                {row.driverName}
+                {live && row.live && <span className="ml-3 text-lg text-amber-300">on track</span>}
+                {live && row.waiting && <span className="ml-3 text-lg text-slate-500">heat to come</span>}
+              </td>
+              <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
+              <td className="py-3 pr-4 text-right font-semibold tabular-nums">{row.points ?? '—'}</td>
+              <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
+              <td className="py-3 text-right tabular-nums">
+                <Movement row={row} hasBaseline={hasBaseline} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </BoardShell>
+  );
+}

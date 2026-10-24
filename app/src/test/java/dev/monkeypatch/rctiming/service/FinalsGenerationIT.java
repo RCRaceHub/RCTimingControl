@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
 import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest.ClassFinalsConfig;
+import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -353,6 +354,58 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(ranked).hasSize(rows.size());
         assertThat(ranked).extracting(r -> r.points()).containsOnlyNulls();
         assertThat(drivers).containsAll(ranked.stream().map(r -> r.entryId()).toList());
+    }
+
+    @Test
+    void theLiveTableCountsTheHeatOnTrackLeavesItOutForTheBaselineAndListsDriversWhoseHeatIsToCome() {
+        long buggyClass = addClass("Buggy", ROUND_BY_ROUND_ALL);
+        addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        List<Race> heats = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER);
+        Race first = heats.get(0);
+        Race second = heats.get(1);
+        List<Long> firstGrid = raceEntryRepository.findByRaceIdOrderByGridPosition(first.getId()).stream()
+                .map(RaceEntry::getEntryId).toList();
+        List<Long> secondGrid = raceEntryRepository.findByRaceIdOrderByGridPosition(second.getId()).stream()
+                .map(RaceEntry::getEntryId).toList();
+        List<long[]> rows = new ArrayList<>();
+        firstGrid.forEach(id -> rows.add(new long[] {id, 10, 60_000}));
+        storeResult(first, rows, false);
+
+        // The second heat is on track and its first car is ahead of everyone in the first heat
+        List<LiveTimingRowDto> live = new ArrayList<>();
+        for (int i = 0; i < secondGrid.size(); i++) {
+            int laps = i == 0 ? 12 : 9;
+            live.add(new LiveTimingRowDto(secondGrid.get(i), "d", "1", i + 1, laps, 0L, 14_000L, 13_000L, 14_000L,
+                    13_000L, 0, 0, null, null, 300_000L + i, false, 0L));
+        }
+
+        var projected = qualifyingStandingsService.projectedResultsFor(buggyClass,
+                QualifyingStandingsService.Overlay.live(second.getId(), live));
+        var before = qualifyingStandingsService.projectedResultsFor(buggyClass,
+                QualifyingStandingsService.Overlay.without(second.getId()));
+
+        assertThat(projected.results()).hasSize(20);
+        assertThat(projected.results().get(0).entryId()).isEqualTo(secondGrid.get(0));
+        assertThat(projected.results().get(0).points()).isEqualTo(1);
+        assertThat(projected.waiting()).isEmpty();
+        // Without the running heat only the finished one is ranked
+        assertThat(before.results()).extracting(r -> r.entryId()).containsExactlyInAnyOrderElementsOf(firstGrid);
+
+        // With the first heat the one on track and the second still to run, the second heat's drivers wait
+        List<LiveTimingRowDto> firstLive = new ArrayList<>();
+        for (int i = 0; i < firstGrid.size(); i++) {
+            firstLive.add(new LiveTimingRowDto(firstGrid.get(i), "d", "1", i + 1, 5, 0L, null, null, null, null,
+                    0, 0, null, null, null, false, 0L));
+        }
+        jdbc.update("delete from result_snapshots where race_id = ?", first.getId());
+        jdbc.update("update races set status = 'RUNNING' where id = ?", first.getId());
+        var early = qualifyingStandingsService.projectedResultsFor(buggyClass,
+                QualifyingStandingsService.Overlay.live(first.getId(), firstLive));
+
+        assertThat(early.results()).extracting(r -> r.entryId()).containsExactlyInAnyOrderElementsOf(firstGrid);
+        assertThat(early.waiting()).containsExactlyInAnyOrderElementsOf(secondGrid);
     }
 
     @Test

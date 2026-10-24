@@ -98,7 +98,7 @@ Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment`
 
 ## Race audio routing
 
-Race control works out every sound (horns, beeps, spoken lines) in the browser; nothing about audio is decided on the server. Each sound goes through `routeCue` in `lib/audioOutput.ts`, which looks up the outputs the club ticked for it in `lib/audioRouting.ts` (kept in `localStorage`). It plays the sound on race control's tab if that output is ticked and sends the rest to the other tabs of the same browser over a `BroadcastChannel`. An audio output page announces itself on the channel every two seconds; a sound ticked for an output that has not been heard from for six seconds plays on race control instead of being lost. An audio output page (`/audio-output/{id}`) listens for cues meant for its output and plays them on its sound card (`setSinkId`) and speaker side (a stereo pan), speaking text, cut into pieces of at most 100 characters and played in turn, with the club's Piper voice because the browser voice cannot leave the default card.
+Race control works out every sound (horns, beeps, spoken lines) in the browser; nothing about audio is decided on the server. Each sound goes through `routeCue` in `lib/audioOutput.ts`, which looks up the outputs the club ticked for it in `lib/audioRouting.ts` (kept in `localStorage`). It plays the sound on race control's tab if that output is ticked and sends the rest to the other tabs of the same browser over a `BroadcastChannel`. An audio output page announces itself on the channel every three seconds; a sound ticked for an output that has not been heard from for six seconds plays on race control instead of being lost. An audio output page (`/audio-output/{id}`) listens for cues meant for its output and plays them on its sound card (`setSinkId`) and speaker side (a stereo pan), speaking text, cut into pieces of at most 100 characters and played in turn, with the club's Piper voice because the browser voice cannot leave the default card.
 
 ```mermaid
 sequenceDiagram
@@ -211,6 +211,24 @@ sequenceDiagram
 ```
 
 The Now and next board polls the same ticker endpoint for the next drivers and marshals.
+
+The Live top screen (`/boards/top`) polls `GET /boards/live-qualifying` every three seconds. `BoardController` picks the qualifying heat (the one on track, else the last one finished) and passes the heat's live rows from `LapTimingService.peek` to `LiveQualifyingService`. That asks `QualifyingStandingsService.projectedResultsFor` twice: once with the heat counted (`Overlay.live`, or `Overlay.stored` after it finished) and once without it (`Overlay.without`) for the places before. Only the board's response is built; nothing is stored.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (/boards/top)
+    participant BC as BoardController
+    participant LTS as LapTimingService
+    participant LQ as LiveQualifyingService
+    participant QS as QualifyingStandingsService
+    B->>BC: GET /boards/live-qualifying (every 3 s)
+    BC->>LTS: peek(raceId).calculatePositions()
+    BC->>LQ: forHeat(raceId, liveRows)
+    LQ->>QS: projectedResultsFor(class, Overlay.live)
+    LQ->>QS: projectedResultsFor(class, Overlay.without)
+    LQ-->>BC: rows with position, previous place, live, waiting
+    BC-->>B: LiveQualifyingDto
+```
 
 `LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
 

@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
+import dev.monkeypatch.rctiming.query.boards.LiveQualifyingDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
@@ -17,6 +18,7 @@ import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsBoardService;
+import dev.monkeypatch.rctiming.service.LiveQualifyingService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -53,6 +55,7 @@ public class BoardController {
     private final FinalLegsService finalLegsService;
     private final FinalsBoardService finalsBoardService;
     private final LastLapTimeout lastLapTimeout;
+    private final LiveQualifyingService liveQualifyingService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -64,7 +67,8 @@ public class BoardController {
                            BoardTickerService boardTickerService,
                            FinalLegsService finalLegsService,
                            FinalsBoardService finalsBoardService,
-                           LastLapTimeout lastLapTimeout) {
+                           LastLapTimeout lastLapTimeout,
+                           LiveQualifyingService liveQualifyingService) {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -76,6 +80,7 @@ public class BoardController {
         this.finalLegsService = finalLegsService;
         this.finalsBoardService = finalsBoardService;
         this.lastLapTimeout = lastLapTimeout;
+        this.liveQualifyingService = liveQualifyingService;
     }
 
     /**
@@ -115,6 +120,38 @@ public class BoardController {
                 .map(event -> new QualifyingBoardDto(event.id(), event.name(),
                         qualifyingTableService.forEventPublic(event.id())))
                 .orElse(new QualifyingBoardDto(null, null, List.of()));
+    }
+
+    /**
+     * The qualifying table of the class on track with the running heat counted from its live positions (#480). When
+     * no qualifying heat is running it shows the one that finished last, so the table keeps who moved until the next
+     * race starts.
+     *
+     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     */
+    @GetMapping("/live-qualifying")
+    public LiveQualifyingDto liveQualifying(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId).map(event -> {
+            BoardRaceDto running = boardQuery.currentRace(event.id()).orElse(null);
+            if (running != null && "QUALIFIER".equals(running.roundType())) {
+                List<LiveTimingRowDto> live = lapTimingService.peek(running.raceId())
+                        .map(LiveRaceState::calculatePositions).orElse(List.of());
+                return liveTable(event, "LIVE", running, live);
+            }
+            BoardRaceDto last = boardQuery.lastCompletedRace(event.id()).orElse(null);
+            if (running == null && last != null && "QUALIFIER".equals(last.roundType())) {
+                return liveTable(event, "FINISHED", last, null);
+            }
+            return new LiveQualifyingDto(event.id(), event.name(), "NONE", null, null, null, List.of());
+        }).orElse(new LiveQualifyingDto(null, null, "NONE", null, null, null, List.of()));
+    }
+
+    private LiveQualifyingDto liveTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
+                                        List<LiveTimingRowDto> liveRows) {
+        return liveQualifyingService.forHeat(race.raceId(), liveRows)
+                .map(rows -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
+                        race.className(), rows))
+                .orElse(new LiveQualifyingDto(event.id(), event.name(), "NONE", null, null, null, List.of()));
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */

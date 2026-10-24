@@ -13,6 +13,7 @@ interface BoardLink {
 const BOARD_LINKS: BoardLink[] = [
   { path: '/boards/now-next', label: 'Now and next', takesEvent: true },
   { path: '/boards/live-race', label: 'Live race', takesEvent: true },
+  { path: '/boards/top', label: 'Live top 10', takesEvent: true },
   { path: '/boards/results', label: 'Race results', takesEvent: true },
   { path: '/qualifying', label: 'Qualifying standings', takesEvent: true },
   { path: '/finals', label: 'Finals', takesEvent: true },

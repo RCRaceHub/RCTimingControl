@@ -12,6 +12,15 @@ export function parseEventParam(value: string | null): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+const DEFAULT_TOP = 10;
+const MAX_TOP = 30;
+
+/** Reads the optional `?top=N` parameter of the live top board: how many places to show, ten unless asked. */
+export function parseTopParam(value: string | null): number {
+  const top = Number(value);
+  return Number.isInteger(top) && top > 0 ? Math.min(top, MAX_TOP) : DEFAULT_TOP;
+}
+
 /** How near the car ahead counts as close on the live race board, until the address says otherwise. */
 const LIVE_RACE_DEFAULT_CLOSE_MS = 1000;
 const LIVE_RACE_MAX_CLOSE_S = 60;

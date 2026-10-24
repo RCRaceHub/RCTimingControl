@@ -142,6 +142,39 @@ export async function getQualifyingBoard(eventId?: number | null): Promise<Quali
   return data;
 }
 
+/** One driver in the live qualifying table (#480). */
+export type LiveQualifyingRow = {
+  position: number;
+  /** The place before the heat counted; null for a driver with no earlier result. */
+  previousPosition: number | null;
+  entryId: number;
+  driverName: string;
+  carNumber: string | null;
+  points: number | null;
+  lapsCompleted: number;
+  bestLapMs: number | null;
+  /** The driver is in the heat on track (or the one that just ended). */
+  live: boolean;
+  /** The driver's heat in this round has not run yet. */
+  waiting: boolean;
+};
+
+export type LiveQualifyingDto = {
+  eventId: number | null;
+  eventName: string | null;
+  /** LIVE while the heat runs (a projection), FINISHED once it has ended, NONE with nothing to show. */
+  phase: 'LIVE' | 'FINISHED' | 'NONE';
+  raceId: number | null;
+  raceLabel: string | null;
+  className: string | null;
+  rows: LiveQualifyingRow[];
+};
+
+export async function getLiveQualifying(eventId?: number | null): Promise<LiveQualifyingDto> {
+  const { data } = await api.get<LiveQualifyingDto>('/api/v1/boards/live-qualifying', eventParams(eventId));
+  return data;
+}
+
 export async function getFinalsBoard(eventId?: number | null): Promise<FinalsBoardDto> {
   const { data } = await api.get<FinalsBoardDto>('/api/v1/boards/finals', eventParams(eventId));
   return data;
