@@ -30,3 +30,27 @@ describe('lap beep files', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('built-in lap beep pitch', () => {
+  it('is an octave higher when faster and an octave lower when slower', async () => {
+    const { playLapBeep } = await import('./sounds');
+    const hz: number[] = [];
+    vi.stubGlobal('AudioContext', class {
+      state = 'running';
+      currentTime = 0;
+      destination = {};
+      createGain() { return { gain: { value: 0 }, connect() {} }; }
+      createOscillator() {
+        const osc = { type: '', frequency: { set value(v: number) { hz.push(v); } }, connect() {}, start() {}, stop() {}, disconnect() {}, onended: null };
+        return osc;
+      }
+    });
+
+    playLapBeep(0.5, 'faster');
+    playLapBeep(0.5, 'slower');
+    playLapBeep(0.5, 'onPace');
+
+    expect(hz).toEqual([880, 220, 440]);
+    vi.unstubAllGlobals();
+  });
+});
