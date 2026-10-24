@@ -108,7 +108,10 @@ A timed race ends when its clock runs out and each car takes the flag on its nex
 also set a **max race window**, in seconds from the start of the race (from the last car's start in a stagger start).
 BRCA uses 390 seconds, 6:30, for a 5 minute race. When the window is reached the race is finished, whatever the cars
 are doing, and a car that has not crossed the line to complete its last lap keeps the laps it completed (its lap in
-progress is not counted). 0 means no window; the track's max last lap wait is then the only backstop.
+progress is not counted). Such a car is marked **DNF** beside its laps on the results (race control, the public results
+page, the boards, the finals page and the heat printout). It keeps its laps and its place, so scoring is unchanged: the
+label only says it did not take the flag. A car that took the flag in time, or a race finished by race control or by the
+last lap timeout, carries no mark. 0 means no window; the track's max last lap wait is then the only backstop.
 
 ### A final in legs
 

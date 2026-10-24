@@ -68,6 +68,8 @@ public class LiveRaceState {
     final Map<Long, Long> startOffsetMs = new HashMap<>();
     /** Whether the finish has been asked for, so it is asked for once. */
     boolean finishRequested = false;
+    /** Whether the race was ended by its maximum race window, so cars not yet flagged did not finish. */
+    private boolean cutOff = false;
     /** Entries that crossed the line before their turn in a stagger start: entryId → how early the first crossing was. */
     final Map<Long, Long> jumpStartEarlyMs = new LinkedHashMap<>();
     /** Jump starts the referee has taken no action on. */
@@ -250,6 +252,21 @@ public class LiveRaceState {
         }
         finishRequested = true;
         return true;
+    }
+
+    /** Records that the maximum race window ended the race, before the finish is taken (#428). */
+    public synchronized void markCutOff() {
+        cutOff = true;
+    }
+
+    /** Withdraws {@link #markCutOff()} when the finish it was for did not happen. */
+    public synchronized void clearCutOff() {
+        cutOff = false;
+    }
+
+    /** Whether the maximum race window ended the race: a car with laps that never took the flag did not finish. */
+    public synchronized boolean isCutOff() {
+        return cutOff;
     }
 
     /** Server time, in epoch milliseconds, when the first car took the flag, if one has. */

@@ -11,6 +11,7 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
 import PrivacyLink from '@/components/layout/PrivacyLink';
 import { Button } from '@/components/ui/button';
+import { DnfBadge } from '@/components/DnfBadge';
 
 const TH = 'px-3 py-2';
 
@@ -78,7 +79,7 @@ function ResultsTable({ final }: { final: FinalsBoardFinal }) {
             <td className="px-3 py-2 font-semibold tabular-nums">{row.position}</td>
             <td className="px-3 py-2 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="px-3 py-2">{row.driverName}</td>
-            <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /></td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.totalTimeMs)}</td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.bestLapMs)}</td>
             {hasPoints && <td className="px-3 py-2 text-right tabular-nums">{row.championshipPoints ?? '—'}</td>}

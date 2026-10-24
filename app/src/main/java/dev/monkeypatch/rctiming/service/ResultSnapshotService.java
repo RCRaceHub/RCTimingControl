@@ -148,7 +148,7 @@ public class ResultSnapshotService {
                         totalTimeMs,
                         row.bestLapMs(),
                         row.gapToLeaderMs()
-                ));
+                ).withDnf(state.isCutOff() && !row.finished() && row.lapsCompleted() > 0));
             }
 
             lapHistory = buildLapHistory(rows, stateOpt.orElse(null));

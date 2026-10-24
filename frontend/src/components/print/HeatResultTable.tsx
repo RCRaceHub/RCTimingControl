@@ -2,6 +2,7 @@ import type { EventResultsRace } from '@/lib/raceControlApi';
 import { averageLapMs, lapTimesFor } from '@/lib/heatSheet';
 import { startPosition } from '@/lib/eventPrint';
 import { fmtMs } from '@/lib/format';
+import { DnfBadge } from '@/components/DnfBadge';
 
 /**
  * One heat's result as it prints: position, driver, car, the grid position the driver started from, laps, total
@@ -37,7 +38,7 @@ export function HeatResultTable({ race }: { race: EventResultsRace }) {
             <td className="py-1.5 pr-4">{row.driverName}</td>
             <td className="py-1.5 pr-4 text-muted-foreground">{row.carNumber ?? '—'}</td>
             <td className="py-1.5 pr-4 text-right font-mono">{startPosition(race, row.entryId) ?? '—'}</td>
-            <td className="py-1.5 pr-4 text-right font-mono">{row.lapsCompleted}</td>
+            <td className="py-1.5 pr-4 text-right font-mono">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /></td>
             <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.totalTimeMs)}</td>
             <td className="py-1.5 pr-4 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
             <td className="py-1.5 pr-4 text-right font-mono">

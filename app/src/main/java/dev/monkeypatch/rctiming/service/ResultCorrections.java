@@ -40,7 +40,7 @@ public final class ResultCorrections {
             long totalTimeMs = row.totalTimeMs() > 0
                     ? row.totalTimeMs() + addedTimeMs.getOrDefault(row.entryId(), 0L) : row.totalTimeMs();
             corrected.add(new ResultRow(row.position(), row.entryId(), row.competitorId(), row.driverName(),
-                    row.carNumber(), laps, totalTimeMs, row.bestLapMs(), null));
+                    row.carNumber(), laps, totalTimeMs, row.bestLapMs(), null).withDnf(row.dnf()));
         }
 
         // Ties keep their timed order, which the stable sort preserves
@@ -56,7 +56,7 @@ public final class ResultCorrections {
                     || row.totalTimeMs() <= 0 || leader.totalTimeMs() <= 0)
                     ? null : row.totalTimeMs() - leader.totalTimeMs();
             ranked.add(new ResultRow(i + 1, row.entryId(), row.competitorId(), row.driverName(), row.carNumber(),
-                    row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), gapToLeaderMs));
+                    row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), gapToLeaderMs).withDnf(row.dnf()));
         }
         return ranked;
     }
