@@ -86,7 +86,7 @@ To run the races without pressing anything between them, use **Auto run** at the
 
 ### 9. Show it on screens
 
-Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/live-race`, `/boards/top` (the live qualifying table), `/boards/results` and `/boards/overlay` on the laptop's address. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.
+Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/live-race`, `/boards/top` (the live qualifying table), `/boards/view/NAME` (screens you build under Admin, Board views), `/boards/results` and `/boards/overlay` on the laptop's address. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.
 
 ---
 

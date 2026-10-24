@@ -172,6 +172,11 @@ erDiagram
         bool built_in "locked, clone to change"
         json config "type: CLASSIC, BRCA, PLACE_POINTS"
     }
+    board_views {
+        text slug "address: /boards/view/slug, unique"
+        int columns "1 to 3"
+        json panels "ordered: type, top, span; no foreign keys, a layout only"
+    }
     competitors ||--o{ entries : ""
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""

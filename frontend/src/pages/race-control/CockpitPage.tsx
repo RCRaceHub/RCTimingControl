@@ -33,6 +33,8 @@ import {
   SIDEBAR_MAX_WIDTH,
 } from '@/hooks/race-control/useSidebarLayout';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { CockpitSectionsMenu } from '@/components/CockpitSectionsMenu';
+import { useCockpitSections } from '@/hooks/race-control/useCockpitSections';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
@@ -79,6 +81,7 @@ export default function CockpitPage() {
 
   const autoRun = useAutoRun(eventId || null);
   const autoRunArmed = autoRun.state?.armed === true;
+  const sections = useCockpitSections();
   const { data: runOrder = [], isLoading, isError } = useRunOrder(eventId || null, autoRunArmed);
   const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
 
@@ -423,7 +426,7 @@ export default function CockpitPage() {
                 {selectedRace.className} still to finish before this final can run.
               </p>
             )}
-            {selectedRace.roundType === 'FINAL' && (
+            {sections.isShown('lineups') && selectedRace.roundType === 'FINAL' && (
               <>
                 <FinalsLineupPanel
                   key={selectedRace.eventClassId}
@@ -434,7 +437,7 @@ export default function CockpitPage() {
                 <QualifyingTablePanel eventId={eventId} eventClassId={selectedRace.eventClassId} />
               </>
             )}
-            {selectedRace.roundType !== 'FINAL' && (
+            {sections.isShown('lineups') && selectedRace.roundType !== 'FINAL' && (
               <HeatLineupsPanel
                 race={selectedRace}
                 runOrder={runOrder}
@@ -498,7 +501,9 @@ export default function CockpitPage() {
                 </Button>
               </div>
             </div>
-            <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+            {sections.isShown('liveTiming') && (
+              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+            )}
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Unknown Transponders</p>
@@ -548,7 +553,9 @@ export default function CockpitPage() {
                 </Button>
               </div>
             </div>
-            <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+            {sections.isShown('liveTiming') && (
+              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+            )}
           </div>
         );
 
@@ -584,6 +591,8 @@ export default function CockpitPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Run Order
           </p>
+          <div className="flex items-center">
+          <CockpitSectionsMenu isShown={sections.isShown} onToggle={sections.toggle} hiddenCount={sections.hiddenCount} />
           <Button
             variant="ghost"
             size="icon-sm"
@@ -593,8 +602,9 @@ export default function CockpitPage() {
           >
             <PanelLeftClose className="h-4 w-4" />
           </Button>
+          </div>
         </div>
-        <AutoRunPanel autoRun={autoRun} canControl={canControlRace} />
+        {sections.isShown('autoRun') && <AutoRunPanel autoRun={autoRun} canControl={canControlRace} />}
         {isLoading ? (
           <div className="p-4 space-y-2">
             {[...Array(6)].map((_, i) => (
@@ -654,7 +664,7 @@ export default function CockpitPage() {
           </div>
         )}
 
-        <AudioSettingsPanel />
+        {sections.isShown('audio') && <AudioSettingsPanel />}
       </aside>
 
       <div
