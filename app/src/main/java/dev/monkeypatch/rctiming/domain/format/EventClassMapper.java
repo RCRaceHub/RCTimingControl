@@ -17,12 +17,16 @@ interface EventClassMapper {
 
     EventClass toEntity(EventClassesRecord record);
 
-    /** Copies every column except the id, which the repository handles, into the record. */
+    /**
+     * Copies every column except the id, which the repository handles, into the record. The bump count and cars
+     * per final columns are left alone, as before.
+     */
     @Mapping(target = "bumpCount", ignore = true)
     @Mapping(target = "carsPerFinal", ignore = true)
     @Mapping(target = "id", ignore = true)
     void toRecord(EventClass ec, @MappingTarget EventClassesRecord record);
 
+    /** Used by MapStruct for the JSON columns. */
     default RaceFormatConfig configSnapshot(String json) {
         return EventClassRepository.CONFIG.convertToEntityAttribute(json);
     }

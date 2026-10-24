@@ -19,6 +19,7 @@ interface ScoringSystemMapper {
     @Mapping(target = "id", ignore = true)
     void toRecord(ScoringSystem s, @MappingTarget ScoringSystemsRecord record);
 
+    /** Used by MapStruct for the JSON column. */
     default ScoringConfig config(String json) {
         return ScoringSystemRepository.CONFIG.convertToEntityAttribute(json);
     }

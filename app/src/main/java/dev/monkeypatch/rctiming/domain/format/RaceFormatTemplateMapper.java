@@ -19,6 +19,7 @@ interface RaceFormatTemplateMapper {
     @Mapping(target = "id", ignore = true)
     void toRecord(RaceFormatTemplate t, @MappingTarget RaceFormatTemplatesRecord record);
 
+    /** Used by MapStruct for the JSON column. */
     default RaceFormatConfig config(String json) {
         return RaceFormatTemplateRepository.CONFIG.convertToEntityAttribute(json);
     }
