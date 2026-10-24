@@ -22,6 +22,15 @@ class ResultSnapshotJsonTest {
     }
 
     @Test
+    void keepsTheDnfMarkAndReadsARowStoredWithoutOneAsFinished() {
+        var dnf = new ResultSnapshotDto.ResultRow(2, 8L, 4L, "Pat Driver", null, 11, 0L, null, null).withDnf(true);
+        String stored = "[{\"position\":1,\"entryId\":7,\"lapsCompleted\":12,\"totalTimeMs\":31500}]";
+
+        assertThat(json.positions(5L, json.write(5L, List.of(dnf)))).containsExactly(dnf);
+        assertThat(json.positions(5L, stored).get(0).dnf()).isFalse();
+    }
+
+    @Test
     void readsARowStoredBeforeRowsHadPointsAsOneWithNoPoints() {
         String stored = "[{\"position\":1,\"entryId\":7,\"competitorId\":3,\"driverName\":\"Sam Driver\","
                 + "\"carNumber\":\"4\",\"lapsCompleted\":12,\"totalTimeMs\":31500,\"bestLapMs\":2400,"

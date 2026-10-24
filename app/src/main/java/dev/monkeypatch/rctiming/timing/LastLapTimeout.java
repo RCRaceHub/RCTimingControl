@@ -166,6 +166,8 @@ public class LastLapTimeout {
         Optional<Long> windowMs = race.getEventClassId() == null ? Optional.empty()
                 : eventClassRepository.findById(race.getEventClassId()).flatMap(raceFormatService::maxRaceWindowMs);
         if (windowMs.isPresent() && windowReached(overrunMs, clock.durationMs(), windowMs.get())) {
+            // Cars still on their last lap are labelled DNF in the result (#428)
+            lapTimingService.peek(race.getId()).ifPresent(LiveRaceState::markCutOff);
             autoFinish.finish(race.getId(), "race-window", "Finished the race automatically: the maximum race window of "
                     + windowMs.get() / 1000 + " seconds was reached, so cars still on their last lap keep the laps they had");
             return;

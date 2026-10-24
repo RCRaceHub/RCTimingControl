@@ -109,7 +109,7 @@ public class FinalsBoardService {
                     .map(r -> new ResultSnapshotDto.ResultRow(r.position(), r.entryId(), r.competitorId(),
                             names.of(r.competitorId(), r.driverName(), r.carNumber()), r.carNumber(),
                             r.lapsCompleted(), r.totalTimeMs(), r.bestLapMs(), r.gapToLeaderMs(), r.points(),
-                            r.championshipPoints()))
+                            r.championshipPoints(), r.dnf()))
                     .toList();
         } catch (EntityNotFoundException e) {
             // Finished but not yet snapshotted

@@ -71,6 +71,16 @@ class ResultCorrectionsTest {
         assertThat(corrected.get(1).totalTimeMs()).isZero();
     }
 
+    @Test
+    void aCarThatDidNotFinishStillDidNotFinishAfterACorrection() {
+        List<ResultRow> timed = List.of(row(1, 101L, 12, 300_100L, null),
+                row(2, 102L, 11, 301_900L, null).withDnf(true));
+
+        List<ResultRow> corrected = ResultCorrections.apply(timed, Map.of(), Map.of(101L, 1_000L));
+
+        assertThat(corrected).extracting(ResultRow::dnf).containsExactly(false, true);
+    }
+
     private static ResultRow row(int position, long entryId, int laps, long totalTimeMs, Long gap) {
         return new ResultRow(position, entryId, null, "Driver " + entryId, String.valueOf(position), laps,
                 totalTimeMs, 24_000L, gap);

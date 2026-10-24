@@ -51,7 +51,8 @@ final class ShikabaneOrdering {
         for (int i = 0; i < ordered.size(); i++) {
             ResultRow row = ordered.get(i);
             renumbered.add(new ResultRow(i + 1, row.entryId(), row.competitorId(), row.driverName(), row.carNumber(),
-                    row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), row.gapToLeaderMs()));
+                    row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), row.gapToLeaderMs())
+                    .withDnf(row.dnf()));
         }
         return renumbered;
     }
