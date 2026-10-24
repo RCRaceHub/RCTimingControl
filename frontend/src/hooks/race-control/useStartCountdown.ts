@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
-import { playTick } from '@/lib/sounds';
-import { speakWithBrowser } from '@/lib/speech';
+import { routeCue } from '@/lib/audioOutput';
 
 interface UseStartCountdownOptions {
   /** The lead-in in seconds; 0 starts at once. */
@@ -60,7 +59,9 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
       setRemaining(left);
       const current = settingsRef.current;
       if (current?.tickSound !== false && left <= tuningOf(current).finalSeconds) {
-        playTick(volumeRef.current, left === 1, current?.hornSounds);
+        routeCue('tick', volumeRef.current, {
+          kind: 'horn', horn: left === 1 ? 'tickLast' : 'tick', sounds: current?.hornSounds,
+        });
       }
       timerRef.current = setTimeout(() => stepRef.current(left - 1), 1000);
     };
@@ -74,7 +75,9 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
       return;
     }
     runningRef.current = true;
-    speakWithBrowser(fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds }), volumeRef.current);
+    routeCue('startLeadIn', volumeRef.current, {
+      kind: 'speech', text: fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds }),
+    });
     stepRef.current(seconds);
   }, [seconds]);
 
@@ -83,7 +86,9 @@ export function useStartCountdown({ seconds, volume, onDone, watch, settings }: 
     if (runningRef.current || from <= 0) return;
     leadInOnlyRef.current = true;
     runningRef.current = true;
-    speakWithBrowser(fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds: from }), volumeRef.current);
+    routeCue('startLeadIn', volumeRef.current, {
+      kind: 'speech', text: fillWording(wordingOf(settingsRef.current, 'startLeadIn'), { seconds: from }),
+    });
     stepRef.current(from);
   }, []);
 
