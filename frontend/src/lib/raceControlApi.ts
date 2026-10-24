@@ -67,6 +67,8 @@ export type ResultRow = {
   points?: number | null;
   /** What the place in the event's finals earns in its championship, for a final of a scoring class; absent or null otherwise. */
   championshipPoints?: number | null;
+  /** Still on the track when the race hit its maximum race window, so it did not take the flag. */
+  dnf?: boolean;
 };
 
 export type PositionAtLap = {

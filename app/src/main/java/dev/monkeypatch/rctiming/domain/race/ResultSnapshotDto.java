@@ -21,6 +21,10 @@ public record ResultSnapshotDto(
      * points (a qualifying heat of a low-points class), and {@code championshipPoints} is what the driver's place in
      * the event's finals is worth in the championship the event belongs to (a final of a class that scores). Neither
      * is stored: both are filled in when a result is read ({@code ResultSnapshotQuery}) and are null otherwise.
+     *
+     * <p>{@code dnf} marks a car that was still on the track when the race hit its maximum race window and so did not
+     * take the flag (#428). It keeps its laps and its place; the flag is only a label. Results stored before it
+     * existed read as false.
      */
     public record ResultRow(
             int position,
@@ -33,25 +37,40 @@ public record ResultSnapshotDto(
             Long bestLapMs,
             Long gapToLeaderMs,
             Integer points,
-            Integer championshipPoints
+            Integer championshipPoints,
+            boolean dnf
     ) {
-        /** A row with no points, as a race is stored. */
+        /** A row with no points and not marked DNF, as a race is stored. */
         public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
                          int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs) {
             this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
-                    gapToLeaderMs, null, null);
+                    gapToLeaderMs, null, null, false);
+        }
+
+        /** A row with points, not marked DNF. */
+        public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
+                         int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs, Integer points,
+                         Integer championshipPoints) {
+            this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
+                    gapToLeaderMs, points, championshipPoints, false);
         }
 
         /** This row with the given round points. */
         public ResultRow withPoints(Integer points) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
         }
 
         /** This row with the given championship points. */
         public ResultRow withChampionshipPoints(Integer championshipPoints) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
+        }
+
+        /** This row marked, or not marked, as a car that did not finish. */
+        public ResultRow withDnf(boolean dnf) {
+            return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
         }
     }
 
