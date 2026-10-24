@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.Names;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,6 +20,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETI
  */
 @Repository
 public class CompetitorRepository extends JooqRepository<Competitor, CompetitorsRecord> {
+
+    private static final CompetitorMapper MAPPER = Mappers.getMapper(CompetitorMapper.class);
 
     public CompetitorRepository(DSLContext dsl) {
         super(dsl, COMPETITORS, COMPETITORS.ID);
@@ -64,31 +67,12 @@ public class CompetitorRepository extends JooqRepository<Competitor, Competitors
 
     @Override
     protected Competitor toEntity(CompetitorsRecord r) {
-        Competitor c = new Competitor();
-        c.setId(r.getId());
-        c.setDisplayName(r.getDisplayName());
-        c.setExternalSource(r.getExternalSource());
-        c.setExternalId(r.getExternalId());
-        c.setBrcaNumber(r.getBrcaNumber());
-        c.setHomeClub(r.getHomeClub());
-        c.setSpokenName(r.getSpokenName());
-        c.setNameVisibility(NameVisibility.valueOf(r.getNameVisibility()));
-        c.setCreatedAt(r.getCreatedAt());
-        c.setUpdatedAt(r.getUpdatedAt());
-        return c;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Competitor c, CompetitorsRecord r) {
-        r.setDisplayName(c.getDisplayName());
-        r.setExternalSource(c.getExternalSource());
-        r.setExternalId(c.getExternalId());
-        r.setBrcaNumber(c.getBrcaNumber());
-        r.setHomeClub(c.getHomeClub());
-        r.setSpokenName(c.getSpokenName());
-        r.setNameVisibility(c.getNameVisibility().name());
-        r.setCreatedAt(c.getCreatedAt());
-        r.setUpdatedAt(c.getUpdatedAt());
+        MAPPER.toRecord(c, r);
     }
 
     @Override

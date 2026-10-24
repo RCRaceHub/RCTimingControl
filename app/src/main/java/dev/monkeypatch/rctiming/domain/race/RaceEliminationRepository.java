@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceEliminationsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,6 +14,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations.RA
 /** Repository for {@link RaceElimination} ({@code race_eliminations}). */
 @Repository
 public class RaceEliminationRepository extends JooqRepository<RaceElimination, RaceEliminationsRecord> {
+
+    private static final RaceEliminationMapper MAPPER = Mappers.getMapper(RaceEliminationMapper.class);
 
     public RaceEliminationRepository(DSLContext dsl) {
         super(dsl, RACE_ELIMINATIONS, RACE_ELIMINATIONS.ID);
@@ -36,25 +39,12 @@ public class RaceEliminationRepository extends JooqRepository<RaceElimination, R
 
     @Override
     protected RaceElimination toEntity(RaceEliminationsRecord r) {
-        RaceElimination e = new RaceElimination();
-        e.setId(r.getId());
-        e.setRaceId(r.getRaceId());
-        e.setEntryId(r.getEntryId());
-        e.setEliminatedAt(r.getEliminatedAt());
-        e.setEliminatedBy(r.getEliminatedBy());
-        e.setRevivedAt(r.getRevivedAt());
-        e.setRevivedBy(r.getRevivedBy());
-        return e;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RaceElimination e, RaceEliminationsRecord r) {
-        r.setRaceId(e.getRaceId());
-        r.setEntryId(e.getEntryId());
-        r.setEliminatedAt(e.getEliminatedAt());
-        r.setEliminatedBy(e.getEliminatedBy());
-        r.setRevivedAt(e.getRevivedAt());
-        r.setRevivedBy(e.getRevivedBy());
+        MAPPER.toRecord(e, r);
     }
 
     @Override

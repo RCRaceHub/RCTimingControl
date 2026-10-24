@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.MarshalAdjustmentsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.
 /** Repository for {@link MarshalAdjustment} ({@code marshal_adjustments}). */
 @Repository
 public class MarshalAdjustmentRepository extends JooqRepository<MarshalAdjustment, MarshalAdjustmentsRecord> {
+
+    private static final MarshalAdjustmentMapper MAPPER = Mappers.getMapper(MarshalAdjustmentMapper.class);
 
     public MarshalAdjustmentRepository(DSLContext dsl) {
         super(dsl, MARSHAL_ADJUSTMENTS, MARSHAL_ADJUSTMENTS.ID);
@@ -23,29 +26,12 @@ public class MarshalAdjustmentRepository extends JooqRepository<MarshalAdjustmen
 
     @Override
     protected MarshalAdjustment toEntity(MarshalAdjustmentsRecord r) {
-        MarshalAdjustment m = new MarshalAdjustment();
-        m.setId(r.getId());
-        m.setRaceId(r.getRaceId());
-        m.setEntryId(r.getEntryId());
-        m.setTransponderNumber(r.getTransponderNumber());
-        m.setLapDelta(r.getLapDelta());
-        m.setRaceStateAtTime(r.getRaceStateAtTime());
-        m.setActingUserId(r.getActingUserId());
-        m.setActingUserName(r.getActingUserName());
-        m.setAdjustedAt(r.getAdjustedAt());
-        return m;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(MarshalAdjustment m, MarshalAdjustmentsRecord r) {
-        r.setRaceId(m.getRaceId());
-        r.setEntryId(m.getEntryId());
-        r.setTransponderNumber(m.getTransponderNumber());
-        r.setLapDelta(m.getLapDelta());
-        r.setRaceStateAtTime(m.getRaceStateAtTime());
-        r.setActingUserId(m.getActingUserId());
-        r.setActingUserName(m.getActingUserName());
-        r.setAdjustedAt(m.getAdjustedAt());
+        MAPPER.toRecord(m, r);
     }
 
     @Override

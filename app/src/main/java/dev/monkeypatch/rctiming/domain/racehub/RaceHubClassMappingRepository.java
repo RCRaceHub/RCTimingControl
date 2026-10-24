@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.racehub;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassMappingsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMapping
  */
 @Repository
 public class RaceHubClassMappingRepository extends JooqRepository<RaceHubClassMapping, RacehubClassMappingsRecord> {
+
+    private static final RaceHubClassMappingMapper MAPPER = Mappers.getMapper(RaceHubClassMappingMapper.class);
 
     public RaceHubClassMappingRepository(DSLContext dsl) {
         super(dsl, RACEHUB_CLASS_MAPPINGS, RACEHUB_CLASS_MAPPINGS.ID);
@@ -38,23 +41,12 @@ public class RaceHubClassMappingRepository extends JooqRepository<RaceHubClassMa
 
     @Override
     protected RaceHubClassMapping toEntity(RacehubClassMappingsRecord r) {
-        RaceHubClassMapping m = new RaceHubClassMapping();
-        m.setId(r.getId());
-        m.setEventId(r.getEventId());
-        m.setRacehubEventClassId(r.getRacehubEventClassId());
-        m.setEventClassId(r.getEventClassId());
-        m.setCreatedAt(r.getCreatedAt());
-        m.setUpdatedAt(r.getUpdatedAt());
-        return m;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RaceHubClassMapping m, RacehubClassMappingsRecord r) {
-        r.setEventId(m.getEventId());
-        r.setRacehubEventClassId(m.getRacehubEventClassId());
-        r.setEventClassId(m.getEventClassId());
-        r.setCreatedAt(m.getCreatedAt());
-        r.setUpdatedAt(m.getUpdatedAt());
+        MAPPER.toRecord(m, r);
     }
 
     @Override

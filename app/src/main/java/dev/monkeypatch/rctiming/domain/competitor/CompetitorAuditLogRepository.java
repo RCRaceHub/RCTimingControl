@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorAuditLog
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.
 /** Repository for {@link CompetitorAuditLog} ({@code competitor_audit_log}). */
 @Repository
 public class CompetitorAuditLogRepository extends JooqRepository<CompetitorAuditLog, CompetitorAuditLogRecord> {
+
+    private static final CompetitorAuditLogMapper MAPPER = Mappers.getMapper(CompetitorAuditLogMapper.class);
 
     public CompetitorAuditLogRepository(DSLContext dsl) {
         super(dsl, COMPETITOR_AUDIT_LOG, COMPETITOR_AUDIT_LOG.ID);
@@ -35,25 +38,12 @@ public class CompetitorAuditLogRepository extends JooqRepository<CompetitorAudit
 
     @Override
     protected CompetitorAuditLog toEntity(CompetitorAuditLogRecord r) {
-        CompetitorAuditLog log = new CompetitorAuditLog();
-        log.setId(r.getId());
-        log.setCompetitorId(r.getCompetitorId());
-        log.setActorUserId(r.getActorUserId());
-        log.setAction(r.getAction());
-        log.setBeforeValue(r.getBeforeValue());
-        log.setAfterValue(r.getAfterValue());
-        log.setCreatedAt(r.getCreatedAt());
-        return log;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(CompetitorAuditLog log, CompetitorAuditLogRecord r) {
-        r.setCompetitorId(log.getCompetitorId());
-        r.setActorUserId(log.getActorUserId());
-        r.setAction(log.getAction());
-        r.setBeforeValue(log.getBeforeValue());
-        r.setAfterValue(log.getAfterValue());
-        r.setCreatedAt(log.getCreatedAt());
+        MAPPER.toRecord(log, r);
     }
 
     @Override

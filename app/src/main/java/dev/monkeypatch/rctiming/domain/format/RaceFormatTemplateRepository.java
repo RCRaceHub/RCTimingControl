@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceFormatTemplate
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,7 +18,9 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates
 @Repository
 public class RaceFormatTemplateRepository extends JooqRepository<RaceFormatTemplate, RaceFormatTemplatesRecord> {
 
-    private static final RaceFormatConfigConverter CONFIG = new RaceFormatConfigConverter();
+    static final RaceFormatConfigConverter CONFIG = new RaceFormatConfigConverter();
+
+    private static final RaceFormatTemplateMapper MAPPER = Mappers.getMapper(RaceFormatTemplateMapper.class);
 
     public RaceFormatTemplateRepository(DSLContext dsl) {
         super(dsl, RACE_FORMAT_TEMPLATES, RACE_FORMAT_TEMPLATES.ID);
@@ -25,21 +28,12 @@ public class RaceFormatTemplateRepository extends JooqRepository<RaceFormatTempl
 
     @Override
     protected RaceFormatTemplate toEntity(RaceFormatTemplatesRecord r) {
-        RaceFormatTemplate t = new RaceFormatTemplate();
-        t.setId(r.getId());
-        t.setName(r.getName());
-        t.setConfig(CONFIG.convertToEntityAttribute(r.getConfig()));
-        t.setCreatedAt(r.getCreatedAt());
-        t.setUpdatedAt(r.getUpdatedAt());
-        return t;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RaceFormatTemplate t, RaceFormatTemplatesRecord r) {
-        r.setName(t.getName());
-        r.setConfig(CONFIG.convertToDatabaseColumn(t.getConfig()));
-        r.setCreatedAt(t.getCreatedAt());
-        r.setUpdatedAt(t.getUpdatedAt());
+        MAPPER.toRecord(t, r);
     }
 
     /** The creation time is set once, on insert. */

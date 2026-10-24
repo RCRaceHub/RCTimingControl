@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipClasse
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses
 /** Repository for {@link ChampionshipClass} ({@code championship_classes}). */
 @Repository
 public class ChampionshipClassRepository extends JooqRepository<ChampionshipClass, ChampionshipClassesRecord> {
+
+    private static final ChampionshipClassMapper MAPPER = Mappers.getMapper(ChampionshipClassMapper.class);
 
     public ChampionshipClassRepository(DSLContext dsl) {
         super(dsl, CHAMPIONSHIP_CLASSES, CHAMPIONSHIP_CLASSES.ID);
@@ -41,23 +44,12 @@ public class ChampionshipClassRepository extends JooqRepository<ChampionshipClas
 
     @Override
     protected ChampionshipClass toEntity(ChampionshipClassesRecord r) {
-        ChampionshipClass c = new ChampionshipClass();
-        c.setId(r.getId());
-        c.setChampionshipId(r.getChampionshipId());
-        c.setRacingClassId(r.getRacingClassId());
-        c.setBestXFromYX(r.getBestXFromYX());
-        c.setBestXFromYY(r.getBestXFromYY());
-        c.setCreatedAt(r.getCreatedAt());
-        return c;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(ChampionshipClass c, ChampionshipClassesRecord r) {
-        r.setChampionshipId(c.getChampionshipId());
-        r.setRacingClassId(c.getRacingClassId());
-        r.setBestXFromYX(c.getBestXFromYX());
-        r.setBestXFromYY(c.getBestXFromYY());
-        r.setCreatedAt(c.getCreatedAt());
+        MAPPER.toRecord(c, r);
     }
 
     @Override

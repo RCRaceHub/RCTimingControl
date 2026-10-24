@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.audit;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.AuditLogRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
  */
 @Repository
 public class AuditLogRepository extends JooqRepository<AuditEntry, AuditLogRecord> {
+
+    private static final AuditEntryMapper MAPPER = Mappers.getMapper(AuditEntryMapper.class);
 
     public AuditLogRepository(DSLContext dsl) {
         super(dsl, AUDIT_LOG, AUDIT_LOG.ID);
@@ -38,37 +41,12 @@ public class AuditLogRepository extends JooqRepository<AuditEntry, AuditLogRecor
 
     @Override
     protected AuditEntry toEntity(AuditLogRecord r) {
-        AuditEntry e = new AuditEntry();
-        e.setId(r.getId());
-        e.setOccurredAt(r.getOccurredAt());
-        e.setActorUserId(r.getActorUserId());
-        e.setActorLabel(r.getActorLabel());
-        e.setSource(Actor.Source.valueOf(r.getSource()));
-        e.setAction(r.getAction());
-        e.setEntityType(r.getEntityType());
-        e.setEntityId(r.getEntityId());
-        e.setEventId(r.getEventId());
-        e.setRaceId(r.getRaceId());
-        e.setSummary(r.getSummary());
-        e.setBeforeJson(r.getBeforeJson());
-        e.setAfterJson(r.getAfterJson());
-        return e;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(AuditEntry e, AuditLogRecord r) {
-        r.setOccurredAt(e.getOccurredAt());
-        r.setActorUserId(e.getActorUserId());
-        r.setActorLabel(e.getActorLabel());
-        r.setSource(e.getSource().name());
-        r.setAction(e.getAction());
-        r.setEntityType(e.getEntityType());
-        r.setEntityId(e.getEntityId());
-        r.setEventId(e.getEventId());
-        r.setRaceId(e.getRaceId());
-        r.setSummary(e.getSummary());
-        r.setBeforeJson(e.getBeforeJson());
-        r.setAfterJson(e.getAfterJson());
+        MAPPER.toRecord(e, r);
     }
 
     @Override

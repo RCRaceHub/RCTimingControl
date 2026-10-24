@@ -8,6 +8,7 @@ import org.jooq.Record;
 import org.jooq.SelectConditionStep;
 import org.jooq.SortField;
 import org.jooq.impl.DSL;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,6 +23,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds.
  */
 @Repository
 public class TrackLapThresholdRepository extends JooqRepository<TrackLapThreshold, TrackLapThresholdsRecord> {
+
+    private static final TrackLapThresholdMapper MAPPER = Mappers.getMapper(TrackLapThresholdMapper.class);
 
     public TrackLapThresholdRepository(DSLContext dsl) {
         super(dsl, TRACK_LAP_THRESHOLDS, TRACK_LAP_THRESHOLDS.ID);
@@ -69,23 +72,12 @@ public class TrackLapThresholdRepository extends JooqRepository<TrackLapThreshol
 
     @Override
     protected TrackLapThreshold toEntity(TrackLapThresholdsRecord r) {
-        TrackLapThreshold t = new TrackLapThreshold();
-        t.setId(r.getId());
-        t.setTrackId(r.getTrackId());
-        t.setRacingClassId(r.getRacingClassId());
-        t.setMinLapMs(r.getMinLapMs());
-        t.setMaxLastLapMs(r.getMaxLastLapMs());
-        t.setCreatedAt(r.getCreatedAt());
-        return t;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(TrackLapThreshold t, TrackLapThresholdsRecord r) {
-        r.setTrackId(t.getTrackId());
-        r.setRacingClassId(t.getRacingClassId());
-        r.setMinLapMs(t.getMinLapMs());
-        r.setMaxLastLapMs(t.getMaxLastLapMs());
-        r.setCreatedAt(t.getCreatedAt());
+        MAPPER.toRecord(t, r);
     }
 
     @Override

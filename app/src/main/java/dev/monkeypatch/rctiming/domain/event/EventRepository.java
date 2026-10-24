@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.event;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,6 +14,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 /** Repository for {@link Event} ({@code events}). */
 @Repository
 public class EventRepository extends JooqRepository<Event, EventsRecord> {
+
+    private static final EventMapper MAPPER = Mappers.getMapper(EventMapper.class);
 
     public EventRepository(DSLContext dsl) {
         super(dsl, EVENTS, EVENTS.ID);
@@ -37,43 +40,14 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
 
     @Override
     protected Event toEntity(EventsRecord r) {
-        Event e = new Event();
-        e.setId(r.getId());
-        e.setName(r.getName());
-        e.setEventDate(r.getEventDate());
-        e.setStatus(r.getStatus() == null ? null : EventStatus.valueOf(r.getStatus()));
-        e.setTrackId(r.getTrackId());
-        e.setCreatedAt(r.getCreatedAt());
-        e.setUpdatedAt(r.getUpdatedAt());
-        e.setRacehubLastImportAt(r.getRacehubLastImportAt());
-        e.setRacehubLastRevision(r.getRacehubLastRevision());
-        e.setRacehubEventId(r.getRacehubEventId());
+        Event e = MAPPER.toEntity(r);
         e.setResultsExportRevision(r.getResultsExportRevision());
-        e.setResultsExportPending(r.getResultsExportPending());
-        e.setLiveFeedEnabled(r.getLiveFeedEnabled());
-        e.setAutoRunGapSeconds(r.getAutoRunGapSeconds());
-        e.setAutoRunHoldBeforeFinals(r.getAutoRunHoldBeforeFinals());
-        e.setAutoRunAutoStart(r.getAutoRunAutoStart());
         return e;
     }
 
     @Override
     protected void toRecord(Event e, EventsRecord r) {
-        r.setName(e.getName());
-        r.setEventDate(e.getEventDate());
-        r.setStatus(e.getStatus() == null ? null : e.getStatus().name());
-        r.setTrackId(e.getTrackId());
-        r.setCreatedAt(e.getCreatedAt());
-        r.setUpdatedAt(e.getUpdatedAt());
-        r.setRacehubLastImportAt(e.getRacehubLastImportAt());
-        r.setRacehubLastRevision(e.getRacehubLastRevision());
-        r.setRacehubEventId(e.getRacehubEventId());
-        r.setResultsExportRevision(e.getResultsExportRevision());
-        r.setResultsExportPending(e.getResultsExportPending());
-        r.setLiveFeedEnabled(e.isLiveFeedEnabled());
-        r.setAutoRunGapSeconds(e.getAutoRunGapSeconds());
-        r.setAutoRunHoldBeforeFinals(e.isAutoRunHoldBeforeFinals());
-        r.setAutoRunAutoStart(e.isAutoRunAutoStart());
+        MAPPER.toRecord(e, r);
     }
 
     @Override

@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipEventL
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLi
 /** Repository for {@link ChampionshipEventLink} ({@code championship_event_links}). */
 @Repository
 public class ChampionshipEventLinkRepository extends JooqRepository<ChampionshipEventLink, ChampionshipEventLinksRecord> {
+
+    private static final ChampionshipEventLinkMapper MAPPER = Mappers.getMapper(ChampionshipEventLinkMapper.class);
 
     public ChampionshipEventLinkRepository(DSLContext dsl) {
         super(dsl, CHAMPIONSHIP_EVENT_LINKS, CHAMPIONSHIP_EVENT_LINKS.ID);
@@ -47,21 +50,12 @@ public class ChampionshipEventLinkRepository extends JooqRepository<Championship
 
     @Override
     protected ChampionshipEventLink toEntity(ChampionshipEventLinksRecord r) {
-        ChampionshipEventLink c = new ChampionshipEventLink();
-        c.setId(r.getId());
-        c.setChampionshipId(r.getChampionshipId());
-        c.setEventId(r.getEventId());
-        c.setRoundNumber(r.getRoundNumber());
-        c.setCreatedAt(r.getCreatedAt());
-        return c;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(ChampionshipEventLink c, ChampionshipEventLinksRecord r) {
-        r.setChampionshipId(c.getChampionshipId());
-        r.setEventId(c.getEventId());
-        r.setRoundNumber(c.getRoundNumber());
-        r.setCreatedAt(c.getCreatedAt());
+        MAPPER.toRecord(c, r);
     }
 
     @Override

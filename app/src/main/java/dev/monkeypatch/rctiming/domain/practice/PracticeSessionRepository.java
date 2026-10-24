@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeSessionsRe
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -15,6 +16,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions.PR
 /** Repository for {@link PracticeSession} ({@code practice_sessions}). */
 @Repository
 public class PracticeSessionRepository extends JooqRepository<PracticeSession, PracticeSessionsRecord> {
+
+    private static final PracticeSessionMapper MAPPER = Mappers.getMapper(PracticeSessionMapper.class);
 
     public PracticeSessionRepository(DSLContext dsl) {
         super(dsl, PRACTICE_SESSIONS, PRACTICE_SESSIONS.ID);
@@ -46,33 +49,14 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
 
     @Override
     protected PracticeSession toEntity(PracticeSessionsRecord r) {
-        PracticeSession s = new PracticeSession();
-        s.setId(r.getId());
-        s.setName(r.getName());
-        s.setEventId(r.getEventId());
-        s.setStatus(r.getStatus() == null ? null : PracticeStatus.valueOf(r.getStatus()));
-        s.setBestLapN(r.getBestLapN());
-        s.setPauseSeconds(r.getPauseSeconds());
-        s.setCreatedByUserId(r.getCreatedByUserId());
-        s.setStartedAt(r.getStartedAt());
-        s.setStoppedAt(r.getStoppedAt());
-        s.setCreatedAt(r.getCreatedAt());
-        s.setUpdatedAt(r.getUpdatedAt());
-        return s;
+        PracticeSession e = MAPPER.toEntity(r);
+        setId(e, r.getId());
+        return e;
     }
 
     @Override
     protected void toRecord(PracticeSession s, PracticeSessionsRecord r) {
-        r.setName(s.getName());
-        r.setEventId(s.getEventId());
-        r.setStatus(s.getStatus() == null ? null : s.getStatus().name());
-        r.setBestLapN(s.getBestLapN());
-        r.setPauseSeconds(s.getPauseSeconds());
-        r.setCreatedByUserId(s.getCreatedByUserId());
-        r.setStartedAt(s.getStartedAt());
-        r.setStoppedAt(s.getStoppedAt());
-        r.setCreatedAt(s.getCreatedAt());
-        r.setUpdatedAt(s.getUpdatedAt());
+        MAPPER.toRecord(s, r);
     }
 
     @Override

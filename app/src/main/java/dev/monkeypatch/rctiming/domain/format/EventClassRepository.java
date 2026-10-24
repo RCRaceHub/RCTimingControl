@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import dev.monkeypatch.rctiming.persistence.convert.JsonMapConverter;
 import org.jooq.DSLContext;
 import org.jooq.Field;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -20,8 +21,10 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACIN
 @Repository
 public class EventClassRepository extends JooqRepository<EventClass, EventClassesRecord> {
 
-    private static final RaceFormatConfigConverter CONFIG = new RaceFormatConfigConverter();
-    private static final JsonMapConverter OVERRIDE = new JsonMapConverter();
+    static final RaceFormatConfigConverter CONFIG = new RaceFormatConfigConverter();
+    static final JsonMapConverter OVERRIDE = new JsonMapConverter();
+
+    private static final EventClassMapper MAPPER = Mappers.getMapper(EventClassMapper.class);
 
     public EventClassRepository(DSLContext dsl) {
         super(dsl, EVENT_CLASSES, EVENT_CLASSES.ID);
@@ -75,31 +78,12 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
 
     @Override
     protected EventClass toEntity(EventClassesRecord r) {
-        EventClass ec = new EventClass();
-        ec.setId(r.getId());
-        ec.setConfigSnapshot(CONFIG.convertToEntityAttribute(r.getConfigSnapshot()));
-        ec.setConfigOverride(OVERRIDE.convertToEntityAttribute(r.getConfigOverride()));
-        ec.setTemplateId(r.getTemplateId());
-        ec.setCreatedAt(r.getCreatedAt());
-        ec.setUpdatedAt(r.getUpdatedAt());
-        ec.setEventId(r.getEventId());
-        ec.setRacingClassId(r.getRacingClassId());
-        ec.setCombinedRaceGroup(r.getCombinedRaceGroup());
-        ec.setFinalsCount(r.getFinalsCount());
-        return ec;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(EventClass ec, EventClassesRecord r) {
-        r.setConfigSnapshot(CONFIG.convertToDatabaseColumn(ec.getConfigSnapshot()));
-        r.setConfigOverride(OVERRIDE.convertToDatabaseColumn(ec.getConfigOverride()));
-        r.setTemplateId(ec.getTemplateId());
-        r.setCreatedAt(ec.getCreatedAt());
-        r.setUpdatedAt(ec.getUpdatedAt());
-        r.setEventId(ec.getEventId());
-        r.setRacingClassId(ec.getRacingClassId());
-        r.setCombinedRaceGroup(ec.getCombinedRaceGroup());
-        r.setFinalsCount(ec.getFinalsCount());
+        MAPPER.toRecord(ec, r);
     }
 
     /** The creation time is set once, on insert. */

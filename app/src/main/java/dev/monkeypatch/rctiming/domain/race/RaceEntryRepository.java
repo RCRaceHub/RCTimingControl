@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RaceEntriesRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,6 +14,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 /** Repository for {@link RaceEntry} ({@code race_entries}). */
 @Repository
 public class RaceEntryRepository extends JooqRepository<RaceEntry, RaceEntriesRecord> {
+
+    private static final RaceEntryMapper MAPPER = Mappers.getMapper(RaceEntryMapper.class);
 
     public RaceEntryRepository(DSLContext dsl) {
         super(dsl, RACE_ENTRIES, RACE_ENTRIES.ID);
@@ -28,23 +31,12 @@ public class RaceEntryRepository extends JooqRepository<RaceEntry, RaceEntriesRe
 
     @Override
     protected RaceEntry toEntity(RaceEntriesRecord r) {
-        RaceEntry raceEntry = new RaceEntry();
-        raceEntry.setId(r.getId());
-        raceEntry.setRaceId(r.getRaceId());
-        raceEntry.setEntryId(r.getEntryId());
-        raceEntry.setGridPosition(r.getGridPosition());
-        raceEntry.setBumped(r.getBumped());
-        raceEntry.setCarNumber(r.getCarNumber());
-        return raceEntry;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(RaceEntry raceEntry, RaceEntriesRecord r) {
-        r.setRaceId(raceEntry.getRaceId());
-        r.setEntryId(raceEntry.getEntryId());
-        r.setGridPosition(raceEntry.getGridPosition());
-        r.setBumped(raceEntry.isBumped());
-        r.setCarNumber(raceEntry.getCarNumber());
+        MAPPER.toRecord(raceEntry, r);
     }
 
     @Override

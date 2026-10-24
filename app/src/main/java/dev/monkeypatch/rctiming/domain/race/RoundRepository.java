@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.race;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RoundsRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,6 +13,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 /** Repository for {@link Round} ({@code rounds}). */
 @Repository
 public class RoundRepository extends JooqRepository<Round, RoundsRecord> {
+
+    private static final RoundMapper MAPPER = Mappers.getMapper(RoundMapper.class);
 
     public RoundRepository(DSLContext dsl) {
         super(dsl, ROUNDS, ROUNDS.ID);
@@ -27,27 +30,12 @@ public class RoundRepository extends JooqRepository<Round, RoundsRecord> {
 
     @Override
     protected Round toEntity(RoundsRecord r) {
-        Round round = new Round();
-        round.setId(r.getId());
-        round.setEventId(r.getEventId());
-        round.setType(r.getType() == null ? null : RoundType.valueOf(r.getType()));
-        round.setRoundNumber(r.getRoundNumber());
-        round.setSequenceInEvent(r.getSequenceInEvent());
-        round.setStatus(r.getStatus() == null ? null : RoundStatus.valueOf(r.getStatus()));
-        round.setCreatedAt(r.getCreatedAt());
-        round.setUpdatedAt(r.getUpdatedAt());
-        return round;
+        return MAPPER.toEntity(r);
     }
 
     @Override
     protected void toRecord(Round round, RoundsRecord r) {
-        r.setEventId(round.getEventId());
-        r.setType(round.getType() == null ? null : round.getType().name());
-        r.setRoundNumber(round.getRoundNumber());
-        r.setSequenceInEvent(round.getSequenceInEvent());
-        r.setStatus(round.getStatus() == null ? null : round.getStatus().name());
-        r.setCreatedAt(round.getCreatedAt());
-        r.setUpdatedAt(round.getUpdatedAt());
+        MAPPER.toRecord(round, r);
     }
 
     @Override
