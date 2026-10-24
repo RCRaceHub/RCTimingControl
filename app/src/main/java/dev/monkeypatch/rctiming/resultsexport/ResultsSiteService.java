@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventCompleted;
@@ -22,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +44,10 @@ import java.util.zip.ZipOutputStream;
  * scheduler thread, never in race control's request, and a failure is logged and tried again on the next pass.
  *
  * <p>The "something changed" mark is in memory and is set after the commit that changed the results, so a restart
- * costs at most one extra rewrite and a rewrite never reads results that are not committed yet.
+ * costs at most one extra rewrite and a rewrite never reads results that are not committed yet. Some changes raise
+ * no mark (a race restarted, a competitor's public name setting changed, an event renamed), so the folder is also
+ * rewritten every {@code rctiming.results-site.refresh-minutes} (5 by default), and pages of events that no longer
+ * appear are removed. Only the pages the service itself writes are touched.
  */
 @Service
 public class ResultsSiteService {
@@ -56,10 +61,14 @@ public class ResultsSiteService {
     private final Path directory;
     /** Starts true so the folder is brought up to date once after start-up. */
     private final AtomicBoolean dirty = new AtomicBoolean(true);
+    private final Duration refreshEvery;
+    private volatile Instant lastWrite = Instant.EPOCH;
 
     public ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
                               ResultsPublishSettings publishSettings, PublicNames publicNames,
-                              @Value("${rctiming.results-site.directory:}") String directory) {
+                              @Value("${rctiming.results-site.directory:}") String directory,
+                              @Value("${rctiming.results-site.refresh-minutes:5}") long refreshMinutes) {
+        this.refreshEvery = Duration.ofMinutes(Math.max(1, refreshMinutes));
         this.eventRepository = eventRepository;
         this.exportQuery = exportQuery;
         this.publishSettings = publishSettings;
@@ -96,9 +105,14 @@ public class ResultsSiteService {
         String clubName = null;
         PublicNames.Snapshot names = publicNames.snapshot();
         for (Event event : eventRepository.findAll()) {
-            ResultsExportV1 export = exportQuery.build(event.getId(), event.getResultsExportRevision(), Instant.now());
-            clubName = export.source().clubName();
-            exports.add(withPublicNames(export, names));
+            try {
+                ResultsExportV1 export = exportQuery.build(event.getId(), event.getResultsExportRevision(),
+                        Instant.now());
+                clubName = export.source().clubName();
+                exports.add(withPublicNames(export, names));
+            } catch (EntityNotFoundException e) {
+                log.debug("Event {} was deleted while the results site was built; left out", event.getId());
+            }
         }
         return ResultsSiteGenerator.generate(exports, clubName);
     }
@@ -161,17 +175,40 @@ public class ResultsSiteService {
      */
     @Scheduled(initialDelay = 20_000, fixedDelayString = "${rctiming.results-site.interval-ms:5000}")
     public void writeIfChanged() {
-        if (directory == null || !publishSettings.effective().includesSite() || !dirty.compareAndSet(true, false)) {
+        if (directory == null || !publishSettings.effective().includesSite()) {
+            return;
+        }
+        boolean stale = lastWrite.plus(refreshEvery).isBefore(Instant.now());
+        if (!dirty.compareAndSet(true, false) && !stale) {
             return;
         }
         try {
-            for (Map.Entry<String, String> page : pages().entrySet()) {
+            Map<String, String> pages = pages();
+            for (Map.Entry<String, String> page : pages.entrySet()) {
                 write(page.getKey(), page.getValue());
             }
+            removeStaleEventPages(pages.keySet());
+            lastWrite = Instant.now();
             log.info("Results site written to {}", directory);
         } catch (IOException | RuntimeException e) {
             dirty.set(true);
             log.error("Could not write the results site to {}; will try again", directory, e);
+        }
+    }
+
+    /** Deletes {@code events/<id>.html} pages left by events that no longer have results. */
+    private void removeStaleEventPages(java.util.Set<String> current) throws IOException {
+        Path events = directory.resolve("events");
+        if (!Files.isDirectory(events)) {
+            return;
+        }
+        try (var files = Files.list(events)) {
+            for (Path file : files.toList()) {
+                String name = file.getFileName().toString();
+                if (name.matches("\\d+\\.html") && !current.contains("events/" + name)) {
+                    Files.deleteIfExists(file);
+                }
+            }
         }
     }
 
@@ -184,7 +221,11 @@ public class ResultsSiteService {
         Path temp = Files.createTempFile(target.getParent(), ".page-", ".tmp");
         try {
             Files.writeString(temp, html, StandardCharsets.UTF_8);
-            Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
         } finally {
             Files.deleteIfExists(temp);
         }

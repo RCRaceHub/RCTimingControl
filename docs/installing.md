@@ -95,7 +95,9 @@ A club without RaceHub can still put its results on the web. Choose **A results 
 rctiming.results-site.directory=C:/Users/club/results-site
 ```
 
-The pages show the same names as the public screens (each competitor's public name setting) and no lap-by-lap times.
+The folder is also rewritten every 5 minutes (`rctiming.results-site.refresh-minutes`), which picks up changes that raise no signal of their own, such as a restarted race or a competitor's public name setting.
+
+The pages show the same names as the public screens (each competitor's public name setting) and no lap-by-lap times or penalty reasons.
 
 ## Sending a live feed
 

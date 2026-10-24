@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -120,7 +121,7 @@ public class ResultsExportController {
     @GetMapping("/results-site.zip")
     public ResponseEntity<byte[]> downloadSite() {
         return ResponseEntity.ok()
-                .contentType(org.springframework.http.MediaType.parseMediaType("application/zip"))
+                .contentType(MediaType.parseMediaType("application/zip"))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment().filename("results-site.zip").build().toString())
                 .body(siteService.zip());

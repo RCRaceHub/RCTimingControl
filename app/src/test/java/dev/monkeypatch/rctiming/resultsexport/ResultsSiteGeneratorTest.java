@@ -49,7 +49,8 @@ class ResultsSiteGeneratorTest {
 
         String html = ResultsSiteGenerator.generate(List.of(event), "Test Club").get("events/5.html");
 
-        assertThat(html).contains("Qualifying round 1, heat 2", "A final", "5:05.123", "17.456", "-1 lap (Cut &lt;track&gt;)");
+        assertThat(html).contains("Qualifying round 1, heat 2", "A final", "5:05.123", "17.456", "-1 lap");
+        assertThat(html).doesNotContain("Cut");
         assertThat(html).contains("A &lt;b&gt;Driver&lt;/b&gt;", "Round &amp; Round").doesNotContain("<b>Driver");
     }
 

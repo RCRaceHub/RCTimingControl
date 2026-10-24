@@ -132,7 +132,7 @@ The QR codes on the boards, the standings pages and the About page open the page
 
 ## Results site
 
-Where results are published (nothing, RaceHub, a results site or both) is chosen under **Admin → Results to RaceHub**. The results site is for clubs without RaceHub: plain web pages for every event, one page per event with each class's heats, finals and championship standings, and an index of events newest first. **Download results site (zip)** builds them for upload to the club's own web space; see `installing.md` for keeping a folder up to date automatically. The pages show display names as the public screens do, and no lap-by-lap times.
+Where results are published (nothing, RaceHub, a results site or both) is chosen under **Admin → Results to RaceHub**. The results site is for clubs without RaceHub: plain web pages for every event, one page per event with each class's heats, finals and championship standings, and an index of events newest first. **Download results site (zip)** builds them for upload to the club's own web space; see `installing.md` for keeping a folder up to date automatically. The pages show display names as the public screens do, and no lap-by-lap times or penalty reasons.
 
 ## Not built yet
 

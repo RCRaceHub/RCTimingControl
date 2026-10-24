@@ -14,7 +14,7 @@ import java.util.Map;
  * <p>Pure: no Spring, database or clock, so it is tested on plain documents. It is called by
  * {@link ResultsSiteService} on a scheduler or request thread. The pages carry only what the export carries: display
  * names (which follow each competitor's public name setting), positions, laps, times and penalties. No lap-by-lap
- * times, contact details or dates of birth ever reach it. {@link ResultsSiteService} swaps the export's names for the
+ * times, penalty reasons, contact details or dates of birth ever reach it. {@link ResultsSiteService} swaps the export's names for the
  * public ones first. All text is HTML-escaped, and the pages use inline CSS and
  * no scripts, so they open from a file, print on A4 and work on any web host.
  *
@@ -171,9 +171,9 @@ public final class ResultsSiteGenerator {
     private static String penalties(List<ResultsExportV1.Penalty> penalties) {
         List<String> parts = new ArrayList<>();
         for (ResultsExportV1.Penalty p : penalties) {
-            parts.add(("LAP".equals(p.type()) ? "-" + p.value().stripTrailingZeros().toPlainString() + " lap"
-                    : "+" + p.value().stripTrailingZeros().toPlainString() + " s")
-                    + (p.reason() == null || p.reason().isBlank() ? "" : " (" + p.reason() + ")"));
+            // The referee's reason is free text that may name other people, so it is left off a public page
+            parts.add("LAP".equals(p.type()) ? "-" + p.value().stripTrailingZeros().toPlainString() + " lap"
+                    : "+" + p.value().stripTrailingZeros().toPlainString() + " s");
         }
         return String.join(", ", parts);
     }

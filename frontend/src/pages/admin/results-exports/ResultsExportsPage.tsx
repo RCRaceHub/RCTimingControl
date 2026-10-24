@@ -55,7 +55,7 @@ function SiteDownload() {
       </Button>
       <p className="text-xs text-muted-foreground">
         Plain web pages for every event, to upload to the club&apos;s own web space. Names follow each
-        competitor&apos;s public name setting, and no lap times are included.
+        competitor&apos;s public name setting, and no lap-by-lap times or penalty reasons are included.
       </p>
     </div>
   );
