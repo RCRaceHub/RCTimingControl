@@ -28,17 +28,18 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 const createSchema = z.object({
   name: z.string().min(1, 'Session name is required').max(120),
   bestLapN: z
-    .number({ coerce: true })
+    .coerce.number()
     .int()
     .min(1, 'Must be at least 1')
     .max(20, 'Must be at most 20'),
   pauseMinutes: z
-    .number({ coerce: true })
+    .coerce.number()
     .min(1, 'Must be at least 1')
     .max(60, 'Must be at most 60'),
 });
 
 type CreateForm = z.infer<typeof createSchema>;
+type CreateFormInput = z.input<typeof createSchema>;
 
 interface PracticeCreateDialogProps {
   open: boolean;
@@ -56,7 +57,7 @@ export function PracticeCreateDialog({
 }: PracticeCreateDialogProps) {
   const queryClient = useQueryClient();
 
-  const form = useForm<CreateForm>({
+  const form = useForm<CreateFormInput, unknown, CreateForm>({
     resolver: zodResolver(createSchema),
     defaultValues: {
       name: '',
@@ -130,6 +131,7 @@ export function PracticeCreateDialog({
                       min={1}
                       max={20}
                       {...field}
+                      value={String(field.value ?? '')}
                       onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 5)}
                     />
                   </FormControl>
@@ -145,7 +147,7 @@ export function PracticeCreateDialog({
                 <FormItem>
                   <FormLabel>Pause that starts a new run (minutes)</FormLabel>
                   <FormControl>
-                    <Input type="number" min={1} max={60} step="any" {...field} />
+                    <Input type="number" min={1} max={60} step="any" {...field} value={String(field.value ?? '')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

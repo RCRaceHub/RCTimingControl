@@ -66,11 +66,12 @@ function DriverPicker({
 }
 
 const exclusionSchema = z.object({
-  driverId: z.number({ required_error: 'Driver is required' }).int().positive('Driver is required'),
+  driverId: z.number({ error: 'Driver is required' }).int().positive('Driver is required'),
   eventId: z.coerce.number().int().positive('Event is required'),
   reason: z.string().min(1, 'Reason is required'),
 });
 type ExclusionFormValues = z.infer<typeof exclusionSchema>;
+type ExclusionFormInput = z.input<typeof exclusionSchema>;
 
 interface CreateExclusionDialogProps {
   championshipId: number;
@@ -82,7 +83,7 @@ export function CreateExclusionDialog({ championshipId, open, onOpenChange }: Cr
   const { data: events = [] } = useAdminEventsList();
   const createMutation = useCreateExclusion(championshipId);
   const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } =
-    useForm<ExclusionFormValues>({ resolver: zodResolver(exclusionSchema) });
+    useForm<ExclusionFormInput, unknown, ExclusionFormValues>({ resolver: zodResolver(exclusionSchema) });
 
   async function onSubmit(values: ExclusionFormValues) {
     try {

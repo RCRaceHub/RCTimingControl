@@ -24,6 +24,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 function toRequest(values: FormValues): UpdateClubProfileRequest {
   return {
@@ -48,7 +49,7 @@ export default function ClubProfilePage() {
     handleSubmit,
     formState: { errors, isSubmitting, isDirty },
     reset,
-  } = useForm<FormValues>({
+  } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     values: data
       ? {

@@ -37,6 +37,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 type Props = {
   open: boolean;
@@ -47,7 +48,7 @@ type Props = {
 };
 
 export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, drivers }: Props) {
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { entryId: 0, incidentType: 'OTHER', description: '' },
   });
@@ -79,7 +80,7 @@ export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, driver
                   <FormLabel>Driver</FormLabel>
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
-                    value={field.value > 0 ? String(field.value) : ''}
+                    value={Number(field.value) > 0 ? String(field.value) : ''}
                   >
                     <FormControl>
                       <SelectTrigger>
