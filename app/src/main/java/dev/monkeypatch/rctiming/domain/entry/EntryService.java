@@ -36,7 +36,7 @@ public class EntryService {
     /**
      * A walk-in to add: an existing {@code competitorId} or a {@code competitorName} for a new competitor, and
      * {@code confirmNewCompetitor} when a new name that matches someone is a different person (#123). Up to four
-     * transponders: a third needs a secondary and a fourth needs a third (#482).
+     * transponders (#482).
      */
     public record WalkIn(Long eventId, Long eventClassId, Long competitorId, String competitorName,
                          String primaryTransponder, String secondaryTransponder, Boolean confirmNewCompetitor,
