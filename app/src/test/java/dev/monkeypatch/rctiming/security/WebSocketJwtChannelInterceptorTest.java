@@ -114,6 +114,7 @@ class WebSocketJwtChannelInterceptorTest {
     void anonymousSubscribe_isLimitedToRaceTimingAndState() {
         assertThat(interceptor.preSend(subscribe("/topic/race/7/timing", null), null)).isNotNull();
         assertThat(interceptor.preSend(subscribe("/topic/race/7/state", null), null)).isNotNull();
+        assertThat(interceptor.preSend(subscribe("/topic/race/7/battles", null), null)).isNotNull();
 
         assertThat(interceptor.preSend(subscribe("/topic/race/7/marshal", null), null)).isNull();
         assertThat(interceptor.preSend(subscribe("/topic/race/7/unknown-transponder", null), null)).isNull();

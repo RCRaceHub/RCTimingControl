@@ -127,10 +127,12 @@ classDiagram
     class LiveRaceState {
         applyLapPassing()
         calculatePositions()
+        advanceBattles()
         runtimeLinks
     }
     class LiveTimingHub {
         broadcastTimingUpdate()
+        broadcastBattles()
         broadcastStateChange()
         broadcastUnknownTransponder()
     }

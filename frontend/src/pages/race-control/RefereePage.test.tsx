@@ -14,6 +14,7 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
 }));
 // Live timing is empty once a race has finished
 const NO_ROWS: never[] = [];
+vi.mock('@/hooks/race-control/useBattles', () => ({ useBattles: () => NO_ROWS }));
 vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: NO_ROWS }) }));
 const mockRaceClock = vi.fn();
 vi.mock('@/hooks/race-control/useRaceClock', () => ({ useRaceClock: () => mockRaceClock() }));

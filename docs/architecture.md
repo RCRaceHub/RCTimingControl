@@ -97,6 +97,7 @@ The AMB/MyLaps decoder client runs on a dedicated background thread (Netty 4.1, 
 | Topic | Content |
 |-------|---------|
 | `/topic/race/{raceId}/timing` | Live lap passings, positions, gaps |
+| `/topic/race/{raceId}/battles` | Cars running close together, and whether each gap is closing or growing (#505) |
 | `/topic/race/{raceId}/state` | Race lifecycle changes |
 | `/topic/race/{raceId}/marshal` | Marshal lap adjustments |
 | `/topic/race/{raceId}/unknown-transponder` | A transponder that matched no entry, for the referee |
