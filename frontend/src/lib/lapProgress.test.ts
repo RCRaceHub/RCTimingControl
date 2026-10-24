@@ -16,6 +16,18 @@ describe('lapProgress', () => {
     expect(lapProgress(row({}), 111_000)).toEqual({ fraction: 1, state: 'late' });
   });
 
+  it('counts a lap from the resume when the car has not crossed since', () => {
+    // Passed the line at 100 s, race stopped, resumed at 140 s: at 144 s the lap is 4 s old, not 44 s
+    expect(lapProgress(row({}), 144_000, 140_000)).toEqual({ fraction: 0.4, state: 'under' });
+    // A car that crossed after the resume is counted from its own crossing
+    expect(lapProgress(row({ lastPassingTimeMs: 142_000 }), 144_000, 140_000)?.fraction).toBe(0.2);
+  });
+
+  it('has nothing to show for an average that is zero or not a number', () => {
+    expect(lapProgress(row({ avgLapMs: 0 }), 104_000)).toBeNull();
+    expect(lapProgress(row({ avgLapMs: Number.NaN }), 104_000)).toBeNull();
+  });
+
   it('has nothing to show before an average, after the flag or with a clock behind the passing', () => {
     expect(lapProgress(row({ avgLapMs: null }), 104_000)).toBeNull();
     expect(lapProgress(row({ finished: true }), 104_000)).toBeNull();

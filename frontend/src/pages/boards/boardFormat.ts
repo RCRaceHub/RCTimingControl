@@ -12,6 +12,26 @@ export function parseEventParam(value: string | null): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+/** How near the car ahead counts as close on the live race board, until the address says otherwise. */
+const LIVE_RACE_DEFAULT_CLOSE_MS = 1000;
+const LIVE_RACE_MAX_CLOSE_S = 60;
+
+/**
+ * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars, and
+ * {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
+ * that is empty or not a number takes the default.
+ */
+export function parseLiveRaceOptions(params: URLSearchParams) {
+  const raw = params.get('close');
+  const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
+  return {
+    showBars: params.get('bars')?.toLowerCase() !== 'hide',
+    closeMs: Number.isFinite(seconds)
+      ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
+      : LIVE_RACE_DEFAULT_CLOSE_MS,
+  };
+}
+
 /** What the overlay's ticker can scroll; `?ticker=` names the ones to show, `?ticker=hide` shows none. */
 export const TICKER_ITEMS = ['next', 'drivers', 'marshals', 'tq', 'fastest'] as const;
 export type TickerItem = (typeof TICKER_ITEMS)[number];

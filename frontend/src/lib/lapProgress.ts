@@ -21,12 +21,14 @@ export interface LapProgress {
  * no average lap yet (the first laps) or has taken the flag.
  *
  * @param row the car's live timing row
- * @param nowMs the current time as the server's clock reads it, in UTC milliseconds
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock; the lap is counted from then if the car
+ *     has not crossed the line since, so a stoppage is not counted against it
  */
-export function lapProgress(row: LiveTimingRowDto, nowMs: number): LapProgress | null {
+export function lapProgress(row: LiveTimingRowDto, nowMs: number, notBeforeMs?: number | null): LapProgress | null {
   const average = row.avgLapMs;
-  if (row.finished || !average || average <= 0 || !row.lastPassingTimeMs) return null;
-  const elapsed = Math.max(0, nowMs - row.lastPassingTimeMs);
+  if (row.finished || !average || !Number.isFinite(average) || !row.lastPassingTimeMs) return null;
+  const elapsed = Math.max(0, nowMs - Math.max(row.lastPassingTimeMs, notBeforeMs ?? 0));
   const state = elapsed < average ? 'under' : elapsed < average + LATE_AFTER_AVERAGE_MS ? 'at' : 'late';
   return { fraction: Math.min(1, elapsed / average), state };
 }
@@ -34,6 +36,9 @@ export function lapProgress(row: LiveTimingRowDto, nowMs: number): LapProgress |
 /**
  * Whether a car is running close behind the one in front: on the same lap and within {@code thresholdMs}. The
  * leader and a car a lap or more down are never close. A threshold of 0 or less switches the flag off.
+ *
+ * <p>This follows the scored order, not the track: the gap is the difference of the two cars' last crossings
+ * (time penalties included), so it changes only at the line.
  */
 export function isClose(row: LiveTimingRowDto, thresholdMs: number): boolean {
   if (thresholdMs <= 0 || row.position === 1 || row.intervalLapsDown > 0 || row.finished) return false;
