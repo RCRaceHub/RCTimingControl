@@ -64,12 +64,14 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
       )}
       {canSetVisibility && (
         <CategoryTagsEditor
+          key={(competitor.categories ?? []).join(',')}
           id={`categories-${competitor.id}`}
           label="Categories"
           tags={competitor.categories ?? []}
           pending={setCategories.isPending}
           onSave={categories => setCategories.mutate({ id: competitor.id, categories }, {
-            onError: () => toast.error('Could not save the categories. Check there are at most 8, each under 30 letters, with no commas.'),
+            onSuccess: () => toast.success('Categories saved'),
+            onError: () => toast.error('Could not save the categories. Check there are at most 8, each up to 30 characters, with no commas.'),
           })}
         />
       )}

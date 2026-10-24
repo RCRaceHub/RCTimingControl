@@ -117,7 +117,7 @@ public class Championships extends TableImpl<ChampionshipsRecord> {
     /**
      * The column <code>championships.split_categories</code>.
      */
-    public final TableField<ChampionshipsRecord, String> SPLIT_CATEGORIES = createField(DSL.name("split_categories"), SQLDataType.VARCHAR, this, "");
+    public final TableField<ChampionshipsRecord, String> SPLIT_CATEGORIES = createField(DSL.name("split_categories"), SQLDataType.CLOB, this, "");
 
     private Championships(Name alias, Table<ChampionshipsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

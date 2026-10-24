@@ -133,7 +133,7 @@ export default function ChampionshipDetailPage() {
                 pending={splits.isPending}
                 onSave={categories => splits.mutate(categories, {
                   onSuccess: () => toast.success('Category splits saved'),
-                  onError: () => toast.error('Could not save the splits. Use at most 8, each under 30 letters, with no commas.'),
+                  onError: () => toast.error('Could not save the splits. Use at most 8, each up to 30 characters, with no commas.'),
                 })}
               />
             </section>

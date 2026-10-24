@@ -117,7 +117,7 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
     /**
      * The column <code>competitors.categories</code>.
      */
-    public final TableField<CompetitorsRecord, String> CATEGORIES = createField(DSL.name("categories"), SQLDataType.VARCHAR, this, "");
+    public final TableField<CompetitorsRecord, String> CATEGORIES = createField(DSL.name("categories"), SQLDataType.CLOB, this, "");
 
     private Competitors(Name alias, Table<CompetitorsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);

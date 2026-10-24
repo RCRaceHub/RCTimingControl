@@ -143,7 +143,7 @@ public class ChampionshipStandingsQuery {
         if (tags.isEmpty() || main.isEmpty()) {
             return main;
         }
-        Set<Long> driverIds = main.stream().map(StandingsRowDto::driverId).collect(Collectors.toSet());
+        Set<Long> driverIds = main.stream().map(StandingsRowDto::driverId).filter(Objects::nonNull).collect(Collectors.toSet());
         Map<Long, List<String>> held = new HashMap<>();
         dsl.select(COMPETITORS.ID, COMPETITORS.CATEGORIES).from(COMPETITORS)
                 .where(COMPETITORS.ID.in(driverIds))

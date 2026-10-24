@@ -117,6 +117,7 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         assertThat(after.getExternalSource()).isNull();
         assertThat(after.getHomeClub()).isNull();
         assertThat(after.getSpokenName()).isNull();
+        assertThat(after.getCategories()).isNull();
         assertThat(result.entries()).isEqualTo(1);
         assertThat(result.resultSnapshots()).isEqualTo(1);
         assertThat(result.exportPayloads()).isEqualTo(2);
@@ -193,6 +194,7 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
         c.setBrcaNumber("BRCA-" + run);
         c.setHomeClub("Fenland RC");
         c.setSpokenName("Pat Anon-imous");
+        c.setCategories("Junior");
         c.setExternalSource("RACEHUB");
         c.setExternalId("rh-" + run);
         c.setCreatedAt(Instant.now());
