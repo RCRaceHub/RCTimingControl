@@ -25,6 +25,7 @@ import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LastLapTimeout;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.RaceClockService;
+import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -180,6 +181,16 @@ public class BoardController {
         return lapTimingService.peek(raceId)
                 .map(LiveRaceState::calculatePositions)
                 .orElse(List.of());
+    }
+
+    /**
+     * The cars running close together in a race on track, with whether each gap is closing or growing (#505): the same
+     * groups the race's {@code /topic/race/{raceId}/battles} frames carry, for a board or companion app that opens
+     * mid-race. Empty when no cars are close or the race has no live timing.
+     */
+    @GetMapping("/races/{raceId}/battles")
+    public List<BattleGroupDto> battles(@PathVariable long raceId) {
+        return lapTimingService.battlesOf(raceId);
     }
 
     /**

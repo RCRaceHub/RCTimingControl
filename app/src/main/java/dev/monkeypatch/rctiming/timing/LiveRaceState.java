@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
+import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 
 import java.util.ArrayList;
@@ -47,6 +49,10 @@ public class LiveRaceState {
      * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
      */
     Long overallBestLapMs = null;
+    /** Spots the race's on-track battles from each update of the order (#505). */
+    private final BattleTracker battleTracker = new BattleTracker(BattleTracker.DEFAULT_GAP_MS);
+    /** The battles as of the last update, for a client that connects between updates. */
+    private List<BattleGroupDto> battles = List.of();
     /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has none. Set once, at state creation. */
     final Map<Long, Long> minLapMs = new HashMap<>();
     /** Server time, in epoch milliseconds, of the last passing that counted a lap; null before the first (TRACK-03). */
@@ -422,6 +428,22 @@ public class LiveRaceState {
         long start = rollingStart ? firstCrossingMs : startedAtMs;
         return start > 0 && pos.getLastPassingTimeMs() > start
                 ? rankedPassingMs(pos, withPenalties) - start : null;
+    }
+
+    /**
+     * Takes an update of the order into the battle tracker and returns the battles it shows (#505). Called by
+     * {@code LapTimingService} for each update it broadcasts, on the timing thread or a request thread.
+     *
+     * @param rows the order as just broadcast
+     */
+    public synchronized List<BattleGroupDto> advanceBattles(List<LiveTimingRowDto> rows) {
+        battles = battleTracker.advance(rows);
+        return battles;
+    }
+
+    /** The battles as of the last update, empty before the first. */
+    public synchronized List<BattleGroupDto> battles() {
+        return battles;
     }
 
     public List<LapPassingEvent> getLapHistory() {

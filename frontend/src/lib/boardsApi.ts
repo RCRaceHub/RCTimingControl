@@ -1,4 +1,5 @@
 import api from './api';
+import type { BattleGroup } from './battles';
 import type { LiveTimingRowDto, QualifyingRoundPlace, ResultRow } from './raceControlApi';
 
 // Anonymous spectator board endpoints (L12). Every call here is public, so a board never
@@ -184,6 +185,12 @@ export async function getFinalsBoard(eventId?: number | null): Promise<FinalsBoa
 
 export async function getBoardLiveTiming(raceId: number): Promise<LiveTimingRowDto[]> {
   const { data } = await api.get<LiveTimingRowDto[]>(`/api/v1/boards/races/${raceId}/live-timing`);
+  return data;
+}
+
+/** The cars running close together in a race on track (#505); empty when none are close. */
+export async function getBoardBattles(raceId: number): Promise<BattleGroup[]> {
+  const { data } = await api.get<BattleGroup[]>(`/api/v1/boards/races/${raceId}/battles`);
   return data;
 }
 

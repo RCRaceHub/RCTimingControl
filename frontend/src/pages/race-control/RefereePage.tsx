@@ -7,7 +7,6 @@ import { RefereeHelp } from '@/help/RefereeHelp';
 import { useRunOrder } from '@/hooks/race-control/useRunOrder';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { useJumpStarts } from '@/hooks/race-control/useJumpStarts';
-import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
 import { IncidentDialog } from './dialogs/IncidentDialog';
@@ -19,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { BattlesPanel } from './panels/BattlesPanel';
-import { DEFAULT_BATTLE_MS, groupBattles } from '@/lib/battles';
+import { gainingFastEntryIds } from '@/lib/battles';
 import { JumpStartAlert } from './referee/JumpStartAlert';
 import { getRaceEntries } from '@/lib/raceControlApi';
 import type { IncidentReportRequest, PenaltyRequest } from '@/lib/raceControlApi';
@@ -65,8 +64,6 @@ export default function RefereePage() {
     setPinnedRaceId(raceId === live?.raceId ? null : raceId);
   }
 
-  const { rows: current } = useLiveTiming(selectedRaceId);
-
   // Drivers to pick from come from the race's entries, not live timing: live timing is empty once
   // the race has finished, and leaves out a car that has not been timed yet (#107)
   const { data: raceEntries = [] } = useQuery({
@@ -77,12 +74,8 @@ export default function RefereePage() {
   const drivers = raceEntries.map((e) => ({ entryId: e.entryId, driverName: e.racerName, carNumber: e.carNumber }));
 
   // Cars running close together (#505); the chasers gaining fast get their table row tinted
-  const battles = useBattles(selectedRaceId, current, DEFAULT_BATTLE_MS);
-  const battleGroups = useMemo(() => groupBattles(battles), [battles]);
-  const highlightEntryIds = useMemo(
-    () => new Set(battles.filter((b) => b.gainingFast).map((b) => b.chaser.entryId)),
-    [battles],
-  );
+  const battleGroups = useBattles(selectedRaceId);
+  const highlightEntryIds = useMemo(() => gainingFastEntryIds(battleGroups), [battleGroups]);
 
   // Cars that left before their turn in a stagger start
   const jumpStarts = useJumpStarts(selectedRaceId);

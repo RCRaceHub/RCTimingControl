@@ -860,6 +860,11 @@ GET /boards/races/{raceId}/live-timing
 **200 OK** — the race's current live timing rows (the same shape as the `/topic/race/{raceId}/timing` frames), or `[]` before the first passing. Boards, and the race control and referee live timing panels, use it once to fill the table, then follow STOMP.
 
 ```http
+GET /boards/races/{raceId}/battles
+```
+**200 OK** — the cars running close together in the race, as the timing laptop works them out (#505): `[ { "cars": [ { "entryId": 31, "position": 4, "driverName": "Sam Second", "carNumber": "4" }, { "entryId": 22, "position": 5, "driverName": "Ann Racer", "carNumber": "9" } ], "links": [ { "gapMs": 800, "ratePerLapMs": -350, "trend": "CLOSING", "gainingFast": true } ], "gainingFast": true } ]`. Each element is one battle (two cars) or a train (three or more, each close to the next). `cars` run from the front to the back and `links` has the gap between each car and the one behind, so one entry fewer. `gapMs` is the gap in the order as of the car behind's last crossing, time penalties included. `ratePerLapMs` is how much the gap changes each of that car's laps, negative while closing, and null until two of its laps have been seen. `trend` is `CLOSING` or `GROWING` beyond 150 ms a lap, `HOLDING` between, `UNKNOWN` before there is a rate; `gainingFast` is a closing rate of 300 ms a lap or more. A battle is two adjacent cars on the same lap within 2 s, kept for two laps after they drop outside it. Groups with a car gaining fast come first, then by the tightest gap. `[]` when no cars are close or the race has no live timing. The same list is sent on `/topic/race/{raceId}/battles` after every update to the order, and an empty list when a battle ends or the race is released, so an app can subscribe instead of polling.
+
+```http
 GET /boards/races/{raceId}/clock
 ```
 **200 OK** — `{ "raceId": 412, "status": "RUNNING", "elapsedMs": 183400, "durationMs": 300000, "remainingMs": 116600, "running": true }`, for the streaming overlay at `/boards/overlay`. `elapsedMs` is race time so far, not counting time stopped; while `running` is true a client counts on from it locally. `durationMs` and `remainingMs` are null when the race's format sets no length. For a race the app hasn't seen change since it started, the time is worked out from its start and finish times, so a stop before the restart isn't allowed for. **404** for an unknown race.
@@ -879,7 +884,7 @@ GET /boards/ticker?eventId={id}
 ```
 **200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "marshalsPending": false, "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); for a final that takes bump-ups, `marshals` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up; `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.
 
-**Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing` and `/topic/race/{raceId}/state`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
+**Anonymous STOMP.** A client may `CONNECT` to `/ws/timing` with no `Authorization` header. Such a session may only `SUBSCRIBE` to `/topic/race/{raceId}/timing`, `/topic/race/{raceId}/state` and `/topic/race/{raceId}/battles`; any other subscription and every `SEND` is dropped. A `CONNECT` carrying a token that does not validate is still refused.
 
 ---
 

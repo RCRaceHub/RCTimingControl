@@ -13,6 +13,7 @@ export const publicQueryKeys = {
     all: ['boards'] as const,
     nowNext: (eventId: number | null) => ['boards', 'now-next', eventId] as const,
     liveTiming: (raceId: number | null) => ['boards', 'live-timing', raceId] as const,
+    battles: (raceId: number | null) => ['boards', 'battles', raceId] as const,
     results: (eventId: number | null) => ['boards', 'results', eventId] as const,
     qualifying: (eventId: number | null) => ['boards', 'qualifying', eventId] as const,
     liveQualifying: (eventId: number | null) => ['boards', 'live-qualifying', eventId] as const,

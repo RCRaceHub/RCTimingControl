@@ -32,7 +32,7 @@ flowchart LR
     relay[Live feed relay<br/>remote viewers]
 
     dec -->|passings| dl --> te --> lts
-    lts --> hub -->|/topic/race/id/timing| br
+    lts --> hub -->|/topic/race/id/timing, battles| br
     br -->|REST + JWT| sec --> api
     api --> svc --> dom --> db
     api --> sm

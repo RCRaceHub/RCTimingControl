@@ -11,7 +11,9 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.LapThresholdQuery;
+import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +115,20 @@ public class LapTimingService {
     }
 
     /**
+     * Sends the order to the boards and, from the same rows, the battles it shows (#505). Every change to the order
+     * goes through here so the two topics never disagree. Runs on the timing thread or a request thread.
+     */
+    private void broadcastTiming(long raceId, LiveRaceState state, List<LiveTimingRowDto> rows) {
+        liveTimingHub.broadcastTimingUpdate(raceId, rows);
+        liveTimingHub.broadcastBattles(raceId, state.advanceBattles(rows));
+    }
+
+    /** The race's battles as of the last update; empty for a race with no live timing. */
+    public List<BattleGroupDto> battlesOf(long raceId) {
+        return peek(raceId).map(LiveRaceState::battles).orElse(List.of());
+    }
+
+    /**
      * Read-only access — returns the state if present, empty if race has had no lap events yet.
      */
     public Optional<LiveRaceState> peek(long raceId) {
@@ -172,7 +188,7 @@ public class LapTimingService {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
         }
 
-        liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+        broadcastTiming(raceId, state, state.calculatePositions());
 
         if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
@@ -292,7 +308,7 @@ public class LapTimingService {
         LiveRaceState state = stateFor(raceId);
         state.applyLapDelta(entryId, lapDelta);
         liveTimingHub.broadcastMarshalAdjustment(raceId, dto);
-        liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+        broadcastTiming(raceId, state, state.calculatePositions());
     }
 
     /**
@@ -302,7 +318,7 @@ public class LapTimingService {
     public void applyLapPenalty(long raceId, long entryId, int laps) {
         peek(raceId).ifPresent(state -> {
             state.applyLapDelta(entryId, -laps);
-            liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+            broadcastTiming(raceId, state, state.calculatePositions());
         });
     }
 
@@ -317,7 +333,7 @@ public class LapTimingService {
     public void applyTimePenalty(long raceId, long entryId, long penaltyMs) {
         LiveRaceState state = stateFor(raceId);
         state.applyTimePenalty(entryId, penaltyMs);
-        liveTimingHub.broadcastTimingUpdate(raceId, state.calculatePositions());
+        broadcastTiming(raceId, state, state.calculatePositions());
     }
 
     /**
@@ -329,6 +345,9 @@ public class LapTimingService {
         released.add(raceId);
         plans.remove(raceId);
         LiveRaceState removed = states.remove(raceId);
+        if (removed != null && !removed.battles().isEmpty()) {
+            liveTimingHub.broadcastBattles(raceId, List.of());
+        }
         if (removed != null && !removed.jumpStarts().isEmpty()) {
             // Tells open referee screens to drop the alerts: they belong to the run that has ended
             liveTimingHub.broadcastJumpStarts(raceId, List.of());
@@ -372,7 +391,7 @@ public class LapTimingService {
         LiveRaceState state = stateFor(raceId);
         List<dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto> positions =
                 state.retroactiveLinkTransponder(transponderNumber, entryId);
-        liveTimingHub.broadcastTimingUpdate(raceId, positions);
+        broadcastTiming(raceId, state, positions);
         return positions;
     }
 

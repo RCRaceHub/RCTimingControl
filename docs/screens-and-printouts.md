@@ -48,7 +48,20 @@ In a **final**, a small green ▲ or red ▼ beside the position shows the place
 
 Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
 
-**Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within 2 seconds, the gap between them, and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, with the change per lap. A chain of close cars shows as one line, a train. A gap underlined means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles if there are more. `battles=hide` leaves it out and `battleGap=SECONDS` sets how near the car ahead starts a battle (default 2). The referee's screen has the same Battles panel.
+**Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within 2 seconds of each other, labelled "Battle for P4", with the gap and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, and the change per lap. A chain of close cars shows as one line, "Train P4–P7". An underlined gap means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles through any more every five seconds. The timing laptop works the battles out (see the API guide), so every screen agrees; the referee's screen has the same Battles panel. A pair stays a battle for two laps after it drops outside 2 seconds, and a lap taken away by a marshal starts its trend again.
+
+### Options on the Live race screen and board views
+
+Options go on the end of the address. They also work on a [board view](#board-views), and the overlay takes the same ones.
+
+| Option | Effect |
+|--------|--------|
+| `event=ID` | Follow one event instead of the one racing now |
+| `bars=hide` | Leave out the lap bars under each name |
+| `arrows=hide` | Leave out the places-gained arrows shown in a final |
+| `predict=hide` | Leave out the **Pred** column in a race with a set length |
+| `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; `close=0` turns the tint off) |
+| `battles=hide` | Leave out the battles strip |
 
 ## The Live top screen
 
@@ -95,8 +108,7 @@ Options go on the end of the address:
 | `bars=hide` | Leave out the lap bars under each name |
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; 0 turns it off) |
-| `battles=show` | Add the battles strip under the running order (off by default here) |
-| `battleGap=SECONDS` | How near the car ahead starts a battle (default 2) |
+| `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |

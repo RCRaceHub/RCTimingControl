@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import type { Battle, BattleGroup } from '@/lib/battles';
+import type { BattleCar, BattleGroup, BattleLink } from '@/lib/battles';
 import { cn } from '@/lib/utils';
 
 /** The gap as seconds to one decimal place, e.g. "0.8s". */
@@ -8,33 +8,33 @@ function fmtGap(ms: number): string {
 }
 
 const TREND_TEXT = {
-  closing: { arrow: '▲', label: 'closing', className: 'text-emerald-500' },
-  growing: { arrow: '▼', label: 'pulling away', className: 'text-rose-500' },
-  holding: { arrow: '▬', label: 'holding', className: 'text-muted-foreground' },
+  CLOSING: { arrow: '▲', label: 'closing', className: 'text-emerald-500' },
+  GROWING: { arrow: '▼', label: 'pulling away', className: 'text-rose-500' },
+  HOLDING: { arrow: '▬', label: 'holding', className: 'text-muted-foreground' },
 } as const;
 
 /** What one link of a battle says in words, for the screen reader and the hover text. */
-function describe(link: Battle): string {
+function describe(ahead: BattleCar, chaser: BattleCar, link: BattleLink): string {
   const gap = fmtGap(link.gapMs);
-  if (link.trend === 'unknown' || link.ratePerLapMs === null) return `${link.chaser.driverName} is ${gap} behind ${link.ahead.driverName}`;
+  if (link.trend === 'UNKNOWN' || link.ratePerLapMs === null) return `${chaser.driverName} is ${gap} behind ${ahead.driverName}`;
   const rate = `${fmtGap(Math.abs(link.ratePerLapMs))} a lap`;
-  return `${link.chaser.driverName} is ${gap} behind ${link.ahead.driverName}, ${TREND_TEXT[link.trend].label}${link.trend === 'holding' ? '' : ` by ${rate}`}`;
+  return `${chaser.driverName} is ${gap} behind ${ahead.driverName}, ${TREND_TEXT[link.trend].label}${link.trend === 'HOLDING' ? '' : ` by ${rate}`}`;
 }
 
 /** The gap between two cars with an arrow for whether it is closing or growing (#505). */
-function GapLink({ link }: { link: Battle }) {
-  const trend = link.trend === 'unknown' ? null : TREND_TEXT[link.trend];
+function GapLink({ ahead, chaser, link }: { ahead: BattleCar; chaser: BattleCar; link: BattleLink }) {
+  const trend = link.trend === 'UNKNOWN' ? null : TREND_TEXT[link.trend];
   return (
     <span
       className={cn('whitespace-nowrap font-semibold tabular-nums', trend?.className, link.gainingFast && 'underline')}
       data-trend={link.trend}
       data-gaining-fast={link.gainingFast || undefined}
-      title={describe(link)}
+      title={describe(ahead, chaser, link)}
     >
-      <span className="sr-only">{describe(link)}</span>
+      <span className="sr-only">{describe(ahead, chaser, link)}</span>
       <span aria-hidden="true">{fmtGap(link.gapMs)}</span>
       {trend && ` ${trend.arrow}`}
-      {trend && link.ratePerLapMs !== null && link.trend !== 'holding' && (
+      {trend && link.ratePerLapMs !== null && link.trend !== 'HOLDING' && (
         <span className="ml-0.5 text-[0.75em] font-normal">{fmtGap(Math.abs(link.ratePerLapMs))}/lap</span>
       )}
     </span>
@@ -63,7 +63,7 @@ export function BattleGroupLine({ group, className }: { group: BattleGroup; clas
             <span className="mr-1 text-[0.75em] opacity-70">P{car.position}</span>
             {car.driverName}
           </span>
-          {i < group.links.length && <GapLink link={group.links[i]} />}
+          {i < group.links.length && <GapLink ahead={car} chaser={group.cars[i + 1]} link={group.links[i]} />}
         </Fragment>
       ))}
     </div>

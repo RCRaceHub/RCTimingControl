@@ -1,5 +1,4 @@
 import { fmtMs } from '@/lib/format';
-import { DEFAULT_BATTLE_MS } from '@/lib/battles';
 import type { TickerDto } from '@/lib/boardsApi';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -28,7 +27,7 @@ const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
- * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, and
+ * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, {@code battles=hide} the battles strip (#505), and
  * {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
  * that is empty or not a number takes the default.
  */
@@ -39,6 +38,7 @@ export function parseLiveRaceOptions(params: URLSearchParams) {
     showBars: params.get('bars')?.toLowerCase() !== 'hide',
     showArrows: params.get('arrows')?.toLowerCase() !== 'hide',
     showPredicted: params.get('predict')?.toLowerCase() !== 'hide',
+    showBattles: params.get('battles')?.toLowerCase() !== 'hide',
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : LIVE_RACE_DEFAULT_CLOSE_MS,
@@ -54,30 +54,11 @@ function parseTickerItems(value: string | null): Set<TickerItem> {
   return new Set(TICKER_ITEMS.filter((item) => value.split(',').includes(item)));
 }
 
-const BATTLE_MAX_GAP_S = 10;
-
-/**
- * The battle strip's options (#505): {@code battles=show} (or {@code 1}) switches it on for the overlay,
- * {@code battles=hide} switches it off on the live race board, and {@code battleGap=SECONDS} sets how near the car
- * ahead starts a battle. A gap that is empty or not a number takes the default.
- */
-export function parseBattleOptions(params: URLSearchParams) {
-  const on = params.get('battles')?.toLowerCase();
-  const raw = params.get('battleGap');
-  const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
-  return {
-    showBattles: on === 'show' || on === '1',
-    hideBattles: on === 'hide',
-    battleMs: Number.isFinite(seconds) ? Math.min(BATTLE_MAX_GAP_S, Math.max(0, seconds)) * 1000 : DEFAULT_BATTLE_MS,
-  };
-}
-
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
 /** The streaming overlay's options from its query string; anything unrecognised falls back to the default. */
 export function parseOverlayOptions(params: URLSearchParams) {
-  const battles = parseBattleOptions(params);
   const top = Number(params.get('top'));
   return {
     eventId: parseEventParam(params.get('event')),
@@ -87,8 +68,6 @@ export function parseOverlayOptions(params: URLSearchParams) {
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
     ...parseLiveRaceOptions(params),
-    showBattles: battles.showBattles,
-    battleMs: battles.battleMs,
   };
 }
 

@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
@@ -17,6 +18,7 @@ import java.util.Map;
 /**
  * STOMP broadcast hub. Broadcasts on these topics:
  * - /topic/race/{raceId}/timing — live position updates
+ * - /topic/race/{raceId}/battles — cars running close together and whether each gap is closing or growing
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
@@ -41,6 +43,15 @@ public class LiveTimingHub {
      */
     public void broadcastTimingUpdate(long raceId, List<LiveTimingRowDto> rows) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/timing", rows);
+    }
+
+    /**
+     * Sends the race's current battles (#505), the whole list each time, empty when no cars are close, so a client that
+     * misses a message is right again at the next and a battle that ends clears. Anonymous clients may subscribe, like
+     * the timing topic. Sent at once, from the same callers as {@link #broadcastTimingUpdate}.
+     */
+    public void broadcastBattles(long raceId, List<BattleGroupDto> battles) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/battles", battles);
     }
 
     /**

@@ -55,6 +55,9 @@ sequenceDiagram
         end
         LTS->>Hub: broadcastTimingUpdate(raceId, calculatePositions())
         Hub-->>B: /topic/race/id/timing
+        LTS->>LRS: advanceBattles(rows), BattleTracker
+        LTS->>Hub: broadcastBattles(raceId, battles)
+        Hub-->>B: /topic/race/id/battles
         opt every car has had its whole window
             LTS->>LTS: publish AllCarsFlaggedEvent(raceId)
             Note over LTS: AutoFinish finishes the race

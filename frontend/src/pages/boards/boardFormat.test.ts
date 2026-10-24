@@ -5,7 +5,14 @@ describe('parseLiveRaceOptions', () => {
   const parse = (query: string) => parseLiveRaceOptions(new URLSearchParams(query));
 
   it('shows the bars and tints cars within a second unless told otherwise', () => {
-    expect(parse('')).toEqual({ showBars: true, showArrows: true, showPredicted: true, closeMs: 1000 });
+    expect(parse('')).toEqual({
+      showBars: true,
+      showArrows: true,
+      showPredicted: true,
+      showBattles: true,
+      closeMs: 1000,
+    });
+    expect(parse('battles=HIDE').showBattles).toBe(false);
   });
 
   it('hides the arrows for arrows=hide and the predicted laps for predict=hide', () => {

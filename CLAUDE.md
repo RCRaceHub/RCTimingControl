@@ -30,6 +30,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 **Real-time:** Spring WebSocket with STOMP in-memory broker. STOMP topics:
 - `/topic/race/{raceId}/timing` — live lap passings, positions, gaps
 - `/topic/race/{raceId}/state` — race lifecycle changes
+- `/topic/race/{raceId}/battles` — cars running close together and the trend of each gap (`timing/battle/BattleTracker`)
 - `/topic/race/{raceId}/marshal` — marshal lap adjustments
 - `/topic/race/{raceId}/unknown-transponder`, `/audio`, `/bump-up-alert` — race director, announcer and bump-up prompts
 - `/topic/race/{raceId}/warmup` — which cars of a race on the grid the decoder has seen on the warm-up lap
