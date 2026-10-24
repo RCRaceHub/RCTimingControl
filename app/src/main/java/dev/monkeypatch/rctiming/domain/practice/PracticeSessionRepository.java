@@ -49,7 +49,9 @@ public class PracticeSessionRepository extends JooqRepository<PracticeSession, P
 
     @Override
     protected PracticeSession toEntity(PracticeSessionsRecord r) {
-        return MAPPER.toEntity(r);
+        PracticeSession e = MAPPER.toEntity(r);
+        setId(e, r.getId());
+        return e;
     }
 
     @Override

@@ -110,7 +110,9 @@ public class ResultsOutboxRepository extends JooqRepository<ResultsOutboxItem, R
 
     @Override
     protected ResultsOutboxItem toEntity(ResultsOutboxRecord r) {
-        return MAPPER.toEntity(r);
+        ResultsOutboxItem e = MAPPER.toEntity(r);
+        setId(e, r.getId());
+        return e;
     }
 
     @Override

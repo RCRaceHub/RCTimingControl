@@ -40,7 +40,9 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
 
     @Override
     protected Event toEntity(EventsRecord r) {
-        return MAPPER.toEntity(r);
+        Event e = MAPPER.toEntity(r);
+        e.setResultsExportRevision(r.getResultsExportRevision());
+        return e;
     }
 
     @Override

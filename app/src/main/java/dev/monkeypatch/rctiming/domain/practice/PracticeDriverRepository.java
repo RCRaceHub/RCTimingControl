@@ -52,7 +52,9 @@ public class PracticeDriverRepository extends JooqRepository<PracticeDriver, Pra
 
     @Override
     protected PracticeDriver toEntity(PracticeDriversRecord r) {
-        return MAPPER.toEntity(r);
+        PracticeDriver e = MAPPER.toEntity(r);
+        setId(e, r.getId());
+        return e;
     }
 
     @Override

@@ -338,6 +338,7 @@ A repository moves an entity to and from its table's record with a MapStruct map
 - `unmappedTargetPolicy = ERROR` makes a column with no entity property (or the reverse) a compile error, so the mapper keeps the safety the hand-written code had. The save-and-reload tests still apply.
 - Where names differ, add an `@Mapping` (`DecoderLoopMapper` maps `isScoringLoop` to `scoringLoop`). Enums stored as text convert on their own. A JSON column uses a `default` method in the mapper that calls its `JsonTextConverter`, as `ClubProfileMapper` does for the audio settings.
 - `mapstruct-jooq/` makes MapStruct ignore jOOQ's fluent `value1(..)` methods, which it would otherwise take for settable properties. It does this for every mapper in `:app`, so a mapper onto a fluent or builder-style target would need its own handling.
+- MapStruct only uses public setters, and ignores a package-private one without warning. Where an entity keeps `setId` (or another setter) package-private, the repository's `toEntity` sets that value itself after the mapper runs, as `PracticeSessionRepository` does for its id; the save-and-reload tests catch a value left out.
 - Two repositories still map by hand because their entities are built by constructor: `OfficialAuditLogRepository` and `UnknownTransponderLinkAuditRepository`. `UserRepository` loads roles after the mapper runs, and `TrackRepository` leaves its loops and thresholds to their own repositories; both ignore those properties in the mapper.
 
 Moving to another database means:

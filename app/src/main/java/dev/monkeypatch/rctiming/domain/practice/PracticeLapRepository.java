@@ -58,7 +58,9 @@ public class PracticeLapRepository extends JooqRepository<PracticeLap, PracticeL
 
     @Override
     protected PracticeLap toEntity(PracticeLapsRecord r) {
-        return MAPPER.toEntity(r);
+        PracticeLap e = MAPPER.toEntity(r);
+        setId(e, r.getId());
+        return e;
     }
 
     @Override
