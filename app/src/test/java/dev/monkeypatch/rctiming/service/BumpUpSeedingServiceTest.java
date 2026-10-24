@@ -1,9 +1,12 @@
 package dev.monkeypatch.rctiming.service;
 
+import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.Round;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,9 +66,9 @@ class BumpUpSeedingServiceTest {
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(bFinal.getId())).thenReturn(List.of());
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(List.of());
 
-        // Ranks 1..20 (index 0 = rank 1, best).
+        // Ranks 1..18 (index 0 = rank 1, best): A takes 8 regular places, B the other 10.
         List<Long> standings = new ArrayList<>();
-        for (long i = 1; i <= 20; i++) standings.add(i);
+        for (long i = 1; i <= 18; i++) standings.add(i);
 
         service().seedFinals(eventClassId, standings, 2, 10, 2);
 
@@ -78,10 +81,10 @@ class BumpUpSeedingServiceTest {
         List<RaceEntry> aEntries = saved.stream().filter(e -> e.getRaceId().equals(aFinal.getId()))
                 .sorted(Comparator.comparingInt(RaceEntry::getGridPosition)).toList();
 
-        // B-Final: 10 regular slots, no bump reservation (lowest final) — ranks 11..20.
+        // B-Final: the rest, no bump reservation (lowest final) — ranks 9..18.
         assertThat(bEntries).hasSize(10);
         assertThat(bEntries).extracting(RaceEntry::getEntryId)
-                .containsExactly(11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L);
+                .containsExactly(9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L);
         assertThat(bEntries).allMatch(e -> !e.isBumped());
 
         // A-Final: 8 regular slots (the TOP qualifiers, ranks 1..8) and 2 bump slots kept as a
@@ -119,6 +122,31 @@ class BumpUpSeedingServiceTest {
         assertThat(saved).extracting(RaceEntry::getEntryId)
                 .containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
         assertThat(saved).allMatch(e -> !e.isBumped());
+    }
+
+    @Test
+    void seedFinals_noBumpSpots_theLowestFinalIsTheOneLeftShort() {
+        Long eventClassId = 25L;
+        List<Race> finals = new ArrayList<>();
+        for (String letter : List.of("A", "B", "C")) {
+            Race race = new Race();
+            race.setId(500L + letter.charAt(0));
+            race.setEventClassId(eventClassId);
+            race.setFinalLetter(letter);
+            finals.add(race);
+            when(raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId())).thenReturn(List.of());
+        }
+        when(raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL)).thenReturn(finals);
+
+        service().seedFinals(eventClassId, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L), 3, 3, 0);
+
+        ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository, times(8)).save(captor.capture());
+        for (String letter : List.of("A", "B", "C")) {
+            long raceId = 500L + letter.charAt(0);
+            long count = captor.getAllValues().stream().filter(e -> e.getRaceId() == raceId).count();
+            assertThat(count).as("final " + letter).isEqualTo(letter.equals("C") ? 2 : 3);
+        }
     }
 
     @Test
@@ -400,5 +428,46 @@ class BumpUpSeedingServiceTest {
         e.setCarNumber(position);
         e.setBumped(bumped);
         return e;
+    }
+
+    @Test
+    void restoreFinals_bringsBackSeveralFinalsDeletedFromTheBottom() {
+        var rounds = org.mockito.Mockito.mock(RoundRepository.class);
+        var svc = new BumpUpSeedingService(raceRepository, raceEntryRepository, rounds,
+                org.mockito.Mockito.mock(AuditService.class, org.mockito.Mockito.RETURNS_DEEP_STUBS));
+        Race aFinal = new Race();
+        aFinal.setId(1L);
+        aFinal.setRoundId(50L);
+        aFinal.setHeatNumber(1);
+        aFinal.setFinalLetter("A");
+        Round aRound = new Round();
+        aRound.setId(50L);
+        aRound.setEventId(7L);
+        aRound.setSequenceInEvent(3);
+        List<Round> eventRounds = new ArrayList<>(List.of(aRound));
+        org.mockito.Mockito.when(raceRepository.findByEventClassIdAndRoundType(10L, RoundType.FINAL))
+                .thenReturn(List.of(aFinal));
+        org.mockito.Mockito.when(rounds.findById(org.mockito.ArgumentMatchers.anyLong())).thenAnswer(inv ->
+                eventRounds.stream().filter(r -> r.getId().equals(inv.getArgument(0))).findFirst());
+        org.mockito.Mockito.when(rounds.findByEventIdOrderBySequenceInEvent(7L)).thenReturn(eventRounds);
+        long[] nextId = {90L};
+        org.mockito.Mockito.when(rounds.save(org.mockito.ArgumentMatchers.any())).thenAnswer(inv -> {
+            Round r = inv.getArgument(0);
+            if (r.getId() == null) {
+                r.setId(nextId[0]++);
+                eventRounds.add(r);
+            }
+            return r;
+        });
+        org.mockito.Mockito.when(raceRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        int count = svc.restoreFinals(10L, 3, null);
+
+        org.junit.jupiter.api.Assertions.assertEquals(3, count);
+        // Run order C, B, A: C was put in front of B, which was put in front of A
+        org.junit.jupiter.api.Assertions.assertEquals(3, eventRounds.get(2).getSequenceInEvent());
+        org.junit.jupiter.api.Assertions.assertEquals(4, eventRounds.get(1).getSequenceInEvent());
+        org.junit.jupiter.api.Assertions.assertEquals(5, aRound.getSequenceInEvent());
     }
 }

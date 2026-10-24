@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.service;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -10,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +67,11 @@ public class BumpUpSeedingService {
     /**
      * Seeds all finals grids for a class after qualifying closes.
      *
-     * <p>Algorithm (example: 20 drivers, 10/final, bumpCount=2, 2 finals A+B):
+     * <p>Algorithm (example: 18 drivers, 10/final, bumpCount=2, 2 finals A+B). The top final takes the best drivers for
+     * its regular places, the next final the following block, and the lowest final, which runs first, what is left, so
+     * it is the smallest:
      * <pre>
-     *   B-Final positions 1–10: drivers ranked 11–20 (lowest qualifiers)
+     *   B-Final positions 1–10: drivers ranked 9–18 (the rest)
      *   A-Final positions 1–8:  drivers ranked 1–8  (top qualifiers)
      *   A-Final positions 9–10: bump slots, kept as bumpSlots=2 on the A-Final race and
      *                           filled by applyBumpUpResults after the B-Final finishes
@@ -77,7 +81,8 @@ public class BumpUpSeedingService {
      * final and three finals gives A and B, and C stays empty), so no empty final sits between two with drivers.
      * The unused finals' races are deleted from the run order (kept, empty, only when something was recorded against
      * one early). The top final is never unused, so a final in legs never loses its later legs. A later calculation
-     * with fewer cars per final than the field needs can't bring a deleted final back: the grids grow to fit instead.
+     * with fewer cars per final than the field needs brings a deleted final back first, see
+     * {@link #restoreFinals}.
      *
      * <p>A Shikabane zombie round (final letter {@value #ZOMBIE_LETTER}) is left out of the split, its old grid is
      * cleared, and the top final gets one more bump place for the zombie round's winner.
@@ -100,10 +105,72 @@ public class BumpUpSeedingService {
     }
 
     /**
-     * As {@link #seedFinals(Long, List, int, int, int)}, but with {@code fillTopFirst} the finals are filled from the
-     * top: the top final takes the best {@code carsPerFinal} qualifiers, the next final the following block, and the
-     * lowest final the rest (at most {@code carsPerFinal}, since the caller has sized the grid to fit the field).
-     * That layout has no bump spots, so {@code bumpCount} is ignored.
+     * Puts back the A, B, C... finals a class had when its rounds were generated but that an earlier calculation
+     * deleted as unused, so a recalculation with fewer cars per final can use them again. Each missing final gets a
+     * round of its own, with an empty grid, just before the next final above it in the run order (and before the zombie round, if it has one); the rounds after
+     * shift down one place. Nothing happens when no final is missing.
+     *
+     * @param intendedCount the number of finals the class was generated with ({@code EventClass.finalsCount})
+     * @param startType     the start type of the class's finals
+     * @return the number of A, B, C finals the class has afterwards
+     */
+    public int restoreFinals(Long eventClassId, int intendedCount, StartType startType) {
+        List<Race> all = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
+        Map<String, Race> byLetter = new HashMap<>();
+        for (Race race : all) {
+            if (!ZOMBIE_LETTER.equals(race.getFinalLetter()) && !FinalLegs.isExtraLeg(race)) {
+                byLetter.put(race.getFinalLetter(), race);
+            }
+        }
+        if (byLetter.isEmpty()) {
+            return 0;
+        }
+        Race zombie = all.stream().filter(r -> ZOMBIE_LETTER.equals(r.getFinalLetter())).findFirst().orElse(null);
+        // Lowest missing letter first (B before C): each is put just before the final above it, which is there already
+        // because the unused finals were dropped from the bottom
+        for (int f = 1; f < Math.min(intendedCount, 26); f++) {
+            String letter = String.valueOf((char) ('A' + f));
+            if (byLetter.containsKey(letter)) {
+                continue;
+            }
+            Race above = byLetter.get(String.valueOf((char) ('A' + f - 1)));
+            if (above == null) {
+                continue;
+            }
+            // A zombie round runs after the lowest main and just before A, so B goes in front of it
+            Race anchor = f == 1 && zombie != null ? zombie : above;
+            Round aboveRound = roundRepository.findById(anchor.getRoundId()).orElseThrow();
+            int sequence = aboveRound.getSequenceInEvent();
+            for (Round later : roundRepository.findByEventIdOrderBySequenceInEvent(aboveRound.getEventId())) {
+                if (later.getSequenceInEvent() >= sequence) {
+                    later.setSequenceInEvent(later.getSequenceInEvent() + 1);
+                    roundRepository.save(later);
+                }
+            }
+            Round round = new Round();
+            round.setEventId(aboveRound.getEventId());
+            round.setType(RoundType.FINAL);
+            round.setRoundNumber(f + 1);
+            round.setSequenceInEvent(sequence);
+            round.setStatus(RoundStatus.PENDING);
+            round = roundRepository.save(round);
+            Race race = new Race();
+            race.setRoundId(round.getId());
+            race.setEventClassId(eventClassId);
+            race.setHeatNumber(1);
+            race.setSequenceInRound(1);
+            race.setFinalLetter(letter);
+            race.setStartType(startType);
+            race.setStatus(RaceStatus.PENDING);
+            byLetter.put(letter, raceRepository.save(race));
+        }
+        return byLetter.size();
+    }
+
+    /**
+     * As {@link #seedFinals(Long, List, int, int, int)}, but with {@code fillTopFirst} every final above the lowest
+     * takes a full {@code carsPerFinal} (the layout has no bump spots, so {@code bumpCount} is ignored), and unused
+     * lowest finals are kept rather than dropped.
      */
     public void seedFinals(Long eventClassId,
                            List<Long> qualifyingStandings,
@@ -157,7 +224,11 @@ public class BumpUpSeedingService {
                     unused.setBumpSlots(0);
                     raceRepository.save(unused);
                 } else {
+                    Long roundId = unused.getRoundId();
                     raceRepository.delete(unused);
+                    if (raceRepository.findByRoundIdOrderBySequenceInRound(roundId).isEmpty()) {
+                        roundRepository.deleteById(roundId);
+                    }
                 }
             }
         }
@@ -168,47 +239,20 @@ public class BumpUpSeedingService {
             regularSlots[fi] = isLowestFinal ? carsPerFinal : carsPerFinal - bumpCount;
         }
 
-        // Two independent pointers: the lowest final draws its regular slots from the
-        // worst-ranked end of standings; every other ("non-lowest") final draws from the
-        // best-ranked end, processed from the top final downward so the fastest qualifiers
-        // always land in the top final first, not in whichever final happens to be processed
-        // first. A single bottom-up pointer would drop the very top qualifiers once the bump
-        // slots shrink the regular places below the size of the qualifying field.
+        // Filled from the top final down, so the fastest qualifiers always land in the top final first
         List<List<Long>> slotEntriesByFinal = new ArrayList<>(finals.size());
         for (int fi = 0; fi < finals.size(); fi++) {
             slotEntriesByFinal.add(null);
         }
 
-        if (fillTopFirst) {
-            // Top final first; each takes a full grid and the lowest takes what is left
-            int next = 0;
-            for (int fi = finals.size() - 1; fi >= 0; fi--) {
-                int take = fi == 0 ? qualifyingStandings.size() - next : Math.min(carsPerFinal,
-                        qualifyingStandings.size() - next);
-                slotEntriesByFinal.set(fi, new ArrayList<>(qualifyingStandings.subList(next, next + Math.max(0, take))));
-                next += Math.max(0, take);
-            }
-        } else {
-            int bottomPtr = qualifyingStandings.size() - 1;
-            int lowestSlots = regularSlots[0];
-            List<Long> lowestEntries = new ArrayList<>(lowestSlots);
-            for (int s = 0; s < lowestSlots && bottomPtr >= 0; s++) {
-                lowestEntries.add(0, qualifyingStandings.get(bottomPtr--)); // prepend to reverse order
-            }
-            slotEntriesByFinal.set(0, lowestEntries);
-
-            // Bound the top pass at bottomPtr (its value *after* the bottom pass above already
-            // ran) so the two passes can never claim the same standings entry twice when the
-            // qualifying field is smaller than total regular capacity.
-            int topPtr = 0;
-            for (int fi = finals.size() - 1; fi >= 1; fi--) {
-                int slots = regularSlots[fi];
-                List<Long> entries = new ArrayList<>(slots);
-                for (int s = 0; s < slots && topPtr <= bottomPtr; s++) {
-                    entries.add(qualifyingStandings.get(topPtr++));
-                }
-                slotEntriesByFinal.set(fi, entries);
-            }
+        // Top final first: each takes its regular places and the lowest final, which runs first, takes what is left, so
+        // it is the smallest. The caller has sized the grid so the rest fits the lowest final.
+        int next = 0;
+        for (int fi = finals.size() - 1; fi >= 0; fi--) {
+            int remaining = qualifyingStandings.size() - next;
+            int take = fi == 0 ? remaining : Math.min(regularSlots[fi], remaining);
+            slotEntriesByFinal.set(fi, new ArrayList<>(qualifyingStandings.subList(next, next + Math.max(0, take))));
+            next += Math.max(0, take);
         }
 
         for (int fi = 0; fi < finals.size(); fi++) {
