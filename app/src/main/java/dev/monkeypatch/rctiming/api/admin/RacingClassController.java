@@ -55,7 +55,8 @@ public class RacingClassController {
     @ResponseStatus(HttpStatus.CREATED)
     public RacingClassDto createRacingClass(Authentication auth, @RequestBody @Valid CreateRacingClassRequest request) {
         return RacingClassDto.from(
-                racingClassService.create(CurrentOfficial.actor(auth), request.name(), request.description(), request.colour()));
+                racingClassService.create(CurrentOfficial.actor(auth), request.name(), request.description(),
+                        request.colour()));
     }
 
     /** Changes a class's name, description and colour. {@code PUT /{id}}; ADMIN; 409 if the name is taken. Audited. */
@@ -65,7 +66,8 @@ public class RacingClassController {
     public RacingClassDto updateRacingClass(Authentication auth, @PathVariable Long id,
                                              @RequestBody @Valid CreateRacingClassRequest request) {
         return RacingClassDto.from(
-                racingClassService.update(CurrentOfficial.actor(auth), id, request.name(), request.description(), request.colour()));
+                racingClassService.update(CurrentOfficial.actor(auth), id, request.name(), request.description(),
+                        request.colour()));
     }
 
     /**

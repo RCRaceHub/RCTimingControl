@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -82,7 +83,7 @@ public class RacingClassService {
     }
 
     private static String blankToNull(String text) {
-        return text == null || text.isBlank() ? null : text.trim().toLowerCase(java.util.Locale.ROOT);
+        return text == null || text.isBlank() ? null : text.trim().toLowerCase(Locale.ROOT);
     }
 
     private RacingClass getRacingClassOrThrow(Long id) {

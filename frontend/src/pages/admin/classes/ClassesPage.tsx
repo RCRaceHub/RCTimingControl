@@ -143,7 +143,7 @@ export default function ClassesPage() {
   async function handleDelete(target: RacingClassDto) {
     const confirmed = await confirm({
       title: `Delete ${target.name}?`,
-      description: 'Events keep their races, but the class is removed from the list. This cannot be undone.',
+      description: 'Events using this class lose it, and its races no longer show in the run order. This cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true,
     });
