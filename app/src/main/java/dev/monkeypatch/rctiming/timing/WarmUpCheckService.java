@@ -85,8 +85,7 @@ public class WarmUpCheckService {
         boolean added = false;
         for (Entry entry : entryRepository.findAllById(entryIds)) {
             if (entry.getStatus() != EntryStatus.WITHDRAWN
-                    && (event.transponderNumber().equals(entry.getTransponderNumberSnapshot())
-                        || event.transponderNumber().equals(entry.getSecondaryTransponderNumber()))) {
+                    && entry.hasTransponder(event.transponderNumber())) {
                 added |= seenHere.add(entry.getId());
             }
         }

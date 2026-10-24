@@ -28,6 +28,13 @@ const ERROR_MESSAGES: Record<string, string> = {
   primary_required: 'The primary transponder can be replaced but not removed.',
 };
 
+const SLOT_CHOICES: { value: TransponderSlot; label: string }[] = [
+  { value: 'PRIMARY', label: 'Primary' },
+  { value: 'SECONDARY', label: 'Secondary' },
+  { value: 'THIRD', label: 'Third' },
+  { value: 'FOURTH', label: 'Fourth' },
+];
+
 function errorMessageFrom(err: unknown): string {
   const code = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
   return (code && ERROR_MESSAGES[code]) || 'Something went wrong. Please try again.';
@@ -69,9 +76,14 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
           ? {
               transponderNumber: response.newTransponderNumber ?? selectedEntry.transponderNumber,
             }
-          : { secondaryTransponderNumber: response.newTransponderNumber }),
+          : slot === 'SECONDARY'
+            ? { secondaryTransponderNumber: response.newTransponderNumber }
+            : slot === 'THIRD'
+              ? { thirdTransponderNumber: response.newTransponderNumber }
+              : { fourthTransponderNumber: response.newTransponderNumber }),
         // A swap to the booking's number settles the difference the import flagged
-        ...(response.newTransponderNumber === (slot === 'PRIMARY' ? selectedEntry.importedTransponderNumber : selectedEntry.importedSecondaryTransponderNumber)
+        ...((slot === 'PRIMARY' || slot === 'SECONDARY')
+          && response.newTransponderNumber === (slot === 'PRIMARY' ? selectedEntry.importedTransponderNumber : selectedEntry.importedSecondaryTransponderNumber)
           ? (slot === 'PRIMARY' ? { importedTransponderNumber: null } : { importedSecondaryTransponderNumber: null })
           : {}),
       });
@@ -107,15 +119,12 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
               />
               Primary
             </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="radio"
-                name="slot"
-                checked={slot === 'SECONDARY'}
-                onChange={() => setSlot('SECONDARY')}
-              />
-              Secondary
-            </label>
+            {SLOT_CHOICES.slice(1).map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-1.5">
+                <input type="radio" name="slot" checked={slot === value} onChange={() => setSlot(value)} />
+                {label}
+              </label>
+            ))}
           </fieldset>
 
           <label className="flex flex-col gap-1">
@@ -125,9 +134,9 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
               value={newTransponderNumber}
               onChange={(e) => setNewTransponderNumber(e.target.value)}
             />
-            {slot === 'SECONDARY' && (
+            {slot !== 'PRIMARY' && (
               <span className="text-xs text-muted-foreground">
-                Leave blank to remove the secondary.
+                Leave blank to remove it.
               </span>
             )}
           </label>
@@ -163,7 +172,7 @@ function successMessage({
   newTransponderNumber: to,
 }: TransponderSwapResponse): string {
   if (from === to) return 'No change: that is already the number.';
-  if (!to) return `Removed secondary #${from}.`;
-  if (!from) return `Added secondary #${to}.`;
+  if (!to) return `Removed transponder #${from}.`;
+  if (!from) return `Added transponder #${to}.`;
   return `Swapped #${from} → #${to}.`;
 }

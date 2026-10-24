@@ -124,14 +124,14 @@ public class TransponderLinkService {
     /**
      * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. It goes in
      * the primary slot when the primary has not passed in this race (and there is no secondary, or the secondary
-     * has passed), otherwise in the secondary slot when that is empty or has not passed. If both numbers have
-     * passed, nothing is saved, since replacing either would stop it counting. A number another competitor's
-     * entry holds is only linked for this race, as a swap would refuse it.
+     * has passed), otherwise in the secondary slot when that is empty or has not passed. If both have passed it
+     * goes in the first empty third or fourth slot (#482); if none is free nothing is saved, since replacing a
+     * number that has passed would stop it counting. A number another competitor's entry holds is only linked
+     * for this race, as a swap would refuse it.
      */
     private void saveOnEntry(long raceId, Long eventId, String transponderNumber, long entryId, long userId) {
         Entry entry = entryRepository.findById(entryId).orElse(null);
-        if (eventId == null || entry == null || transponderNumber.equals(entry.getTransponderNumberSnapshot())
-                || transponderNumber.equals(entry.getSecondaryTransponderNumber())) {
+        if (eventId == null || entry == null || entry.hasTransponder(transponderNumber)) {
             return;
         }
         String primary = entry.getTransponderNumberSnapshot();
@@ -144,8 +144,12 @@ public class TransponderLinkService {
             slot = TransponderSlot.PRIMARY;
         } else if (!hasSecondary || !secondarySeen) {
             slot = TransponderSlot.SECONDARY;
+        } else if (isBlank(entry.getThirdTransponderNumber())) {
+            slot = TransponderSlot.THIRD;
+        } else if (isBlank(entry.getFourthTransponderNumber())) {
+            slot = TransponderSlot.FOURTH;
         } else {
-            log.info("Transponder {} linked to entry {} for race {} only: both its numbers are in use",
+            log.info("Transponder {} linked to entry {} for race {} only: all its numbers are in use",
                     transponderNumber, entryId, raceId);
             return;
         }
@@ -154,5 +158,9 @@ public class TransponderLinkService {
             log.info("Transponder {} linked to entry {} for race {} only: not saved on the entry ({})",
                     transponderNumber, entryId, raceId, result.getClass().getSimpleName());
         }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

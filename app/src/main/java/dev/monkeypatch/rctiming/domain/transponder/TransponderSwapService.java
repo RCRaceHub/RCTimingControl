@@ -52,7 +52,7 @@ public class TransponderSwapService {
      * number is refused if another competitor's active entry in the event holds it; one competitor may share a number
      * between their own entries. Swapping to the number the entry already has succeeds without changing anything.
      *
-     * @param newNumber the new number; blank removes a secondary transponder
+     * @param newNumber the new number; blank removes a secondary, third or fourth transponder
      */
     @Transactional
     public SwapResult swap(long eventId, long entryId, TransponderSlot slot, String newNumber, long actingUserId) {
@@ -72,19 +72,16 @@ public class TransponderSwapService {
             return new SwapResult.PrimaryRequired();
         }
 
-        String oldNumber = slot == TransponderSlot.PRIMARY
-                ? entry.getTransponderNumberSnapshot()
-                : entry.getSecondaryTransponderNumber();
+        String oldNumber = numberIn(entry, slot);
         if (Objects.equals(oldNumber, normalized)) {
             return new SwapResult.Success(entry, slot, oldNumber, normalized);
         }
 
         if (normalized != null) {
-            String otherSlot = slot == TransponderSlot.PRIMARY
-                    ? entry.getSecondaryTransponderNumber()
-                    : entry.getTransponderNumberSnapshot();
-            if (normalized.equals(otherSlot)) {
-                return new SwapResult.SameAsOtherSlot();
+            for (TransponderSlot other : TransponderSlot.values()) {
+                if (other != slot && normalized.equals(numberIn(entry, other))) {
+                    return new SwapResult.SameAsOtherSlot();
+                }
             }
             if (heldByAnotherCompetitor(entry, normalized)) {
                 return new SwapResult.TransponderAlreadyAssigned();
@@ -97,11 +94,15 @@ public class TransponderSwapService {
             if (Objects.equals(normalized, entry.getImportedTransponderNumber())) {
                 entry.setImportedTransponderNumber(null);
             }
-        } else {
+        } else if (slot == TransponderSlot.SECONDARY) {
             entry.setSecondaryTransponderNumber(normalized);
             if (Objects.equals(normalized, entry.getImportedSecondaryTransponderNumber())) {
                 entry.setImportedSecondaryTransponderNumber(null);
             }
+        } else if (slot == TransponderSlot.THIRD) {
+            entry.setThirdTransponderNumber(normalized);
+        } else {
+            entry.setFourthTransponderNumber(normalized);
         }
         Instant now = Instant.now();
         entryRepository.save(entry);
@@ -145,8 +146,16 @@ public class TransponderSwapService {
                 .filter(other -> !other.getId().equals(entry.getId()))
                 .filter(other -> other.getStatus() != EntryStatus.WITHDRAWN)
                 .filter(other -> !Objects.equals(other.getCompetitorId(), entry.getCompetitorId()))
-                .anyMatch(other -> number.equals(other.getTransponderNumberSnapshot())
-                        || number.equals(other.getSecondaryTransponderNumber()));
+                .anyMatch(other -> other.hasTransponder(number));
+    }
+
+    private static String numberIn(Entry entry, TransponderSlot slot) {
+        return switch (slot) {
+            case PRIMARY -> entry.getTransponderNumberSnapshot();
+            case SECONDARY -> entry.getSecondaryTransponderNumber();
+            case THIRD -> entry.getThirdTransponderNumber();
+            case FOURTH -> entry.getFourthTransponderNumber();
+        };
     }
 
     private void writeAudit(Long entryId, long actingUserId, TransponderSlot slot,

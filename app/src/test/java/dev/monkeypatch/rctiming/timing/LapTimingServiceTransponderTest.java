@@ -134,6 +134,21 @@ class LapTimingServiceTransponderTest {
     }
 
     @Test
+    void thirdAndFourthTransponderGetLaps() {
+        addEntry(1L, 10L, "1001", "2002", EntryStatus.CONFIRMED);
+        entriesById.get(10L).setThirdTransponderNumber("3003");
+        entriesById.get(10L).setFourthTransponderNumber("4004");
+
+        lap(1L, "1001", 1_000);
+        lap(1L, "3003", 31_000);
+        lap(1L, "4004", 61_000);
+
+        assertThat(lapsFor(1L, 10L)).isEqualTo(2);
+        verify(hub, never()).broadcastUnknownTransponder(anyLong(), eq("3003"));
+        verify(hub, never()).broadcastUnknownTransponder(anyLong(), eq("4004"));
+    }
+
+    @Test
     void sameNumberInTwoDifferentEventsDoesNotConflict() {
         // Race 1 belongs to one event, race 2 to another; both entries use 5555
         addEntry(1L, 10L, "5555", null, EntryStatus.CONFIRMED);

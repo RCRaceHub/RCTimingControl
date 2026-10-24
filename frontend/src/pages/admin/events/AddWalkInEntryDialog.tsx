@@ -38,6 +38,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   const [selected, setSelected] = useState<CompetitorSummaryDto | null>(null);
   const [primary, setPrimary] = useState('');
   const [secondary, setSecondary] = useState('');
+  const [third, setThird] = useState('');
+  const [fourth, setFourth] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Existing drivers the typed name matches, while the official decides if it is one of them (#123)
   const [possibleDuplicates, setPossibleDuplicates] = useState<CompetitorSummaryDto[]>([]);
@@ -51,6 +53,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       setSelected(null);
       setPrimary('');
       setSecondary('');
+      setThird('');
+      setFourth('');
       setError(null);
       setPossibleDuplicates([]);
     }
@@ -80,6 +84,11 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       setError('The secondary transponder must be different from the primary.');
       return;
     }
+    const given = [primary, secondary, third, fourth].map(n => n.trim()).filter(Boolean);
+    if (new Set(given).size !== given.length) {
+      setError('Each transponder must be a different number.');
+      return;
+    }
     setError(null);
     try {
       const result = await createEntry.mutateAsync({
@@ -87,6 +96,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
         ...(!chosen && options.confirmNew ? { confirmNewCompetitor: true } : {}),
         primaryTransponder: primary.trim(),
         ...(secondary.trim() ? { secondaryTransponder: secondary.trim() } : {}),
+        ...(third.trim() ? { thirdTransponder: third.trim() } : {}),
+        ...(fourth.trim() ? { fourthTransponder: fourth.trim() } : {}),
       });
       toast.success(`Entry added for ${chosen?.displayName ?? driverText.trim()}.`);
       result.warnings.forEach(w => toast.warning(w));
@@ -166,6 +177,14 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                 maxLength={20}
                 onChange={e => setSecondary(e.target.value)}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="walkin-third">Third transponder (optional)</Label>
+              <Input id="walkin-third" value={third} maxLength={20} onChange={e => setThird(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="walkin-fourth">Fourth transponder (optional)</Label>
+              <Input id="walkin-fourth" value={fourth} maxLength={20} onChange={e => setFourth(e.target.value)} />
             </div>
           </div>
 

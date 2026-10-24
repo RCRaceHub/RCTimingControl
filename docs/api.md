@@ -599,11 +599,12 @@ Content-Type: application/json
   "eventClassId": 11,
   "competitorName": "Wendy Walkin",
   "primaryTransponder": "1234567",
-  "secondaryTransponder": "7654321"
+  "secondaryTransponder": "7654321",
+  "thirdTransponder": "7654322"
 }
 ```
 
-Requires `ADMIN` or `RACE_DIRECTOR`. Give either `competitorId` (an existing competitor) or `competitorName` (a new one), not both. **201 Created** with `{ "entry": {...}, "warnings": [...] }`; a transponder another active entry in the event uses is a warning. **409** if the competitor already has an entry in the class or the event is completed. A new `competitorName` that matches an existing competitor (same name, ignoring case and spacing) is refused with **409** and `{ "code": "POSSIBLE_DUPLICATE_COMPETITOR", "matches": [{ "id": 7, "displayName": "Wendy Walkin", "brcaNumber": null, "homeClub": null, "spokenName": null }] }`. Send that `competitorId` to use them, or add `"confirmNewCompetitor": true` to say this is a different person.
+Requires `ADMIN` or `RACE_DIRECTOR`. Give either `competitorId` (an existing competitor) or `competitorName` (a new one), not both. `secondaryTransponder`, `thirdTransponder` and `fourthTransponder` are optional extras (up to four numbers), and laps from any of them count. **201 Created** with `{ "entry": {...}, "warnings": [...] }`; a transponder another active entry in the event uses is a warning. **409** if the competitor already has an entry in the class or the event is completed. A new `competitorName` that matches an existing competitor (same name, ignoring case and spacing) is refused with **409** and `{ "code": "POSSIBLE_DUPLICATE_COMPETITOR", "matches": [{ "id": 7, "displayName": "Wendy Walkin", "brcaNumber": null, "homeClub": null, "spokenName": null }] }`. Send that `competitorId` to use them, or add `"confirmNewCompetitor": true` to say this is a different person.
 
 ---
 
@@ -686,7 +687,7 @@ Open to any official (`ADMIN`, `RACE_DIRECTOR` or `REFEREE`). Withdrawn entries 
 GET  /race-control/events/{eventId}/entries/search?query=jane
 ```
 
-`search` is a case-insensitive name match, to find the entry to swap. Each item is `{ "entryId": 101, "competitorName": "Jane Doe", "competitorId": 7, "spokenName": null, "speechName": "Jane Doe", "className": "Stock Buggy", "transponderNumber": "1234567", "secondaryTransponderNumber": null, "importedTransponderNumber": null, "importedSecondaryTransponderNumber": null }`. Refusals are Problem Details with a readable `detail` and a code in `error`.
+`search` is a case-insensitive name match, to find the entry to swap. Each item is `{ "entryId": 101, "competitorName": "Jane Doe", "competitorId": 7, "spokenName": null, "speechName": "Jane Doe", "className": "Stock Buggy", "transponderNumber": "1234567", "secondaryTransponderNumber": null, "importedTransponderNumber": null, "importedSecondaryTransponderNumber": null, "thirdTransponderNumber": null, "fourthTransponderNumber": null }`. Refusals are Problem Details with a readable `detail` and a code in `error`.
 
 ```http
 POST /race-control/events/{eventId}/entries/{entryId}/transponder-swap
@@ -695,7 +696,7 @@ Content-Type: application/json
 { "slot": "PRIMARY", "newTransponderNumber": "7654321" }
 ```
 
-`slot` is `PRIMARY` or `SECONDARY`. A blank number removes the secondary. **200 OK** with `{ "entryId": 101, "slot": "PRIMARY", "oldTransponderNumber": "1234567", "newTransponderNumber": "7654321" }`; the change is written to the entry audit log as `TRANSPONDER_SWAP`, and laps count on the new number from the next passing. **409** `transponder_already_assigned` if another competitor's entry in the event uses the number (the same competitor's other entries may share it), or `entry_withdrawn`. **400** `same_as_other_transponder` or `primary_required`.
+`slot` is `PRIMARY`, `SECONDARY`, `THIRD` or `FOURTH`. A blank number removes any but the primary. **200 OK** with `{ "entryId": 101, "slot": "PRIMARY", "oldTransponderNumber": "1234567", "newTransponderNumber": "7654321" }`; the change is written to the entry audit log as `TRANSPONDER_SWAP`, and laps count on the new number from the next passing. **409** `transponder_already_assigned` if another competitor's entry in the event uses the number (the same competitor's other entries may share it), or `entry_withdrawn`. **400** `same_as_other_transponder` or `primary_required`.
 
 The pre-race readiness grid call (`GET /race-control/race/{raceId}/pre-race-readiness`) carries `racehubArrival` on each slot, and `seenEntryIds`, the entries whose transponder the decoder has picked up since the grid was called (the warm-up check; also pushed on `/topic/race/{raceId}/warmup`). For a final with bump slots, `marshalDuty` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up.
 

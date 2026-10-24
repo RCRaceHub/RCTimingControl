@@ -272,6 +272,34 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
         return (String) get(17);
     }
 
+    /**
+     * Setter for <code>entries.third_transponder_number</code>.
+     */
+    public void setThirdTransponderNumber(String value) {
+        set(18, value);
+    }
+
+    /**
+     * Getter for <code>entries.third_transponder_number</code>.
+     */
+    public String getThirdTransponderNumber() {
+        return (String) get(18);
+    }
+
+    /**
+     * Setter for <code>entries.fourth_transponder_number</code>.
+     */
+    public void setFourthTransponderNumber(String value) {
+        set(19, value);
+    }
+
+    /**
+     * Getter for <code>entries.fourth_transponder_number</code>.
+     */
+    public String getFourthTransponderNumber() {
+        return (String) get(19);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -295,7 +323,7 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     /**
      * Create a detached, initialised EntriesRecord
      */
-    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber) {
+    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber, String thirdTransponderNumber, String fourthTransponderNumber) {
         super(Entries.ENTRIES);
 
         setId(id);
@@ -316,6 +344,8 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
         setRacehubEventClassId(racehubEventClassId);
         setImportedTransponderNumber(importedTransponderNumber);
         setImportedSecondaryTransponderNumber(importedSecondaryTransponderNumber);
+        setThirdTransponderNumber(thirdTransponderNumber);
+        setFourthTransponderNumber(fourthTransponderNumber);
         resetChangedOnNotNull();
     }
 }

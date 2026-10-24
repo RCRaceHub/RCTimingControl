@@ -9,6 +9,8 @@ package dev.monkeypatch.rctiming.query.racecontrol;
  * @param importedTransponderNumber the imported file's primary, when it differs from a number swapped on the
  *                                  day (#50); null otherwise
  * @param importedSecondaryTransponderNumber the same for the secondary
+ * @param thirdTransponderNumber  the optional third number, or null (#482)
+ * @param fourthTransponderNumber the optional fourth number, or null
  */
 public record EntrySearchDto(
         long entryId,
@@ -20,5 +22,7 @@ public record EntrySearchDto(
         String transponderNumber,
         String secondaryTransponderNumber,
         String importedTransponderNumber,
-        String importedSecondaryTransponderNumber
+        String importedSecondaryTransponderNumber,
+        String thirdTransponderNumber,
+        String fourthTransponderNumber
 ) {}

@@ -61,7 +61,7 @@ public class TransponderSwapController {
     }
 
     /**
-     * Swaps (or, for the secondary slot, removes) a transponder on an entry on the day.
+     * Swaps (or, for any slot but the primary, removes) a transponder on an entry on the day.
      * {@code POST /entries/{entryId}/transponder-swap}. Answers 200 with a {@link TransponderSwapResponse}, or a
      * problem with an {@code error} code: {@code entry_not_found} (404), {@code entry_withdrawn} and
      * {@code transponder_already_assigned} (409, another competitor holds the number in the event),

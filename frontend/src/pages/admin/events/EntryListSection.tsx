@@ -174,9 +174,11 @@ function EntriesTable({
                 {entry.transponderNumber ?? (
                   <span className="text-muted-foreground">—</span>
                 )}
-                {entry.secondaryTransponderNumber && (
-                  <span className="text-muted-foreground"> / {entry.secondaryTransponderNumber}</span>
-                )}
+                {[entry.secondaryTransponderNumber, entry.thirdTransponderNumber, entry.fourthTransponderNumber]
+                  .filter(Boolean)
+                  .map(n => (
+                    <span key={n} className="text-muted-foreground"> / {n}</span>
+                  ))}
                 <ImportedTransponderDifference
                   primary={entry.importedTransponderNumber}
                   secondary={entry.importedSecondaryTransponderNumber}

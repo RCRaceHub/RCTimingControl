@@ -286,6 +286,9 @@ export interface AdminEntryDto {
   status: 'PENDING' | 'CONFIRMED' | 'WITHDRAWN';
   submittedAt: string;
   withdrawnAt: string | null;
+  /** Optional third and fourth transponders (#482) */
+  thirdTransponderNumber?: string | null;
+  fourthTransponderNumber?: string | null;
 }
 
 export interface CreateEventRequest {
@@ -461,6 +464,8 @@ export interface CreateWalkInEntryRequest {
   confirmNewCompetitor?: boolean;
   primaryTransponder: string;
   secondaryTransponder?: string;
+  thirdTransponder?: string;
+  fourthTransponder?: string;
 }
 
 export interface CreateWalkInEntryResult {

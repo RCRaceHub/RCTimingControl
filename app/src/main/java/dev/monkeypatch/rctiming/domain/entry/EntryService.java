@@ -35,10 +35,19 @@ public class EntryService {
 
     /**
      * A walk-in to add: an existing {@code competitorId} or a {@code competitorName} for a new competitor, and
-     * {@code confirmNewCompetitor} when a new name that matches someone is a different person (#123).
+     * {@code confirmNewCompetitor} when a new name that matches someone is a different person (#123). Up to four
+     * transponders (#482).
      */
     public record WalkIn(Long eventId, Long eventClassId, Long competitorId, String competitorName,
-                         String primaryTransponder, String secondaryTransponder, Boolean confirmNewCompetitor) {}
+                         String primaryTransponder, String secondaryTransponder, Boolean confirmNewCompetitor,
+                         String thirdTransponder, String fourthTransponder) {
+        /** A walk-in with at most two transponders. */
+        public WalkIn(Long eventId, Long eventClassId, Long competitorId, String competitorName,
+                      String primaryTransponder, String secondaryTransponder, Boolean confirmNewCompetitor) {
+            this(eventId, eventClassId, competitorId, competitorName, primaryTransponder, secondaryTransponder,
+                    confirmNewCompetitor, null, null);
+        }
+    }
 
     /** The walk-in's entry, and warnings such as a transponder already used in the event. */
     public record WalkInResult(Entry entry, List<String> warnings) {}
@@ -93,10 +102,21 @@ public class EntryService {
         }
 
         String primary = walkIn.primaryTransponder().trim();
-        String secondary = walkIn.secondaryTransponder() == null || walkIn.secondaryTransponder().isBlank()
-                ? null : walkIn.secondaryTransponder().trim();
+        String secondary = blankToNull(walkIn.secondaryTransponder());
+        String third = blankToNull(walkIn.thirdTransponder());
+        String fourth = blankToNull(walkIn.fourthTransponder());
         if (primary.equals(secondary)) {
             throw new IllegalArgumentException("The secondary transponder must differ from the primary");
+        }
+        List<String> given = new ArrayList<>();
+        given.add(primary);
+        for (String n : new String[] {secondary, third, fourth}) {
+            if (n != null) {
+                given.add(n);
+            }
+        }
+        if (given.stream().distinct().count() != given.size()) {
+            throw new IllegalArgumentException("Each transponder must be a different number");
         }
 
         boolean hasName = walkIn.competitorName() != null && !walkIn.competitorName().isBlank();
@@ -132,15 +152,16 @@ public class EntryService {
         entry.setEventClassId(walkIn.eventClassId());
         entry.setTransponderNumberSnapshot(primary);
         entry.setSecondaryTransponderNumber(secondary);
+        entry.setThirdTransponderNumber(third);
+        entry.setFourthTransponderNumber(fourth);
         entry.setStatus(EntryStatus.CONFIRMED);
         entry.setSubmittedAt(now);
         entry.setConfirmedAt(now);
         Entry persisted = entryRepository.save(entry);
 
         List<String> warnings = new ArrayList<>();
-        for (String number : secondary == null ? List.of(primary) : List.of(primary, secondary)) {
-            boolean inUse = eventEntries.stream().anyMatch(e ->
-                    number.equals(e.getTransponderNumberSnapshot()) || number.equals(e.getSecondaryTransponderNumber()));
+        for (String number : given) {
+            boolean inUse = eventEntries.stream().anyMatch(e -> e.hasTransponder(number));
             if (inUse) {
                 warnings.add("Transponder " + number + " is already used by another entry in this event.");
             }
@@ -151,6 +172,8 @@ public class EntryService {
         created.put("eventClassId", String.valueOf(walkIn.eventClassId()));
         created.put("transponderNumberSnapshot", primary);
         created.put("secondaryTransponderNumber", secondary);
+        created.put("thirdTransponderNumber", third);
+        created.put("fourthTransponderNumber", fourth);
         String afterJson = EntryAuditLog.snapshot(objectMapper, created);
         auditLogRepository.save(
                 EntryAuditLog.of(persisted.getId(), adminUserId, "ADMIN_CREATE", null, null, afterJson, now));
@@ -178,5 +201,9 @@ public class EntryService {
         auditLogRepository.save(EntryAuditLog.of(entry.getId(), adminUserId, "ADMIN_WITHDRAW", reason,
                 beforeJson, afterJson, now));
         return entry;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 }

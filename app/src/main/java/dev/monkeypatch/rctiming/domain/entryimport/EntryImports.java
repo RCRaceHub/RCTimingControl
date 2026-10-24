@@ -81,7 +81,8 @@ public class EntryImports {
         for (Entry e : current) {
             if (!replaced.contains(e.getId()) && e.getStatus() != EntryStatus.WITHDRAWN) {
                 state.add("c:" + e.getCompetitorId(), names.getOrDefault(e.getCompetitorId(), "entry " + e.getId()),
-                        e.getEventClassId(), e.getTransponderNumberSnapshot(), e.getSecondaryTransponderNumber());
+                        e.getEventClassId(), e.getTransponderNumberSnapshot(), e.getSecondaryTransponderNumber(),
+                        e.getThirdTransponderNumber(), e.getFourthTransponderNumber());
             }
         }
         return state;

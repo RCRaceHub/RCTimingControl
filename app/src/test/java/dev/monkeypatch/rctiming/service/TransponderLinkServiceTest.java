@@ -222,9 +222,24 @@ class TransponderLinkServiceTest {
     }
 
     @Test
-    void link_whenBothNumbersAreInUse_savesNothingOnTheEntry() {
+    void link_whenBothNumbersAreInUse_savesItInTheThirdSlot() {
         runningRaceWithEntry11(new LiveRaceState());
         entry11("1111111", "2222222");
+        when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(2);
+        when(lapTimingService.countPassingsForTransponder(7L, "2222222")).thenReturn(4);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(swapService).swap(5L, 11L, TransponderSlot.THIRD, "1234567", 3L);
+        verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
+    }
+
+    @Test
+    void link_whenAllFourNumbersAreInUse_savesNothingOnTheEntry() {
+        runningRaceWithEntry11(new LiveRaceState());
+        Entry entry = entry11("1111111", "2222222");
+        entry.setThirdTransponderNumber("3333333");
+        entry.setFourthTransponderNumber("4444444");
         when(lapTimingService.countPassingsForTransponder(7L, "1111111")).thenReturn(2);
         when(lapTimingService.countPassingsForTransponder(7L, "2222222")).thenReturn(4);
 
@@ -234,7 +249,7 @@ class TransponderLinkServiceTest {
         verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
     }
 
-    private void entry11(String primary, String secondary) {
+    private Entry entry11(String primary, String secondary) {
         when(labels.eventOf(7L)).thenReturn(5L);
         // link() counts the unknown number's own passings too
         lenient().when(lapTimingService.countPassingsForTransponder(7L, "1234567")).thenReturn(0);
@@ -245,6 +260,7 @@ class TransponderLinkServiceTest {
         when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
         lenient().when(swapService.swap(anyLong(), anyLong(), any(), any(), anyLong()))
                 .thenReturn(new SwapResult.Success(entry, TransponderSlot.PRIMARY, primary, "1234567"));
+        return entry;
     }
 
     private void runningRaceWithEntry11(LiveRaceState state) {
