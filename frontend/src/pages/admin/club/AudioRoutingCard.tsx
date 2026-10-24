@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ExternalLink, Play, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { sendCueTo } from '@/lib/audioOutput';
+import { isOutputOpen, sendCueTo, subscribePresence } from '@/lib/audioOutput';
 import {
   LOCAL_OUTPUT_ID,
   SOUND_ROUTES,
@@ -12,7 +12,6 @@ import {
   outputsFor,
   saveRouting,
   useAudioRouting,
-  type AudioRouting,
   type OutputPan,
   type SoundRoute,
 } from '@/lib/audioRouting';
@@ -33,34 +32,51 @@ export function AudioRoutingCard() {
   const routing = useAudioRouting();
   const [newName, setNewName] = useState('');
 
-  const update = (next: AudioRouting) => saveRouting(next);
+  const [, refresh] = useState(0);
+
+  // Re-check which output pages are open when one says so, and now and then in case one has closed
+  useEffect(() => {
+    const stop = subscribePresence(() => refresh((n) => n + 1));
+    const timer = setInterval(() => refresh((n) => n + 1), 3000);
+    return () => {
+      stop();
+      clearInterval(timer);
+    };
+  }, []);
 
   const toggle = (sound: SoundRoute, outputId: string, on: boolean) => {
     const current = outputsFor(routing, sound);
     const next = on ? [...current, outputId] : current.filter((id) => id !== outputId);
-    update({ ...routing, routes: { ...routing.routes, [sound]: next } });
+    saveRouting({ ...routing, routes: { ...routing.routes, [sound]: next } });
   };
 
   const addOutput = () => {
     const name = newName.trim();
     if (!name) return;
     const id = outputIdFor(name, routing.outputs.map((o) => o.id));
-    update({ ...routing, outputs: [...routing.outputs, { id, name, pan: 'both' }] });
+    saveRouting({ ...routing, outputs: [...routing.outputs, { id, name, pan: 'both' }] });
     setNewName('');
   };
 
   const removeOutput = (id: string) => {
+    // A sound that only went to this output goes back to the default, not to silence
     const routes = Object.fromEntries(
-      Object.entries(routing.routes).map(([sound, ids]) => [sound, ids.filter((out) => out !== id)]),
+      Object.entries(routing.routes).flatMap(([sound, ids]) => {
+        const left = ids.filter((out) => out !== id);
+        return left.length === 0 && ids.length > 0 ? [] : [[sound, left]];
+      }),
     );
-    update({ outputs: routing.outputs.filter((o) => o.id !== id), routes });
+    saveRouting({ outputs: routing.outputs.filter((o) => o.id !== id), routes });
   };
 
   const setPan = (id: string, pan: OutputPan) =>
-    update({ ...routing, outputs: routing.outputs.map((o) => (o.id === id ? { ...o, pan } : o)) });
+    saveRouting({ ...routing, outputs: routing.outputs.map((o) => (o.id === id ? { ...o, pan } : o)) });
 
   const rename = (id: string, name: string) =>
-    update({ ...routing, outputs: routing.outputs.map((o) => (o.id === id ? { ...o, name: name.trim() || o.name } : o)) });
+    saveRouting({
+      ...routing,
+      outputs: routing.outputs.map((o) => (o.id === id ? { ...o, name: name.trim() || o.name } : o)),
+    });
 
   return (
     <Card>
@@ -71,7 +87,8 @@ export function AudioRoutingCard() {
         <p className="text-sm text-muted-foreground">
           Add an output for each place you want sound, such as the rostrum and the pits, then tick the outputs that
           play each sound. A sound can go to more than one. Open each output&apos;s page in Chrome or Edge on this
-          laptop, choose its sound card there, and leave the tab open. This is saved in this browser.
+          laptop, choose its sound card there, and leave the tab open. If an output&apos;s page is not open when a sound
+          is due, race control plays that sound itself. This is saved in this browser.
         </p>
 
         <div className="space-y-3">
@@ -103,6 +120,11 @@ export function AudioRoutingCard() {
                 >
                   Open output page <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 </a>
+              )}
+              {output.id !== LOCAL_OUTPUT_ID && (
+                <span className="text-xs text-muted-foreground">
+                  {isOutputOpen(output.id) ? 'Open' : 'Not open: its sounds play on race control'}
+                </span>
               )}
               <Button
                 variant="outline"
@@ -152,7 +174,10 @@ export function AudioRoutingCard() {
                 const picked = outputsFor(routing, id);
                 return (
                   <tr key={id} className="border-t">
-                    <td className="py-2 pr-4">{label}</td>
+                    <td className="py-2 pr-4">
+                      {label}
+                      {picked.length === 0 && <span className="ml-2 text-xs text-destructive">Plays nowhere</span>}
+                    </td>
                     {routing.outputs.map((o) => (
                       <td key={o.id} className="py-2 px-2 text-center">
                         <Checkbox
@@ -170,7 +195,8 @@ export function AudioRoutingCard() {
         </div>
         <p className="text-xs text-muted-foreground">
           Spoken lines on an output page use the club&apos;s Piper voice, because the browser&apos;s own voice
-          always plays on the default sound card. If Piper is not running, that line plays on the default card.
+          always plays on the default sound card. If Piper is not running, that line plays on the default card. Race
+          control&apos;s own spoken lines always use the browser voice, so its side setting only affects its sounds.
         </p>
       </CardContent>
     </Card>

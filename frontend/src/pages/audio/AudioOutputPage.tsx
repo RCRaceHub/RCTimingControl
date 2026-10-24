@@ -23,12 +23,11 @@ function readDevice(id: string): { deviceId: string; label: string } | null {
   }
 }
 
-function describe(cue: Cue): string {
+function cueSummary(cue: Cue): string {
   switch (cue.kind) {
     case 'horn': return `${cue.horn} sound`;
     case 'lapBeep': return 'lap beep';
-    case 'speech': return `“${cue.text}”`;
-    case 'clip': return `“${cue.text}”`;
+    default: return `“${cue.text}”`;
   }
 }
 
@@ -51,21 +50,24 @@ export default function AudioOutputPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setThisOutput(outputId);
+    const stopAnnouncing = setThisOutput(outputId);
     setThisDevice(readDevice(outputId)?.deviceId ?? null);
     unlockAudio();
+    return stopAnnouncing;
   }, [outputId]);
 
   useEffect(() => listenForCues((cue, volume) => {
     playCueHere(cue, volume);
-    setPlayed((list) => [`${new Date().toLocaleTimeString()}  ${describe(cue)}`, ...list].slice(0, 8));
+    setPlayed((list) => [`${new Date().toLocaleTimeString()}  ${cueSummary(cue)}`, ...list].slice(0, 8));
   }), [outputId]);
 
   const choose = useCallback(async () => {
     setError(null);
     const media = (navigator as PickerNavigator).mediaDevices;
     if (!media?.selectAudioOutput) {
-      setError('This browser cannot choose a sound card. Use Chrome or Edge on this laptop (a page on localhost or HTTPS).');
+      setError(
+        'This browser cannot choose a sound card. Use Chrome or Edge on this laptop (a page on localhost or HTTPS).',
+      );
       return;
     }
     try {

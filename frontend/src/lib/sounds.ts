@@ -161,8 +161,15 @@ export function finishHornMs(sounds?: HornSounds | null): number {
  * context, which a sound card choice does not need. {@code onFail} runs if the element cannot play.
  */
 export function playElement(audio: HTMLAudioElement, volume: number, onFail: (e?: unknown) => void) {
+  // A file that will not play can fail twice (the error event and the rejected play): report it once
+  let failed = false;
+  const fail = (e?: unknown) => {
+    if (failed) return;
+    failed = true;
+    onFail(e);
+  };
   audio.volume = Math.min(1, Math.max(0, volume));
-  audio.onerror = () => onFail();
+  audio.onerror = () => fail();
   const sink = (audio as SinkAudio).setSinkId;
   const ready = target.deviceId && sink ? sink.call(audio, target.deviceId).catch(() => undefined) : Promise.resolve();
   void ready.then(() => {
@@ -175,7 +182,7 @@ export function playElement(audio: HTMLAudioElement, volume: number, onFail: (e?
       }
     }
     return audio.play();
-  }).catch(onFail);
+  }).catch(fail);
 }
 
 /** Plays the club's sound file; if the browser can't, sounds the built-in horn instead. */

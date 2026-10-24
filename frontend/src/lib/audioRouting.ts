@@ -103,7 +103,8 @@ export function saveRouting(routing: AudioRouting) {
 // Another tab of this browser saved the routing
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    if (event.key !== STORAGE_KEY) return;
+    // A null key is the whole storage being cleared
+    if (event.key !== null && event.key !== STORAGE_KEY) return;
     cached = null;
     listeners.forEach((listener) => listener());
   });
