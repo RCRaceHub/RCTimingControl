@@ -237,11 +237,15 @@ function lapBeepFile(pace: LapPace, sounds?: HornSounds | null): { url: string; 
   return null;
 }
 
-/** The beep for a lap: an octave higher when faster than the driver's best; the club's own sound for that pace if it has one. */
+/**
+ * The beep for a lap: an octave higher when faster than the driver's best and an octave lower when slower; the
+ * club's own sound for that pace if it has one.
+ */
 export function playLapBeep(volume: number, pace: LapPace, tone?: BeepTone, sounds?: HornSounds | null) {
   const builtIn = () => {
     const hz = tone?.hz ?? 440;
-    play([{ at: 0, length: (tone?.ms ?? 200) / 1000, hz: pace === 'faster' ? hz * 2 : hz }], volume, 'sine');
+    const pitch = pace === 'faster' ? hz * 2 : pace === 'slower' ? hz / 2 : hz;
+    play([{ at: 0, length: (tone?.ms ?? 200) / 1000, hz: pitch }], volume, 'sine');
   };
   const own = lapBeepFile(pace, sounds);
   if (own) playFile(own.url, volume, builtIn);
