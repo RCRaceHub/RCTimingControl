@@ -36,7 +36,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
         {results.map((row) => (
           <tr key={row.entryId} className="border-b border-slate-800">
             <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
-            <td className="py-3 pr-4 font-semibold">{row.driverName}<FinishedFlag /></td>
+            <td className="py-3 pr-4 font-semibold">{row.driverName}{!row.dnf && <FinishedFlag />}</td>
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}<DnfBadge dnf={row.dnf} className="ml-3 text-lg font-semibold text-red-400" /></td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.totalTimeMs > 0 ? fmtMs(row.totalTimeMs) : '—'}</td>

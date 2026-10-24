@@ -259,6 +259,11 @@ public class LiveRaceState {
         cutOff = true;
     }
 
+    /** Withdraws {@link #markCutOff()} when the finish it was for did not happen. */
+    public synchronized void clearCutOff() {
+        cutOff = false;
+    }
+
     /** Whether the maximum race window ended the race: a car with laps that never took the flag did not finish. */
     public synchronized boolean isCutOff() {
         return cutOff;

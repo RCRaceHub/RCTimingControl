@@ -133,7 +133,7 @@ export default function PublicResultsPage() {
                 onClick={() => setExpandedEntryId(expandedEntryId === row.entryId ? null : row.entryId)}
               >
                 <td className="py-2 pr-4 font-mono">{row.position}</td>
-                <td className="py-2 pr-4">{row.driverName}<FinishedFlag /></td>
+                <td className="py-2 pr-4">{row.driverName}{!row.dnf && <FinishedFlag />}</td>
                 <td className="py-2 pr-4 text-right font-mono">{row.carNumber ?? '—'}</td>
                 <td className="py-2 pr-4 text-right font-mono">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /></td>
                 <td className="py-2 pr-4 text-right font-mono">

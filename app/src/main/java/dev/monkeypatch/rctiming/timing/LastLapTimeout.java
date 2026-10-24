@@ -168,8 +168,15 @@ public class LastLapTimeout {
         if (windowMs.isPresent() && windowReached(overrunMs, clock.durationMs(), windowMs.get())) {
             // Cars still on their last lap are labelled DNF in the result (#428)
             lapTimingService.peek(race.getId()).ifPresent(LiveRaceState::markCutOff);
-            autoFinish.finish(race.getId(), "race-window", "Finished the race automatically: the maximum race window of "
-                    + windowMs.get() / 1000 + " seconds was reached, so cars still on their last lap keep the laps they had");
+            try {
+                autoFinish.finish(race.getId(), "race-window", "Finished the race automatically: the maximum race window of "
+                        + windowMs.get() / 1000 + " seconds was reached, so cars still on their last lap keep the laps they had");
+            } finally {
+                // A finish that did not happen must not leave the mark for whoever finishes the race by hand
+                if (raceRepository.findById(race.getId()).filter(r -> r.getStatus() == RaceStatus.RUNNING).isPresent()) {
+                    lapTimingService.peek(race.getId()).ifPresent(LiveRaceState::clearCutOff);
+                }
+            }
             return;
         }
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());
