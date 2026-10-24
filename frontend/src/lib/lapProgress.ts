@@ -46,11 +46,18 @@ export function isClose(row: LiveTimingRowDto, thresholdMs: number): boolean {
 }
 
 /**
- * Places a car has gained since the start: positive is up, negative down, null with no grid place (#479). It
- * compares the grid place with the scored order, so it moves only as cars cross the line.
+ * Places a car has gained since the start: positive is up, negative down, null with no grid place (#479). The
+ * order only holds cars that have crossed the line, so the grid place is ranked among those same cars (a car
+ * from the back that crosses first is not "up" past a pole sitter who has not yet crossed). It moves only as cars
+ * cross the line.
+ *
+ * @param row the car's live timing row
+ * @param rows every row of the race, which the grid place is ranked among
  */
-export function placesGained(row: LiveTimingRowDto): number | null {
-  return row.startPosition == null ? null : row.startPosition - row.position;
+export function placesGained(row: LiveTimingRowDto, rows: LiveTimingRowDto[]): number | null {
+  if (row.startPosition == null) return null;
+  const gridRank = rows.filter((r) => r.startPosition != null && r.startPosition <= row.startPosition!).length;
+  return gridRank - row.position;
 }
 
 /**
@@ -61,10 +68,17 @@ export function placesGained(row: LiveTimingRowDto): number | null {
  * @param row the car's live timing row
  * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
  * @param remainingMs the race time left now, in milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock; the lap is counted from then if the car
+ *     has not crossed since, so a stoppage is not counted as lap time
  */
-export function predictedLaps(row: LiveTimingRowDto, nowMs: number, remainingMs: number | null): number | null {
+export function predictedLaps(
+  row: LiveTimingRowDto,
+  nowMs: number,
+  remainingMs: number | null,
+  notBeforeMs?: number | null,
+): number | null {
   const average = row.avgLapMs;
   if (row.finished || remainingMs === null || remainingMs <= 0 || !average || !row.lastPassingTimeMs) return null;
-  const sinceCrossing = Math.max(0, nowMs - row.lastPassingTimeMs);
-  return row.lapsCompleted + Math.max(1, Math.ceil((sinceCrossing + remainingMs) / average));
+  const sinceCrossing = Math.max(0, nowMs - Math.max(row.lastPassingTimeMs, notBeforeMs ?? 0));
+  return row.lapsCompleted + Math.floor((sinceCrossing + remainingMs) / average) + 1;
 }

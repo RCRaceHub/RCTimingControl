@@ -8,6 +8,7 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
  * re-renders by itself four times a second like the lap bars, so the table around it does not.
  *
  * @param remainingAt the race time left at a given device time in milliseconds, or null when there is no time limit
+ *     or the clock is not counting, which reads as a dash
  */
 export function PredictedLaps({ row, clock, remainingAt }: {
   row: LiveTimingRowDto;
@@ -15,6 +16,6 @@ export function PredictedLaps({ row, clock, remainingAt }: {
   remainingAt: (deviceNowMs: number) => number | null;
 }) {
   const deviceNow = useTick();
-  const laps = predictedLaps(row, deviceNow + clock.offsetMs, remainingAt(deviceNow));
+  const laps = predictedLaps(row, deviceNow + clock.offsetMs, remainingAt(deviceNow), clock.resumedAtMs);
   return <>{laps ?? '—'}</>;
 }

@@ -96,7 +96,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
-                <TableCell className="font-mono font-semibold">{row.position}{showArrows && <PositionArrow row={row} />}</TableCell>
+                <TableCell className="font-mono font-semibold">{row.position}{showArrows && <PositionArrow row={row} rows={sorted} />}</TableCell>
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
                   <span>{row.driverName}</span>

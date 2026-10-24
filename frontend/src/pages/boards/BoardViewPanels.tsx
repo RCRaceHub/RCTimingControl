@@ -7,7 +7,7 @@ import { ClassSwatch } from '@/components/ClassSwatch';
 import type { LapBarClock } from '@/components/LapProgressBar';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-import { BoardLiveTable } from './BoardLiveTable';
+import { BoardLiveTable, type PredictedClock } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { LiveTopTable } from './LiveTopTable';
 import { NameList, NextRacePanel } from './NextRacePanel';
@@ -21,7 +21,7 @@ export type PanelContext = {
   barClock: LapBarClock | undefined;
   closeMs: number;
   showArrows: boolean;
-  remainingAt: ((deviceNowMs: number) => number | null) | undefined;
+  predicted: PredictedClock | undefined;
 };
 
 function PanelTitle({ children }: { children: string }) {
@@ -60,7 +60,7 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
           barClock={race.status === 'RUNNING' ? ctx.barClock : undefined}
           closeMs={ctx.closeMs}
           showArrows={ctx.showArrows && race.finalLetter !== null}
-          remainingAt={ctx.remainingAt}
+          predicted={ctx.predicted}
         />
       ) : (
         <Empty>Waiting for the first lap…</Empty>

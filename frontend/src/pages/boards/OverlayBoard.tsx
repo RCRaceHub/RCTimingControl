@@ -288,10 +288,11 @@ export default function OverlayBoard() {
                       >
                         {row.position}
                       </span>
-                      {showArrows && race.finalLetter !== null && <PositionArrow row={row} className="block ml-0 text-center text-[0.65rem]" />}
-                    </td>
+                                          </td>
                     <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
-                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}{row.finished && <FinishedFlag className="ml-1" />}
+                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
+                      {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
+                      {row.finished && <FinishedFlag className="ml-1" />}
                       {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
                     </td>
                     <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>

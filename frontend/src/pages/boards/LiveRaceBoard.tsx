@@ -73,7 +73,7 @@ export default function LiveRaceBoard() {
           barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
           closeMs={closeMs}
           showArrows={showArrows && currentRace.finalLetter !== null}
-          remainingAt={showPredicted && clock?.remainingMs != null ? remainingAt : undefined}
+          predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
         />
       ) : (
         <BoardMessage>Waiting for the first lap…</BoardMessage>

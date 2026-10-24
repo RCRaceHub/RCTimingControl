@@ -57,7 +57,7 @@ export default function BoardViewPage() {
   const ctx = { eventId, nowNext, rows, barClock: showBars ? barClock : undefined,
     closeMs,
     showArrows,
-    remainingAt: showPredicted && clock?.remainingMs != null ? remainingAt : undefined,
+    predicted: showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined,
   };
   return (
     <BoardShell eventName={nowNext?.eventName}>

@@ -132,18 +132,18 @@ describe('OverlayBoard', () => {
 
   it('adds lap bars, a close tint and, in a final, places-gained arrows, each switchable from the address', async () => {
     const close = { ...row(2, 'Grace Hopper', 13_500), gapToAheadMs: 600, startPosition: 4, avgLapMs: 13_000, lastPassingTimeMs: Date.now() };
-    stompFrames['/topic/race/12/timing'] = [row(1, 'Ada Lovelace', 13_870), close];
+    stompFrames['/topic/race/12/timing'] = [{ ...row(1, 'Ada Lovelace', 13_870), startPosition: 5 }, close];
     vi.mocked(getNowNext).mockResolvedValue(nowNext({ ...race, finalLetter: 'A' }));
     const { container, unmount } = renderOverlay();
 
-    expect(await screen.findByLabelText('Up 2')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Up 1')).toBeInTheDocument();
     expect(screen.getByTestId('lap-progress')).toBeInTheDocument();
     expect(container.querySelector('tr[data-close]')).not.toBeNull();
     unmount();
 
     renderOverlay('/boards/overlay?arrows=hide&bars=hide&close=0');
     expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Up 2')).toBeNull();
+    expect(screen.queryByLabelText('Up 1')).toBeNull();
     expect(screen.queryByTestId('lap-progress')).toBeNull();
   });
 

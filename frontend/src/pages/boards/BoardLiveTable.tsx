@@ -27,17 +27,23 @@ interface BoardLiveTableProps {
   closeMs?: number;
   /** Show the places gained or lost against the grid beside each position; for finals. */
   showArrows?: boolean;
-  /** Race time left at a device time; given with {@code barClock}, adds a column of predicted finish laps. */
-  remainingAt?: (deviceNowMs: number) => number | null;
+  /** Given for a timed race, adds a column of the laps each car is on course to finish with. */
+  predicted?: PredictedClock;
+}
+
+/** What the predicted laps column needs: the device clock offset and the race time left at a device time. */
+export interface PredictedClock {
+  clock: LapBarClock;
+  remainingAt: (deviceNowMs: number) => number | null;
 }
 
 /**
  * The live timing table of a board: the order with each car's laps, last and best lap, the gap to the car ahead
  * and to the leader, a marker on cars running close, and (given {@code barClock}) a bar for how far each car is
- * round its lap against its average, and, in a timed race, the laps it is on course to finish with (given {@code remainingAt}); finals also get an arrow for places gained or lost since the grid (#479).
+ * round its lap against its average. Given {@code predicted} it adds the laps each car is on course to finish
+ * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
-export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, remainingAt }: BoardLiveTableProps) {
-  const predict = !!barClock && !!remainingAt;
+export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted }: BoardLiveTableProps) {
   return (
     <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
       <thead>
@@ -46,7 +52,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
           <th className="py-2 pr-4">Car</th>
           <th className="py-2 pr-4">Driver</th>
           <th className="py-2 pr-4 text-right">Laps</th>
-          {predict && <th className="py-2 pr-4 text-right">Pred</th>}
+          {predicted && <th className="py-2 pr-4 text-right">Pred</th>}
           <th className="py-2 pr-4 text-right">Total</th>
           <th className="py-2 pr-4 text-right">Last</th>
           <th className="py-2 pr-4 text-right">Best</th>
@@ -63,16 +69,16 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             className={cn('border-b border-slate-800', close && 'bg-amber-500/20')}
             data-close={close || undefined}
           >
-            <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} />}</td>
+            <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 font-semibold">
               {row.driverName}{row.finished && <FinishedFlag />}
               {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
             </td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
-            {predict && (
+            {predicted && (
               <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
-                <PredictedLaps row={row} clock={barClock} remainingAt={remainingAt} />
+                <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
               </td>
             )}
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
