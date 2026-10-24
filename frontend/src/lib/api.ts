@@ -43,6 +43,8 @@ export interface AboutDto {
   buildTime: string;
   /** URLs other devices on the venue network can open */
   addresses: string[];
+  /** The mDNS URL (such as http://timing.local:8080/) once announced, which survives address changes; null if not */
+  stableAddress?: string | null;
 }
 
 export interface PrivacyNoticeDto {

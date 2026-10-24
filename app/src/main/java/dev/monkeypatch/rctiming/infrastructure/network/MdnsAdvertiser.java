@@ -40,6 +40,7 @@ public class MdnsAdvertiser {
     private final Optional<String> label;
     private final LanAddresses lan;
     private final List<JmDNS> announcers = new CopyOnWriteArrayList<>();
+    private volatile boolean announcing;
 
     public MdnsAdvertiser(@Value("${rctiming.network.mdns-name:}") String name, LanAddresses lan) {
         this.label = hostLabel(name);
@@ -91,6 +92,7 @@ public class MdnsAdvertiser {
         if (announced.isEmpty()) {
             log.warn("RC Timing is not announced as {}.local: no network interface took the announcement", label.get());
         } else {
+            announcing = true;
             log.info("RC Timing is announced as {}.local on {}", label.get(), String.join(", ", announced));
         }
     }
@@ -107,5 +109,20 @@ public class MdnsAdvertiser {
             }
         }
         announcers.clear();
+        announcing = false;
+    }
+
+    /**
+     * Whether at least one interface took the announcement, so the name can be trusted. False when the setting is
+     * off, while the announcement is still being set up, and when every interface refused it. Read by request
+     * threads, written by the announce thread.
+     */
+    public boolean isAnnouncing() {
+        return announcing;
+    }
+
+    /** The announced name, such as {@code timing.local}, when {@link #isAnnouncing()}. */
+    public Optional<String> announcedHost() {
+        return announcing ? label.map(l -> l + ".local") : Optional.empty();
     }
 }

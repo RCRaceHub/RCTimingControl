@@ -108,6 +108,11 @@ public class LanAddresses {
         return urls;
     }
 
+    /** The URL of {@code host} on the port the web server bound to, e.g. {@code http://timing.local:8080/}. */
+    public String urlFor(String host) {
+        return url(host, port);
+    }
+
     /** {@code http://host:port/}, with an IPv6 address in brackets and no port for 80. */
     static String url(String host, int port) {
         String authority = host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;

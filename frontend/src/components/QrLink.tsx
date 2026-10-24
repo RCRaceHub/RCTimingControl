@@ -6,14 +6,23 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 /**
- * The address a phone on the venue network can open for {@code path}. A screen opened on the timing laptop itself
- * is at "localhost", which means nothing to a phone, so the laptop's network address stands in for it.
+ * The address a phone on the venue network can open for {@code path}. The announced mDNS name (timing.local) wins,
+ * because a printed code with it survives the laptop's address changing. Without one, a screen opened on the timing
+ * laptop itself is at "localhost", which means nothing to a phone, so the laptop's network address stands in for it;
+ * otherwise the address this screen was opened at is used.
  */
-export function shareableUrl(path: string, networkAddresses: string[] | undefined): string {
+export function shareableUrl(
+  path: string,
+  networkAddresses: string[] | undefined,
+  stableAddress?: string | null,
+): string {
   const { origin, hostname } = window.location;
-  const base = LOCAL_HOSTS.has(hostname) && networkAddresses && networkAddresses.length > 0
-    ? networkAddresses[0].replace(/\/+$/, '')
-    : origin;
+  let base = origin;
+  if (stableAddress) {
+    base = stableAddress.replace(/\/+$/, '');
+  } else if (LOCAL_HOSTS.has(hostname) && networkAddresses && networkAddresses.length > 0) {
+    base = networkAddresses[0].replace(/\/+$/, '');
+  }
   return `${base}${path}`;
 }
 
@@ -34,7 +43,7 @@ export function QrLink({ path, caption, size = 128, onDark = false }: Props) {
     queryFn: getAboutInfo,
     staleTime: Infinity,
   });
-  const url = shareableUrl(path, data?.addresses);
+  const url = shareableUrl(path, data?.addresses, data?.stableAddress);
 
   return (
     <figure className="flex flex-col items-center gap-2">
