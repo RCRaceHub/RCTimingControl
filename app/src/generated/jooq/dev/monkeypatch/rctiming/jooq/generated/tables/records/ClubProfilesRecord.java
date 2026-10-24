@@ -286,6 +286,90 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (String) get(18);
     }
 
+    /**
+     * Setter for <code>club_profiles.battle_gap_ms</code>.
+     */
+    public void setBattleGapMs(Integer value) {
+        set(19, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.battle_gap_ms</code>.
+     */
+    public Integer getBattleGapMs() {
+        return (Integer) get(19);
+    }
+
+    /**
+     * Setter for <code>club_profiles.battle_trend_ms</code>.
+     */
+    public void setBattleTrendMs(Integer value) {
+        set(20, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.battle_trend_ms</code>.
+     */
+    public Integer getBattleTrendMs() {
+        return (Integer) get(20);
+    }
+
+    /**
+     * Setter for <code>club_profiles.battle_fast_ms</code>.
+     */
+    public void setBattleFastMs(Integer value) {
+        set(21, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.battle_fast_ms</code>.
+     */
+    public Integer getBattleFastMs() {
+        return (Integer) get(21);
+    }
+
+    /**
+     * Setter for <code>club_profiles.battle_hold_laps</code>.
+     */
+    public void setBattleHoldLaps(Integer value) {
+        set(22, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.battle_hold_laps</code>.
+     */
+    public Integer getBattleHoldLaps() {
+        return (Integer) get(22);
+    }
+
+    /**
+     * Setter for <code>club_profiles.close_gap_ms</code>.
+     */
+    public void setCloseGapMs(Integer value) {
+        set(23, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.close_gap_ms</code>.
+     */
+    public Integer getCloseGapMs() {
+        return (Integer) get(23);
+    }
+
+    /**
+     * Setter for <code>club_profiles.late_margin_ms</code>.
+     */
+    public void setLateMarginMs(Integer value) {
+        set(24, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.late_margin_ms</code>.
+     */
+    public Integer getLateMarginMs() {
+        return (Integer) get(24);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -309,7 +393,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -331,6 +415,12 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setPrivacyNotice(privacyNotice);
         setRacehubResultsUrl(racehubResultsUrl);
         setResultsPublishTarget(resultsPublishTarget);
+        setBattleGapMs(battleGapMs);
+        setBattleTrendMs(battleTrendMs);
+        setBattleFastMs(battleFastMs);
+        setBattleHoldLaps(battleHoldLaps);
+        setCloseGapMs(closeGapMs);
+        setLateMarginMs(lateMarginMs);
         resetChangedOnNotNull();
     }
 }
