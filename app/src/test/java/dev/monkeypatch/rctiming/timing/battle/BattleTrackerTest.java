@@ -118,10 +118,10 @@ class BattleTrackerTest {
         List<LiveTimingRowDto> rows = List.of(row(1, 1, 3, null), row(2, 2, 3, 1500L));
         assertThat(tracker.advance(rows)).hasSize(1);
 
-        // No hold laps, so the pair does not linger after it falls outside the new, smaller gap
+        // No hold laps, so a pair a lap later does not linger outside the new, smaller gap
         tracker.setSettings(new BattleTracker.Settings(1000, 150, 300, 0));
 
-        assertThat(tracker.advance(rows)).isEmpty();
+        assertThat(tracker.advance(List.of(row(1, 1, 4, null), row(2, 2, 4, 1500L)))).isEmpty();
     }
 
     @Test
