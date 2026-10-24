@@ -43,7 +43,7 @@ export function gridClipKey(entry: GridEntry): string {
 /** What the browser says for a grid call when no clip is available. */
 export function gridFallbackText(entry: GridEntry, firstNamesOnly = false): string {
   const whole = entry.speechName?.trim() || entry.driverName;
-  const name = firstNamesOnly ? whole.split(' ')[0] : whole;
+  const name = firstNamesOnly ? whole.trim().split(/\s+/)[0] : whole;
   return entry.carNumber ? `Car ${entry.carNumber}, ${name}.` : `${name}.`;
 }
 

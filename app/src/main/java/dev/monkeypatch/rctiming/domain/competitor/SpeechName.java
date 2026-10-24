@@ -103,7 +103,7 @@ public final class SpeechName {
 
     /**
      * Just the first name of a speech name, for a call that names each driver briefly (#482): everything up to the
-     * first space, so "Alex Rowe" is "Alex". A name of one word, or a blank one, comes back as it is. A spoken
+     * first white space, so "Alex Rowe" is "Alex". A name of one word, or a blank one, comes back as it is. A spoken
      * name an admin typed is cut the same way, so one meant to be said whole should keep to a single word.
      */
     public static String firstName(String speechName) {
@@ -111,7 +111,6 @@ public final class SpeechName {
             return "";
         }
         String trimmed = speechName.trim();
-        int space = trimmed.indexOf(' ');
-        return space < 0 ? trimmed : trimmed.substring(0, space);
+        return trimmed.split("\\s+", 2)[0];
     }
 }

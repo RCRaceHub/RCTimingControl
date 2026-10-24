@@ -238,8 +238,9 @@ public class AudioPreGenerationService {
             Competitor competitor = competitorRepository.findById(entry.getCompetitorId()).orElse(null);
             if (competitor == null) continue;
 
-            String gridName = settings.tuning().firstNamesOnly()
-                    ? SpeechName.firstName(competitor.speechName()) : competitor.speechName();
+            String firstName = SpeechName.firstName(competitor.speechName());
+            String gridName = settings.tuning().firstNamesOnly() && !firstName.isEmpty()
+                    ? firstName : competitor.speechName();
             String url = clipService.generateGridCallClip(raceId, entry.getId(), gridName + ".", voiceId);
             if (url != null) {
                 clips.put("grid-" + entry.getId(), url);

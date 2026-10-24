@@ -314,6 +314,7 @@ public class RaceHubImportService {
         Set<String> seenEntryIds = new HashSet<>();
         Map<Long, Set<TransponderSlot>> swapped = transponderSwapService.swappedSlots(eventId);
         Map<String, String> brcaHolders = new HashMap<>();
+        Set<String> brcaChecked = new HashSet<>();
 
         for (ExportEntry row : exportEntries) {
             if (row == null) {
@@ -353,7 +354,7 @@ public class RaceHubImportService {
                         existing == null ? Set.of() : swapped.getOrDefault(existing.getId(), Set.of()));
                 String name = row.driverDisplayName() != null ? row.driverDisplayName() : label;
                 warnings.addAll(transponders.differences(name));
-                warnBrcaShared(row, name, source, brcaHolders, warnings);
+                warnBrcaShared(row, name, source, brcaHolders, brcaChecked, warnings);
             }
             plan.add(new Planned(row, action, existing, eventClassId, transponders));
         }
@@ -363,22 +364,22 @@ public class RaceHubImportService {
     /**
      * Warns when a driver's BRCA number is held by a different competitor, either already stored or by another
      * driver earlier in this file (#482). Only a warning: a number can be mistyped on either side, and the official
-     * sorts it out from the possible-duplicates review. A blank number never matches. Reads through the repository,
-     * once per distinct number per import.
+     * sorts it out from the possible-duplicates review. A blank number never matches. A driver is checked once
+     * however many classes they enter, so the repository is read once per driver per import.
      *
      * @param brcaHolders the driver id first seen with each number in this import, shared across the rows
+     * @param checked     the driver ids already checked in this import
      */
     private void warnBrcaShared(ExportEntry row, String name, String source, Map<String, String> brcaHolders,
-                                List<String> warnings) {
+                                Set<String> checked, List<String> warnings) {
         String brca = blankToNull(row.brcaNumber());
-        if (brca == null) {
+        if (brca == null || !checked.add(row.driverProfileId())) {
             return;
         }
-        brca = brca.trim();
         String earlier = brcaHolders.putIfAbsent(brca, row.driverProfileId());
         boolean sharedInFile = earlier != null && !earlier.equals(row.driverProfileId());
         boolean sharedWithStored = competitorRepository.findByBrcaNumber(brca).stream()
-                .anyMatch(c -> !(source.equals(c.getExternalSource())
+                .anyMatch(c -> !(Objects.equals(source, c.getExternalSource())
                         && row.driverProfileId().equals(c.getExternalId())));
         if (sharedInFile || sharedWithStored) {
             warnings.add(name + " has BRCA number " + brca + ", which another competitor also has");

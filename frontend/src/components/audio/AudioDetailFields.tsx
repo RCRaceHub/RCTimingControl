@@ -25,7 +25,9 @@ const WORDING_FIELDS: { key: keyof AudioWording; label: string; fills?: string }
   { key: 'carFinish', label: 'Each car as it finishes', fills: '{car} {name}' },
 ];
 
-const TUNING_FIELDS: { key: Exclude<keyof AudioTuning, 'firstNamesOnly'>; label: string; unit: string; min: number; max: number }[] = [
+type NumericTuningKey = Exclude<keyof AudioTuning, 'firstNamesOnly'>;
+
+const TUNING_FIELDS: { key: NumericTuningKey; label: string; unit: string; min: number; max: number }[] = [
   { key: 'runningOrderEarlyPeriodMinutes', label: 'Running order: early period', unit: 'minutes', min: 0, max: 120 },
   { key: 'runningOrderEarlyEveryMinutes', label: 'Called every, early on', unit: 'minutes', min: 1, max: 60 },
   { key: 'runningOrderLaterEveryMinutes', label: 'Called every, after it', unit: 'minutes', min: 1, max: 60 },
