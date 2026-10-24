@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getLiveQualifying, getResultsBoard, getTicker, type NowNextDto } from '@/lib/boardsApi';
 import type { BoardPanel } from '@/lib/boardViewsApi';
+import { ClassSwatch } from '@/components/ClassSwatch';
 import type { LapBarClock } from '@/components/LapProgressBar';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
@@ -37,7 +38,10 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-3xl font-bold lg:text-4xl">{race.label}</h2>
+        <h2 className="text-3xl font-bold lg:text-4xl">
+          <ClassSwatch colour={race.classColour} className="mr-3" />
+          {race.label}
+        </h2>
         <span
           className={
             race.status === 'STOPPED'

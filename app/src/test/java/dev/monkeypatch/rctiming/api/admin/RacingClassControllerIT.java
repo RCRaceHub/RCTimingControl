@@ -121,6 +121,36 @@ class RacingClassControllerIT extends AbstractIntegrationTest {
         assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 
+    @Test
+    void colour_isSavedLowerCasedAndCanBeCleared() {
+        String name = "RC-Colour-" + UUID.randomUUID().toString().substring(0, 8);
+        ResponseEntity<RacingClassDto> created = restTemplate.exchange(
+                "/api/v1/admin/classes", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", name, "colour", "#DC2626"), adminHeaders()),
+                RacingClassDto.class);
+
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(created.getBody().colour()).isEqualTo("#dc2626");
+
+        ResponseEntity<RacingClassDto> cleared = restTemplate.exchange(
+                "/api/v1/admin/classes/" + created.getBody().id(), HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", name, "colour", ""), adminHeaders()),
+                RacingClassDto.class);
+
+        assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(cleared.getBody().colour()).isNull();
+    }
+
+    @Test
+    void colour_thatIsNotSixHexDigits_isRefused() {
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/v1/admin/classes", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", "RC-Bad-" + UUID.randomUUID(), "colour", "red"), adminHeaders()),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
     // --- helpers ---
 
     private HttpHeaders adminHeaders() {

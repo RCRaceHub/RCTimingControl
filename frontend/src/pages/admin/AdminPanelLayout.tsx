@@ -20,6 +20,7 @@ import {
   UserCog,
   BookOpen,
   Tv,
+  Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +64,7 @@ const adminOnlyOperations: NavEntry[] = [
 
 const configGroup: NavEntry[] = [
   { to: '/admin/tracks', label: 'Tracks', Icon: MapPin, adminOnly: true },
+  { to: '/admin/classes', label: 'Classes', Icon: Tag, adminOnly: true },
   { to: '/admin/formats', label: 'Formats', Icon: Sliders, adminOnly: true },
   { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },

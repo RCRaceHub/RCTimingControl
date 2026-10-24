@@ -86,6 +86,11 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
      */
     public final TableField<RacingClassesRecord, Instant> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
 
+    /**
+     * The column <code>racing_classes.colour</code>.
+     */
+    public final TableField<RacingClassesRecord, String> COLOUR = createField(DSL.name("colour"), SQLDataType.CLOB, this, "");
+
     private RacingClasses(Name alias, Table<RacingClassesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -13,6 +13,8 @@ export type BoardRaceDto = {
   heatNumber: number;
   finalLetter: string | null;
   status: 'PENDING' | 'GRID' | 'RUNNING' | 'STOPPED' | 'FINISHED';
+  /** The colour the club picked for the class as #rrggbb, or null for none. */
+  classColour?: string | null;
 };
 
 /** Auto run as a board shows it: a count to the next start, or why it is waiting. */

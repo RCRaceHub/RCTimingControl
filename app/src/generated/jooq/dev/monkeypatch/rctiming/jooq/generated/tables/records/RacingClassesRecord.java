@@ -90,6 +90,20 @@ public class RacingClassesRecord extends UpdatableRecordImpl<RacingClassesRecord
         return (Instant) get(4);
     }
 
+    /**
+     * Setter for <code>racing_classes.colour</code>.
+     */
+    public void setColour(String value) {
+        set(5, value);
+    }
+
+    /**
+     * Getter for <code>racing_classes.colour</code>.
+     */
+    public String getColour() {
+        return (String) get(5);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -113,7 +127,7 @@ public class RacingClassesRecord extends UpdatableRecordImpl<RacingClassesRecord
     /**
      * Create a detached, initialised RacingClassesRecord
      */
-    public RacingClassesRecord(Long id, String name, String description, Instant createdAt, Instant updatedAt) {
+    public RacingClassesRecord(Long id, String name, String description, Instant createdAt, Instant updatedAt, String colour) {
         super(RacingClasses.RACING_CLASSES);
 
         setId(id);
@@ -121,6 +135,7 @@ public class RacingClassesRecord extends UpdatableRecordImpl<RacingClassesRecord
         setDescription(description);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setColour(colour);
         resetChangedOnNotNull();
     }
 }

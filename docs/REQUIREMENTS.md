@@ -212,6 +212,7 @@
 - [x] **BOARDS-03**: The live race board shows the gap to the car ahead as well as to the leader, a lap bar per driver for how far the car is round its lap against its own average (green under the average, yellow at it, red a second over), and an amber row for a car within a set time of the car ahead on the scored order (default 1 s, `close=SECONDS`, `bars=hide`). The bars correct for a device clock that differs from the timing laptop's and for a stoppage. Race control's live timing shows the bar and a CLOSE badge at 1 s. Position arrows and predicted times are not built yet (#479)
 - [x] **BOARDS-04**: A live top 10/20 board (`/boards/top`, `top=20`) shows the qualifying table of the class on track, with the running heat counted from its live positions as if it ended now. Drivers in the heat are marked, drivers whose heat in the round is still to run are marked and placed behind, and arrows show who moved against the table before the heat. The settled table stays up after the heat until the next race starts. Classes ranked by low points only (#480)
 - [x] **BOARDS-05**: An official builds saved board views from panels (live timing, live top table, next race, current marshals, last result), in 1 to 3 columns, each opened by its own address `/boards/view/NAME` (`event=ID`, `bars=hide`, `close=SECONDS` as on the live race board), so the commentator and each trackside monitor have their own. `commentator` and `monitor` come ready made. Edited under Admin, Board views (ADMIN and RACE_DIRECTOR). Race control can show or hide its auto run, audio, live timing and line-up sections on each browser (#481)
+- [x] **BOARDS-06**: An admin can add, edit and delete racing classes under Admin, Classes, and pick a colour for each. The colour shows as a dot beside the class on race control's run order, the heat line-ups and the live timing heading, and on the Live race and board views. A class with no colour shows none. Stored as `#rrggbb` on the class (#482)
 - [x] **LOCAL-01**: A full meeting runs with no internet connection at the venue (#21)
 - [x] **DB-01**: The app keeps its data in one SQLite file in a per-machine data folder (#26)
 - [x] **DB-02**: The database vendor is chosen in one place and vendor-specific code is confined to one package, enforced by a test, so the database can be swapped later (#26)
@@ -415,6 +416,7 @@
 | BOARDS-03 | Wishlist (#483) | Complete (#479) |
 | BOARDS-04 | Wishlist (#483) | Complete (#480) |
 | BOARDS-05 | Wishlist (#483) | Complete (#481) |
+| BOARDS-06 | Wishlist (#483) | Complete (#482) |
 | LOCAL-01 | #21 | Complete |
 | DB-01 | #26 | Complete |
 | DB-02 | #26 | Complete |

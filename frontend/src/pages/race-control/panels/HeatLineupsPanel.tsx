@@ -7,6 +7,7 @@ import { getRaceEntries, moveEntryToHeat, type RunOrderItemDto } from '@/lib/rac
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
+import { ClassSwatch } from '@/components/ClassSwatch';
 
 type Props = {
   race: RunOrderItemDto;
@@ -58,6 +59,7 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
   return (
     <Card className="p-4 space-y-2" aria-label="Heat line-ups">
       <h3 className="text-sm font-semibold">
+        <ClassSwatch colour={race.classColour} className="mr-1.5" />
         {roundLabel} line-ups: {race.className}
       </h3>
       <Tabs defaultValue="next">

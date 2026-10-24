@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
+import { ClassSwatch } from '@/components/ClassSwatch';
 
 type Props = {
   items: RunOrderItemDto[];
@@ -52,7 +53,10 @@ export function RunOrderPanel({ items, selectedRaceId, onSelect }: Props) {
           )}
         >
           <div className="min-w-0">
-            <div className="truncate font-medium">{raceLabel(item)}</div>
+            <div className="truncate font-medium">
+              <ClassSwatch colour={item.classColour} className="mr-1.5" />
+              {raceLabel(item)}
+            </div>
             <div className="text-muted-foreground truncate">Heat {item.heatNumber}</div>
           </div>
           <div className="shrink-0">{statusBadge(item.status)}</div>

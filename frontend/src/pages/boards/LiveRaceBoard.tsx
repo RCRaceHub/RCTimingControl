@@ -3,6 +3,7 @@
 // Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
 import { PositionChart } from '@/components/print/PositionChart';
+import { ClassSwatch } from '@/components/ClassSwatch';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
@@ -41,7 +42,10 @@ export default function LiveRaceBoard() {
   return (
     <BoardShell eventName={nowNext?.eventName}>
       <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <h1 className="text-4xl font-bold lg:text-6xl">{currentRace.label}</h1>
+        <h1 className="text-4xl font-bold lg:text-6xl">
+          <ClassSwatch colour={currentRace.classColour} className="mr-3" />
+          {currentRace.label}
+        </h1>
         <span
           className={
             currentRace.status === 'STOPPED'

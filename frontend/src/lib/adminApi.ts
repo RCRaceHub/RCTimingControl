@@ -338,7 +338,11 @@ export interface RacingClassDto {
   id: number;
   name: string;
   description: string | null;
+  /** The colour the club picked for the class as #rrggbb, or null for none (#482). */
+  colour?: string | null;
 }
+
+export type RacingClassInput = { name: string; description: string | null; colour: string | null };
 
 export interface RaceFormatTemplateDto {
   id: number;
@@ -775,6 +779,13 @@ export const adminApi = {
   // Racing classes
   listRacingClasses: () =>
     api.get<RacingClassDto[]>('/api/v1/admin/classes').then(r => r.data),
+  racingClasses: {
+    create: (body: RacingClassInput) =>
+      api.post<RacingClassDto>('/api/v1/admin/classes', body).then(r => r.data),
+    update: (id: number, body: RacingClassInput) =>
+      api.put<RacingClassDto>(`/api/v1/admin/classes/${id}`, body).then(r => r.data),
+    delete: (id: number) => api.delete(`/api/v1/admin/classes/${id}`).then(r => r.data),
+  },
 
   // Entries
   listEntriesForClass: (eventId: number, classId: number) =>

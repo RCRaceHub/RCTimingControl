@@ -172,6 +172,9 @@ erDiagram
         bool built_in "locked, clone to change"
         json config "type: CLASSIC, BRCA, PLACE_POINTS"
     }
+    racing_classes {
+        text colour "#rrggbb picked by the club, null for none"
+    }
     board_views {
         text slug "address: /boards/view/slug, unique"
         int columns "1 to 3"
