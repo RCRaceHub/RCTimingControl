@@ -2,7 +2,7 @@
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
 // timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page
 // never looks like a broken overlay.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,9 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
+import { groupBattles } from '@/lib/battles';
+import { BattleStrip } from '@/components/BattleStrip';
+import { useBattles } from '@/hooks/race-control/useBattles';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -120,6 +123,9 @@ function StatsTicker({
   );
 }
 
+/** Stands in for the rows while the battle strip is off, so the detector's input stays the same array. */
+const NO_ROWS: LiveTimingRowDto[] = [];
+
 /** Seconds a ticker takes per character to cross the screen: slow enough to read, long text just takes longer. */
 const TICKER_SECONDS_PER_CHAR = 0.18;
 const TICKER_MIN_SECONDS = 20;
@@ -179,7 +185,7 @@ function OverlayTicker({
 
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
-  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs } = parseOverlayOptions(searchParams);
+  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs, showBattles, battleMs } = parseOverlayOptions(searchParams);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -191,11 +197,13 @@ export default function OverlayBoard() {
     refetchInterval: BOARD_POLL_MS,
   });
 
+  const battles = useBattles(showBattles ? raceId : null, showBattles ? allRows : NO_ROWS, battleMs);
   const barClock = useLapBarClock(allRows, race?.status);
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
   const lapFlash = useLapFlash(allRows);
+  const battleGroups = useMemo(() => groupBattles(battles), [battles]);
   const chartSeries = useLivePositionSeries(raceId, allRows, showChart);
   const tickerEventId = eventId ?? nowNext?.eventId ?? null;
 
@@ -308,6 +316,7 @@ export default function OverlayBoard() {
             </tbody>
           </table>
         )}
+        {showBattles && race.status === 'RUNNING' && <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
       {showChart && chartSeries.length > 0 && (

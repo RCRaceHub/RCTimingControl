@@ -17,7 +17,9 @@ import { RaceHistoryPanel } from './panels/RaceHistoryPanel';
 import { RaceClockDisplay } from './panels/RaceClockDisplay';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useProximityAlerts } from './referee/useProximityAlerts';
+import { useBattles } from '@/hooks/race-control/useBattles';
+import { BattlesPanel } from './panels/BattlesPanel';
+import { DEFAULT_BATTLE_MS, groupBattles } from '@/lib/battles';
 import { JumpStartAlert } from './referee/JumpStartAlert';
 import { getRaceEntries } from '@/lib/raceControlApi';
 import type { IncidentReportRequest, PenaltyRequest } from '@/lib/raceControlApi';
@@ -74,8 +76,13 @@ export default function RefereePage() {
   });
   const drivers = raceEntries.map((e) => ({ entryId: e.entryId, driverName: e.racerName, carNumber: e.carNumber }));
 
-  // Cars closing on the one ahead between timing updates
-  const highlightEntryIds = useProximityAlerts(selectedRaceId, current);
+  // Cars running close together (#505); the chasers gaining fast get their table row tinted
+  const battles = useBattles(selectedRaceId, current, DEFAULT_BATTLE_MS);
+  const battleGroups = useMemo(() => groupBattles(battles), [battles]);
+  const highlightEntryIds = useMemo(
+    () => new Set(battles.filter((b) => b.gainingFast).map((b) => b.chaser.entryId)),
+    [battles],
+  );
 
   // Cars that left before their turn in a stagger start
   const jumpStarts = useJumpStarts(selectedRaceId);
@@ -180,6 +187,7 @@ export default function RefereePage() {
               onPenalty={(entryId) => { setPenaltyEntryId(entryId); setPenaltyOpen(true); }}
               onDismiss={onDismissJumpStart}
             />
+            <BattlesPanel groups={battleGroups} />
             <LiveTimingPanel
               raceId={selectedRaceId}
               status={selectedRace?.status ?? 'PENDING'}

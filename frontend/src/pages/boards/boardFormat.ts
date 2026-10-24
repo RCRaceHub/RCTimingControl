@@ -1,4 +1,5 @@
 import { fmtMs } from '@/lib/format';
+import { DEFAULT_BATTLE_MS } from '@/lib/battles';
 import type { TickerDto } from '@/lib/boardsApi';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -52,11 +53,31 @@ function parseTickerItems(value: string | null): Set<TickerItem> {
   return new Set(TICKER_ITEMS.filter((item) => value.split(',').includes(item)));
 }
 
+const BATTLE_MAX_GAP_S = 10;
+
+/**
+ * The battle strip (#505): on the overlay {@code battles=show} (or {@code 1}) switches it on, and on the live
+ * race board {@code battles=hide} switches it off. {@code battleGap=SECONDS} sets how near the car ahead starts a battle, and
+ * {@code battleGap=SECONDS} sets how near the car ahead starts a battle. A gap that is empty or not a number
+ * takes the default.
+ */
+export function parseBattleOptions(params: URLSearchParams) {
+  const on = params.get('battles')?.toLowerCase();
+  const raw = params.get('battleGap');
+  const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
+  return {
+    showBattles: on === 'show' || on === '1',
+    hideBattles: on === 'hide',
+    battleMs: Number.isFinite(seconds) ? Math.min(BATTLE_MAX_GAP_S, Math.max(0, seconds)) * 1000 : DEFAULT_BATTLE_MS,
+  };
+}
+
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
 /** The streaming overlay's options from its query string; anything unrecognised falls back to the default. */
 export function parseOverlayOptions(params: URLSearchParams) {
+  const battles = parseBattleOptions(params);
   const top = Number(params.get('top'));
   return {
     eventId: parseEventParam(params.get('event')),
@@ -66,6 +87,8 @@ export function parseOverlayOptions(params: URLSearchParams) {
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
     ...parseLiveRaceOptions(params),
+    showBattles: battles.showBattles,
+    battleMs: battles.battleMs,
   };
 }
 

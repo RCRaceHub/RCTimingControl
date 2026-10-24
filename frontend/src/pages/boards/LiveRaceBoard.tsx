@@ -1,6 +1,6 @@
 // The Live Race screen for a venue TV: the race on track with its live timing table and the position chart (#410),
 // who holds which place lap by lap. Anonymous like the other boards, and follows the race live through useBoardRace.
-// Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
+// Cars running close together show as a battles strip under the table (#505). Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getRaceClock } from '@/lib/boardsApi';
@@ -9,11 +9,18 @@ import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { PositionChart } from '@/components/print/PositionChart';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
+import { useMemo } from 'react';
+import { useBattles } from '@/hooks/race-control/useBattles';
+import { groupBattles } from '@/lib/battles';
+import { BattleStrip } from '@/components/BattleStrip';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
-import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
+import { BOARD_POLL_MS, parseBattleOptions, parseEventParam, parseLiveRaceOptions } from './boardFormat';
+import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
+
+const NO_ROWS: LiveTimingRowDto[] = [];
 
 export default function LiveRaceBoard() {
   const [searchParams] = useSearchParams();
@@ -22,6 +29,9 @@ export default function LiveRaceBoard() {
   const series = useLivePositionSeries(raceId, rows);
 
   const { showBars, showArrows, showPredicted, closeMs } = parseLiveRaceOptions(searchParams);
+  const { hideBattles, battleMs } = parseBattleOptions(searchParams);
+  const battles = useBattles(hideBattles ? null : raceId, hideBattles ? NO_ROWS : rows, battleMs);
+  const battleGroups = useMemo(() => groupBattles(battles), [battles]);
   const barClock = useLapBarClock(rows, currentRace?.status);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
@@ -77,6 +87,9 @@ export default function LiveRaceBoard() {
         />
       ) : (
         <BoardMessage>Waiting for the first lap…</BoardMessage>
+      )}
+      {currentRace.status === 'RUNNING' && (
+        <BattleStrip groups={battleGroups} className="rounded-lg bg-slate-800/60 px-6 py-3 text-2xl lg:text-3xl" />
       )}
       {series.length > 0 && (
         <div className="mx-auto w-full max-w-6xl">

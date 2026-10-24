@@ -48,6 +48,8 @@ In a **final**, a small green ▲ or red ▼ beside the position shows the place
 
 Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
 
+**Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within 2 seconds, the gap between them, and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, with the change per lap. A chain of close cars shows as one line, a train. A gap underlined means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles if there are more. `battles=hide` leaves it out and `battleGap=SECONDS` sets how near the car ahead starts a battle (default 2). The referee's screen has the same Battles panel.
+
 ## The Live top screen
 
 During qualifying, `/boards/top` shows the class on track as a low-points table: places, points, best lap and who has moved. While a heat runs it counts that heat from its live positions, as if it ended now, so the table changes with every lap. The driver rows in the running heat are amber and marked "on track". Drivers whose heat in the same round has not run yet are marked "heat to come" and sit behind everyone with a result in the round, since they have nothing to score yet.
@@ -93,6 +95,8 @@ Options go on the end of the address:
 | `bars=hide` | Leave out the lap bars under each name |
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; 0 turns it off) |
+| `battles=show` | Add the battles strip under the running order (off by default here) |
+| `battleGap=SECONDS` | How near the car ahead starts a battle (default 2) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |
