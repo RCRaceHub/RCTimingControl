@@ -94,38 +94,38 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         }
 
         // Qualifying order: the buggies in the order they were added
-        bumpUpSeedingService.seedFinals(buggyClass, buggies, 2, 10, 2);
+        bumpUpSeedingService.seedFinals(buggyClass, buggies, 2, 11, 2);
 
         Race aFinal = finalOf(buggyClass, "A");
         Race bFinal = finalOf(buggyClass, "B");
         assertThat(aFinal.getBumpSlots()).isEqualTo(2);
         assertThat(bFinal.getBumpSlots()).isZero();
-        assertThat(gridOf(aFinal)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(buggies.subList(0, 8));
-        assertThat(gridOf(bFinal)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(buggies.subList(10, 20));
+        assertThat(gridOf(aFinal)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(buggies.subList(0, 9));
+        assertThat(gridOf(bFinal)).extracting(RaceEntry::getEntryId).containsExactlyElementsOf(buggies.subList(9, 20));
 
         // Seeding again replaces the grids rather than adding to them
-        bumpUpSeedingService.seedFinals(buggyClass, buggies, 2, 10, 2);
-        assertThat(gridOf(aFinal)).hasSize(8);
-        assertThat(gridOf(bFinal)).hasSize(10);
+        bumpUpSeedingService.seedFinals(buggyClass, buggies, 2, 11, 2);
+        assertThat(gridOf(aFinal)).hasSize(9);
+        assertThat(gridOf(bFinal)).hasSize(11);
 
         // The B-final finishes in reverse grid order; its top two go up
-        List<Long> bFinishingOrder = new ArrayList<>(buggies.subList(10, 20));
+        List<Long> bFinishingOrder = new ArrayList<>(buggies.subList(9, 20));
         Collections.reverse(bFinishingOrder);
         List<Long> promoted = bumpUpSeedingService.applyBumpUpResults(bFinal.getId(), bFinishingOrder);
 
         assertThat(promoted).containsExactly(buggies.get(19), buggies.get(18));
         List<RaceEntry> aGrid = gridOf(aFinal);
-        assertThat(aGrid).hasSize(10);
-        assertThat(aGrid.subList(8, 10)).allMatch(RaceEntry::isBumped);
-        assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getEntryId)
+        assertThat(aGrid).hasSize(11);
+        assertThat(aGrid.subList(9, 11)).allMatch(RaceEntry::isBumped);
+        assertThat(aGrid.subList(9, 11)).extracting(RaceEntry::getEntryId)
                 .containsExactly(buggies.get(19), buggies.get(18));
-        assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getGridPosition).containsExactly(9, 10);
+        assertThat(aGrid.subList(9, 11)).extracting(RaceEntry::getGridPosition).containsExactly(10, 11);
         // The bump-ups are numbered by their place on the A grid, in finishing order, not by qualifying rank
-        assertThat(aGrid.subList(8, 10)).extracting(RaceEntry::getCarNumber).containsExactly(9, 10);
+        assertThat(aGrid.subList(9, 11)).extracting(RaceEntry::getCarNumber).containsExactly(10, 11);
 
         // A repeat (race finished again after a resume) promotes nobody else
         assertThat(bumpUpSeedingService.applyBumpUpResults(bFinal.getId(), bFinishingOrder)).isEmpty();
-        assertThat(gridOf(aFinal)).hasSize(10);
+        assertThat(gridOf(aFinal)).hasSize(11);
 
         // The promotion is in the audit log as the system's, once: the repeat promoted nobody
         List<Map<String, Object>> audited = jdbc.queryForList(
@@ -189,7 +189,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                     heat.getRoundId());
             finishWithResult(heat, buggies, round);
         }
-        runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 10, 2);
+        runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 11, 2);
 
         // The first entry has the most laps; the rest tie on laps, so the quickest best lap (the last entry) is next
         List<Long> order = new ArrayList<>();
@@ -198,9 +198,9 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         Collections.reverse(rest);
         order.addAll(rest);
         assertThat(gridOf(finalOf(buggyClass, "A"))).extracting(RaceEntry::getEntryId)
-                .containsExactlyElementsOf(order.subList(0, 8));
+                .containsExactlyElementsOf(order.subList(0, 9));
         assertThat(gridOf(finalOf(buggyClass, "B"))).extracting(RaceEntry::getEntryId)
-                .containsExactlyElementsOf(order.subList(10, 20));
+                .containsExactlyElementsOf(order.subList(9, 20));
 
         List<Map<String, Object>> audited = jdbc.queryForList(
                 "select * from audit_log where event_id = ? and action = 'FINALS_SEEDED'", eventId);
@@ -551,14 +551,14 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
             finishWithResult(heat, buggies, 1);
         }
-        runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 10, 2);
+        runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 11, 2);
         Race aFinal = finalOf(buggyClass, "A");
         int seeded = gridOf(aFinal).size();
 
         assertThatThrownBy(() -> runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 10, 11))
                 .isInstanceOf(IllegalArgumentException.class);
         jdbc.update("update races set status = 'RUNNING' where id = ?", aFinal.getId());
-        assertThatThrownBy(() -> runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 10, 2))
+        assertThatThrownBy(() -> runOrderService.seedFinals(Actor.system("test"), eventId, buggyClass, 2, 11, 2))
                 .isInstanceOf(StateConflictException.class);
 
         assertThat(gridOf(aFinal)).hasSize(seeded);

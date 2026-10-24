@@ -67,9 +67,11 @@ public class BumpUpSeedingService {
     /**
      * Seeds all finals grids for a class after qualifying closes.
      *
-     * <p>Algorithm (example: 20 drivers, 10/final, bumpCount=2, 2 finals A+B):
+     * <p>Algorithm (example: 18 drivers, 10/final, bumpCount=2, 2 finals A+B). The top final takes the best drivers for
+     * its regular places, the next final the following block, and the lowest final, which runs first, what is left, so
+     * it is the smallest:
      * <pre>
-     *   B-Final positions 1–10: drivers ranked 11–20 (lowest qualifiers)
+     *   B-Final positions 1–10: drivers ranked 9–18 (the rest)
      *   A-Final positions 1–8:  drivers ranked 1–8  (top qualifiers)
      *   A-Final positions 9–10: bump slots, kept as bumpSlots=2 on the A-Final race and
      *                           filled by applyBumpUpResults after the B-Final finishes
@@ -166,10 +168,9 @@ public class BumpUpSeedingService {
     }
 
     /**
-     * As {@link #seedFinals(Long, List, int, int, int)}, but with {@code fillTopFirst} the finals are filled from the
-     * top: the top final takes the best {@code carsPerFinal} qualifiers, the next final the following block, and the
-     * lowest final the rest (at most {@code carsPerFinal}, since the caller has sized the grid to fit the field).
-     * That layout has no bump spots, so {@code bumpCount} is ignored.
+     * As {@link #seedFinals(Long, List, int, int, int)}, but with {@code fillTopFirst} every final above the lowest
+     * takes a full {@code carsPerFinal} (the layout has no bump spots, so {@code bumpCount} is ignored), and unused
+     * lowest finals are kept rather than dropped.
      */
     public void seedFinals(Long eventClassId,
                            List<Long> qualifyingStandings,
@@ -238,48 +239,20 @@ public class BumpUpSeedingService {
             regularSlots[fi] = isLowestFinal ? carsPerFinal : carsPerFinal - bumpCount;
         }
 
-        // Two independent pointers: the lowest final draws its regular slots from the
-        // worst-ranked end of standings; every other ("non-lowest") final draws from the
-        // best-ranked end, processed from the top final downward so the fastest qualifiers
-        // always land in the top final first, not in whichever final happens to be processed
-        // first. A single bottom-up pointer would drop the very top qualifiers once the bump
-        // slots shrink the regular places below the size of the qualifying field.
+        // Filled from the top final down, so the fastest qualifiers always land in the top final first
         List<List<Long>> slotEntriesByFinal = new ArrayList<>(finals.size());
         for (int fi = 0; fi < finals.size(); fi++) {
             slotEntriesByFinal.add(null);
         }
 
-        if (fillTopFirst || bumpCount == 0) {
-            // With no bump spots the lowest final is the one left short, so the top final first; each takes a full grid
-            // and the lowest takes what is left
-            int next = 0;
-            for (int fi = finals.size() - 1; fi >= 0; fi--) {
-                int take = fi == 0 ? qualifyingStandings.size() - next : Math.min(carsPerFinal,
-                        qualifyingStandings.size() - next);
-                slotEntriesByFinal.set(fi, new ArrayList<>(qualifyingStandings.subList(next, next + Math.max(0, take))));
-                next += Math.max(0, take);
-            }
-        } else {
-            int bottomPtr = qualifyingStandings.size() - 1;
-            int lowestSlots = regularSlots[0];
-            List<Long> lowestEntries = new ArrayList<>(lowestSlots);
-            for (int s = 0; s < lowestSlots && bottomPtr >= 0; s++) {
-                lowestEntries.add(0, qualifyingStandings.get(bottomPtr--)); // prepend to reverse order
-            }
-            slotEntriesByFinal.set(0, lowestEntries);
-
-            // Bound the top pass at bottomPtr (its value *after* the bottom pass above already
-            // ran) so the two passes can never claim the same standings entry twice when the
-            // qualifying field is smaller than total regular capacity.
-            int topPtr = 0;
-            for (int fi = finals.size() - 1; fi >= 1; fi--) {
-                int slots = regularSlots[fi];
-                List<Long> entries = new ArrayList<>(slots);
-                for (int s = 0; s < slots && topPtr <= bottomPtr; s++) {
-                    entries.add(qualifyingStandings.get(topPtr++));
-                }
-                slotEntriesByFinal.set(fi, entries);
-            }
+        // Top final first: each takes its regular places and the lowest final, which runs first, takes what is left, so
+        // it is the smallest. The caller has sized the grid so the rest fits the lowest final.
+        int next = 0;
+        for (int fi = finals.size() - 1; fi >= 0; fi--) {
+            int remaining = qualifyingStandings.size() - next;
+            int take = fi == 0 ? remaining : Math.min(regularSlots[fi], remaining);
+            slotEntriesByFinal.set(fi, new ArrayList<>(qualifyingStandings.subList(next, next + Math.max(0, take))));
+            next += Math.max(0, take);
         }
 
         for (int fi = 0; fi < finals.size(); fi++) {

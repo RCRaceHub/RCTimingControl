@@ -66,9 +66,9 @@ class BumpUpSeedingServiceTest {
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(bFinal.getId())).thenReturn(List.of());
         when(raceEntryRepository.findByRaceIdOrderByGridPosition(aFinal.getId())).thenReturn(List.of());
 
-        // Ranks 1..20 (index 0 = rank 1, best).
+        // Ranks 1..18 (index 0 = rank 1, best): A takes 8 regular places, B the other 10.
         List<Long> standings = new ArrayList<>();
-        for (long i = 1; i <= 20; i++) standings.add(i);
+        for (long i = 1; i <= 18; i++) standings.add(i);
 
         service().seedFinals(eventClassId, standings, 2, 10, 2);
 
@@ -81,10 +81,10 @@ class BumpUpSeedingServiceTest {
         List<RaceEntry> aEntries = saved.stream().filter(e -> e.getRaceId().equals(aFinal.getId()))
                 .sorted(Comparator.comparingInt(RaceEntry::getGridPosition)).toList();
 
-        // B-Final: 10 regular slots, no bump reservation (lowest final) — ranks 11..20.
+        // B-Final: the rest, no bump reservation (lowest final) — ranks 9..18.
         assertThat(bEntries).hasSize(10);
         assertThat(bEntries).extracting(RaceEntry::getEntryId)
-                .containsExactly(11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L, 20L);
+                .containsExactly(9L, 10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L);
         assertThat(bEntries).allMatch(e -> !e.isBumped());
 
         // A-Final: 8 regular slots (the TOP qualifiers, ranks 1..8) and 2 bump slots kept as a

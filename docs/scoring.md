@@ -155,14 +155,14 @@ The number of finals is the number the round generator made for the class.
 If the field is too small to fill every final, the lowest finals are left empty rather than one in the middle: 8 drivers
 with 4 cars a final and three finals gives an A final (ranks 1 to 4) and a B final (5 to 8), and the C final is removed from the run order. Calculating again with fewer cars per final puts a removed final back, as long as it is one the class was generated with.
 
-A Points Finals format can set **cars per final** and **fill A first**. With fill A first the finals are filled from
-the top instead of from the bottom: the A final is ranks 1 to the cars per final, B the next block, and the lowest final
+A Points Finals format can set **cars per final** and **fill A first**. With fill A first every final above the lowest takes a full
+grid: the A final is ranks 1 to the cars per final, B the next block, and the lowest final
 takes whoever is left, so with 25 drivers and 10 cars each the C final has 5. Nobody bumps up. If the field would not
 fit, the grid grows as above.
 
 Example (bump-up, grid size 10, bump spots 2, two finals, 18 drivers):
 
-- **B final**: the lowest qualifiers, ranks 9 to 18 (10 cars), gridded in qualifying order.
+- **B final**: the rest, ranks 9 to 18 (10 cars), gridded in qualifying order.
 - **A final**: ranks 1 to 8 plus **2 bump places**, which stay empty until the B final finishes. Then the top two
   finishers of the B final are added to the back of the A grid (positions 9 and 10, marked as bumped).
 - A third final (C) feeds B in the same way, and B's bumped drivers sit at the back of B's grid.
@@ -170,7 +170,7 @@ Example (bump-up, grid size 10, bump spots 2, two finals, 18 drivers):
 If the grid would not fit the field, it grows: with 20 drivers, grid size 10, 2 bump spots and two finals, the grid
 becomes 11 (B ranks 10 to 20; A ranks 1 to 9 plus 2 bumps), so nobody is left out.
 
-With bump spots, the lowest final is filled first, from the bottom of the standings, so it gets the full grid and the higher finals take what is left. Example (points finals, two finals, 14 drivers): 7 cars each, B final ranks 8 to 14, A final ranks 1 to 7. With 15 drivers, A has 8 (ranks 1 to 8) and B has 7: where there are no bump spots the top finals take full grids and the lowest final is the one left short (8 drivers over three finals: 3, 3 and 2). A short bump-up field works the same way: 14 drivers, grid size 10, 2 bump spots, two finals gives B ranks 5 to 14 and A ranks 1 to 4 plus 2 bump places.
+The finals are filled from the top: the A final takes the best qualifiers for its places, B the next block, and the lowest final, which runs first, takes whoever is left, so the lowest final is always the smallest. Example (points finals, two finals, 15 drivers): A has 8 (ranks 1 to 8) and B has 7. Eight drivers over three finals give 3, 3 and 2. A short bump-up field works the same way: 14 drivers, grid size 10, 2 bump spots, two finals gives A ranks 1 to 8 plus 2 bump places and B ranks 9 to 14.
 
 ## 4. Marshal duty
 
