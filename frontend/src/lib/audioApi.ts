@@ -48,6 +48,8 @@ export interface AudioTuning {
   finalSeconds: number;
   lapBeepHz: number;
   lapBeepMs: number;
+  /** The grid call and each driver's call in a stagger start say first names only (#482). */
+  firstNamesOnly: boolean;
 }
 
 export const DEFAULT_TUNING: AudioTuning = {
@@ -57,6 +59,7 @@ export const DEFAULT_TUNING: AudioTuning = {
   finalSeconds: 5,
   lapBeepHz: 440,
   lapBeepMs: 200,
+  firstNamesOnly: false,
 };
 
 /** The line with each {key} replaced by its value; a key with no value is left as it is. */

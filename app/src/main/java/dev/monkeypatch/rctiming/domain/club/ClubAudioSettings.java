@@ -175,14 +175,23 @@ public record ClubAudioSettings(
      * Timings and tones: how often the running order is called (every {@code runningOrderEarlyEveryMinutes} for
      * the first {@code runningOrderEarlyPeriodMinutes} of a race, then every {@code runningOrderLaterEveryMinutes}),
      * how many of the last seconds get a count, and the lap beep's pitch (the beep for an improved lap is an
-     * octave higher) and length.
+     * octave higher) and length. {@code firstNamesOnly} makes the grid call say each driver's first name only
+     * (#482); results, car-finish calls and the running order keep the whole name.
      */
     public record Tuning(@Min(0) @Max(120) Integer runningOrderEarlyPeriodMinutes,
                          @Min(1) @Max(60) Integer runningOrderEarlyEveryMinutes,
                          @Min(1) @Max(60) Integer runningOrderLaterEveryMinutes,
                          @Min(0) @Max(10) Integer finalSeconds, @Min(100) @Max(2000) Integer lapBeepHz,
-                         @Min(50) @Max(1000) Integer lapBeepMs) {
-        public static final Tuning STANDARD = new Tuning(null, null, null, null, null, null);
+                         @Min(50) @Max(1000) Integer lapBeepMs, Boolean firstNamesOnly) {
+        public static final Tuning STANDARD = new Tuning(null, null, null, null, null, null, null);
+
+        /** A tuning with the grid call naming whole names, as before the option existed. */
+        public Tuning(Integer runningOrderEarlyPeriodMinutes, Integer runningOrderEarlyEveryMinutes,
+                      Integer runningOrderLaterEveryMinutes, Integer finalSeconds, Integer lapBeepHz,
+                      Integer lapBeepMs) {
+            this(runningOrderEarlyPeriodMinutes, runningOrderEarlyEveryMinutes, runningOrderLaterEveryMinutes,
+                    finalSeconds, lapBeepHz, lapBeepMs, null);
+        }
 
         public Tuning {
             runningOrderEarlyPeriodMinutes = runningOrderEarlyPeriodMinutes == null ? 10
@@ -194,6 +203,7 @@ public record ClubAudioSettings(
             finalSeconds = finalSeconds == null ? 5 : finalSeconds;
             lapBeepHz = lapBeepHz == null ? 440 : lapBeepHz;
             lapBeepMs = lapBeepMs == null ? 200 : lapBeepMs;
+            firstNamesOnly = firstNamesOnly != null && firstNamesOnly;
         }
     }
 
@@ -271,7 +281,8 @@ public record ClubAudioSettings(
         return !java.util.Arrays.equals(countdownIntervals, other.countdownIntervals)
                 || !wording.carFinish().equals(other.wording.carFinish())
                 || !wording.raceFinished().equals(other.wording.raceFinished())
-                || !announceCarFinish.equals(other.announceCarFinish);
+                || !announceCarFinish.equals(other.announceCarFinish)
+                || !tuning.firstNamesOnly().equals(other.tuning.firstNamesOnly());
     }
 
     /**

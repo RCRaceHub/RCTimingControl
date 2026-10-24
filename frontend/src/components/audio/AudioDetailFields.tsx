@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   DEFAULT_WORDING,
   tuningOf,
@@ -24,7 +25,9 @@ const WORDING_FIELDS: { key: keyof AudioWording; label: string; fills?: string }
   { key: 'carFinish', label: 'Each car as it finishes', fills: '{car} {name}' },
 ];
 
-const TUNING_FIELDS: { key: keyof AudioTuning; label: string; unit: string; min: number; max: number }[] = [
+type NumericTuningKey = Exclude<keyof AudioTuning, 'firstNamesOnly'>;
+
+const TUNING_FIELDS: { key: NumericTuningKey; label: string; unit: string; min: number; max: number }[] = [
   { key: 'runningOrderEarlyPeriodMinutes', label: 'Running order: early period', unit: 'minutes', min: 0, max: 120 },
   { key: 'runningOrderEarlyEveryMinutes', label: 'Called every, early on', unit: 'minutes', min: 1, max: 60 },
   { key: 'runningOrderLaterEveryMinutes', label: 'Called every, after it', unit: 'minutes', min: 1, max: 60 },
@@ -105,6 +108,16 @@ export function AudioDetailFields({ settings, onChange, idPrefix }: AudioDetailF
           className="h-8"
         />
         <p className="text-xs text-muted-foreground">Seconds, separated by commas (600 is 10 minutes).</p>
+      </div>
+
+      <p className="text-xs font-semibold text-muted-foreground pt-2">Names</p>
+      <div className="flex items-center gap-2">
+        <Switch
+          id={`${idPrefix}-first-names`}
+          checked={tuning.firstNamesOnly}
+          onCheckedChange={(checked) => onChange({ ...settings, tuning: { ...tuning, firstNamesOnly: checked } })}
+        />
+        <Label htmlFor={`${idPrefix}-first-names`}>Say first names only when calling drivers to start</Label>
       </div>
 
       <p className="text-xs font-semibold text-muted-foreground pt-2">Timings and tones</p>

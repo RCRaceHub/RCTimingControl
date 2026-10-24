@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.competitor.SpeechName;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -237,8 +238,10 @@ public class AudioPreGenerationService {
             Competitor competitor = competitorRepository.findById(entry.getCompetitorId()).orElse(null);
             if (competitor == null) continue;
 
-            String url = clipService.generateGridCallClip(
-                    raceId, entry.getId(), competitor.speechName() + ".", voiceId);
+            String firstName = SpeechName.firstName(competitor.speechName());
+            String gridName = settings.tuning().firstNamesOnly() && !firstName.isEmpty()
+                    ? firstName : competitor.speechName();
+            String url = clipService.generateGridCallClip(raceId, entry.getId(), gridName + ".", voiceId);
             if (url != null) {
                 clips.put("grid-" + entry.getId(), url);
             }

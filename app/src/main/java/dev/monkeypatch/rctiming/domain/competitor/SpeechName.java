@@ -100,4 +100,17 @@ public final class SpeechName {
         }
         return out.toString();
     }
+
+    /**
+     * Just the first name of a speech name, for a call that names each driver briefly (#482): everything up to the
+     * first white space, so "Alex Rowe" is "Alex". A name of one word, or a blank one, comes back as it is. A spoken
+     * name an admin typed is cut the same way, so one meant to be said whole should keep to a single word.
+     */
+    public static String firstName(String speechName) {
+        if (speechName == null) {
+            return "";
+        }
+        String trimmed = speechName.trim();
+        return trimmed.split("\\s+", 2)[0];
+    }
 }

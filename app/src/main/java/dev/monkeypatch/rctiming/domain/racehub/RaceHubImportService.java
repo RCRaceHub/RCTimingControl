@@ -313,6 +313,8 @@ public class RaceHubImportService {
         List<Planned> plan = new ArrayList<>();
         Set<String> seenEntryIds = new HashSet<>();
         Map<Long, Set<TransponderSlot>> swapped = transponderSwapService.swappedSlots(eventId);
+        Map<String, String> brcaHolders = new HashMap<>();
+        Set<String> brcaChecked = new HashSet<>();
 
         for (ExportEntry row : exportEntries) {
             if (row == null) {
@@ -352,10 +354,36 @@ public class RaceHubImportService {
                         existing == null ? Set.of() : swapped.getOrDefault(existing.getId(), Set.of()));
                 String name = row.driverDisplayName() != null ? row.driverDisplayName() : label;
                 warnings.addAll(transponders.differences(name));
+                warnBrcaShared(row, name, source, brcaHolders, brcaChecked, warnings);
             }
             plan.add(new Planned(row, action, existing, eventClassId, transponders));
         }
         return plan;
+    }
+
+    /**
+     * Warns when a driver's BRCA number is held by a different competitor, either already stored or by another
+     * driver earlier in this file (#482). Only a warning: a number can be mistyped on either side, and the official
+     * sorts it out from the possible-duplicates review. A blank number never matches. A driver is checked once
+     * however many classes they enter, so the repository is read once per driver per import.
+     *
+     * @param brcaHolders the driver id first seen with each number in this import, shared across the rows
+     * @param checked     the driver ids already checked in this import
+     */
+    private void warnBrcaShared(ExportEntry row, String name, String source, Map<String, String> brcaHolders,
+                                Set<String> checked, List<String> warnings) {
+        String brca = blankToNull(row.brcaNumber());
+        if (brca == null || !checked.add(row.driverProfileId())) {
+            return;
+        }
+        String earlier = brcaHolders.putIfAbsent(brca, row.driverProfileId());
+        boolean sharedInFile = earlier != null && !earlier.equals(row.driverProfileId());
+        boolean sharedWithStored = competitorRepository.findByBrcaNumber(brca).stream()
+                .anyMatch(c -> !(Objects.equals(source, c.getExternalSource())
+                        && row.driverProfileId().equals(c.getExternalId())));
+        if (sharedInFile || sharedWithStored) {
+            warnings.add(name + " has BRCA number " + brca + ", which another competitor also has");
+        }
     }
 
     /** Upserts by entry id: a row changes an entry only when its entry_version is higher than the one applied. */

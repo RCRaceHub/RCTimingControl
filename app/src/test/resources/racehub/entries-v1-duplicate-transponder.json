@@ -20,7 +20,7 @@
       "class_name": "2WD Buggy",
       "driver_profile_id": "drv-ada-{{run}}",
       "driver_display_name": "Ada Lovelace",
-      "brca_number": "BR12345",
+      "brca_number": "BR{{run}}",
       "brca_source": "BRCA",
       "home_club": "Analytical RC",
       "age_category": "SENIOR",

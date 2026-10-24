@@ -98,7 +98,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(adaDriver.getExternalSource()).isEqualTo("RACEHUB");
         assertThat(adaDriver.getExternalId()).isEqualTo("drv-ada-" + run);
         assertThat(adaDriver.getDisplayName()).isEqualTo("Ada Lovelace");
-        assertThat(adaDriver.getBrcaNumber()).isEqualTo("BR12345");
+        assertThat(adaDriver.getBrcaNumber()).isEqualTo("BR" + run);
         assertThat(adaDriver.getHomeClub()).isEqualTo("Analytical RC");
 
         // Class matched by rc_class_name, ignoring case
@@ -385,6 +385,29 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(warnings.get(0).asText())
                 .contains("71" + run).contains("Ada Lovelace").contains("Grace Hopper");
         assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+    }
+
+    @Test
+    void brcaNumberHeldByAnotherCompetitor_isAWarningNotAnError() {
+        Competitor other = new Competitor();
+        other.setDisplayName("Other Holder " + run);
+        other.setBrcaNumber("BR" + run);
+        competitorRepository.save(other);
+
+        ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
+
+        assertThat(resp.getBody().get("blocked").asBoolean()).isFalse();
+        assertThat(resp.getBody().get("warnings").toString())
+                .contains("Ada Lovelace").contains("BRCA number BR" + run);
+    }
+
+    @Test
+    void brcaNumberOfTheSameDriver_isNotWarnedAbout() {
+        importFixture("entries-v1-initial.json", false);
+
+        ResponseEntity<JsonNode> again = importFixture("entries-v1-update.json", true);
+
+        assertThat(again.getBody().get("warnings").toString()).doesNotContain("BRCA number");
     }
 
     @Test
