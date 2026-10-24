@@ -19,6 +19,7 @@ import {
   CloudUpload,
   UserCog,
   BookOpen,
+  Tv,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -64,6 +65,7 @@ const configGroup: NavEntry[] = [
   { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
+  { to: '/admin/board-views', label: 'Board Views', Icon: Tv },
 ];
 
 /** The entries this official is allowed to open. */
