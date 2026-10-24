@@ -32,7 +32,7 @@ function cueSummary(cue: Cue): string {
 }
 
 type PickerNavigator = Navigator & {
-  mediaDevices: MediaDevices & { selectAudioOutput?: () => Promise<MediaDeviceInfo> };
+  mediaDevices?: MediaDevices & { selectAudioOutput?: () => Promise<MediaDeviceInfo> };
 };
 
 /**
@@ -48,6 +48,7 @@ export default function AudioOutputPage() {
   const blocked = useSyncExternalStore(subscribeAudioState, audioBlocked, () => false);
   const [played, setPlayed] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cards, setCards] = useState<Array<{ deviceId: string; label: string }>>([]);
 
   useEffect(() => {
     const stopAnnouncing = setThisOutput(outputId);
@@ -61,29 +62,57 @@ export default function AudioOutputPage() {
     setPlayed((list) => [`${new Date().toLocaleTimeString()}  ${cueSummary(cue)}`, ...list].slice(0, 8));
   }), [outputId]);
 
+  const save = useCallback((chosen: { deviceId: string; label: string }) => {
+    try {
+      localStorage.setItem(deviceKey(outputId), JSON.stringify(chosen));
+    } catch {
+      // Private windows can refuse storage; the choice then lasts until the page reloads
+    }
+    setDevice(chosen);
+    setThisDevice(chosen.deviceId);
+  }, [outputId]);
+
   const choose = useCallback(async () => {
     setError(null);
-    const media = (navigator as PickerNavigator).mediaDevices;
-    if (!media?.selectAudioOutput) {
+    if (!window.isSecureContext) {
+      // Browsers hide sound cards from a page on a plain http:// address other than localhost. Running the app in
+      // a container makes no difference; the address in the browser's bar does
       setError(
-        'This browser cannot choose a sound card. Use Chrome or Edge on this laptop (a page on localhost or HTTPS).',
+        `The browser will not offer sound cards to a page at ${window.location.origin}, because it is not localhost `
+        + 'or HTTPS. Open this page as http://localhost:PORT on the laptop, or in Chrome or Edge open '
+        + 'chrome://flags/#unsafely-treat-insecure-origin-as-secure, add this address, enable it and relaunch.',
       );
       return;
     }
+    const media = (navigator as PickerNavigator).mediaDevices;
     try {
-      const picked = await media.selectAudioOutput();
-      const chosen = { deviceId: picked.deviceId, label: picked.label || 'Chosen sound card' };
-      try {
-        localStorage.setItem(deviceKey(outputId), JSON.stringify(chosen));
-      } catch {
-        // Private windows can refuse storage; the choice then lasts until the page reloads
+      if (media?.selectAudioOutput) {
+        const picked = await media.selectAudioOutput();
+        save({ deviceId: picked.deviceId, label: picked.label || 'Chosen sound card' });
+        return;
       }
-      setDevice(chosen);
-      setThisDevice(chosen.deviceId);
-    } catch {
-      setError('No sound card was chosen.');
+      if (!media?.enumerateDevices) {
+        setError('This browser cannot choose a sound card. Use Chrome or Edge 110 or later.');
+        return;
+      }
+      // Chrome has no picker: it lists sound cards by name only once the page has been let use the microphone
+      try {
+        (await media.getUserMedia({ audio: true })).getTracks().forEach((t) => t.stop());
+      } catch {
+        // Without it the cards are listed without names, which is still usable
+      }
+      const outputs = (await media.enumerateDevices()).filter((d) => d.kind === 'audiooutput');
+      setCards(outputs.map((d, i) => ({ deviceId: d.deviceId, label: d.label || `Sound card ${i + 1}` })));
+      if (outputs.length === 0) setError('The browser found no sound cards.');
+    } catch (e) {
+      const name = e instanceof DOMException ? e.name : '';
+      setError(
+        name === 'NotAllowedError'
+          ? 'The browser refused: no sound card was picked, or sound card choice is blocked for this site. Click Choose sound card again and pick one.'
+          : `The sound card could not be chosen${name ? ` (${name})` : ''}.`,
+      );
     }
-  }, [outputId]);
+  }, [save]);
 
   if (!output) {
     return (
@@ -112,6 +141,20 @@ export default function AudioOutputPage() {
               Test
             </Button>
           </div>
+          {cards.length > 0 && (
+            <select
+              aria-label="Sound card"
+              className="w-full rounded border bg-background px-2 py-1 text-sm"
+              value={device?.deviceId ?? ''}
+              onChange={(ev) => {
+                const card = cards.find((c) => c.deviceId === ev.target.value);
+                if (card) save(card);
+              }}
+            >
+              <option value="">The browser’s default sound card</option>
+              {cards.map((c) => <option key={c.deviceId} value={c.deviceId}>{c.label}</option>)}
+            </select>
+          )}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           {blocked && (
             <p role="alert" className="text-sm">
