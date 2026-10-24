@@ -142,8 +142,8 @@ public class BattleTracker {
                 ? Math.round((double) (last.gapMs() - first.gapMs()) / (last.chaserLaps() - first.chaserLaps()))
                 : null;
         BattleTrend trend = rate == null ? BattleTrend.UNKNOWN
-                : rate <= -current.trendMsPerLap() ? BattleTrend.CLOSING
-                : rate >= current.trendMsPerLap() ? BattleTrend.GROWING
+                : rate < 0 && rate <= -current.trendMsPerLap() ? BattleTrend.CLOSING
+                : rate > 0 && rate >= current.trendMsPerLap() ? BattleTrend.GROWING
                 : BattleTrend.HOLDING;
         return new BattleLinkDto(gapMs, rate, trend, rate != null && rate <= -current.fastMsPerLap());
     }

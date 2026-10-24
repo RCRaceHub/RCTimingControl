@@ -22,7 +22,7 @@ export function parseTopParam(value: string | null): number {
   return Number.isInteger(top) && top > 0 ? Math.min(top, MAX_TOP) : DEFAULT_TOP;
 }
 
-/** How near the car ahead counts as close on the live race board, until the address says otherwise. */
+/** The most seconds `close=` may ask for on a board address. */
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**

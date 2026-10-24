@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.club;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,8 +70,11 @@ public class ClubProfileService {
                 .orElseGet(ClubAudioSettings::defaults);
     }
 
-    /** The club's live timing thresholds, or the defaults before a profile exists. */
-    @Transactional(readOnly = true)
+    /**
+     * The club's live timing thresholds, or the defaults before a profile exists. Read on the read pool, so the
+     * timing thread and the anonymous boards never queue behind a write.
+     */
+    @ReadTransaction
     public LiveTimingSettings liveTimingSettings() {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getLiveTimingSettings)
