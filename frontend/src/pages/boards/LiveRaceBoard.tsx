@@ -6,6 +6,8 @@ import { PositionChart } from '@/components/print/PositionChart';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { parseEventParam } from './boardFormat';
+import { useServerNow } from '@/hooks/race-control/useServerNow';
+import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
 
@@ -14,6 +16,14 @@ export default function LiveRaceBoard() {
   const eventId = parseEventParam(searchParams.get('event'));
   const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
   const series = useLivePositionSeries(raceId, rows);
+
+  // Options on the address: bars=hide leaves out the lap bars, close=SECONDS sets how near counts as close (0 for off)
+  const showBars = searchParams.get('bars') !== 'hide';
+  const closeParam = Number(searchParams.get('close'));
+  const closeMs = searchParams.has('close') && Number.isFinite(closeParam) ? Math.max(0, closeParam) * 1000 : DEFAULT_CLOSE_MS;
+  const status = currentRace?.status;
+  // The bars compare passing times, stamped by the timing laptop, with this device's clock
+  const nowMs = useServerNow(0, showBars && status === 'RUNNING');
 
   if (isPending) {
     return (
@@ -48,7 +58,7 @@ export default function LiveRaceBoard() {
           {currentRace.status === 'STOPPED' ? 'Stopped' : 'Racing'}
         </span>
       </div>
-      {rows.length > 0 ? <BoardLiveTable rows={rows} /> : <BoardMessage>Waiting for the first lap…</BoardMessage>}
+      {rows.length > 0 ? <BoardLiveTable rows={rows} nowMs={showBars && status === 'RUNNING' ? nowMs : undefined} closeMs={closeMs} /> : <BoardMessage>Waiting for the first lap…</BoardMessage>}
       {series.length > 0 && (
         <div className="mx-auto w-full max-w-6xl">
           <PositionChart series={series} />
