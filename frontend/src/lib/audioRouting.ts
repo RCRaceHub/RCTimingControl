@@ -14,6 +14,7 @@ export const SOUND_ROUTES = [
   { id: 'carFinish', label: 'Car finish calls' },
   { id: 'nextRace', label: 'Next race, marshals and time to next start' },
   { id: 'runningOrder', label: 'Running order' },
+  { id: 'practiceLaps', label: 'Lap times in open practice' },
 ] as const;
 
 export type SoundRoute = (typeof SOUND_ROUTES)[number]['id'];

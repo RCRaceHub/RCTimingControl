@@ -3,6 +3,7 @@ import { useStomp } from '@/hooks/race-control/useStomp';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { startHornMs, type LapPace } from '@/lib/sounds';
 import { routeCue } from '@/lib/audioOutput';
+import { firstNameOf } from '@/lib/speechNames';
 import type { SoundRoute } from '@/lib/audioRouting';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
@@ -43,7 +44,7 @@ export function gridClipKey(entry: GridEntry): string {
 /** What the browser says for a grid call when no clip is available. */
 export function gridFallbackText(entry: GridEntry, firstNamesOnly = false): string {
   const whole = entry.speechName?.trim() || entry.driverName;
-  const name = firstNamesOnly ? whole.trim().split(/\s+/)[0] : whole;
+  const name = firstNamesOnly ? firstNameOf(whole) : whole;
   return entry.carNumber ? `Car ${entry.carNumber}, ${name}.` : `${name}.`;
 }
 

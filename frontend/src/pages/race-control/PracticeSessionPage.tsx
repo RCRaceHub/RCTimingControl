@@ -9,6 +9,9 @@ import { PracticeLiveTable } from './panels/PracticeLiveTable';
 import { PracticeCreateDialog } from './dialogs/PracticeCreateDialog';
 import { PracticeNameDialog } from './dialogs/PracticeNameDialog';
 import { usePracticeTiming } from '@/hooks/race-control/usePracticeTiming';
+import { usePracticeSpeech } from '@/hooks/race-control/usePracticeSpeech';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   getSession,
   startSession,
@@ -62,9 +65,10 @@ export function PracticeSessionPage() {
     },
   });
 
-  const { rows, unknownTransponders } = usePracticeTiming(
+  const { rows, unknownTransponders, isLoading: timingLoading } = usePracticeTiming(
     session ? id : null,
   );
+  const speech = usePracticeSpeech(id, rows, session?.status === 'RUNNING', !!session && !timingLoading);
 
   const startMutation = useMutation({
     mutationFn: () => startSession(id),
@@ -131,7 +135,25 @@ export function PracticeSessionPage() {
             Event: {session.eventName}
           </p>
         )}
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Switch
+              id="speak-laps"
+              checked={speech.prefs.on}
+              onCheckedChange={(on) => speech.update({ on })}
+            />
+            <Label htmlFor="speak-laps" className="text-xs">Say lap times</Label>
+          </div>
+          {speech.prefs.on && (
+            <div className="flex items-center gap-1.5">
+              <Switch
+                id="speak-first-names"
+                checked={speech.prefs.firstNames}
+                onCheckedChange={(firstNames) => speech.update({ firstNames })}
+              />
+              <Label htmlFor="speak-first-names" className="text-xs">First names only</Label>
+            </div>
+          )}
           {session.status === 'IDLE' && (
             <Button
               size="sm"
