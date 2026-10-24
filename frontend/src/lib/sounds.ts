@@ -38,6 +38,50 @@ const FINISH_BLASTS: Blast[] = [
   { at: 1.1, length: 0.6, hz: 440 },
 ];
 
+/**
+ * Where this tab's sound comes out: a sound card (its device id; the browser's default when null) and a stereo
+ * pan from -1 (left only) to 1 (right only). Set by an audio output page (#478); race control uses the default.
+ */
+export interface OutputTarget {
+  deviceId: string | null;
+  pan: number;
+}
+
+let target: OutputTarget = { deviceId: null, pan: 0 };
+
+type SinkContext = AudioContext & { setSinkId?: (id: string) => Promise<void> };
+type SinkAudio = HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
+
+/** Sends this tab's sound to the sound card and side given; a sound already playing is not moved. */
+export function setOutputTarget(next: OutputTarget) {
+  target = next;
+  if (shared && shared.state !== 'closed') applySink(shared);
+}
+
+/** The target this tab is sending sound to. */
+export function getOutputTarget(): OutputTarget {
+  return target;
+}
+
+function applySink(ctx: AudioContext) {
+  // setSinkId needs Chrome or Edge 110 or later, and a page on localhost or HTTPS
+  (ctx as SinkContext).setSinkId?.(target.deviceId ?? '').catch((e: unknown) => {
+    console.warn('Could not use the chosen sound card:', e);
+  });
+}
+
+/** Joins a source to the speakers through the target's pan. */
+function connectOut(ctx: AudioContext, node: AudioNode) {
+  if (target.pan !== 0 && ctx.createStereoPanner) {
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = Math.min(1, Math.max(-1, target.pan));
+    node.connect(panner);
+    panner.connect(ctx.destination);
+  } else {
+    node.connect(ctx.destination);
+  }
+}
+
 // One context for every sound: browsers cap how many can be open, and a start horn that comes from a
 // server message, not a click, may find it suspended until it is resumed
 let shared: AudioContext | null = null;
@@ -49,6 +93,7 @@ function context(): AudioContext {
   if (!shared || shared.state === 'closed') {
     shared = new AudioContext();
     shared.onstatechange = notify;
+    if (target.deviceId) applySink(shared);
     notify();
   }
   if (shared.state !== 'running') void shared.resume().catch(() => undefined);
@@ -86,7 +131,7 @@ function play(blasts: Blast[], volume: number, wave: OscillatorType) {
     const ctx = context();
     const gain = ctx.createGain();
     gain.gain.value = Math.min(1, Math.max(0, volume)) * 0.6;
-    gain.connect(ctx.destination);
+    connectOut(ctx, gain);
     for (const { at, length, hz } of blasts) {
       const osc = ctx.createOscillator();
       osc.type = wave;
@@ -111,6 +156,35 @@ export function finishHornMs(sounds?: HornSounds | null): number {
   return sounds?.finishUrl && sounds.finishMs ? sounds.finishMs : FINISH_HORN_MS;
 }
 
+/**
+ * Plays an audio element on this tab's target. A pan other than centre runs the element through the audio
+ * context, which a sound card choice does not need. {@code onFail} runs if the element cannot play.
+ */
+export function playElement(audio: HTMLAudioElement, volume: number, onFail: (e?: unknown) => void) {
+  // A file that will not play can fail twice (the error event and the rejected play): report it once
+  let failed = false;
+  const fail = (e?: unknown) => {
+    if (failed) return;
+    failed = true;
+    onFail(e);
+  };
+  audio.volume = Math.min(1, Math.max(0, volume));
+  audio.onerror = () => fail();
+  const sink = (audio as SinkAudio).setSinkId;
+  const ready = target.deviceId && sink ? sink.call(audio, target.deviceId).catch(() => undefined) : Promise.resolve();
+  void ready.then(() => {
+    if (target.pan !== 0) {
+      try {
+        const ctx = context();
+        connectOut(ctx, ctx.createMediaElementSource(audio));
+      } catch (e) {
+        console.warn('Could not pan the sound:', e);
+      }
+    }
+    return audio.play();
+  }).catch(fail);
+}
+
 /** Plays the club's sound file; if the browser can't, sounds the built-in horn instead. */
 function playFile(url: string, volume: number, builtIn: () => void) {
   // A file that will not play can fail twice (the error event and the rejected play): sound the horn once
@@ -122,10 +196,7 @@ function playFile(url: string, volume: number, builtIn: () => void) {
     builtIn();
   };
   try {
-    const audio = new Audio(url);
-    audio.volume = Math.min(1, Math.max(0, volume));
-    audio.onerror = () => fallBack();
-    audio.play().catch(fallBack);
+    playElement(new Audio(url), volume, fallBack);
   } catch (e) {
     fallBack(e);
   }

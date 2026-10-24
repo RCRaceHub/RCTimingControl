@@ -28,6 +28,7 @@ const ChampionshipListPage = lazy(() => import('@/pages/admin/championships/Cham
 const ChampionshipDetailPage = lazy(() => import('@/pages/admin/championships/ChampionshipDetailPage'));
 const ClubProfilePage = lazy(() => import('@/pages/admin/club/ClubProfilePage'));
 const AdminAudioSettingsPage = lazy(() => import('@/pages/admin/club/AdminAudioSettingsPage'));
+const AudioOutputPage = lazy(() => import('@/pages/audio/AudioOutputPage'));
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
 const TracksPage = lazy(() => import('@/pages/admin/tracks/TracksPage'));
 const FormatsPage = lazy(() => import('@/pages/admin/formats/FormatsPage'));
@@ -138,6 +139,14 @@ const router = createBrowserRouter([
           { path: 'results/:raceId', element: <PrintResultsPage /> },
           { path: 'print', element: <PrintCentrePage /> },
         ],
+      },
+      {
+        path: '/audio-output/:outputId',
+        element: (
+          <ProtectedRoute roles={['RACE_DIRECTOR', 'REFEREE', 'ADMIN']}>
+            <AudioOutputPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: '/race-control/print/event/:eventId',

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
-import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playLapBeep, playStartHorn, playTick, startHornMs, type LapPace } from '@/lib/sounds';
+import { startHornMs, type LapPace } from '@/lib/sounds';
+import { routeCue } from '@/lib/audioOutput';
+import type { SoundRoute } from '@/lib/audioRouting';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];
 
@@ -120,22 +121,15 @@ export function useAnnouncements({
     raceId ? `/topic/race/${raceId}/audio` : null,
   );
 
-  // Web Speech API fallback (AUDIO-11)
-  const fallbackSpeak = useCallback((text: string) => {
-    speakWithBrowser(text, volumeRef.current);
+  // Web Speech API fallback (AUDIO-11), on the outputs the club chose for this kind of line (#478)
+  const fallbackSpeak = useCallback((text: string, route: SoundRoute = 'raceCalls') => {
+    routeCue(route, volumeRef.current, { kind: 'speech', text });
   }, []);
 
-  // playClip: play a pre-generated clip URL; fall back to Web Speech API (AUDIO-10, AUDIO-11)
-  const playClip = useCallback((key: string, fallbackText: string) => {
-    const url = clipMapRef.current[key];
-    if (url) {
-      const audio = new Audio(url);
-      audio.volume = volumeRef.current;
-      audio.play().catch(() => fallbackSpeak(fallbackText));
-    } else {
-      fallbackSpeak(fallbackText);
-    }
-  }, [fallbackSpeak]);
+  // playClip: play a pre-generated clip URL; fall back to the spoken text (AUDIO-10, AUDIO-11)
+  const playClip = useCallback((key: string, fallbackText: string, route: SoundRoute = 'raceCalls') => {
+    routeCue(route, volumeRef.current, { kind: 'clip', url: clipMapRef.current[key] ?? null, text: fallbackText });
+  }, []);
 
   // setClipMap: populate the clip cache from outside (called by usePregeneratedClips)
   const setClipMap = useCallback((map: Record<string, string>) => {
@@ -156,7 +150,7 @@ export function useAnnouncements({
     if (audioEvent.type === 'start-countdown') {
       onStartCountdownRef.current?.(audioEvent.seconds);
     } else if (audioEvent.type === 'next-race-warning' || audioEvent.type === 'auto-run-held') {
-      if (settingsRef.current?.announceNextRace !== false) fallbackSpeak(audioEvent.text);
+      if (settingsRef.current?.announceNextRace !== false) fallbackSpeak(audioEvent.text, 'nextRace');
     }
   }, [audioEvent, fallbackSpeak]);
 
@@ -167,7 +161,7 @@ export function useAnnouncements({
     if (!s?.announceRunningOrder) return;
     if (audioEvent.type === 'running-order' && audioEvent.positions?.length > 0) {
       const positions = audioEvent.positions.map((name, i) => `${i + 1}, ${name}`).join('. ');
-      fallbackSpeak(fillWording(wordingOf(s, 'runningOrder'), { positions }));
+      fallbackSpeak(fillWording(wordingOf(s, 'runningOrder'), { positions }), 'runningOrder');
     }
   }, [audioEvent, fallbackSpeak]);
 
@@ -202,7 +196,7 @@ export function useAnnouncements({
       const t = setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceCountdown) return;
-        playClip(`countdown-${secsBeforeEnd}`, text);
+        playClip(`countdown-${secsBeforeEnd}`, text, 'countdown');
       }, delay);
 
       countdownTimeoutsRef.current.push(t);
@@ -217,7 +211,9 @@ export function useAnnouncements({
         countdownTimeoutsRef.current.push(setTimeout(() => {
           if (raceStateRef.current !== 'RUNNING') return;
           if (settingsRef.current?.finalBeeps !== true) return;
-          playTick(volumeRef.current, left === 1, settingsRef.current?.hornSounds);
+          routeCue('tick', volumeRef.current, {
+            kind: 'horn', horn: left === 1 ? 'tickLast' : 'tick', sounds: settingsRef.current?.hornSounds,
+          });
         }, delay));
       }
     }
@@ -228,7 +224,7 @@ export function useAnnouncements({
       countdownTimeoutsRef.current.push(setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceCountdown) return;
-        fallbackSpeak(settingsRef.current?.timeUpText?.trim() || DEFAULT_TIME_UP_TEXT);
+        fallbackSpeak(settingsRef.current?.timeUpText?.trim() || DEFAULT_TIME_UP_TEXT, 'countdown');
       }, upDelay));
     }
 
@@ -283,9 +279,11 @@ export function useAnnouncements({
       if (s?.announceFinish !== false) fallbackSpeak(wordingOf(s, 'abandon'));
       return;
     }
-    const hornMs = s?.finishHorn !== false ? playFinishHorn(volumeRef.current, s?.hornSounds) : 0;
+    const hornMs = s?.finishHorn !== false
+      ? routeCue('finishHorn', volumeRef.current, { kind: 'horn', horn: 'finish', sounds: s?.hornSounds })
+      : 0;
     if (!s?.announceFinish) return;
-    const t = setTimeout(() => playClip('finish', wordingOf(s, 'raceFinished')), hornMs);
+    const t = setTimeout(() => playClip('finish', wordingOf(s, 'raceFinished'), 'raceFinished'), hornMs);
     return () => clearTimeout(t);
   }, [raceState, raceId, playClip, fallbackSpeak]);
 
@@ -319,7 +317,7 @@ export function useAnnouncements({
     clearTimeout(nextTimerRef.current);
     nextTimerRef.current = setTimeout(() => {
       if (raceStateRef.current === 'FINISHED' && raceIdRef.current === raceId) {
-        fallbackSpeak(`${fillWording(wordingOf(s, 'nextRace'), { race: nextRace.label })}${marshals}`);
+        fallbackSpeak(`${fillWording(wordingOf(s, 'nextRace'), { race: nextRace.label })}${marshals}`, 'nextRace');
       }
     }, NEXT_RACE_DELAY_MS);
   }, [raceState, raceId, nextRace, fallbackSpeak]);
@@ -365,7 +363,9 @@ export function useAnnouncements({
     if (!hornFiredRef.current) {
       hornFiredRef.current = true;
       if (settingsRef.current?.startHorn !== false) {
-        hornMs = playStartHorn(volumeRef.current, settingsRef.current?.hornSounds);
+        hornMs = routeCue('startHorn', volumeRef.current, {
+          kind: 'horn', horn: 'start', sounds: settingsRef.current?.hornSounds,
+        });
       }
       if (startType && startType !== 'STAGGER' && settingsRef.current?.announceRaceCalls !== false) {
         const t = setTimeout(() => {
@@ -388,7 +388,7 @@ export function useAnnouncements({
       const t = setTimeout(() => {
         if (raceStateRef.current !== 'RUNNING') return;
         if (!settingsRef.current?.announceStagger) return;
-        playClip(gridClipKey(entry), gridFallbackText(entry));
+        playClip(gridClipKey(entry), gridFallbackText(entry), 'stagger');
       }, startAfterMs + index * stepMs);
 
       staggerTimeoutsRef.current.push(t);
@@ -402,8 +402,12 @@ export function useAnnouncements({
       const tuning = tuningOf(settingsRef.current);
       // Pace beeps off: every lap gets the plain beep, with no prediction of better or worse
       const plain = settingsRef.current?.paceBeeps === false;
-      playLapBeep(volumeRef.current, plain ? 'onPace' : pace, { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
-        settingsRef.current?.hornSounds);
+      routeCue('lapBeep', volumeRef.current, {
+        kind: 'lapBeep',
+        pace: plain ? 'onPace' : pace,
+        tone: { hz: tuning.lapBeepHz, ms: tuning.lapBeepMs },
+        sounds: settingsRef.current?.hornSounds,
+      });
     },
     [],
   );
@@ -426,7 +430,7 @@ export function useAnnouncements({
     if (state !== 'RUNNING' && state !== 'FINISHED') return true;
     const entry = gridEntriesRef.current?.find((e) => e.entryId === entryId);
     if (!entry) return false;
-    playClip(`car-finish-${entryId}`, carFinishText(entry, settingsRef.current));
+    playClip(`car-finish-${entryId}`, carFinishText(entry, settingsRef.current), 'carFinish');
     return true;
   }, [playClip]);
 

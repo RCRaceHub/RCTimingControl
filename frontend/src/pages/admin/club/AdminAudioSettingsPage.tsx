@@ -23,6 +23,7 @@ import {
 } from '@/lib/audioApi';
 import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { HornSoundsCard } from './HornSoundsCard';
+import { AudioRoutingCard } from './AudioRoutingCard';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 export default function AdminAudioSettingsPage() {
@@ -180,6 +181,8 @@ export default function AdminAudioSettingsPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <AudioRoutingCard />
 
       <HornSoundsCard sounds={settings?.hornSounds} />
     </div>

@@ -96,6 +96,35 @@ Shikabane eliminations are not state changes either: `RaceEliminationService` sa
 
 Marshal laps are not state changes: `MarshalService` saves a `MarshalAdjustment` and calls `LapTimingService.applyMarshalAdjustment`, which recalculates and rebroadcasts positions.
 
+## Race audio routing
+
+Race control works out every sound (horns, beeps, spoken lines) in the browser; nothing about audio is decided on the server. Each sound goes through `routeCue` in `lib/audioOutput.ts`, which looks up the outputs the club ticked for it in `lib/audioRouting.ts` (kept in `localStorage`). It plays the sound on race control's tab if that output is ticked and sends the rest to the other tabs of the same browser over a `BroadcastChannel`. An audio output page announces itself on the channel every two seconds; a sound ticked for an output that has not been heard from for six seconds plays on race control instead of being lost. An audio output page (`/audio-output/{id}`) listens for cues meant for its output and plays them on its sound card (`setSinkId`) and speaker side (a stereo pan), speaking text, cut into pieces of at most 100 characters and played in turn, with the club's Piper voice because the browser voice cannot leave the default card.
+
+```mermaid
+sequenceDiagram
+    participant RC as Race control tab
+    participant Route as routeCue
+    participant Store as Routing (localStorage)
+    participant Chan as BroadcastChannel
+    participant Out as Audio output tab
+    participant Piper as Server (Piper preview)
+
+    RC->>Route: routeCue(sound, volume, cue)
+    Route->>Store: outputs ticked for this sound
+    alt race control ticked
+        Route->>RC: play horn, beep, clip or browser voice here
+    end
+    Route->>Chan: cue for the other ticked outputs
+    Chan-->>Out: cue (only if its output id is listed)
+    alt cue is a horn or beep
+        Out->>Out: play on the chosen sound card and side
+    else cue is a spoken line
+        Out->>Piper: POST spoken-name/preview (text)
+        Piper-->>Out: wav, played on the chosen sound card
+        Note over Out: browser voice on the default card if Piper is down
+    end
+```
+
 ## Results export to RaceHub
 
 The export is an outbox, so a finish never waits on the network and a crash loses nothing.

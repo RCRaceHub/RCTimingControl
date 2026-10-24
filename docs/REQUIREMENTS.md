@@ -147,6 +147,7 @@
 - [x] **AUDIO-24**: The club words what is said when a timed race's clock reaches zero (empty goes back to the standard wording), and each car's number and name is called as it takes the flag, with a switch for those calls; live timing marks a car that has finished
 - [x] **AUDIO-25**: The club words every spoken line (start lead-in, grid call, race started, stopped, resumed and abandoned, race finished, next race, marshals, running order and each car as it finishes) with placeholders for what changes, an empty box meaning the standard wording; sets the countdown call times, the running order cadence, how many final seconds are counted (the start lead-in's ticks and beeps at the end of a timed race) and the lap beep's pitch and length; switches the lap beep, the ticks and the final-seconds beeps separately (the final-seconds beeps are off until the club switches them on); and replaces the tick and lap beep with its own sound files. All are on both the race control and admin audio screens, and clips already made for a race on the grid or running are made again when they change (#299)
 - [x] **AUDIO-26**: The club can switch pace beeps off, so every lap gets the same plain beep with no prediction of faster or slower than the driver's best, as BRCA events expect. On by default; on both the race control and admin audio screens
+- [x] **AUDIO-27**: The club chooses, on one page (Admin → Audio), which outputs play each sound: a grid with a row for every sound and call and a column for every output, so a sound can go to several. An output is a browser tab of the same browser as race control, opened at `/audio-output/{id}`, that plays on the sound card chosen there (Chrome or Edge) and on both, the left or the right speaker. Race control's own tab is always an output, and a sound with no choice plays there only. Spoken lines on another output use the club's Piper voice, since the browser voice cannot leave the default sound card. The grid is saved in the browser, since a sound card belongs to the machine (#478)
 
 ### Race Official Views
 
@@ -364,6 +365,7 @@
 | AUDIO-22 | Audio improvements | Complete (#285) |
 | AUDIO-23 | Audio improvements | Complete (#278, #281, #286) |
 | AUDIO-24 | Audio improvements | Complete |
+| AUDIO-27 | Wishlist (#483) | Complete (#478) |
 | OFFICIAL-01 | Phase 4 | Complete |
 | OFFICIAL-02 | Phase 4 | Complete |
 | OFFICIAL-03 | Phase 4 | Complete |
