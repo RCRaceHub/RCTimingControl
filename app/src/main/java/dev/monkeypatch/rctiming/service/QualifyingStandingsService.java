@@ -124,7 +124,10 @@ public class QualifyingStandingsService {
      * that is only part run still ranks; drivers on the grid of a heat that has not run are returned as waiting,
      * and are placed behind everyone who has a result in the round. Pass {@link Overlay#without} to leave the heat
      * out instead, which gives the order before it. Empty for a class that is not ranked by
-     * low points, and for a Shikabane class, whose heats are separate races.
+     * low points. A Shikabane class's heats are separate races, so the overlay is ignored for it. A driver who is
+     * on no heat counted so far is not in the order, so a first round's waiting drivers are listed only from the
+     * second round on. Under BRCA a car with no laps yet in the heat on track scores the no-show points until it
+     * crosses the line.
      */
     public ProjectedResults projectedResultsFor(Long eventClassId, Overlay overlay) {
         Optional<RoundRules> rules = roundByRoundRules(eventClassId);

@@ -10,28 +10,29 @@ import { parseEventParam, parseTopParam } from './boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 /** The table changes with every lap, so it polls faster than the other boards. */
-const LIVE_TOP_POLL_MS = 2000;
+const LIVE_TOP_POLL_MS = 3000;
 
 /** How a driver's place changed: positive is up the table, null when they had no earlier place. */
 function placesGained(row: LiveQualifyingRow): number | null {
   return row.previousPosition === null ? null : row.previousPosition - row.position;
 }
 
-function Movement({ row }: { row: LiveQualifyingRow }) {
+function Movement({ row, hasBaseline }: { row: LiveQualifyingRow; hasBaseline: boolean }) {
   const gained = placesGained(row);
-  if (gained === null) return <span className="text-sky-300">New</span>;
+  // The first heat of the event has nothing to compare with, so nobody is "new"
+  if (gained === null) return !hasBaseline ? null : <span className="text-sky-300">New</span>;
   if (gained > 0) return <span className="text-emerald-400">▲ {gained}</span>;
   if (gained < 0) return <span className="text-rose-400">▼ {-gained}</span>;
   return <span className="text-slate-600">–</span>;
 }
 
-function rowTint(row: LiveQualifyingRow, live: boolean): string {
+function rowTint(row: LiveQualifyingRow, live: boolean, hasBaseline: boolean): string {
   // The heat on track in amber while it runs; once it ends, whoever it moved stays lit green or red
   if (live && row.live) return 'bg-amber-500/20';
   if (!live && row.previousPosition !== null && row.previousPosition !== row.position) {
     return row.position < row.previousPosition ? 'bg-emerald-500/15' : 'bg-rose-500/15';
   }
-  if (!live && row.previousPosition === null) return 'bg-sky-500/15';
+  if (!live && hasBaseline && row.previousPosition === null) return 'bg-sky-500/15';
   return '';
 }
 
@@ -68,6 +69,7 @@ export default function LiveTopBoard() {
 
   const live = data.phase === 'LIVE';
   const rows = data.rows.slice(0, top);
+  const hasBaseline = data.rows.some((r) => r.previousPosition !== null);
   return (
     <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
       <div className="flex flex-wrap items-baseline justify-between gap-4">
@@ -89,7 +91,7 @@ export default function LiveTopBoard() {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.entryId} className={`border-b border-slate-800 ${rowTint(row, live)}`}>
+            <tr key={row.entryId} className={`border-b border-slate-800 ${rowTint(row, live, hasBaseline)}`}>
               <td className="py-3 pr-4 font-bold tabular-nums">{row.position}</td>
               <td className="py-3 pr-4 font-semibold">
                 {row.driverName}
@@ -100,7 +102,7 @@ export default function LiveTopBoard() {
               <td className="py-3 pr-4 text-right font-semibold tabular-nums">{row.points ?? '—'}</td>
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
               <td className="py-3 text-right tabular-nums">
-                <Movement row={row} />
+                <Movement row={row} hasBaseline={hasBaseline} />
               </td>
             </tr>
           ))}

@@ -57,7 +57,8 @@ public class LiveQualifyingService {
     /**
      * The table for a qualifying heat. {@code liveRows} are the heat's live positions while it runs, or null once
      * it has finished, when its stored result is counted. Empty when the heat is not a qualifying heat or its class
-     * is not ranked by low points. Names are as the public may see them (#265).
+     * is not ranked by low points. Drivers whose only heat is still to come are not in a first round's table, so
+     * they show as waiting only from the second round on. Names are as the public may see them (#265).
      */
     @ReadTransaction
     public Optional<List<LiveQualifyingDto.Row>> forHeat(long raceId, List<LiveTimingRowDto> liveRows) {
@@ -71,8 +72,11 @@ public class LiveQualifyingService {
         if (!qualifier) {
             return Optional.empty();
         }
-        ProjectedResults after = qualifyingStandingsService.projectedResultsFor(eventClassId,
-                liveRows != null ? Overlay.live(raceId, liveRows) : Overlay.stored(raceId));
+        // A heat that has started but has no live positions yet (before its first passing, or after a restart) is
+        // left out rather than scored as every driver on no laps
+        Overlay counted = liveRows == null ? Overlay.stored(raceId)
+                : liveRows.isEmpty() ? Overlay.without(raceId) : Overlay.live(raceId, liveRows);
+        ProjectedResults after = qualifyingStandingsService.projectedResultsFor(eventClassId, counted);
         if (after.results().isEmpty()) {
             return Optional.empty();
         }
@@ -91,7 +95,7 @@ public class LiveQualifyingService {
         for (int i = 0; i < after.results().size(); i++) {
             QualifyingResult result = after.results().get(i);
             Long entryId = result.entryId();
-            rows.add(new LiveQualifyingDto.Row(i + 1, before.get(entryId), entryId, driverName(entryId, names),
+            rows.add(new LiveQualifyingDto.Row(i + 1, before.get(entryId), entryId, driverName(entryId, carNumbers.get(entryId), names),
                     carNumbers.get(entryId), result.points(), result.lapsCompleted(),
                     result.hasBestLap() ? result.bestLapMs() : null, inHeat.contains(entryId),
                     after.waiting().contains(entryId)));
@@ -99,7 +103,7 @@ public class LiveQualifyingService {
         return Optional.of(rows);
     }
 
-    /** Each entry's car number across the class's qualifying heats; the heat read last wins. */
+    /** Each entry's car number across the class's qualifying heats. */
     private Map<Long, String> carNumbers(Long eventClassId) {
         Map<Long, String> carNumbers = new HashMap<>();
         for (Race heat : raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.QUALIFIER)) {
@@ -112,10 +116,10 @@ public class LiveQualifyingService {
         return carNumbers;
     }
 
-    private String driverName(Long entryId, PublicNames.Snapshot names) {
+    private String driverName(Long entryId, String carNumber, PublicNames.Snapshot names) {
         return entryRepository.findById(entryId)
                 .flatMap(e -> competitorRepository.findById(e.getCompetitorId()))
-                .map(c -> names.of(c.getId(), c.getDisplayName(), entryId))
-                .orElse("Entry " + entryId);
+                .map(c -> names.of(c.getId(), c.getDisplayName(), carNumber))
+                .orElse(carNumber == null ? "Driver" : "Car " + carNumber);
     }
 }
