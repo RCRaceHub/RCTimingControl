@@ -24,7 +24,8 @@ import java.util.Set;
 
 /**
  * The addresses phones, tablets and boards on the venue network should open (#23): one
- * {@code http://<ip>:<port>/} per network the laptop is on, plus one by its hostname. Logged at
+ * {@code http://<ip>:<port>/} per network the laptop is on, plus one by its hostname, and one by its mDNS name such
+ * as {@code timing.local} when {@code rctiming.network.mdns-name} is set (listed first). Logged at
  * start-up and shown on the About page.
  *
  * <p>Inside a container the app only sees the container's own network, so
@@ -42,10 +43,13 @@ public class LanAddresses {
 
     private final String bindAddress;
     private final List<String> configuredAddresses;
+    private final Optional<String> mdnsHost;
     private volatile int port;
 
     public LanAddresses(@Value("${server.address:}") String bindAddress,
-                        @Value("${rctiming.network.addresses:}") String configuredAddresses) {
+                        @Value("${rctiming.network.addresses:}") String configuredAddresses,
+                        @Value("${rctiming.network.mdns-name:}") String mdnsName) {
+        this.mdnsHost = MdnsAdvertiser.hostLabel(mdnsName).map(label -> label + ".local");
         this.bindAddress = bindAddress == null ? "" : bindAddress.trim();
         this.configuredAddresses = configuredAddresses == null ? List.of()
                 : Arrays.stream(configuredAddresses.split(","))
@@ -88,6 +92,7 @@ public class LanAddresses {
                     .toList();
         }
         Set<String> hosts = new LinkedHashSet<>();
+        mdnsHost.ifPresent(hosts::add);
         if (!bindAddress.isEmpty() && !isWildcard(bindAddress)) {
             hosts.add(bindAddress);
         } else {
@@ -111,6 +116,16 @@ public class LanAddresses {
 
     private static boolean isWildcard(String address) {
         return address.equals("0.0.0.0") || address.equals("::") || address.equals("[::]");
+    }
+
+    /** The port the web server bound to, 0 before it has started. */
+    int port() {
+        return port;
+    }
+
+    /** The IPv4 address of each real network interface, for the mDNS announcement to go out on. */
+    static List<String> lanIpv4Addresses() {
+        return interfaceAddresses();
     }
 
     private static List<String> interfaceAddresses() {

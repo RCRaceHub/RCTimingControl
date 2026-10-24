@@ -68,7 +68,11 @@ To change a setting such as the port, create a file called `application.properti
 server.port=80
 # Keep backups on a USB stick
 rctiming.backup.directory=E:/rctiming-backups
+# Announce the laptop on the venue network as timing.local
+rctiming.network.mdns-name=timing
 ```
+
+With `rctiming.network.mdns-name` set, the app announces itself by that name over mDNS, so devices can open `http://timing.local:8080/` without knowing the laptop's address. Windows 10 and later, macOS, iOS and Android look up `.local` names themselves; the About page lists the name first. It is off unless you set it, and it does not work from inside Docker, because multicast cannot cross Docker's network (use host networking, or leave it off and set `CLUB_ADDRESS`). Because `http://timing.local` is plain HTTP, browsers treat it as not secure, so the sound card list on the audio output page works only at `http://localhost:8080` on the laptop itself.
 
 On Linux the backup folder must be one the `rctiming` user can write to. For a folder on the laptop's own disk, create it with `sudo install -d -o rctiming -g rctiming /srv/rctiming-backups`. A USB stick or network share has to be mounted so that user can write to it, for example with `uid=rctiming,gid=rctiming` in its mount options. The desktop's automatic mount under `/media/<your name>` is private to you, so the service can't use it.
 
