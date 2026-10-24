@@ -1024,6 +1024,11 @@ export const adminApi = {
     /** Null clears the choice, so the default applies */
     setTarget: (target: ResultsPublishTarget | null) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/target', { target }).then(r => r.data),
+    /** The results site (static pages) as it stands now, as a zip */
+    downloadSite: () =>
+      api
+        .get<Blob>('/api/v1/admin/results-site.zip', { responseType: 'blob' })
+        .then(r => ({ blob: r.data, filename: filenameFrom(r.headers['content-disposition']) ?? 'results-site.zip' })),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api

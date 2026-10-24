@@ -130,11 +130,14 @@ The qualifying standings page (`/qualifying`) is the standings after each round:
 
 The QR codes on the boards, the standings pages and the About page open the page on this laptop. When the laptop announces a name (`rctiming.network.mdns-name`, see `installing.md`) and the announcement has really gone out, the code holds that name, for example `http://timing.local:8080/qualifying`, so codes printed at one meeting still work after the laptop's address changes. When no name is announced, which includes a container on Docker's bridge network, the code holds the address the screen was opened at, or the laptop's network address if the screen is open on the laptop itself, so a phone on the venue wifi can still open it. A phone that cannot look up `.local` names (some older Android phones) needs the address instead: the About page lists both.
 
+## Results site
+
+Where results are published (nothing, RaceHub, a results site or both) is chosen under **Admin → Results to RaceHub**. The results site is for clubs without RaceHub: plain web pages for every event, one page per event with each class's heats, finals and championship standings, and an index of events newest first. **Download results site (zip)** builds them for upload to the club's own web space; see `installing.md` for keeping a folder up to date automatically. The pages show display names as the public screens do, and no lap-by-lap times.
+
 ## Not built yet
 
 Planned, tracked in issue #359:
 
-- A results site for clubs without RaceHub. The choice of where results are published (nothing, RaceHub, a results site or both) is made under **Admin → Results to RaceHub**, but choosing the results site sends nothing yet.
 - QR codes that link to RaceHub's public pages instead of this laptop (#316).
 
 ### Points on a heat result

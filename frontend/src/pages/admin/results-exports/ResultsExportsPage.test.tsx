@@ -6,7 +6,7 @@ import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setTarget: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -62,6 +62,22 @@ describe('ResultsExportsPage', () => {
     expect(screen.getByText('Sent')).toBeInTheDocument();
     expect(screen.getByText('RaceHub answered 503')).toBeInTheDocument();
     expect(screen.getByText(/^Correction · revision 3 · .* · 2 attempts$/)).toBeInTheDocument();
+  });
+
+  it('offers the results site download only when results are published to a site', async () => {
+    const base = { sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: [], chosenTarget: null, exports: [] };
+    api.resultsExports.list.mockResolvedValue({ ...base, publishTarget: 'SITE' });
+    renderPage();
+    expect(await screen.findByRole('button', { name: 'Download results site (zip)' })).toBeInTheDocument();
+  });
+
+  it('hides the results site download when results go to RaceHub only', async () => {
+    api.resultsExports.list.mockResolvedValue({
+      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: [], chosenTarget: null, exports: [], publishTarget: 'RACEHUB',
+    });
+    renderPage();
+    await screen.findByLabelText('Publish results to');
+    expect(screen.queryByRole('button', { name: 'Download results site (zip)' })).not.toBeInTheDocument();
   });
 
   it('sends a failed export again on request', async () => {

@@ -22,6 +22,7 @@ flowchart LR
         qry[query.*<br/>jOOQ projections<br/>read side]
         sm[domain.race.RaceStateMachineService]
         rx[resultsexport.*<br/>outbox and sender]
+        rs[resultsexport.ResultsSiteService<br/>static results pages]
         lf[livefeed.*<br/>publisher]
         bk[backup.*, retention.*]
         db[(SQLite file<br/>WAL, one writer + read pool)]
@@ -39,6 +40,8 @@ flowchart LR
     sm --> dom
     sm -->|RaceStatusChangedEvent| rx
     sm -->|RaceStatusChangedEvent| lf
+    sm -->|RaceStatusChangedEvent| rs
+    rs -->|reads the export document| qry
     sm --> hub
     te -.->|finds the running race| dom
     lts -.->|resolves transponder to entry| dom
