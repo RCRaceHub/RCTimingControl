@@ -38,6 +38,8 @@ interface NavEntry {
   Icon: LucideIcon;
   /** Shown to admins only: only an admin can change what it opens (#132). */
   adminOnly?: boolean;
+  /** Hidden from a referee, for pages only an admin or a race director can use. */
+  runEventOnly?: boolean;
 }
 
 const eventsGroup: NavEntry[] = [
@@ -65,12 +67,12 @@ const configGroup: NavEntry[] = [
   { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
-  { to: '/admin/board-views', label: 'Board Views', Icon: Tv },
+  { to: '/admin/board-views', label: 'Board Views', Icon: Tv, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */
-function visibleTo(entries: NavEntry[], isAdmin: boolean): NavEntry[] {
-  return entries.filter(entry => isAdmin || !entry.adminOnly);
+function visibleTo(entries: NavEntry[], isAdmin: boolean, canRunEvent = isAdmin): NavEntry[] {
+  return entries.filter(entry => (isAdmin || !entry.adminOnly) && (canRunEvent || !entry.runEventOnly));
 }
 
 function NavItem({
@@ -106,7 +108,7 @@ function NavItem({
 // Used by both the desktop sidebar and the mobile sheet
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
-  const { isAdmin } = useRoles();
+  const { isAdmin, canRunEvent } = useRoles();
   const eventId = useMatch('/admin/events/:id/*')?.params.id;
 
   return (
@@ -146,7 +148,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Configuration
         </p>
-        {visibleTo(configGroup, isAdmin).map(({ to, label, Icon }) => (
+        {visibleTo(configGroup, isAdmin, canRunEvent).map(({ to, label, Icon }) => (
           <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
         ))}
       </nav>
@@ -191,7 +193,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 export default function AdminPanelLayout() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { helpContent, isOpen, setIsOpen } = useHelp();
-  const { isAdmin } = useRoles();
+  const { isAdmin, canRunEvent } = useRoles();
 
   return (
     <div className="min-h-screen bg-background">
@@ -256,7 +258,7 @@ export default function AdminPanelLayout() {
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 flex md:hidden border-t bg-background z-10 h-14">
-        {visibleTo([...eventsGroup, ...operationsGroup, ...configGroup], isAdmin).slice(0, 5).map(({ to, label, Icon }) => (
+        {visibleTo([...eventsGroup, ...operationsGroup, ...configGroup], isAdmin, canRunEvent).slice(0, 5).map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}

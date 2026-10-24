@@ -43,7 +43,8 @@ public class BoardTickerService {
      *
      * @param eventId an event that exists, already resolved by the caller
      * @return the parts of the ticker that have something to show; the next race is null when none is left
-     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the next race is deleted while this runs
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the next race or the race on track is deleted
+     *                                                                  while this runs
      */
     public TickerDto forEvent(long eventId) {
         Optional<BoardRaceDto> next = boardQuery.nextRace(eventId);

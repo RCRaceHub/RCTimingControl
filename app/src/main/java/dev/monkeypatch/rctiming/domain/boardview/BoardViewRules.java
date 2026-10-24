@@ -48,7 +48,7 @@ final class BoardViewRules {
             throw new IllegalArgumentException("A view has 1 to " + MAX_PANELS + " panels");
         }
         return panels.stream().map(panel -> {
-            if (panel.type() == null) {
+            if (panel == null || panel.type() == null) {
                 throw new IllegalArgumentException("Every panel needs a type");
             }
             if (panel.span() < 1 || panel.span() > columns) {

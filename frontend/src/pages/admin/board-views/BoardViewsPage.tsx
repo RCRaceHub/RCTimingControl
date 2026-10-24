@@ -19,7 +19,7 @@ type DialogState = { mode: 'create' } | { mode: 'edit'; view: BoardView };
 
 /**
  * The saved board views (#481): screens built from panels, each opened at its own address so a commentator or a
- * trackside monitor can have a layout of their own. Open to ADMIN and RACE_DIRECTOR; a referee can read the list.
+ * trackside monitor can have a layout of their own. Open to ADMIN and RACE_DIRECTOR.
  */
 export default function BoardViewsPage() {
   const { data: views, isLoading, isError, refetch } = useBoardViews();

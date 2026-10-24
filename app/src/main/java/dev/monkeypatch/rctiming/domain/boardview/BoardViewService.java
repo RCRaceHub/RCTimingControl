@@ -7,7 +7,9 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
@@ -36,25 +38,26 @@ public class BoardViewService {
     }
 
     /** Every view, by name. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<BoardView> list() {
         return repository.findAllByName();
     }
 
     /** One view by its address name. @throws EntityNotFoundException (404) if there is none */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public BoardView getBySlug(String slug) {
         return repository.findBySlug(slug)
                 .orElseThrow(() -> new EntityNotFoundException("There is no board view called " + slug));
     }
 
     /** One view by id. @throws EntityNotFoundException (404) if there is none */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public BoardView get(Long id) {
         return repository.getOrThrow(id);
     }
 
-    /** A view's panels, read from its stored JSON. */
+    /** A view's panels, read from its stored JSON; touches no table, so it opens no transaction. */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public List<BoardPanel> panelsOf(BoardView view) {
         try {
             return json.readValue(view.getPanels(), PANELS);

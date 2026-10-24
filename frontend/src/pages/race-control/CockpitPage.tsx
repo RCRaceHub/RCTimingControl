@@ -592,16 +592,16 @@ export default function CockpitPage() {
             Run Order
           </p>
           <div className="flex items-center">
-          <CockpitSectionsMenu isShown={sections.isShown} onToggle={sections.toggle} hiddenCount={sections.hiddenCount} />
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Hide run order"
-            title="Hide run order"
-            onClick={sidebar.toggleCollapsed}
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </Button>
+            <CockpitSectionsMenu isShown={sections.isShown} onToggle={sections.toggle} hiddenCount={sections.hiddenCount} />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Hide run order"
+              title="Hide run order"
+              onClick={sidebar.toggleCollapsed}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         {sections.isShown('autoRun') && <AutoRunPanel autoRun={autoRun} canControl={canControlRace} />}

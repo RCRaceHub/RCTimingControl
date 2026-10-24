@@ -64,7 +64,7 @@ A board view is a screen you build yourself. Open **Admin → Board views**, pre
 - **Marshals**, the drivers marshalling the race on track.
 - **Last result**, the result of the race that finished last.
 
-A panel can be one column wide or span several. The view opens at `/boards/view/` followed by its address name, with no sign-in, and the options of the Live race screen work on it: `event=ID`, `bars=hide` and `close=SECONDS`. Two views come ready made: **commentator** (live timing across the top, the live top table and the next race below) and **monitor** (all four, for a screen beside the track). Edit or delete them like any other. Two monitors each get their own view by opening different addresses. ADMIN and RACE_DIRECTOR can change views; a referee can see the list.
+A panel can be one column wide or span several. The view opens at `/boards/view/` followed by its address name, with no sign-in, and the options of the Live race screen work on it: `event=ID`, `bars=hide` and `close=SECONDS`. Two views come ready made: **commentator** (live timing across the top, the live top table and the next race below) and **monitor** (all four, for a screen beside the track). Edit or delete them like any other. Two monitors each get their own view by opening different addresses. ADMIN and RACE_DIRECTOR can change views.
 
 ### Showing less in race control
 
