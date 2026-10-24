@@ -115,6 +115,7 @@
 - [x] **CTRL-11**: The start order of a heat is the finishing order of the same heat in the round before it, except that the first qualifying round starts in car number order, whatever practice did. Calling the grid takes the heat's start type from its class's format as it is then, so a format change made after the rounds were generated applies, and the cockpit says how the race will start (and whether drivers are called one by one)
 - [x] **CTRL-12**: A referee records a driver who missed their marshal duty and then applies a marshal penalty of the kind they choose: the driver's best qualifying round does not count (round by round qualifying; the next best round takes its place), or a lap comes off their result in the first final they race. Marshals are assumed present: the race control marshal list has the buttons for both penalties on every driver, and applying one records the miss itself, so recording it first is optional
 - [x] **CTRL-13**: While a race is on the grid, race control's Grid Called panel shows beside each driver whether the decoder has seen their transponder (primary or secondary) since the grid was called, updating live. Nothing is timed or stored, and the check starts afresh each time a race is called to the grid (#482)
+- [x] **CTRL-14**: In race control the Move drivers tab and the Finals line-up also work by dragging: drag a driver onto another heat or final to move them there, or onto another driver in the finals to swap places. The Move to and up/down buttons stay for anyone who prefers them, and nothing can be dragged once the race has been called (#482)
 
 ### Audit
 
@@ -349,6 +350,7 @@
 | CTRL-11 | Race control | Complete |
 | CTRL-12 | Race control | Complete |
 | CTRL-13 | Wishlist (#483) | Complete (#482) |
+| CTRL-14 | Wishlist (#483) | Complete (#482) |
 | AUDIO-01 | Phase 6 | Complete |
 | AUDIO-02 | Phase 6 | Complete |
 | AUDIO-03 | Phase 6 | Complete |
