@@ -43,6 +43,7 @@ const addClassSchema = z.object({
   templateId: z.coerce.number().int().positive('Format template is required'),
 });
 type AddClassFormValues = z.infer<typeof addClassSchema>;
+type AddClassFormInput = z.input<typeof addClassSchema>;
 
 function ConfigSummary({ config }: { config: EventClassDto['configSnapshot'] }) {
   if (!config) return <span className="text-muted-foreground text-xs">No config</span>;
@@ -252,8 +253,8 @@ function AddClassDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
-  control: ReturnType<typeof useForm<AddClassFormValues>>['control'];
-  errors: ReturnType<typeof useForm<AddClassFormValues>>['formState']['errors'];
+  control: ReturnType<typeof useForm<AddClassFormInput, unknown, AddClassFormValues>>['control'];
+  errors: ReturnType<typeof useForm<AddClassFormInput, unknown, AddClassFormValues>>['formState']['errors'];
   isSubmitting: boolean;
 }) {
   const { data: racingClasses = [], isLoading: classesLoading } = useRacingClasses();
@@ -361,7 +362,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
     reset,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<AddClassFormValues>({ resolver: zodResolver(addClassSchema) });
+  } = useForm<AddClassFormInput, unknown, AddClassFormValues>({ resolver: zodResolver(addClassSchema) });
 
   function resolveClassName(racingClassId: number | null): string {
     if (!racingClassId) return 'Unknown class';

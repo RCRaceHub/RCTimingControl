@@ -38,6 +38,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 type Props = {
   open: boolean;
@@ -52,7 +53,7 @@ type Props = {
 };
 
 export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers, defaultEntryId, defaultReason }: Props) {
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { entryId: 0, penaltyType: 'LAP', value: 1, reason: '' },
   });
@@ -87,7 +88,7 @@ export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers
                   <FormLabel>Driver</FormLabel>
                   <Select
                     onValueChange={(v) => field.onChange(Number(v))}
-                    value={field.value > 0 ? String(field.value) : ''}
+                    value={Number(field.value) > 0 ? String(field.value) : ''}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -139,7 +140,7 @@ export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers
                 <FormItem>
                   <FormLabel>{penaltyType === 'LAP' ? 'Laps' : 'Seconds'}</FormLabel>
                   <FormControl>
-                    <Input type="number" min={1} step={penaltyType === 'TIME' ? 0.1 : 1} {...field} />
+                    <Input type="number" min={1} step={penaltyType === 'TIME' ? 0.1 : 1} {...field} value={String(field.value ?? '')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

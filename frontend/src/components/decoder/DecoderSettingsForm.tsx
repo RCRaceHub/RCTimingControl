@@ -42,6 +42,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 interface Props {
   /** Called after the settings are saved. */
@@ -60,7 +61,7 @@ interface Props {
 export function DecoderSettingsForm({ onSaved, onBack, onSkip, saveLabel = 'Save' }: Props) {
   const queryClient = useQueryClient();
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
     defaultValues: { decoderHost: '', decoderProtocol: 'RC4', decoderPort: 5100 },
@@ -167,6 +168,7 @@ export function DecoderSettingsForm({ onSaved, onBack, onSkip, saveLabel = 'Save
                   max={65535}
                   step={1}
                   {...field}
+                  value={String(field.value ?? '')}
                   onChange={(e) => {
                     userEditedPortRef.current = true;
                     field.onChange(e);

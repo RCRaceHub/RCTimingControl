@@ -35,6 +35,7 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 interface Props {
   onNext: () => void;
@@ -54,7 +55,7 @@ export default function FormatStep({ onNext, onBack }: Props) {
   const existing = data ?? [];
   const [adding, setAdding] = useState(false);
 
-  const form = useForm<FormValues>({
+  const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
     defaultValues: {
@@ -242,6 +243,7 @@ export default function FormatStep({ onNext, onBack }: Props) {
                     step={1}
                     placeholder="e.g. 5"
                     {...field}
+                    value={String(field.value ?? '')}
                   />
                 </FormControl>
                 <FormMessage />

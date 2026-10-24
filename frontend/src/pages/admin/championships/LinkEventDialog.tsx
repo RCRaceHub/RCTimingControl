@@ -29,6 +29,7 @@ const linkEventSchema = z.object({
   roundNumber: z.coerce.number().int().positive('Round number is required'),
 });
 type LinkEventFormValues = z.infer<typeof linkEventSchema>;
+type LinkEventFormInput = z.input<typeof linkEventSchema>;
 
 interface LinkEventDialogProps {
   championshipId: number;
@@ -40,7 +41,7 @@ export function LinkEventDialog({ championshipId, open, onOpenChange }: LinkEven
   const { data: events = [], isLoading } = useAdminEventsList();
   const linkMutation = useLinkChampionshipEvent(championshipId);
   const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } =
-    useForm<LinkEventFormValues>({ resolver: zodResolver(linkEventSchema) });
+    useForm<LinkEventFormInput, unknown, LinkEventFormValues>({ resolver: zodResolver(linkEventSchema) });
 
   async function onSubmit(values: LinkEventFormValues) {
     try {

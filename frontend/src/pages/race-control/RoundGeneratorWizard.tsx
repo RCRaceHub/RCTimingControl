@@ -34,7 +34,7 @@ type Props = {
 // ranges are this form's own. Not z.coerce, which would turn an emptied box into 0 and say "At least 1".
 const count = (min: number, max: number) => z.preprocess(
   (v) => (v === '' || v == null ? undefined : Number(v)),
-  z.number({ required_error: 'Enter a number', invalid_type_error: 'Enter a number' })
+  z.number({ error: 'Enter a number' })
     .int('Enter a whole number').min(min, `At least ${min}`).max(max, `At most ${max}`),
 );
 
