@@ -35,6 +35,7 @@ public class Entry implements UpdatedAt {
     /** Optional third and fourth transponders (#482). Laps from any of the four numbers count. */
     private String thirdTransponderNumber;
     private String fourthTransponderNumber;
+
     private EntryStatus status = EntryStatus.PENDING;
     private Instant submittedAt;
     private Instant confirmedAt;

@@ -108,9 +108,6 @@ public class EntryService {
         if (primary.equals(secondary)) {
             throw new IllegalArgumentException("The secondary transponder must differ from the primary");
         }
-        if ((third != null && secondary == null) || (fourth != null && third == null)) {
-            throw new IllegalArgumentException("Fill the transponders in order: a third needs a second, a fourth a third");
-        }
         List<String> given = new ArrayList<>();
         given.add(primary);
         for (String n : new String[] {secondary, third, fourth}) {

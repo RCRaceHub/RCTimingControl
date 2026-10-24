@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * The body of {@code POST /race-control/events/{eventId}/entries/{entryId}/transponder-swap}. Swap one of an
- * entry's transponders. A blank {@code newTransponderNumber} removes the secondary transponder; the primary can
+ * entry's transponders. A blank {@code newTransponderNumber} removes a secondary, third or fourth transponder; the primary can
  * only be replaced.
  */
 public record TransponderSwapRequest(

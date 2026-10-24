@@ -82,7 +82,8 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
               ? { thirdTransponderNumber: response.newTransponderNumber }
               : { fourthTransponderNumber: response.newTransponderNumber }),
         // A swap to the booking's number settles the difference the import flagged
-        ...(response.newTransponderNumber === (slot === 'PRIMARY' ? selectedEntry.importedTransponderNumber : selectedEntry.importedSecondaryTransponderNumber)
+        ...((slot === 'PRIMARY' || slot === 'SECONDARY')
+          && response.newTransponderNumber === (slot === 'PRIMARY' ? selectedEntry.importedTransponderNumber : selectedEntry.importedSecondaryTransponderNumber)
           ? (slot === 'PRIMARY' ? { importedTransponderNumber: null } : { importedSecondaryTransponderNumber: null })
           : {}),
       });

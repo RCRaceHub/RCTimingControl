@@ -432,7 +432,9 @@ public class RaceHubImportService {
             String name = p.row.driverDisplayName() != null ? p.row.driverDisplayName() : "entry " + p.row.entryId();
             String primary = rowWins ? p.transponders.primary() : p.existing.getTransponderNumberSnapshot();
             String secondary = rowWins ? p.transponders.secondary() : p.existing.getSecondaryTransponderNumber();
-            state.add(driverKey, name, p.eventClassId, primary, secondary);
+            state.add(driverKey, name, p.eventClassId, primary, secondary,
+                    p.existing == null ? null : p.existing.getThirdTransponderNumber(),
+                    p.existing == null ? null : p.existing.getFourthTransponderNumber());
 
             if (rowWins && p.transponders.primary().isEmpty()) {
                 warnings.add(name + " (entry " + p.row.entryId() + ") has no transponder");

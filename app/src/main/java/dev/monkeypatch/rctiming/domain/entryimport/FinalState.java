@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public final class FinalState {
 
-    private record Active(String driverKey, String name, Long eventClassId, String primary, String secondary) {}
+    private record Active(String driverKey, String name, Long eventClassId, List<String> numbers) {}
 
     private final EventClasses classes;
     private final List<Active> active = new ArrayList<>();
@@ -33,9 +33,14 @@ public final class FinalState {
      * Adds an entry that would be active.
      *
      * @param driverKey the same for every entry of one driver: {@code "c:" + competitorId} for a known competitor
+     * @param extra     the entry's third and fourth transponders, which an import never sets but an existing entry
+     *                  may hold (#482)
      */
-    public void add(String driverKey, String name, Long eventClassId, String primary, String secondary) {
-        active.add(new Active(driverKey, name, eventClassId, primary, secondary));
+    public void add(String driverKey, String name, Long eventClassId, String primary, String secondary,
+                    String... extra) {
+        List<String> numbers = new ArrayList<>(Arrays.asList(primary, secondary));
+        numbers.addAll(Arrays.asList(extra));
+        active.add(new Active(driverKey, name, eventClassId, numbers));
     }
 
     /** Adds what is wrong with the result to {@code errors} and {@code warnings}. */
@@ -50,7 +55,7 @@ public final class FinalState {
         Map<String, Set<String>> byTransponder = new TreeMap<>();
         Map<String, Integer> uses = new HashMap<>();
         for (Active a : active) {
-            for (String number : new LinkedHashSet<>(Arrays.asList(a.primary(), a.secondary()))) {
+            for (String number : new LinkedHashSet<>(a.numbers())) {
                 if (number != null && !number.isBlank()) {
                     byTransponder.computeIfAbsent(number, k -> new LinkedHashSet<>()).add(a.name());
                     uses.merge(number, 1, Integer::sum);

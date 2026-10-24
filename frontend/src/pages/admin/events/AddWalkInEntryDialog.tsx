@@ -89,10 +89,6 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       setError('Each transponder must be a different number.');
       return;
     }
-    if ((third.trim() && !secondary.trim()) || (fourth.trim() && !third.trim())) {
-      setError('Fill the transponders in order: a third needs a second, a fourth needs a third.');
-      return;
-    }
     setError(null);
     try {
       const result = await createEntry.mutateAsync({

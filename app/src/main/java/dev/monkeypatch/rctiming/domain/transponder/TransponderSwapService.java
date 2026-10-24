@@ -52,7 +52,7 @@ public class TransponderSwapService {
      * number is refused if another competitor's active entry in the event holds it; one competitor may share a number
      * between their own entries. Swapping to the number the entry already has succeeds without changing anything.
      *
-     * @param newNumber the new number; blank removes a secondary transponder
+     * @param newNumber the new number; blank removes a secondary, third or fourth transponder
      */
     @Transactional
     public SwapResult swap(long eventId, long entryId, TransponderSlot slot, String newNumber, long actingUserId) {

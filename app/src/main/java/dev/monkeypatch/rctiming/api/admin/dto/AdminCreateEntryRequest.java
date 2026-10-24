@@ -9,8 +9,7 @@ import jakarta.validation.constraints.Size;
  * {@code competitorName} for a new competitor. A new name that matches an existing competitor is
  * refused (409, with the matches) unless {@code confirmNewCompetitor} says it is a different person (#123).
  * The body of {@code POST /api/v1/admin/entries}. {@code primaryTransponder} is required; a blank
- * {@code secondaryTransponder}, {@code thirdTransponder} or {@code fourthTransponder} means none; a third needs a
- * secondary and a fourth needs a third (#482).
+ * {@code secondaryTransponder}, {@code thirdTransponder} or {@code fourthTransponder} means none (#482).
  */
 public record AdminCreateEntryRequest(
         @NotNull Long eventId,

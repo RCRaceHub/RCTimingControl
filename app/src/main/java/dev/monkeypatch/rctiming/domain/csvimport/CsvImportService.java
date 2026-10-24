@@ -312,10 +312,13 @@ public class CsvImportService {
             Competitor c = competitors.get(p.competitorKey);
             String driverKey = c == null ? "csv:" + p.competitorKey : "c:" + c.getId();
             if (fromFile) {
-                state.add(driverKey, p.row.name(), p.eventClassId, primaryOf(p.row), secondaryOf(p.row));
+                state.add(driverKey, p.row.name(), p.eventClassId, primaryOf(p.row), secondaryOf(p.row),
+                        p.existing == null ? null : p.existing.getThirdTransponderNumber(),
+                        p.existing == null ? null : p.existing.getFourthTransponderNumber());
             } else {
                 state.add(driverKey, p.row.name(), p.existing.getEventClassId(),
-                        p.existing.getTransponderNumberSnapshot(), p.existing.getSecondaryTransponderNumber());
+                        p.existing.getTransponderNumberSnapshot(), p.existing.getSecondaryTransponderNumber(),
+                        p.existing.getThirdTransponderNumber(), p.existing.getFourthTransponderNumber());
             }
             if (p.group() == Group.NEW && primaryOf(p.row).isEmpty()) {
                 warnings.add(p.row.name() + " (line " + p.row.line() + ") has no transponder");
