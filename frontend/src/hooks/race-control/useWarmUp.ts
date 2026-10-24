@@ -9,5 +9,6 @@ type WarmUpFrame = { raceId: number; seenEntryIds: number[] };
  */
 export function useWarmUp(raceId: number | null, snapshot: number[] | undefined): Set<number> {
   const { data: pushed } = useStomp<WarmUpFrame>(raceId ? `/topic/race/${raceId}/warmup` : null);
-  return new Set(pushed?.seenEntryIds ?? snapshot ?? []);
+  const current = pushed && pushed.raceId === raceId ? pushed : null;
+  return new Set(current?.seenEntryIds ?? snapshot ?? []);
 }

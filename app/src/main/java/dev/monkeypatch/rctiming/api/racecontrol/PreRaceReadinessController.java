@@ -46,7 +46,8 @@ public class PreRaceReadinessController {
 
     /**
      * The grid call list and the marshal duty list for a race, with how it starts (the race's own start type, or the
-     * format's when the race has none saved) and the stagger interval in seconds, and the entries the decoder has seen on the warm-up lap.
+     * format's when the race has none saved), the stagger interval in seconds and the entries the decoder has seen on
+     * the warm-up lap.
      * {@code GET /{raceId}/pre-race-readiness}; RACE_DIRECTOR or ADMIN. Read only; 404 if the race does not exist.
      */
     @GetMapping("/{raceId}/pre-race-readiness")

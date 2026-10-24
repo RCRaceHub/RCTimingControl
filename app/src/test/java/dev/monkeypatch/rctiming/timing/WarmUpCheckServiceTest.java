@@ -114,6 +114,43 @@ class WarmUpCheckServiceTest {
         assertThat(service.seenEntryIds(RACE)).isEmpty();
     }
 
+    @Test
+    void leavingTheGridSendsAnEmptyListSoScreensDropTheirMarks() {
+        service.onLapPassing(new LapPassingEvent(LapPassingEvent.NO_RACE, "1001", 1L));
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.PENDING));
+
+        verify(hub).broadcastWarmUp(RACE, List.of());
+    }
+
+    @Test
+    void aPassingForARaceThatHasLeftTheGridIsNotMarked() {
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.RUNNING));
+
+        service.onLapPassing(new LapPassingEvent(LapPassingEvent.NO_RACE, "1001", 1L));
+
+        assertThat(service.seenEntryIds(RACE)).isEmpty();
+    }
+
+    @Test
+    void callingTheGridAgainReopensTheCheck() {
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.PENDING));
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.GRID));
+
+        service.onLapPassing(new LapPassingEvent(LapPassingEvent.NO_RACE, "1001", 1L));
+
+        assertThat(service.seenEntryIds(RACE)).containsExactly(1L);
+    }
+
+    @Test
+    void aFaultIsSwallowedSoPracticeStillGetsThePassing() {
+        when(raceRepository.findFirstByStatus(RaceStatus.GRID)).thenThrow(new IllegalStateException("database"));
+
+        service.onLapPassing(new LapPassingEvent(LapPassingEvent.NO_RACE, "1001", 1L));
+
+        verify(hub, never()).broadcastWarmUp(anyLong(), any());
+    }
+
     private static RaceEntry raceEntry(long entryId) {
         RaceEntry raceEntry = new RaceEntry();
         raceEntry.setEntryId(entryId);

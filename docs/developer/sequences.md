@@ -36,6 +36,7 @@ sequenceDiagram
     alt no race is running
         LTS->>LTS: ignore (practice listens to the same event)
         opt a race is on the grid and the number is one of its entries
+            Note over WU: a second listener on the same event
             WU->>Hub: broadcastWarmUp(raceId, seenEntryIds), first sighting only
             Hub-->>B: /topic/race/id/warmup
         end

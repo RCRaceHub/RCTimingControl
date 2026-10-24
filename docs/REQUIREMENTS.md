@@ -109,11 +109,12 @@
 - [x] **CTRL-05**: Server enforces race state machine (PENDING → GRID → RUNNING → FINISHED); conflicting commands from multiple browser sessions are rejected
 - [x] **CTRL-06**: Unknown transponder passings can be retrospectively linked to an entry by the race director, with full audit trail
 - [x] **CTRL-07**: Race control displays the marshal list for the current race (the drivers who were in the previous race), on a Marshals tab beside the Drivers (grid call) tab of the Grid Called panel
-- [x] **CTRL-12**: A referee records a driver who missed their marshal duty and then applies a marshal penalty of the kind they choose: the driver's best qualifying round does not count (round by round qualifying; the next best round takes its place), or a lap comes off their result in the first final they race. Marshals are assumed present: the race control marshal list has the buttons for both penalties on every driver, and applying one records the miss itself, so recording it first is optional
 - [x] **CTRL-08**: Race director can abandon a race in progress; results up to the abandonment point are saved and the meeting advances normally
 - [x] **CTRL-09**: Race director can skip to or re-run a specific race and round number
 - [x] **CTRL-10**: Every race lifecycle command (call the grid, start, stop, resume, finish, abandon, restart) is audit-logged with the official who gave it and the status before and after; a restart also records what it discards (the race's times, its stored result and the live timing) (#139)
 - [x] **CTRL-11**: The start order of a heat is the finishing order of the same heat in the round before it, except that the first qualifying round starts in car number order, whatever practice did. Calling the grid takes the heat's start type from its class's format as it is then, so a format change made after the rounds were generated applies, and the cockpit says how the race will start (and whether drivers are called one by one)
+- [x] **CTRL-12**: A referee records a driver who missed their marshal duty and then applies a marshal penalty of the kind they choose: the driver's best qualifying round does not count (round by round qualifying; the next best round takes its place), or a lap comes off their result in the first final they race. Marshals are assumed present: the race control marshal list has the buttons for both penalties on every driver, and applying one records the miss itself, so recording it first is optional
+- [x] **CTRL-13**: While a race is on the grid, race control's Grid Called panel shows beside each driver whether the decoder has seen their transponder (primary or secondary) since the grid was called, updating live. Nothing is timed or stored, and the check starts afresh each time a race is called to the grid (#482)
 
 ### Audit
 
@@ -212,7 +213,6 @@
 - [x] **BOARDS-03**: The live race board shows the gap to the car ahead as well as to the leader, a lap bar per driver for how far the car is round its lap against its own average (green under the average, yellow at it, red a second over), and an amber row for a car within a set time of the car ahead on the scored order (default 1 s, `close=SECONDS`, `bars=hide`). The bars correct for a device clock that differs from the timing laptop's and for a stoppage. Race control's live timing shows the bar and a CLOSE badge at 1 s. Position arrows and predicted times are not built yet (#479)
 - [x] **BOARDS-04**: A live top 10/20 board (`/boards/top`, `top=20`) shows the qualifying table of the class on track, with the running heat counted from its live positions as if it ended now. Drivers in the heat are marked, drivers whose heat in the round is still to run are marked and placed behind, and arrows show who moved against the table before the heat. The settled table stays up after the heat until the next race starts. Classes ranked by low points only (#480)
 - [x] **BOARDS-05**: An official builds saved board views from panels (live timing, live top table, next race, current marshals, last result), in 1 to 3 columns, each opened by its own address `/boards/view/NAME` (`event=ID`, `bars=hide`, `close=SECONDS` as on the live race board), so the commentator and each trackside monitor have their own. `commentator` and `monitor` come ready made. Edited under Admin, Board views (ADMIN and RACE_DIRECTOR). Race control can show or hide its auto run, audio, live timing and line-up sections on each browser (#481)
-- [x] **CTRL-12**: While a race is on the grid, race control's Grid Called panel shows beside each driver whether the decoder has seen their transponder (primary or secondary) since the grid was called, updating live. Nothing is timed or stored, and the check starts afresh each time a race is called to the grid (#482)
 - [x] **BOARDS-06**: An admin can add, edit and delete racing classes under Admin, Classes, and pick a colour for each. The colour shows as a dot beside the class on race control's run order, the heat line-ups and the live timing heading, and on the Live race and board views. A class with no colour shows none. Stored as `#rrggbb` on the class (#482)
 - [x] **LOCAL-01**: A full meeting runs with no internet connection at the venue (#21)
 - [x] **DB-01**: The app keeps its data in one SQLite file in a per-machine data folder (#26)
@@ -347,6 +347,7 @@
 | CTRL-09 | Phase 4 | Complete |
 | CTRL-11 | Race control | Complete |
 | CTRL-12 | Race control | Complete |
+| CTRL-13 | Wishlist (#483) | Complete (#482) |
 | AUDIO-01 | Phase 6 | Complete |
 | AUDIO-02 | Phase 6 | Complete |
 | AUDIO-03 | Phase 6 | Complete |
@@ -418,7 +419,6 @@
 | BOARDS-04 | Wishlist (#483) | Complete (#480) |
 | BOARDS-05 | Wishlist (#483) | Complete (#481) |
 | BOARDS-06 | Wishlist (#483) | Complete (#482) |
-| CTRL-12 | Wishlist (#483) | Complete (#482) |
 | LOCAL-01 | #21 | Complete |
 | DB-01 | #26 | Complete |
 | DB-02 | #26 | Complete |
