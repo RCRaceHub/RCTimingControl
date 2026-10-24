@@ -249,8 +249,9 @@ public class BumpUpSeedingService {
             slotEntriesByFinal.add(null);
         }
 
-        if (fillTopFirst) {
-            // Top final first; each takes a full grid and the lowest takes what is left
+        if (fillTopFirst || bumpCount == 0) {
+            // With no bump spots the lowest final is the one left short, so the top final first; each takes a full grid
+            // and the lowest takes what is left
             int next = 0;
             for (int fi = finals.size() - 1; fi >= 0; fi--) {
                 int take = fi == 0 ? qualifyingStandings.size() - next : Math.min(carsPerFinal,

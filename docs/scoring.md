@@ -170,7 +170,7 @@ Example (bump-up, grid size 10, bump spots 2, two finals, 18 drivers):
 If the grid would not fit the field, it grows: with 20 drivers, grid size 10, 2 bump spots and two finals, the grid
 becomes 11 (B ranks 10 to 20; A ranks 1 to 9 plus 2 bumps), so nobody is left out.
 
-The lowest final is always filled first, from the bottom of the standings, so it gets the full grid and the higher finals take what is left. Example (points finals, two finals, 14 drivers): 7 cars each, B final ranks 8 to 14, A final ranks 1 to 7. With 15 drivers, B has 8 (ranks 8 to 15) and A has 7. A short bump-up field works the same way: 14 drivers, grid size 10, 2 bump spots, two finals gives B ranks 5 to 14 and A ranks 1 to 4 plus 2 bump places.
+With bump spots, the lowest final is filled first, from the bottom of the standings, so it gets the full grid and the higher finals take what is left. Example (points finals, two finals, 14 drivers): 7 cars each, B final ranks 8 to 14, A final ranks 1 to 7. With 15 drivers, A has 8 (ranks 1 to 8) and B has 7: where there are no bump spots the top finals take full grids and the lowest final is the one left short (8 drivers over three finals: 3, 3 and 2). A short bump-up field works the same way: 14 drivers, grid size 10, 2 bump spots, two finals gives B ranks 5 to 14 and A ranks 1 to 4 plus 2 bump places.
 
 ## 4. Marshal duty
 

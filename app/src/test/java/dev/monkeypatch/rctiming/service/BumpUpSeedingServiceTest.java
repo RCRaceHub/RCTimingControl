@@ -125,6 +125,31 @@ class BumpUpSeedingServiceTest {
     }
 
     @Test
+    void seedFinals_noBumpSpots_theLowestFinalIsTheOneLeftShort() {
+        Long eventClassId = 25L;
+        List<Race> finals = new ArrayList<>();
+        for (String letter : List.of("A", "B", "C")) {
+            Race race = new Race();
+            race.setId(500L + letter.charAt(0));
+            race.setEventClassId(eventClassId);
+            race.setFinalLetter(letter);
+            finals.add(race);
+            when(raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId())).thenReturn(List.of());
+        }
+        when(raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL)).thenReturn(finals);
+
+        service().seedFinals(eventClassId, List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L), 3, 3, 0);
+
+        ArgumentCaptor<RaceEntry> captor = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository, times(8)).save(captor.capture());
+        for (String letter : List.of("A", "B", "C")) {
+            long raceId = 500L + letter.charAt(0);
+            long count = captor.getAllValues().stream().filter(e -> e.getRaceId() == raceId).count();
+            assertThat(count).as("final " + letter).isEqualTo(letter.equals("C") ? 2 : 3);
+        }
+    }
+
+    @Test
     void seedFinals_fewerQualifiersThanTotalCapacity_doesNotThrow_leavesShortfallUnassigned() {
         Long eventClassId = 30L;
         Race bFinal = new Race();
