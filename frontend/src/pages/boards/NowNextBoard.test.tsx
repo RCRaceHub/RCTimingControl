@@ -86,7 +86,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   for (const key of Object.keys(stompFrames)) delete stompFrames[key];
   vi.mocked(getBoardLiveTiming).mockResolvedValue([]);
-  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], marshalsPending: false, topQualifiers: [] });
+  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getResultsBoard).mockResolvedValue({
     eventId: 7,
     eventName: 'Club Round 3',
@@ -145,6 +145,7 @@ describe('NowNextBoard', () => {
       nextRace: 'Qualifying 1 — Touring Stock — Heat 2',
       nextDrivers: ['Ann Next', 'Bob Next'],
       marshals: ['Cat Marshal'],
+      currentMarshals: [],
       marshalsPending: false,
       topQualifiers: [],
     });
@@ -167,6 +168,7 @@ describe('NowNextBoard', () => {
       nextRace: 'A Final',
       nextDrivers: ['Ann Next'],
       marshals: [],
+      currentMarshals: [],
       marshalsPending: true,
       topQualifiers: [],
     });

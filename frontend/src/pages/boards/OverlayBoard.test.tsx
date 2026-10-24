@@ -103,7 +103,7 @@ beforeEach(() => {
   vi.mocked(getRaceClock).mockResolvedValue(clock());
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
   vi.mocked(getPositionHistory).mockResolvedValue([]);
-  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], marshalsPending: false, topQualifiers: [] });
+  vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
 });
 
 afterEach(() => {
@@ -262,6 +262,7 @@ describe('OverlayBoard chart and ticker', () => {
       nextRace: 'Qualifying 1 — Stock Buggy — Heat 3',
       nextDrivers: ['Ada Lovelace', 'Grace Hopper'],
       marshals: ['Walk-in Wendy'],
+      currentMarshals: [],
       marshalsPending: false,
       topQualifiers: [{ className: 'Stock Buggy', driverName: 'Ada Lovelace', bestLapMs: 13_500 }],
     });
@@ -285,6 +286,7 @@ describe('OverlayBoard chart and ticker', () => {
       nextRace: 'Qualifying 2 — Stock Buggy — Heat 1',
       nextDrivers: ['Ada Lovelace'],
       marshals: [],
+      currentMarshals: [],
       marshalsPending: false,
       topQualifiers: [],
     });

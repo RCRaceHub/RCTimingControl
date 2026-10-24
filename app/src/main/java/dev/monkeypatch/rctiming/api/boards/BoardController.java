@@ -171,7 +171,7 @@ public class BoardController {
     public TickerDto ticker(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> boardTickerService.forEvent(event.id()))
-                .orElse(new TickerDto(null, List.of(), List.of(), false, List.of()));
+                .orElse(new TickerDto(null, List.of(), List.of(), List.of(), false, List.of()));
     }
 
     /** Seeds a board's live table before the first STOMP frame arrives. */
