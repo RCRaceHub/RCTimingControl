@@ -105,7 +105,7 @@ public class BumpUpSeedingService {
     /**
      * Puts back the A, B, C... finals a class had when its rounds were generated but that an earlier calculation
      * deleted as unused, so a recalculation with fewer cars per final can use them again. Each missing final gets a
-     * round of its own, with an empty grid, just before the next final above it in the run order; the rounds after
+     * round of its own, with an empty grid, just before the next final above it in the run order (and before the zombie round, if it has one); the rounds after
      * shift down one place. Nothing happens when no final is missing.
      *
      * @param intendedCount the number of finals the class was generated with ({@code EventClass.finalsCount})
@@ -123,8 +123,10 @@ public class BumpUpSeedingService {
         if (byLetter.isEmpty()) {
             return 0;
         }
-        // Highest missing letter first, so the final above it already has its place in the run order
-        for (int f = Math.min(intendedCount, 26) - 1; f >= 1; f--) {
+        Race zombie = all.stream().filter(r -> ZOMBIE_LETTER.equals(r.getFinalLetter())).findFirst().orElse(null);
+        // Lowest missing letter first (B before C): each is put just before the final above it, which is there already
+        // because the unused finals were dropped from the bottom
+        for (int f = 1; f < Math.min(intendedCount, 26); f++) {
             String letter = String.valueOf((char) ('A' + f));
             if (byLetter.containsKey(letter)) {
                 continue;
@@ -133,7 +135,9 @@ public class BumpUpSeedingService {
             if (above == null) {
                 continue;
             }
-            Round aboveRound = roundRepository.findById(above.getRoundId()).orElseThrow();
+            // A zombie round runs after the lowest main and just before A, so B goes in front of it
+            Race anchor = f == 1 && zombie != null ? zombie : above;
+            Round aboveRound = roundRepository.findById(anchor.getRoundId()).orElseThrow();
             int sequence = aboveRound.getSequenceInEvent();
             for (Round later : roundRepository.findByEventIdOrderBySequenceInEvent(aboveRound.getEventId())) {
                 if (later.getSequenceInEvent() >= sequence) {

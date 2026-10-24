@@ -304,6 +304,11 @@ public class RoundGeneratorService {
             // sequenceInEvent; the round number still follows the letter (A is 1).
             for (EventClass ec : eventClasses) {
                 int finalsCount = resolveFinalsCount(ec);
+                // Remembered so a later finals calculation can put back a final it dropped as unused
+                if (!Integer.valueOf(finalsCount).equals(ec.getFinalsCount())) {
+                    ec.setFinalsCount(finalsCount);
+                    eventClassRepository.save(ec);
+                }
                 boolean zombie = finalsCount >= 2 && raceFormatService.shikabaneConfig(ec)
                         .map(ShikabaneConfig::zombieRound).orElse(false);
                 for (int f = finalsCount - 1; f >= 0; f--) {
