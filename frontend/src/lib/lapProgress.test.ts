@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isClose, lapProgress } from './lapProgress';
+import { isClose, lapProgress, placesGained, predictedLaps } from './lapProgress';
 import type { LiveTimingRowDto } from './raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -48,5 +48,50 @@ describe('isClose', () => {
     expect(isClose(row({ finished: true }), 1000)).toBe(false);
     expect(isClose(row({ gapToAheadMs: null }), 1000)).toBe(false);
     expect(isClose(row({}), 0)).toBe(false);
+  });
+});
+
+describe('placesGained', () => {
+  it('is positive up the order, negative down it and null with no grid place', () => {
+    const rows = [row({ entryId: 1, position: 1, startPosition: 3 }), row({ entryId: 2, position: 2, startPosition: 2 }), row({ entryId: 3, position: 3, startPosition: 1 })];
+    expect(placesGained(rows[0], rows)).toBe(2);
+    expect(placesGained(rows[1], rows)).toBe(0);
+    expect(placesGained(rows[2], rows)).toBe(-2);
+    expect(placesGained(row({ startPosition: null }), rows)).toBeNull();
+    expect(placesGained(row({}), rows)).toBeNull();
+  });
+
+  it('ranks the grid among the cars that have crossed, not the whole field', () => {
+    // The pole sitter has not crossed yet, so the car from grid 5 that leads is not "up four"
+    const rows = [row({ entryId: 1, position: 1, startPosition: 5 }), row({ entryId: 2, position: 2, startPosition: 6 })];
+    expect(placesGained(rows[0], rows)).toBe(0);
+    expect(placesGained(rows[1], rows)).toBe(0);
+  });
+});
+
+describe('predictedLaps', () => {
+  it('counts the crossings in the time left and the one that ends the race', () => {
+    // Crossed at 100 s, 10 s laps, 25 s to go: crossings at 110 and 120 are inside, 130 ends it => 3 more laps
+    expect(predictedLaps(row({}), 100_000, 25_000)).toBe(5 + 3);
+    // 4 s after the crossing the same race has 21 s left: 4 + 21 = 25 s still
+    expect(predictedLaps(row({}), 104_000, 21_000)).toBe(5 + 3);
+    // A crossing exactly at the end counts as the one that ends it
+    expect(predictedLaps(row({}), 100_000, 20_000)).toBe(5 + 3);
+  });
+
+  it('always counts the lap that ends the race', () => {
+    expect(predictedLaps(row({}), 100_000, 1)).toBe(5 + 1);
+  });
+
+  it('counts the lap from the resume when the car has not crossed since a stoppage', () => {
+    // Crossed at 100 s, stopped, resumed at 140 s with 25 s left: at 144 s the lap is 4 s old, not 44 s
+    expect(predictedLaps(row({}), 144_000, 25_000, 140_000)).toBe(5 + 3);
+  });
+
+  it('is null with no average, no time limit, no time left or a finished car', () => {
+    expect(predictedLaps(row({ avgLapMs: null }), 100_000, 25_000)).toBeNull();
+    expect(predictedLaps(row({}), 100_000, null)).toBeNull();
+    expect(predictedLaps(row({}), 100_000, 0)).toBeNull();
+    expect(predictedLaps(row({ finished: true }), 100_000, 25_000)).toBeNull();
   });
 });

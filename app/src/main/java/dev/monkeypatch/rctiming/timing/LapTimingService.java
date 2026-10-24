@@ -347,6 +347,14 @@ public class LapTimingService {
         }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
+            // Swaps and bump-ups edit the grid after a board may already have built the state; the start is final
+            LiveRaceState state = states.get(event.getRaceId());
+            if (state != null) {
+                Map<Long, Integer> grid = new HashMap<>();
+                raceEntryRepository.findByRaceIdOrderByGridPosition(event.getRaceId())
+                        .forEach(re -> grid.put(re.getEntryId(), re.getGridPosition()));
+                state.replaceStartPositions(grid);
+            }
         }
     }
 
@@ -387,6 +395,7 @@ public class LapTimingService {
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
             state.putEntryCarNumber(raceEntry.getEntryId(),
                     raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
+            state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)

@@ -2,12 +2,16 @@
 // who holds which place lap by lap. Anonymous like the other boards, and follows the race live through useBoardRace.
 // Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getRaceClock } from '@/lib/boardsApi';
+import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { PositionChart } from '@/components/print/PositionChart';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
-import { parseEventParam, parseLiveRaceOptions } from './boardFormat';
+import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
 
@@ -17,8 +21,15 @@ export default function LiveRaceBoard() {
   const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
   const series = useLivePositionSeries(raceId, rows);
 
-  const { showBars, closeMs } = parseLiveRaceOptions(searchParams);
+  const { showBars, showArrows, showPredicted, closeMs } = parseLiveRaceOptions(searchParams);
   const barClock = useLapBarClock(rows, currentRace?.status);
+  const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
+    queryKey: publicQueryKeys.boards.clock(raceId),
+    queryFn: () => getRaceClock(raceId!),
+    enabled: raceId !== null && showPredicted,
+    refetchInterval: BOARD_POLL_MS,
+  });
+  const remainingAt = useRemainingAt(clock, clockReadAt);
 
   if (isPending) {
     return (
@@ -61,6 +72,8 @@ export default function LiveRaceBoard() {
           rows={rows}
           barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
           closeMs={closeMs}
+          showArrows={showArrows && currentRace.finalLetter !== null}
+          predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
         />
       ) : (
         <BoardMessage>Waiting for the first lap…</BoardMessage>

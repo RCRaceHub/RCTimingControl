@@ -97,4 +97,16 @@ class LiveRaceStateRetroactiveTest {
 
         assertThat(positions).extracting(LiveTimingRowDto::carNumber).containsExactly("7", null);
     }
+
+    @Test
+    void positionsCarryTheEntrysGridPositionOrNullWhenItHadNone() {
+        state.putEntryStartPosition(1L, 3);
+        state.putEntryStartPosition(2L, null);
+        state.applyLapPassing(new LapPassingEvent(1L, "T1", 1_000_000L), 1L);
+        state.applyLapPassing(new LapPassingEvent(1L, "T2", 1_100_000L), 2L);
+
+        List<LiveTimingRowDto> positions = state.calculatePositions();
+
+        assertThat(positions).extracting(LiveTimingRowDto::startPosition).containsExactly(3, null);
+    }
 }

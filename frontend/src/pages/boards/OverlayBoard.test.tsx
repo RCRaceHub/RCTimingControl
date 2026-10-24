@@ -130,6 +130,23 @@ describe('OverlayBoard', () => {
     expect(await screen.findByLabelText('Race clock')).toHaveTextContent('3:45');
   });
 
+  it('adds lap bars, a close tint and, in a final, places-gained arrows, each switchable from the address', async () => {
+    const close = { ...row(2, 'Grace Hopper', 13_500), gapToAheadMs: 600, startPosition: 4, avgLapMs: 13_000, lastPassingTimeMs: Date.now() };
+    stompFrames['/topic/race/12/timing'] = [{ ...row(1, 'Ada Lovelace', 13_870), startPosition: 5 }, close];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext({ ...race, finalLetter: 'A' }));
+    const { container, unmount } = renderOverlay();
+
+    expect(await screen.findByLabelText('Up 1')).toBeInTheDocument();
+    expect(screen.getByTestId('lap-progress')).toBeInTheDocument();
+    expect(container.querySelector('tr[data-close]')).not.toBeNull();
+    unmount();
+
+    renderOverlay('/boards/overlay?arrows=hide&bars=hide&close=0');
+    expect(await screen.findByText('Grace Hopper')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Up 1')).toBeNull();
+    expect(screen.queryByTestId('lap-progress')).toBeNull();
+  });
+
   it('flashes a new lap in the colour the live timing screen uses', async () => {
     stompFrames['/topic/race/12/timing'] = [{ ...row(1, 'Grace Hopper', 13_500), overallFastestLapMs: 13_500 }];
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
@@ -220,6 +237,10 @@ describe('overlay options', () => {
       theme: 'dark',
       showChart: true,
       tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest']),
+      showBars: true,
+      showArrows: true,
+      showPredicted: true,
+      closeMs: 1000,
     });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);
     expect(parseOverlayOptions(new URLSearchParams('event=7')).eventId).toBe(7);

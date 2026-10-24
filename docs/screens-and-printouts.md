@@ -44,7 +44,9 @@ Each driver has a thin **lap bar** under the name: it fills as the car goes roun
 
 A car on the same lap within one second of the car ahead gets an amber row. This follows the scored order (the gap between the two cars' last crossings, penalties included), so it changes only at the line. The **Ahead** column is that gap, and **Gap** is the gap to the leader.
 
-Options on the end of the address: `bars=hide` leaves the bars out, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
+In a **final**, a small green ▲ or red ▼ beside the position shows the places a car has gained or lost against its grid place (nothing when it has held its place). Race control's live timing shows the same arrows for a final. In a race with a set length, a **Pred** column shows the laps each car is on course to finish with, worked out from its average lap and the time left; the race ends for a car on its first crossing after time is up, so that lap is counted.
+
+Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
 
 ## The Live top screen
 
@@ -64,7 +66,7 @@ A board view is a screen you build yourself. Open **Admin → Board views**, pre
 - **Marshals**, the drivers marshalling the race on track.
 - **Last result**, the result of the race that finished last.
 
-A panel can be one column wide or span several. The view opens at `/boards/view/` followed by its address name, with no sign-in, and the options of the Live race screen work on it: `event=ID`, `bars=hide` and `close=SECONDS`. Two views come ready made: **commentator** (live timing across the top, the live top table and the next race below) and **monitor** (all four, for a screen beside the track). Edit or delete them like any other. Two monitors each get their own view by opening different addresses. ADMIN and RACE_DIRECTOR can change views.
+A panel can be one column wide or span several. The view opens at `/boards/view/` followed by its address name, with no sign-in, and the options of the Live race screen work on it: `event=ID`, `bars=hide`, `arrows=hide`, `predict=hide` and `close=SECONDS`. Two views come ready made: **commentator** (live timing across the top, the live top table and the next race below) and **monitor** (all four, for a screen beside the track). Edit or delete them like any other. Two monitors each get their own view by opening different addresses. ADMIN and RACE_DIRECTOR can change views.
 
 ### Showing less in race control
 
@@ -88,6 +90,9 @@ Options go on the end of the address:
 | `class=hide` | Leave out the race and class name |
 | `theme=light` | Dark text on a light panel instead of white on dark |
 | `event=ID` | Follow one event |
+| `bars=hide` | Leave out the lap bars under each name |
+| `arrows=hide` | Leave out the places-gained arrows shown in a final |
+| `close=SECONDS` | How near the car ahead counts as close for the amber row (default 1; 0 turns it off) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |

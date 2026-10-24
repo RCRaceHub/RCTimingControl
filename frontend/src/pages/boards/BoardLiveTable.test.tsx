@@ -43,4 +43,29 @@ describe('BoardLiveTable', () => {
     render(<BoardLiveTable rows={[row(1)]} />);
     expect(screen.queryByTestId('lap-progress')).toBeNull();
   });
+
+  it('shows places gained or lost against the grid only when asked to', () => {
+    const rows = [row(1, { startPosition: 3 }), row(2, { startPosition: 1 }), row(3, { startPosition: 3 })];
+    const { container, rerender } = render(<BoardLiveTable rows={rows} showArrows />);
+    expect(container.querySelectorAll('[data-direction="up"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-direction="down"]')).toHaveLength(1);
+    expect(screen.getByLabelText('Up 2')).toBeInTheDocument();
+    expect(screen.getByLabelText('Down 1')).toBeInTheDocument();
+    rerender(<BoardLiveTable rows={rows} />);
+    expect(container.querySelectorAll('[data-direction]')).toHaveLength(0);
+  });
+
+  it('adds a predicted laps column given a bar clock and the time left', () => {
+    const clock: LapBarClock = { offsetMs: 100_000 - Date.now(), resumedAtMs: null };
+    render(<BoardLiveTable rows={[row(1)]} barClock={clock} predicted={{ clock, remainingAt: () => 25_000 }} />);
+    expect(screen.getByRole('columnheader', { name: 'Pred' })).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+  });
+
+  it('shows a dash for predicted laps while the clock is not counting', () => {
+    const clock: LapBarClock = { offsetMs: 100_000 - Date.now(), resumedAtMs: null };
+    render(<BoardLiveTable rows={[row(1)]} predicted={{ clock, remainingAt: () => null }} />);
+    expect(screen.getByRole('columnheader', { name: 'Pred' })).toBeInTheDocument();
+    expect(screen.queryByText('7')).toBeNull();
+  });
 });
