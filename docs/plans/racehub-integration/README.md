@@ -2,6 +2,8 @@
 
 Status: proposed roadmap, not implemented behaviour.
 
+The whole-system view, decisions made since this plan and the added packages C13 to C17 are in the [design](design.md).
+
 Planning baseline: 19 October 2026.
 
 This is the durable, public-safe product plan. It contains the requirements,
@@ -195,6 +197,11 @@ Documentation change: [#385](https://github.com/RCRaceHub/RCTimingControl/pull/3
 | C10 | [#395](https://github.com/RCRaceHub/RCTimingControl/issues/395) | Optional public live viewing |
 | C11 | [#396](https://github.com/RCRaceHub/RCTimingControl/issues/396) | Verified public sharing links |
 | C12 | [#397](https://github.com/RCRaceHub/RCTimingControl/issues/397) | Reviewed operational feedback |
+| C13 | [#471](https://github.com/RCRaceHub/RCTimingControl/issues/471) | Contract files, tests and mock RaceHub (see [design](design.md)) |
+| C14 | [#472](https://github.com/RCRaceHub/RCTimingControl/issues/472) | Guarantee that race history is never lost |
+| C15 | [#473](https://github.com/RCRaceHub/RCTimingControl/issues/473) | Off-site backups: sync-folder guide, then uploaders |
+| C16 | [#474](https://github.com/RCRaceHub/RCTimingControl/issues/474) | Local network name; local HTTPS deferred |
+| C17 | [#475](https://github.com/RCRaceHub/RCTimingControl/issues/475) | Passkeys for officials, deferred |
 
 The milestone contains a parent tracker and the following child work packages.
 All cards initially live in the timing repository. "Companion work" identifies
