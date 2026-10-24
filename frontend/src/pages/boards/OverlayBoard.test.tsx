@@ -241,6 +241,8 @@ describe('overlay options', () => {
       showArrows: true,
       showPredicted: true,
       closeMs: 1000,
+      showBattles: false,
+      battleMs: 2000,
     });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);
     expect(parseOverlayOptions(new URLSearchParams('event=7')).eventId).toBe(7);

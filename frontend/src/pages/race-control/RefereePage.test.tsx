@@ -13,11 +13,11 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
     new Proxy({}, { get: () => ({ mutate: vi.fn(), isPending: false }) }),
 }));
 // Live timing is empty once a race has finished
-vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: [] }) }));
+const NO_ROWS: never[] = [];
+vi.mock('@/hooks/race-control/useLiveTiming', () => ({ useLiveTiming: () => ({ rows: NO_ROWS }) }));
 const mockRaceClock = vi.fn();
 vi.mock('@/hooks/race-control/useRaceClock', () => ({ useRaceClock: () => mockRaceClock() }));
 vi.mock('@/hooks/race-control/useJumpStarts', () => ({ useJumpStarts: () => [] }));
-vi.mock('./referee/useProximityAlerts', () => ({ useProximityAlerts: () => new Set<number>() }));
 vi.mock('./panels/LiveTimingPanel', () => ({ LiveTimingPanel: () => null }));
 vi.mock('./panels/RunOrderPanel', () => ({
   RunOrderPanel: (props: { onSelect: (id: number) => void }) => (

@@ -299,7 +299,7 @@ export default function MeetingGuidePage() {
             <span className="font-semibold">Open Referee View:</span> The Referee tab
             is accessible from the race control navigation. It requires the
             <strong> Referee</strong> role. The main panel shows the Live Timing display
-            with proximity highlights for drivers running close together.
+            with a Battles panel for drivers running close together.
           </li>
           <li>
             <span className="font-semibold">Raise an incident report:</span> Click

@@ -154,7 +154,7 @@
 
 ### Race Official Views
 
-- [x] **OFFICIAL-01**: Race steward has a dedicated view showing live proximity alerts (which cars are closing on others)
+- [x] **OFFICIAL-01**: Race steward has a dedicated view showing live proximity alerts (which cars are closing on others). Now the Battles panel: pairs and trains of cars within 2 s, with whether each gap is closing or growing and by how much a lap, also on the live race board and, with `battles=show`, the OBS overlay (#505)
 - [x] **OFFICIAL-02**: Race steward view highlights backmarker situations (lapped cars approaching leaders)
 - [x] **OFFICIAL-03**: Race referee can raise an incident report against a specific car during or after a race
 - [x] **OFFICIAL-04**: Race referee can apply a lap or time penalty to a car, which immediately updates live standings
