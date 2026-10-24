@@ -23,6 +23,10 @@ import { PositionChart } from '@/components/print/PositionChart';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
+import { LapProgressBar } from '@/components/LapProgressBar';
+import { PositionArrow } from '@/components/PositionArrow';
+import { isClose } from '@/lib/lapProgress';
+import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const THEMES = {
@@ -175,7 +179,7 @@ function OverlayTicker({
 
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
-  const { eventId, top, showClass, theme, showChart, tickerItems } = parseOverlayOptions(searchParams);
+  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs } = parseOverlayOptions(searchParams);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -187,6 +191,7 @@ export default function OverlayBoard() {
     refetchInterval: BOARD_POLL_MS,
   });
 
+  const barClock = useLapBarClock(allRows, race?.status);
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
@@ -259,12 +264,15 @@ export default function OverlayBoard() {
             <tbody>
               {rows.map(row => {
                 const flash = lapFlash.get(row.entryId);
+                const close = isClose(row, closeMs);
                 return (
                   <tr
                     key={row.entryId}
+                    data-close={close || undefined}
                     className={cn(
                       'border-t transition-colors',
                       colours.row,
+                      close && !flash && 'bg-amber-500/25',
                       flash === 'race-best' && 'bg-purple-500/40',
                       flash === 'personal-best' && 'bg-blue-500/40',
                       flash === 'improving' && 'bg-green-500/40',
@@ -280,9 +288,12 @@ export default function OverlayBoard() {
                       >
                         {row.position}
                       </span>
+                      {showArrows && race.finalLetter !== null && <PositionArrow row={row} className="block ml-0 text-center text-[0.65rem]" />}
                     </td>
                     <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
-                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}{row.finished && <FinishedFlag className="ml-1" />}</td>
+                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}{row.finished && <FinishedFlag className="ml-1" />}
+                      {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
+                    </td>
                     <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className={cn('w-20 py-1 pr-2 text-right tabular-nums', colours.muted)}>
                       {fmtMs(row.totalTimeMs)}

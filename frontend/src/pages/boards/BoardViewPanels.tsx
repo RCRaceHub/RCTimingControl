@@ -20,6 +20,8 @@ export type PanelContext = {
   rows: LiveTimingRowDto[];
   barClock: LapBarClock | undefined;
   closeMs: number;
+  showArrows: boolean;
+  remainingAt: ((deviceNowMs: number) => number | null) | undefined;
 };
 
 function PanelTitle({ children }: { children: string }) {
@@ -57,6 +59,8 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
           rows={ctx.rows}
           barClock={race.status === 'RUNNING' ? ctx.barClock : undefined}
           closeMs={ctx.closeMs}
+          showArrows={ctx.showArrows && race.finalLetter !== null}
+          remainingAt={ctx.remainingAt}
         />
       ) : (
         <Empty>Waiting for the first lap…</Empty>

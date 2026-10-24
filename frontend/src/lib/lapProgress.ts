@@ -44,3 +44,27 @@ export function isClose(row: LiveTimingRowDto, thresholdMs: number): boolean {
   if (thresholdMs <= 0 || row.position === 1 || row.intervalLapsDown > 0 || row.finished) return false;
   return row.gapToAheadMs !== null && row.gapToAheadMs <= thresholdMs;
 }
+
+/**
+ * Places a car has gained since the start: positive is up, negative down, null with no grid place (#479). It
+ * compares the grid place with the scored order, so it moves only as cars cross the line.
+ */
+export function placesGained(row: LiveTimingRowDto): number | null {
+  return row.startPosition == null ? null : row.startPosition - row.position;
+}
+
+/**
+ * The laps a car is on course to have when the race ends, judged from its average lap (#479). A timed race ends
+ * for a car on the first crossing after the time is up, so it counts every crossing that falls in the time left
+ * plus the one after it. Null with no average lap, no time left to run, or once the car has finished.
+ *
+ * @param row the car's live timing row
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param remainingMs the race time left now, in milliseconds
+ */
+export function predictedLaps(row: LiveTimingRowDto, nowMs: number, remainingMs: number | null): number | null {
+  const average = row.avgLapMs;
+  if (row.finished || remainingMs === null || remainingMs <= 0 || !average || !row.lastPassingTimeMs) return null;
+  const sinceCrossing = Math.max(0, nowMs - row.lastPassingTimeMs);
+  return row.lapsCompleted + Math.max(1, Math.ceil((sinceCrossing + remainingMs) / average));
+}

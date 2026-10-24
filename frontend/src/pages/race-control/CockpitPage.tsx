@@ -513,7 +513,7 @@ export default function CockpitPage() {
               </div>
             </div>
             {sections.isShown('liveTiming') && (
-              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
@@ -565,7 +565,7 @@ export default function CockpitPage() {
               </div>
             </div>
             {sections.isShown('liveTiming') && (
-              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} />
+              <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
           </div>
         );

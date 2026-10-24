@@ -40,6 +40,7 @@ public class LiveRaceState {
     final Map<Long, String> entryNames = new HashMap<>();
     /** Entry car numbers for this race: entryId → car number; an entry with none recorded has no key. */
     final Map<Long, String> entryCarNumbers = new HashMap<>();
+    final Map<Long, Integer> entryStartPositions = new HashMap<>();
     /**
      * Fastest lap recorded across ALL entries this race session. It is never cleared: a lap removed by a
      * marshal adjustment or a penalty still counts, since those change lap counts, not lap times.
@@ -165,6 +166,13 @@ public class LiveRaceState {
     public void putEntryCarNumber(long entryId, String carNumber) {
         if (carNumber != null) {
             entryCarNumbers.put(entryId, carNumber);
+        }
+    }
+
+    /** Stores an entry's 1-based grid position for this race, which the boards compare with its place. Null is ignored. */
+    public void putEntryStartPosition(long entryId, Integer startPosition) {
+        if (startPosition != null) {
+            entryStartPositions.put(entryId, startPosition);
         }
     }
 
@@ -373,7 +381,8 @@ public class LiveRaceState {
                     gapToAhead,
                     totalTimeMs(pos, withPenalties),
                     flagged.contains(pos.getEntryId()),
-                    withPenalties ? timePenaltyMs.getOrDefault(pos.getEntryId(), 0L) : 0L
+                    withPenalties ? timePenaltyMs.getOrDefault(pos.getEntryId(), 0L) : 0L,
+                    entryStartPositions.get(pos.getEntryId())
             ));
             prevLastPassing = rankedPassingMs(pos, withPenalties);
             prevLaps = pos.getLapsCompleted();

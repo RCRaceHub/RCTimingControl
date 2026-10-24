@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isClose, lapProgress } from './lapProgress';
+import { isClose, lapProgress, placesGained, predictedLaps } from './lapProgress';
 import type { LiveTimingRowDto } from './raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -48,5 +48,35 @@ describe('isClose', () => {
     expect(isClose(row({ finished: true }), 1000)).toBe(false);
     expect(isClose(row({ gapToAheadMs: null }), 1000)).toBe(false);
     expect(isClose(row({}), 0)).toBe(false);
+  });
+});
+
+describe('placesGained', () => {
+  it('is positive up the order, negative down it and null with no grid place', () => {
+    expect(placesGained(row({ position: 2, startPosition: 5 }))).toBe(3);
+    expect(placesGained(row({ position: 4, startPosition: 1 }))).toBe(-3);
+    expect(placesGained(row({ position: 3, startPosition: 3 }))).toBe(0);
+    expect(placesGained(row({ startPosition: null }))).toBeNull();
+    expect(placesGained(row({}))).toBeNull();
+  });
+});
+
+describe('predictedLaps', () => {
+  it('counts the crossings in the time left and the one that ends the race', () => {
+    // Crossed at 100 s, 10 s laps, 25 s to go: crossings at 110 and 120 are inside, 130 ends it => 3 more laps
+    expect(predictedLaps(row({}), 100_000, 25_000)).toBe(5 + 3);
+    // 4 s after the crossing the same race has 21 s left: 4 + 21 = 25 s still
+    expect(predictedLaps(row({}), 104_000, 21_000)).toBe(5 + 3);
+  });
+
+  it('always counts the lap that ends the race', () => {
+    expect(predictedLaps(row({}), 100_000, 1)).toBe(5 + 1);
+  });
+
+  it('is null with no average, no time limit, no time left or a finished car', () => {
+    expect(predictedLaps(row({ avgLapMs: null }), 100_000, 25_000)).toBeNull();
+    expect(predictedLaps(row({}), 100_000, null)).toBeNull();
+    expect(predictedLaps(row({}), 100_000, 0)).toBeNull();
+    expect(predictedLaps(row({ finished: true }), 100_000, 25_000)).toBeNull();
   });
 });

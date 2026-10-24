@@ -26,7 +26,7 @@ const LIVE_RACE_DEFAULT_CLOSE_MS = 1000;
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
- * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars, and
+ * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars, {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, and
  * {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
  * that is empty or not a number takes the default.
  */
@@ -35,6 +35,8 @@ export function parseLiveRaceOptions(params: URLSearchParams) {
   const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
   return {
     showBars: params.get('bars')?.toLowerCase() !== 'hide',
+    showArrows: params.get('arrows')?.toLowerCase() !== 'hide',
+    showPredicted: params.get('predict')?.toLowerCase() !== 'hide',
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : LIVE_RACE_DEFAULT_CLOSE_MS,
@@ -63,6 +65,7 @@ export function parseOverlayOptions(params: URLSearchParams) {
     theme: params.get('theme') === 'light' ? ('light' as const) : ('dark' as const),
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
+    ...parseLiveRaceOptions(params),
   };
 }
 

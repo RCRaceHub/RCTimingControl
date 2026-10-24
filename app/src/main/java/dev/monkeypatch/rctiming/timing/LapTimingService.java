@@ -387,6 +387,7 @@ public class LapTimingService {
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
             state.putEntryCarNumber(raceEntry.getEntryId(),
                     raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
+            state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)

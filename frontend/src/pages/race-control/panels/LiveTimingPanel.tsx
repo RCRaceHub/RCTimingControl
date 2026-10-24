@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { fmtMs } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
+import { PositionArrow } from '@/components/PositionArrow';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { DEFAULT_CLOSE_MS, isClose } from '@/lib/lapProgress';
 
@@ -27,9 +28,11 @@ type Props = {
   highlightEntryIds?: Set<number>;
   /** Entry IDs that jumped a stagger start, flagged on their row. */
   jumpStartEntryIds?: Set<number>;
+  /** Show the places gained or lost against the grid beside each position; for finals. */
+  showArrows?: boolean;
 };
 
-export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds }: Props) {
+export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds, showArrows = false }: Props) {
   const { rows: sorted, wsStatus, snapshotFailed } = useLiveTiming(raceId);
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
@@ -93,7 +96,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
-                <TableCell className="font-mono font-semibold">{row.position}</TableCell>
+                <TableCell className="font-mono font-semibold">{row.position}{showArrows && <PositionArrow row={row} />}</TableCell>
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
                   <span>{row.driverName}</span>

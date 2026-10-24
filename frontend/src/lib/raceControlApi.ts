@@ -111,6 +111,8 @@ export type LiveTimingRowDto = {
   finished?: boolean;
   /** Time the referee has added so far, in milliseconds; the order, gaps and total already include it. */
   timePenaltyMs?: number;
+  /** The car's 1-based place on the grid; absent or null when it had none. */
+  startPosition?: number | null;
 };
 
 export type RaceStateChangeDto = {
