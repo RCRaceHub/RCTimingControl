@@ -23,11 +23,32 @@ class LanAddressesTest {
     @Test
     void configuredAddressesReplaceTheDetectedOnes() {
         // In a container the detected addresses are the container's own (#99)
-        LanAddresses addresses = new LanAddresses("", " 192.168.1.50, club-timing ,http://192.168.1.50:9000/,");
+        LanAddresses addresses = new LanAddresses("", " 192.168.1.50, club-timing ,http://192.168.1.50:9000/,", "");
         started(addresses, 8080);
 
         assertThat(addresses.urls()).containsExactly(
                 "http://192.168.1.50:8080/", "http://club-timing:8080/", "http://192.168.1.50:9000/");
+    }
+
+    @Test
+    void anMdnsNameIsListedFirstAndDoesNotNeedTheDotLocal() {
+        LanAddresses addresses = new LanAddresses("192.168.1.9", "", "Timing");
+        started(addresses, 8080);
+
+        assertThat(addresses.urls()).containsExactly("http://timing.local:8080/", "http://192.168.1.9:8080/");
+    }
+
+    @Test
+    void noMdnsNameLeavesTheListAsItWas() {
+        LanAddresses addresses = new LanAddresses("192.168.1.9", "", "");
+        started(addresses, 8080);
+
+        assertThat(addresses.urls()).containsExactly("http://192.168.1.9:8080/");
+    }
+
+    @Test
+    void theNameIsAnnouncedOnlyOnTheBindAddressWhenOneIsSet() {
+        assertThat(new LanAddresses("192.168.1.9", "", "timing").announceAddresses()).containsExactly("192.168.1.9");
     }
 
     private static void started(LanAddresses addresses, int port) {
