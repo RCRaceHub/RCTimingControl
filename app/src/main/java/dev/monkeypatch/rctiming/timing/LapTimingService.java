@@ -115,12 +115,16 @@ public class LapTimingService {
     }
 
     /**
-     * Sends the order to the boards and, from the same rows, the battles it shows (#505). Every change to the order
-     * goes through here so the two topics never disagree. Runs on the timing thread or a request thread.
+     * Sends the order to the boards and, from the same rows, the battles it shows (#505), the battles only when they
+     * changed since the last update. Every change to the order goes through here, so the two topics agree. Runs on
+     * the timing thread or a request thread.
      */
-    private void broadcastTiming(long raceId, LiveRaceState state, List<LiveTimingRowDto> rows) {
-        liveTimingHub.broadcastTimingUpdate(raceId, rows);
-        liveTimingHub.broadcastBattles(raceId, state.advanceBattles(rows));
+    private void broadcastTiming(long raceId, LiveRaceState state) {
+        LiveRaceState.TimingSnapshot snapshot = state.snapshot();
+        liveTimingHub.broadcastTimingUpdate(raceId, snapshot.rows());
+        if (snapshot.battlesChanged()) {
+            liveTimingHub.broadcastBattles(raceId, snapshot.battles());
+        }
     }
 
     /** The race's battles as of the last update; empty for a race with no live timing. */
@@ -188,7 +192,7 @@ public class LapTimingService {
             liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
         }
 
-        broadcastTiming(raceId, state, state.calculatePositions());
+        broadcastTiming(raceId, state);
 
         if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
@@ -308,7 +312,7 @@ public class LapTimingService {
         LiveRaceState state = stateFor(raceId);
         state.applyLapDelta(entryId, lapDelta);
         liveTimingHub.broadcastMarshalAdjustment(raceId, dto);
-        broadcastTiming(raceId, state, state.calculatePositions());
+        broadcastTiming(raceId, state);
     }
 
     /**
@@ -318,7 +322,7 @@ public class LapTimingService {
     public void applyLapPenalty(long raceId, long entryId, int laps) {
         peek(raceId).ifPresent(state -> {
             state.applyLapDelta(entryId, -laps);
-            broadcastTiming(raceId, state, state.calculatePositions());
+            broadcastTiming(raceId, state);
         });
     }
 
@@ -333,7 +337,7 @@ public class LapTimingService {
     public void applyTimePenalty(long raceId, long entryId, long penaltyMs) {
         LiveRaceState state = stateFor(raceId);
         state.applyTimePenalty(entryId, penaltyMs);
-        broadcastTiming(raceId, state, state.calculatePositions());
+        broadcastTiming(raceId, state);
     }
 
     /**
@@ -386,12 +390,13 @@ public class LapTimingService {
      *
      * @return the positions after the credit, as broadcast
      */
-    public List<dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto> linkTransponder(
+    public List<LiveTimingRowDto> linkTransponder(
             long raceId, String transponderNumber, long entryId) {
         LiveRaceState state = stateFor(raceId);
-        List<dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto> positions =
+        List<LiveTimingRowDto> positions =
                 state.retroactiveLinkTransponder(transponderNumber, entryId);
-        broadcastTiming(raceId, state, positions);
+        liveTimingHub.broadcastTimingUpdate(raceId, positions);
+        liveTimingHub.broadcastBattles(raceId, state.advanceBattles(positions));
         return positions;
     }
 

@@ -36,8 +36,8 @@ public class WebSocketJwtChannelInterceptor implements ChannelInterceptor {
     private static final Logger log = LoggerFactory.getLogger(WebSocketJwtChannelInterceptor.class);
 
     /**
-     * Topics an anonymous spectator may subscribe to: the public boards need only live timing, the race's
-     * state and its battles. The other race topics carry referee prompts (unknown transponders), announcer audio, bump-up
+     * Topics an anonymous spectator may subscribe to: the public boards need only live timing, the race's state and
+     * its battles. The other race topics carry referee prompts (unknown transponders), announcer audio, bump-up
      * alerts and marshal adjustments, which are for officials. A signed-in official may subscribe to any
      * topic, whatever their role, as every official screen may show any of them.
      */

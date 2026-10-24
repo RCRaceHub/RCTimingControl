@@ -27,8 +27,8 @@ const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
- * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps, {@code battles=hide} the battles strip (#505), and
- * {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
+ * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
+ * {@code battles=hide} the battles strip (#505), and {@code close=SECONDS} sets how near the car ahead counts as close (0 switches the tint off). A close value
  * that is empty or not a number takes the default.
  */
 export function parseLiveRaceOptions(params: URLSearchParams) {

@@ -441,6 +441,21 @@ public class LiveRaceState {
         return battles;
     }
 
+    /** The order and the battles it shows, taken together, and whether the battles differ from the last update. */
+    public record TimingSnapshot(List<LiveTimingRowDto> rows, List<BattleGroupDto> battles, boolean battlesChanged) {
+    }
+
+    /**
+     * Works out the order and takes it into the battle tracker under one lock, so two threads (the timing thread and a
+     * request thread giving a penalty) never feed the tracker older rows after newer ones (#505).
+     */
+    public synchronized TimingSnapshot snapshot() {
+        List<LiveTimingRowDto> rows = calculatePositions();
+        List<BattleGroupDto> before = battles;
+        List<BattleGroupDto> after = advanceBattles(rows);
+        return new TimingSnapshot(rows, after, !after.equals(before));
+    }
+
     /** The battles as of the last update, empty before the first. */
     public synchronized List<BattleGroupDto> battles() {
         return battles;

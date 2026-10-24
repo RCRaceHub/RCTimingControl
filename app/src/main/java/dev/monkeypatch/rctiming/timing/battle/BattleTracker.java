@@ -16,7 +16,8 @@ import java.util.Map;
  * <p>The gap between two cars changes only as they cross the line, so it is sampled once per lap of the car behind,
  * and the trend is the average change per lap over its last {@value #TREND_SAMPLES} samples. A pair stays a battle for
  * {@value #HOLD_LAPS} laps after it drops outside the gap, so it does not flicker on and off. A lap count that goes
- * back (a marshal's lap taken away) starts the pair's trend again. Chained pairs (A-B, B-C) are joined into one
+ * back (a marshal's lap taken away) starts the pair's trend again. Between the car ahead crossing the line and the
+ * car behind doing so the order gives the car behind no gap; the pair keeps its last gap and history through that. Chained pairs (A-B, B-C) are joined into one
  * group, a train. Gaps are those of the scored order, so time penalties are included and nothing here reads the
  * database.
  */
@@ -48,6 +49,10 @@ public class BattleTracker {
     /** Keyed by {@code aheadEntryId:chaserEntryId}. */
     private Map<String, PairHistory> history = new HashMap<>();
 
+    /**
+     * @param gapMs the largest gap, in milliseconds, between adjacent cars that starts a battle; 0 or less switches
+     *              battles off
+     */
     public BattleTracker(long gapMs) {
         this.gapMs = gapMs;
     }
@@ -71,18 +76,29 @@ public class BattleTracker {
         rows.forEach(row -> byPosition.put(row.position(), row));
         for (LiveTimingRowDto chaser : rows) {
             LiveTimingRowDto ahead = byPosition.get(chaser.position() - 1);
-            if (ahead == null || chaser.finished() || ahead.finished() || chaser.intervalLapsDown() > 0
-                    || chaser.gapToAheadMs() == null) {
+            if (ahead == null || chaser.finished() || ahead.finished()) {
                 continue;
             }
             String key = ahead.entryId() + ":" + chaser.entryId();
             PairHistory previous = history.get(key);
+            // A lap count that goes back (a marshal's -1) makes the old laps meaningless: start the pair again
+            if (previous != null && lastLaps(previous) > chaser.lapsCompleted()) {
+                previous = null;
+            }
+            if (chaser.intervalLapsDown() > 0 || chaser.gapToAheadMs() == null) {
+                // The car ahead has crossed and the chaser has not, so for a moment the order gives no gap: keep the
+                // pair and its last gap rather than lose its history every lap
+                if (previous != null && chaser.lapsCompleted() - previous.lastCloseLaps <= HOLD_LAPS) {
+                    next.put(key, previous);
+                    long lastGapMs = previous.samples.get(previous.samples.size() - 1).gapMs();
+                    links.add(new Link(ahead, chaser, linkOf(previous, lastGapMs)));
+                }
+                continue;
+            }
             PairHistory pair = new PairHistory();
-            if (previous != null && lastLaps(previous) <= chaser.lapsCompleted()) {
+            if (previous != null) {
                 pair.samples.addAll(previous.samples);
                 pair.lastCloseLaps = previous.lastCloseLaps;
-            } else if (previous != null) {
-                pair.lastCloseLaps = chaser.lapsCompleted();
             }
             if (pair.samples.isEmpty() || lastLaps(pair) != chaser.lapsCompleted()) {
                 pair.samples.add(new Sample(chaser.lapsCompleted(), chaser.gapToAheadMs()));

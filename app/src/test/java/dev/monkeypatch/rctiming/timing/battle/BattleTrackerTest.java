@@ -83,6 +83,23 @@ class BattleTrackerTest {
     }
 
     @Test
+    void keepsAPairThroughTheMomentTheCarAheadHasCrossedAndTheChaserHasNot() {
+        BattleTracker tracker = new BattleTracker(2000);
+        long[] gaps = {1800, 1500, 1200, 900};
+        List<BattleGroupDto> last = List.of();
+        for (int i = 0; i < gaps.length; i++) {
+            // The leader crosses first: the order has the chaser a lap down and no gap until it crosses too
+            List<BattleGroupDto> between = tracker.advance(List.of(row(1, 1, 4 + i, null), row(2, 2, 3 + i, null, 1, false)));
+            if (i > 0) {
+                assertThat(between).hasSize(1);
+            }
+            last = tracker.advance(List.of(row(1, 1, 4 + i, null), row(2, 2, 4 + i, gaps[i])));
+        }
+
+        assertThat(last.get(0).links().get(0).ratePerLapMs()).isEqualTo(-300L);
+    }
+
+    @Test
     void ignoresALappedCarAFinishedCarAndAZeroGap() {
         assertThat(new BattleTracker(2000).advance(
                 List.of(row(1, 1, 3, null), row(2, 2, 2, 500L, 1, false)))).isEmpty();
