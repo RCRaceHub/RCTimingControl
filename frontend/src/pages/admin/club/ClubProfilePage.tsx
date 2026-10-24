@@ -111,7 +111,7 @@ export default function ClubProfilePage() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <h1 className="text-2xl font-semibold">Club</h1>
+      <h1 className="text-2xl font-semibold">Club Profile</h1>
 
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList>
