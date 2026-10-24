@@ -25,7 +25,8 @@ import java.util.Set;
 /**
  * The addresses phones, tablets and boards on the venue network should open (#23): one
  * {@code http://<ip>:<port>/} per network the laptop is on, plus one by its hostname, and one by its mDNS name such
- * as {@code timing.local} when {@code rctiming.network.mdns-name} is set (listed first). Logged at
+ * as {@code timing.local} when {@code rctiming.network.mdns-name} is set (listed first, unless
+ * {@code rctiming.network.addresses} names the addresses, which are then listed as given). Logged at
  * start-up and shown on the About page.
  *
  * <p>Inside a container the app only sees the container's own network, so
@@ -123,9 +124,12 @@ public class LanAddresses {
         return port;
     }
 
-    /** The IPv4 address of each real network interface, for the mDNS announcement to go out on. */
-    static List<String> lanIpv4Addresses() {
-        return interfaceAddresses();
+    /**
+     * The addresses the mDNS name should resolve to: the {@code server.address} when one is set (nothing listens on
+     * the others), otherwise the IPv4 address of each real network interface.
+     */
+    List<String> announceAddresses() {
+        return !bindAddress.isEmpty() && !isWildcard(bindAddress) ? List.of(bindAddress) : interfaceAddresses();
     }
 
     private static List<String> interfaceAddresses() {

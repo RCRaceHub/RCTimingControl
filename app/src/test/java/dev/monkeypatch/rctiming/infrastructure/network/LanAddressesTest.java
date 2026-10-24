@@ -46,6 +46,11 @@ class LanAddressesTest {
         assertThat(addresses.urls()).containsExactly("http://192.168.1.9:8080/");
     }
 
+    @Test
+    void theNameIsAnnouncedOnlyOnTheBindAddressWhenOneIsSet() {
+        assertThat(new LanAddresses("192.168.1.9", "", "timing").announceAddresses()).containsExactly("192.168.1.9");
+    }
+
     private static void started(LanAddresses addresses, int port) {
         WebServer server = mock(WebServer.class);
         when(server.getPort()).thenReturn(port);
