@@ -669,6 +669,11 @@ export interface PrivacyNoticeEditDto {
   customised: boolean;
 }
 
+/** {@code gapMs}: how near the car ahead, in milliseconds, makes an on-track battle; 0 switches battles off (#505) */
+export interface BattleSettingsDto {
+  gapMs: number;
+}
+
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
   importRaceHubEntries: (eventId: number, exportDocument: unknown, dryRun: boolean) =>
@@ -865,6 +870,10 @@ export const adminApi = {
     /** A blank text goes back to the default notice */
     setPrivacyNotice: (text: string) =>
       api.put<PrivacyNoticeEditDto>('/api/v1/admin/club/privacy-notice', { text }).then(r => r.data),
+    getBattleSettings: () =>
+      api.get<BattleSettingsDto>('/api/v1/admin/club/battle-settings').then(r => r.data),
+    setBattleSettings: (gapMs: number) =>
+      api.put<BattleSettingsDto>('/api/v1/admin/club/battle-settings', { gapMs }).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);

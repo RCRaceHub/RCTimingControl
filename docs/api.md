@@ -818,17 +818,19 @@ POST   /admin/championships/{id}/scoring-system/{systemId}
 
 A system is a named set of scoring options a race format or a championship can follow, such as BRCA 1/10 off-road. `POST` and `clone` answer **201**; **400** when a value is out of range or an import cannot be read, **404** for an unknown system, **409** when the name is taken or when changing or deleting a built-in system (clone it instead). Applying a system to a championship copies its options onto the championship, which stays editable; changing the system afterwards does not change the championship. What each option does is in [scoring.md](scoring.md).
 
-## Club — Logo and privacy notice
+## Club — Logo, battle gap and privacy notice
 
 ```
 PUT /admin/club/logo                (multipart form data, part `file`; ADMIN)
+GET /admin/club/battle-settings     (any official)
+PUT /admin/club/battle-settings     (ADMIN)
 GET /admin/club/privacy-notice      (any official)
 PUT /admin/club/privacy-notice      (ADMIN)
 GET /privacy-notice                 (anonymous)
 GET /admin/retention                (ADMIN)
 ```
 
-`logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever). The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
+`battle-settings` is `{ "gapMs" }`, how near the car ahead, in milliseconds, makes an on-track battle (default 2000, 0 switches battles off, **400** outside 0 to 10000); a change reaches races in progress at their next update and is audited as `BATTLE_GAP_CHANGED`. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever). The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
 
 ## Spectator boards
 
@@ -862,7 +864,7 @@ GET /boards/races/{raceId}/live-timing
 ```http
 GET /boards/races/{raceId}/battles
 ```
-**200 OK** — the cars running close together in the race, as the timing laptop works them out (#505): `[ { "cars": [ { "entryId": 31, "position": 4, "driverName": "Sam Second", "carNumber": "4" }, { "entryId": 22, "position": 5, "driverName": "Ann Racer", "carNumber": "9" } ], "links": [ { "gapMs": 800, "ratePerLapMs": -350, "trend": "CLOSING", "gainingFast": true } ], "gainingFast": true } ]`. Each element is one battle (two cars) or a train (three or more, each close to the next). `cars` run from the front to the back and `links` has the gap between each car and the one behind, so one entry fewer. `gapMs` is the gap in the order as of the car behind's last crossing, time penalties included. `ratePerLapMs` is how much the gap changes each of that car's laps, negative while closing, and null until two of its laps have been seen. `trend` is `CLOSING` or `GROWING` beyond 150 ms a lap, `HOLDING` between, `UNKNOWN` before there is a rate; `gainingFast` is a closing rate of 300 ms a lap or more. A battle is two adjacent cars on the same lap within 2 s, kept for two laps after they drop outside it. Groups with a car gaining fast come first, then by the tightest gap. `[]` when no cars are close or the race has no live timing. The same list is sent on `/topic/race/{raceId}/battles` after every update to the order, and an empty list when a battle ends or the race is released, so an app can subscribe instead of polling.
+**200 OK** — the cars running close together in the race, as the timing laptop works them out (#505): `[ { "cars": [ { "entryId": 31, "position": 4, "driverName": "Sam Second", "carNumber": "4" }, { "entryId": 22, "position": 5, "driverName": "Ann Racer", "carNumber": "9" } ], "links": [ { "gapMs": 800, "ratePerLapMs": -350, "trend": "CLOSING", "gainingFast": true } ], "gainingFast": true } ]`. Each element is one battle (two cars) or a train (three or more, each close to the next). `cars` run from the front to the back and `links` has the gap between each car and the one behind, so one entry fewer. `gapMs` is the gap in the order as of the car behind's last crossing, time penalties included. `ratePerLapMs` is how much the gap changes each of that car's laps, negative while closing, and null until two of its laps have been seen. `trend` is `CLOSING` or `GROWING` beyond 150 ms a lap, `HOLDING` between, `UNKNOWN` before there is a rate; `gainingFast` is a closing rate of 300 ms a lap or more. A battle is two adjacent cars on the same lap within the club's battle gap (2 s unless the club has changed it under Club), kept for two laps after they drop outside it. Groups with a car gaining fast come first, then by the tightest gap. `[]` when no cars are close or the race has no live timing. The same list is sent on `/topic/race/{raceId}/battles` after every update to the order, and an empty list when a battle ends or the race is released, so an app can subscribe instead of polling.
 
 ```http
 GET /boards/races/{raceId}/clock

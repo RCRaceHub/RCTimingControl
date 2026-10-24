@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.domain.audit.Audited;
+import dev.monkeypatch.rctiming.api.admin.dto.BattleSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ClubProfileDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateClubProfileRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateGoverningBodyRequest;
@@ -89,6 +90,23 @@ public class ClubProfileController {
                                                     @RequestBody @Valid PrivacyNoticeRequest request) {
         return PrivacyNoticeEditDto.from(
                 clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
+    }
+
+    /** The gap that makes an on-track battle (#505). {@code GET /battle-settings}; read only. */
+    @GetMapping("/battle-settings")
+    public BattleSettingsDto getBattleSettings() {
+        return new BattleSettingsDto(clubProfileService.battleGapMs());
+    }
+
+    /**
+     * Saves the battle gap, in milliseconds; 0 switches battles off. {@code PUT /battle-settings}; ADMIN; 400 outside 0
+     * to 10000. Races in progress take it from their next update. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/battle-settings")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BattleSettingsDto changeBattleSettings(Authentication auth, @RequestBody @Valid BattleSettingsDto request) {
+        return new BattleSettingsDto(clubProfileService.changeBattleGap(CurrentOfficial.actor(auth), request.gapMs()));
     }
 
     /** The governing bodies the club is affiliated to. {@code GET /affiliations}; read only. */

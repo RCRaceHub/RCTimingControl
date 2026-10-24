@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useClubProfile, useUpdateClubProfile, useUploadClubLogo } from '@/hooks/admin/useAdminClub';
 import type { UpdateClubProfileRequest } from '@/lib/adminApi';
 import axios from 'axios';
+import BattleSettingsCard from './BattleSettingsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 
 const schema = z.object({
@@ -190,6 +191,8 @@ export default function ClubProfilePage() {
           {updateMutation.isPending ? 'Saving…' : 'Save Profile'}
         </Button>
       </form>
+
+      <BattleSettingsCard />
 
       <PrivacyNoticeEditor />
     </div>

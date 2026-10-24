@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -41,6 +42,30 @@ class ClubProfileServiceTest {
         when(repository.findCurrent()).thenReturn(Optional.of(profileWithVoice("en_GB-jenny_dioco-medium")));
 
         assertThat(service.defaultVoiceId()).contains("en_GB-jenny_dioco-medium");
+    }
+
+    @Test
+    void beforeAProfileExists_theBattleGapIsTheDefault() {
+        when(repository.findCurrent()).thenReturn(Optional.empty());
+
+        assertThat(service.battleGapMs()).isEqualTo(ClubProfile.DEFAULT_BATTLE_GAP_MS);
+    }
+
+    @Test
+    void aSavedBattleGap_isTheClubs() {
+        ClubProfile profile = new ClubProfile();
+        profile.setBattleGapMs(1500);
+        when(repository.findCurrent()).thenReturn(Optional.of(profile));
+
+        assertThat(service.battleGapMs()).isEqualTo(1500);
+    }
+
+    @Test
+    void aBattleGapOutsideTheRange_isRefusedAndSavesNothing() {
+        assertThatThrownBy(() -> service.changeBattleGap(null, -1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.changeBattleGap(null, ClubProfile.MAX_BATTLE_GAP_MS + 1))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(repository, never()).save(any());
     }
 
     private static ClubProfile profileWithVoice(String voice) {

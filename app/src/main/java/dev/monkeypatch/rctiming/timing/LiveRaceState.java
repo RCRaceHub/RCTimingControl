@@ -50,7 +50,7 @@ public class LiveRaceState {
      */
     Long overallBestLapMs = null;
     /** Spots the race's on-track battles from each update of the order (#505). */
-    private final BattleTracker battleTracker = new BattleTracker(BattleTracker.DEFAULT_GAP_MS);
+    private final BattleTracker battleTracker;
     /** The battles as of the last update, for a client that connects between updates. */
     private List<BattleGroupDto> battles = List.of();
     /** Shortest lap that counts, by entry id (TRACK-02); an entry not listed has none. Set once, at state creation. */
@@ -82,6 +82,20 @@ public class LiveRaceState {
     final Set<Long> jumpStartDismissed = new HashSet<>();
     /** Seconds the referee added to an entry's time, in milliseconds, summed; an entry with none has no key. */
     final Map<Long, Long> timePenaltyMs = new HashMap<>();
+
+    public LiveRaceState() {
+        this(BattleTracker.DEFAULT_GAP_MS);
+    }
+
+    /** @param battleGapMs the club's battle gap in milliseconds (#505); 0 switches battles off */
+    public LiveRaceState(long battleGapMs) {
+        this.battleTracker = new BattleTracker(battleGapMs);
+    }
+
+    /** Applies a changed battle gap from the next update. */
+    public void setBattleGapMs(long battleGapMs) {
+        battleTracker.setGapMs(battleGapMs);
+    }
 
     /**
      * Sets when the race started, for each row's total time. Called at state creation time.

@@ -45,7 +45,7 @@ public class BattleTracker {
     private record Link(LiveTimingRowDto ahead, LiveTimingRowDto chaser, BattleLinkDto dto) {
     }
 
-    private final long gapMs;
+    private volatile long gapMs;
     /** Keyed by {@code aheadEntryId:chaserEntryId}. */
     private Map<String, PairHistory> history = new HashMap<>();
 
@@ -54,6 +54,11 @@ public class BattleTracker {
      *              battles off
      */
     public BattleTracker(long gapMs) {
+        this.gapMs = gapMs;
+    }
+
+    /** Changes the gap for the next update; the club's setting was edited mid-race. */
+    public void setGapMs(long gapMs) {
         this.gapMs = gapMs;
     }
 
@@ -67,7 +72,8 @@ public class BattleTracker {
     public List<BattleGroupDto> advance(List<LiveTimingRowDto> rows) {
         Map<String, PairHistory> next = new HashMap<>();
         List<Link> links = new ArrayList<>();
-        if (gapMs <= 0) {
+        long threshold = gapMs;
+        if (threshold <= 0) {
             history = next;
             return List.of();
         }
@@ -103,7 +109,7 @@ public class BattleTracker {
             if (pair.samples.isEmpty() || lastLaps(pair) != chaser.lapsCompleted()) {
                 pair.samples.add(new Sample(chaser.lapsCompleted(), chaser.gapToAheadMs()));
             }
-            boolean inRange = chaser.gapToAheadMs() <= gapMs;
+            boolean inRange = chaser.gapToAheadMs() <= threshold;
             if (inRange) {
                 pair.lastCloseLaps = chaser.lapsCompleted();
             } else if (previous == null || chaser.lapsCompleted() - pair.lastCloseLaps > HOLD_LAPS) {

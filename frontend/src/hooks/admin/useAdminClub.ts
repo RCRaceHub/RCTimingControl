@@ -44,3 +44,19 @@ export function useSetPrivacyNotice() {
     },
   });
 }
+
+export function useBattleSettings() {
+  return useQuery({
+    queryKey: adminQueryKeys.club.battleSettings(),
+    queryFn: adminApi.club.getBattleSettings,
+  });
+}
+
+/** Saves the battle gap in milliseconds (#505); races in progress take it from their next update. */
+export function useSetBattleSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (gapMs: number) => adminApi.club.setBattleSettings(gapMs),
+    onSuccess: (saved) => qc.setQueryData(adminQueryKeys.club.battleSettings(), saved),
+  });
+}

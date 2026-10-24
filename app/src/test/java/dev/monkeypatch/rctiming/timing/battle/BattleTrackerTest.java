@@ -109,6 +109,17 @@ class BattleTrackerTest {
     }
 
     @Test
+    void takesAChangedGapFromTheNextUpdate() {
+        BattleTracker tracker = new BattleTracker(2000);
+        List<LiveTimingRowDto> rows = List.of(row(1, 1, 3, null), row(2, 2, 3, 1500L));
+        assertThat(tracker.advance(rows)).hasSize(1);
+
+        tracker.setGapMs(1000);
+
+        assertThat(tracker.advance(rows)).isEmpty();
+    }
+
+    @Test
     void joinsChainedPairsIntoATrainAndKeepsSeparateFightsApart() {
         List<BattleGroupDto> groups = new BattleTracker(2000).advance(List.of(
                 row(1, 1, 3, null), row(2, 2, 3, 800L), row(3, 3, 3, 1200L), row(4, 4, 3, 6000L), row(5, 5, 3, 900L)));
