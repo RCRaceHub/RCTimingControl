@@ -57,7 +57,7 @@ public class ChampionshipSeedingQuery {
             if (championshipId == null) {
                 return positions;
             }
-            for (StandingsRowDto row : standingsQuery.computeStandings(championshipId)) {
+            for (StandingsRowDto row : standingsQuery.computeMainStandings(championshipId)) {
                 if (racingClassId.equals(row.racingClassId()) && row.totalPoints() > 0 && row.driverId() != null) {
                     positions.putIfAbsent(row.driverId(), row.position());
                 }

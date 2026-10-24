@@ -160,6 +160,20 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
         return (Boolean) get(9);
     }
 
+    /**
+     * Setter for <code>championships.split_categories</code>.
+     */
+    public void setSplitCategories(String value) {
+        set(10, value);
+    }
+
+    /**
+     * Getter for <code>championships.split_categories</code>.
+     */
+    public String getSplitCategories() {
+        return (String) get(10);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -183,7 +197,7 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
     /**
      * Create a detached, initialised ChampionshipsRecord
      */
-    public ChampionshipsRecord(Long id, String name, Integer bestXFromYX, Integer bestXFromYY, String scoringSource, Integer tqBonusPoints, Integer afinalWinnerBonusPoints, Instant createdAt, Instant updatedAt, Boolean showOverallTable) {
+    public ChampionshipsRecord(Long id, String name, Integer bestXFromYX, Integer bestXFromYY, String scoringSource, Integer tqBonusPoints, Integer afinalWinnerBonusPoints, Instant createdAt, Instant updatedAt, Boolean showOverallTable, String splitCategories) {
         super(Championships.CHAMPIONSHIPS);
 
         setId(id);
@@ -196,6 +210,7 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setShowOverallTable(showOverallTable);
+        setSplitCategories(splitCategories);
         resetChangedOnNotNull();
     }
 }

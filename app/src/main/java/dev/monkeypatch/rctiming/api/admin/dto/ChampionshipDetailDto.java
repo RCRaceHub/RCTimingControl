@@ -18,7 +18,8 @@ public record ChampionshipDetailDto(
         boolean showOverallTable,
         List<ChampionshipClassDto> classes,
         List<ChampionshipEventLinkDto> events,
-        List<PointsScaleEntryDto> pointsScale
+        List<PointsScaleEntryDto> pointsScale,
+        List<String> splitCategories
 ) {
     public static ChampionshipDetailDto from(
             Championship c,
@@ -29,6 +30,6 @@ public record ChampionshipDetailDto(
                 c.getId(), c.getName(),
                 c.getBestXFromYX(), c.getBestXFromYY(),
                 c.getTqBonusPoints(), c.getAfinalWinnerBonusPoints(), c.isShowOverallTable(),
-                classes, events, pointsScale);
+                classes, events, pointsScale, c.splitTags());
     }
 }

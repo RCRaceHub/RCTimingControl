@@ -174,6 +174,23 @@ public class ChampionshipController {
         return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(auth), id, systemId));
     }
 
+    /** The body of {@code PUT /{id}/split-categories}: the tags to split the standings by; empty for none. */
+    public record SplitCategoriesRequest(@jakarta.validation.constraints.NotNull List<String> categories) {}
+
+    /**
+     * Sets the category tags (for example Junior, Vet, F-Grade) the championship also gives standings for, in
+     * addition to its per-class and overall tables (#494). {@code PUT /{id}/split-categories}; ADMIN; 400 for more
+     * than 8 tags, a tag over 30 characters or one with a comma; 404 if the championship is missing. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/{id}/split-categories")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ChampionshipDto setSplitCategories(Authentication auth, @PathVariable Long id,
+                                              @RequestBody @Valid SplitCategoriesRequest request) {
+        return ChampionshipDto.from(championshipService.setSplitCategories(
+                CurrentOfficial.actor(auth), id, request.categories()));
+    }
+
     /** The drivers excluded from events of the championship. {@code GET /{id}/exclusions}; read only. */
     @GetMapping("/{id}/exclusions")
     public List<ChampionshipExclusionDto> listExclusions(@PathVariable Long id) {

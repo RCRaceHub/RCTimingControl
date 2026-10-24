@@ -30,6 +30,16 @@ export function useSetNameVisibility() {
   });
 }
 
+/** Sets the category tags a competitor holds, then refreshes the list (#494). */
+export function useSetCompetitorCategories() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, categories }: { id: number; categories: string[] }) =>
+      adminApi.competitors.setCategories(id, categories),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.competitors.all() }),
+  });
+}
+
 /** Who changed how a competitor's name is said (admin only), newest first (#119). */
 export function useCompetitorChanges(id: number, enabled: boolean) {
   return useQuery({

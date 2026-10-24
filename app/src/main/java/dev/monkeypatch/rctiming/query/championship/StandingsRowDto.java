@@ -10,6 +10,8 @@ import java.util.List;
  * @param racingClassId the class the row is for; a driver who raced two classes has a row in each
  * @param totalPoints sum of best-X rounds plus any bonuses (CHAMP-01, CHAMP-07, CHAMP-08)
  * @param position    the row's place in its class: drivers level on points and countback share it (1, 1, 3)
+ * @param category    the category tag of a split table (Junior, Vet and so on), or null for the class and overall
+ *                    tables (#494); a split repeats the same rows, filtered and ranked again among themselves
  * @param rounds      per-round detail — position, points, excluded (CHAMP-02/09), dropped (CHAMP-01 worst-round drop)
  */
 public record StandingsRowDto(
@@ -18,5 +20,13 @@ public record StandingsRowDto(
         Long racingClassId,
         int totalPoints,
         int position,
-        List<RoundResultDto> rounds
-) {}
+        List<RoundResultDto> rounds,
+        String category
+) {
+
+    /** A row of a class or overall table, with no category. */
+    public StandingsRowDto(Long driverId, String displayName, Long racingClassId, int totalPoints, int position,
+                           List<RoundResultDto> rounds) {
+        this(driverId, displayName, racingClassId, totalPoints, position, rounds, null);
+    }
+}

@@ -225,7 +225,7 @@ public class ResultsExportQuery {
         List<ResultsExportV1.Championship> championships = new ArrayList<>();
         for (var link : links) {
             long championshipId = link.get(CHAMPIONSHIPS.ID);
-            List<StandingsRowDto> standingsRows = standingsQuery.computeStandings(championshipId);
+            List<StandingsRowDto> standingsRows = standingsQuery.computeMainStandings(championshipId);
             Map<Long, CompetitorRef> competitors = competitors(standingsRows);
             Map<Long, List<StandingsRowDto>> byClass = new LinkedHashMap<>();
             for (StandingsRowDto row : standingsRows) {

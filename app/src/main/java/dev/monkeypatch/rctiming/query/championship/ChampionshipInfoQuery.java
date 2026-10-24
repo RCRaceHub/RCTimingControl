@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.competitor.CategoryTags;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;
@@ -31,13 +32,14 @@ public class ChampionshipInfoQuery {
      * @throws EntityNotFoundException if there is no such championship (HTTP 404)
      */
     public ChampionshipInfoDto find(long championshipId) {
-        String name = dsl.select(CHAMPIONSHIPS.NAME)
+        var championship = dsl.select(CHAMPIONSHIPS.NAME, CHAMPIONSHIPS.SPLIT_CATEGORIES)
                 .from(CHAMPIONSHIPS)
                 .where(CHAMPIONSHIPS.ID.eq(championshipId))
-                .fetchOne(CHAMPIONSHIPS.NAME);
-        if (name == null) {
+                .fetchOne();
+        if (championship == null) {
             throw new EntityNotFoundException("No championship " + championshipId);
         }
+        String name = championship.get(CHAMPIONSHIPS.NAME);
         List<ChampionshipInfoDto.ClassInfo> classes = dsl
                 .select(RACING_CLASSES.ID, RACING_CLASSES.NAME)
                 .from(CHAMPIONSHIP_CLASSES)
@@ -45,6 +47,7 @@ public class ChampionshipInfoQuery {
                 .where(CHAMPIONSHIP_CLASSES.CHAMPIONSHIP_ID.eq(championshipId))
                 .orderBy(RACING_CLASSES.NAME.asc())
                 .fetch(r -> new ChampionshipInfoDto.ClassInfo(r.get(RACING_CLASSES.ID), r.get(RACING_CLASSES.NAME)));
-        return new ChampionshipInfoDto(championshipId, name, classes);
+        return new ChampionshipInfoDto(championshipId, name, classes,
+                CategoryTags.parse(championship.get(CHAMPIONSHIPS.SPLIT_CATEGORIES)));
     }
 }

@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import CategoryTagsEditor from '@/components/CategoryTagsEditor';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChampionshipConfigForm } from './ChampionshipConfigForm';
@@ -17,6 +18,7 @@ import {
   useChampionshipDetail,
   useUpdateChampionship,
   useChampionshipExclusions,
+  useSetSplitCategories,
 } from '@/hooks/admin/useAdminChampionships';
 import { useAdminEventsList } from '@/hooks/admin/useAdminEvents';
 import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
@@ -59,6 +61,7 @@ export default function ChampionshipDetailPage() {
   const { data: competitors = [] } = useAdminCompetitorsList();
 
   const { isAdmin } = useRoles();
+  const splits = useSetSplitCategories(id);
   // Counts applied scoring systems, so the forms reload their values even when an apply changes nothing
   const [appliedCount, setAppliedCount] = useState(0);
 
@@ -116,6 +119,24 @@ export default function ChampionshipDetailPage() {
               onSubmit={handleUpdate}
               submitLabel="Save"
             />
+            <section className="mt-6 max-w-xl space-y-2">
+              <h2 className="text-sm font-medium">Category splits</h2>
+              <p className="text-xs text-muted-foreground">
+                Give each of these categories its own standings, besides the class tables. Drivers get their
+                categories on the Competitors page. Leave empty for none.
+              </p>
+              <CategoryTagsEditor
+                key={(data.splitCategories ?? []).join(',')}
+                id="split-categories"
+                label="Splits"
+                tags={data.splitCategories ?? []}
+                pending={splits.isPending}
+                onSave={categories => splits.mutate(categories, {
+                  onSuccess: () => toast.success('Category splits saved'),
+                  onError: () => toast.error('Could not save the splits. Use at most 8, each up to 30 characters, with no commas.'),
+                })}
+              />
+            </section>
           </ReadOnlyUnlessAdmin>
         </TabsContent>
 

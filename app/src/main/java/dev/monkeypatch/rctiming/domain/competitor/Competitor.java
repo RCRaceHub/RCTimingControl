@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.competitor;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import dev.monkeypatch.rctiming.persistence.UpdatedAt;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * A driver who races, independent of any login. Entries point at a competitor, so a racing
@@ -23,6 +24,9 @@ public class Competitor implements CreatedAt, UpdatedAt {
     private String homeClub;
     private String spokenName;
     private NameVisibility nameVisibility = NameVisibility.SHOW;
+
+    /** The category tags this driver holds, comma separated (#494); read them with {@link #categoryTags()}. */
+    private String categories;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -40,6 +44,12 @@ public class Competitor implements CreatedAt, UpdatedAt {
 
     public String getBrcaNumber() { return brcaNumber; }
     public void setBrcaNumber(String brcaNumber) { this.brcaNumber = brcaNumber; }
+
+    public String getCategories() { return categories; }
+    public void setCategories(String categories) { this.categories = categories; }
+
+    /** The category tags this driver holds (Junior, Vet and so on), empty for none. */
+    public List<String> categoryTags() { return CategoryTags.parse(categories); }
 
     public String getHomeClub() { return homeClub; }
     public void setHomeClub(String homeClub) { this.homeClub = homeClub; }

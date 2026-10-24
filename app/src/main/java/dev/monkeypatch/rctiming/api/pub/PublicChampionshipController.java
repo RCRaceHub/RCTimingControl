@@ -46,7 +46,7 @@ public class PublicChampionshipController {
         PublicNames.Snapshot names = publicNames.snapshot();
         return query.computeStandings(id).stream()
                 .map(r -> new StandingsRowDto(r.driverId(), names.of(r.driverId(), r.displayName(), null),
-                        r.racingClassId(), r.totalPoints(), r.position(), r.rounds()))
+                        r.racingClassId(), r.totalPoints(), r.position(), r.rounds(), r.category()))
                 .toList();
     }
 

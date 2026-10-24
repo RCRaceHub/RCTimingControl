@@ -534,6 +534,30 @@ Content-Type: application/json
 
 Requires `ADMIN`, `RACE_DIRECTOR` or `REFEREE`, so a name can be fixed on the day. Every real change is recorded with who made it (see below); saving the same value again records nothing. Send an empty string to clear it. The text is trimmed and can be at most 100 characters (400 otherwise); an unknown competitor is 404. Returns the competitor. The grid-call audio uses it from the next race to reach the grid (the clips are made then), the running order from its next announcement, and a RaceHub or CSV re-import never changes it.
 
+### Set a competitor's categories
+
+```http
+PUT /admin/competitors/{id}/categories
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "categories": ["Junior", "F-Grade"] }
+```
+
+Requires `ADMIN` or `RACE_DIRECTOR`. Sets the category tags a driver holds (Junior, Vet, F-Grade and so on); an empty list clears them. Tags are trimmed and repeats (ignoring case) are dropped; at most 8, each at most 30 characters with no comma (400 otherwise). Returns the competitor with `categories`. Audited as `COMPETITOR_CATEGORIES_CHANGED`. A championship can split its standings by these tags.
+
+### Set a championship's category splits
+
+```http
+PUT /admin/championships/{id}/split-categories
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "categories": ["Junior", "Vet"] }
+```
+
+Requires `ADMIN`. Lists the tags the championship also produces standings for, in display order, with the same limits as above (400 otherwise, 404 for an unknown championship). Standings (`GET /championships/{id}` and the admin `standings`) then carry extra rows with `category` set to the tag: each repeats the class and overall tables for the drivers who hold it, with the points they earned, ranked again among themselves. Rows of the class and overall tables have `category` null. The public `GET /championships/{id}/info` lists `splits`. Audited as `CHAMPIONSHIP_SPLITS_CHANGED`.
+
 ### See who changed how a name is said
 
 ```http

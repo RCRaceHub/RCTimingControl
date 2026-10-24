@@ -71,6 +71,18 @@ export function useUnlinkChampionshipEvent(id: number) {
   });
 }
 
+/** Sets the category tags a championship also splits its standings by, then refreshes it (#494). */
+export function useSetSplitCategories(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (categories: string[]) => adminApi.championships.setSplitCategories(id, categories),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: adminQueryKeys.championships.detail(id) });
+      void qc.invalidateQueries({ queryKey: adminQueryKeys.championships.standings(id) });
+    },
+  });
+}
+
 export function useApplyScoringSystem(id: number) {
   const qc = useQueryClient();
   return useMutation({

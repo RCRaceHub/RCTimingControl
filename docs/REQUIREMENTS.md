@@ -180,6 +180,7 @@
 - [x] **CHAMP-07**: Championship can award a configurable bonus point to the top qualifier (TQ) per class per round: a driver who tops qualifying in two classes, or at two events, earns it for each (#133)
 - [x] **CHAMP-08**: Championship can award a configurable bonus point to the A-final winner per class per round, earned once per class and event (#133)
 - [x] **CHAMP-09**: Individual drivers can be excluded from championship points for a specific round (DQ, non-eligible equipment, factory driver), and earns no TQ or A-final bonus for that round either; exclusion is audit-logged
+- [x] **CHAMP-11**: Drivers can hold category tags (for example Junior, Vet, F-Grade), set by an admin or race director on the Competitors page. A championship can list tags to split its standings by: each split repeats the class and overall tables for the drivers who hold the tag, with the same points, ranked again among themselves, besides the existing tables. Tags are the club's own words (up to 8, 30 characters each) (#494)
 - [x] **CHAMP-10**: Championship standings can be displayed in best-to-worst order per driver to surface drop scores and remaining title contenders
 
 ### Results
@@ -393,6 +394,7 @@
 | CHAMP-08 | Phase 3 | Complete |
 | CHAMP-09 | Phase 3 | Complete |
 | CHAMP-10 | Phase 3 | Complete |
+| CHAMP-11 | Wishlist (#483) | Complete (#494) |
 | RESULT-01 | Phase 7 | Complete |
 | RESULT-02 | Phase 7 | Complete |
 | RESULT-03 | Phase 7 | Changed (#12) |

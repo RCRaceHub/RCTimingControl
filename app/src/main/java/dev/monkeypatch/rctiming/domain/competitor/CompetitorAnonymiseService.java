@@ -106,6 +106,7 @@ public class CompetitorAnonymiseService {
         competitor.setExternalId(null);
         competitor.setHomeClub(null);
         competitor.setSpokenName(null);
+        competitor.setCategories(null);
         competitors.save(competitor);
 
         int snapshots = rewriteSnapshots(competitorId, Set.copyOf(entryIds), name);
