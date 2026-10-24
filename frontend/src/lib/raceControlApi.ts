@@ -34,6 +34,8 @@ export type PreRaceReadinessDto = {
   marshalsPending: boolean;
   startType: 'STAGGER' | 'GRID' | 'ROLLING' | null;
   staggerIntervalSeconds: number;
+  /** The entries the decoder has seen on the warm-up lap while the race is on the grid (#482). */
+  seenEntryIds?: number[];
 };
 
 export type RunOrderItemDto = {

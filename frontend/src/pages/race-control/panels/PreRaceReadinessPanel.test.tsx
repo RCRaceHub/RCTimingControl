@@ -8,6 +8,11 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
   useRaceStateMutations: () => ({ marshalAbsent: { mutate: marshalAbsent }, marshalPenalty: { mutate: marshalPenalty } }),
 }));
 
+const seenEntries = vi.hoisted(() => ({ ids: [11] as number[] }));
+vi.mock('@/hooks/race-control/useWarmUp', () => ({
+  useWarmUp: () => new Set(seenEntries.ids),
+}));
+
 vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
   usePreRaceReadiness: () => ({
     isLoading: false,
@@ -45,6 +50,13 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
 }));
 
 describe('PreRaceReadinessPanel', () => {
+  it('shows which cars the decoder has seen on the warm-up lap', () => {
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    expect(screen.getAllByText('seen')).toHaveLength(1);
+    expect(screen.getAllByText('not seen yet')).toHaveLength(1);
+  });
+
   it('shows the grid call with the RaceHub arrival mark beside each driver', () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
