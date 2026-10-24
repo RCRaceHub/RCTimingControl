@@ -22,6 +22,7 @@ sequenceDiagram
     participant TE as timingExecutor<br/>(timing thread)
     participant RR as RaceRepository
     participant LTS as LapTimingService
+    participant WU as WarmUpCheckService
     participant LRS as LiveRaceState
     participant Hub as LiveTimingHub
     participant B as Browsers
@@ -34,6 +35,10 @@ sequenceDiagram
     TE->>LTS: publish LapPassingEvent(raceId, transponder, rtcTime)
     alt no race is running
         LTS->>LTS: ignore (practice listens to the same event)
+        opt a race is on the grid and the number is one of its entries
+            WU->>Hub: broadcastWarmUp(raceId, seenEntryIds), first sighting only
+            Hub-->>B: /topic/race/id/warmup
+        end
     else a race is running
         LTS->>LRS: getRuntimeLink(transponder), else resolveEntryId
         LTS->>LRS: applyLapPassing(event, entryId, now, windowEnded)

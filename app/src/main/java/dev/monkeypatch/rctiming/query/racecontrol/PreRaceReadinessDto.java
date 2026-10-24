@@ -18,6 +18,8 @@ import java.util.List;
  *                         marshal) is not known and marshalDuty is empty
  * @param startType        how the race starts (STAGGER, GRID or ROLLING); null when not set
  * @param staggerIntervalSeconds the seconds between driver calls in a stagger start
+ * @param seenEntryIds   the entries the decoder has seen on the warm-up lap while the race is on the grid (#482);
+ *                       kept in memory by the timing side, so the query leaves it empty and the controller fills it in
  */
 public record PreRaceReadinessDto(
         long raceId,
@@ -28,11 +30,18 @@ public record PreRaceReadinessDto(
         List<MarshalDutyRowDto> marshalDuty,
         boolean marshalsPending,
         String startType,
-        int staggerIntervalSeconds
+        int staggerIntervalSeconds,
+        List<Long> seenEntryIds
 ) {
     /** The same view with the race's start details, which come from the race and its format, not from SQL. */
     public PreRaceReadinessDto withStart(String startType, int staggerIntervalSeconds) {
         return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
-                marshalsPending, startType, staggerIntervalSeconds);
+                marshalsPending, startType, staggerIntervalSeconds, seenEntryIds);
+    }
+
+    /** The same view with the entries seen on the warm-up lap. */
+    public PreRaceReadinessDto withSeen(List<Long> seenEntryIds) {
+        return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
+                marshalsPending, startType, staggerIntervalSeconds, seenEntryIds);
     }
 }

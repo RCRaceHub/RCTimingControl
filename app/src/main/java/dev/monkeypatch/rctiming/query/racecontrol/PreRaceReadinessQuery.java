@@ -205,7 +205,7 @@ public class PreRaceReadinessQuery {
                 ));
 
         return new PreRaceReadinessDto(raceId, eventId, raceLabel, firstRaceOfEvent, gridCall, marshalDuty,
-                marshalsPending, null, 0);
+                marshalsPending, null, 0, List.of());
     }
 
     /**

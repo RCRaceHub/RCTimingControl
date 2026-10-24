@@ -32,6 +32,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 - `/topic/race/{raceId}/state` — race lifecycle changes
 - `/topic/race/{raceId}/marshal` — marshal lap adjustments
 - `/topic/race/{raceId}/unknown-transponder`, `/audio`, `/bump-up-alert` — race director, announcer and bump-up prompts
+- `/topic/race/{raceId}/warmup` — which cars of a race on the grid the decoder has seen on the warm-up lap
 - `/topic/practice/{sessionId}/timing` and `/unknown-transponder` — open practice
 - `/topic/system/decoder-status` — whether the decoder is connected
 - `/topic/system/live-feed-status` — whether the live feed is connected to its relay

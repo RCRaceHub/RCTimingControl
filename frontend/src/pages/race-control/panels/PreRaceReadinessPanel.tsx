@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
+import { useWarmUp } from '@/hooks/race-control/useWarmUp';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -20,6 +21,7 @@ type Props = { raceId: number };
 
 export function PreRaceReadinessPanel({ raceId }: Props) {
   const { data, isLoading, error } = usePreRaceReadiness(raceId);
+  const seen = useWarmUp(raceId, data?.seenEntryIds);
   const mutations = useRaceStateMutations(raceId, data?.eventId ?? 0);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
@@ -106,6 +108,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                 <TableHead>Car</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>RaceHub</TableHead>
+                <TableHead>Warm-up</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,10 +123,19 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                       {row.racehubArrival === 'ARRIVED' ? 'arrived' : row.racehubArrival === 'NOT_ARRIVED' ? 'not arrived' : '—'}
                     </span>
                   </TableCell>
+                  <TableCell>
+                    {seen.has(row.entryId)
+                      ? <span className="text-xs text-green-600">seen</span>
+                      : <span className="text-xs text-amber-600">not seen yet</span>}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Warm-up shows which transponders the decoder has picked up since the grid was called, so a flat or missing
+            one can be sorted out before the start.
+          </p>
         </TabsContent>
 
         <TabsContent value="marshals" className="mt-4">

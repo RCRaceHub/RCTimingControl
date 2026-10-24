@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessQuery;
+import dev.monkeypatch.rctiming.timing.WarmUpCheckService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,20 +30,23 @@ public class PreRaceReadinessController {
     private final EventClassRepository eventClassRepository;
     private final RoundRepository roundRepository;
     private final RaceFormatService raceFormatService;
+    private final WarmUpCheckService warmUpCheckService;
 
     public PreRaceReadinessController(PreRaceReadinessQuery query, RaceRepository raceRepository,
                                       EventClassRepository eventClassRepository, RoundRepository roundRepository,
-                                      RaceFormatService raceFormatService) {
+                                      RaceFormatService raceFormatService,
+                                      WarmUpCheckService warmUpCheckService) {
         this.query = query;
         this.raceRepository = raceRepository;
         this.eventClassRepository = eventClassRepository;
         this.roundRepository = roundRepository;
         this.raceFormatService = raceFormatService;
+        this.warmUpCheckService = warmUpCheckService;
     }
 
     /**
      * The grid call list and the marshal duty list for a race, with how it starts (the race's own start type, or the
-     * format's when the race has none saved) and the stagger interval in seconds.
+     * format's when the race has none saved) and the stagger interval in seconds, and the entries the decoder has seen on the warm-up lap.
      * {@code GET /{raceId}/pre-race-readiness}; RACE_DIRECTOR or ADMIN. Read only; 404 if the race does not exist.
      */
     @GetMapping("/{raceId}/pre-race-readiness")
@@ -54,6 +58,7 @@ public class PreRaceReadinessController {
         // A race made before it kept its start type takes the format's start, as the round generator would
         StartType startType = race.getStartType() != null ? race.getStartType()
                 : raceFormatService.startType(eventClass, roundRepository.getOrThrow(race.getRoundId()).getType());
-        return readiness.withStart(startType.name(), raceFormatService.staggerIntervalSeconds(eventClass));
+        return readiness.withStart(startType.name(), raceFormatService.staggerIntervalSeconds(eventClass))
+                .withSeen(warmUpCheckService.seenEntryIds(raceId));
     }
 }

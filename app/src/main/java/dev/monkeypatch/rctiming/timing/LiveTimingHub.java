@@ -21,6 +21,7 @@ import java.util.Map;
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
  * - /topic/race/{raceId}/jump-start — cars that crossed the line before their turn in a stagger start
+ * - /topic/race/{raceId}/warmup — cars of a race on the grid the decoder has seen so far
  * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
  * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
@@ -62,6 +63,16 @@ public class LiveTimingHub {
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
                 Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+    }
+
+    /**
+     * Tells race control which entries of a race on the grid the decoder has seen on the warm-up lap (#482). Sends the
+     * whole list, not a delta, so a screen that misses one message is right again at the next. Sent at once, from the
+     * timing thread.
+     */
+    public void broadcastWarmUp(long raceId, List<Long> seenEntryIds) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/warmup",
+                Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
     }
 
     /**
