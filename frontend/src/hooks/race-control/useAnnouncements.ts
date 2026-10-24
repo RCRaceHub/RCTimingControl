@@ -3,7 +3,7 @@ import { useStomp } from '@/hooks/race-control/useStomp';
 import { fillWording, tuningOf, wordingOf, type AudioSettingsDto } from '@/lib/audioApi';
 import { startHornMs, type LapPace } from '@/lib/sounds';
 import { routeCue } from '@/lib/audioOutput';
-import { firstNameOf } from '@/lib/practiceSpeech';
+import { firstNameOf } from '@/lib/speechNames';
 import type { SoundRoute } from '@/lib/audioRouting';
 
 const DEFAULT_COUNTDOWN_INTERVALS = [600, 300, 120, 60, 30];

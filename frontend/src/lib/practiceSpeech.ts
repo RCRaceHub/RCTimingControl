@@ -1,9 +1,5 @@
 import type { PracticeTimingRowDto } from '@/lib/practiceApi';
-
-/** The first word of a name, for a call that names drivers briefly (#482). */
-export function firstNameOf(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? '';
-}
+import { firstNameOf } from '@/lib/speechNames';
 
 /** A lap time as it is said: "12.34" seconds, or "1 minute 12.34" from a minute up. Hundredths are enough to hear. */
 export function spokenLapTime(ms: number): string {
@@ -16,14 +12,16 @@ export function spokenLapTime(ms: number): string {
 /** What is said as a driver finishes a lap: their name (or first name) and the lap time. */
 export function lapCallText(row: Pick<PracticeTimingRowDto, 'racerName' | 'isUnknown'>, lastLapMs: number,
                             firstNameOnly: boolean): string {
-  const name = row.isUnknown ? 'Unknown' : firstNameOnly ? firstNameOf(row.racerName) : row.racerName.trim();
+  const spoken = firstNameOnly ? firstNameOf(row.racerName) : row.racerName.trim();
+  const name = row.isUnknown || !spoken ? 'Unknown' : spoken;
   return `${name}, ${spokenLapTime(lastLapMs)}`;
 }
 
 /**
  * The laps completed between two views of the live table, each as the text to say: a driver whose lap count went up
  * since {@code before} (their lap counts by transponder). A driver not in {@code before} counts from none, so a
- * driver's first lap in the session is called.
+ * driver's first lap in the session is called. A driver who gained several laps between two views is called once, for
+ * the last.
  */
 export function newLapCalls(before: Map<string, number>, rows: PracticeTimingRowDto[],
                             firstNameOnly: boolean): string[] {

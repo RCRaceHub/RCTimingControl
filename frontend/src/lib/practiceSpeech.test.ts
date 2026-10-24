@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { firstNameOf, lapCallText, newLapCalls, spokenLapTime } from './practiceSpeech';
+import { lapCallText, newLapCalls, spokenLapTime } from './practiceSpeech';
+import { firstNameOf } from './speechNames';
 import type { PracticeTimingRowDto } from './practiceApi';
 
 function row(over: Partial<PracticeTimingRowDto>): PracticeTimingRowDto {
@@ -26,6 +27,7 @@ describe('practice speech', () => {
     expect(lapCallText(row({}), 12340, false)).toBe('Alex Rowe, 12.34');
     expect(lapCallText(row({}), 12340, true)).toBe('Alex, 12.34');
     expect(lapCallText(row({ isUnknown: true, racerName: '1001' }), 12340, true)).toBe('Unknown, 12.34');
+    expect(lapCallText(row({ racerName: '  ' }), 12340, false)).toBe('Unknown, 12.34');
   });
 
   it('calls only the drivers whose lap count went up', () => {

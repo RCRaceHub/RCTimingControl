@@ -68,7 +68,7 @@ export function PracticeSessionPage() {
   const { rows, unknownTransponders, isLoading: timingLoading } = usePracticeTiming(
     session ? id : null,
   );
-  const speech = usePracticeSpeech(rows, session?.status === 'RUNNING', !timingLoading);
+  const speech = usePracticeSpeech(id, rows, session?.status === 'RUNNING', !!session && !timingLoading);
 
   const startMutation = useMutation({
     mutationFn: () => startSession(id),
@@ -136,7 +136,7 @@ export function PracticeSessionPage() {
           </p>
         )}
         <div className="ml-auto flex items-center gap-3">
-          <div className="hidden items-center gap-1.5 md:flex">
+          <div className="flex items-center gap-1.5">
             <Switch
               id="speak-laps"
               checked={speech.prefs.on}
@@ -145,7 +145,7 @@ export function PracticeSessionPage() {
             <Label htmlFor="speak-laps" className="text-xs">Say lap times</Label>
           </div>
           {speech.prefs.on && (
-            <div className="hidden items-center gap-1.5 md:flex">
+            <div className="flex items-center gap-1.5">
               <Switch
                 id="speak-first-names"
                 checked={speech.prefs.firstNames}

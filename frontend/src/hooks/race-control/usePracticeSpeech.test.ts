@@ -21,7 +21,7 @@ describe('usePracticeSpeech', () => {
   });
 
   it('says nothing until it is switched on', () => {
-    const { rerender } = renderHook(({ rows }) => usePracticeSpeech(rows, true, true), {
+    const { rerender } = renderHook(({ rows }) => usePracticeSpeech(1, rows, true, true), {
       initialProps: { rows: [row(1)] },
     });
 
@@ -32,7 +32,7 @@ describe('usePracticeSpeech', () => {
 
   it('says a lap as it is completed, but not the laps already run when the table loaded', () => {
     localStorage.setItem('rc-practice-speech', JSON.stringify({ on: true, firstNames: true }));
-    const { rerender } = renderHook(({ rows }) => usePracticeSpeech(rows, true, true), {
+    const { rerender } = renderHook(({ rows }) => usePracticeSpeech(1, rows, true, true), {
       initialProps: { rows: [row(5)] },
     });
     expect(routeCue).not.toHaveBeenCalled();
@@ -45,7 +45,7 @@ describe('usePracticeSpeech', () => {
 
   it('keeps quiet while the table is still loading', () => {
     localStorage.setItem('rc-practice-speech', JSON.stringify({ on: true, firstNames: false }));
-    const { rerender } = renderHook(({ rows, ready }) => usePracticeSpeech(rows, true, ready), {
+    const { rerender } = renderHook(({ rows, ready }) => usePracticeSpeech(1, rows, true, ready), {
       initialProps: { rows: [] as PracticeTimingRowDto[], ready: false },
     });
 
@@ -54,8 +54,31 @@ describe('usePracticeSpeech', () => {
     expect(routeCue).not.toHaveBeenCalled();
   });
 
+  it('does not read out a table that arrives after the page was ready with nothing', () => {
+    localStorage.setItem('rc-practice-speech', JSON.stringify({ on: true, firstNames: false }));
+    const { rerender } = renderHook(({ rows, ready }) => usePracticeSpeech(1, rows, true, ready), {
+      initialProps: { rows: [] as PracticeTimingRowDto[], ready: true },
+    });
+
+    rerender({ rows: [], ready: false });
+    rerender({ rows: [row(5)], ready: true });
+
+    expect(routeCue).not.toHaveBeenCalled();
+  });
+
+  it('does not compare a new session with the last one', () => {
+    localStorage.setItem('rc-practice-speech', JSON.stringify({ on: true, firstNames: false }));
+    const { rerender } = renderHook(({ id, rows }) => usePracticeSpeech(id, rows, true, true), {
+      initialProps: { id: 1, rows: [row(2)] },
+    });
+
+    rerender({ id: 2, rows: [row(7)] });
+
+    expect(routeCue).not.toHaveBeenCalled();
+  });
+
   it('remembers the choice in this browser', () => {
-    const { result } = renderHook(() => usePracticeSpeech([], true, true));
+    const { result } = renderHook(() => usePracticeSpeech(1, [], true, true));
 
     act(() => result.current.update({ on: true }));
 
