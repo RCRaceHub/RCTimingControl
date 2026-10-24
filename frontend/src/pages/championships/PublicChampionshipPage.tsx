@@ -13,26 +13,34 @@ import { Button } from '@/components/ui/button';
 /** The class id the backend gives the overall table's rows. */
 const OVERALL_CLASS_ID = 0;
 
-type ClassGroup = { racingClassId: number; name: string; rows: StandingsRowDto[] };
+type ClassGroup = { key: string; racingClassId: number; category: string | null; name: string; rows: StandingsRowDto[] };
 
 /** The rows split by class in the order the classes are named; a class the info doesn't name is headed "Class N". */
-function groupByClass(rows: StandingsRowDto[], names: Map<number, string>): ClassGroup[] {
-  const groups = new Map<number, ClassGroup>();
+function groupByClass(rows: StandingsRowDto[], names: Map<number, string>, splits: string[]): ClassGroup[] {
+  const groups = new Map<string, ClassGroup>();
   for (const row of rows) {
-    let group = groups.get(row.racingClassId);
+    const category = row.category ?? null;
+    const key = `${category ?? ''}/${row.racingClassId}`;
+    let group = groups.get(key);
     if (!group) {
+      const className = row.racingClassId === OVERALL_CLASS_ID ? 'Overall' : (names.get(row.racingClassId) ?? `Class ${row.racingClassId}`);
       group = {
+        key,
         racingClassId: row.racingClassId,
-        name: row.racingClassId === OVERALL_CLASS_ID ? 'Overall' : (names.get(row.racingClassId) ?? `Class ${row.racingClassId}`),
+        category,
+        name: category ? `${category}: ${className}` : className,
         rows: [],
       };
-      groups.set(row.racingClassId, group);
+      groups.set(key, group);
     }
     group.rows.push(row);
   }
-  // The overall table (class id 0, when the championship has one) comes first
-  return [...groups.values()].sort((a, b) =>
-    a.racingClassId === OVERALL_CLASS_ID ? -1 : b.racingClassId === OVERALL_CLASS_ID ? 1 : a.name.localeCompare(b.name));
+  // The class and overall tables first, the overall table (class id 0, when the championship has one) leading;
+  // then each category split in the championship's order, laid out the same way
+  const inOrder = (a: ClassGroup, b: ClassGroup) =>
+    a.racingClassId === OVERALL_CLASS_ID ? -1 : b.racingClassId === OVERALL_CLASS_ID ? 1 : a.name.localeCompare(b.name);
+  const rank = (g: ClassGroup) => (g.category === null ? -1 : splits.findIndex(s => s.toLowerCase() === g.category!.toLowerCase()));
+  return [...groups.values()].sort((a, b) => rank(a) - rank(b) || inOrder(a, b));
 }
 
 export default function PublicChampionshipPage() {
@@ -76,7 +84,7 @@ export default function PublicChampionshipPage() {
   }
 
   const names = new Map((info.data?.classes ?? []).map((c) => [c.racingClassId, c.name]));
-  const groups = groupByClass(rows, names);
+  const groups = groupByClass(rows, names, info.data?.splits ?? []);
 
   return (
     <div className="mx-auto max-w-4xl p-8 print:p-4">
@@ -97,7 +105,7 @@ export default function PublicChampionshipPage() {
 
       {groups.map((group) => (
         <section
-          key={group.racingClassId}
+          key={group.key}
           aria-label={group.name}
           className="mb-8 print:break-after-page print:last:break-after-auto"
         >

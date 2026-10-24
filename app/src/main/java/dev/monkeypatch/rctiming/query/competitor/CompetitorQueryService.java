@@ -36,7 +36,7 @@ public class CompetitorQueryService {
     /** Every competitor by display name, ties by id, with the speech name worked out for each. */
     public List<CompetitorSummaryDto> listAll() {
         return dsl.select(COMPETITORS.ID, COMPETITORS.DISPLAY_NAME, COMPETITORS.BRCA_NUMBER, COMPETITORS.HOME_CLUB,
-                        COMPETITORS.SPOKEN_NAME, COMPETITORS.NAME_VISIBILITY)
+                        COMPETITORS.SPOKEN_NAME, COMPETITORS.NAME_VISIBILITY, COMPETITORS.CATEGORIES)
                 .from(COMPETITORS)
                 .orderBy(COMPETITORS.DISPLAY_NAME.asc(), COMPETITORS.ID.asc())
                 .fetch(r -> new CompetitorSummaryDto(
@@ -46,7 +46,8 @@ public class CompetitorQueryService {
                         r.get(COMPETITORS.HOME_CLUB),
                         r.get(COMPETITORS.SPOKEN_NAME),
                         SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME)),
-                        r.get(COMPETITORS.NAME_VISIBILITY)));
+                        r.get(COMPETITORS.NAME_VISIBILITY),
+                        dev.monkeypatch.rctiming.domain.competitor.CategoryTags.parse(r.get(COMPETITORS.CATEGORIES))));
     }
 
     /** A competitor's recorded changes, newest first, with the name of the official who made each. */

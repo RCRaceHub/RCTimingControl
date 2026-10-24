@@ -25,6 +25,8 @@ classDiagram
         externalId : RaceHub driver id
         brcaNumber
         homeClub
+        categories : Junior, Vet, F-Grade tags
+        categories : Junior, Vet, F-Grade tags
     }
     class Entry {
         competitorId
@@ -176,6 +178,9 @@ erDiagram
     }
     racing_classes {
         text colour "#rrggbb picked by the club, null for none"
+    }
+    championships {
+        text split_categories "category tags the standings are also split by, comma separated"
     }
     board_views {
         text slug "address: /boards/view/slug, unique"

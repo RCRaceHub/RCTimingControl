@@ -114,6 +114,11 @@ public class Championships extends TableImpl<ChampionshipsRecord> {
      */
     public final TableField<ChampionshipsRecord, Boolean> SHOW_OVERALL_TABLE = createField(DSL.name("show_overall_table"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
 
+    /**
+     * The column <code>championships.split_categories</code>.
+     */
+    public final TableField<ChampionshipsRecord, String> SPLIT_CATEGORIES = createField(DSL.name("split_categories"), SQLDataType.VARCHAR, this, "");
+
     private Championships(Name alias, Table<ChampionshipsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

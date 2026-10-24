@@ -428,6 +428,8 @@ export interface ChampionshipDetailDto extends ChampionshipDto {
   classes: ChampionshipClassDto[];
   events: ChampionshipEventLinkDto[];
   pointsScale: PointsScaleEntryDto[];
+  /** The category tags the standings are also split by, in display order (#494). */
+  splitCategories?: string[];
 }
 
 export interface RoundResultDto {
@@ -449,6 +451,8 @@ export interface StandingsRowDto {
   /** Place in the class; drivers level on points and countback share one. */
   position: number;
   rounds: RoundResultDto[];
+  /** The category tag of a split table (Junior, Vet and so on); absent for the class and overall tables (#494). */
+  category?: string | null;
 }
 
 export interface CreateWalkInEntryRequest {
@@ -484,6 +488,8 @@ export interface CompetitorSummaryDto {
   speechName: string;
   /** How the name is shown on public screens and in the live feed (#265). */
   nameVisibility: NameVisibility;
+  /** The category tags the driver holds, such as Junior, Vet or F-Grade (#494). */
+  categories?: string[];
 }
 
 /** One recorded change to a competitor: when, who, and the spoken name before and after (null means none). */
@@ -830,6 +836,10 @@ export const adminApi = {
       api.post<ChampionshipEventLinkDto>(`/api/v1/admin/championships/${id}/events`, body).then(r => r.data),
     unlinkEvent: (id: number, eventId: number) =>
       api.delete(`/api/v1/admin/championships/${id}/events/${eventId}`),
+    /** Sets the category tags the standings are also split by; an empty list means no splits (#494). */
+    setSplitCategories: (id: number, categories: string[]) =>
+      api.put<ChampionshipDto>(`/api/v1/admin/championships/${id}/split-categories`, { categories })
+        .then(r => r.data),
     applyScoringSystem: (id: number, systemId: number) =>
       api.post<ChampionshipDto>(`/api/v1/admin/championships/${id}/scoring-system/${systemId}`).then(r => r.data),
     replacePointsScale: (id: number, entries: PointsScaleEntryDto[]) =>
@@ -947,6 +957,10 @@ export const adminApi = {
     /** Sets how the name is shown on public screens and in the live feed (#265). */
     setNameVisibility: (id: number, nameVisibility: NameVisibility) =>
       api.put<CompetitorSummaryDto>(`/api/v1/admin/competitors/${id}/name-visibility`, { nameVisibility })
+        .then(r => r.data),
+    /** Sets the category tags the driver holds; an empty list clears them (#494). */
+    setCategories: (id: number, categories: string[]) =>
+      api.put<CompetitorSummaryDto>(`/api/v1/admin/competitors/${id}/categories`, { categories })
         .then(r => r.data),
     possibleDuplicates: () =>
       api.get<CompetitorDuplicateGroupDto[]>('/api/v1/admin/competitors/possible-duplicates').then(r => r.data),

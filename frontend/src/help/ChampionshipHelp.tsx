@@ -29,6 +29,11 @@ export function ChampionshipHelp() {
           until a linked event has a finished final (or, for a class with no finals, all its qualifying heats). Points
           are not stored: if you change the Points Scale, the standings change with it.
         </p>
+        <p>
+          To give Junior, Vet or F-Grade drivers their own tables as well, set each driver's categories on the
+          Competitors page, then list the categories under Category splits on the Config tab. Each split repeats
+          the class tables for those drivers, ranked among themselves.
+        </p>
       </div>
 
       <GuideLinks admin meeting doc="scoring" />

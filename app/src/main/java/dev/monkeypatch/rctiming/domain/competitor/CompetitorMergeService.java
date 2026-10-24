@@ -157,6 +157,14 @@ public class CompetitorMergeService {
         if (isBlank(keep.getBrcaNumber())) {
             keep.setBrcaNumber(duplicate.getBrcaNumber());
         }
+        List<String> mergedTags = new ArrayList<>(keep.categoryTags());
+        for (String tag : duplicate.categoryTags()) {
+            if (mergedTags.stream().noneMatch(t -> CategoryTags.same(t, tag))) {
+                mergedTags.add(tag);
+            }
+        }
+        keep.setCategories(CategoryTags.format(mergedTags.size() > CategoryTags.MAX_TAGS
+                ? mergedTags.subList(0, CategoryTags.MAX_TAGS) : mergedTags));
         if (isBlank(keep.getHomeClub())) {
             keep.setHomeClub(duplicate.getHomeClub());
         }
@@ -283,6 +291,7 @@ public class CompetitorMergeService {
         m.put("displayName", c.getDisplayName());
         m.put("brcaNumber", c.getBrcaNumber());
         m.put("homeClub", c.getHomeClub());
+        m.put("categories", c.getCategories());
         m.put("spokenName", c.getSpokenName());
         m.put("externalSource", c.getExternalSource());
         m.put("externalId", c.getExternalId());

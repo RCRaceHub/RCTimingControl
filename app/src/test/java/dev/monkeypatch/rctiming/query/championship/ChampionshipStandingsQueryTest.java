@@ -427,6 +427,36 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aCategorySplitRepeatsTheTablesForTheDriversWhoHoldTheTagAndRanksThemAgain() throws Exception {
+        // Ann 1st (10), Bea 2nd (8), Cat 3rd (6). Bea and Cat are Juniors, so in the Junior split Bea is first and
+        // Cat second on the points they earned; the main table is untouched and a tag nobody holds gives no rows.
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8, 3, 6));
+        finishRound(champ, 1, makeUser("Ann", "Aa"), 1);
+        finishRound(champ, 2, makeUser("Bea", "Bb"), 2);
+        finishRound(champ, 3, makeUser("Cat", "Cc"), 3);
+        List<StandingsRowDto> main = query.computeStandings(champ.getId());
+        assertThat(main).hasSize(3).allSatisfy(r -> assertThat(r.category()).isNull());
+
+        for (StandingsRowDto row : main) {
+            if (!row.displayName().startsWith("Ann")) {
+                Competitor c = competitorRepository.getOrThrow(row.driverId());
+                c.setCategories("Junior");
+                competitorRepository.save(c);
+            }
+        }
+        champ.setSplitCategories("junior,Vet");
+        championshipRepository.save(champ);
+
+        List<StandingsRowDto> rows = query.computeStandings(champ.getId());
+        assertThat(rows.stream().filter(r -> r.category() == null)).hasSize(3);
+        List<StandingsRowDto> junior = rows.stream().filter(r -> "junior".equals(r.category())).toList();
+        assertThat(junior).extracting(StandingsRowDto::totalPoints).containsExactly(8, 6);
+        assertThat(junior).extracting(StandingsRowDto::position).containsExactly(1, 2);
+        assertThat(rows.stream().filter(r -> "Vet".equals(r.category()))).isEmpty();
+    }
+
+    @Test
     void anOverallTableRanksEveryClassTogetherOnChampionshipPoints() throws Exception {
         Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
         champ.setShowOverallTable(true);

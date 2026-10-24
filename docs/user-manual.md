@@ -94,7 +94,7 @@ Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-n
 
 ### 10. Results, corrections and championships
 
-When all races are done, complete the event. Results are on the public pages, printable, and downloadable from the event's page. If a result needs correcting after the finish, the stored result is worked out again and championship points follow. Sections 6 and 8 of the Race Meeting Guide cover finishing, corrections and publishing results. Championship standings update from the saved results and are on the championship's Standings tab and its public page.
+When all races are done, complete the event. Results are on the public pages, printable, and downloadable from the event's page. If a result needs correcting after the finish, the stored result is worked out again and championship points follow. Sections 6 and 8 of the Race Meeting Guide cover finishing, corrections and publishing results. Championship standings update from the saved results and are on the championship's Standings tab and its public page. To give Junior, Vet or F-Grade drivers their own tables as well, set each driver's categories on the Competitors page, then list the categories on the championship's Config tab under Category splits; each split repeats the class tables for those drivers, ranked among themselves.
 
 ### 11. Backups
 

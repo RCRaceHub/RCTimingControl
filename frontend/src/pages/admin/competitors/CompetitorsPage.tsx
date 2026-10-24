@@ -4,8 +4,9 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CategoryTagsEditor from '@/components/CategoryTagsEditor';
 import SpokenNameEditor from '@/components/SpokenNameEditor';
-import { useAdminCompetitorsList, useExportCompetitorData, usePossibleDuplicates, useSetNameVisibility } from '@/hooks/admin/useAdminCompetitors';
+import { useAdminCompetitorsList, useExportCompetitorData, usePossibleDuplicates, useSetCompetitorCategories, useSetNameVisibility } from '@/hooks/admin/useAdminCompetitors';
 import { useHelpContent } from '@/context/HelpContext';
 import { CompetitorsHelp } from '@/help/CompetitorsHelp';
 import type { CompetitorSummaryDto, NameVisibility } from '@/lib/adminApi';
@@ -28,6 +29,7 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
 }) {
   const [editing, setEditing] = useState(false);
   const setVisibility = useSetNameVisibility();
+  const setCategories = useSetCompetitorCategories();
   const exportData = useExportCompetitorData();
 
   const meta = formatCompetitorMeta(competitor);
@@ -59,6 +61,17 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
             <option value="HIDE">Hidden</option>
           </select>
         </div>
+      )}
+      {canSetVisibility && (
+        <CategoryTagsEditor
+          id={`categories-${competitor.id}`}
+          label="Categories"
+          tags={competitor.categories ?? []}
+          pending={setCategories.isPending}
+          onSave={categories => setCategories.mutate({ id: competitor.id, categories }, {
+            onError: () => toast.error('Could not save the categories. Check there are at most 8, each under 30 letters, with no commas.'),
+          })}
+        />
       )}
       {editing ? (
         <SpokenNameEditor

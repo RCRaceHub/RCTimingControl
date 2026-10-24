@@ -116,6 +116,30 @@ public class ChampionshipService {
         return saved;
     }
 
+    /**
+     * Sets the category tags (Junior, Vet, F-Grade and so on) the championship also produces standings for, in the
+     * order they are shown, and records {@code CHAMPIONSHIP_SPLITS_CHANGED}. The per-class tables and the overall
+     * table are unaffected: each split is an extra table. Saving the tags it already has records nothing.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such championship (HTTP 404)
+     * @throws IllegalArgumentException if the tags break the {@code CategoryTags} limits (HTTP 400)
+     */
+    public Championship setSplitCategories(Actor actor, Long id, List<String> typed) {
+        List<String> tags = dev.monkeypatch.rctiming.domain.competitor.CategoryTags.normalise(typed);
+        Championship c = getChampionshipOrThrow(id);
+        String before = c.getSplitCategories();
+        String after = dev.monkeypatch.rctiming.domain.competitor.CategoryTags.format(tags);
+        if (java.util.Objects.equals(before, after)) {
+            return c;
+        }
+        c.setSplitCategories(after);
+        Championship saved = championshipRepository.save(c);
+        audit.entry(actor, "CHAMPIONSHIP_SPLITS_CHANGED").entity("championship", id)
+                .summary("Changed the category splits of championship " + saved.getName())
+                .before(before).after(after).record();
+        return saved;
+    }
+
     /** Every championship, in a read-only transaction. */
     @Transactional(readOnly = true)
     public List<Championship> listAll() {

@@ -11,5 +11,7 @@ public record CompetitorSummaryDto(
         /** What the announcer says: the spoken name when set, else the display name tidied for speech (#120). */
         String speechName,
         /** How the name is shown on public screens: SHOW, INITIALS or HIDE (#265). */
-        String nameVisibility) {
+        String nameVisibility,
+        /** The category tags the driver holds, such as Junior, Vet or F-Grade (#494). */
+        java.util.List<String> categories) {
 }

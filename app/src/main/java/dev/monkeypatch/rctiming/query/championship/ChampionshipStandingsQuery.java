@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.query.championship;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.competitor.CategoryTags;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
@@ -102,11 +103,23 @@ public class ChampionshipStandingsQuery {
      * Rows come grouped by racing class in class id order, and within a class by total points highest first, then
      * by display name; the position is the row's place in its class, so equal points are not given a shared rank
      * here. A driver appears once per class they scored or were on a grid in. Runs in one read snapshot, so the
-     * rounds, rules and results agree with each other.
+     * rounds, rules and results agree with each other. After those tables come the championship's category splits,
+     * if it has any (see {@link #withSplits}).
      *
      * @throws EntityNotFoundException if there is no such championship
      */
     public List<StandingsRowDto> computeStandings(Long championshipId) {
+        return withSplits(championshipId, computeMainStandings(championshipId));
+    }
+
+    /**
+     * The class and overall tables only, without the category splits (#494). For callers that read a driver's place
+     * in a class or the overall table, such as seeding the next round and the results export, where a split's rows
+     * would repeat a driver under the same class.
+     *
+     * @throws EntityNotFoundException if there is no such championship
+     */
+    public List<StandingsRowDto> computeMainStandings(Long championshipId) {
         Rules rules = rules(championshipId);
         List<ChampionshipRound> rounds = rounds(championshipId);
         Map<Long, EventResults> resultsByEvent = results(rounds);
@@ -116,6 +129,36 @@ public class ChampionshipStandingsQuery {
             score(round, resultsByEvent.getOrDefault(round.eventId(), EventResults.NONE), rules, tally);
         }
         return rank(rows(tally, rules));
+    }
+
+    /**
+     * Adds the category splits (Junior, Vet, F-Grade and so on) the championship asks for after its class and
+     * overall tables (#494). A split repeats each table (every class, and the overall one) for the drivers who hold
+     * the tag, with the points they earned, ranked again among themselves, so a Junior third overall but first Junior
+     * is first in the split. Splits come in the championship's order, and a tag nobody holds gives no rows.
+     */
+    private List<StandingsRowDto> withSplits(Long championshipId, List<StandingsRowDto> main) {
+        List<String> tags = CategoryTags.parse(dsl.select(CHAMPIONSHIPS.SPLIT_CATEGORIES).from(CHAMPIONSHIPS)
+                .where(CHAMPIONSHIPS.ID.eq(championshipId)).fetchOne(CHAMPIONSHIPS.SPLIT_CATEGORIES));
+        if (tags.isEmpty() || main.isEmpty()) {
+            return main;
+        }
+        Set<Long> driverIds = main.stream().map(StandingsRowDto::driverId).collect(Collectors.toSet());
+        Map<Long, List<String>> held = new HashMap<>();
+        dsl.select(COMPETITORS.ID, COMPETITORS.CATEGORIES).from(COMPETITORS)
+                .where(COMPETITORS.ID.in(driverIds))
+                .forEach(r -> held.put(r.get(COMPETITORS.ID), CategoryTags.parse(r.get(COMPETITORS.CATEGORIES))));
+
+        List<StandingsRowDto> all = new ArrayList<>(main);
+        for (String tag : tags) {
+            List<StandingsRowDto> inSplit = main.stream()
+                    .filter(r -> held.getOrDefault(r.driverId(), List.of()).stream().anyMatch(t -> CategoryTags.same(t, tag)))
+                    .map(r -> new StandingsRowDto(r.driverId(), r.displayName(), r.racingClassId(), r.totalPoints(),
+                            0, r.rounds(), tag))
+                    .toList();
+            all.addAll(rank(new ArrayList<>(inSplit)));
+        }
+        return all;
     }
 
     /**
@@ -885,7 +928,7 @@ public class ChampionshipStandingsQuery {
     }
 
     /**
-     * Each class by points, then by countback (see {@link #countbackCompare}), then display name. Drivers level on
+     * Each class (and each category split of it) by points, then by countback (see {@link #countbackCompare}), then display name. Drivers level on
      * points and countback share a position and the next one skips ahead (1, 1, 3). Classes come out in racing class
      * order (a class with no racing class last): the order rows are first seen in follows hash-map order, which
      * changes with the ids.
@@ -913,7 +956,7 @@ public class ChampionshipStandingsQuery {
                     position = i + 1;
                 }
                 ranked.add(new StandingsRowDto(row.driverId(), row.displayName(), row.racingClassId(),
-                        row.totalPoints(), position, row.rounds()));
+                        row.totalPoints(), position, row.rounds(), row.category()));
                 previous = row;
             }
         }

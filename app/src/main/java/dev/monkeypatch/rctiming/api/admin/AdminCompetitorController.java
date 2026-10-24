@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorAnonymiseService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorCategoryService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorNameVisibilityService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.competitor.NameVisibility;
@@ -54,6 +55,7 @@ public class AdminCompetitorController {
     private final CompetitorService competitorService;
     private final CompetitorMergeService mergeService;
     private final CompetitorNameVisibilityService nameVisibilityService;
+    private final CompetitorCategoryService categoryService;
     private final CompetitorAnonymiseService anonymiseService;
     private final CompetitorDataExportService exportService;
     private final ClubProfileService clubProfileService;
@@ -63,6 +65,7 @@ public class AdminCompetitorController {
                                      CompetitorService competitorService,
                                      CompetitorMergeService mergeService,
                                      CompetitorNameVisibilityService nameVisibilityService,
+                                     CompetitorCategoryService categoryService,
                                      CompetitorAnonymiseService anonymiseService,
                                      CompetitorDataExportService exportService,
                                      ClubProfileService clubProfileService,
@@ -71,6 +74,7 @@ public class AdminCompetitorController {
         this.competitorService = competitorService;
         this.mergeService = mergeService;
         this.nameVisibilityService = nameVisibilityService;
+        this.categoryService = categoryService;
         this.anonymiseService = anonymiseService;
         this.exportService = exportService;
         this.clubProfileService = clubProfileService;
@@ -169,7 +173,7 @@ public class AdminCompetitorController {
                                               @RequestBody SpokenNameRequest body) {
         Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id(auth));
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
-                c.getSpokenName(), c.speechName(), c.getNameVisibility().name());
+                c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
 
     /** The body of {@code PUT /{id}/name-visibility}: how the name is shown on public screens. */
@@ -187,7 +191,25 @@ public class AdminCompetitorController {
                                                   @Valid @RequestBody NameVisibilityRequest body) {
         Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id(auth));
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
-                c.getSpokenName(), c.speechName(), c.getNameVisibility().name());
+                c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
+    }
+
+    /** The body of {@code PUT /{id}/categories}: the tags the driver holds; an empty list clears them. */
+    public record CategoriesRequest(@NotNull List<@Size(max = 30) String> categories) {}
+
+    /**
+     * Sets the category tags a competitor holds, such as Junior, Vet or F-Grade, which a championship can split
+     * its standings by (#494). Race directors and admins. {@code PUT /{id}/categories}. 400 for more than 8 tags,
+     * a tag over 30 characters or one with a comma. Answers with the competitor as saved. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/{id}/categories")
+    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    public CompetitorSummaryDto setCategories(Authentication auth, @PathVariable Long id,
+                                              @Valid @RequestBody CategoriesRequest body) {
+        Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id(auth));
+        return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
+                c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
 
     /**

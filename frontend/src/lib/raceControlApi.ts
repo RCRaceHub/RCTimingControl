@@ -305,6 +305,8 @@ export type ChampionshipInfoDto = {
   id: number;
   name: string;
   classes: { racingClassId: number; name: string }[];
+  /** The category tags the standings are also split by, in display order (#494) */
+  splits?: string[];
 };
 
 export async function getPublicChampionshipInfo(championshipId: number): Promise<ChampionshipInfoDto> {

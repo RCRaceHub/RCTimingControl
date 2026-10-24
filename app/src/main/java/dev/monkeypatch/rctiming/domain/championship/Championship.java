@@ -35,6 +35,9 @@ public class Championship implements CreatedAt, UpdatedAt {
     /** Whether the standings also have an overall table ranking every class together. */
     private boolean showOverallTable = false;
 
+    /** The category tags the standings are also split by, comma separated (#494); see {@link #splitTags()}. */
+    private String splitCategories;
+
     private Instant createdAt;
 
     private Instant updatedAt;
@@ -64,6 +67,14 @@ public class Championship implements CreatedAt, UpdatedAt {
 
     public boolean isShowOverallTable() { return showOverallTable; }
     public void setShowOverallTable(boolean v) { this.showOverallTable = v; }
+
+    public String getSplitCategories() { return splitCategories; }
+    public void setSplitCategories(String v) { this.splitCategories = v; }
+
+    /** The category tags the standings are also split by, in the order they are shown; empty for none. */
+    public java.util.List<String> splitTags() {
+        return dev.monkeypatch.rctiming.domain.competitor.CategoryTags.parse(splitCategories);
+    }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant t) { this.createdAt = t; }

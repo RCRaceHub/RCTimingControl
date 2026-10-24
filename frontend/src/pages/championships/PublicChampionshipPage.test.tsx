@@ -69,4 +69,24 @@ describe('PublicChampionshipPage', () => {
 
     expect(await screen.findByRole('region', { name: 'Class 9' })).toBeInTheDocument();
   });
+  it('shows each category split after the class tables, ranked among its own drivers', async () => {
+    vi.mocked(getPublicChampionshipInfo).mockResolvedValue({
+      id: 5, name: 'Club Series', classes: [{ racingClassId: 1, name: 'Buggy' }], splits: ['Junior'],
+    });
+    vi.mocked(getPublicChampionshipStandings).mockResolvedValue([
+      { driverId: 1, displayName: 'Ann Adult', racingClassId: 1, totalPoints: 20, position: 1, rounds: [] },
+      { driverId: 2, displayName: 'Jo Junior', racingClassId: 1, totalPoints: 15, position: 2, rounds: [] },
+      { driverId: 2, displayName: 'Jo Junior', racingClassId: 1, totalPoints: 15, position: 1, rounds: [], category: 'Junior' },
+    ]);
+
+    renderPage();
+
+    const main = await screen.findByRole('region', { name: 'Buggy' });
+    expect(within(main).getByText('Ann Adult')).toBeInTheDocument();
+    const split = screen.getByRole('region', { name: 'Junior: Buggy' });
+    expect(within(split).getByText('Jo Junior')).toBeInTheDocument();
+    expect(within(split).queryByText('Ann Adult')).not.toBeInTheDocument();
+    const regions = screen.getAllByRole('region');
+    expect(regions.indexOf(main)).toBeLessThan(regions.indexOf(split));
+  });
 });

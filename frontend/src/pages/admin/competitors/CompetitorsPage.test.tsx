@@ -9,7 +9,7 @@ vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     competitors: {
       list: vi.fn(), setSpokenName: vi.fn(), previewSpeech: vi.fn(),
-      possibleDuplicates: vi.fn(), mergePreview: vi.fn(), merge: vi.fn(), changes: vi.fn(), setNameVisibility: vi.fn(),
+      possibleDuplicates: vi.fn(), mergePreview: vi.fn(), merge: vi.fn(), changes: vi.fn(), setNameVisibility: vi.fn(), setCategories: vi.fn(),
       exportPersonalData: vi.fn(), anonymise: vi.fn(),
     },
   },
@@ -228,5 +228,28 @@ describe('CompetitorsPage', () => {
 
     await screen.findByText('Ada Lovelace');
     expect(screen.queryByLabelText('How Ada Lovelace is shown publicly')).not.toBeInTheDocument();
+  });
+  it('lets a race director set the categories a driver holds', async () => {
+    mockUser.mockReturnValue({ roles: ['RACE_DIRECTOR'] });
+    const ada = { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const };
+    api.competitors.list.mockResolvedValue([ada]);
+    api.competitors.setCategories.mockResolvedValue({ ...ada, categories: ['Junior', 'F-Grade'] });
+    renderPage();
+
+    fireEvent.change(await screen.findByLabelText('Categories'), { target: { value: 'Junior, F-Grade' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save categories' }));
+
+    await waitFor(() => expect(api.competitors.setCategories).toHaveBeenCalledWith(1, ['Junior', 'F-Grade']));
+  });
+
+  it('does not offer categories to a referee', async () => {
+    mockUser.mockReturnValue({ roles: ['REFEREE'] });
+    api.competitors.list.mockResolvedValue([
+      { id: 1, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
+    ]);
+    renderPage();
+
+    await screen.findByText('Ada Lovelace');
+    expect(screen.queryByLabelText('Categories')).not.toBeInTheDocument();
   });
 });
