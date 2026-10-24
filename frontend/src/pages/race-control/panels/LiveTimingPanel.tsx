@@ -16,6 +16,9 @@ import { EliminationButtons } from './EliminationButtons';
 import { cn } from '@/lib/utils';
 import { fmtMs } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
+import { LapProgressBar } from '@/components/LapProgressBar';
+import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
+import { DEFAULT_CLOSE_MS, isClose } from '@/lib/lapProgress';
 
 type Props = {
   raceId: number;
@@ -31,6 +34,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);
+  const barClock = useLapBarClock(sorted, status);
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
@@ -74,6 +78,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
           <TableBody>
             {sorted.map((row) => {
               const flash = lapFlash.get(row.entryId);
+              const close = isClose(row, DEFAULT_CLOSE_MS);
               return (
               <TableRow
                 key={row.entryId}
@@ -84,6 +89,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   flash === 'improving'      && 'bg-green-500/30',
                   flash === 'slow'           && 'bg-red-500/30',
                   !flash && highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
+                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-amber-500/15',
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
@@ -92,6 +98,11 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell>
                   <span>{row.driverName}</span>
                   {row.finished && <FinishedFlag />}
+                  {close && (
+                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
+                      CLOSE
+                    </Badge>
+                  )}
                   {elim.deadOrder.has(row.entryId) && (
                     <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
                       DEAD #{elim.deadOrder.get(row.entryId)}
@@ -112,6 +123,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                       LAPPED
                     </Badge>
                   )}
+                  {status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
                 </TableCell>
                 <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>

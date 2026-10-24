@@ -3,9 +3,10 @@
 // Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
 import { PositionChart } from '@/components/print/PositionChart';
+import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
-import { parseEventParam } from './boardFormat';
+import { parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
 
@@ -14,6 +15,9 @@ export default function LiveRaceBoard() {
   const eventId = parseEventParam(searchParams.get('event'));
   const { nowNext, isPending, isError, currentRace, raceId, rows } = useBoardRace(eventId);
   const series = useLivePositionSeries(raceId, rows);
+
+  const { showBars, closeMs } = parseLiveRaceOptions(searchParams);
+  const barClock = useLapBarClock(rows, currentRace?.status);
 
   if (isPending) {
     return (
@@ -48,7 +52,15 @@ export default function LiveRaceBoard() {
           {currentRace.status === 'STOPPED' ? 'Stopped' : 'Racing'}
         </span>
       </div>
-      {rows.length > 0 ? <BoardLiveTable rows={rows} /> : <BoardMessage>Waiting for the first lap…</BoardMessage>}
+      {rows.length > 0 ? (
+        <BoardLiveTable
+          rows={rows}
+          barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
+          closeMs={closeMs}
+        />
+      ) : (
+        <BoardMessage>Waiting for the first lap…</BoardMessage>
+      )}
       {series.length > 0 && (
         <div className="mx-auto w-full max-w-6xl">
           <PositionChart series={series} />

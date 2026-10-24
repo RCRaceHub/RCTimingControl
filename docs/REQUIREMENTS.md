@@ -208,6 +208,7 @@
 - [x] **COMPETITOR-05**: An admin or race director can set a competitor's public name to full, initials only or hidden (the car number stands in). It applies to the results page, boards and overlay, championship standings, live timing and the live feed, is audited, and is not changed by imports. Officials' screens and results sent to RaceHub keep the real name (#265)
 - [x] **BOARDS-01**: Spectator boards show the race on now and next, live timing and results on screens at the venue without signing in (#20)
 - [x] **BOARDS-02**: A public, auto-refreshing qualifying standings page, linked by QR codes from the boards and printouts so people can follow their score on their phones
+- [x] **BOARDS-03**: The live race board shows the gap to the car ahead as well as to the leader, a lap bar per driver for how far the car is round its lap against its own average (green under the average, yellow at it, red a second over), and an amber row for a car within a set time of the car ahead on the scored order (default 1 s, `close=SECONDS`, `bars=hide`). The bars correct for a device clock that differs from the timing laptop's and for a stoppage. Race control's live timing shows the bar and a CLOSE badge at 1 s. Position arrows and predicted times are not built yet (#479)
 - [x] **LOCAL-01**: A full meeting runs with no internet connection at the venue (#21)
 - [x] **DB-01**: The app keeps its data in one SQLite file in a per-machine data folder (#26)
 - [x] **DB-02**: The database vendor is chosen in one place and vendor-specific code is confined to one package, enforced by a test, so the database can be swapped later (#26)
@@ -407,6 +408,7 @@
 | CHECKIN-02 | #19, #92 | Complete |
 | BOARDS-01 | #20 | Complete |
 | BOARDS-02 | #20 | Complete |
+| BOARDS-03 | Wishlist (#483) | Complete (#479) |
 | LOCAL-01 | #21 | Complete |
 | DB-01 | #26 | Complete |
 | DB-02 | #26 | Complete |
