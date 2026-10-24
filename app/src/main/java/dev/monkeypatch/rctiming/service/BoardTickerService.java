@@ -43,7 +43,8 @@ public class BoardTickerService {
      *
      * @param eventId an event that exists, already resolved by the caller
      * @return the parts of the ticker that have something to show; the next race is null when none is left
-     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the next race is deleted while this runs
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the next race or the race on track is deleted
+     *                                                                  while this runs
      */
     public TickerDto forEvent(long eventId) {
         Optional<BoardRaceDto> next = boardQuery.nextRace(eventId);
@@ -65,8 +66,22 @@ public class BoardTickerService {
                     .toList();
             marshalsPending = readiness.marshalsPending();
         }
-        return new TickerDto(next.map(BoardRaceDto::label).orElse(null), drivers, marshals, marshalsPending,
-                topQualifiers(eventId));
+        List<String> currentMarshals = boardQuery.currentRace(eventId)
+                .map(race -> marshalNames(race.raceId())).orElse(List.of());
+        return new TickerDto(next.map(BoardRaceDto::label).orElse(null), drivers, marshals, currentMarshals,
+                marshalsPending, topQualifiers(eventId));
+    }
+
+    /** The drivers on marshal duty for a race, named as the public may see them. */
+    private List<String> marshalNames(long raceId) {
+        List<MarshalDutyRowDto> duty = preRaceReadinessQuery.load(raceId).marshalDuty();
+        List<Long> entryIds = duty.stream().map(MarshalDutyRowDto::entryId).toList();
+        Map<Long, Long> competitors = boardQuery.competitorIds(entryIds);
+        Map<Long, String> carNumbers = boardQuery.carNumbers(entryIds);
+        PublicNames.Snapshot names = publicNames.snapshot();
+        return duty.stream()
+                .map(row -> names.of(competitors.get(row.entryId()), row.driverName(), carNumbers.get(row.entryId())))
+                .toList();
     }
 
     private static List<Long> entryIds(PreRaceReadinessDto readiness) {

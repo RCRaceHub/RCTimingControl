@@ -32,6 +32,7 @@ const AudioOutputPage = lazy(() => import('@/pages/audio/AudioOutputPage'));
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
 const TracksPage = lazy(() => import('@/pages/admin/tracks/TracksPage'));
 const FormatsPage = lazy(() => import('@/pages/admin/formats/FormatsPage'));
+const BoardViewsPage = lazy(() => import('@/pages/admin/board-views/BoardViewsPage'));
 const ScoringSystemsPage = lazy(() => import('@/pages/admin/scoring/ScoringSystemsPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
 const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSettingsPage'));
@@ -68,6 +69,7 @@ const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
 const LiveRaceBoard = lazy(() => import('@/pages/boards/LiveRaceBoard'));
 const LiveTopBoard = lazy(() => import('@/pages/boards/LiveTopBoard'));
+const BoardViewPage = lazy(() => import('@/pages/boards/BoardViewPage'));
 
 function RootLayout() {
   return (
@@ -121,6 +123,7 @@ const router = createBrowserRouter([
           { path: 'results-exports', element: <ProtectedRoute roles={['ADMIN']}><ResultsExportsPage /></ProtectedRoute> },
           { path: 'officials', element: <ProtectedRoute roles={['ADMIN']}><OfficialsPage /></ProtectedRoute> },
           { path: 'audio', element: <AdminAudioSettingsPage /> },
+          { path: 'board-views', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><BoardViewsPage /></ProtectedRoute> },
           { path: 'competitors', element: <CompetitorsPage /> },
         ],
       },
@@ -207,6 +210,7 @@ const router = createBrowserRouter([
       { path: '/boards/results', element: <ResultsBoard /> },
       { path: '/boards/live-race', element: <LiveRaceBoard /> },
       { path: '/boards/top', element: <LiveTopBoard /> },
+      { path: '/boards/view/:slug', element: <BoardViewPage /> },
       { path: '/boards/chart', element: <ChartRedirect /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
