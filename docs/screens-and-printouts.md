@@ -10,6 +10,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 |--------|---------|---------------|----------|
 | Now and next | `/boards/now-next` | The line-up of the race on track in running order, with its status (Racing or Stopped), then the next race with the drivers on its grid and the marshals. For a final that takes bump-ups, the marshals read "To be confirmed when the final below finishes" until it has, then list the drivers who stayed down (those who moved up race instead). Between races it shows the next race, its drivers and marshals, and the last finished race's results. When auto run is on it also shows a large countdown to the next start, or "Waiting for the finals to be released" while it is holding. A QR code in the corner opens the qualifying standings on a phone | The main pit TV |
 | Live race | `/boards/live-race` | The race on track with its live timing table (laps, total time, last and best lap, the gap to the car ahead and to the leader, a bar for how far each car is round its lap, and a tint on cars running close) and the position chart. See [The Live race screen](#the-live-race-screen) | A second TV, or the one TV when the timing matters more than the line-up |
+| Live top 10 | `/boards/top` | The qualifying table of the class on track as it would stand if the running heat ended now. See [The Live top screen](#the-live-top-screen) | A TV by the drivers' stand during qualifying |
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
 | Finals results | `/finals` | Every class's finals, A first then B, C and so on, each best first with car, laps, time and best lap. An A final run in legs shows the combined result (points in each leg, dropped legs struck through). A final that has not run says so. It refreshes by itself as finals finish, and has a Print button and a QR code | Phones (via the QR code), a tablet in the pits, or a TV |
@@ -20,7 +21,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 
 Officials don't have to type these addresses. A **Boards** menu sits in the Admin sidebar (above Docs) and in the top bar of race control. It lists every board and results page, and each opens in a new tab. In race control, and on an event's page in Admin, the links are already pinned to that event.
 
-Add `?event=ID` to `/boards/now-next`, `/boards/live-race`, `/boards/results`, `/boards/overlay`, `/qualifying` or `/finals` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
+Add `?event=ID` to `/boards/now-next`, `/boards/live-race`, `/boards/top`, `/boards/results`, `/boards/overlay`, `/qualifying` or `/finals` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
 
 ### Setting up a TV
 
@@ -43,6 +44,14 @@ Each driver has a thin **lap bar** under the name: it fills as the car goes roun
 A car on the same lap within one second of the car ahead gets an amber row. This follows the scored order (the gap between the two cars' last crossings, penalties included), so it changes only at the line. The **Ahead** column is that gap, and **Gap** is the gap to the leader.
 
 Options on the end of the address: `bars=hide` leaves the bars out, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, always at one second.
+
+## The Live top screen
+
+During qualifying, `/boards/top` shows the class on track as a low-points table: places, points, best lap and who has moved. While a heat runs it counts that heat from its live positions, as if it ended now, so the table changes with every lap. The driver rows in the running heat are amber and marked "on track". Drivers whose heat in the same round has not run yet are marked "heat to come" and sit behind everyone with a result in the round, since they have nothing to score yet.
+
+The **Moved** column compares each driver with the table before the running heat counted: a green arrow for places gained, a red arrow for places lost, "New" for a driver with no earlier result. When the heat ends the settled table stays up with the same arrows and tints (green for up, red for down, blue for new) until the next race starts. It shows classes ranked by low points (round by round), and says "No qualifying table yet." for any other class and when nothing has run. Names follow each competitor's public name setting.
+
+Options on the end of the address: `top=20` shows more places (ten by default, at most thirty) and `event=ID` follows one event.
 
 ## The streaming overlay for OBS
 

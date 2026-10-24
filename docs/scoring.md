@@ -42,6 +42,9 @@ class has finished, the table shows the laps order so it is never blank.
 
 1. A round is scored only once **all its heats are finished** (and not all abandoned). A round with a heat still to
    run is left out until it is done.
+   The live top board (`/boards/top`) is the one place a part-run round is ranked: it scores the round from its
+   finished heats plus the heat on track (counted from its live laps and total time), and lists drivers of unrun
+   heats as waiting, behind everyone with a result. Nothing from that projection is stored or used for seeding.
 2. In each scored round, everyone on the grid of any of the class's heats in that round is ranked together: most
    laps, then lowest total time. Their **place is their points** (1 for the best, then 2, 3 and so on). Drivers
    with exactly the same laps and total time share the place.

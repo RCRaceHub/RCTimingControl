@@ -67,6 +67,7 @@ const AboutPage = lazy(() => import('@/pages/AboutPage'));
 const NowNextBoard = lazy(() => import('@/pages/boards/NowNextBoard'));
 const ResultsBoard = lazy(() => import('@/pages/boards/ResultsBoard'));
 const LiveRaceBoard = lazy(() => import('@/pages/boards/LiveRaceBoard'));
+const LiveTopBoard = lazy(() => import('@/pages/boards/LiveTopBoard'));
 
 function RootLayout() {
   return (
@@ -205,6 +206,7 @@ const router = createBrowserRouter([
       { path: '/boards/now-next', element: <NowNextBoard /> },
       { path: '/boards/results', element: <ResultsBoard /> },
       { path: '/boards/live-race', element: <LiveRaceBoard /> },
+      { path: '/boards/top', element: <LiveTopBoard /> },
       { path: '/boards/chart', element: <ChartRedirect /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },

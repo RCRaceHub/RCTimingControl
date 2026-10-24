@@ -24,6 +24,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
+import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -118,6 +119,51 @@ public class QualifyingStandingsService {
     }
 
     /**
+     * The low-points order with one heat counted from its live positions instead of a stored result, for the live
+     * top table (#480). The heat's round is scored from its finished heats plus {@code overlay}'s heat, so a round
+     * that is only part run still ranks; drivers on the grid of a heat that has not run are returned as waiting,
+     * and are placed behind everyone who has a result in the round. Pass {@link Overlay#without} to leave the heat
+     * out instead, which gives the order before it. Empty for a class that is not ranked by
+     * low points, and for a Shikabane class, whose heats are separate races.
+     */
+    public ProjectedResults projectedResultsFor(Long eventClassId, Overlay overlay) {
+        Optional<RoundRules> rules = roundByRoundRules(eventClassId);
+        if (rules.isEmpty()) {
+            return new ProjectedResults(List.of(), Set.of());
+        }
+        Set<Long> waiting = new LinkedHashSet<>();
+        List<QualifyingResult> results = roundByRound(eventClassId, rules.get(), lostBestRounds(eventClassId),
+                overlay, waiting);
+        return new ProjectedResults(results, waiting);
+    }
+
+    /**
+     * One heat of a round counted in a different way for the live top table. With {@code include} false the heat
+     * is left out, which gives the standings from before it. With {@code include} and {@code liveRows} it is counted
+     * from the live positions of the heat on track; with {@code include} and null rows, from its stored result.
+     */
+    public record Overlay(long raceId, boolean include, List<LiveTimingRowDto> liveRows) {
+
+        /** The standings as they were before this heat. */
+        public static Overlay without(long raceId) {
+            return new Overlay(raceId, false, null);
+        }
+
+        /** The standings with this heat counted from its live positions. */
+        public static Overlay live(long raceId, List<LiveTimingRowDto> liveRows) {
+            return new Overlay(raceId, true, liveRows);
+        }
+
+        /** The standings with this finished heat counted from its stored result. */
+        public static Overlay stored(long raceId) {
+            return new Overlay(raceId, true, null);
+        }
+    }
+
+    /** A projected order, and the drivers whose heat in the overlay's round has not run yet. */
+    public record ProjectedResults(List<QualifyingResult> results, Set<Long> waiting) {}
+
+    /**
      * The points each driver scored in every scored round of a round by round class, by round id and then entry id,
      * for showing a heat's points on its result. A round with a heat still to run, or whose heats were all
      * abandoned, is left out; so is a driver who was not on the round's grid. Empty for any other qualifying type, or
@@ -203,8 +249,14 @@ public class QualifyingStandingsService {
      * tie-break (see {@link #brcaOrder}).
      */
     private List<QualifyingResult> roundByRound(Long eventClassId, RoundRules rules, Map<Long, Integer> lostBest) {
+        return roundByRound(eventClassId, rules, lostBest, null, null);
+    }
+
+    /** As above, with one heat counted from {@code overlay} and the drivers still to run added to {@code waiting}. */
+    private List<QualifyingResult> roundByRound(Long eventClassId, RoundRules rules, Map<Long, Integer> lostBest,
+                                                Overlay overlay, Set<Long> waiting) {
         int bestRounds = rules.bestRounds();
-        ScoredRounds scoredRounds = scoreRounds(eventClassId, rules);
+        ScoredRounds scoredRounds = scoreRounds(eventClassId, rules, overlay, waiting);
         List<Map<Long, RoundScore>> rounds = scoredRounds.rounds();
         List<Integer> missingPoints = scoredRounds.missingPoints();
         Map<Long, Integer> heatOf = scoredRounds.heatOf();
@@ -241,6 +293,16 @@ public class QualifyingStandingsService {
      * first half of {@link #roundByRound} and {@link #roundPointsFor}.
      */
     private ScoredRounds scoreRounds(Long eventClassId, RoundRules rules) {
+        return scoreRounds(eventClassId, rules, null, null);
+    }
+
+    /**
+     * With an {@code overlay}, the round holding its heat is scored from that round's finished heats plus the
+     * overlay's heat (left out unless it is included), whether or not the rest of the round has run; the drivers
+     * on the grid of a heat left unrun are added to {@code waiting}. Every other round, and a Shikabane class, is
+     * scored as usual.
+     */
+    private ScoredRounds scoreRounds(Long eventClassId, RoundRules rules, Overlay overlay, Set<Long> waiting) {
         Set<Long> withdrawn = entryRepository.findByEventClassIdAndStatus(eventClassId, EntryStatus.WITHDRAWN)
                 .stream().map(Entry::getId).collect(Collectors.toSet());
         Map<Long, List<Race>> heatsByRound = new LinkedHashMap<>();
@@ -260,14 +322,40 @@ public class QualifyingStandingsService {
         List<Integer> missingPoints = new ArrayList<>();
         for (Map.Entry<Long, List<Race>> inRound : heatsByRound.entrySet()) {
             List<Race> heats = inRound.getValue();
-            boolean finished = heats.stream().allMatch(h -> h.getStatus() == RaceStatus.FINISHED);
+            Long liveRaceId = null;
+            boolean overlaid = false;
+            if (overlay != null && shikabane == null
+                    && heats.stream().anyMatch(h -> h.getId().equals(overlay.raceId()))) {
+                // Count the finished heats and the heat on track; the others have not run, so those drivers wait
+                List<Race> counted = heats.stream()
+                        .filter(h -> h.getStatus() == RaceStatus.FINISHED && !h.getId().equals(overlay.raceId())
+                                || h.getId().equals(overlay.raceId()) && overlay.include())
+                        .toList();
+                if (waiting != null) {
+                    for (Race heat : heats) {
+                        if (!counted.contains(heat) && !heat.getId().equals(overlay.raceId())) {
+                            raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())
+                                    .forEach(e -> waiting.add(e.getEntryId()));
+                        }
+                    }
+                }
+                heats = counted;
+                overlaid = true;
+                liveRaceId = overlay.include() && overlay.liveRows() != null ? overlay.raceId() : null;
+                if (heats.isEmpty()) {
+                    continue;
+                }
+            }
+            boolean finished = overlaid
+                    || heats.stream().allMatch(h -> h.getStatus() == RaceStatus.FINISHED);
             boolean anyRun = heats.stream().anyMatch(h -> h.getAbandonedAt() == null);
             if (!finished || !anyRun) {
                 continue;
             }
             Map<Long, RoundScore> scored = shikabane != null
                     ? scoreShikabaneRound(heats, withdrawn, shikabane)
-                    : scoreRound(heats, withdrawn, rules.splitTiedPlaces(), dnsPoints);
+                    : scoreRound(heats, withdrawn, rules.splitTiedPlaces(), dnsPoints,
+                            liveRaceId == null ? null : overlay);
             if (shikabane != null) {
                 for (Race heat : heats) {
                     raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())
@@ -298,9 +386,12 @@ public class QualifyingStandingsService {
         return scored;
     }
 
-    /** Each driver's laps, time and place in one finished round, withdrawn entries left out. */
+    /**
+     * Each driver's laps, time and place in one finished round, withdrawn entries left out. A heat that is the
+     * {@code live} overlay's is scored from its live rows instead of a stored result.
+     */
     private Map<Long, RoundScore> scoreRound(List<Race> heats, Set<Long> withdrawn, boolean splitTiedPlaces,
-                                             int dnsPoints) {
+                                             int dnsPoints, Overlay live) {
         Map<Long, RoundScore> inRound = new LinkedHashMap<>();
         for (Race heat : heats) {
             // A driver who never crossed the line, or whose heat was abandoned, is last in the round. They sort
@@ -308,7 +399,13 @@ public class QualifyingStandingsService {
             for (RaceEntry onGrid : raceEntryRepository.findByRaceIdOrderByGridPosition(heat.getId())) {
                 inRound.putIfAbsent(onGrid.getEntryId(), new RoundScore(0, 0, Long.MAX_VALUE, NO_LAP));
             }
-            if (heat.getAbandonedAt() == null) {
+            if (live != null && heat.getId().equals(live.raceId())) {
+                for (LiveTimingRowDto row : live.liveRows()) {
+                    inRound.put(row.entryId(), new RoundScore(0, row.lapsCompleted(),
+                            row.totalTimeMs() == null ? Long.MAX_VALUE : row.totalTimeMs(),
+                            row.bestLapMs() == null ? NO_LAP : row.bestLapMs()));
+                }
+            } else if (heat.getAbandonedAt() == null) {
                 resultSnapshotRepository.findByRaceId(heat.getId()).ifPresent(snapshot -> {
                     for (ResultSnapshotDto.ResultRow row : snapshotJson.positions(heat.getId(),
                             snapshot.getPositionsJson())) {
