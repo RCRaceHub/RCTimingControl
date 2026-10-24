@@ -8,6 +8,7 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { ClassSwatch } from '@/components/ClassSwatch';
+import { isEntryDrag, readEntryDrag, startEntryDrag } from '@/lib/dragEntry';
 
 type Props = {
   race: RunOrderItemDto;
@@ -23,11 +24,13 @@ type Props = {
  * of the round with the move controls, the selected heat highlighted. A driver in a heat that has not been called
  * can be moved to another such heat to balance them (the heats need not stay the same size), either in this round
  * only or in every round where both heats are still waiting, which is how qualifying is evened up after practice.
- * The heat names select that heat.
+ * The heat names select that heat. A driver can also be dragged onto another heat that has not been called, which
+ * is the same move as the Move to… list.
  */
 export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: Props) {
   const queryClient = useQueryClient();
   const [allRounds, setAllRounds] = useState(true);
+  const [dropTarget, setDropTarget] = useState<number | null>(null);
   const roundLabel = roundName(race, true);
   const move = useMutation({
     mutationFn: (v: { raceId: number; entryId: number; targetRaceId: number }) =>
@@ -94,7 +97,21 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
                   key={h.raceId}
                   aria-label={`Heat ${h.heatNumber}`}
                   aria-current={h.raceId === selected.raceId ? 'true' : undefined}
-                  className={`rounded border p-2 space-y-1 ${h.raceId === selected.raceId ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''}`}
+                  className={`rounded border p-2 space-y-1 ${h.raceId === selected.raceId ? 'border-primary bg-primary/5 ring-1 ring-primary' : ''} ${dropTarget === h.raceId ? 'outline outline-2 outline-primary' : ''}`}
+                  onDragOver={canMove && h.status === 'PENDING' ? (ev) => {
+                    if (!isEntryDrag(ev)) return;
+                    ev.preventDefault();
+                    setDropTarget(h.raceId);
+                  } : undefined}
+                  onDragLeave={() => setDropTarget((t) => (t === h.raceId ? null : t))}
+                  onDrop={canMove && h.status === 'PENDING' ? (ev) => {
+                    ev.preventDefault();
+                    setDropTarget(null);
+                    const dragged = readEntryDrag(ev);
+                    if (dragged && dragged.raceId !== h.raceId) {
+                      move.mutate({ raceId: dragged.raceId, entryId: dragged.entryId, targetRaceId: h.raceId });
+                    }
+                  } : undefined}
                 >
                   <button
                     type="button"
@@ -108,7 +125,13 @@ export function HeatLineupsPanel({ race, runOrder, onSelect, canMove = false }: 
                   </span>
                   <ol className="space-y-0.5 text-sm">
                     {drivers.map((d) => (
-                      <li key={d.entryId} className="flex items-center justify-between gap-2">
+                      <li
+                        key={d.entryId}
+                        className={`flex items-center justify-between gap-2 ${canMove && h.status === 'PENDING' ? 'cursor-grab' : ''}`}
+                        draggable={canMove && h.status === 'PENDING'}
+                        onDragStart={(ev) => startEntryDrag(ev, { raceId: h.raceId, entryId: d.entryId })}
+                        onDragEnd={() => setDropTarget(null)}
+                      >
                         <span>
                           {d.racerName}
                           {d.carNumber && <span className="ml-1 text-muted-foreground">#{d.carNumber}</span>}

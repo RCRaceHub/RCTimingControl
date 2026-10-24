@@ -17,6 +17,17 @@ const heat = (raceId: number, heatNumber: number): RunOrderItemDto => ({
   heatNumber, finalLetter: null, status: 'PENDING', sequenceInRound: heatNumber, startedAt: null,
 });
 
+
+function fakeTransfer() {
+  const data: Record<string, string> = {};
+  return {
+    setData: (k: string, v: string) => { data[k] = v; },
+    getData: (k: string) => data[k] ?? '',
+    get types() { return Object.keys(data); },
+    effectAllowed: 'none',
+  };
+}
+
 describe('HeatLineupsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -84,6 +95,25 @@ describe('HeatLineupsPanel', () => {
     await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: false }));
     expect(screen.getByRole('region', { name: 'Heat 1' })).toHaveAttribute('aria-current', 'true');
     expect(screen.getByRole('region', { name: 'Heat 2' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('moves a driver to another heat by dragging', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    openMoveTab();
+    const dataTransfer = fakeTransfer();
+    fireEvent.dragStart(await screen.findByText('Driver 1'), { dataTransfer });
+    fireEvent.dragOver(screen.getByRole('region', { name: 'Heat 2' }), { dataTransfer });
+    fireEvent.drop(screen.getByRole('region', { name: 'Heat 2' }), { dataTransfer });
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith(1, { entryId: 10, targetRaceId: 2, allRounds: true }));
+  });
+
+  it('ignores a drop on the heat the driver is already in', async () => {
+    renderPanel([heat(1, 1), heat(2, 2)], vi.fn(), true);
+    openMoveTab();
+    const dataTransfer = fakeTransfer();
+    fireEvent.dragStart(await screen.findByText('Driver 1'), { dataTransfer });
+    fireEvent.drop(screen.getByRole('region', { name: 'Heat 1' }), { dataTransfer });
+    expect(mockMove).not.toHaveBeenCalled();
   });
 
   it('offers no moves without permission', async () => {
