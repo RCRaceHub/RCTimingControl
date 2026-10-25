@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.ExternalSources;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipExclusionRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
@@ -55,6 +56,7 @@ public class CompetitorMergeService {
     private final PracticeDriverRepository practiceDriverRepository;
     private final ObjectMapper objectMapper;
     private final AuditService audit;
+    private final DriverMediaService driverMedia;
 
     public CompetitorMergeService(CompetitorRepository competitorRepository,
                                   EntryRepository entryRepository,
@@ -64,7 +66,8 @@ public class CompetitorMergeService {
                                   EventClassRepository eventClassRepository,
                                   PracticeDriverRepository practiceDriverRepository,
                                   ObjectMapper objectMapper,
-                                  AuditService audit) {
+                                  AuditService audit,
+                                  DriverMediaService driverMedia) {
         this.competitorRepository = competitorRepository;
         this.entryRepository = entryRepository;
         this.auditLogRepository = auditLogRepository;
@@ -74,6 +77,7 @@ public class CompetitorMergeService {
         this.practiceDriverRepository = practiceDriverRepository;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.driverMedia = driverMedia;
     }
 
     /** One of the two competitors, as the preview shows it. */
@@ -176,6 +180,8 @@ public class CompetitorMergeService {
             keep.setNameVisibility(duplicate.getNameVisibility());
         }
         competitorRepository.save(keep);
+        // The duplicate's headshot and sponsors go with it, files included; their entries (and car photos) have moved
+        driverMedia.eraseForCompetitor(duplicateId);
         competitorRepository.deleteById(duplicateId);
 
         // The duplicate is deleted, so this row is the only place its details survive

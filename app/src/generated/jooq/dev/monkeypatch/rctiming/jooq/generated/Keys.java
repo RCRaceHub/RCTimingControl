@@ -7,6 +7,8 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
+import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -51,6 +53,8 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.AuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.BoardViewsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventSponsorsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryPhotosRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorMediaRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipClassesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipEventLinksRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipExclusionsRecord;
@@ -113,6 +117,10 @@ public class Keys {
 
     public static final UniqueKey<AuditLogRecord> AUDIT_LOG__PK_AUDIT_LOG = Internal.createUniqueKey(AuditLog.AUDIT_LOG, DSL.name("pk_audit_log"), new TableField[] { AuditLog.AUDIT_LOG.ID }, true);
     public static final UniqueKey<BoardViewsRecord> BOARD_VIEWS__PK_BOARD_VIEWS = Internal.createUniqueKey(BoardViews.BOARD_VIEWS, DSL.name("pk_board_views"), new TableField[] { BoardViews.BOARD_VIEWS.ID }, true);
+    public static final UniqueKey<CompetitorMediaRecord> COMPETITOR_MEDIA__PK_COMPETITOR_MEDIA = Internal.createUniqueKey(CompetitorMedia.COMPETITOR_MEDIA, DSL.name("pk_competitor_media"), new TableField[] { CompetitorMedia.COMPETITOR_MEDIA.ID }, true);
+    public static final UniqueKey<CompetitorMediaRecord> COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_KEY = Internal.createUniqueKey(CompetitorMedia.COMPETITOR_MEDIA, DSL.name("competitor_media_competitor_id_key"), new TableField[] { CompetitorMedia.COMPETITOR_MEDIA.COMPETITOR_ID }, true);
+    public static final UniqueKey<EntryPhotosRecord> ENTRY_PHOTOS__PK_ENTRY_PHOTOS = Internal.createUniqueKey(EntryPhotos.ENTRY_PHOTOS, DSL.name("pk_entry_photos"), new TableField[] { EntryPhotos.ENTRY_PHOTOS.ID }, true);
+    public static final UniqueKey<EntryPhotosRecord> ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_KEY = Internal.createUniqueKey(EntryPhotos.ENTRY_PHOTOS, DSL.name("entry_photos_entry_id_key"), new TableField[] { EntryPhotos.ENTRY_PHOTOS.ENTRY_ID }, true);
     public static final UniqueKey<EventSponsorsRecord> EVENT_SPONSORS__PK_EVENT_SPONSORS = Internal.createUniqueKey(EventSponsors.EVENT_SPONSORS, DSL.name("pk_event_sponsors"), new TableField[] { EventSponsors.EVENT_SPONSORS.ID }, true);
     public static final UniqueKey<BoardViewsRecord> BOARD_VIEWS__BOARD_VIEWS_SLUG_KEY = Internal.createUniqueKey(BoardViews.BOARD_VIEWS, DSL.name("board_views_slug_key"), new TableField[] { BoardViews.BOARD_VIEWS.SLUG }, true);
     public static final UniqueKey<ChampionshipClassesRecord> CHAMPIONSHIP_CLASSES__PK_CHAMPIONSHIP_CLASSES = Internal.createUniqueKey(ChampionshipClasses.CHAMPIONSHIP_CLASSES, DSL.name("pk_championship_classes"), new TableField[] { ChampionshipClasses.CHAMPIONSHIP_CLASSES.ID }, true);

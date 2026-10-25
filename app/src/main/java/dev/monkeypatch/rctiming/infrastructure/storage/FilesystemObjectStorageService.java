@@ -56,4 +56,27 @@ public class FilesystemObjectStorageService implements ObjectStorageService {
         }
         return publicBaseUrl + "/" + key;
     }
+
+    /**
+     * Deletes the file at the URL's key. Blocks on disk I/O on the calling thread. A URL outside {@code
+     * storage.public-base-url}, a key that would leave the storage folder or a file that is already gone does nothing.
+     *
+     * @throws java.io.UncheckedIOException if the file exists but cannot be deleted
+     */
+    @Override
+    public void delete(String url) {
+        if (url == null || !url.startsWith(publicBaseUrl + "/")) {
+            return;
+        }
+        String key = url.substring(publicBaseUrl.length() + 1);
+        Path target = rootDir.resolve(key).normalize();
+        if (key.isBlank() || target.equals(rootDir) || !target.startsWith(rootDir)) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(target);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not delete object: " + url, e);
+        }
+    }
 }

@@ -895,11 +895,18 @@ GET /boards/races/{raceId}/position-history
 **200 OK** — `[ { "lap": 1, "entryId": 31, "position": 2 }, ... ]`, the place each car held at the end of every lap so far, by the order the cars crossed the line, for the live position chart. `[]` for a race with no live state (not started, or finished: its stored result has the history). If a marshal adjustment has changed any car's lap count the crossing order can't be trusted, so every place is the car's current position.
 
 ```http
+GET /boards/races/{raceId}/media
+```
+**200 OK** — `[ { "entryId": 31, "headshotUrl": "/storage/photos/9f2c….jpg", "carPhotoUrl": null, "sponsors": ["Acme Tyres"] } ]`, the pictures and driver sponsors the public may see for the cars in a race (#520), in grid order. Cars with nothing to show are left out, and a driver whose name is set to initials only or hidden is always left out (#265).
+
+Officials manage them under `/api/v1/admin`: `GET /competitors/{id}/media` (any official; `{ headshotUrl, sponsors }`), `PUT /competitors/{id}/media/sponsors {names}` (up to 5, 100 characters each), `PUT` and `DELETE /competitors/{id}/media/headshot` (multipart `file`, PNG or JPEG up to 2 MB), and `GET`, `PUT` and `DELETE /entries/{id}/car-photo`. Changes are ADMIN or RACE_DIRECTOR and audited; 400 for a bad file or list, 404 for an unknown competitor or entry.
+
+```http
 GET /boards/sponsors?eventId={id}
 ```
 **200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now.
 
-Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG, JPEG or WebP up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
+Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG or JPEG up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
 
 ```http
 GET /boards/ticker?eventId={id}

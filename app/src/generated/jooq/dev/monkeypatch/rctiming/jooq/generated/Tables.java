@@ -7,6 +7,8 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
+import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -70,6 +72,16 @@ public class Tables {
      * The table <code>event_sponsors</code>.
      */
     public static final EventSponsors EVENT_SPONSORS = EventSponsors.EVENT_SPONSORS;
+
+    /**
+     * The table <code>entry_photos</code>.
+     */
+    public static final EntryPhotos ENTRY_PHOTOS = EntryPhotos.ENTRY_PHOTOS;
+
+    /**
+     * The table <code>competitor_media</code>.
+     */
+    public static final CompetitorMedia COMPETITOR_MEDIA = CompetitorMedia.COMPETITOR_MEDIA;
 
     /**
      * The table <code>championship_classes</code>.
