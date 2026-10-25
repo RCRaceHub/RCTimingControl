@@ -27,6 +27,8 @@ flowchart LR
         bk[backup.*, retention.*]
         tls[infrastructure.tls.*<br/>club CA, server certificate,<br/>HTTPS connector]
         tlsfiles[(tls folder<br/>ca.p12, server.p12)]
+        cs[domain.club.ClubSettingsService<br/>settings file export and import]
+        props[infrastructure.settings.SettingsFile<br/>application.properties]
         db[(SQLite file<br/>WAL, one writer + read pool)]
     end
 
@@ -53,6 +55,8 @@ flowchart LR
     bk --> db
     br -->|HTTPS, optional| tls
     tls --> tlsfiles
+    api --> cs --> dom
+    api -->|HTTPS switch, next start| props
     tls -.->|ca.crt download| api
 ```
 

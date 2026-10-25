@@ -15,6 +15,7 @@ import axios from 'axios';
 import LiveTimingSettingsCard from './LiveTimingSettingsCard';
 import HttpsCard from './HttpsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
+import SettingsFileCard from './SettingsFileCard';
 
 const schema = z.object({
   name: z.string().min(1, 'Club name is required'),
@@ -120,6 +121,7 @@ export default function ClubProfilePage() {
           <TabsTrigger value="live-timing">Live timing</TabsTrigger>
           <TabsTrigger value="https">Secure connection</TabsTrigger>
           <TabsTrigger value="privacy">Privacy notice</TabsTrigger>
+          <TabsTrigger value="settings-file">Settings file</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-8">
@@ -214,6 +216,10 @@ export default function ClubProfilePage() {
 
         <TabsContent value="privacy">
           <PrivacyNoticeEditor />
+        </TabsContent>
+
+        <TabsContent value="settings-file">
+          <SettingsFileCard />
         </TabsContent>
       </Tabs>
     </div>

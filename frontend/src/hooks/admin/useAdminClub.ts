@@ -85,3 +85,41 @@ export function useRegenerateTls() {
     },
   });
 }
+
+/** Switches HTTPS on or off for the next start (#510); the app must be restarted for it to apply. */
+export function useChangeTlsSetting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enabled, port }: { enabled: boolean; port?: number }) =>
+      adminApi.club.changeTlsSetting(enabled, port),
+    onSuccess: (status) => qc.setQueryData(adminQueryKeys.club.tls(), status),
+  });
+}
+
+/** Downloads this install's club settings file and saves it through the browser (#510). */
+export function useExportClubSettings() {
+  return useMutation({
+    mutationFn: adminApi.club.exportSettings,
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
+  });
+}
+
+/** Previews or imports a club settings file (#510); an import refreshes everything the Club page shows. */
+export function useImportClubSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, apply }: { file: unknown; apply: boolean }) => adminApi.club.importSettings(file, apply),
+    onSuccess: (_sections, { apply }) => {
+      if (apply) void qc.invalidateQueries();
+    },
+  });
+}

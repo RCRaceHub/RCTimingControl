@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { CertificateSteps } from '@/components/CertificateSteps';
-import { useRegenerateTls, useTlsStatus } from '@/hooks/admin/useAdminClub';
+import { useChangeTlsSetting, useRegenerateTls, useTlsStatus } from '@/hooks/admin/useAdminClub';
 import { formatDate } from '@/lib/dates';
 
 /**
@@ -16,19 +16,39 @@ import { formatDate } from '@/lib/dates';
 export default function HttpsCard() {
   const { data, isLoading, isError } = useTlsStatus();
   const regenerate = useRegenerateTls();
+  const change = useChangeTlsSetting();
   const { confirm, dialog } = useConfirm();
 
   if (isLoading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
   if (isError || !data) return <p className="text-sm text-destructive">Could not load the HTTPS state.</p>;
 
+  function setSwitch(enabled: boolean) {
+    change.mutate({ enabled }, {
+      onSuccess: () => toast.success(enabled ? 'HTTPS will be on after a restart' : 'HTTPS will be off after a restart'),
+      onError: () => toast.error('Could not save the setting. Try again.'),
+    });
+  }
+
+  const restartNotice = data.restartNeeded && (
+    <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
+      The setting is saved: HTTPS will be {data.switchedOn ? 'on' : 'off'} after RC Timing is restarted
+      (restart the service, or the container).
+    </p>
+  );
+
   if (!data.enabled) {
     return (
-      <div className="space-y-2 text-sm">
+      <div className="space-y-3 text-sm">
         <p>HTTPS is switched off. The app is served over plain HTTP only.</p>
+        {restartNotice}
         <p className="text-muted-foreground">
-          To switch it on, add <code>rctiming.https.enabled=true</code> to <code>application.properties</code> in the
-          data folder and restart the app. It then also serves HTTPS on port {data.port}, beside HTTP.
+          Switching it on makes the app also serve HTTPS on port {data.configuredPort}, beside HTTP, after a restart.
+          It is saved in <code>application.properties</code> in the data folder. In Docker, set{' '}
+          <code>RCTIMING_HTTPS_ENABLED</code> in the compose file instead.
         </p>
+        <Button disabled={change.isPending || data.switchedOn} onClick={() => setSwitch(true)}>
+          Switch HTTPS on
+        </Button>
       </div>
     );
   }
@@ -53,6 +73,7 @@ export default function HttpsCard() {
   return (
     <div className="space-y-5 text-sm">
       {dialog}
+      {restartNotice}
       <div className="space-y-1">
         <h2 className="font-medium">HTTPS addresses</h2>
         {data.urls.length === 0 ? (
@@ -105,6 +126,16 @@ export default function HttpsCard() {
         </p>
         <Button variant="destructive" disabled={regenerate.isPending} onClick={() => void run('ca')}>
           Make a new club certificate
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="font-medium">Switch HTTPS off</h2>
+        <p className="text-muted-foreground">
+          Plain HTTP keeps working either way. Turning HTTPS off takes effect after a restart; the certificates are kept.
+        </p>
+        <Button variant="outline" disabled={change.isPending || !data.switchedOn} onClick={() => setSwitch(false)}>
+          Switch HTTPS off
         </Button>
       </div>
     </div>
