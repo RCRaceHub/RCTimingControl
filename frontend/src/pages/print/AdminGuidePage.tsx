@@ -366,6 +366,15 @@ export default function AdminGuidePage() {
             changes the name, and nothing shown on results or boards is affected.
           </li>
           <li>
+            <span className="font-semibold">Photos and sponsors:</span> Admins and race directors can click
+            <span className="font-semibold"> Photo…</span> on a driver to add a headshot (PNG or JPEG, up to
+            2 MB) and up to five driver sponsors, and click <span className="font-semibold">Car photo</span> on
+            an entry (event, Entries tab). They show on the live timing screens and the commentator&apos;s Driver
+            cards panel, never for a driver whose name is hidden publicly, and are deleted when the competitor is
+            anonymised or merged. An event&apos;s own sponsors (name and logo) go on its Sponsors tab and show in the
+            overlay&apos;s sponsor bar.
+          </li>
+          <li>
             <span className="font-semibold">Merge duplicates:</span> A driver entered twice has
             their results and championship points split. The top of the Competitors page lists
             <span className="font-semibold"> Possible duplicates</span> (the same name or BRCA
