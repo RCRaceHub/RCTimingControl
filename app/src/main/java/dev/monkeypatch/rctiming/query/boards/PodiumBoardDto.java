@@ -16,10 +16,12 @@ public record PodiumBoardDto(Long eventId, String eventName, List<ClassPodium> c
      * @param className       the racing class's name
      * @param complete        whether every final of the class has finished; until then the category leaders are only
      *                        the best so far
+     * @param aFinalAbandoned whether the A final was abandoned, so there is no podium and none is coming
      * @param podium          the first three of the A final, best first; empty until the A final has finished
-     * @param categoryLeaders the best-placed driver of each category in the class's finals, categories in name order
+     * @param categoryLeaders the best-placed finisher (not a DNF) of each category in the class's finals, in name
+     *                        order; looks only at finals up to the first one still to run
      */
-    public record ClassPodium(Long eventClassId, String className, boolean complete, List<Place> podium,
+    public record ClassPodium(Long eventClassId, String className, boolean complete, boolean aFinalAbandoned, List<Place> podium,
                               List<CategoryLeader> categoryLeaders) {}
 
     /**

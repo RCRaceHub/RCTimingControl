@@ -182,7 +182,8 @@ public class BoardController {
     @GetMapping("/podium")
     public PodiumBoardDto podium(@RequestParam(required = false) Long eventId) {
         return boardQuery.resolveEvent(eventId)
-                .map(event -> new PodiumBoardDto(event.id(), event.name(), podiumBoardService.forEventPublic(event.id())))
+                .map(event -> new PodiumBoardDto(event.id(), event.name(),
+                        podiumBoardService.forEventPublic(event.id())))
                 .orElse(new PodiumBoardDto(null, null, List.of()));
     }
 

@@ -25,13 +25,15 @@ function ClassSection({ cls }: { cls: PodiumBoardClass }) {
         {!cls.complete && <p className="text-xs text-muted-foreground">Finals still to run</p>}
       </div>
       {cls.podium.length === 0 ? (
-        <p className="text-sm text-muted-foreground">The A final has not finished yet.</p>
+        <p className="text-sm text-muted-foreground">
+          {cls.aFinalAbandoned ? 'The A final was abandoned.' : 'The A final has not finished yet.'}
+        </p>
       ) : (
         <ol className="space-y-1.5" aria-label={`${cls.className} podium`}>
           {cls.podium.map((place) => (
             <li
               key={place.position}
-              className={`flex items-center gap-4 rounded-lg px-4 py-3 ${PLACE_STYLE[place.position] ?? ''}`}
+              className={`flex items-center gap-4 rounded-lg px-4 py-3 [print-color-adjust:exact] ${PLACE_STYLE[place.position] ?? ''}`}
             >
               <span className="w-8 text-2xl font-bold tabular-nums">{place.position}</span>
               <span className="flex-1 text-lg font-semibold">{place.driverName}</span>

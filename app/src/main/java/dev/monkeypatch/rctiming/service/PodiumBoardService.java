@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.service;
 
-import dev.monkeypatch.rctiming.domain.competitor.CategoryTags;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
@@ -12,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public class PodiumBoardService {
                 .flatMap(c -> c.finals().stream())
                 .flatMap(f -> finishedOrder(f).stream())
                 .map(Placing::competitorId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<Long, List<String>> tags = new LinkedHashMap<>();
         competitorRepository.findAllById(ids).forEach(c -> tags.put(c.getId(), c.categoryTags()));
@@ -54,7 +55,7 @@ public class PodiumBoardService {
     }
 
     /** One driver's place in a final, with the name already as the public may see it. */
-    record Placing(Long competitorId, String driverName, String carNumber) {}
+    record Placing(Long competitorId, String driverName, String carNumber, boolean dnf) {}
 
     /**
      * Works out each class's podium and category leaders; pure, so it is tested without a database.
@@ -68,8 +69,17 @@ public class PodiumBoardService {
         for (FinalsBoardDto.ClassFinals cls : classes) {
             List<Placing> overall = new ArrayList<>();
             List<Placing> aFinal = List.of();
+            boolean aAbandoned = false;
             for (FinalsBoardDto.Final f : cls.finals()) {
+                if (f.abandoned()) {
+                    aAbandoned |= "A".equals(f.letter());
+                    continue;
+                }
                 List<Placing> placings = finishedOrder(f);
+                if (placings.isEmpty()) {
+                    // A final still to run: lower finals cannot be placed against it
+                    break;
+                }
                 if ("A".equals(f.letter())) {
                     aFinal = placings;
                 }
@@ -79,11 +89,14 @@ public class PodiumBoardService {
                 continue;
             }
             List<PodiumBoardDto.Place> podium = new ArrayList<>();
-            for (int i = 0; i < Math.min(PODIUM_PLACES, aFinal.size()); i++) {
-                podium.add(new PodiumBoardDto.Place(i + 1, aFinal.get(i).driverName(), aFinal.get(i).carNumber()));
+            for (Placing p : aFinal) {
+                if (podium.size() < PODIUM_PLACES && !p.dnf()) {
+                    podium.add(new PodiumBoardDto.Place(podium.size() + 1, p.driverName(), p.carNumber()));
+                }
             }
             out.add(new PodiumBoardDto.ClassPodium(cls.eventClassId(), cls.className(),
-                    cls.finalsFinished() == cls.finalsTotal(), podium, leaders(overall, tagsByCompetitor)));
+                    cls.finalsFinished() == cls.finalsTotal(), aAbandoned, podium,
+                    leaders(overall, tagsByCompetitor)));
         }
         return out;
     }
@@ -93,15 +106,16 @@ public class PodiumBoardService {
         Map<String, PodiumBoardDto.CategoryLeader> byTag = new LinkedHashMap<>();
         for (int i = 0; i < overall.size(); i++) {
             Placing p = overall.get(i);
+            if (p.dnf()) {
+                continue;
+            }
             for (String tag : tagsByCompetitor.getOrDefault(p.competitorId(), List.of())) {
-                boolean seen = byTag.keySet().stream().anyMatch(t -> CategoryTags.same(t, tag));
-                if (!seen) {
-                    byTag.put(tag, new PodiumBoardDto.CategoryLeader(tag, p.driverName(), p.carNumber(), i + 1));
-                }
+                byTag.putIfAbsent(tag.toLowerCase(Locale.ROOT),
+                        new PodiumBoardDto.CategoryLeader(tag, p.driverName(), p.carNumber(), i + 1));
             }
         }
         return byTag.values().stream()
-                .sorted(Comparator.comparing(l -> l.category().toLowerCase(java.util.Locale.ROOT)))
+                .sorted(Comparator.comparing(l -> l.category().toLowerCase(Locale.ROOT)))
                 .toList();
     }
 
@@ -112,9 +126,9 @@ public class PodiumBoardService {
         }
         if (f.legs() != null && !f.legs().rows().isEmpty()) {
             return f.legs().rows().stream()
-                    .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber())).toList();
+                    .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber(), false)).toList();
         }
         return f.results().stream()
-                .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber())).toList();
+                .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber(), r.dnf())).toList();
     }
 }

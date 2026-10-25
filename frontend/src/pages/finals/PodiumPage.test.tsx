@@ -31,7 +31,7 @@ describe('PodiumPage', () => {
       eventId: 7,
       eventName: 'Club Round 3',
       classes: [{
-        eventClassId: 1, className: '1/10 Buggy', complete: true,
+        eventClassId: 1, className: '1/10 Buggy', complete: true, aFinalAbandoned: false,
         podium: [
           { position: 1, driverName: 'Ann', carNumber: '1' },
           { position: 2, driverName: 'Bob', carNumber: '2' },
@@ -55,7 +55,7 @@ describe('PodiumPage', () => {
     vi.mocked(getPodiumBoard).mockResolvedValue({
       eventId: 7, eventName: 'Club Round 3',
       classes: [{
-        eventClassId: 2, className: 'Stock', complete: false, podium: [],
+        eventClassId: 2, className: 'Stock', complete: false, aFinalAbandoned: false, podium: [],
         categoryLeaders: [{ category: 'Vet', driverName: 'Gus', carNumber: '9', overallPosition: 1 }],
       }],
     });
@@ -63,6 +63,15 @@ describe('PodiumPage', () => {
 
     expect(await screen.findByText('The A final has not finished yet.')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Category leader' })).toBeInTheDocument();
+  });
+
+  it('says so when the A final was abandoned', async () => {
+    vi.mocked(getPodiumBoard).mockResolvedValue({
+      eventId: 7, eventName: 'Club Round 3',
+      classes: [{ eventClassId: 3, className: 'Mod', complete: true, aFinalAbandoned: true, podium: [], categoryLeaders: [] }],
+    });
+    renderPage();
+    expect(await screen.findByText('The A final was abandoned.')).toBeInTheDocument();
   });
 
   it('says so when no final has finished', async () => {

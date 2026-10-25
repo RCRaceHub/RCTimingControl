@@ -141,7 +141,9 @@ export type PodiumBoardClass = {
   className: string;
   /** Every final of the class has finished; until then the category leaders are the best so far. */
   complete: boolean;
-  /** The first three of the A final; empty until it has finished. */
+  /** The A final was abandoned: there is no podium and none is coming. */
+  aFinalAbandoned: boolean;
+  /** The first three finishers of the A final; empty until it has finished. */
   podium: PodiumPlace[];
   categoryLeaders: PodiumCategoryLeader[];
 };
