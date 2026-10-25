@@ -12,6 +12,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -105,6 +106,40 @@ public class LanAddresses {
         List<String> urls = new ArrayList<>();
         for (String host : hosts) {
             urls.add(url(host, port));
+        }
+        return urls;
+    }
+
+    /**
+     * Every host name and IPv4 address the app can be opened at, which the HTTPS certificate has to name: the mDNS
+     * name, the addresses it is announced on, the machine's host name, the hosts of any configured addresses, and
+     * {@code localhost} with {@code 127.0.0.1}.
+     */
+    public List<String> hostsForCertificate() {
+        Set<String> hosts = new LinkedHashSet<>();
+        mdnsHost.ifPresent(hosts::add);
+        hosts.addAll(announceAddresses());
+        hostname().ifPresent(hosts::add);
+        for (String configured : configuredAddresses) {
+            String host = configured.startsWith("http://") || configured.startsWith("https://")
+                    ? URI.create(configured).getHost() : configured;
+            if (host != null && !host.isBlank()) {
+                hosts.add(host);
+            }
+        }
+        hosts.add("localhost");
+        hosts.add("127.0.0.1");
+        return List.copyOf(hosts);
+    }
+
+    /** The HTTPS addresses to open, one for each of {@link #urls()}, on {@code httpsPort}. */
+    public List<String> httpsUrls(int httpsPort) {
+        List<String> urls = new ArrayList<>();
+        for (String url : urls()) {
+            String host = URI.create(url).getHost();
+            if (host != null) {
+                urls.add("https://" + host + (httpsPort == 443 ? "" : ":" + httpsPort) + "/");
+            }
         }
         return urls;
     }

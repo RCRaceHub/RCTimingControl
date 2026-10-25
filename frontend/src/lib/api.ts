@@ -45,6 +45,10 @@ export interface AboutDto {
   addresses: string[];
   /** The mDNS URL (such as http://timing.local:8080/) once announced, which survives address changes; null if not */
   stableAddress?: string | null;
+  /** The HTTPS addresses, empty when HTTPS is off */
+  httpsAddresses?: string[];
+  /** HTTPS is on, so the club certificate authority can be downloaded */
+  httpsEnabled?: boolean;
 }
 
 export interface PrivacyNoticeDto {

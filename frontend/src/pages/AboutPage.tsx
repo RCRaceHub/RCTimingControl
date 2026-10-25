@@ -5,6 +5,7 @@ import { formatDate } from '@/lib/dates';
 import PrivacyLink from '@/components/layout/PrivacyLink';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
+import { CertificateSteps } from '@/components/CertificateSteps';
 
 export default function AboutPage() {
   const { data, isLoading, isError } = useQuery({
@@ -68,6 +69,37 @@ export default function AboutPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {data?.httpsEnabled && (
+          <div className="rounded-lg border bg-card p-6 space-y-3 text-sm">
+            <div>
+              <h2 className="font-medium">Secure connection (HTTPS)</h2>
+              <p className="text-muted-foreground">
+                Some browser features, such as choosing a sound card, need a secure address. Install the club
+                certificate once on a device and these open without a warning.
+              </p>
+            </div>
+            {data.httpsAddresses && data.httpsAddresses.length > 0 && (
+              <ul className="space-y-1" aria-label="HTTPS addresses">
+                {data.httpsAddresses.map((address) => (
+                  <li key={address}>
+                    <a href={address} className="font-mono text-primary underline underline-offset-4 break-all">
+                      {address}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <a
+              href="/api/v1/about/ca.crt"
+              download
+              className="inline-block text-primary underline underline-offset-4"
+            >
+              Download the club certificate
+            </a>
+            <CertificateSteps />
           </div>
         )}
 

@@ -79,8 +79,8 @@ export default function AudioOutputPage() {
       // a container makes no difference; the address in the browser's bar does
       setError(
         `The browser will not offer sound cards to a page at ${window.location.origin}, because it is not localhost `
-        + 'or HTTPS. Open this page as http://localhost:PORT on the laptop, or in Chrome or Edge open '
-        + 'chrome://flags/#unsafely-treat-insecure-origin-as-secure, add this address, enable it and relaunch.',
+        + 'or HTTPS. Open this page as http://localhost:PORT on the laptop, or use the app\'s HTTPS address '
+        + '(listed on the About page when HTTPS is switched on).',
       );
       return;
     }

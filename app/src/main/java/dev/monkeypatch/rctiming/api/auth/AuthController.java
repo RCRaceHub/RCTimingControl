@@ -137,7 +137,7 @@ public class AuthController {
 
     /**
      * The refresh cookie. Not marked Secure because RCTC is served over plain HTTP on the venue network
-     * (there is no TLS); SameSite=Lax keeps it off cross-site POSTs, and the path keeps it off every other request.
+     * (HTTPS is optional and runs beside it, #503, so one cookie setting must suit both); SameSite=Lax keeps it off cross-site POSTs, and the path keeps it off every other request.
      */
     private static ResponseCookie refreshCookie(String value, Duration maxAge) {
         return ResponseCookie.from("refresh_token", value)

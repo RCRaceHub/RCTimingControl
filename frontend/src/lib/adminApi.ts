@@ -679,6 +679,18 @@ export interface LiveTimingSettingsDto {
   lateMarginMs: number;
 }
 
+/** The HTTPS state (#503): the addresses, the hosts the certificate covers, and when the certificates run out (UTC ISO) */
+export interface TlsStatusDto {
+  enabled: boolean;
+  port: number;
+  urls: string[];
+  names: string[];
+  caExpires: string | null;
+  serverExpires: string | null;
+  /** The CA's SHA-256 fingerprint, to check a downloaded file against */
+  caFingerprint: string | null;
+}
+
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
   importRaceHubEntries: (eventId: number, exportDocument: unknown, dryRun: boolean) =>
@@ -879,6 +891,11 @@ export const adminApi = {
       api.get<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings').then(r => r.data),
     setLiveTimingSettings: (settings: LiveTimingSettingsDto) =>
       api.put<LiveTimingSettingsDto>('/api/v1/admin/club/live-timing-settings', settings).then(r => r.data),
+    getTls: () => api.get<TlsStatusDto>('/api/v1/admin/tls').then(r => r.data),
+    /** A new server certificate from the same CA: devices need do nothing */
+    regenerateTlsServer: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-server').then(r => r.data),
+    /** A new CA: every device must install it again */
+    regenerateTlsCa: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-ca').then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);

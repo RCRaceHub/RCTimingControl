@@ -83,6 +83,10 @@ Open **http://localhost:8080** on that machine and follow the setup wizard to cr
 
 To use port 80, so devices can open `http://192.168.1.50/` with no port, add `HOST_PORT=80` to `.env` and give the address as a full URL: `CLUB_ADDRESS=http://192.168.1.50/`.
 
+### Secure connection (HTTPS)
+
+The secure connection described in [installing.md](installing.md#secure-connection-https) works in Docker too, but the compose files publish only port 8080. Turn it on with `rctiming.https.enabled=true` in the `application.properties` in the data folder, publish port 8443 by adding `- "8443:8443"` under `ports:` in the compose file, and set `CLUB_ADDRESS` to the machine's real address or name, because the certificate can only cover names the app can see (inside a container it can't see the machine's own).
+
 ### Where the data is
 
 Everything the app keeps is in the `club_data` volume, mounted at `/data` in the container: the database `rctiming.db`, `backups/`, `uploads/` and the `jwt-secret` sign-in key. It survives stopping, restarting and rebuilding. Only `docker compose -f docker-compose.club.yml down -v` deletes it, so never add `-v` on the club's server.

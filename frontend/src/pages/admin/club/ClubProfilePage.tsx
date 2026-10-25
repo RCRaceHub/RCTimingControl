@@ -13,6 +13,7 @@ import { useClubProfile, useUpdateClubProfile, useUploadClubLogo } from '@/hooks
 import type { UpdateClubProfileRequest } from '@/lib/adminApi';
 import axios from 'axios';
 import LiveTimingSettingsCard from './LiveTimingSettingsCard';
+import HttpsCard from './HttpsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 
 const schema = z.object({
@@ -117,6 +118,7 @@ export default function ClubProfilePage() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="live-timing">Live timing</TabsTrigger>
+          <TabsTrigger value="https">Secure connection</TabsTrigger>
           <TabsTrigger value="privacy">Privacy notice</TabsTrigger>
         </TabsList>
 
@@ -204,6 +206,10 @@ export default function ClubProfilePage() {
 
         <TabsContent value="live-timing">
           <LiveTimingSettingsCard />
+        </TabsContent>
+
+        <TabsContent value="https">
+          <HttpsCard />
         </TabsContent>
 
         <TabsContent value="privacy">

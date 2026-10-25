@@ -12,7 +12,7 @@ RCTC (RC Timing Control) is one program on a laptop at the track. Only officials
 
 Put RCTC on the laptop that sits by the decoder. Install it as a background service with the installer for your system: [installing.md](installing.md). To run it from Docker on a laptop or small server instead, see [docker.md](docker.md#running-the-clubs-server-with-docker).
 
-Then open **http://localhost:8080** on the laptop. The About page (`/about`) lists the addresses phones, tablets and boards on the venue network should use. If a phone can't connect, the last part of [First run](installing.md#first-run) covers the firewall and network settings.
+Then open **http://localhost:8080** on the laptop. The About page (`/about`) lists the addresses phones, tablets and boards on the venue network should use. If a phone can't connect, the last part of [First run](installing.md#first-run) covers the firewall and network settings. For a secure (HTTPS) address, which the sound card list on the audio output page needs, see [Secure connection](installing.md#secure-connection-https).
 
 If you want to look around before setting up your own club, [trial-quickstart.md](trial-quickstart.md) loads a demo club with a simulated decoder, and [docker.md](docker.md#try-the-demo) runs the same demo in Docker.
 
