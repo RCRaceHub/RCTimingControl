@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  DEFAULT_OVERLAY_DESIGN, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayQuery, type OverlayDesign, type TickerItem,
+  DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayQuery,
+  type OverlayDesign, type TickerItem,
 } from '@/pages/boards/boardFormat';
 
 const TICKER_LABELS: Record<TickerItem, string> = {
@@ -43,6 +44,7 @@ export default function OverlayDesignerPage() {
   // The typed text of the two number fields, kept apart from the design so half-typed values aren't rewritten
   const [topText, setTopText] = useState(String(DEFAULT_OVERLAY_DESIGN.top));
   const [eventText, setEventText] = useState('');
+  const [gapEveryText, setGapEveryText] = useState(String(DEFAULT_OVERLAY_DESIGN.gapEverySeconds));
 
   const query = overlayQuery(design);
   const path = `/boards/overlay${query}`;
@@ -105,6 +107,39 @@ export default function OverlayDesignerPage() {
                 <option value="table">Table</option>
               </select>
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ov-gap">Gap column (tower)</Label>
+              <select
+                id="ov-gap"
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                value={design.gap}
+                onChange={(e) => set('gap', e.target.value as OverlayDesign['gap'])}
+              >
+                <option value="int">INT: gap to the car ahead</option>
+                <option value="leader">GAP: gap to the leader</option>
+                <option value="auto">Take turns</option>
+              </select>
+            </div>
+            {design.gap === 'auto' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="ov-gap-every">Seconds on each</Label>
+                <Input
+                  id="ov-gap-every"
+                  type="number"
+                  min={1}
+                  max={GAP_EVERY_LIMIT}
+                  value={gapEveryText}
+                  onChange={(e) => {
+                    setGapEveryText(e.target.value);
+                    const n = Math.round(Number(e.target.value));
+                    if (e.target.value.trim() !== '' && Number.isFinite(n)) {
+                      set('gapEverySeconds', Math.min(GAP_EVERY_LIMIT, Math.max(1, n)));
+                    }
+                  }}
+                  onBlur={() => setGapEveryText(String(design.gapEverySeconds))}
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="ov-top">Places shown</Label>
               <Input
@@ -174,6 +209,7 @@ export default function OverlayDesignerPage() {
               setDesign(DEFAULT_OVERLAY_DESIGN);
               setTopText(String(DEFAULT_OVERLAY_DESIGN.top));
               setEventText('');
+              setGapEveryText(String(DEFAULT_OVERLAY_DESIGN.gapEverySeconds));
             }}
           >
             Reset to the default
