@@ -24,6 +24,7 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsMoveRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
+import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsLineupService;
@@ -204,6 +205,28 @@ public class RaceControlController {
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
     public List<FinalsLineupDto> getFinalsLineup(@PathVariable long eventId) {
         return finalsLineupService.forEvent(eventId);
+    }
+
+    /**
+     * Whether the finals line-up screen must be shown instead of the cockpit: qualifying is over, no final has been
+     * called and the line-ups are unconfirmed. {@code GET /event/{eventId}/finals-review}. Read only; 404 for an
+     * unknown event.
+     */
+    @GetMapping("/event/{eventId}/finals-review")
+    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    public FinalsReviewDto getFinalsReview(@PathVariable long eventId) {
+        return finalsLineupService.review(eventId);
+    }
+
+    /**
+     * Confirms the event's finals line-ups, which brings the cockpit back. {@code POST /event/{eventId}/finals-lineup/confirm};
+     * no body. 200 with the new review state. 404 for an unknown event; 409 if the event has no finals, qualifying is
+     * not over, a class is still to be calculated or a final has started. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/event/{eventId}/finals-lineup/confirm")
+    public FinalsReviewDto confirmFinalsLineup(@PathVariable long eventId) {
+        return finalsLineupService.confirm(CurrentOfficial.actor(), eventId);
     }
 
     /**

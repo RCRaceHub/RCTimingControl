@@ -4,6 +4,8 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
@@ -31,7 +33,8 @@ import java.util.Map;
  * put back.
  *
  * <p>Nothing is calculated by itself when qualifying ends: the official reviews and edits the line-ups first
- * ({@link FinalsLineupService}). It refuses while a qualifying heat is still to run, when there are no finals, and
+ * ({@link FinalsLineupService}), and calculating clears the event's confirmed line-up so the review screen comes back.
+ * It refuses while a qualifying heat is still to run, when there are no finals, and
  * once a final has started, since calculating replaces the finals' grids.
  */
 @Service
@@ -43,19 +46,22 @@ public class AutoFinalsSeedingService {
     private final BumpUpSeedingService bumpUpSeedingService;
     private final RaceFormatService raceFormatService;
     private final AuditService audit;
+    private final EventRepository eventRepository;
 
     public AutoFinalsSeedingService(RaceRepository raceRepository,
                                     EventClassRepository eventClassRepository,
                                     QualifyingStandingsService qualifyingStandingsService,
                                     BumpUpSeedingService bumpUpSeedingService,
                                     RaceFormatService raceFormatService,
-                                    AuditService audit) {
+                                    AuditService audit,
+                                    EventRepository eventRepository) {
         this.raceRepository = raceRepository;
         this.eventClassRepository = eventClassRepository;
         this.qualifyingStandingsService = qualifyingStandingsService;
         this.bumpUpSeedingService = bumpUpSeedingService;
         this.raceFormatService = raceFormatService;
         this.audit = audit;
+        this.eventRepository = eventRepository;
     }
 
     /** Whether every qualifying heat is finished, as {@link FinalsLineupService} shows it. */
@@ -172,6 +178,11 @@ public class AutoFinalsSeedingService {
         after.put("carsPerFinal", layout[0]);
         after.put("bumpCount", layout[1]);
         after.put("qualifyingOrder", standings);
+        Event event = eventRepository.getOrThrow(eventClass.getEventId());
+        if (event.getFinalsLineupConfirmedAt() != null) {
+            event.setFinalsLineupConfirmedAt(null);
+            eventRepository.save(event);
+        }
         audit.entry(actor, "FINALS_SEEDED").entity("event_class", eventClassId)
                 .event(eventClass.getEventId())
                 .summary("Calculated the finals from " + standings.size() + " qualifiers ("

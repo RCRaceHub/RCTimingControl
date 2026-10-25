@@ -19,6 +19,8 @@ type Props = {
   eventId: number;
   eventClassId: number;
   canEdit: boolean;
+  /** Leaves out the all-classes button, for the line-up screen that has its own. */
+  hideCalculateAll?: boolean;
 };
 
 /**
@@ -27,7 +29,7 @@ type Props = {
  * another final or swap two. Nothing is calculated by itself when qualifying ends. Editing is open until a final is
  * called to the grid; calculating again throws the edits away, so it asks first once the finals have drivers.
  */
-export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
+export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculateAll = false }: Props) {
   const queryClient = useQueryClient();
   const [cars, setCars] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -127,13 +129,15 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit }: Props) {
           <Button variant="outline" onClick={onCalculate} disabled={!canCalculate}>
             {calculate.isPending ? 'Calculating…' : lineup.calculated ? 'Recalculate finals' : 'Calculate finals'}
           </Button>
-          <Button
-            variant="outline"
-            onClick={onCalculateAll}
-            disabled={readyClasses.length === 0 || calculateAll.isPending}
-          >
-            {calculateAll.isPending ? 'Calculating…' : 'Calculate finals for all classes'}
-          </Button>
+          {!hideCalculateAll && (
+            <Button
+              variant="outline"
+              onClick={onCalculateAll}
+              disabled={readyClasses.length === 0 || calculateAll.isPending}
+            >
+              {calculateAll.isPending ? 'Calculating…' : 'Calculate finals for all classes'}
+            </Button>
+          )}
           {!lineup.qualifyingComplete && !lineup.started && (
             <span className="text-sm text-muted-foreground">Finish or abandon every qualifying heat first.</span>
           )}

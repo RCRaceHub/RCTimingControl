@@ -38,6 +38,8 @@ import { useCockpitSections } from '@/hooks/race-control/useCockpitSections';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
+import { FinalsLineupScreen } from './FinalsLineupScreen';
+import { getFinalsReview } from '@/lib/raceControlApi';
 import { Button } from '@/components/ui/button';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
@@ -83,7 +85,7 @@ function commandFailed(command: string) {
     toast.error(`${command} failed: ${getApiErrorMessage(err, 'try again, and check the connection if it keeps failing.')}`);
 }
 
-export default function CockpitPage() {
+function CockpitView() {
   const { confirm, dialog: confirmDialog } = useConfirm();
   const { eventId: eventIdStr } = useParams<{ eventId: string }>();
   const eventId = Number(eventIdStr);
@@ -714,4 +716,24 @@ export default function CockpitPage() {
       {confirmDialog}
     </div>
   );
+}
+
+/**
+ * The cockpit, except between the end of qualifying and the confirmed finals line-up: then race directors see the
+ * dedicated line-up screen instead, so the finals are set before Call Grid is on offer. Referees keep the cockpit,
+ * and a failed check shows the cockpit rather than lock anyone out of it.
+ */
+export default function CockpitPage() {
+  const { eventId: eventIdStr } = useParams<{ eventId: string }>();
+  const eventId = Number(eventIdStr);
+  const { canRunEvent } = useRoles();
+  const { data: review } = useQuery({
+    queryKey: raceControlQueryKeys.finalsReview(eventId),
+    queryFn: () => getFinalsReview(eventId),
+    enabled: canRunEvent && eventId > 0,
+    // Qualifying ends on a screen that is already open, so look again every few seconds until the line-up is set
+    refetchInterval: (query) => (query.state.data?.confirmedAt ? false : 5000),
+  });
+  if (canRunEvent && review?.required) return <FinalsLineupScreen eventId={eventId} />;
+  return <CockpitView />;
 }

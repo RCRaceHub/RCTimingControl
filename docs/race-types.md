@@ -182,8 +182,12 @@ has the best qualifiers, and its last places are filled by the best finishers fr
 
 How the finals run:
 
-1. When the last qualifying heat of a class finishes, press **Calculate finals** in the **Finals line-up** panel of a
-   final in race control (nothing is calculated for you). Set **Cars per final** first; it starts at the size of a
+1. When the last qualifying heat of the event finishes, race control shows a **finals line-up screen** in place of the
+   cockpit (race directors and admins; referees keep the cockpit). It only calculates the finals, shows every class's
+   finals on one page for editing, and has **Confirm line-up and go to race control**, which brings the cockpit back
+   with Call Grid. Calculating again later (from the cockpit's panel too) clears the confirmation, so the screen
+   returns for the new line-ups. On that screen, or in the **Finals line-up** panel of a final in race control, press
+   **Calculate finals** (nothing is calculated for you). Set **Cars per final** first; it starts at the size of a
    qualifying heat, so the marshalling is the same as in qualifying. **Calculate finals for all classes** does every
    class that is ready in one go with each class's default. The lowest final is filled first from the bottom
    of the qualifying order with a full grid; each higher final takes what is left, with the bump spots left empty.

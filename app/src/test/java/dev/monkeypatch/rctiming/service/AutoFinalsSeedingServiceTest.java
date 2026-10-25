@@ -93,7 +93,7 @@ class AutoFinalsSeedingServiceTest {
         when(races.findByEventClassIdAndRoundType(2L, RoundType.FINAL)).thenReturn(List.of(race(RaceStatus.RUNNING)));
         when(races.findByEventClassIdAndRoundType(3L, RoundType.FINAL)).thenReturn(List.of(race(RaceStatus.PENDING)));
         when(races.findByEventClassIdAndRoundType(3L, RoundType.QUALIFIER)).thenReturn(List.of(race(RaceStatus.RUNNING)));
-        var service = new AutoFinalsSeedingService(races, classes, null, bumpUp, null, null);
+        var service = new AutoFinalsSeedingService(races, classes, null, bumpUp, null, null, null);
 
         var result = service.reseedAll(Actor.system("test"), 9L);
 
