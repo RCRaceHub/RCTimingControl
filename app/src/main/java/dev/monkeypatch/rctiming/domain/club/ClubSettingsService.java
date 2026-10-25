@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Exports the club's own configuration as one small file and reads it back on another install (#510), so a club can
@@ -57,19 +61,24 @@ public class ClubSettingsService {
     private final ClubProfileService clubs;
     private final ObjectMapper mapper;
     private final AuditService audit;
+    private final Validator validator;
 
-    public ClubSettingsService(ClubProfileService clubs, ObjectMapper mapper, AuditService audit) {
+    public ClubSettingsService(ClubProfileService clubs, ObjectMapper mapper, AuditService audit,
+                               Validator validator) {
         this.clubs = clubs;
         this.mapper = mapper;
         this.audit = audit;
+        this.validator = validator;
     }
 
     /** This install's settings as a file. Read only. */
     @Transactional(readOnly = true)
     public SettingsFile export() {
         ClubProfile profile = clubs.getProfile().orElseGet(ClubProfile::new);
-        ClubProfileService.ClubDetails club = new ClubProfileService.ClubDetails(
-                profile.getName() == null ? "" : profile.getName(), profile.getEmail(), profile.getPhone(),
+        // Before the setup wizard has saved the club there are no details to export
+        ClubProfileService.ClubDetails club = clubs.getProfile().isEmpty() || profile.getName() == null
+                || profile.getName().isBlank() ? null
+                : new ClubProfileService.ClubDetails(profile.getName(), profile.getEmail(), profile.getPhone(),
                 profile.getWebsiteUrl(), profile.getLatitude(), profile.getLongitude(), profile.getTimezone());
         ClubAudioSettings audio = profile.getAudioSettings().withHornSounds(null);
         DecoderSettings decoder = clubs.getDecoderSettings();
@@ -95,8 +104,9 @@ public class ClubSettingsService {
             sections.add(section("Club details", file.club().name(), file.club(), current.club()));
         }
         if (file.audio() != null) {
+            // The sound files are this install's own uploads and are never imported, so they are not compared
             sections.add(section("Announcer settings", "Countdown, calls, beeps and wording",
-                    file.audio(), current.audio()));
+                    file.audio().withHornSounds(null), current.audio()));
         }
         if (file.voiceId() != null) {
             sections.add(section("Default voice", file.voiceId(), file.voiceId(), current.voiceId()));
@@ -109,7 +119,7 @@ public class ClubSettingsService {
             sections.add(section("Decoder address", file.decoder().host() + ":" + file.decoder().port(),
                     file.decoder(), current.decoder()));
         }
-        if (file.resultsPublishTarget() != null) {
+        if (file.resultsPublishTarget() != null && !file.resultsPublishTarget().isBlank()) {
             sections.add(section("Where results are published", file.resultsPublishTarget(),
                     file.resultsPublishTarget(), current.resultsPublishTarget()));
         }
@@ -118,8 +128,15 @@ public class ClubSettingsService {
                     current.privacyNotice()));
         }
         if (file.governingBodies() != null && !file.governingBodies().isEmpty()) {
-            sections.add(section("Governing bodies", file.governingBodies().size() + " in the file",
-                    file.governingBodies(), current.governingBodies()));
+            // Importing adds or changes bodies by code and never removes one, so only those count as a change
+            List<GoverningBody> differing = file.governingBodies().stream()
+                    .filter(body -> current.governingBodies().stream().noneMatch(
+                            now -> now.code().equalsIgnoreCase(body.code())
+                                    && Objects.equals(now.displayName(), body.displayName())
+                                    && now.membershipRequired() == body.membershipRequired()))
+                    .toList();
+            sections.add(new Section("Governing bodies", file.governingBodies().size() + " in the file",
+                    !differing.isEmpty()));
         }
         return sections;
     }
@@ -152,9 +169,10 @@ public class ClubSettingsService {
             clubs.changeLiveTimingSettings(actor, file.liveTiming());
         }
         if (file.decoder() != null && file.decoder().host() != null) {
+            clubs.getSingletonProfileId();   // a file with a decoder but no club section on a fresh install
             clubs.updateDecoderConfig(actor, file.decoder().host(), file.decoder().port(), file.decoder().protocol());
         }
-        if (file.resultsPublishTarget() != null) {
+        if (file.resultsPublishTarget() != null && !file.resultsPublishTarget().isBlank()) {
             clubs.updateResultsPublishTarget(actor, file.resultsPublishTarget());
         }
         if (file.privacyNotice() != null) {
@@ -190,6 +208,70 @@ public class ClubSettingsService {
         if (file.version() != VERSION) {
             throw new IllegalArgumentException("This settings file is version " + file.version()
                     + "; this version of RC Timing reads version " + VERSION);
+        }
+        validate(file);
+    }
+
+    /**
+     * The checks the Club page and the setup wizard make on the same values, which a file would otherwise skip because
+     * it arrives as one body. Every message is shown to the admin.
+     */
+    private void validate(SettingsFile file) {
+        if (file.club() != null) {
+            ClubProfileService.ClubDetails club = file.club();
+            require(club.name() != null && !club.name().isBlank(), "The club name is missing");
+            require(club.timezone() != null && !club.timezone().isBlank(), "The club's time zone is missing");
+        }
+        if (file.audio() != null) {
+            ClubAudioSettings audio = file.audio();
+            require(audio.runningOrderPercent() >= 1 && audio.runningOrderPercent() <= 100,
+                    "The running order share must be from 1 to 100");
+            require(audio.startCountdownSeconds() >= 0 && audio.startCountdownSeconds() <= 60,
+                    "The start countdown must be from 0 to 60 seconds");
+            require(audio.countdownIntervals().length <= 10, "There can be at most 10 countdown calls");
+            for (int seconds : audio.countdownIntervals()) {
+                require(seconds >= 0, "A countdown call cannot be negative");
+            }
+            Set<ConstraintViolation<ClubAudioSettings.Wording>> wording = validator.validate(audio.wording());
+            require(wording.isEmpty(), "The announcer wording is too long");
+            Set<ConstraintViolation<ClubAudioSettings.Tuning>> tuning = validator.validate(audio.tuning());
+            require(tuning.isEmpty(), "The announcer tuning is out of range");
+        }
+        if (file.liveTiming() != null) {
+            file.liveTiming().validated();
+        }
+        if (file.decoder() != null && file.decoder().host() != null) {
+            Decoder decoder = file.decoder();
+            require(!decoder.host().isBlank() && decoder.host().length() <= 255, "The decoder address is not valid");
+            require(decoder.port() != null && decoder.port() >= 1 && decoder.port() <= 65535,
+                    "The decoder port must be from 1 to 65535");
+            require("RC4".equals(decoder.protocol()) || "P3".equals(decoder.protocol()),
+                    "The decoder protocol must be RC4 or P3");
+        }
+        if (file.resultsPublishTarget() != null && !file.resultsPublishTarget().isBlank()) {
+            try {
+                ResultsPublishTarget.valueOf(file.resultsPublishTarget());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Results cannot be published to " + file.resultsPublishTarget());
+            }
+        }
+        if (file.privacyNotice() != null) {
+            require(file.privacyNotice().length() <= 20_000, "The privacy notice is too long");
+        }
+        if (file.governingBodies() != null) {
+            require(file.governingBodies().size() <= 50, "There are too many governing bodies");
+            for (GoverningBody body : file.governingBodies()) {
+                require(body.code() != null && !body.code().isBlank() && body.code().length() <= 50,
+                        "A governing body needs a code of up to 50 characters");
+                require(body.displayName() != null && !body.displayName().isBlank() && body.displayName().length() <= 255,
+                        "A governing body needs a name of up to 255 characters");
+            }
+        }
+    }
+
+    private static void require(boolean ok, String message) {
+        if (!ok) {
+            throw new IllegalArgumentException(message);
         }
     }
 

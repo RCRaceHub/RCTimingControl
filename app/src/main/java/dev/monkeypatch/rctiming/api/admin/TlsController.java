@@ -8,6 +8,8 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -18,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.Instant;
+import java.util.List;
 
 /**
  * The HTTPS certificates for the Club page (#503): their state, and the two emergency buttons that make them again.
@@ -33,8 +38,11 @@ public class TlsController {
     private final TlsService tls;
     private final AuditService audit;
     private final SettingsFile settings;
+    private final int httpPort;
 
-    public TlsController(TlsService tls, AuditService audit, SettingsFile settings) {
+    public TlsController(TlsService tls, AuditService audit, SettingsFile settings,
+                         @Value("${server.port:8080}") int httpPort) {
+        this.httpPort = httpPort;
         this.tls = tls;
         this.audit = audit;
         this.settings = settings;
@@ -44,13 +52,13 @@ public class TlsController {
      * The state of HTTPS: what is running, and what the settings file says for the next start. {@code switchedOn} and
      * {@code configuredPort} are the file's values; {@code restartNeeded} is true when they differ from what is running.
      */
-    public record TlsStateDto(boolean enabled, int port, java.util.List<String> urls, java.util.List<String> names,
-                              java.time.Instant caExpires, java.time.Instant serverExpires, String caFingerprint,
+    public record TlsStateDto(boolean enabled, int port, List<String> urls, List<String> names,
+                              Instant caExpires, Instant serverExpires, String caFingerprint,
                               boolean switchedOn, int configuredPort, boolean restartNeeded) {
     }
 
     /** The body of {@code PUT /setting}. */
-    public record TlsSettingRequest(boolean enabled, @Min(1) @Max(65535) Integer port) {
+    public record TlsSettingRequest(@NotNull Boolean enabled, @Min(1) @Max(65535) Integer port) {
     }
 
     /** Whether HTTPS is on, its addresses, the names and expiry of the certificates. {@code GET}; read only. */
@@ -67,6 +75,10 @@ public class TlsController {
     @Audited("audit_log")
     @PutMapping("/setting")
     public TlsStateDto change(Authentication auth, @RequestBody @Valid TlsSettingRequest request) {
+        if (request.port() != null && request.port() == httpPort) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Port " + httpPort + " is already used by plain HTTP; choose another for HTTPS");
+        }
         settings.set("rctiming.https.enabled", String.valueOf(request.enabled()));
         if (request.port() != null) {
             settings.set("rctiming.https.port", String.valueOf(request.port()));

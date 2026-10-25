@@ -5,10 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,12 +22,16 @@ import java.util.Optional;
  * the file is the one place such a choice is written; the setting takes effect at the next restart.
  *
  * <p>Only the one key asked for is changed. Every other line, including comments and blank lines, is kept as it is, and
- * the file is written to a temporary file and moved into place, so a crash cannot leave it half written. Called from
+ * the file is written to a temporary file and moved into place, so a crash cannot leave it half written, and it
+ * keeps its permissions. It is read and written as ISO-8859-1, as Spring Boot reads {@code .properties} files. Called from
  * request threads; {@code synchronized}, because two admins saving at once would otherwise lose one change. A value
  * given by an environment variable (as the Docker image does) still wins over the file.
  */
 @Component
 public class SettingsFile {
+
+    /** The charset Spring Boot reads {@code .properties} files in, so a line this class does not touch is kept byte for byte. */
+    private static final Charset CHARSET = StandardCharsets.ISO_8859_1;
 
     private final Path file;
 
@@ -39,12 +46,13 @@ public class SettingsFile {
 
     /** The value the file gives {@code key}, or empty when the file or the key is missing. */
     public synchronized Optional<String> get(String key) {
+        String found = null;
         for (String line : lines()) {
             if (isKey(line, key)) {
-                return Optional.of(valueOf(line));
+                found = valueOf(line);   // as Spring does, the last of a repeated key wins
             }
         }
-        return Optional.empty();
+        return Optional.ofNullable(found);
     }
 
     /**
@@ -54,6 +62,9 @@ public class SettingsFile {
      * @throws IllegalStateException if the file cannot be written
      */
     public synchronized void set(String key, String value) {
+        if (hasLineBreak(key) || hasLineBreak(value)) {
+            throw new IllegalArgumentException("A setting cannot contain a line break");
+        }
         List<String> lines = new ArrayList<>(lines());
         String replacement = key + "=" + value;
         boolean found = false;
@@ -75,7 +86,7 @@ public class SettingsFile {
 
     private List<String> lines() {
         try {
-            return Files.exists(file) ? Files.readAllLines(file, StandardCharsets.UTF_8) : List.of();
+            return Files.exists(file) ? Files.readAllLines(file, CHARSET) : List.of();
         } catch (IOException e) {
             throw new IllegalStateException("Could not read " + file, e);
         }
@@ -86,13 +97,38 @@ public class SettingsFile {
             Files.createDirectories(file.toAbsolutePath().getParent());
             Path temporary = Files.createTempFile(file.toAbsolutePath().getParent(), "application", ".tmp");
             try {
-                Files.write(temporary, lines, StandardCharsets.UTF_8);
-                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
+                Files.write(temporary, lines, CHARSET);
+                copyPermissions(file, temporary);
+                move(temporary, file);
             } finally {
                 Files.deleteIfExists(temporary);
             }
         } catch (IOException e) {
             throw new IllegalStateException("Could not write " + file, e);
+        }
+    }
+
+    private static boolean hasLineBreak(String text) {
+        return text.indexOf('\r') >= 0 || text.indexOf('\n') >= 0 || text.indexOf('\0') >= 0;
+    }
+
+    /** Gives the new file the old file's permissions, so a file an admin made readable stays readable. */
+    private static void copyPermissions(Path from, Path to) {
+        try {
+            PosixFileAttributeView source = Files.getFileAttributeView(from, PosixFileAttributeView.class);
+            if (source != null && Files.exists(from)) {
+                Files.setPosixFilePermissions(to, source.readAttributes().permissions());
+            }
+        } catch (IOException | UnsupportedOperationException e) {
+            // Windows has no POSIX permissions; the folder's own access rules apply there
+        }
+    }
+
+    private static void move(Path from, Path to) throws IOException {
+        try {
+            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(from, to, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 

@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.club;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -23,12 +24,14 @@ class ClubSettingsServiceTest {
 
     private final ClubProfileService clubs = mock(ClubProfileService.class);
     private final AuditService audit = mock(AuditService.class, Answers.RETURNS_DEEP_STUBS);
+    private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
     private ClubSettingsService service;
     private ClubProfile profile;
 
     @BeforeEach
     void setUp() {
-        service = new ClubSettingsService(clubs, new ObjectMapper().findAndRegisterModules(), audit);
+        service = new ClubSettingsService(clubs, mapper, audit,
+                Validation.buildDefaultValidatorFactory().getValidator());
         profile = new ClubProfile();
         profile.setName("Wyvern RC Club");
         profile.setTimezone("Europe/London");
@@ -45,6 +48,50 @@ class ClubSettingsServiceTest {
 
         assertThat(exported.format()).isEqualTo(ClubSettingsService.FORMAT);
         assertThat(service.preview(exported)).isNotEmpty().allMatch(section -> !section.changes());
+    }
+
+    @Test
+    void anExportSurvivesBeingSavedAndReadBack() throws Exception {
+        String json = mapper.writeValueAsString(service.export());
+
+        ClubSettingsService.SettingsFile read = mapper.readValue(json, ClubSettingsService.SettingsFile.class);
+
+        assertThat(service.preview(read)).isNotEmpty().allMatch(section -> !section.changes());
+    }
+
+    @Test
+    void anInvalidSettingIsRefusedWithAMessageBeforeAnythingIsChanged() {
+        ClubSettingsService.SettingsFile exported = service.export();
+        ClubSettingsService.SettingsFile badDecoder = new ClubSettingsService.SettingsFile(
+                exported.format(), exported.version(), null, null, null, null, null,
+                new ClubSettingsService.Decoder("192.168.1.9", 0, "FOO"), null, null, null);
+        ClubSettingsService.SettingsFile badTarget = new ClubSettingsService.SettingsFile(
+                exported.format(), exported.version(), null, null, null, null, null, null, "SOMEWHERE", null, null);
+        ClubSettingsService.SettingsFile badBody = new ClubSettingsService.SettingsFile(
+                exported.format(), exported.version(), null, null, null, null, null, null, null, null,
+                List.of(new ClubSettingsService.GoverningBody(null, "No code", false)));
+
+        assertThatThrownBy(() -> service.apply(null, badDecoder)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("port");
+        assertThatThrownBy(() -> service.apply(null, badTarget)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("SOMEWHERE");
+        assertThatThrownBy(() -> service.apply(null, badBody)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("code");
+        verify(clubs, never()).updateDecoderConfig(any(), any(), any(), any());
+    }
+
+    @Test
+    void aGoverningBodyListThatIsOnlyWhatIsAlreadyThereIsNotAChange() {
+        GoverningBodyAffiliation brca = new GoverningBodyAffiliation();
+        brca.setCode("BRCA");
+        brca.setDisplayName("BRCA");
+        brca.setMembershipRequired(true);
+        when(clubs.listAffiliations()).thenReturn(List.of(brca));
+        ClubSettingsService.SettingsFile file = new ClubSettingsService.SettingsFile(
+                ClubSettingsService.FORMAT, ClubSettingsService.VERSION, null, null, null, null, null, null, null,
+                null, List.of(new ClubSettingsService.GoverningBody("brca", "BRCA", true)));
+
+        assertThat(service.preview(file)).singleElement().matches(section -> !section.changes());
     }
 
     @Test

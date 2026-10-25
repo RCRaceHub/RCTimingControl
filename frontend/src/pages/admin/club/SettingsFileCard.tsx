@@ -1,10 +1,16 @@
 import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { useExportClubSettings, useImportClubSettings } from '@/hooks/admin/useAdminClub';
 import type { SettingsSectionDto } from '@/lib/adminApi';
+
+/** The server's explanation of a refused file, such as the version it reads, when it gave one. */
+function problemDetail(error: unknown): string | undefined {
+  return axios.isAxiosError(error) ? error.response?.data?.detail : undefined;
+}
 
 /**
  * The club settings file (#510): download this install's settings as one small file, and read a file from another
@@ -34,7 +40,7 @@ export default function SettingsFileCard() {
         setFile(parsed);
         setSections(preview);
       },
-      onError: () => toast.error('That is not a settings file this version of RC Timing can read.'),
+      onError: (error) => toast.error(problemDetail(error) ?? 'That is not a settings file this version of RC Timing can read.'),
     });
   }
 
@@ -46,7 +52,8 @@ export default function SettingsFileCard() {
         setFile(null);
         if (input.current) input.current.value = '';
       },
-      onError: () => toast.error('The settings could not be imported, so nothing was changed.'),
+      onError: (error) => toast.error(
+        problemDetail(error) ?? 'The settings could not be imported, so nothing was changed.'),
     });
   }
 

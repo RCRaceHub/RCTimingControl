@@ -1062,7 +1062,7 @@ PUT  /api/v1/admin/tls/setting
 
 `import` takes that file as the body. With `apply=false` (the default) it changes nothing and answers the sections in the file as `[{name, summary, changes}]`; with `apply=true` it applies them in one transaction, each through the same checks and audit rows as the Club page, and answers the same list. 400 for a file that is not a settings file, is another version, or holds an invalid setting; then nothing is changed.
 
-`PUT /api/v1/admin/tls/setting` takes `{enabled, port?}` and writes `rctiming.https.enabled` and `rctiming.https.port` to `application.properties` in the data folder; it takes effect at the next restart. The state answered by `GET /api/v1/admin/tls` gains `switchedOn`, `configuredPort` and `restartNeeded`.
+`PUT /api/v1/admin/tls/setting` takes `{enabled, port?}` and writes `rctiming.https.enabled` and `rctiming.https.port` to `application.properties` in the data folder; it takes effect at the next restart. 400 for a port outside 1 to 65535 or the same as the plain HTTP port. The state answered by `GET /api/v1/admin/tls` gains `switchedOn`, `configuredPort` and `restartNeeded`.
 
 ## Error responses
 
