@@ -142,3 +142,71 @@ export function tickerSegments(
   }
   return segments;
 }
+
+/** Everything the overlay designer (#524) lets an official choose; the overlay reads the same choices from its address. */
+export type OverlayDesign = {
+  eventId: number | null;
+  top: number;
+  showClass: boolean;
+  theme: 'dark' | 'light';
+  showChart: boolean;
+  tickerItems: TickerItem[];
+  showSponsors: boolean;
+  layout: 'tower' | 'table';
+  showQualifying: boolean;
+  showPredicted: boolean;
+  showBars: boolean;
+  showArrows: boolean;
+  showBattles: boolean;
+  /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
+  closeSeconds: number | null;
+};
+
+/** The overlay as it opens with no options on its address. */
+export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
+  eventId: null,
+  top: OVERLAY_DEFAULT_TOP,
+  showClass: true,
+  theme: 'dark',
+  showChart: true,
+  tickerItems: [...TICKER_ITEMS],
+  showSponsors: true,
+  layout: 'tower',
+  showQualifying: true,
+  showPredicted: true,
+  showBars: true,
+  showArrows: true,
+  showBattles: true,
+  closeSeconds: null,
+};
+
+/** The most places the designer offers; the overlay itself caps `top` here. */
+export const OVERLAY_TOP_LIMIT = OVERLAY_MAX_TOP;
+
+/**
+ * The query string ("" or "?a=b&...") that opens the overlay as designed. Only choices that differ from the
+ * overlay's defaults are written, so a stock design is the bare address and the addresses stay short for OBS.
+ * {@link parseOverlayOptions} reads back what this writes.
+ */
+export function overlayQuery(design: OverlayDesign): string {
+  const q = new URLSearchParams();
+  if (design.eventId !== null) q.set('event', String(design.eventId));
+  if (design.top !== OVERLAY_DEFAULT_TOP) q.set('top', String(design.top));
+  if (!design.showClass) q.set('class', 'hide');
+  if (design.theme === 'light') q.set('theme', 'light');
+  if (!design.showChart) q.set('chart', 'hide');
+  if (design.tickerItems.length === 0) q.set('ticker', 'hide');
+  else if (design.tickerItems.length < TICKER_ITEMS.length) {
+    q.set('ticker', TICKER_ITEMS.filter((item) => design.tickerItems.includes(item)).join(','));
+  }
+  if (!design.showSponsors) q.set('sponsors', 'hide');
+  if (design.layout === 'table') q.set('layout', 'table');
+  if (!design.showQualifying) q.set('qual', 'hide');
+  if (!design.showPredicted) q.set('predict', 'hide');
+  if (!design.showBars) q.set('bars', 'hide');
+  if (!design.showArrows) q.set('arrows', 'hide');
+  if (!design.showBattles) q.set('battles', 'hide');
+  if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
+  const text = q.toString().replace(/%2C/g, ',');
+  return text ? `?${text}` : '';
+}
