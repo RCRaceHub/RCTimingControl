@@ -24,6 +24,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getPositionHistory: vi.fn(),
   getTicker: vi.fn(),
   getSponsors: vi.fn(),
+  getLiveQualifying: vi.fn(),
 }));
 
 import {
@@ -34,6 +35,7 @@ import {
   getRoundFastestLap,
   getTicker,
   getSponsors,
+  getLiveQualifying,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -107,6 +109,7 @@ beforeEach(() => {
   vi.mocked(getPositionHistory).mockResolvedValue([]);
   vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getSponsors).mockResolvedValue([]);
+  vi.mocked(getLiveQualifying).mockResolvedValue({ eventId: null, eventName: null, phase: 'NONE', raceId: null, raceLabel: null, className: null, rows: [] });
 });
 
 afterEach(() => {
@@ -125,7 +128,7 @@ describe('OverlayBoard', () => {
 
   it('shows the race, its running order, laps, last lap and time to go', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
-    renderOverlay();
+    renderOverlay('/boards/overlay?layout=table');
 
     expect(await screen.findByText('Qualifying 1 — Stock Buggy — Heat 2')).toBeInTheDocument();
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
@@ -141,7 +144,7 @@ describe('OverlayBoard', () => {
 
     expect(await screen.findByLabelText('Up 1')).toBeInTheDocument();
     expect(screen.getByTestId('lap-progress')).toBeInTheDocument();
-    expect(container.querySelector('tr[data-close]')).not.toBeNull();
+    expect(container.querySelector('[role="row"][data-close]')).not.toBeNull();
     unmount();
 
     renderOverlay('/boards/overlay?arrows=hide&bars=hide&close=0');
@@ -156,7 +159,7 @@ describe('OverlayBoard', () => {
     renderOverlay();
 
     const driver = await screen.findByText('Grace Hopper');
-    expect(driver.closest('tr')).toHaveClass('bg-purple-500/40');
+    expect(driver.closest('[role="row"]')).toHaveClass('bg-purple-500/40');
   });
 
   it('ticker starts with the heat\'s total laps, then the fastest lap and the round\'s fastest', async () => {
@@ -184,7 +187,7 @@ describe('OverlayBoard', () => {
     renderOverlay();
 
     const rows = await screen.findAllByRole('row');
-    expect(rows[1]).toHaveTextContent('Grace Hopper');
+    expect(rows[0]).toHaveTextContent('Grace Hopper');
     expect(screen.queryByText('Walk-in Wendy')).not.toBeInTheDocument();
   });
 
@@ -231,6 +234,53 @@ describe('OverlayBoard', () => {
   });
 });
 
+describe('OverlayBoard timing tower', () => {
+  it('stacks the rows by place, sliding each to its slot, with the gap to the car ahead', async () => {
+    stompFrames['/topic/race/12/timing'] = [
+      row(1, 'Grace Hopper', 13_500),
+      { ...row(2, 'Ada Lovelace', 14_100), gapToAheadMs: 1_250 },
+    ];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay();
+
+    const rows = await screen.findAllByRole('row');
+    expect(rows[0]).toHaveStyle({ transform: 'translateY(0rem)' });
+    expect(rows[1]).toHaveStyle({ transform: 'translateY(2.5rem)' });
+    expect(rows[1]).toHaveTextContent('Ada Lovelace');
+    expect(rows[1]).toHaveTextContent('+1.250');
+  });
+
+  it('shows each driver\'s projected qualifying place and how far it moved in a qualifying heat', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getLiveQualifying).mockResolvedValue({
+      eventId: 1,
+      eventName: 'Club Day',
+      phase: 'LIVE',
+      raceId: 12,
+      raceLabel: race.label,
+      className: 'Stock Buggy',
+      rows: [
+        { position: 3, previousPosition: 5, entryId: 1, driverName: 'Grace Hopper', carNumber: '1', points: 3, lapsCompleted: 9, bestLapMs: 13_500, live: true, waiting: false },
+        { position: 4, previousPosition: 4, entryId: 2, driverName: 'Ada Lovelace', carNumber: '2', points: 4, lapsCompleted: 8, bestLapMs: 14_100, live: true, waiting: false },
+      ],
+    });
+    renderOverlay();
+
+    const rows = await screen.findAllByRole('row');
+    await vi.waitFor(() => expect(rows[0]).toHaveTextContent('Q3▲2'));
+    expect(rows[1]).toHaveTextContent('Q4');
+  });
+
+  it('draws the old table instead with layout=table', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay('/boards/overlay?layout=table');
+
+    expect(await screen.findByRole('table', { name: 'Running order' })).toBeInTheDocument();
+    expect(screen.queryByText('Q1')).not.toBeInTheDocument();
+  });
+});
+
 describe('OverlayBoard sponsor bar', () => {
   it('shows the event sponsors along the foot, a logo where there is one and the name where not', async () => {
     vi.mocked(getSponsors).mockResolvedValue([
@@ -262,6 +312,8 @@ describe('overlay options', () => {
       showChart: true,
       tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest']),
       showSponsors: true,
+      layout: 'tower',
+      showQualifying: true,
       showBars: true,
       showArrows: true,
       showPredicted: true,

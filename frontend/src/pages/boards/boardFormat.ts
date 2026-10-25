@@ -68,8 +68,17 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
     showSponsors: params.get('sponsors')?.toLowerCase() !== 'hide',
+    layout: params.get('layout')?.toLowerCase() === 'table' ? ('table' as const) : ('tower' as const),
+    showQualifying: params.get('qual')?.toLowerCase() !== 'hide',
     ...parseLiveRaceOptions(params, defaultCloseMs),
   };
+}
+
+/** The gap a tower row shows: laps down, or the time behind the car ahead; a dash for the leader and for no gap yet. */
+export function gapText(row: LiveTimingRowDto): string {
+  if (row.position === 1) return '—';
+  if (row.intervalLapsDown > 0) return `+${row.intervalLapsDown} ${row.intervalLapsDown === 1 ? 'lap' : 'laps'}`;
+  return row.gapToAheadMs !== null ? `+${fmtMs(row.gapToAheadMs)}` : '—';
 }
 
 /** Race time as m:ss, rounded down to the second. */
