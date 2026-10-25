@@ -85,7 +85,7 @@ To use port 80, so devices can open `http://192.168.1.50/` with no port, add `HO
 
 ### Secure connection (HTTPS)
 
-The secure connection described in [installing.md](installing.md#secure-connection-https) works in Docker too, but the compose files publish only port 8080. Turn it on with `rctiming.https.enabled=true` in the `application.properties` in the data folder, publish port 8443 by adding `- "8443:8443"` under `ports:` in the compose file, and set `CLUB_ADDRESS` to the machine's real address or name, because the certificate can only cover names the app can see (inside a container it can't see the machine's own).
+The secure connection described in [installing.md](installing.md#secure-connection-https) works in Docker too, but the compose files publish only port 8080. In `docker-compose.club.yml`, add `RCTIMING_HTTPS_ENABLED: "true"` to `environment:` and `- "8443:8443"` to `ports:`, then run `docker compose -f docker-compose.club.yml up -d`. Set `CLUB_ADDRESS` to the machine's real address or name, because the certificate can only cover names the app can see (inside a container it can't see the machine's own). The certificates are kept in the `club_data` volume, so they survive upgrades.
 
 ### Where the data is
 
