@@ -54,7 +54,7 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 // HSTS ignores ports: a device that trusted the HTTPS address would be sent to HTTPS on the HTTP port
-                .headers(h -> h.httpStrictTransportSecurity(AbstractHttpConfigurer::disable))
+                .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts.disable()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
