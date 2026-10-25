@@ -11,9 +11,9 @@ import type { PredictedClock } from './BoardLiveTable';
 import { gapText, leaderGapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
-export const TOWER_ROW_REM = 2.5;
+export const TOWER_ROW_REM = 2;
 /** The panel width of the tower: wide enough for the name beside the predicted laps, qualifying place and gap. */
-export const TOWER_WIDTH_CLASS = 'w-[30rem]';
+export const TOWER_WIDTH_CLASS = 'w-[23rem]';
 
 /** A driver's projected place in the event's qualifying table, if the heat ended now. */
 export interface ProjectedQualifying {
@@ -95,8 +95,8 @@ export function OverlayTower({
   const gapClass = cn('transition-opacity duration-200', gapFading && 'opacity-0');
   return (
     <>
-      <div aria-hidden className={cn('flex justify-end px-3 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
-        <span className={cn('w-20 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
+      <div aria-hidden className={cn('flex justify-end px-2 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
+        <span className={cn('w-[4.5rem] text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
       </div>
       <div
         role="table"
@@ -114,7 +114,7 @@ export function OverlayTower({
               role="row"
               data-close={close || undefined}
               className={cn(
-                'absolute inset-x-0 flex items-center gap-2 border-t px-3 transition-[transform,background-color] duration-700 ease-in-out',
+                'absolute inset-x-0 flex items-center gap-1.5 border-t px-2 transition-[transform,background-color] duration-700 ease-in-out',
                 colours.row,
                 close && !flash && 'bg-amber-500/25',
                 flash && FLASH_CLASS[flash],
@@ -123,13 +123,13 @@ export function OverlayTower({
             >
               <span
                 className={cn(
-                  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded font-bold tabular-nums',
+                  'inline-flex h-6 w-6 shrink-0 text-sm items-center justify-center rounded font-bold tabular-nums',
                   colours.position,
                 )}
               >
                 {row.position}
               </span>
-              <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
+              <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
               <span className="relative min-w-0 flex-1 truncate font-semibold">
                 {row.driverName}
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
@@ -139,12 +139,12 @@ export function OverlayTower({
                 )}
               </span>
               {predicted && (
-                <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)} title="Laps on course to finish with">
+                <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)} title="Laps on course to finish with">
                   <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
                 </span>
               )}
               {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
-              <span className={cn('w-20 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
+              <span className={cn('w-[4.5rem] shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
                 {gap === 'int' ? gapText(row) : leaderGapText(row)}
               </span>
             </div>
