@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService.CompetitorMediaView;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -55,13 +56,13 @@ public class AdminDriverMediaController {
     @Audited("audit_log")
     @PutMapping("/competitors/{id}/media/sponsors")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView setSponsors(Authentication auth, @PathVariable long id, @RequestBody SponsorsRequest request) {
+    public CompetitorMediaView setSponsors(Authentication auth, @PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
         return service.setSponsors(CurrentOfficial.actor(auth), id, request.names() == null ? List.of() : request.names());
     }
 
     /**
      * Replaces the headshot. {@code PUT /competitors/{id}/media/headshot} as multipart form data with a {@code file}
-     * part (PNG, JPEG or WebP up to 2 MB); ADMIN or RACE_DIRECTOR; 400. Audited.
+     * part (PNG or JPEG up to 2 MB); ADMIN or RACE_DIRECTOR; 400. Audited.
      */
     @Audited("audit_log")
     @PutMapping(value = "/competitors/{id}/media/headshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -86,8 +87,8 @@ public class AdminDriverMediaController {
     }
 
     /**
-     * Replaces the car photo. {@code PUT /entries/{id}/car-photo} as multipart form data with a {@code file} part (PNG,
-     * JPEG or WebP up to 2 MB); ADMIN or RACE_DIRECTOR; 400. Audited.
+     * Replaces the car photo. {@code PUT /entries/{id}/car-photo} as multipart form data with a {@code file} part (PNG or
+     * JPEG up to 2 MB); ADMIN or RACE_DIRECTOR; 400. Audited.
      */
     @Audited("audit_log")
     @PutMapping(value = "/entries/{id}/car-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

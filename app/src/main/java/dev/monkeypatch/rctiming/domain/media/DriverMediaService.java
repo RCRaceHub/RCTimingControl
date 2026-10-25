@@ -13,8 +13,14 @@ import dev.monkeypatch.rctiming.infrastructure.storage.ObjectStorageService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,15 +40,20 @@ import java.util.stream.Collectors;
  * <p>A headshot is personal data. It is kept only when an official adds it, it is deleted from storage, not just
  * unlinked, when it is replaced, removed or the competitor is anonymised, and {@link #publicForRace} never returns a
  * competitor's pictures or sponsors while their name is not shown in full (#265). Files are named by a random id, so
- * their addresses cannot be guessed, but anyone who has an address can open it. PNG, JPEG or WebP up to 2 MB only: no
- * SVG, which could carry a script. Audit rows name the competitor or entry by id, never by name.
+ * their addresses cannot be guessed, but anyone who has an address can open it. PNG or JPEG up to 2 MB only, no SVG
+ * (which could carry a script) and no WebP. Each upload is decoded and written out again, which proves it is an image
+ * and drops any metadata such as the GPS position a phone adds. A replaced file is deleted only once the change has
+ * committed, and an upload whose change rolls back is deleted again, so a failure never leaves a record pointing at a
+ * missing file. Audit rows name the competitor or entry by id, never by name.
  */
 @Service
 @Transactional
 public class DriverMediaService {
 
-    private static final Set<String> IMAGE_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
+    private static final Set<String> IMAGE_TYPES = Set.of("image/png", "image/jpeg");
     private static final long IMAGE_MAX_BYTES = 2 * 1024 * 1024L;
+    /** Where pictures are kept in object storage; only files under it are ever deleted by this class. */
+    private static final String PHOTO_FOLDER = "photos";
     private static final int SPONSORS_MAX = 5;
     private static final int SPONSOR_NAME_MAX = 100;
 
@@ -85,8 +96,11 @@ public class DriverMediaService {
                 .orElse(new CompetitorMediaView(null, List.of()));
     }
 
-    /** An entry's car photo address, or null.
-     * @throws EntityNotFoundException (404) if there is no such entry */
+    /**
+     * An entry's car photo address, or null.
+     *
+     * @throws EntityNotFoundException (404) if there is no such entry
+     */
     @ReadTransaction
     public String carPhoto(long entryId) {
         entries.requireExists(entryId);
@@ -103,7 +117,7 @@ public class DriverMediaService {
     public CompetitorMediaView setSponsors(Actor actor, long competitorId, List<String> names) {
         competitors.requireExists(competitorId);
         List<String> clean = names.stream().filter(n -> n != null).map(String::trim).filter(n -> !n.isEmpty()).toList();
-        if (clean.size() > SPONSORS_MAX || clean.stream().anyMatch(n -> n.length() > SPONSOR_NAME_MAX || n.contains("\n"))) {
+        if (clean.size() > SPONSORS_MAX || clean.stream().anyMatch(n -> n.length() > SPONSOR_NAME_MAX || n.chars().anyMatch(Character::isISOControl))) {
             throw new IllegalArgumentException(
                     "A driver can have up to " + SPONSORS_MAX + " sponsors of up to " + SPONSOR_NAME_MAX + " characters");
         }
@@ -118,14 +132,14 @@ public class DriverMediaService {
     /**
      * Stores the uploaded image as the competitor's headshot, deleting the previous one.
      *
-     * @throws IllegalArgumentException (400) if the file is missing, not PNG, JPEG or WebP, over 2 MB or unreadable
+     * @throws IllegalArgumentException (400) if the file is missing, not PNG or JPEG, over 2 MB or unreadable
      * @throws EntityNotFoundException (404) if there is no such competitor
      */
     public CompetitorMediaView uploadHeadshot(Actor actor, long competitorId, MultipartFile file) {
         competitors.requireExists(competitorId);
         String url = store(file);
         DriverMedia row = mediaRow(competitorId);
-        storage.delete(row.getHeadshotUrl());
+        deleteAfterCommit(row.getHeadshotUrl());
         row.setHeadshotUrl(url);
         media.save(row);
         audit.entry(actor, "DRIVER_HEADSHOT_CHANGED").entity("competitor", competitorId)
@@ -133,11 +147,15 @@ public class DriverMediaService {
         return new CompetitorMediaView(url, splitSponsors(row.getSponsors()));
     }
 
-    /** Removes the competitor's headshot, from storage too. @throws EntityNotFoundException (404) */
+    /**
+     * Removes the competitor's headshot, from storage too once the change commits.
+     *
+     * @throws EntityNotFoundException (404) if there is no such competitor
+     */
     public CompetitorMediaView deleteHeadshot(Actor actor, long competitorId) {
         competitors.requireExists(competitorId);
         DriverMedia row = mediaRow(competitorId);
-        storage.delete(row.getHeadshotUrl());
+        deleteAfterCommit(row.getHeadshotUrl());
         row.setHeadshotUrl(null);
         media.save(row);
         audit.entry(actor, "DRIVER_HEADSHOT_REMOVED").entity("competitor", competitorId)
@@ -160,7 +178,7 @@ public class DriverMediaService {
             created.setEntryId(entryId);
             return created;
         });
-        storage.delete(photo.getCarPhotoUrl());
+        deleteAfterCommit(photo.getCarPhotoUrl());
         photo.setCarPhotoUrl(url);
         photos.save(photo);
         audit.entry(actor, "ENTRY_CAR_PHOTO_CHANGED").entity("entry", entryId).event(entry.getEventId())
@@ -168,11 +186,15 @@ public class DriverMediaService {
         return url;
     }
 
-    /** Removes the entry's car photo, from storage too. @throws EntityNotFoundException (404) */
+    /**
+     * Removes the entry's car photo, from storage too once the change commits.
+     *
+     * @throws EntityNotFoundException (404) if there is no such entry
+     */
     public void deleteCarPhoto(Actor actor, long entryId) {
         Entry entry = entries.getOrThrow(entryId);
         photos.findByEntryId(entryId).ifPresent(photo -> {
-            storage.delete(photo.getCarPhotoUrl());
+            deleteAfterCommit(photo.getCarPhotoUrl());
             photos.deleteById(photo.getId());
             audit.entry(actor, "ENTRY_CAR_PHOTO_REMOVED").entity("entry", entryId).event(entry.getEventId())
                     .summary("Removed the car photo of entry #" + entryId).record();
@@ -186,12 +208,12 @@ public class DriverMediaService {
      */
     public void eraseForCompetitor(long competitorId) {
         media.findByCompetitorId(competitorId).ifPresent(row -> {
-            storage.delete(row.getHeadshotUrl());
+            deleteAfterCommit(row.getHeadshotUrl());
             media.deleteById(row.getId());
         });
         List<Long> entryIds = entries.findByCompetitorId(competitorId).stream().map(Entry::getId).toList();
         photos.findByEntryIds(entryIds).forEach(photo -> {
-            storage.delete(photo.getCarPhotoUrl());
+            deleteAfterCommit(photo.getCarPhotoUrl());
             photos.deleteById(photo.getId());
         });
     }
@@ -238,6 +260,23 @@ public class DriverMediaService {
         });
     }
 
+    /** Deletes a stored picture once the surrounding transaction has committed (at once when there is none). */
+    private void deleteAfterCommit(String url) {
+        if (url == null || !url.contains("/" + PHOTO_FOLDER + "/")) {
+            return;
+        }
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            storage.delete(url);
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                storage.delete(url);
+            }
+        });
+    }
+
     private String store(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("file part is required");
@@ -249,18 +288,45 @@ public class DriverMediaService {
         if (file.getSize() > IMAGE_MAX_BYTES) {
             throw new IllegalArgumentException("File too large: max " + IMAGE_MAX_BYTES + " bytes");
         }
-        byte[] bytes;
+        byte[] bytes = reencode(file, contentType);
+        String extension = contentType.equals("image/png") ? "png" : "jpg";
+        String url = storage.upload(PHOTO_FOLDER + "/" + UUID.randomUUID() + "." + extension, bytes);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            // A change that rolls back must not leave this file behind with nothing pointing at it
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        storage.delete(url);
+                    }
+                }
+            });
+        }
+        return url;
+    }
+
+    /** Decodes the upload and writes it out again, so only pixels are kept; fails for anything that is not an image. */
+    private static byte[] reencode(MultipartFile file, String contentType) {
         try {
-            bytes = file.getBytes();
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(file.getBytes()));
+            if (image == null) {
+                throw new IllegalArgumentException("The file is not a readable " + contentType + " image");
+            }
+            boolean png = contentType.equals("image/png");
+            BufferedImage out = image;
+            if (!png && image.getType() != BufferedImage.TYPE_INT_RGB) {
+                // JPEG has no transparency
+                out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+                out.getGraphics().drawImage(image, 0, 0, java.awt.Color.WHITE, null);
+            }
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            if (!ImageIO.write(out, png ? "png" : "jpg", bytes)) {
+                throw new IllegalArgumentException("The file is not a readable " + contentType + " image");
+            }
+            return bytes.toByteArray();
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
         }
-        String extension = switch (contentType) {
-            case "image/png" -> "png";
-            case "image/jpeg" -> "jpg";
-            default -> "webp";
-        };
-        return storage.upload("photos/" + UUID.randomUUID() + "." + extension, bytes);
     }
 
     private static List<String> splitSponsors(String stored) {

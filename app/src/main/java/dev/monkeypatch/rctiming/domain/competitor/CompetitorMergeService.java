@@ -68,7 +68,6 @@ public class CompetitorMergeService {
                                   ObjectMapper objectMapper,
                                   AuditService audit,
                                   DriverMediaService driverMedia) {
-        this.driverMedia = driverMedia;
         this.competitorRepository = competitorRepository;
         this.entryRepository = entryRepository;
         this.auditLogRepository = auditLogRepository;
@@ -78,6 +77,7 @@ public class CompetitorMergeService {
         this.practiceDriverRepository = practiceDriverRepository;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.driverMedia = driverMedia;
     }
 
     /** One of the two competitors, as the preview shows it. */

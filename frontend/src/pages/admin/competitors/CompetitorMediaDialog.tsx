@@ -23,9 +23,11 @@ function MediaForm({ competitor }: { competitor: CompetitorSummaryDto }) {
   const { sponsors, upload, remove } = useCompetitorMediaMutations(competitor.id);
   // One name per row; the saved list fills the form once it arrives (adjusting state while rendering)
   const [names, setNames] = useState<string[]>([]);
-  const [loadedFor, setLoadedFor] = useState<unknown>(null);
-  if (media && loadedFor !== media) {
-    setLoadedFor(media);
+  // Keyed on the saved sponsors, not the object, so a headshot change does not wipe names being typed
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const savedKey = media ? JSON.stringify(media.sponsors) : null;
+  if (media && loadedFor !== savedKey) {
+    setLoadedFor(savedKey);
     setNames(media.sponsors);
   }
   const fail = (error: unknown) => toast.error(getApiErrorMessage(error, 'Could not save. Try again.'));
@@ -46,7 +48,7 @@ function MediaForm({ competitor }: { competitor: CompetitorSummaryDto }) {
             {media?.headshotUrl ? 'Replace headshot' : 'Add headshot'}
             <input
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg"
               className="sr-only"
               aria-label="Headshot file"
               onChange={e => {
@@ -63,7 +65,7 @@ function MediaForm({ competitor }: { competitor: CompetitorSummaryDto }) {
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          PNG, JPEG or WebP up to 2 MB. Only add one with the driver&apos;s agreement; it is deleted if they are anonymised,
+          PNG or JPEG up to 2 MB. Only add one with the driver&apos;s agreement; it is deleted if they are anonymised,
           and never shown on a public screen while their name is not shown in full.
         </p>
       </div>

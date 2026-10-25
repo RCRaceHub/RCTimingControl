@@ -68,8 +68,9 @@ public class FilesystemObjectStorageService implements ObjectStorageService {
         if (url == null || !url.startsWith(publicBaseUrl + "/")) {
             return;
         }
-        Path target = rootDir.resolve(url.substring(publicBaseUrl.length() + 1)).normalize();
-        if (!target.startsWith(rootDir)) {
+        String key = url.substring(publicBaseUrl.length() + 1);
+        Path target = rootDir.resolve(key).normalize();
+        if (key.isBlank() || target.equals(rootDir) || !target.startsWith(rootDir)) {
             return;
         }
         try {

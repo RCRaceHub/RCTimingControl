@@ -32,7 +32,8 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESUL
  * still add up, but nothing that says who they are is kept.
  * <p>
  * What goes: the display name (replaced by {@code Anonymised competitor #id}), BRCA number, RaceHub driver id, home
- * club and spoken name; the headshot (file included), driver sponsors and car photos; the name inside every stored result and every queued or sent RaceHub export; and the names and
+ * club and spoken name; the headshot (file included), driver sponsors and car photos (#520); the name inside every
+ * stored result and every queued or sent RaceHub export; and the names and
  * numbers in the change history of the competitor and of their entries, in the audit log and in the entry audit log.
  * Those history rows stay, with their details replaced, so the log still shows that something happened.
  * <p>
@@ -72,11 +73,11 @@ public class CompetitorAnonymiseService {
 
     public CompetitorAnonymiseService(CompetitorRepository competitors, DSLContext dsl, ObjectMapper objectMapper,
                                       AuditService audit, DriverMediaService driverMedia) {
-        this.driverMedia = driverMedia;
         this.competitors = competitors;
         this.dsl = dsl;
         this.objectMapper = objectMapper;
         this.audit = audit;
+        this.driverMedia = driverMedia;
     }
 
     /** The display name an anonymised competitor is given. */

@@ -31,7 +31,7 @@ function CarPhotoForm({ entryId, driverName }: { entryId: number; driverName: st
           {url ? 'Replace photo' : 'Add photo'}
           <input
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg"
             className="sr-only"
             aria-label="Car photo file"
             onChange={e => {
@@ -48,7 +48,7 @@ function CarPhotoForm({ entryId, driverName }: { entryId: number; driverName: st
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        PNG, JPEG or WebP up to 2 MB. Keep the driver out of the picture. It shows on the live timing and referee
+        PNG or JPEG up to 2 MB. Keep the driver out of the picture. It shows on the live timing and referee
         screens, and is deleted if the driver is anonymised.
       </p>
     </div>
