@@ -90,7 +90,7 @@ public class AdminCompetitorController {
 
     /**
      * The transponder numbers from the competitor's most recent entry, to prefill the add-entry form. {@code GET};
-     * read only; all four are null when they have never been entered.
+     * read only; ADMIN, RACE_DIRECTOR or REFEREE. All four are null when they have never been entered.
      */
     @GetMapping("/{id}/last-transponders")
     public CompetitorTransponderDto lastTransponders(@PathVariable Long id) {
