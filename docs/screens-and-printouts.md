@@ -122,7 +122,9 @@ Options go on the end of the address:
 | `sponsors=hide` | Leave out the sponsor bar |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |
 
-For example `/boards/overlay?top=6&theme=light`. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
+For example `/boards/overlay?top=6&theme=light`.
+
+You don't need to write the address by hand: **Admin, Overlay Designer** (ADMIN and RACE_DIRECTOR) lets you tick the parts you want, the layout, the ticker items, the theme and the number of places, shows the overlay live in a preview, and gives you the address to copy into OBS (#524). Nothing is saved on the server; the address holds the design, so keep the ones you use in OBS. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
 
 The same position chart is on the Live race screen (`/boards/live-race`, add `?event=ID` for one event) below the live timing. The old `/boards/chart` address still works and opens the Live race screen. Names follow each competitor's public name setting.
 

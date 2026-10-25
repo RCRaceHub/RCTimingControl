@@ -35,6 +35,7 @@ const TracksPage = lazy(() => import('@/pages/admin/tracks/TracksPage'));
 const ClassesPage = lazy(() => import('@/pages/admin/classes/ClassesPage'));
 const FormatsPage = lazy(() => import('@/pages/admin/formats/FormatsPage'));
 const BoardViewsPage = lazy(() => import('@/pages/admin/board-views/BoardViewsPage'));
+const OverlayDesignerPage = lazy(() => import('@/pages/admin/board-views/OverlayDesignerPage'));
 const ScoringSystemsPage = lazy(() => import('@/pages/admin/scoring/ScoringSystemsPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
 const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSettingsPage'));
@@ -127,6 +128,7 @@ const router = createBrowserRouter([
           { path: 'officials', element: <ProtectedRoute roles={['ADMIN']}><OfficialsPage /></ProtectedRoute> },
           { path: 'audio', element: <AdminAudioSettingsPage /> },
           { path: 'board-views', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><BoardViewsPage /></ProtectedRoute> },
+          { path: 'overlay-designer', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><OverlayDesignerPage /></ProtectedRoute> },
           { path: 'competitors', element: <CompetitorsPage /> },
         ],
       },

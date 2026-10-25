@@ -70,6 +70,7 @@ const configGroup: NavEntry[] = [
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
   { to: '/admin/board-views', label: 'Board Views', Icon: Tv, runEventOnly: true },
+  { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: Tv, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */
