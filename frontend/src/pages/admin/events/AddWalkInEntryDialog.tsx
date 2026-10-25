@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
+import { adminApi } from '@/lib/adminApi';
 import { useCreateWalkInEntry } from '@/hooks/admin/useAdminEntries';
 import type { CompetitorSummaryDto } from '@/lib/adminApi';
 import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPicker';
@@ -69,6 +70,21 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   const exactMatch = query
     ? competitors.find(c => sameNameKey(c.displayName) === sameNameKey(driverText))
     : undefined;
+
+  /** Picks a driver and, if the numbers are still empty, starts from the ones on their latest entry. */
+  async function pickDriver(competitor: CompetitorSummaryDto) {
+    setSelected(competitor);
+    try {
+      const last = await adminApi.competitors.lastTransponders(competitor.id);
+      // Fill only boxes the official has not typed in while this loaded
+      setPrimary(v => v || last.primaryTransponder || '');
+      setSecondary(v => v || last.secondaryTransponder || '');
+      setThird(v => v || last.thirdTransponder || '');
+      setFourth(v => v || last.fourthTransponder || '');
+    } catch {
+      // Prefilling is a convenience; the official can still type the numbers
+    }
+  }
 
   async function submit(options: { competitor?: CompetitorSummaryDto; confirmNew?: boolean } = {}) {
     const chosen = options.competitor ?? selected;
@@ -128,7 +144,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
           <DialogHeader>
             <DialogTitle>Add entry</DialogTitle>
             <DialogDescription>
-              Add a walk-in to this class. Pick a driver who has raced before, or type a new name.
+              Add a walk-in to this class. Pick a driver who has raced before, and their transponders from last time are filled in. Or type a new name.
             </DialogDescription>
           </DialogHeader>
 
@@ -148,7 +164,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                   placeholder="Search drivers or type a new name"
                   autoComplete="off"
                 />
-                <CompetitorChoices choices={matches} onPick={setSelected} label="Matching drivers" />
+                <CompetitorChoices choices={matches} onPick={c => void pickDriver(c)} label="Matching drivers" />
                 {query && !exactMatch && (
                   <p className="text-xs text-muted-foreground">
                     “{driverText.trim()}” will be added as a new driver.

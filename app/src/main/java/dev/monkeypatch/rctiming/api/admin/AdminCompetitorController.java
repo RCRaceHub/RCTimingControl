@@ -16,6 +16,7 @@ import dev.monkeypatch.rctiming.query.competitor.CompetitorDataExportService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDuplicateGroupDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorQueryService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorSummaryDto;
+import dev.monkeypatch.rctiming.query.competitor.CompetitorTransponderDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -85,6 +86,15 @@ public class AdminCompetitorController {
     @GetMapping
     public List<CompetitorSummaryDto> listCompetitors() {
         return competitorQueryService.listAll();
+    }
+
+    /**
+     * The transponder numbers from the competitor's most recent entry, to prefill the add-entry form. {@code GET};
+     * read only; all four are null when they have never been entered.
+     */
+    @GetMapping("/{id}/last-transponders")
+    public CompetitorTransponderDto lastTransponders(@PathVariable Long id) {
+        return competitorQueryService.lastTransponders(id);
     }
 
     /**

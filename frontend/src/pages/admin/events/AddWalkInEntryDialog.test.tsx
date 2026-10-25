@@ -12,7 +12,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: v
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     createWalkInEntry: vi.fn(),
-    competitors: { list: vi.fn() },
+    competitors: { list: vi.fn(), lastTransponders: vi.fn() },
   },
 }));
 
@@ -75,6 +75,21 @@ describe('AddWalkInEntryDialog', () => {
       eventId: 5, eventClassId: 11, competitorId: 7, primaryTransponder: '1234', secondaryTransponder: '5678',
     });
     expect(toast.success).toHaveBeenCalledWith('Entry added for Ada Lovelace.');
+  });
+
+  it('fills the transponders from the picked driver\'s latest entry, still editable', async () => {
+    api.competitors.lastTransponders.mockResolvedValue({
+      primaryTransponder: '1111', secondaryTransponder: '2222', thirdTransponder: null, fourthTransponder: null,
+    });
+    renderDialog();
+
+    type('Driver', 'ada');
+    fireEvent.click(await screen.findByRole('button', { name: /Ada Lovelace/ }));
+
+    await waitFor(() => expect(screen.getByLabelText('Primary transponder')).toHaveValue('1111'));
+    expect(screen.getByLabelText('Secondary transponder (optional)')).toHaveValue('2222');
+    type('Primary transponder', '9999');
+    expect(screen.getByLabelText('Primary transponder')).toHaveValue('9999');
   });
 
   it('adds a new driver by name and shows transponder warnings', async () => {
