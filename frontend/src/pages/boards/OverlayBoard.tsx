@@ -83,7 +83,7 @@ const LIVE_QUALIFYING_POLL_MS = 3000;
 /** How long each ticker stat stays up before the next one rolls in. */
 const TICKER_MS = 5000;
 
-/** Rolls through the heat's total laps, its fastest lap and the round's fastest lap, one stat at a time. */
+/** Rolls through the heat's fastest lap and the round's fastest lap, one stat at a time. */
 function StatsTicker({
   rows,
   raceId,
@@ -106,13 +106,11 @@ function StatsTicker({
     return () => clearInterval(timer);
   }, []);
 
-  const totalLaps = rows.reduce((sum, row) => sum + row.lapsCompleted, 0);
   const heatBest = heatBestLap(rows);
   // The round's fastest includes this heat, which has no snapshot until it finishes
   const roundBest = roundBestLap(heatBest, round);
 
   const stats: Array<[string, string]> = [];
-  if (totalLaps > 0) stats.push(['Laps in heat', String(totalLaps)]);
   if (heatBest) stats.push(['Fastest lap', `${fmtMs(heatBest.lapMs)} · ${heatBest.driverName}`]);
   if (roundBest) stats.push(['Round fastest', `${fmtMs(roundBest.lapMs)} · ${roundBest.driverName}`]);
   if (stats.length === 0) return null;

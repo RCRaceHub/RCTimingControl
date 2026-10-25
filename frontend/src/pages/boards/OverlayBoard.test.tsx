@@ -163,7 +163,7 @@ describe('OverlayBoard', () => {
     expect(driver.closest('[role="row"]')).toHaveClass('bg-purple-500/40');
   });
 
-  it('ticker starts with the heat\'s total laps, then the fastest lap and the round\'s fastest', async () => {
+  it('ticker starts with the heat\'s fastest lap, then the round\'s fastest', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
@@ -171,11 +171,8 @@ describe('OverlayBoard', () => {
     renderOverlay();
 
     const ticker = await screen.findByLabelText('Race stats');
-    expect(ticker).toHaveTextContent('Laps in heat17');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000);
-    });
     expect(ticker).toHaveTextContent('Grace Hopper');
+    expect(ticker).not.toHaveTextContent('Laps in heat');
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5000);
     });
