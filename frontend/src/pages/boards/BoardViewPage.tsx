@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getRaceClock } from '@/lib/boardsApi';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { getBoardView } from '@/lib/boardViewsApi';
+import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
@@ -30,6 +31,7 @@ export default function BoardViewPage() {
   const { nowNext, currentRace, rows } = useBoardRace(eventId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const raceId = currentRace?.raceId ?? null;
+  const media = useRaceMedia(raceId);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
     queryFn: () => getRaceClock(raceId!),
@@ -59,6 +61,7 @@ export default function BoardViewPage() {
   const ctx = { eventId, nowNext, rows, barClock: showBars ? barClock : undefined,
     closeMs,
     showArrows,
+    media,
     predicted: showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined,
   };
   return (

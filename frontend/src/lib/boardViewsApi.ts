@@ -3,7 +3,7 @@ import api from './api';
 // Saved board views (#481): a named screen built from panels, opened at /boards/view/{slug}. The read is public like the
 // other boards; the changes need an official, so they go through the signed-in client like the rest of Admin.
 
-export type BoardPanelType = 'LIVE_TIMING' | 'LIVE_TOP' | 'NEXT_RACE' | 'MARSHALS' | 'LAST_RESULT';
+export type BoardPanelType = 'LIVE_TIMING' | 'LIVE_TOP' | 'NEXT_RACE' | 'MARSHALS' | 'LAST_RESULT' | 'DRIVER_CARDS';
 
 export type BoardPanel = {
   type: BoardPanelType;
@@ -38,6 +38,7 @@ export const PANEL_TYPES: { type: BoardPanelType; label: string; help: string }[
   { type: 'NEXT_RACE', label: 'Next race', help: 'The countdown, the drivers and the marshals for the next race' },
   { type: 'MARSHALS', label: 'Marshals', help: 'The drivers marshalling the race on track' },
   { type: 'LAST_RESULT', label: 'Last result', help: 'The result of the race that finished last' },
+  { type: 'DRIVER_CARDS', label: 'Driver cards', help: 'Headshots, car numbers and driver sponsors of the race on track, for the commentator' },
 ];
 
 /** The anonymous read of one view; a 404 means there is no view with that address name. */

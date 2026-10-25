@@ -13,6 +13,7 @@ import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { BattleStrip } from '@/components/BattleStrip';
+import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
@@ -28,6 +29,7 @@ export default function LiveRaceBoard() {
   const settings = useBoardSettings();
   const { showBars, showArrows, showPredicted, closeMs, showBattles } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
   const battleGroups = useBattles(showBattles ? raceId : null);
+  const media = useRaceMedia(raceId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
     queryKey: publicQueryKeys.boards.clock(raceId),
@@ -76,6 +78,7 @@ export default function LiveRaceBoard() {
       {rows.length > 0 ? (
         <BoardLiveTable
           rows={rows}
+          media={media}
           barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
           closeMs={closeMs}
           showArrows={showArrows && currentRace.finalLetter !== null}

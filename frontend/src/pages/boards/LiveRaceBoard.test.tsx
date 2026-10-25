@@ -14,6 +14,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getNowNext: vi.fn(),
   getBoardLiveTiming: vi.fn(),
   getPositionHistory: vi.fn(),
+  getRaceMedia: vi.fn().mockResolvedValue([]),
 }));
 
 import { getBoardLiveTiming, getNowNext, getPositionHistory } from '@/lib/boardsApi';

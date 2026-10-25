@@ -310,3 +310,17 @@ export async function getSponsors(eventId?: number | null): Promise<SponsorDto[]
   const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', eventParams(eventId));
   return data;
 }
+
+/** What the public may see of one car in a race: headshot, car photo and the driver's own sponsors (#520). */
+export type RaceMediaDto = {
+  entryId: number;
+  headshotUrl: string | null;
+  carPhotoUrl: string | null;
+  sponsors: string[];
+};
+
+/** The pictures and driver sponsors for the cars of a race; cars with nothing to show, or a hidden name, are left out. */
+export async function getRaceMedia(raceId: number): Promise<RaceMediaDto[]> {
+  const { data } = await api.get<RaceMediaDto[]>(`/api/v1/boards/races/${raceId}/media`);
+  return data;
+}
