@@ -46,19 +46,24 @@ class PodiumBoardServiceTest {
     }
 
     @Test
-    void aClassWithNoFinishedFinalIsLeftOutAndAnUnfinishedAFinalHasNoPodium() {
+    void aClassWhoseAFinalIsStillToRunIsLeftOutEvenIfALowerFinalHasFinished() {
         var notStarted = new FinalsBoardDto.ClassFinals(1L, "Stock", 0, 1, List.of(pending("A")));
         var bOnly = new FinalsBoardDto.ClassFinals(2L, "Modified", 1, 2,
                 List.of(pending("A"), done("B", row(1, 9, "Gus"))));
 
-        List<PodiumBoardDto.ClassPodium> out = PodiumBoardService.build(List.of(notStarted, bOnly), Map.of());
-
-        assertThat(out).hasSize(1);
-        assertThat(out.get(0).className()).isEqualTo("Modified");
-        assertThat(out.get(0).complete()).isFalse();
-        assertThat(out.get(0).podium()).isEmpty();
         // The B winner is not placed against an A final still to run
-        assertThat(out.get(0).categoryLeaders()).isEmpty();
+        assertThat(PodiumBoardService.build(List.of(notStarted, bOnly), Map.of(9L, List.of("Vet")))).isEmpty();
+    }
+
+    @Test
+    void aClassWithALowerFinalStillToRunIsNotComplete() {
+        var cls = new FinalsBoardDto.ClassFinals(1L, "Stock", 1, 2,
+                List.of(done("A", row(1, 1, "Ann")), pending("B")));
+
+        PodiumBoardDto.ClassPodium out = PodiumBoardService.build(List.of(cls), Map.of()).get(0);
+
+        assertThat(out.complete()).isFalse();
+        assertThat(out.podium()).extracting(PodiumBoardDto.Place::driverName).containsExactly("Ann");
     }
 
     @Test
