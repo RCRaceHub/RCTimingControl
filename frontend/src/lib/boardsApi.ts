@@ -84,6 +84,8 @@ export type QualifyingBoardRow = {
   rounds: QualifyingRoundPlace[];
   /** The heat, when the class's heats are separate overall races (positions count from 1 in each); else null. */
   heat?: number | null;
+  /** What the place earns in the event's championship; set only for a class with no finals, once its heats are done. */
+  championshipPoints?: number | null;
 };
 
 export type QualifyingBoardTable = {

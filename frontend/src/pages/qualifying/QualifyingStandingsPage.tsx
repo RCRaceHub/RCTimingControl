@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 
 function ClassTable({ table }: { table: QualifyingBoardTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
+  const hasChampPoints = table.rows.some((r) => r.championshipPoints != null);
   const hasHeats = table.rows.some((r) => r.heat != null);
   const rounds = roundCount(table.rows);
   return (
@@ -41,6 +42,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
                 {byPoints && <th className="px-3 py-2 text-right">Points</th>}
                 <th className="px-3 py-2 text-right">Laps</th>
                 <th className="px-3 py-2 text-right">Best lap</th>
+                {hasChampPoints && <th className="px-3 py-2 text-right">Champ. pts</th>}
               </tr>
             </thead>
             <tbody>
@@ -54,6 +56,7 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
                   {byPoints && <td className="px-3 py-2 text-right tabular-nums">{row.points}</td>}
                   <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.bestLapMs)}</td>
+                  {hasChampPoints && <td className="px-3 py-2 text-right tabular-nums">{row.championshipPoints ?? '—'}</td>}
                 </tr>
               ))}
             </tbody>
