@@ -13,19 +13,25 @@ const GAP_FADE_MS = 250;
  * out for {@link #GAP_FADE_MS}, swaps, then fades back in.
  */
 export function useGapView(mode: GapMode, everySeconds: number): { view: 'leader' | 'int'; fading: boolean } {
-  const [autoView, setAutoView] = useState<'leader' | 'int'>('int');
-  const [fading, setFading] = useState(false);
+  const key = `${mode}:${everySeconds}`;
+  const [state, setState] = useState<{ key: string; view: 'leader' | 'int'; fading: boolean }>({
+    key,
+    view: 'int',
+    fading: false,
+  });
+  // A change of mode or period starts over from INT with the column showing (React's way of resetting state on a
+  // changed input: set it while rendering, not in an effect)
+  if (state.key !== key) {
+    setState({ key, view: 'int', fading: false });
+  }
 
   useEffect(() => {
-    setFading(false);
-    setAutoView('int');
     if (mode !== 'auto') return;
     let swap: ReturnType<typeof setTimeout> | undefined;
     const timer = setInterval(() => {
-      setFading(true);
+      setState((s) => ({ ...s, fading: true }));
       swap = setTimeout(() => {
-        setAutoView((v) => (v === 'int' ? 'leader' : 'int'));
-        setFading(false);
+        setState((s) => ({ ...s, view: s.view === 'int' ? 'leader' : 'int', fading: false }));
       }, GAP_FADE_MS);
     }, everySeconds * 1000);
     return () => {
@@ -34,5 +40,6 @@ export function useGapView(mode: GapMode, everySeconds: number): { view: 'leader
     };
   }, [mode, everySeconds]);
 
-  return { view: mode === 'auto' ? autoView : mode, fading: mode === 'auto' && fading };
+  if (mode !== 'auto') return { view: mode, fading: false };
+  return { view: state.view, fading: state.fading };
 }
