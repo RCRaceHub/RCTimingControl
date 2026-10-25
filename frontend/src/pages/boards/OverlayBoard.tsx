@@ -422,7 +422,20 @@ export default function OverlayBoard() {
             </tbody>
           </table>
         )}
-        {showBattles && lapCounted && race.status === 'RUNNING' && <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />}
+      </section>
+      {/* Battles and fastest laps sit apart from the tower, bottom left, clear of the ticker and sponsor bar; the
+          panel hides itself while neither has anything to show */}
+      <section
+        className={cn(
+          'fixed left-4 w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
+          colours.panel,
+        )}
+        style={{ bottom: chartBottom }}
+        aria-label="Battles and fastest laps"
+      >
+        {showBattles && lapCounted && race.status === 'RUNNING' && (
+          <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />
+        )}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
       {showChart && chartSeries.length > 0 && (

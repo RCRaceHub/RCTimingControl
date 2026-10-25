@@ -12,8 +12,8 @@ import { gapText, leaderGapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2;
-/** The panel width of the tower: wide enough for the name beside the predicted laps, qualifying place and gap. */
-export const TOWER_WIDTH_CLASS = 'w-[23rem]';
+/** The panel width of the tower: the name truncates to fit beside the predicted laps, qualifying place and gap. */
+export const TOWER_WIDTH_CLASS = 'w-[20rem]';
 
 /** A driver's projected place in the event's qualifying table, if the heat ended now. */
 export interface ProjectedQualifying {
@@ -96,7 +96,7 @@ export function OverlayTower({
   return (
     <>
       <div aria-hidden className={cn('flex justify-end px-2 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
-        <span className={cn('w-[4.5rem] text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
+        <span className={cn('w-16 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
       </div>
       <div
         role="table"
@@ -144,7 +144,7 @@ export function OverlayTower({
                 </span>
               )}
               {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
-              <span className={cn('w-[4.5rem] shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
+              <span className={cn('w-16 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
                 {gap === 'int' ? gapText(row) : leaderGapText(row)}
               </span>
             </div>
