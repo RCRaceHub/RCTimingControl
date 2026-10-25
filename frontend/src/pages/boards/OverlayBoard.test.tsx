@@ -297,6 +297,7 @@ describe('OverlayBoard timing tower', () => {
     renderOverlay();
     await screen.findAllByRole('row');
     expect(screen.getByText('DRIVER')).toBeInTheDocument();
+    expect(screen.getByText('LAP')).toBeInTheDocument();
     expect(screen.getByText('INT')).toBeInTheDocument();
     expect(screen.queryByText('QUAL')).not.toBeInTheDocument();
   });

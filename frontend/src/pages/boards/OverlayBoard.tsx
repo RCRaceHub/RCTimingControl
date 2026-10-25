@@ -249,6 +249,8 @@ export default function OverlayBoard() {
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
+  // The laps column takes turns between laps done and predicted laps on the same period as the gap
+  const lapsView = useGapView('auto', gapEverySeconds);
   useTransparentPage();
 
   const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
@@ -361,6 +363,8 @@ export default function OverlayBoard() {
             qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
             gap={gapView.view}
             gapFading={gapView.fading}
+            lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
+            lapsFading={lapsView.fading}
           />
         )}
         {rows.length > 0 && layout === 'table' && (

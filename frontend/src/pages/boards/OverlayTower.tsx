@@ -1,5 +1,6 @@
 // The overlay's running order drawn as a timing tower, like a Formula 1 broadcast: one slim row per car with its
 // place, car number, driver and gap, and rows that slide to their new place when the order changes.
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
@@ -12,8 +13,8 @@ import { gapText, leaderGapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2;
-/** The panel width of the tower: the name truncates to fit beside the predicted laps, qualifying place and gap. */
-export const TOWER_WIDTH_CLASS = 'w-[21rem]';
+/** The panel width of the tower: a long name scrolls to fit beside the laps, predicted laps, qualifying place and gap. */
+export const TOWER_WIDTH_CLASS = 'w-[17rem]';
 
 /** A driver's projected place in the event's qualifying table, if the heat ended now. */
 export interface ProjectedQualifying {
@@ -50,6 +51,10 @@ interface OverlayTowerProps {
   gap?: 'int' | 'leader';
   /** The gap column is fading out ahead of a change in auto mode. */
   gapFading?: boolean;
+  /** Which the shared laps column shows: laps done, or (for a timed race) the laps on course to finish with. */
+  lapsView?: 'laps' | 'predicted';
+  /** The laps column is fading out ahead of a change. */
+  lapsFading?: boolean;
 }
 
 const FLASH_CLASS: Record<string, string> = {
@@ -58,6 +63,38 @@ const FLASH_CLASS: Record<string, string> = {
   improving: 'bg-green-500/40',
   slow: 'bg-red-500/40',
 };
+
+/** A driver name that scrolls to show its end when it is wider than the room it has, and sits still otherwise. */
+function ScrollingName({ name }: { name: string }) {
+  const outer = useRef<HTMLSpanElement>(null);
+  const inner = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const box = outer.current;
+    const text = inner.current;
+    if (!box || !text) return;
+    const measure = () => {
+      const overflow = text.scrollWidth - box.clientWidth;
+      if (overflow > 0) {
+        text.style.setProperty('--name-overflow', `${overflow}px`);
+        text.dataset.overflow = 'true';
+      } else {
+        delete text.dataset.overflow;
+      }
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [name]);
+  return (
+    <span ref={outer} className="block overflow-hidden whitespace-nowrap">
+      <span ref={inner} className="name-scroll inline-block">
+        {name}
+      </span>
+    </span>
+  );
+}
 
 function QualifyingChip({ projected, final }: { projected: ProjectedQualifying; final: boolean }) {
   const gained = projected.previousPosition === null ? null : projected.previousPosition - projected.position;
@@ -91,8 +128,12 @@ export function OverlayTower({
   qualifyingFinal = false,
   gap = 'int',
   gapFading = false,
+  lapsView = 'laps',
+  lapsFading = false,
 }: OverlayTowerProps) {
   const showQualifying = qualifying !== undefined && qualifying.size > 0;
+  const showPredicted = predicted !== undefined && lapsView === 'predicted';
+  const lapsClass = cn('transition-opacity duration-200', lapsFading && 'opacity-0');
   const gapClass = cn('transition-opacity duration-200', gapFading && 'opacity-0');
   return (
     <>
@@ -103,7 +144,9 @@ export function OverlayTower({
         <span className="w-6 shrink-0" />
         <span className="w-6 shrink-0 text-right">#</span>
         <span className="min-w-0 flex-1">DRIVER</span>
-        {predicted && <span className="w-8 shrink-0 text-right" title="Laps on course to finish with">PRED</span>}
+        <span className={cn('w-8 shrink-0 text-right', lapsClass)} title={showPredicted ? 'Laps on course to finish with' : 'Laps completed'}>
+          {showPredicted ? 'PRED' : 'LAP'}
+        </span>
         {showQualifying && <span className="w-10 shrink-0 text-right" title="Qualifying place">QUAL</span>}
         <span className={cn('w-16 shrink-0 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
       </div>
@@ -139,19 +182,21 @@ export function OverlayTower({
                 {row.position}
               </span>
               <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
-              <span className="relative min-w-0 flex-1 truncate font-semibold">
-                {row.driverName}
+              <span className="relative flex min-w-0 flex-1 items-center font-semibold">
+                <ScrollingName name={row.driverName} />
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
                 {row.finished && <FinishedFlag className="ml-1" />}
                 {barClock && !row.finished && (
                   <LapProgressBar row={row} clock={barClock} className="absolute inset-x-0 -bottom-1 h-0.5" />
                 )}
               </span>
-              {predicted && (
-                <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)} title="Laps on course to finish with">
+              <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted, lapsClass)}>
+                {showPredicted ? (
                   <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
-                </span>
-              )}
+                ) : (
+                  row.lapsCompleted
+                )}
+              </span>
               {showQualifying && (
                 <span className="w-10 shrink-0 text-right">
                   {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}

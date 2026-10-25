@@ -222,3 +222,11 @@
   to { transform: translateX(-100%); }
 }
 .ticker-scroll { display: inline-block; white-space: nowrap; animation: ticker-scroll linear infinite; }
+
+/* A tower driver name wider than its cell: waits, slides to show the end, waits, and slides back */
+@keyframes name-scroll {
+  0%, 20% { transform: translateX(0); }
+  50%, 70% { transform: translateX(calc(-1 * var(--name-overflow))); }
+  100% { transform: translateX(0); }
+}
+.name-scroll[data-overflow] { animation: name-scroll 8s ease-in-out infinite; }
