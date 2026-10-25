@@ -430,15 +430,19 @@ export default function MeetingGuidePage() {
           <li>
             <span className="font-semibold">Streaming overlay:</span> In OBS, add a
             <span className="font-semibold"> Browser</span> source pointing at
-            <span className="font-mono text-xs"> http://&lt;laptop&gt;:8080/boards/overlay</span>, about
-            450 &times; 520 pixels. It shows the race on track over your video on a transparent
-            background: the running order, laps, last lap and the race clock (time to go, or time so
-            far when the format sets no length). Rows flash on each lap like the live timing screen
-            (purple race best, blue personal best, green faster, red slower), and a small stats line
-            underneath rolls through the laps run in the heat, the heat's fastest lap and the round's
-            fastest. A position chart sits at the bottom right, and a ticker scrolls along the foot of
-            the page with the next race, its drivers and marshals, the top qualifiers and the round's
-            fastest lap. Between races it shows a small "No race on track" panel, and the ticker stays up.
+            <span className="font-mono text-xs"> http://&lt;laptop&gt;:8080/boards/overlay</span>, 1920
+            &times; 1080 pixels. It shows the race on track over your video on a transparent
+            background: a timing tower (one slim row per car with its place, car number, driver and gap,
+            sliding to its new place as the order changes) and the race clock (time to go, or time so
+            far when the format sets no length). In a timed race each row shows the laps the car is on
+            course to finish with, and in a qualifying heat the driver&apos;s projected qualifying place.
+            Rows flash on each lap like the live timing screen (purple race best, blue personal best,
+            green faster, red slower), and a small stats line underneath rolls through the laps run in
+            the heat, the heat&apos;s fastest lap and the round&apos;s fastest. A position chart sits at the
+            bottom right, a ticker with large text scrolls above the foot of the page (next race, its
+            drivers and marshals, the top qualifiers and the round&apos;s fastest lap), and a sponsor bar
+            along the bottom shows the event&apos;s sponsors, added on the event&apos;s Sponsors tab. Between
+            races it shows a small &quot;No race on track&quot; panel, and the ticker stays up.
           </li>
           <li>
             <span className="font-semibold">Overlay options</span> go on the end of the address:
@@ -448,8 +452,18 @@ export default function MeetingGuidePage() {
             panel, <span className="font-mono text-xs">chart=hide</span> leaves out the position chart,
             <span className="font-mono text-xs"> ticker=hide</span> leaves out the ticker (or name the
             items to scroll: <span className="font-mono text-xs">ticker=next,drivers,marshals,tq,fastest</span>),
+            <span className="font-mono text-xs"> sponsors=hide</span> leaves out the sponsor bar,
+            <span className="font-mono text-xs"> layout=table</span> draws a table in place of the tower,
+            <span className="font-mono text-xs"> predict=hide</span> leaves out predicted laps,
+            <span className="font-mono text-xs"> qual=hide</span> leaves out the qualifying place,
+            <span className="font-mono text-xs"> bars=hide</span>, <span className="font-mono text-xs">arrows=hide</span> and
+            <span className="font-mono text-xs"> battles=hide</span> leave out those parts,
+            <span className="font-mono text-xs"> close=SECONDS</span> sets how near counts as close,
             and <span className="font-mono text-xs">event=ID</span> follows one event. For
             example <span className="font-mono text-xs">/boards/overlay?top=6&amp;theme=light</span>.
+            You don&apos;t have to write these by hand: <span className="font-semibold">Admin, Overlay
+            Designer</span> lets you tick the parts you want, shows a live preview, and gives you the
+            address to copy into OBS.
           </li>
         </ol>
       </section>

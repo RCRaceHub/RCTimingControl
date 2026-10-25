@@ -190,6 +190,20 @@ erDiagram
         json panels "ordered: type, top, span; no foreign keys, a layout only"
     }
     competitors ||--o{ entries : ""
+    events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
+    competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
+    entries ||--o| entry_photos : "optional car photo"
+    event_sponsors {
+        text logo_url "object storage /storage/..., random name"
+        int sort_order "display order"
+    }
+    competitor_media {
+        text headshot_url "object storage"
+        text sponsors "up to 5, newline separated"
+    }
+    entry_photos {
+        text car_photo_url "object storage"
+    }
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""
     event_classes ||--o{ races : ""
