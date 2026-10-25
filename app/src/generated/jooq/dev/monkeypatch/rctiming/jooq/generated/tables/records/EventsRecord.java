@@ -245,6 +245,20 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (Boolean) get(15);
     }
 
+    /**
+     * Setter for <code>events.finals_lineup_confirmed_at</code>.
+     */
+    public void setFinalsLineupConfirmedAt(Instant value) {
+        set(16, value);
+    }
+
+    /**
+     * Getter for <code>events.finals_lineup_confirmed_at</code>.
+     */
+    public Instant getFinalsLineupConfirmedAt() {
+        return (Instant) get(16);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -268,7 +282,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart, Instant finalsLineupConfirmedAt) {
         super(Events.EVENTS);
 
         setId(id);
@@ -287,6 +301,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setAutoRunGapSeconds(autoRunGapSeconds);
         setAutoRunHoldBeforeFinals(autoRunHoldBeforeFinals);
         setAutoRunAutoStart(autoRunAutoStart);
+        setFinalsLineupConfirmedAt(finalsLineupConfirmedAt);
         resetChangedOnNotNull();
     }
 }
