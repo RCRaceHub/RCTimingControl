@@ -124,8 +124,10 @@ function StatsTicker({
 }
 
 /** Seconds a ticker takes per character to cross the screen: slow enough to read, long text just takes longer. */
-const TICKER_SECONDS_PER_CHAR = 0.18;
-const TICKER_MIN_SECONDS = 20;
+const TICKER_SECONDS_PER_CHAR = 0.22;
+const TICKER_MIN_SECONDS = 24;
+/** What the wide gap and separator between two ticker items count for when timing the scroll, in characters. */
+const TICKER_GAP_CHARS = 8;
 
 /**
  * A strip along the foot of the page that scrolls the next race, who is on its grid and marshalling, the class
@@ -158,23 +160,32 @@ function OverlayTicker({
     refetchInterval: BOARD_POLL_MS * 6,
   });
   const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round));
-  const text = segments.join('   •   ');
   // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
   // jump mid-scroll
-  const [shown, setShown] = useState<string | null>(null);
+  const [shown, setShown] = useState<string[] | null>(null);
   if (segments.length === 0) return null;
-  const display = shown ?? text;
+  const display = shown ?? segments;
+  const length = display.reduce((sum, segment) => sum + segment.length + TICKER_GAP_CHARS, 0);
   return (
     <div
-      className={cn('fixed inset-x-0 bottom-0 overflow-hidden py-2 font-sans text-lg font-semibold', panelClass)}
+      className={cn('fixed inset-x-0 bottom-0 overflow-hidden py-3 font-sans text-3xl font-semibold', panelClass)}
       aria-label="Ticker"
     >
       <span
         className="ticker-scroll"
-        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, display.length * TICKER_SECONDS_PER_CHAR)}s` }}
-        onAnimationIteration={() => setShown(text)}
+        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, length * TICKER_SECONDS_PER_CHAR)}s` }}
+        onAnimationIteration={() => setShown(segments)}
       >
-        {display}
+        {display.map((segment, index) => (
+          <span key={index}>
+            {index > 0 && (
+              <span className="mx-16 opacity-50" aria-hidden="true">
+                ◆
+              </span>
+            )}
+            {segment}
+          </span>
+        ))}
       </span>
     </div>
   );
@@ -321,7 +332,7 @@ export default function OverlayBoard() {
           className={cn(
             'fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg',
             // Clear of the ticker's strip when it is showing
-            tickerItems.size > 0 ? 'bottom-14' : 'bottom-4',
+            tickerItems.size > 0 ? 'bottom-20' : 'bottom-4',
             colours.panel,
           )}
           aria-label="Position chart"
