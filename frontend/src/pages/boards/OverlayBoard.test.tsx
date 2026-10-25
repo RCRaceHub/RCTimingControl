@@ -291,6 +291,16 @@ describe('OverlayBoard timing tower', () => {
     expect(getLiveQualifying).not.toHaveBeenCalled();
   });
 
+  it('heads the tower\'s columns, with PRED only when the race is timed and QUAL only in a qualifying heat', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay();
+    await screen.findAllByRole('row');
+    expect(screen.getByText('DRIVER')).toBeInTheDocument();
+    expect(screen.getByText('INT')).toBeInTheDocument();
+    expect(screen.queryByText('QUAL')).not.toBeInTheDocument();
+  });
+
   it('labels the gap column INT, and gap=leader shows the gap to the leader and labels it GAP', async () => {
     stompFrames['/topic/race/12/timing'] = [
       row(1, 'Grace Hopper', 13_500),
