@@ -64,3 +64,24 @@ export function useSetLiveTimingSettings() {
     },
   });
 }
+
+/** The HTTPS certificates' state (#503). */
+export function useTlsStatus() {
+  return useQuery({
+    queryKey: adminQueryKeys.club.tls(),
+    queryFn: adminApi.club.getTls,
+  });
+}
+
+/** Makes the HTTPS server certificate again; {@code ca} also makes the club CA again, so devices must reinstall it. */
+export function useRegenerateTls() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (what: 'server' | 'ca') =>
+      what === 'ca' ? adminApi.club.regenerateTlsCa() : adminApi.club.regenerateTlsServer(),
+    onSuccess: (status) => {
+      qc.setQueryData(adminQueryKeys.club.tls(), status);
+      void qc.invalidateQueries({ queryKey: ['public', 'about'] });
+    },
+  });
+}

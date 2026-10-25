@@ -37,6 +37,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.jmdns:jmdns:3.5.9")
+    // #503: makes the club certificate authority and the HTTPS certificate it signs
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.79")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")

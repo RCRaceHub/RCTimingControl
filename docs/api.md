@@ -1034,6 +1034,20 @@ PUT  /api/v1/race-control/events/{eventId}/auto-run/settings    { "gapSeconds": 
 
 ---
 
+## Admin — Secure connection (HTTPS)
+
+Administrators only. HTTPS runs beside HTTP when `rctiming.https.enabled=true`; see [installing.md](installing.md#secure-connection-https).
+
+```
+GET  /api/v1/admin/tls
+POST /api/v1/admin/tls/regenerate-server
+POST /api/v1/admin/tls/regenerate-ca
+```
+
+All three return the state: `enabled`, `port`, `urls`, `names` (what the server certificate covers), `caExpires`, `serverExpires` and `caFingerprint` (SHA-256). The two `POST`s make a new server certificate signed by the same club authority, or a new authority and server certificate (devices must then install the new authority); both answer 409 when HTTPS is off and write an audit row.
+
+Anyone on the venue network can download the club authority's certificate (the public part only) from `GET /api/v1/about/ca.crt`, a PEM file sent as an attachment. It answers 404 when HTTPS is off. `GET /api/v1/about` also returns `httpsEnabled` and `httpsAddresses`.
+
 ## Error responses
 
 All errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457):

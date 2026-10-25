@@ -72,7 +72,23 @@ rctiming.backup.directory=E:/rctiming-backups
 rctiming.network.mdns-name=timing
 ```
 
-With `rctiming.network.mdns-name` set, the app announces itself by that name over mDNS, so devices can open `http://timing.local:8080/` without knowing the laptop's address. Windows 10 and later, macOS, iOS and Android look up `.local` names themselves; the About page lists the name first. The name is announced on IPv4 only, and the app looks at the laptop's network every 30 seconds, so a laptop that boots before its network is up, or moves to another network, is picked up without a restart. If another device already uses the name, the app logs the name it got instead. It is off unless you set it, and it does not work from inside Docker, because multicast cannot cross Docker's network (use host networking, or leave it off and set `CLUB_ADDRESS`). Because `http://timing.local` is plain HTTP, browsers treat it as not secure, so the sound card list on the audio output page works only at `http://localhost:8080` on the laptop itself.
+With `rctiming.network.mdns-name` set, the app announces itself by that name over mDNS, so devices can open `http://timing.local:8080/` without knowing the laptop's address. Windows 10 and later, macOS, iOS and Android look up `.local` names themselves; the About page lists the name first. The name is announced on IPv4 only, and the app looks at the laptop's network every 30 seconds, so a laptop that boots before its network is up, or moves to another network, is picked up without a restart. If another device already uses the name, the app logs the name it got instead. It is off unless you set it, and it does not work from inside Docker, because multicast cannot cross Docker's network (use host networking, or leave it off and set `CLUB_ADDRESS`). Because `http://timing.local` is plain HTTP, browsers treat it as not secure, so the sound card list on the audio output page works only at `http://localhost:8080` on the laptop itself, unless you turn on the secure connection below.
+
+## Secure connection (HTTPS)
+
+Browsers only offer the sound card list on the audio output page, and some other device features, on a secure page. A public authority cannot sign `.local` names or private addresses, so the app can act as the club's own certificate authority instead. HTTPS is off unless you turn it on, and it runs beside plain HTTP, so existing bookmarks keep working:
+
+```properties
+rctiming.https.enabled=true
+# The default; change it if 8443 is taken
+rctiming.https.port=8443
+```
+
+After a restart, devices open `https://timing.local:8443/` (the About page lists every secure address). The app creates a club certificate authority valid for 10 years and a server certificate valid for 1 year that covers the laptop's names and addresses. The server certificate is renewed automatically within 30 days of expiry, and re-issued when the laptop gains a new address or name; the app checks every 10 minutes and picks the change up without a restart. The certificates live in the `tls` folder of the data folder. Back that folder up with the rest of the data folder, and keep it private, because whoever holds the authority's key can issue certificates the club's devices trust.
+
+Each device warns about the certificate until it trusts the club authority. On the About page, download the club certificate and follow the steps shown there for Windows, macOS, iOS, Android or Linux. This is needed once per device, and the 10-year lifetime means it will not need repeating soon.
+
+If something goes wrong on the day, an administrator can open **Club profile → Secure connection** and press **Make a new server certificate** (devices keep trusting it) or **Make a new club certificate** (a new authority and a new server certificate; every device must download and trust the new certificate again, so the app asks first). Both are recorded in the audit log.
 
 On Linux the backup folder must be one the `rctiming` user can write to. For a folder on the laptop's own disk, create it with `sudo install -d -o rctiming -g rctiming /srv/rctiming-backups`. A USB stick or network share has to be mounted so that user can write to it, for example with `uid=rctiming,gid=rctiming` in its mount options. The desktop's automatic mount under `/media/<your name>` is private to you, so the service can't use it.
 

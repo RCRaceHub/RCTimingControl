@@ -64,7 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events", "/api/v1/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/results/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/championships/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/about", "/api/v1/privacy-notice").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/about", "/api/v1/about/ca.crt", "/api/v1/privacy-notice").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/boards/**").permitAll()
                         // Club logos and TTS clips are public content served from local disk —
                         // see FilesystemObjectStorageService / StaticStorageConfig.
