@@ -54,7 +54,10 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 // HSTS ignores ports: a device that trusted the HTTPS address would be sent to HTTPS on the HTTP port
-                .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts.disable()))
+                // The Overlay Designer previews the overlay in a frame of its own page (#524), which Spring's default
+                // X-Frame-Options: DENY blocks; same origin still keeps other sites from framing the app
+                .headers(h -> h.httpStrictTransportSecurity(hsts -> hsts.disable())
+                        .frameOptions(frame -> frame.sameOrigin()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()

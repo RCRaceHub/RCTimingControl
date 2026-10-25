@@ -49,6 +49,13 @@ class SpaIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void pagesMayBeFramedBySameOriginPagesOnly() {
+        // The Overlay Designer previews the overlay in an iframe (#524)
+        ResponseEntity<String> page = restTemplate.getForEntity("/boards/overlay", String.class);
+        assertThat(page.getHeaders().getFirst("X-Frame-Options")).isEqualTo("SAMEORIGIN");
+    }
+
+    @Test
     void assetsAreCachedForGoodAndMissingOnesAre404() {
         ResponseEntity<String> asset = restTemplate.getForEntity("/assets/app-test.js", String.class);
         assertThat(asset.getStatusCode()).isEqualTo(HttpStatus.OK);
