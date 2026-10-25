@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TOWER_ROW_REM } from './OverlayTower';
 import { act, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -245,7 +246,7 @@ describe('OverlayBoard timing tower', () => {
 
     const rows = await screen.findAllByRole('row');
     expect(rows[0]).toHaveStyle({ transform: 'translateY(0rem)' });
-    expect(rows[1]).toHaveStyle({ transform: 'translateY(2.5rem)' });
+    expect(rows[1]).toHaveStyle({ transform: `translateY(${TOWER_ROW_REM}rem)` });
     expect(rows[1]).toHaveTextContent('Ada Lovelace');
     expect(rows[1]).toHaveTextContent('+1.250');
   });
@@ -270,6 +271,27 @@ describe('OverlayBoard timing tower', () => {
     const rows = await screen.findAllByRole('row');
     await vi.waitFor(() => expect(rows[0]).toHaveTextContent('Q3▲2'));
     expect(rows[1]).toHaveTextContent('Q4');
+  });
+
+  it('ignores qualifying places that belong to another heat, and qual=hide leaves them out', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    const other = {
+      eventId: 1, eventName: 'Club Day', phase: 'LIVE' as const, raceId: 99, raceLabel: 'Heat 1', className: 'Stock Buggy',
+      rows: [{ position: 3, previousPosition: 5, entryId: 1, driverName: 'Grace Hopper', carNumber: '1', points: 3, lapsCompleted: 9, bestLapMs: 13_500, live: true, waiting: false }],
+    };
+    vi.mocked(getLiveQualifying).mockResolvedValue(other);
+    const { unmount } = renderOverlay();
+    const rows = await screen.findAllByRole('row');
+    await vi.waitFor(() => expect(getLiveQualifying).toHaveBeenCalled());
+    expect(rows[0]).not.toHaveTextContent('Q3');
+    unmount();
+
+    vi.mocked(getLiveQualifying).mockClear();
+    vi.mocked(getLiveQualifying).mockResolvedValue({ ...other, raceId: 12 });
+    renderOverlay('/boards/overlay?qual=hide');
+    await screen.findAllByRole('row');
+    expect(getLiveQualifying).not.toHaveBeenCalled();
   });
 
   it('draws the old table instead with layout=table', async () => {
@@ -320,6 +342,7 @@ describe('overlay options', () => {
       closeMs: 1000,
       showBattles: true,
     });
+    expect(parseOverlayOptions(new URLSearchParams('layout=table&qual=hide'))).toMatchObject({ layout: 'table', showQualifying: false });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);
     expect(parseOverlayOptions(new URLSearchParams('event=7')).eventId).toBe(7);
   });

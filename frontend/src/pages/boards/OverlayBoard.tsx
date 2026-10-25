@@ -19,7 +19,7 @@ import {
   type TickerItem,
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
-import { OverlayTower, type ProjectedQualifying } from './OverlayTower';
+import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
@@ -75,6 +75,9 @@ function useNow(active: boolean) {
   }, [active]);
   return now;
 }
+
+/** How often the projected qualifying places are re-read, like the Live top screen. */
+const LIVE_QUALIFYING_POLL_MS = 3000;
 
 /** How long each ticker stat stays up before the next one rolls in. */
 const TICKER_MS = 5000;
@@ -241,7 +244,10 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const settings = useBoardSettings();
-  const { eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showPredicted, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams, settings.closeGapMs);
+  const {
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showPredicted,
+    showBars, showArrows, closeMs, showBattles,
+  } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -268,14 +274,15 @@ export default function OverlayBoard() {
     queryKey: publicQueryKeys.boards.liveQualifying(tickerEventId),
     queryFn: () => getLiveQualifying(tickerEventId),
     enabled: showQualifying && isQualifier && layout === 'tower',
-    refetchInterval: 3000,
+    refetchInterval: LIVE_QUALIFYING_POLL_MS,
   });
+  const raceIdNow = race?.raceId ?? null;
   const qualifying = useMemo(() => {
-    if (!race || liveQualifying?.raceId !== race.raceId) return undefined;
+    if (raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
     return new Map<number, ProjectedQualifying>(
       liveQualifying.rows.map(r => [r.entryId, { position: r.position, previousPosition: r.previousPosition }]),
     );
-  }, [liveQualifying, race]);
+  }, [liveQualifying, raceIdNow]);
   const { data: sponsors = [] } = useQuery({
     queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
     queryFn: () => getSponsors(tickerEventId),
@@ -322,7 +329,7 @@ export default function OverlayBoard() {
   return (
     <div className="p-4">
       <section
-        className={cn(layout === 'tower' ? 'w-[30rem]' : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
+        className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
         aria-label="Live timing overlay"
       >
         <header className="flex items-center gap-3 px-4 py-2">
@@ -349,6 +356,7 @@ export default function OverlayBoard() {
             barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
             predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
             qualifying={qualifying}
+            qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
           />
         )}
         {rows.length > 0 && layout === 'table' && (

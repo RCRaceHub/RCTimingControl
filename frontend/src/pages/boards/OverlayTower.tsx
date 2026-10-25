@@ -12,6 +12,8 @@ import { gapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2.5;
+/** The panel width of the tower: wide enough for the name beside the predicted laps, qualifying place and gap. */
+export const TOWER_WIDTH_CLASS = 'w-[30rem]';
 
 /** A driver's projected place in the event's qualifying table, if the heat ended now. */
 export interface ProjectedQualifying {
@@ -42,6 +44,8 @@ interface OverlayTowerProps {
   predicted?: PredictedClock;
   /** Given for a qualifying heat, adds each driver's projected qualifying place by entry id. */
   qualifying?: Map<number, ProjectedQualifying>;
+  /** The heat has ended, so the places in {@code qualifying} are settled rather than a projection. */
+  qualifyingFinal?: boolean;
 }
 
 const FLASH_CLASS: Record<string, string> = {
@@ -51,10 +55,10 @@ const FLASH_CLASS: Record<string, string> = {
   slow: 'bg-red-500/40',
 };
 
-function QualifyingChip({ projected }: { projected: ProjectedQualifying }) {
+function QualifyingChip({ projected, final }: { projected: ProjectedQualifying; final: boolean }) {
   const gained = projected.previousPosition === null ? null : projected.previousPosition - projected.position;
   return (
-    <span className="whitespace-nowrap text-xs tabular-nums" title="Projected qualifying place if the heat ended now">
+    <span className="whitespace-nowrap text-xs tabular-nums" title={final ? 'Qualifying place after this heat' : 'Projected qualifying place if the heat ended now'}>
       Q{projected.position}
       {gained !== null && gained !== 0 && (
         <span className={gained > 0 ? 'text-emerald-500' : 'text-rose-500'}>
@@ -80,6 +84,7 @@ export function OverlayTower({
   barClock,
   predicted,
   qualifying,
+  qualifyingFinal = false,
 }: OverlayTowerProps) {
   return (
     <div
@@ -127,7 +132,7 @@ export function OverlayTower({
                 <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
               </span>
             )}
-            {projected && <QualifyingChip projected={projected} />}
+            {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
             <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums">{gapText(row)}</span>
           </div>
         );
