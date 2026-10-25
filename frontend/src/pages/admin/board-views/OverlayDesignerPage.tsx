@@ -40,9 +40,14 @@ export default function OverlayDesignerPage() {
   const set = <K extends keyof OverlayDesign>(key: K, value: OverlayDesign[K]) =>
     setDesign((d) => ({ ...d, [key]: value }));
 
+  // The typed text of the two number fields, kept apart from the design so half-typed values aren't rewritten
+  const [topText, setTopText] = useState(String(DEFAULT_OVERLAY_DESIGN.top));
+  const [eventText, setEventText] = useState('');
+
   const query = overlayQuery(design);
   const path = `/boards/overlay${query}`;
   const address = `${window.location.origin}${path}`;
+  const isLocalHost = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
 
   const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.4);
@@ -52,8 +57,13 @@ export default function OverlayDesignerPage() {
       if (width) setScale(width / STREAM_W);
     };
     fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', fit);
+      return () => window.removeEventListener('resize', fit);
+    }
+    const observer = new ResizeObserver(fit);
+    if (frame.current) observer.observe(frame.current);
+    return () => observer.disconnect();
   }, []);
 
   async function copy() {
@@ -102,11 +112,15 @@ export default function OverlayDesignerPage() {
                 type="number"
                 min={1}
                 max={OVERLAY_TOP_LIMIT}
-                value={design.top}
+                value={topText}
                 onChange={(e) => {
+                  setTopText(e.target.value);
                   const n = Math.round(Number(e.target.value));
-                  if (Number.isFinite(n)) set('top', Math.min(OVERLAY_TOP_LIMIT, Math.max(1, n)));
+                  if (e.target.value.trim() !== '' && Number.isFinite(n)) {
+                    set('top', Math.min(OVERLAY_TOP_LIMIT, Math.max(1, n)));
+                  }
                 }}
+                onBlur={() => setTopText(String(design.top))}
               />
             </div>
             <Check label="Class name" checked={design.showClass} onChange={(v) => set('showClass', v)} />
@@ -143,16 +157,25 @@ export default function OverlayDesignerPage() {
               <Input
                 id="ov-event"
                 inputMode="numeric"
-                value={design.eventId ?? ''}
+                value={eventText}
                 onChange={(e) => {
+                  setEventText(e.target.value);
                   const n = Number(e.target.value);
-                  set('eventId', e.target.value.trim() !== '' && Number.isInteger(n) && n > 0 ? n : null);
+                  set('eventId', e.target.value.trim() !== '' && Number.isSafeInteger(n) && n > 0 ? n : null);
                 }}
               />
             </div>
           </fieldset>
 
-          <Button variant="outline" size="sm" onClick={() => setDesign(DEFAULT_OVERLAY_DESIGN)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setDesign(DEFAULT_OVERLAY_DESIGN);
+              setTopText(String(DEFAULT_OVERLAY_DESIGN.top));
+              setEventText('');
+            }}
+          >
             Reset to the default
           </Button>
         </div>
@@ -173,6 +196,12 @@ export default function OverlayDesignerPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ov-address">Address for OBS</Label>
+            {isLocalHost && (
+              <p className="text-xs text-muted-foreground">
+                This page is open on <code>{window.location.hostname}</code>, which another PC can't reach. If OBS runs
+                on a different computer, swap it for the laptop's address on the venue network (see About).
+              </p>
+            )}
             <div className="flex gap-2">
               <Input id="ov-address" readOnly value={address} onFocus={(e) => e.currentTarget.select()} />
               <Button onClick={copy}>
