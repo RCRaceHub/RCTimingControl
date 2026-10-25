@@ -1,5 +1,6 @@
 import { fmtMs } from '@/lib/format';
 import type { TickerDto } from '@/lib/boardsApi';
+import type { GapMode } from '@/hooks/useGapView';
 import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -54,6 +55,26 @@ function parseTickerItems(value: string | null): Set<TickerItem> {
   return new Set(TICKER_ITEMS.filter((item) => value.split(',').includes(item)));
 }
 
+/** The tower's gap from `?gap=`: the interval to the car ahead unless asked for the leader gap or the two in turn. */
+function parseGapMode(value: string | null): GapMode {
+  const mode = value?.toLowerCase();
+  return mode === 'leader' || mode === 'auto' ? mode : 'int';
+}
+
+/** Seconds each gap stays up in auto mode. */
+export const DEFAULT_GAP_EVERY_S = 6;
+const MAX_GAP_EVERY_S = 60;
+
+/** Reads `?gapevery=SECONDS`: how long each gap shows in auto mode, 1 to 60, six unless asked. */
+function parseGapEvery(value: string | null): number {
+  const s = Number(value);
+  return value !== null && value.trim() !== '' && Number.isFinite(s) && s >= 1
+    ? Math.min(MAX_GAP_EVERY_S, Math.round(s))
+    : DEFAULT_GAP_EVERY_S;
+}
+
+export const GAP_EVERY_LIMIT = MAX_GAP_EVERY_S;
+
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
@@ -70,8 +91,17 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showSponsors: params.get('sponsors')?.toLowerCase() !== 'hide',
     layout: params.get('layout')?.toLowerCase() === 'table' ? ('table' as const) : ('tower' as const),
     showQualifying: params.get('qual')?.toLowerCase() !== 'hide',
+    gap: parseGapMode(params.get('gap')),
+    gapEverySeconds: parseGapEvery(params.get('gapevery')),
     ...parseLiveRaceOptions(params, defaultCloseMs),
   };
+}
+
+/** The gap to the leader a tower row shows: laps down, or the time behind the leader; a dash for the leader. */
+export function leaderGapText(row: LiveTimingRowDto): string {
+  if (row.position === 1) return '—';
+  if (row.lapsDown > 0) return `+${row.lapsDown} ${row.lapsDown === 1 ? 'lap' : 'laps'}`;
+  return row.gapToLeaderMs !== null ? `+${fmtMs(row.gapToLeaderMs)}` : '—';
 }
 
 /** The gap a tower row shows: laps down, or the time behind the car ahead; a dash for the leader and for no gap yet. */
@@ -154,6 +184,8 @@ export type OverlayDesign = {
   showSponsors: boolean;
   layout: 'tower' | 'table';
   showQualifying: boolean;
+  gap: GapMode;
+  gapEverySeconds: number;
   showPredicted: boolean;
   showBars: boolean;
   showArrows: boolean;
@@ -173,6 +205,8 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showSponsors: true,
   layout: 'tower',
   showQualifying: true,
+  gap: 'int',
+  gapEverySeconds: DEFAULT_GAP_EVERY_S,
   showPredicted: true,
   showBars: true,
   showArrows: true,
@@ -202,6 +236,10 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showSponsors) q.set('sponsors', 'hide');
   if (design.layout === 'table') q.set('layout', 'table');
   if (!design.showQualifying) q.set('qual', 'hide');
+  if (design.gap !== 'int') q.set('gap', design.gap);
+  if (design.gap === 'auto' && design.gapEverySeconds !== DEFAULT_GAP_EVERY_S) {
+    q.set('gapevery', String(design.gapEverySeconds));
+  }
   if (!design.showPredicted) q.set('predict', 'hide');
   if (!design.showBars) q.set('bars', 'hide');
   if (!design.showArrows) q.set('arrows', 'hide');

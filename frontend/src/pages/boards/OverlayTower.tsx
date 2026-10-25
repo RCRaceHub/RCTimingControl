@@ -8,7 +8,7 @@ import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
-import { gapText } from './boardFormat';
+import { gapText, leaderGapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2.5;
@@ -46,6 +46,10 @@ interface OverlayTowerProps {
   qualifying?: Map<number, ProjectedQualifying>;
   /** The heat has ended, so the places in {@code qualifying} are settled rather than a projection. */
   qualifyingFinal?: boolean;
+  /** The gap on view: the interval to the car ahead (INT) or the gap to the leader (GAP); INT unless given. */
+  gap?: 'int' | 'leader';
+  /** The gap column is fading out ahead of a change in auto mode. */
+  gapFading?: boolean;
 }
 
 const FLASH_CLASS: Record<string, string> = {
@@ -85,8 +89,15 @@ export function OverlayTower({
   predicted,
   qualifying,
   qualifyingFinal = false,
+  gap = 'int',
+  gapFading = false,
 }: OverlayTowerProps) {
+  const gapClass = cn('transition-opacity duration-200', gapFading && 'opacity-0');
   return (
+    <>
+    <div aria-hidden className={cn('flex justify-end px-3 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
+      <span className={cn('w-20 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
+    </div>
     <div
       role="table"
       aria-label="Running order"
@@ -133,10 +144,13 @@ export function OverlayTower({
               </span>
             )}
             {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
-            <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums">{gapText(row)}</span>
+            <span className={cn('w-20 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
+              {gap === 'int' ? gapText(row) : leaderGapText(row)}
+            </span>
           </div>
         );
       })}
     </div>
+    </>
   );
 }

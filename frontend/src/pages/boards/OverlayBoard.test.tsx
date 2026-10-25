@@ -294,6 +294,24 @@ describe('OverlayBoard timing tower', () => {
     expect(getLiveQualifying).not.toHaveBeenCalled();
   });
 
+  it('labels the gap column INT, and gap=leader shows the gap to the leader and labels it GAP', async () => {
+    stompFrames['/topic/race/12/timing'] = [
+      row(1, 'Grace Hopper', 13_500),
+      { ...row(2, 'Ada Lovelace', 14_100), gapToAheadMs: 1_250, gapToLeaderMs: 3_400 },
+    ];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    const { unmount } = renderOverlay();
+    const rows = await screen.findAllByRole('row');
+    expect(rows[1]).toHaveTextContent('+1.250');
+    expect(screen.getByText('INT')).toBeInTheDocument();
+    unmount();
+
+    renderOverlay('/boards/overlay?gap=leader');
+    const leaderRows = await screen.findAllByRole('row');
+    expect(leaderRows[1]).toHaveTextContent('+3.400');
+    expect(screen.getByText('GAP')).toBeInTheDocument();
+  });
+
   it('draws the old table instead with layout=table', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     renderOverlay('/boards/overlay?layout=table');
@@ -336,6 +354,8 @@ describe('overlay options', () => {
       showSponsors: true,
       layout: 'tower',
       showQualifying: true,
+      gap: 'int',
+      gapEverySeconds: 6,
       showBars: true,
       showArrows: true,
       showPredicted: true,

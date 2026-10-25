@@ -20,6 +20,7 @@ import {
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
+import { useGapView } from '@/hooks/useGapView';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
@@ -245,10 +246,11 @@ export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showPredicted,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds, showPredicted,
     showBars, showArrows, closeMs, showBattles,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
+  const gapView = useGapView(gap, gapEverySeconds);
   useTransparentPage();
 
   const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
@@ -357,6 +359,8 @@ export default function OverlayBoard() {
             predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
             qualifying={qualifying}
             qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
+            gap={gapView.view}
+            gapFading={gapView.fading}
           />
         )}
         {rows.length > 0 && layout === 'table' && (

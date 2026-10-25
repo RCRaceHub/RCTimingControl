@@ -25,4 +25,13 @@ describe('overlayQuery', () => {
     expect(query).toBe('?ticker=hide');
     expect(parseOverlayOptions(new URLSearchParams(query)).tickerItems.size).toBe(0);
   });
+
+  it('writes the gap mode and its period, and reads them back', () => {
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, gap: 'auto', gapEverySeconds: 8 });
+    expect(query).toBe('?gap=auto&gapevery=8');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ gap: 'auto', gapEverySeconds: 8 });
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, gap: 'leader' })).toBe('?gap=leader');
+    expect(parseOverlayOptions(new URLSearchParams('gap=nonsense&gapevery=0')))
+      .toMatchObject({ gap: 'int', gapEverySeconds: 6 });
+  });
 });

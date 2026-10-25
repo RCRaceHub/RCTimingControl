@@ -124,7 +124,7 @@ Options go on the end of the address:
 
 For example `/boards/overlay?top=6&theme=light`.
 
-You don't need to write the address by hand: **Admin, Overlay Designer** (ADMIN and RACE_DIRECTOR) lets you tick the parts you want, the layout, the ticker items, the theme and the number of places, shows the overlay live in a preview, and gives you the address to copy into OBS (#524). Nothing is saved on the server; the address holds the design, so keep the ones you use in OBS. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
+The tower's gap column shows the interval to the car ahead (**INT**) by default; `gap=leader` shows the gap to the leader (**GAP**), and `gap=auto` takes turns between them with a quick fade, every 6 seconds or every `gapevery=SECONDS` (1 to 60). A small label above the column says which is on view, and a lapped car shows the laps it is down in either. You don't need to write the address by hand: **Admin, Overlay Designer** (ADMIN and RACE_DIRECTOR) lets you tick the parts you want, the layout, the ticker items, the theme and the number of places, shows the overlay live in a preview, and gives you the address to copy into OBS (#524). Nothing is saved on the server; the address holds the design, so keep the ones you use in OBS. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.
 
 The same position chart is on the Live race screen (`/boards/live-race`, add `?event=ID` for one event) below the live timing. The old `/boards/chart` address still works and opens the Live race screen. Names follow each competitor's public name setting.
 

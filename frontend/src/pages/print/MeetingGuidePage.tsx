@@ -452,6 +452,10 @@ export default function MeetingGuidePage() {
             panel, <span className="font-mono text-xs">chart=hide</span> leaves out the position chart,
             <span className="font-mono text-xs"> ticker=hide</span> leaves out the ticker (or name the
             items to scroll: <span className="font-mono text-xs">ticker=next,drivers,marshals,tq,fastest</span>),
+            <span className="font-mono text-xs"> gap=leader</span> shows the tower&apos;s gap to the leader
+            (GAP) in place of the interval to the car ahead (INT), and
+            <span className="font-mono text-xs"> gap=auto</span> takes turns every
+            <span className="font-mono text-xs"> gapevery=SECONDS</span> (default 6),
             <span className="font-mono text-xs"> sponsors=hide</span> leaves out the sponsor bar,
             <span className="font-mono text-xs"> layout=table</span> draws a table in place of the tower,
             <span className="font-mono text-xs"> predict=hide</span> leaves out predicted laps,
