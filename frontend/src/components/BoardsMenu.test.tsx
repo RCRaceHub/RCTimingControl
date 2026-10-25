@@ -15,6 +15,7 @@ describe('BoardsMenu', () => {
     open();
     expect(await screen.findByRole('menuitem', { name: 'Qualifying standings' })).toHaveAttribute('href', '/qualifying?event=7');
     expect(screen.getByRole('menuitem', { name: 'Finals' })).toHaveAttribute('href', '/finals?event=7');
+    expect(screen.getByRole('menuitem', { name: 'Podium' })).toHaveAttribute('href', '/podium?event=7');
     expect(screen.getByRole('menuitem', { name: 'Event schedule' })).toHaveAttribute('href', '/events');
   });
 
