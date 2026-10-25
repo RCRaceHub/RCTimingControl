@@ -1,12 +1,13 @@
 // The panels a saved board view is built from (#481). Each draws one thing from the public board endpoints, so a view
 // is only a layout: the same data feeds the stand-alone boards.
 import { useQuery } from '@tanstack/react-query';
-import { getLiveQualifying, getResultsBoard, getTicker, type NowNextDto } from '@/lib/boardsApi';
+import { getLiveQualifying, getResultsBoard, getTicker, type NowNextDto, type RaceMediaDto } from '@/lib/boardsApi';
 import type { BoardPanel } from '@/lib/boardViewsApi';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import type { LapBarClock } from '@/components/LapProgressBar';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { CarThumb } from '@/components/CarThumb';
 import { BoardLiveTable, type PredictedClock } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { LiveTopTable } from './LiveTopTable';
@@ -22,6 +23,8 @@ export type PanelContext = {
   closeMs: number;
   showArrows: boolean;
   predicted: PredictedClock | undefined;
+  /** Headshots, car photos and driver sponsors of the race on track, by entry id (#520). */
+  media: Map<number, RaceMediaDto>;
 };
 
 function PanelTitle({ children }: { children: string }) {
@@ -57,6 +60,7 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
       {ctx.rows.length > 0 ? (
         <BoardLiveTable
           rows={ctx.rows}
+          media={ctx.media}
           barClock={race.status === 'RUNNING' ? ctx.barClock : undefined}
           closeMs={ctx.closeMs}
           showArrows={ctx.showArrows && race.finalLetter !== null}
@@ -127,6 +131,48 @@ function LastResultPanel({ ctx }: { ctx: PanelContext }) {
   );
 }
 
+/**
+ * The drivers of the race on track in race order, each with a headshot, car number and their own sponsors, for the
+ * commentator (#522). A driver without a picture gets a plain card; one whose name is hidden has no picture or sponsors
+ * (the server leaves them out) and shows as the name the timing already gives.
+ */
+function DriverCardsPanel({ ctx }: { ctx: PanelContext }) {
+  const race = ctx.nowNext?.currentRace ?? null;
+  if (!race || ctx.rows.length === 0) {
+    return <Empty>No race on track</Empty>;
+  }
+  return (
+    <div>
+      <PanelTitle>{`Drivers: ${race.label}`}</PanelTitle>
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="view-driver-cards">
+        {ctx.rows.map((row) => {
+          const media = ctx.media.get(row.entryId);
+          return (
+            <li key={row.entryId} className="flex items-center gap-4 rounded-lg bg-slate-900 p-3">
+              {media?.headshotUrl ? (
+                <img src={media.headshotUrl} alt="" loading="lazy" className="h-20 w-20 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="h-20 w-20 shrink-0 rounded-full bg-slate-800" aria-hidden />
+              )}
+              <div className="min-w-0">
+                <p className="truncate text-2xl font-bold">
+                  <span className="mr-2 tabular-nums text-slate-400">{row.position}.</span>
+                  {row.carNumber != null && <span className="mr-2 tabular-nums text-slate-400">#{row.carNumber}</span>}
+                  {row.driverName}
+                </p>
+                {media && media.sponsors.length > 0 && (
+                  <p className="truncate text-lg text-slate-400">{media.sponsors.join(' · ')}</p>
+                )}
+                <CarThumb url={media?.carPhotoUrl} className="mt-1 h-10 w-16" />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 /** One panel of a view. */
 export function BoardViewPanel({ panel, ctx }: { panel: BoardPanel; ctx: PanelContext }) {
   switch (panel.type) {
@@ -140,5 +186,7 @@ export function BoardViewPanel({ panel, ctx }: { panel: BoardPanel; ctx: PanelCo
       return <MarshalsPanel ctx={ctx} />;
     case 'LAST_RESULT':
       return <LastResultPanel ctx={ctx} />;
+    case 'DRIVER_CARDS':
+      return <DriverCardsPanel ctx={ctx} />;
   }
 }

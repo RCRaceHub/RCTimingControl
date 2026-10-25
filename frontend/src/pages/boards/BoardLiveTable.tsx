@@ -5,6 +5,8 @@ import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
+import { CarThumb } from '@/components/CarThumb';
+import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
 import { gapText } from './boardFormat';
 
@@ -24,6 +26,8 @@ interface BoardLiveTableProps {
   showArrows?: boolean;
   /** Given for a timed race, adds a column of the laps each car is on course to finish with. */
   predicted?: PredictedClock;
+  /** Car photos by entry id, shown beside the driver's name (#521); omitted or empty leaves the rows as they were. */
+  media?: Map<number, RaceMediaDto>;
 }
 
 /** What the predicted laps column needs: the device clock offset and the race time left at a device time. */
@@ -38,7 +42,7 @@ export interface PredictedClock {
  * round its lap against its average. Given {@code predicted} it adds the laps each car is on course to finish
  * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
-export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted }: BoardLiveTableProps) {
+export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media }: BoardLiveTableProps) {
   return (
     <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
       <thead>
@@ -67,6 +71,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
             <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="py-3 pr-4 font-semibold">
+              <CarThumb url={media?.get(row.entryId)?.carPhotoUrl} className="mr-3 h-10 w-16" />
               {row.driverName}{row.finished && <FinishedFlag />}
               {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
             </td>

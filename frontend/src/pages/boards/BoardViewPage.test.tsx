@@ -19,10 +19,11 @@ vi.mock('@/lib/boardsApi', () => ({
   getTicker: vi.fn(),
   getLiveQualifying: vi.fn(),
   getResultsBoard: vi.fn(),
+  getRaceMedia: vi.fn(),
 }));
 
 import { getBoardView } from '@/lib/boardViewsApi';
-import { getBoardLiveTiming, getLiveQualifying, getNowNext, getTicker } from '@/lib/boardsApi';
+import { getBoardLiveTiming, getLiveQualifying, getNowNext, getRaceMedia, getTicker } from '@/lib/boardsApi';
 
 const race = {
   raceId: 12,
@@ -55,6 +56,7 @@ function renderView(path = '/boards/view/pit') {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getBoardLiveTiming).mockResolvedValue([]);
+  vi.mocked(getRaceMedia).mockResolvedValue([]);
   vi.mocked(getLiveQualifying).mockResolvedValue({
     eventId: 7, eventName: 'Club Round 3', phase: 'NONE', raceId: null, raceLabel: null, className: null, rows: [],
   });
@@ -80,6 +82,30 @@ describe('BoardViewPage', () => {
     expect(await screen.findByText(race.label)).toBeInTheDocument();
     expect(await screen.findByText('Sam Marshal')).toBeInTheDocument();
     expect(await screen.findByText('No qualifying table yet.')).toBeInTheDocument();
+  });
+
+  it('draws driver cards with headshots and sponsors, and a car photo on the timing table', async () => {
+    vi.mocked(getBoardView).mockResolvedValue({
+      id: 2, slug: 'pit', name: 'Pit', columns: 1,
+      panels: [{ type: 'LIVE_TIMING', top: null, span: 1 }, { type: 'DRIVER_CARDS', top: null, span: 1 }],
+    });
+    vi.mocked(getNowNext).mockResolvedValue(nowNext({ currentRace: race }));
+    vi.mocked(getBoardLiveTiming).mockResolvedValue([
+      {
+        entryId: 5, driverName: 'Ann Racer', carNumber: '3', position: 1, lapsCompleted: 2, lastPassingTimeMs: 1,
+        lastLapMs: 30000, bestLapMs: 30000, avgLapMs: 30000, overallFastestLapMs: 30000, lapsDown: 0,
+        intervalLapsDown: 0, gapToLeaderMs: null, gapToAheadMs: null, totalTimeMs: 60000,
+      },
+    ]);
+    vi.mocked(getRaceMedia).mockResolvedValue([
+      { entryId: 5, headshotUrl: '/storage/h.png', carPhotoUrl: '/storage/c.png', sponsors: ['Acme Tyres', 'Bolt Motors'] },
+    ]);
+
+    renderView();
+
+    expect(await screen.findByText('Acme Tyres · Bolt Motors')).toBeInTheDocument();
+    expect(screen.getByTestId('view-driver-cards')).toBeInTheDocument();
+    expect((await screen.findAllByTestId('car-thumb')).length).toBeGreaterThan(0);
   });
 
   it('says so when there is no view at that address', async () => {

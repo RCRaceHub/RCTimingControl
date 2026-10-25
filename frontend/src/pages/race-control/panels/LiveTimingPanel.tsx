@@ -20,6 +20,8 @@ import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { isClose } from '@/lib/lapProgress';
+import { CarThumb } from '@/components/CarThumb';
+import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 
 type Props = {
@@ -39,6 +41,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);
   const settings = useBoardSettings();
+  const media = useRaceMedia(raceId);
   const barClock = useLapBarClock(sorted, status, settings.lateMarginMs);
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
@@ -101,6 +104,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="font-mono font-semibold">{row.position}{showArrows && <PositionArrow row={row} rows={sorted} />}</TableCell>
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
+                  <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2" />
                   <span>{row.driverName}</span>
                   {row.finished && <FinishedFlag />}
                   {close && (

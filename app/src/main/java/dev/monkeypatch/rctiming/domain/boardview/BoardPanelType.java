@@ -11,5 +11,7 @@ public enum BoardPanelType {
     /** The drivers marshalling the race on track. */
     MARSHALS,
     /** The result of the race that finished last. */
-    LAST_RESULT
+    LAST_RESULT,
+    /** The drivers of the race on track with headshots and their own sponsors, for the commentator (#522). */
+    DRIVER_CARDS
 }
