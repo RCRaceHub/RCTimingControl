@@ -52,6 +52,9 @@ const adaMatch = { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClu
 describe('AddWalkInEntryDialog', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    api.competitors.lastTransponders.mockResolvedValue({
+      primaryTransponder: null, secondaryTransponder: null, thirdTransponder: null, fourthTransponder: null,
+    });
     api.competitors.list.mockResolvedValue([
       { id: 7, displayName: 'Ada Lovelace', brcaNumber: null, homeClub: 'Analytical RC', spokenName: null, speechName: 'Ada Lovelace', nameVisibility: 'SHOW' as const },
       { id: 8, displayName: 'Grace Hopper', brcaNumber: null, homeClub: null, spokenName: null, speechName: 'Grace Hopper', nameVisibility: 'SHOW' as const },

@@ -85,10 +85,12 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       if (mine !== lookup.current) return;
       prefilled.current = true;
       // Fill only boxes the official has not typed in while this loaded
-      setPrimary(v => v || last.primaryTransponder || '');
-      setSecondary(v => v || last.secondaryTransponder || '');
-      setThird(v => v || last.thirdTransponder || '');
-      setFourth(v => v || last.fourthTransponder || '');
+      const { primaryTransponder = '', secondaryTransponder = '', thirdTransponder = '', fourthTransponder = '' } =
+        last ?? {};
+      setPrimary(v => v || primaryTransponder || '');
+      setSecondary(v => v || secondaryTransponder || '');
+      setThird(v => v || thirdTransponder || '');
+      setFourth(v => v || fourthTransponder || '');
     } catch {
       // Prefilling is a convenience; the official can still type the numbers
     }
