@@ -432,13 +432,13 @@ export default function MeetingGuidePage() {
             <span className="font-semibold"> Browser</span> source pointing at
             <span className="font-mono text-xs"> http://&lt;laptop&gt;:8080/boards/overlay</span>, 1920
             &times; 1080 pixels. It shows the race on track over your video on a transparent
-            background: a timing tower (one slim row per car with its place, car number, driver and gap,
+            background: a timing tower (one slim row per car with its place, car number, driver, laps (taking turns with the predicted laps in a timed race) and gap,
             sliding to its new place as the order changes) and the race clock (time to go, or time so
             far when the format sets no length). In a timed race each row shows the laps the car is on
             course to finish with, and in a qualifying heat the driver&apos;s projected qualifying place.
             Rows flash on each lap like the live timing screen (purple race best, blue personal best,
-            green faster, red slower), and a small stats line underneath rolls between the heat&apos;s
-            fastest lap and the round&apos;s fastest. A position chart sits at the
+            green faster, red slower), and a small panel at the bottom left shows the battles (cars
+            running close) and rolls between the heat&apos;s fastest lap and the round&apos;s fastest. A position chart sits at the
             bottom right, a ticker with large text scrolls above the foot of the page (next race, its
             drivers and marshals, the top qualifiers and the round&apos;s fastest lap), and a sponsor bar
             along the bottom shows the event&apos;s sponsors, added on the event&apos;s Sponsors tab. Between
