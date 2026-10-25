@@ -14,6 +14,7 @@ vi.mock('@/lib/adminApi', async (importOriginal) => {
         getTls: vi.fn(),
         regenerateTlsServer: vi.fn(),
         regenerateTlsCa: vi.fn(),
+        changeTlsSetting: vi.fn(),
       },
     },
   };
@@ -29,6 +30,9 @@ const ON = {
   caExpires: '2036-10-25T00:00:00Z',
   serverExpires: '2027-10-25T00:00:00Z',
   caFingerprint: 'AB:CD',
+  switchedOn: true,
+  configuredPort: 8443,
+  restartNeeded: false,
 };
 
 function renderCard() {
@@ -47,11 +51,23 @@ describe('HttpsCard', () => {
   });
 
   it('says how to switch HTTPS on when it is off', async () => {
-    vi.mocked(adminApi.club.getTls).mockResolvedValue({ ...ON, enabled: false, urls: [], names: [] });
+    vi.mocked(adminApi.club.getTls).mockResolvedValue({ ...ON, enabled: false, switchedOn: false, urls: [], names: [] });
     renderCard();
 
     expect(await screen.findByText(/HTTPS is switched off/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /new server certificate/i })).not.toBeInTheDocument();
+  });
+
+  it('saves the switch and says a restart is needed', async () => {
+    const off = { ...ON, enabled: false, switchedOn: false, urls: [], names: [] };
+    vi.mocked(adminApi.club.getTls).mockResolvedValue(off);
+    vi.mocked(adminApi.club.changeTlsSetting).mockResolvedValue({ ...off, switchedOn: true, restartNeeded: true });
+    renderCard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Switch HTTPS on' }));
+
+    await waitFor(() => expect(adminApi.club.changeTlsSetting).toHaveBeenCalledWith(true, undefined));
+    expect(await screen.findByRole('status')).toHaveTextContent(/after RC Timing is restarted/);
   });
 
   it('lists the addresses and makes a new server certificate without asking', async () => {

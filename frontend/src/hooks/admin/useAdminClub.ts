@@ -85,3 +85,13 @@ export function useRegenerateTls() {
     },
   });
 }
+
+/** Switches HTTPS on or off for the next start (#510); the app must be restarted for it to apply. */
+export function useChangeTlsSetting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enabled, port }: { enabled: boolean; port?: number }) =>
+      adminApi.club.changeTlsSetting(enabled, port),
+    onSuccess: (status) => qc.setQueryData(adminQueryKeys.club.tls(), status),
+  });
+}

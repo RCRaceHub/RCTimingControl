@@ -689,6 +689,11 @@ export interface TlsStatusDto {
   serverExpires: string | null;
   /** The CA's SHA-256 fingerprint, to check a downloaded file against */
   caFingerprint: string | null;
+  /** What the settings file says for the next start (#510) */
+  switchedOn: boolean;
+  configuredPort: number;
+  /** The file differs from what is running, so the app must be restarted */
+  restartNeeded: boolean;
 }
 
 export const adminApi = {
@@ -896,6 +901,9 @@ export const adminApi = {
     regenerateTlsServer: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-server').then(r => r.data),
     /** A new CA: every device must install it again */
     regenerateTlsCa: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-ca').then(r => r.data),
+    /** Switches HTTPS on or off for the next start by writing the settings file */
+    changeTlsSetting: (enabled: boolean, port?: number) =>
+      api.put<TlsStatusDto>('/api/v1/admin/tls/setting', { enabled, port }).then(r => r.data),
     uploadLogo: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);
