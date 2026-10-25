@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.COMPETITORS;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
 /**
@@ -48,6 +49,26 @@ public class CompetitorQueryService {
                         SpeechName.of(r.get(COMPETITORS.SPOKEN_NAME), r.get(COMPETITORS.DISPLAY_NAME)),
                         r.get(COMPETITORS.NAME_VISIBILITY),
                         dev.monkeypatch.rctiming.domain.competitor.CategoryTags.parse(r.get(COMPETITORS.CATEGORIES))));
+    }
+
+    /**
+     * The transponder numbers on the competitor's newest entry (highest id, any event, class or status), so a walk-in
+     * can start from the numbers they used last time. Withdrawn entries count: the car is still theirs. Returns an
+     * all-null result when they have no entries.
+     */
+    public CompetitorTransponderDto lastTransponders(Long competitorId) {
+        return dsl.select(ENTRIES.TRANSPONDER_NUMBER, ENTRIES.SECONDARY_TRANSPONDER_NUMBER,
+                        ENTRIES.THIRD_TRANSPONDER_NUMBER, ENTRIES.FOURTH_TRANSPONDER_NUMBER)
+                .from(ENTRIES)
+                .where(ENTRIES.COMPETITOR_ID.eq(competitorId))
+                .orderBy(ENTRIES.ID.desc())
+                .limit(1)
+                .fetchOptional(r -> new CompetitorTransponderDto(
+                        r.get(ENTRIES.TRANSPONDER_NUMBER),
+                        r.get(ENTRIES.SECONDARY_TRANSPONDER_NUMBER),
+                        r.get(ENTRIES.THIRD_TRANSPONDER_NUMBER),
+                        r.get(ENTRIES.FOURTH_TRANSPONDER_NUMBER)))
+                .orElse(new CompetitorTransponderDto(null, null, null, null));
     }
 
     /** A competitor's recorded changes, newest first, with the name of the official who made each. */

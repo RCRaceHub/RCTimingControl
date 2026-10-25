@@ -558,6 +558,15 @@ Content-Type: application/json
 
 Requires `ADMIN`. Lists the tags the championship also produces standings for, in display order, with the same limits as above (400 otherwise, 404 for an unknown championship). Standings (`GET /championships/{id}` and the admin `standings`) then carry extra rows with `category` set to the tag: each repeats the class and overall tables for the drivers who hold it, with the points they earned, ranked again among themselves. Rows of the class and overall tables have `category` null. The public `GET /championships/{id}/info` lists `splits`. Audited as `CHAMPIONSHIP_SPLITS_CHANGED`.
 
+### Get a competitor's last transponders
+
+```http
+GET /admin/competitors/{id}/last-transponders
+Authorization: Bearer <token>
+```
+
+Requires an official role. The transponder numbers on the competitor's newest entry in any event: `{ "primaryTransponder": "1234", "secondaryTransponder": null, "thirdTransponder": null, "fourthTransponder": null }`. All four are `null` when they have no entries. The add-entry form uses it to fill in the numbers when a returning driver is picked.
+
 ### See who changed how a name is said
 
 ```http

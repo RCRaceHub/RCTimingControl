@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -16,7 +16,7 @@ import {
 
 import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
 import { useCreateWalkInEntry } from '@/hooks/admin/useAdminEntries';
-import type { CompetitorSummaryDto } from '@/lib/adminApi';
+import { adminApi, type CompetitorSummaryDto } from '@/lib/adminApi';
 import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPicker';
 import { getApiErrorMessage } from '@/lib/errors';
 
@@ -44,11 +44,17 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   // Existing drivers the typed name matches, while the official decides if it is one of them (#123)
   const [possibleDuplicates, setPossibleDuplicates] = useState<CompetitorSummaryDto[]>([]);
 
+  // Which pick the transponder lookup belongs to, so a slow answer for an earlier pick is ignored
+  const lookup = useRef(0);
+  const prefilled = useRef(false);
+
   const { data: competitors = [] } = useAdminCompetitorsList();
   const createEntry = useCreateWalkInEntry(eventId, classId);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
+      lookup.current++;
+      prefilled.current = false;
       setDriverText('');
       setSelected(null);
       setPrimary('');
@@ -69,6 +75,39 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   const exactMatch = query
     ? competitors.find(c => sameNameKey(c.displayName) === sameNameKey(driverText))
     : undefined;
+
+  /** Picks a driver and, if the numbers are still empty, starts from the ones on their latest entry. */
+  async function pickDriver(competitor: CompetitorSummaryDto) {
+    setSelected(competitor);
+    const mine = ++lookup.current;
+    try {
+      const last = await adminApi.competitors.lastTransponders(competitor.id);
+      if (mine !== lookup.current) return;
+      prefilled.current = true;
+      // Fill only boxes the official has not typed in while this loaded
+      const { primaryTransponder = '', secondaryTransponder = '', thirdTransponder = '', fourthTransponder = '' } =
+        last ?? {};
+      setPrimary(v => v || primaryTransponder || '');
+      setSecondary(v => v || secondaryTransponder || '');
+      setThird(v => v || thirdTransponder || '');
+      setFourth(v => v || fourthTransponder || '');
+    } catch {
+      // Prefilling is a convenience; the official can still type the numbers
+    }
+  }
+
+  /** Back to the driver search; numbers filled in for the previous pick go with it. */
+  function changeDriver() {
+    lookup.current++;
+    setSelected(null);
+    if (prefilled.current) {
+      prefilled.current = false;
+      setPrimary('');
+      setSecondary('');
+      setThird('');
+      setFourth('');
+    }
+  }
 
   async function submit(options: { competitor?: CompetitorSummaryDto; confirmNew?: boolean } = {}) {
     const chosen = options.competitor ?? selected;
@@ -128,14 +167,14 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
           <DialogHeader>
             <DialogTitle>Add entry</DialogTitle>
             <DialogDescription>
-              Add a walk-in to this class. Pick a driver who has raced before, or type a new name.
+              Add a walk-in to this class. Pick a driver who has raced before to fill in the transponders from their last entry, or type a new name.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-1.5">
             <Label htmlFor="walkin-driver">Driver</Label>
             {selected ? (
-              <ChosenCompetitor competitor={selected} onChange={() => setSelected(null)} />
+              <ChosenCompetitor competitor={selected} onChange={changeDriver} />
             ) : (
               <>
                 <Input
@@ -148,7 +187,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                   placeholder="Search drivers or type a new name"
                   autoComplete="off"
                 />
-                <CompetitorChoices choices={matches} onPick={setSelected} label="Matching drivers" />
+                <CompetitorChoices choices={matches} onPick={c => void pickDriver(c)} label="Matching drivers" />
                 {query && !exactMatch && (
                   <p className="text-xs text-muted-foreground">
                     “{driverText.trim()}” will be added as a new driver.

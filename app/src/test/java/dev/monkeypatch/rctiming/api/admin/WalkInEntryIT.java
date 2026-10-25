@@ -124,6 +124,34 @@ class WalkInEntryIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void lastTranspondersAreThoseOfTheNewestEntry_andEmptyForANewDriver() {
+        long competitorId = createCompetitor("Returning " + run);
+        assertThat(lastTransponders(competitorId).get("primaryTransponder").isNull()).isTrue();
+
+        create(Map.of("competitorId", competitorId, "primaryTransponder", "71" + run));
+        long secondClass = jdbc.queryForObject("""
+                insert into event_classes (event_id, racing_class_id, config_snapshot)
+                select event_id, racing_class_id, config_snapshot from event_classes where id = ? returning id""",
+                Long.class, classId);
+        Map<String, Object> second = Map.of("eventId", eventId, "eventClassId", secondClass,
+                "competitorId", competitorId, "primaryTransponder", "72" + run,
+                "secondaryTransponder", "73" + run, "thirdTransponder", "74" + run);
+        restTemplate.exchange("/api/v1/admin/entries", HttpMethod.POST,
+                new HttpEntity<>(second, headers(adminToken)), JsonNode.class);
+
+        JsonNode last = lastTransponders(competitorId);
+        assertThat(last.get("primaryTransponder").asText()).isEqualTo("72" + run);
+        assertThat(last.get("secondaryTransponder").asText()).isEqualTo("73" + run);
+        assertThat(last.get("thirdTransponder").asText()).isEqualTo("74" + run);
+        assertThat(last.get("fourthTransponder").isNull()).isTrue();
+    }
+
+    private JsonNode lastTransponders(long competitorId) {
+        return restTemplate.exchange("/api/v1/admin/competitors/" + competitorId + "/last-transponders",
+                HttpMethod.GET, new HttpEntity<>(headers(adminToken)), JsonNode.class).getBody();
+    }
+
+    @Test
     void rejectsASecondEntryForTheSameCompetitorInTheClass() {
         long competitorId = createCompetitor("Twice " + run);
         assertThat(create(Map.of("competitorId", competitorId, "primaryTransponder", "64" + run)).getStatusCode())

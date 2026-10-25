@@ -511,6 +511,14 @@ export interface CompetitorDuplicateGroupDto {
   competitors: CompetitorSummaryDto[];
 }
 
+/** The transponder numbers on a competitor's most recent entry; each is null when not set. */
+export interface CompetitorTransponders {
+  primaryTransponder: string | null;
+  secondaryTransponder: string | null;
+  thirdTransponder: string | null;
+  fourthTransponder: string | null;
+}
+
 /** SHOW the full name, INITIALS only, or HIDE it (#265). */
 export type NameVisibility = 'SHOW' | 'INITIALS' | 'HIDE';
 
@@ -1056,6 +1064,9 @@ export const adminApi = {
   competitors: {
     list: () =>
       api.get<CompetitorSummaryDto[]>('/api/v1/admin/competitors').then(r => r.data),
+    /** The transponders from the driver's latest entry, to prefill a new one. */
+    lastTransponders: (id: number) =>
+      api.get<CompetitorTransponders>(`/api/v1/admin/competitors/${id}/last-transponders`).then(r => r.data),
     /** Set, change or clear (empty text) how a name is said aloud (#119). */
     setSpokenName: (id: number, spokenName: string) =>
       api.put<CompetitorSummaryDto>(`/api/v1/admin/competitors/${id}/spoken-name`, { spokenName })
