@@ -61,19 +61,18 @@ function parseGapMode(value: string | null): GapMode {
   return mode === 'leader' || mode === 'auto' ? mode : 'int';
 }
 
-/** Seconds each gap stays up in auto mode. */
+/** Seconds each gap stays up in auto mode when `gapevery=` is not given. */
 export const DEFAULT_GAP_EVERY_S = 6;
-const MAX_GAP_EVERY_S = 60;
+/** The most seconds `gapevery=` may ask for. */
+export const GAP_EVERY_LIMIT = 60;
 
 /** Reads `?gapevery=SECONDS`: how long each gap shows in auto mode, 1 to 60, six unless asked. */
 function parseGapEvery(value: string | null): number {
   const s = Number(value);
   return value !== null && value.trim() !== '' && Number.isFinite(s) && s >= 1
-    ? Math.min(MAX_GAP_EVERY_S, Math.round(s))
+    ? Math.min(GAP_EVERY_LIMIT, Math.round(s))
     : DEFAULT_GAP_EVERY_S;
 }
-
-export const GAP_EVERY_LIMIT = MAX_GAP_EVERY_S;
 
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;

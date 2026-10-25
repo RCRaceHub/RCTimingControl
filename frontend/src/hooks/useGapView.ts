@@ -17,6 +17,8 @@ export function useGapView(mode: GapMode, everySeconds: number): { view: 'leader
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
+    setFading(false);
+    setAutoView('int');
     if (mode !== 'auto') return;
     let swap: ReturnType<typeof setTimeout> | undefined;
     const timer = setInterval(() => {

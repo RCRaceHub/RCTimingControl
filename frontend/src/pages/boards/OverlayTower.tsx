@@ -95,62 +95,62 @@ export function OverlayTower({
   const gapClass = cn('transition-opacity duration-200', gapFading && 'opacity-0');
   return (
     <>
-    <div aria-hidden className={cn('flex justify-end px-3 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
-      <span className={cn('w-20 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
-    </div>
-    <div
-      role="table"
-      aria-label="Running order"
-      className="relative"
-      style={{ height: `${rows.length * TOWER_ROW_REM}rem` }}
-    >
-      {rows.map((row, index) => {
-        const flash = lapFlash.get(row.entryId);
-        const close = isClose(row, closeMs);
-        const projected = qualifying?.get(row.entryId);
-        return (
-          <div
-            key={row.entryId}
-            role="row"
-            data-close={close || undefined}
-            className={cn(
-              'absolute inset-x-0 flex items-center gap-2 border-t px-3 transition-[transform,background-color] duration-700 ease-in-out',
-              colours.row,
-              close && !flash && 'bg-amber-500/25',
-              flash && FLASH_CLASS[flash],
-            )}
-            style={{ height: `${TOWER_ROW_REM}rem`, transform: `translateY(${index * TOWER_ROW_REM}rem)` }}
-          >
-            <span
+      <div aria-hidden className={cn('flex justify-end px-3 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}>
+        <span className={cn('w-20 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
+      </div>
+      <div
+        role="table"
+        aria-label="Running order"
+        className="relative"
+        style={{ height: `${rows.length * TOWER_ROW_REM}rem` }}
+      >
+        {rows.map((row, index) => {
+          const flash = lapFlash.get(row.entryId);
+          const close = isClose(row, closeMs);
+          const projected = qualifying?.get(row.entryId);
+          return (
+            <div
+              key={row.entryId}
+              role="row"
+              data-close={close || undefined}
               className={cn(
-                'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded font-bold tabular-nums',
-                colours.position,
+                'absolute inset-x-0 flex items-center gap-2 border-t px-3 transition-[transform,background-color] duration-700 ease-in-out',
+                colours.row,
+                close && !flash && 'bg-amber-500/25',
+                flash && FLASH_CLASS[flash],
               )}
+              style={{ height: `${TOWER_ROW_REM}rem`, transform: `translateY(${index * TOWER_ROW_REM}rem)` }}
             >
-              {row.position}
-            </span>
-            <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
-            <span className="relative min-w-0 flex-1 truncate font-semibold">
-              {row.driverName}
-              {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
-              {row.finished && <FinishedFlag className="ml-1" />}
-              {barClock && !row.finished && (
-                <LapProgressBar row={row} clock={barClock} className="absolute inset-x-0 -bottom-1 h-0.5" />
-              )}
-            </span>
-            {predicted && (
-              <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)} title="Laps on course to finish with">
-                <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
+              <span
+                className={cn(
+                  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded font-bold tabular-nums',
+                  colours.position,
+                )}
+              >
+                {row.position}
               </span>
-            )}
-            {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
-            <span className={cn('w-20 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
-              {gap === 'int' ? gapText(row) : leaderGapText(row)}
-            </span>
-          </div>
-        );
-      })}
-    </div>
+              <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
+              <span className="relative min-w-0 flex-1 truncate font-semibold">
+                {row.driverName}
+                {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
+                {row.finished && <FinishedFlag className="ml-1" />}
+                {barClock && !row.finished && (
+                  <LapProgressBar row={row} clock={barClock} className="absolute inset-x-0 -bottom-1 h-0.5" />
+                )}
+              </span>
+              {predicted && (
+                <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted)} title="Laps on course to finish with">
+                  <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
+                </span>
+              )}
+              {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
+              <span className={cn('w-20 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
+                {gap === 'int' ? gapText(row) : leaderGapText(row)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </>
   );
 }

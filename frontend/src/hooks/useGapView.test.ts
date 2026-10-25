@@ -30,4 +30,13 @@ describe('useGapView', () => {
     act(() => vi.advanceTimersByTime(1_300));
     expect(result.current.view).toBe('leader');
   });
+
+  it('starts again on INT, with the column visible, after the mode is changed away and back mid-fade', () => {
+    const { result, rerender } = renderHook(({ mode }) => useGapView(mode, 5), { initialProps: { mode: 'auto' as const } });
+    act(() => vi.advanceTimersByTime(5_000));
+    expect(result.current.fading).toBe(true);
+    rerender({ mode: 'leader' as never });
+    rerender({ mode: 'auto' as never });
+    expect(result.current).toEqual({ view: 'int', fading: false });
+  });
 });

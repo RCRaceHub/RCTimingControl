@@ -246,8 +246,8 @@ export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds, showPredicted,
-    showBars, showArrows, closeMs, showBattles,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,
+    showPredicted, showBars, showArrows, closeMs, showBattles,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
