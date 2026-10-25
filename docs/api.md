@@ -895,6 +895,13 @@ GET /boards/races/{raceId}/position-history
 **200 OK** — `[ { "lap": 1, "entryId": 31, "position": 2 }, ... ]`, the place each car held at the end of every lap so far, by the order the cars crossed the line, for the live position chart. `[]` for a race with no live state (not started, or finished: its stored result has the history). If a marshal adjustment has changed any car's lap count the crossing order can't be trusted, so every place is the car's current position.
 
 ```http
+GET /boards/sponsors?eventId={id}
+```
+**200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now.
+
+Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG, JPEG, WebP or SVG up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
+
+```http
 GET /boards/ticker?eventId={id}
 ```
 **200 OK** — `{ "nextRace": "Qualifying 2 — Buggy — Heat 1", "nextDrivers": ["Ann Racer"], "marshals": ["Bob Racer"], "marshalsPending": false, "topQualifiers": [ { "className": "Buggy", "driverName": "Ann Racer", "bestLapMs": 18500 } ] }`, for the overlay's scrolling ticker. `nextDrivers` are in grid order; `marshals` are the drivers of the race before the next one (for the first race of an event, the last race of its own round); for a final that takes bump-ups, `marshals` is empty and `marshalsPending` is true until the final below finishes, and then it leaves out the drivers who moved up; `topQualifiers` has a class once it has finished a qualifying heat. Names follow the public name rule. `eventId` defaults to the event racing now.

@@ -43,6 +43,7 @@ import EntryListSection from './EntryListSection';
 import RaceHubImportDialog from './RaceHubImportDialog';
 import CsvImportDialog from './CsvImportDialog';
 import EntryFeedSection from './EntryFeedSection';
+import EventSponsorsSection from './EventSponsorsSection';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatDateTime, formatEventDate } from '@/lib/dates';
@@ -261,6 +262,7 @@ export default function EventDetailPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
           <TabsTrigger value="entries">Entries</TabsTrigger>
+          <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -334,6 +336,10 @@ export default function EventDetailPage() {
 
         <TabsContent value="classes" className="mt-4">
           <EventClassSection eventId={id} classes={data.classes} />
+        </TabsContent>
+
+        <TabsContent value="sponsors" className="mt-4">
+          <EventSponsorsSection eventId={id} canEdit={canRunEvent} />
         </TabsContent>
 
         <TabsContent value="entries" className="mt-4 space-y-4">

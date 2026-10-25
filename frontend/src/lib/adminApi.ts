@@ -1,4 +1,5 @@
 import api from './api';
+import type { SponsorDto } from './boardsApi';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -725,6 +726,27 @@ export const adminApi = {
       .post<CsvImportResult>(`/api/v1/admin/events/${eventId}/csv-import`, form, {
         params: { dryRun },
         validateStatus: s => (s >= 200 && s < 300) || s === 422,
+      })
+      .then(r => r.data);
+  },
+
+  // Event sponsors (#518): name, optional logo, display order.
+  listSponsors: (eventId: number) =>
+    api.get<SponsorDto[]>(`/api/v1/admin/events/${eventId}/sponsors`).then(r => r.data),
+  addSponsor: (eventId: number, name: string) =>
+    api.post<SponsorDto>(`/api/v1/admin/events/${eventId}/sponsors`, { name }).then(r => r.data),
+  renameSponsor: (eventId: number, id: number, name: string) =>
+    api.put<SponsorDto>(`/api/v1/admin/events/${eventId}/sponsors/${id}`, { name }).then(r => r.data),
+  deleteSponsor: (eventId: number, id: number) =>
+    api.delete(`/api/v1/admin/events/${eventId}/sponsors/${id}`).then(() => undefined),
+  orderSponsors: (eventId: number, ids: number[]) =>
+    api.put<SponsorDto[]>(`/api/v1/admin/events/${eventId}/sponsors/order`, { ids }).then(r => r.data),
+  uploadSponsorLogo: (eventId: number, id: number, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api
+      .put<SponsorDto>(`/api/v1/admin/events/${eventId}/sponsors/${id}/logo`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       })
       .then(r => r.data);
   },
