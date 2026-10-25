@@ -213,6 +213,49 @@ public class ChampionshipStandingsQuery {
         return pointsByRace;
     }
 
+    /**
+     * What each driver's place in the overall qualifying order of a class with no finals is worth in the championship
+     * the event belongs to, by racing class id and then entry id, for showing on the qualifying standings. The place
+     * is the one the standings score from (see {@link #scoreFromQualifying}) and the points are the championship's
+     * points scale at that place, nil for a driver excluded from the event. Bonuses are not included. A class is left
+     * out until its qualifying is complete, and so is a class with finals (its points show on the finals) or one the
+     * championship does not score. Where several championships include the event, the lowest-numbered one that
+     * scores the class is used. Empty when the event is in no championship.
+     */
+    public Map<Long, Map<Long, Integer>> qualifyingPointsFor(Long eventId) {
+        List<Long> championshipIds = dsl.select(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID)
+                .from(CHAMPIONSHIP_EVENT_LINKS)
+                .where(CHAMPIONSHIP_EVENT_LINKS.EVENT_ID.eq(eventId))
+                .orderBy(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID.asc())
+                .fetch(CHAMPIONSHIP_EVENT_LINKS.CHAMPIONSHIP_ID);
+        Map<Long, Map<Long, Integer>> pointsByClass = new HashMap<>();
+        for (Long championshipId : championshipIds) {
+            Rules rules = rules(championshipId);
+            ChampionshipRound round = rounds(championshipId).stream()
+                    .filter(r -> r.eventId().equals(eventId)).findFirst().orElse(null);
+            if (round == null) {
+                continue;
+            }
+            EventResults results = results(List.of(round)).getOrDefault(eventId, EventResults.NONE);
+            results.qualifyingOrder().forEach((racingClassId, order) -> {
+                if (pointsByClass.containsKey(racingClassId) || !rules.scores(racingClassId)) {
+                    return;
+                }
+                Map<Long, Integer> points = new HashMap<>();
+                for (int i = 0; i < order.size(); i++) {
+                    EntryRef entry = results.scoringEntries().get(order.get(i));
+                    if (entry != null && entry.driverId() != null) {
+                        points.put(order.get(i), rules.excluded(entry.driverId(), eventId) ? 0 : rules.points(i + 1));
+                    }
+                }
+                if (!points.isEmpty()) {
+                    pointsByClass.put(racingClassId, points);
+                }
+            });
+        }
+        return pointsByClass;
+    }
+
     /** The rounds of finals at the event, by class, that run their A final in legs (a final with a heat above 1). */
     private Set<RoundClass> finalsInLegs(Long eventId) {
         return new HashSet<>(dsl.select(RACES.ROUND_ID, EVENT_CLASSES.RACING_CLASS_ID)

@@ -24,10 +24,13 @@ public record QualifyingTableDto(
      * round, in round order, with whether that round counts towards the total (empty otherwise). {@code carNumber}
      * is the driver's car number in the class's qualifying heats, null when none was recorded. {@code heat} is
      * the heat number when the class's heats are separate overall races (the positions then count from 1 in each
-     * heat), else null.
+     * heat), else null. {@code championshipPoints} is what the driver's place in the table earns in the event's
+     * championship, set only for a class with no finals (whose qualifying is its overall result) once all its heats
+     * are finished; null otherwise.
      */
     public record Row(int position, long entryId, String driverName, String carNumber, int lapsCompleted,
-                      Long bestLapMs, Integer points, List<RoundPlace> rounds, Integer heat) {}
+                      Long bestLapMs, Integer points, List<RoundPlace> rounds, Integer heat,
+                      Integer championshipPoints) {}
 
     /** A driver's place in one finished round; {@code counted} is false for a round that was dropped. */
     public record RoundPlace(int place, boolean counted) {}

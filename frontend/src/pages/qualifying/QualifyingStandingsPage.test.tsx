@@ -92,4 +92,33 @@ describe('QualifyingStandingsPage', () => {
 
     expect(await screen.findByText('No qualifying results yet.')).toBeInTheDocument();
   });
+
+  it('shows the championship points a place earns for a class with no finals', async () => {
+    vi.mocked(getQualifyingBoard).mockResolvedValue({
+      eventId: 7,
+      eventName: 'Club Round 3',
+      tables: [
+        {
+          eventClassId: 1,
+          className: 'Truggy',
+          heatsFinished: 2,
+          heatsTotal: 2,
+          finalsStarted: false,
+          rows: [
+            { position: 1, entryId: 10, driverName: 'Fast Freddie', carNumber: '4', lapsCompleted: 12, bestLapMs: 19_000, points: null,
+              rounds: [], championshipPoints: 25 },
+            { position: 2, entryId: 11, driverName: 'Slow Sam', carNumber: '5', lapsCompleted: 10, bestLapMs: 20_000, points: null,
+              rounds: [], championshipPoints: 18 },
+          ],
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Fast Freddie')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Champ. pts' })).toBeInTheDocument();
+    expect(screen.getByText('25')).toBeInTheDocument();
+    expect(screen.getByText('18')).toBeInTheDocument();
+  });
 });

@@ -16,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.QualifyingResult;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class QualifyingTableService {
     private final CompetitorRepository competitorRepository;
     private final QualifyingStandingsService qualifyingStandingsService;
     private final PublicNames publicNames;
+    private final ChampionshipStandingsQuery championshipStandings;
 
     public QualifyingTableService(EventClassRepository eventClassRepository,
                                   RacingClassRepository racingClassRepository,
@@ -53,7 +55,8 @@ public class QualifyingTableService {
                                   EntryRepository entryRepository,
                                   CompetitorRepository competitorRepository,
                                   QualifyingStandingsService qualifyingStandingsService,
-                                  PublicNames publicNames) {
+                                  PublicNames publicNames,
+                                  ChampionshipStandingsQuery championshipStandings) {
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
@@ -62,6 +65,7 @@ public class QualifyingTableService {
         this.competitorRepository = competitorRepository;
         this.qualifyingStandingsService = qualifyingStandingsService;
         this.publicNames = publicNames;
+        this.championshipStandings = championshipStandings;
     }
 
     /** One table per class of the event that has qualifying heats, with full driver names for officials. */
@@ -78,6 +82,7 @@ public class QualifyingTableService {
     private List<QualifyingTableDto> tables(Long eventId, boolean forPublic) {
         PublicNames.Snapshot restricted = forPublic ? this.publicNames.snapshot() : null;
         List<QualifyingTableDto> tables = new ArrayList<>();
+        Map<Long, Map<Long, Integer>> championshipPoints = null;
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
             List<Race> heats = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.QUALIFIER);
             if (heats.isEmpty()) {
@@ -87,6 +92,14 @@ public class QualifyingTableService {
             String className = racingClassRepository.findById(eventClass.getRacingClassId())
                     .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
             Map<Long, String> carNumbers = carNumbers(heats);
+            // A class with finals shows its championship points on the finals; one without scores from this table
+            Map<Long, Integer> classPoints = Map.of();
+            if (finals.isEmpty()) {
+                if (championshipPoints == null) {
+                    championshipPoints = championshipStandings.qualifyingPointsFor(eventId);
+                }
+                classPoints = championshipPoints.getOrDefault(eventClass.getRacingClassId(), Map.of());
+            }
             List<QualifyingTableDto.Row> rows = new ArrayList<>();
             int position = 1;
             Integer previousHeat = null;
@@ -105,7 +118,7 @@ public class QualifyingTableService {
                         result.lapsCompleted(), result.hasBestLap() ? result.bestLapMs() : null, result.points(),
                         result.rounds().stream()
                                 .map(r -> new QualifyingTableDto.RoundPlace(r.place(), r.counted())).toList(),
-                        result.heat()));
+                        result.heat(), classPoints.get(result.entryId())));
             }
             tables.add(new QualifyingTableDto(eventClass.getId(), className,
                     (int) heats.stream().filter(h -> h.getStatus() == RaceStatus.FINISHED).count(), heats.size(),

@@ -30,6 +30,7 @@ function HeatBlock({ race }: { race: EventResultsRace }) {
 
 function StandingsBlock({ table }: { table: QualifyingTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
+  const hasChampPoints = table.rows.some((r) => r.championshipPoints != null);
   const rounds = roundCount(table.rows);
   return (
     <section className="mb-6 break-inside-avoid" aria-label="Qualifying standings">
@@ -43,7 +44,8 @@ function StandingsBlock({ table }: { table: QualifyingTable }) {
             <RoundHeaderCells count={rounds} className="py-2 pr-4 text-right" />
             {byPoints && <th scope="col" className="py-2 pr-4 text-right">Points</th>}
             <th scope="col" className="py-2 pr-4 text-right">Laps</th>
-            <th scope="col" className="py-2 text-right">Best Lap</th>
+            <th scope="col" className={`py-2 text-right ${hasChampPoints ? 'pr-4' : ''}`}>Best Lap</th>
+            {hasChampPoints && <th scope="col" className="py-2 text-right">Champ. pts</th>}
           </tr>
         </thead>
         <tbody>
@@ -55,7 +57,8 @@ function StandingsBlock({ table }: { table: QualifyingTable }) {
               <RoundPlaceCells rounds={row.rounds} count={rounds} className="py-1.5 pr-4 text-right font-mono" />
               {byPoints && <td className="py-1.5 pr-4 text-right font-mono">{row.points}</td>}
               <td className="py-1.5 pr-4 text-right font-mono">{row.lapsCompleted}</td>
-              <td className="py-1.5 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
+              <td className={`py-1.5 text-right font-mono ${hasChampPoints ? 'pr-4' : ''}`}>{fmtMs(row.bestLapMs)}</td>
+              {hasChampPoints && <td className="py-1.5 text-right font-mono">{row.championshipPoints ?? '—'}</td>}
             </tr>
           ))}
         </tbody>

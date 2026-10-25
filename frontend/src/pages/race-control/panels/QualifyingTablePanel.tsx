@@ -22,6 +22,7 @@ export function QualifyingTablePanel({
   const table = data?.find((t) => t.eventClassId === eventClassId);
   const hasHeats = table?.rows.some((r) => r.heat != null) ?? false;
   const hasPoints = table?.rows.some((r) => r.points != null) ?? false;
+  const hasChampPoints = table?.rows.some((r) => r.championshipPoints != null) ?? false;
   const rounds = table ? roundCount(table.rows) : 0;
 
   return (
@@ -59,6 +60,7 @@ export function QualifyingTablePanel({
                   {hasPoints && <th className="w-16 py-1 text-right">Points</th>}
                   <th className="w-16 py-1 text-right">Laps</th>
                   <th className="w-24 py-1 text-right">Best lap</th>
+                  {hasChampPoints && <th className="w-20 py-1 text-right">Champ. pts</th>}
                 </tr>
               </thead>
               <tbody>
@@ -72,6 +74,7 @@ export function QualifyingTablePanel({
                     {hasPoints && <td className="py-1 text-right tabular-nums">{row.points}</td>}
                     <td className="py-1 text-right tabular-nums">{row.lapsCompleted}</td>
                     <td className="py-1 text-right font-mono">{fmtMs(row.bestLapMs)}</td>
+                    {hasChampPoints && <td className="py-1 text-right tabular-nums">{row.championshipPoints ?? '—'}</td>}
                   </tr>
                 ))}
               </tbody>
