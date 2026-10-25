@@ -5,9 +5,9 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
-import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -125,7 +126,7 @@ public class FinalsLineupService {
     @Transactional(readOnly = true)
     public FinalsReviewDto review(Long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
-        boolean required = event.getFinalsLineupConfirmedAt() == null && hasFinals(eventId)
+        boolean required = event.getFinalsLineupConfirmedAt() == null && hasCalculableFinals(eventId)
                 && blocker(eventId, false) == null;
         return new FinalsReviewDto(required, event.getFinalsLineupConfirmedAt());
     }
@@ -141,15 +142,15 @@ public class FinalsLineupService {
      */
     public FinalsReviewDto confirm(Actor actor, Long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
-        if (!hasFinals(eventId)) {
-            throw new StateConflictException("This event has no finals to confirm");
+        if (!hasCalculableFinals(eventId)) {
+            throw new StateConflictException("This event has no finals that can be calculated, so there is nothing to confirm");
         }
         String reason = blocker(eventId, true);
         if (reason != null) {
             throw new StateConflictException(reason);
         }
         if (event.getFinalsLineupConfirmedAt() == null) {
-            event.setFinalsLineupConfirmedAt(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+            event.setFinalsLineupConfirmedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
             eventRepository.save(event);
             audit.entry(actor, "FINALS_LINEUP_CONFIRMED").entity("event", eventId).event(eventId)
                     .summary("Confirmed the finals line-ups for " + event.getName()).record();
@@ -157,9 +158,11 @@ public class FinalsLineupService {
         return new FinalsReviewDto(false, event.getFinalsLineupConfirmedAt());
     }
 
-    private boolean hasFinals(Long eventId) {
+    /** Whether some class has finals and has finished qualifying with a heat that ran, so there is a line-up to confirm. */
+    private boolean hasCalculableFinals(Long eventId) {
         return eventClassRepository.findByEventId(eventId).stream().anyMatch(
-                c -> !raceRepository.findByEventClassIdAndRoundType(c.getId(), RoundType.FINAL).isEmpty());
+                c -> !raceRepository.findByEventClassIdAndRoundType(c.getId(), RoundType.FINAL).isEmpty()
+                        && autoFinalsSeedingService.qualifyingComplete(c.getId()));
     }
 
     /**

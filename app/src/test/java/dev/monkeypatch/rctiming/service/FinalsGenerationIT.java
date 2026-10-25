@@ -702,6 +702,20 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> finalsLineupService.confirm(actor, eventId)).isInstanceOf(StateConflictException.class);
     }
 
+    @Test
+    void theLineupScreenIsNotRequiredWhenEveryQualifyingHeatWasAbandoned() {
+        long buggyClass = addClass("Buggy");
+        addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            jdbc.update("update races set status = 'FINISHED', abandoned_at = 1 where id = ?", heat.getId());
+        }
+        assertThat(finalsLineupService.review(eventId).required()).isFalse();
+        assertThatThrownBy(() -> finalsLineupService.confirm(Actor.system("test"), eventId))
+                .isInstanceOf(StateConflictException.class);
+    }
+
     private long addClass(String name) {
         return addClass(name, "{\"type\":\"TIMED\"}");
     }
