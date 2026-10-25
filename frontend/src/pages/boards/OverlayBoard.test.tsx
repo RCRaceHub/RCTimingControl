@@ -324,6 +324,38 @@ describe('OverlayBoard sponsor bar', () => {
   });
 });
 
+describe('OverlayBoard battles', () => {
+  const battle = [{
+    cars: [
+      { entryId: 1, position: 1, driverName: 'Ada Lovelace', carNumber: '1' },
+      { entryId: 2, position: 2, driverName: 'Grace Hopper', carNumber: '2' },
+    ],
+    links: [{ gapMs: 800, ratePerLapMs: -200, trend: 'CLOSING', gainingFast: false }],
+    gainingFast: false,
+  }];
+
+  it('calls out a battle once a lap has been counted', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay('/boards/overlay?layout=table');
+
+    expect(await screen.findByText(/Battle for P1/)).toBeInTheDocument();
+  });
+
+  it('shows no battle call-outs before any lap has been counted', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getBoardLiveTiming).mockResolvedValue([
+      { ...row(1, 'Ada Lovelace', 0), lapsCompleted: 0 },
+      { ...row(2, 'Grace Hopper', 0), lapsCompleted: 0 },
+    ]);
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay('/boards/overlay?layout=table');
+
+    expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
+    expect(screen.queryByText(/Battle for/)).not.toBeInTheDocument();
+  });
+});
+
 describe('overlay options', () => {
   it('falls back to the defaults for anything it does not recognise', () => {
     expect(parseOverlayOptions(new URLSearchParams('top=abc&theme=neon&class=yes'))).toEqual({

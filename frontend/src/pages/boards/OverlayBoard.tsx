@@ -261,6 +261,8 @@ export default function OverlayBoard() {
 
   const remainingAt = useRemainingAt(clock, clockReadAt);
   const battleGroups = useBattles(showBattles ? raceId : null);
+  // The grid is bunched up until the field has spread out, so no battle call-outs before a lap has been counted
+  const lapCounted = allRows.some(row => row.lapsCompleted >= 1);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
@@ -418,7 +420,7 @@ export default function OverlayBoard() {
             </tbody>
           </table>
         )}
-        {showBattles && race.status === 'RUNNING' && <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />}
+        {showBattles && lapCounted && race.status === 'RUNNING' && <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
       {showChart && chartSeries.length > 0 && (

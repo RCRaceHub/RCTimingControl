@@ -113,7 +113,7 @@ Options go on the end of the address:
 | `bars=hide` | Leave out the lap bars under each name |
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; 0 turns it off) |
-| `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running) |
+| `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running, and only once the first lap has been counted) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `layout=table` | The older table (laps, total time and last lap) instead of the tower |
