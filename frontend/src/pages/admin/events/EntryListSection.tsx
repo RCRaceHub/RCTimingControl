@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import CarPhotoDialog from './CarPhotoDialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -130,6 +131,8 @@ function EntriesTable({
   const [withdrawTarget, setWithdrawTarget] = useState<AdminEntryDto | null>(null);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [historyTarget, setHistoryTarget] = useState<AdminEntryDto | null>(null);
+  const [photoTarget, setPhotoTarget] = useState<AdminEntryDto | null>(null);
+  const { canRunEvent } = useRoles();
 
   if (isLoading) {
     return (
@@ -198,6 +201,12 @@ function EntriesTable({
                     History
                   </Button>
                 )}
+                {canRunEvent && (
+                  <Button size="sm" variant="outline" onClick={() => setPhotoTarget(entry)}
+                    aria-label={`Car photo of ${entry.displayName ?? 'unknown driver'}`}>
+                    Car photo
+                  </Button>
+                )}
                 {(entry.status === 'PENDING' || entry.status === 'CONFIRMED') && (
                   <Button
                     size="sm"
@@ -215,6 +224,11 @@ function EntriesTable({
           ))}
         </TableBody>
       </Table>
+
+      <CarPhotoDialog
+        entry={photoTarget ? { id: photoTarget.id, driverName: photoTarget.displayName ?? 'Unknown driver' } : null}
+        onClose={() => setPhotoTarget(null)}
+      />
 
       {historyTarget && (
         <EntryHistoryDialog entry={historyTarget} onClose={() => setHistoryTarget(null)} />

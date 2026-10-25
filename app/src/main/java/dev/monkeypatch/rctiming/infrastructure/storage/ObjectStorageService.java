@@ -13,4 +13,14 @@ public interface ObjectStorageService {
      * @return retrievable URL (public or signed)
      */
     String upload(String key, byte[] content);
+
+    /**
+     * Removes the file an earlier {@link #upload} returned this URL for, so personal data such as a headshot does not
+     * outlive the record that pointed at it. A URL that is not one of this store's, or a file already gone, is
+     * ignored.
+     *
+     * @param url the URL {@link #upload} returned
+     */
+    default void delete(String url) {
+    }
 }

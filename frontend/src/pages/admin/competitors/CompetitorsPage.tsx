@@ -12,6 +12,7 @@ import { CompetitorsHelp } from '@/help/CompetitorsHelp';
 import type { CompetitorSummaryDto, NameVisibility } from '@/lib/adminApi';
 import { formatCompetitorMeta, matchesCompetitor } from '@/lib/competitors';
 import AnonymiseCompetitorDialog from './AnonymiseCompetitorDialog';
+import CompetitorMediaDialog from './CompetitorMediaDialog';
 import MergeCompetitorDialog from './MergeCompetitorDialog';
 import { useRoles } from '@/hooks/useRoles';
 
@@ -28,6 +29,7 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
   onAnonymise: (competitor: CompetitorSummaryDto) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const setVisibility = useSetNameVisibility();
   const setCategories = useSetCompetitorCategories();
   const exportData = useExportCompetitorData();
@@ -101,6 +103,12 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
                 Say as…
               </Button>
             )}
+            {canSetVisibility && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setMediaOpen(true)}
+                aria-label={`Photo and sponsors of ${competitor.displayName}`}>
+                Photo…
+              </Button>
+            )}
             {isAdmin && (
               <Button type="button" variant="ghost" size="sm" onClick={() => onMerge(competitor)}
                 aria-label={`Merge ${competitor.displayName} into another competitor`}>
@@ -121,6 +129,9 @@ function CompetitorRow({ competitor, canSetSpokenName, isAdmin, canSetVisibility
               </Button>
             )}
           </span>
+          {mediaOpen && (
+            <CompetitorMediaDialog competitor={competitor} onOpenChange={open => setMediaOpen(open)} />
+          )}
         </div>
       )}
     </li>

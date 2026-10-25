@@ -58,6 +58,17 @@ An admin or race director can set any competitor to show as **Full name**, **Ini
 
 A change made during a race reaches the live timing at once. Race control's live timing panel shows the public name too, as it shares the stream the public screens use; the other official screens (the competitor lists, the grid) and the announcer use the real name, so an announcer will say a junior's name aloud at the venue; give them a spoken name or ask them to skip it if that matters. The CSV `Junior` column is still only shown in the import preview; it does not set this. Results sent to RaceHub carry the real name, as before.
 
+## Headshots, car photos and driver sponsors (#520)
+
+An official can add three optional extras for the boards and the commentator view: a **headshot** and the driver's own **sponsors** (Admin, Competitors, Photo…), and a **car photo** for one entry (the event's Entries tab, Car photo). A headshot is a picture of a person and so personal data; a car photo can show the driver, so the screen asks for the driver to be kept out of it, and the driver sponsors are just names.
+
+- Nothing is requested from drivers or RaceHub: RCTC only holds what an official adds, and the screen says to add a headshot only with the driver's agreement.
+- Only PNG, JPEG and WebP up to 2 MB are accepted, never SVG. Each file is stored with a random name in the app's storage folder, so its address cannot be guessed, but anyone who has the address can open it (storage is served to the venue network without sign-in, like the club logo).
+- A public screen never gets a competitor's headshot, car photo or sponsors while their name is set to initials only or hidden (#265).
+- Replacing or removing a picture deletes the file. **Anonymise** deletes the headshot file, the sponsors and the car photos of all the competitor's entries; merging two competitors deletes the duplicate's. Older database backups and the storage folder in a file-level backup can still hold earlier copies, as with names.
+- Every change is audited (`DRIVER_HEADSHOT_CHANGED`, `DRIVER_HEADSHOT_REMOVED`, `DRIVER_SPONSORS_CHANGED`, `ENTRY_CAR_PHOTO_CHANGED`, `ENTRY_CAR_PHOTO_REMOVED`) by competitor or entry id, with no name.
+- Not sent to the live feed relay or RaceHub.
+
 ## Proposed child tickets
 
 1. Retention job: purge expired and revoked refresh tokens; drop failed-sign-in rows after a set period (suggest 90 days) and keep other audit rows for a longer, admin-visible period.

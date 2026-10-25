@@ -11,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
@@ -67,6 +68,7 @@ public class BoardController {
     private final LiveQualifyingService liveQualifyingService;
     private final ClubProfileService clubProfileService;
     private final EventSponsorService eventSponsorService;
+    private final DriverMediaService driverMediaService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -82,7 +84,9 @@ public class BoardController {
                            LastLapTimeout lastLapTimeout,
                            LiveQualifyingService liveQualifyingService,
                            ClubProfileService clubProfileService,
-                           EventSponsorService eventSponsorService) {
+                           EventSponsorService eventSponsorService,
+                           DriverMediaService driverMediaService) {
+        this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
         this.eventSponsorService = eventSponsorService;
         this.boardQuery = boardQuery;
@@ -202,6 +206,16 @@ public class BoardController {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> boardTickerService.forEvent(event.id()))
                 .orElse(new TickerDto(null, List.of(), List.of(), List.of(), false, List.of()));
+    }
+
+    /**
+     * The pictures and sponsors the public may see for the cars in a race (#520): headshot, car photo and the driver's
+     * own sponsors. A driver whose name is not shown in full gets none (#265), and cars with nothing to show are left
+     * out.
+     */
+    @GetMapping("/races/{raceId}/media")
+    public List<DriverMediaService.PublicMedia> raceMedia(@PathVariable long raceId) {
+        return List.copyOf(driverMediaService.publicForRace(raceId).values());
     }
 
     /**

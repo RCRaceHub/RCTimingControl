@@ -1,6 +1,9 @@
 import api from './api';
 import type { SponsorDto } from './boardsApi';
 
+/** A competitor's optional headshot address and their own sponsors (#520). */
+export type CompetitorMediaDto = { headshotUrl: string | null; sponsors: string[] };
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type EventStatus =
@@ -729,6 +732,36 @@ export const adminApi = {
       })
       .then(r => r.data);
   },
+
+  // Driver pictures and sponsors (#520): a competitor's headshot and sponsors, an entry's car photo.
+  getCompetitorMedia: (competitorId: number) =>
+    api.get<CompetitorMediaDto>(`/api/v1/admin/competitors/${competitorId}/media`).then(r => r.data),
+  setCompetitorSponsors: (competitorId: number, names: string[]) =>
+    api.put<CompetitorMediaDto>(`/api/v1/admin/competitors/${competitorId}/media/sponsors`, { names }).then(r => r.data),
+  uploadHeadshot: (competitorId: number, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api
+      .put<CompetitorMediaDto>(`/api/v1/admin/competitors/${competitorId}/media/headshot`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(r => r.data);
+  },
+  deleteHeadshot: (competitorId: number) =>
+    api.delete<CompetitorMediaDto>(`/api/v1/admin/competitors/${competitorId}/media/headshot`).then(r => r.data),
+  getCarPhoto: (entryId: number) =>
+    api.get<{ url: string | null }>(`/api/v1/admin/entries/${entryId}/car-photo`).then(r => r.data.url),
+  uploadCarPhoto: (entryId: number, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api
+      .put<{ url: string | null }>(`/api/v1/admin/entries/${entryId}/car-photo`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(r => r.data.url);
+  },
+  deleteCarPhoto: (entryId: number) =>
+    api.delete(`/api/v1/admin/entries/${entryId}/car-photo`).then(() => undefined),
 
   // Event sponsors (#518): name, optional logo, display order.
   listSponsors: (eventId: number) =>
