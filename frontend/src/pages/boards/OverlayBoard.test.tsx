@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
@@ -23,6 +23,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getRoundFastestLap: vi.fn(),
   getPositionHistory: vi.fn(),
   getTicker: vi.fn(),
+  getSponsors: vi.fn(),
 }));
 
 import {
@@ -32,6 +33,7 @@ import {
   getRaceClock,
   getRoundFastestLap,
   getTicker,
+  getSponsors,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -104,6 +106,7 @@ beforeEach(() => {
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
   vi.mocked(getPositionHistory).mockResolvedValue([]);
   vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
+  vi.mocked(getSponsors).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -228,6 +231,27 @@ describe('OverlayBoard', () => {
   });
 });
 
+describe('OverlayBoard sponsor bar', () => {
+  it('shows the event sponsors along the foot, a logo where there is one and the name where not', async () => {
+    vi.mocked(getSponsors).mockResolvedValue([
+      { id: 1, name: 'Acme Hobbies', logoUrl: '/storage/sponsors/1.png' },
+      { id: 2, name: 'Bolt Batteries', logoUrl: null },
+    ]);
+    renderOverlay();
+
+    const bar = await screen.findByLabelText('Sponsors');
+    expect(within(bar).getByAltText('Acme Hobbies')).toHaveAttribute('src', '/storage/sponsors/1.png');
+    expect(within(bar).getByText('Bolt Batteries')).toBeInTheDocument();
+  });
+
+  it('leaves the bar out when the event has no sponsors', async () => {
+    renderOverlay();
+
+    await screen.findByLabelText('Running order');
+    expect(screen.queryByLabelText('Sponsors')).not.toBeInTheDocument();
+  });
+});
+
 describe('overlay options', () => {
   it('falls back to the defaults for anything it does not recognise', () => {
     expect(parseOverlayOptions(new URLSearchParams('top=abc&theme=neon&class=yes'))).toEqual({
@@ -237,6 +261,7 @@ describe('overlay options', () => {
       theme: 'dark',
       showChart: true,
       tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest']),
+      showSponsors: true,
       showBars: true,
       showArrows: true,
       showPredicted: true,

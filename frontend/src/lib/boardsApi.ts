@@ -301,3 +301,12 @@ export async function getTicker(eventId?: number | null): Promise<TickerDto> {
   const { data } = await api.get<TickerDto>('/api/v1/boards/ticker', eventParams(eventId));
   return data;
 }
+
+/** A sponsor of an event: its name and the address of its logo, if it has one. */
+export type SponsorDto = { id: number; name: string; logoUrl: string | null };
+
+/** The event's sponsors in display order, for the overlay's sponsor bar (#518). */
+export async function getSponsors(eventId?: number | null): Promise<SponsorDto[]> {
+  const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', eventParams(eventId));
+  return data;
+}

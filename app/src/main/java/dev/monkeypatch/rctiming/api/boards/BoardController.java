@@ -4,12 +4,14 @@ import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
+import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
+import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
@@ -64,6 +66,7 @@ public class BoardController {
     private final LastLapTimeout lastLapTimeout;
     private final LiveQualifyingService liveQualifyingService;
     private final ClubProfileService clubProfileService;
+    private final EventSponsorService eventSponsorService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -78,8 +81,10 @@ public class BoardController {
                            PodiumBoardService podiumBoardService,
                            LastLapTimeout lastLapTimeout,
                            LiveQualifyingService liveQualifyingService,
-                           ClubProfileService clubProfileService) {
+                           ClubProfileService clubProfileService,
+                           EventSponsorService eventSponsorService) {
         this.clubProfileService = clubProfileService;
+        this.eventSponsorService = eventSponsorService;
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -197,6 +202,18 @@ public class BoardController {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> boardTickerService.forEvent(event.id()))
                 .orElse(new TickerDto(null, List.of(), List.of(), List.of(), false, List.of()));
+    }
+
+    /**
+     * The event's sponsors in display order, for the overlay's sponsor bar (#518). Names and logos only.
+     *
+     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     */
+    @GetMapping("/sponsors")
+    public List<SponsorDto> sponsors(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId)
+                .map(event -> eventSponsorService.list(event.id()).stream().map(SponsorDto::from).toList())
+                .orElse(List.of());
     }
 
     /**

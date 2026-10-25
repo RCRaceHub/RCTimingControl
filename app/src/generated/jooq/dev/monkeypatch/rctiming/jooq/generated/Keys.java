@@ -6,6 +6,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -49,6 +50,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.UserRoles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.AuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.BoardViewsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventSponsorsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipClassesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipEventLinksRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ChampionshipExclusionsRecord;
@@ -111,6 +113,7 @@ public class Keys {
 
     public static final UniqueKey<AuditLogRecord> AUDIT_LOG__PK_AUDIT_LOG = Internal.createUniqueKey(AuditLog.AUDIT_LOG, DSL.name("pk_audit_log"), new TableField[] { AuditLog.AUDIT_LOG.ID }, true);
     public static final UniqueKey<BoardViewsRecord> BOARD_VIEWS__PK_BOARD_VIEWS = Internal.createUniqueKey(BoardViews.BOARD_VIEWS, DSL.name("pk_board_views"), new TableField[] { BoardViews.BOARD_VIEWS.ID }, true);
+    public static final UniqueKey<EventSponsorsRecord> EVENT_SPONSORS__PK_EVENT_SPONSORS = Internal.createUniqueKey(EventSponsors.EVENT_SPONSORS, DSL.name("pk_event_sponsors"), new TableField[] { EventSponsors.EVENT_SPONSORS.ID }, true);
     public static final UniqueKey<BoardViewsRecord> BOARD_VIEWS__BOARD_VIEWS_SLUG_KEY = Internal.createUniqueKey(BoardViews.BOARD_VIEWS, DSL.name("board_views_slug_key"), new TableField[] { BoardViews.BOARD_VIEWS.SLUG }, true);
     public static final UniqueKey<ChampionshipClassesRecord> CHAMPIONSHIP_CLASSES__PK_CHAMPIONSHIP_CLASSES = Internal.createUniqueKey(ChampionshipClasses.CHAMPIONSHIP_CLASSES, DSL.name("pk_championship_classes"), new TableField[] { ChampionshipClasses.CHAMPIONSHIP_CLASSES.ID }, true);
     public static final UniqueKey<ChampionshipEventLinksRecord> CHAMPIONSHIP_EVENT_LINKS__PK_CHAMPIONSHIP_EVENT_LINKS = Internal.createUniqueKey(ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS, DSL.name("pk_championship_event_links"), new TableField[] { ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS.ID }, true);

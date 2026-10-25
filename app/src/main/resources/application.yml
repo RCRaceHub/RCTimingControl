@@ -5,6 +5,11 @@ spring:
       add-mappings: false
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      # Logo uploads allow 2 MB; Boot's default of 1 MB refused them before the service's own check
+      max-file-size: 2MB
+      max-request-size: 3MB
   task:
     scheduling:
       # The scheduled jobs (decoder check, announcements, results export, backup, entry feed) share these

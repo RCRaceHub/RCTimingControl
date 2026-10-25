@@ -94,7 +94,7 @@ The eye button at the top of race control's run order lists the sections of the 
 
 ## The streaming overlay for OBS
 
-The overlay shows the race on track over your video on a transparent background: the running order, laps, total time, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A small stats line under the order rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. A **position chart** (lap across, place down, one line per car, each labelled with the driver's name) sits at the bottom right, and a **ticker** scrolls along the foot of the page with the next race, who is on its grid, who marshals it, each class's top qualifier and the fastest lap of the round. The ticker stays up between races, when the next race is the useful part. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
+The overlay shows the race on track over your video on a transparent background: the running order, laps, total time, last lap and the race clock (time to go, or time so far when the format sets no length). Rows flash on each lap as on the live timing screen (purple race best, blue personal best, green faster, red slower). A small stats line under the order rolls through the laps run in the heat, the heat's fastest lap and the round's fastest. A **position chart** (lap across, place down, one line per car, each labelled with the driver's name) sits at the bottom right, and a **ticker** scrolls along the foot of the page with the next race, who is on its grid, who marshals it, each class's top qualifier and the fastest lap of the round. The ticker stays up between races, when the next race is the useful part. Its text is large enough to read on a stream, with a wide gap and a diamond between one item and the next. Below the ticker a **sponsor bar** shows the event's sponsors: add them under Admin, Events, the event's **Sponsors** tab (a name each, plus a PNG, JPEG or WebP logo up to 2 MB, and move them up or down to set the order). Sponsors without a logo show their name; more than six take turns. The bar is left out when the event has no sponsors. Between races a small "No race on track" panel stands in, so a blank page never looks like a broken overlay.
 
 To use it in OBS:
 
@@ -116,6 +116,7 @@ Options go on the end of the address:
 | `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running) |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
+| `sponsors=hide` | Leave out the sponsor bar |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |
 
 For example `/boards/overlay?top=6&theme=light`. OBS runs on the laptop or a second PC; if it runs on the timing laptop itself, `localhost` is fine.

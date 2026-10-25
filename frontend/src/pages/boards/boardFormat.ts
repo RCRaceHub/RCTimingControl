@@ -67,6 +67,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     theme: params.get('theme') === 'light' ? ('light' as const) : ('dark' as const),
     showChart: params.get('chart') !== 'hide',
     tickerItems: parseTickerItems(params.get('ticker')),
+    showSponsors: params.get('sponsors')?.toLowerCase() !== 'hide',
     ...parseLiveRaceOptions(params, defaultCloseMs),
   };
 }

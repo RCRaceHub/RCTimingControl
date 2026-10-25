@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getRaceClock, getRoundFastestLap, getTicker } from '@/lib/boardsApi';
+import { getRaceClock, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
+import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
   BOARD_POLL_MS,
@@ -124,8 +125,10 @@ function StatsTicker({
 }
 
 /** Seconds a ticker takes per character to cross the screen: slow enough to read, long text just takes longer. */
-const TICKER_SECONDS_PER_CHAR = 0.18;
-const TICKER_MIN_SECONDS = 20;
+const TICKER_SECONDS_PER_CHAR = 0.22;
+const TICKER_MIN_SECONDS = 24;
+/** What the wide gap and separator between two ticker items count for when timing the scroll, in characters. */
+const TICKER_GAP_CHARS = 8;
 
 /**
  * A strip along the foot of the page that scrolls the next race, who is on its grid and marshalling, the class
@@ -138,12 +141,15 @@ function OverlayTicker({
   rows,
   items,
   panelClass,
+  bottom,
 }: {
   eventId: number | null;
   raceId: number | null;
   rows: LiveTimingRowDto[];
   items: Set<TickerItem>;
   panelClass: string;
+  /** How far the strip sits above the foot of the page, so it clears the sponsor bar when that is showing. */
+  bottom: string;
 }) {
   const { data: ticker } = useQuery({
     queryKey: publicQueryKeys.boards.ticker(eventId),
@@ -158,24 +164,74 @@ function OverlayTicker({
     refetchInterval: BOARD_POLL_MS * 6,
   });
   const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round));
-  const text = segments.join('   •   ');
   // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
   // jump mid-scroll
-  const [shown, setShown] = useState<string | null>(null);
+  const [shown, setShown] = useState<string[] | null>(null);
   if (segments.length === 0) return null;
-  const display = shown ?? text;
+  const display = shown ?? segments;
+  const length = display.reduce((sum, segment) => sum + segment.length + TICKER_GAP_CHARS, 0);
   return (
     <div
-      className={cn('fixed inset-x-0 bottom-0 overflow-hidden py-2 font-sans text-lg font-semibold', panelClass)}
+      className={cn('fixed inset-x-0 overflow-hidden py-3 font-sans text-3xl font-semibold', panelClass)}
+      style={{ bottom }}
       aria-label="Ticker"
     >
       <span
         className="ticker-scroll"
-        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, display.length * TICKER_SECONDS_PER_CHAR)}s` }}
-        onAnimationIteration={() => setShown(text)}
+        style={{ animationDuration: `${Math.max(TICKER_MIN_SECONDS, length * TICKER_SECONDS_PER_CHAR)}s` }}
+        onAnimationIteration={() => setShown(segments)}
       >
-        {display}
+        {display.map((segment, index) => (
+          <span key={index}>
+            {index > 0 && (
+              <span className="mx-16 opacity-50" aria-hidden="true">
+                ◆
+              </span>
+            )}
+            {segment}
+          </span>
+        ))}
       </span>
+    </div>
+  );
+}
+
+/** Most sponsors shown at once; with more, the bar shows them in turns. */
+const SPONSORS_PER_PAGE = 6;
+const SPONSOR_PAGE_MS = 8000;
+/** The height of the sponsor bar, and of the ticker above it, which the strips and the chart stack on. */
+const SPONSOR_BAR_REM = 6;
+const TICKER_REM = 5;
+
+/**
+ * A bar along the foot of the page with the event's sponsors: logos side by side, or the name where a sponsor has no
+ * logo. More than {@link SPONSORS_PER_PAGE} take turns. Renders nothing when the event has no sponsors.
+ */
+function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelClass: string }) {
+  const [page, setPage] = useState(0);
+  const pages = Math.ceil(sponsors.length / SPONSORS_PER_PAGE);
+  useEffect(() => {
+    if (pages < 2) return;
+    const timer = setInterval(() => setPage(p => p + 1), SPONSOR_PAGE_MS);
+    return () => clearInterval(timer);
+  }, [pages]);
+  if (sponsors.length === 0) return null;
+  const shown = sponsors.slice((page % pages) * SPONSORS_PER_PAGE, (page % pages + 1) * SPONSORS_PER_PAGE);
+  return (
+    <div
+      className={cn('fixed inset-x-0 bottom-0 flex items-center justify-center gap-12 px-8 font-sans', panelClass)}
+      style={{ height: `${SPONSOR_BAR_REM}rem` }}
+      aria-label="Sponsors"
+    >
+      {shown.map(sponsor =>
+        sponsor.logoUrl ? (
+          <img key={sponsor.id} src={sponsor.logoUrl} alt={sponsor.name} className="max-h-[4.5rem] max-w-[14rem] object-contain" />
+        ) : (
+          <span key={sponsor.id} className="text-3xl font-bold">
+            {sponsor.name}
+          </span>
+        ),
+      )}
     </div>
   );
 }
@@ -183,7 +239,7 @@ function OverlayTicker({
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const settings = useBoardSettings();
-  const { eventId, top, showClass, theme, showChart, tickerItems, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams, settings.closeGapMs);
+  const { eventId, top, showClass, theme, showChart, tickerItems, showSponsors, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -203,6 +259,15 @@ export default function OverlayBoard() {
   const lapFlash = useLapFlash(allRows);
   const chartSeries = useLivePositionSeries(raceId, allRows, showChart);
   const tickerEventId = eventId ?? nowNext?.eventId ?? null;
+  const { data: sponsors = [] } = useQuery({
+    queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
+    queryFn: () => getSponsors(tickerEventId),
+    enabled: showSponsors,
+    refetchInterval: BOARD_POLL_MS * 12,
+  });
+  const sponsorsShowing = showSponsors && sponsors.length > 0;
+  const tickerBottom = sponsorsShowing ? `${SPONSOR_BAR_REM}rem` : '0px';
+  const chartBottom = `${(sponsorsShowing ? SPONSOR_BAR_REM : 0) + (tickerItems.size > 0 ? TICKER_REM : 0) + 1}rem`;
 
   if (!race) {
     const upcoming = nowNext?.nextRace?.label;
@@ -226,7 +291,9 @@ export default function OverlayBoard() {
           rows={[]}
           items={tickerItems}
           panelClass={colours.panel}
+          bottom={tickerBottom}
         />
+        {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
       </div>
     );
   }
@@ -318,12 +385,9 @@ export default function OverlayBoard() {
       </section>
       {showChart && chartSeries.length > 0 && (
         <section
-          className={cn(
-            'fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg',
-            // Clear of the ticker's strip when it is showing
-            tickerItems.size > 0 ? 'bottom-14' : 'bottom-4',
-            colours.panel,
-          )}
+          className={cn('fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg', colours.panel)}
+          // Clear of the ticker's strip and the sponsor bar when they are showing
+          style={{ bottom: chartBottom }}
           aria-label="Position chart"
         >
           <PositionChart series={chartSeries} />
@@ -335,7 +399,9 @@ export default function OverlayBoard() {
         rows={allRows}
         items={tickerItems}
         panelClass={colours.panel}
+        bottom={tickerBottom}
       />
+      {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
     </div>
   );
 }
