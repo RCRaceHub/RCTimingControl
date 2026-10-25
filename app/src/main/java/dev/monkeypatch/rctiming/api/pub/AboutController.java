@@ -44,7 +44,7 @@ public class AboutController {
     public AboutDto get() {
         return new AboutDto(version, buildTime, lanAddresses.urls(),
                 mdns.announcedHost().map(lanAddresses::urlFor).orElse(null),
-                tls.enabled() ? lanAddresses.httpsUrls(tls.port()) : List.of(), tls.enabled());
+                tls.active() ? lanAddresses.httpsUrls(tls.port()) : List.of(), tls.active());
     }
 
     /**
@@ -53,7 +53,7 @@ public class AboutController {
      */
     @GetMapping("/ca.crt")
     public ResponseEntity<String> caCertificate() {
-        if (!tls.enabled()) {
+        if (!tls.active()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         return ResponseEntity.ok()

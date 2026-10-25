@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -68,6 +69,8 @@ public class TlsService {
     private ClubCertificates.KeyAndCertificate ca;
     private ClubCertificates.KeyAndCertificate server;
     private ScheduledExecutorService scheduler;
+    private volatile String caPem;
+    private volatile boolean active;
 
     @Autowired
     public TlsService(@Value("${rctiming.https.enabled:false}") boolean enabled,
@@ -84,9 +87,19 @@ public class TlsService {
         this.clock = clock;
     }
 
-    /** Whether the app serves HTTPS. */
+    /** Whether HTTPS is switched on in the settings. */
     public boolean enabled() {
         return enabled;
+    }
+
+    /** Whether the HTTPS connector is really serving: switched on and its certificates could be made at start-up. */
+    public boolean active() {
+        return enabled && active;
+    }
+
+    /** Called by the connector setup once the HTTPS connector has been added. */
+    void markActive() {
+        active = true;
     }
 
     /** The port the HTTPS connector listens on. */
@@ -112,12 +125,14 @@ public class TlsService {
             ca = load(caFile(), ClubCertificates.CA_ALIAS);
             if (ca == null) {
                 createCa();
+            } else {
+                caPem = ClubCertificates.toPem(ca.certificate());
             }
         }
         if (server == null) {
             server = load(serverFile(), ClubCertificates.SERVER_ALIAS);
         }
-        if (server == null || needsReissue(server.certificate())) {
+        if (server == null || needsReissue(server.certificate()) || !signedBy(server.certificate(), ca.certificate())) {
             issueServer();
             return true;
         }
@@ -148,15 +163,24 @@ public class TlsService {
         return new String(ClubCertificates.PASSWORD);
     }
 
-    /** The CA's certificate as PEM text, for download. Never the key. */
-    public synchronized String caPem() {
-        ensure();
-        return ClubCertificates.toPem(ca.certificate());
+    /**
+     * The CA's certificate as PEM text, for download. Never the key. Read without the lock, because anyone on the
+     * venue network can ask for it and the lock may be held while certificates are made.
+     */
+    public String caPem() {
+        String pem = caPem;
+        if (pem == null) {
+            synchronized (this) {
+                ensure();
+                pem = caPem;
+            }
+        }
+        return pem;
     }
 
     /** What the Club page shows: whether HTTPS is on, where, and when the certificates run out. */
     public synchronized Status status() {
-        if (!enabled) {
+        if (!active()) {
             return new Status(false, port, List.of(), List.of(), null, null, null);
         }
         ensure();
@@ -204,6 +228,15 @@ public class TlsService {
         }
     }
 
+    private static boolean signedBy(X509Certificate certificate, X509Certificate issuer) {
+        try {
+            certificate.verify(issuer.getPublicKey());
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
     private boolean needsReissue(X509Certificate certificate) {
         Instant soon = clock.instant().plus(RENEW_BEFORE_EXPIRY);
         if (certificate.getNotAfter().toInstant().isBefore(soon)) {
@@ -221,15 +254,26 @@ public class TlsService {
     private void createCa() {
         ca = ClubCertificates.newCertificateAuthority(clock.instant(), CA_YEARS);
         save(caFile(), ClubCertificates.keyStore(ClubCertificates.CA_ALIAS, ca.key(), ca.certificate()));
+        caPem = ClubCertificates.toPem(ca.certificate());
         log.info("RC Timing made a new club certificate authority; devices need to install it to trust the HTTPS address");
     }
 
     private void issueServer() {
-        List<String> hosts = new ArrayList<>(wantedHosts());
-        server = ClubCertificates.newServerCertificate(ca, hosts, clock.instant(), SERVER_DAYS);
+        // Names the old certificate had stay, so an address that comes and goes does not make a new one each time
+        Set<String> hosts = new LinkedHashSet<>(wantedHosts());
+        if (server != null) {
+            hosts.addAll(ClubCertificates.namesIn(server.certificate()));
+        }
+        server = ClubCertificates.newServerCertificate(ca, new ArrayList<>(hosts), clock.instant(), SERVER_DAYS);
         save(serverFile(), ClubCertificates.keyStore(ClubCertificates.SERVER_ALIAS, server.key(),
                 server.certificate(), ca.certificate()));
-        listeners.forEach(Runnable::run);
+        for (Runnable listener : listeners) {
+            try {
+                listener.run();
+            } catch (RuntimeException e) {
+                log.error("The HTTPS connector could not load the new certificate; a restart will: {}", e.getMessage());
+            }
+        }
     }
 
     private Path caFile() {
@@ -259,9 +303,11 @@ public class TlsService {
             Path temporary = Files.createTempFile(folder, file.getFileName().toString(), ".tmp");
             try (OutputStream out = Files.newOutputStream(temporary)) {
                 ClubCertificates.write(store, out);
+                ownerOnly(temporary);
+                Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } finally {
+                Files.deleteIfExists(temporary);
             }
-            ownerOnly(temporary);
-            Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new IllegalStateException("Could not write " + file, e);
         }

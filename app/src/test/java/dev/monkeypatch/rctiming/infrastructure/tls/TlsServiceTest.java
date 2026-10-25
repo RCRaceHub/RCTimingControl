@@ -25,7 +25,9 @@ class TlsServiceTest {
     private Clock clock = Clock.fixed(Instant.parse("2026-10-25T10:00:00Z"), ZoneOffset.UTC);
 
     private TlsService service() {
-        return new TlsService(true, 8443, folder.resolve("tls"), lan, clock);
+        TlsService service = new TlsService(true, 8443, folder.resolve("tls"), lan, clock);
+        service.markActive();
+        return service;
     }
 
     @Test
@@ -70,6 +72,18 @@ class TlsServiceTest {
         when(lan.hostsForCertificate()).thenReturn(List.of("timing.local", "localhost"));
 
         assertThat(service.ensure()).isFalse();
+    }
+
+    @Test
+    void aNewCertificateKeepsTheNamesTheOldOneHad() {
+        when(lan.hostsForCertificate()).thenReturn(List.of("timing.local", "10.0.0.7"));
+        TlsService service = service();
+        service.ensure();
+
+        when(lan.hostsForCertificate()).thenReturn(List.of("timing.local"));
+        service.regenerateServer();
+
+        assertThat(service.status().names()).contains("timing.local", "10.0.0.7");
     }
 
     @Test

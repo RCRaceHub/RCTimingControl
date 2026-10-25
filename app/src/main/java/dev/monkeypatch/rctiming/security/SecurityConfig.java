@@ -53,6 +53,8 @@ public class SecurityConfig {
                                            JwtAuthenticationFilter jwtFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
+                // HSTS ignores ports: a device that trusted the HTTPS address would be sent to HTTPS on the HTTP port
+                .headers(h -> h.httpStrictTransportSecurity(AbstractHttpConfigurer::disable))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
@@ -64,7 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/events", "/api/v1/events/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/results/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/championships/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/about", "/api/v1/about/ca.crt", "/api/v1/privacy-notice").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/about", "/api/v1/about/ca.crt",
+                                "/api/v1/privacy-notice").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/boards/**").permitAll()
                         // Club logos and TTS clips are public content served from local disk —
                         // see FilesystemObjectStorageService / StaticStorageConfig.

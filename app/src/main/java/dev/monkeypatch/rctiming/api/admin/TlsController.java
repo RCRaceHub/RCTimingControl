@@ -66,7 +66,7 @@ public class TlsController {
     }
 
     private void requireEnabled() {
-        if (!tls.enabled()) {
+        if (!tls.active()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "HTTPS is switched off. Set rctiming.https.enabled=true and restart.");
         }
