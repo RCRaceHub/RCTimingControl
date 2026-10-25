@@ -17,14 +17,14 @@ import java.util.Set;
 /**
  * The sponsors of an event (#518): the list officials keep and the overlay's sponsor bar reads. Called by {@code
  * AdminEventSponsorController} (each change is one write transaction with an audit row) and by the anonymous boards
- * endpoint (reads). Logos are PNG, JPEG, WebP or SVG up to 2 MB, kept in object storage like the club logo; a replaced
+ * endpoint (reads). Logos are PNG, JPEG or WebP up to 2 MB (no SVG: the files are served from the app's own origin, where a script in one would run), kept in object storage like the club logo; a replaced
  * or deleted sponsor's old file stays in storage. A sponsor is a business, so nothing here is personal data.
  */
 @Service
 @Transactional
 public class EventSponsorService {
 
-    private static final Set<String> LOGO_TYPES = Set.of("image/png", "image/jpeg", "image/webp", "image/svg+xml");
+    private static final Set<String> LOGO_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
     private static final long LOGO_MAX_BYTES = 2 * 1024 * 1024L;
     private static final int NAME_MAX = 255;
 
@@ -86,10 +86,15 @@ public class EventSponsorService {
      * Sets the order of the event's sponsors: {@code orderedIds} lists them first to last, and any left out keep
      * their relative order after them.
      *
-     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if an id is not one of this event's sponsors
+     * @throws IllegalArgumentException (400) if an id is missing or repeated
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if the event, or an id's sponsor, is not found
      */
     public List<EventSponsor> reorder(Actor actor, long eventId, List<Long> orderedIds) {
+        eventRepository.requireExists(eventId);
         List<EventSponsor> all = repository.findByEventId(eventId);
+        if (orderedIds.stream().anyMatch(java.util.Objects::isNull) || orderedIds.stream().distinct().count() != orderedIds.size()) {
+            throw new IllegalArgumentException("The order must list each sponsor once");
+        }
         for (Long id : orderedIds) {
             ofEvent(eventId, id);
         }
@@ -147,8 +152,7 @@ public class EventSponsorService {
         String extension = switch (contentType) {
             case "image/png" -> "png";
             case "image/jpeg" -> "jpg";
-            case "image/webp" -> "webp";
-            default -> "svg";
+            default -> "webp";
         };
         sponsor.setLogoUrl(storage.upload("sponsors/" + sponsorId + "-" + System.currentTimeMillis() + "." + extension, bytes));
         repository.save(sponsor);

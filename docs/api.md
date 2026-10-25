@@ -899,7 +899,7 @@ GET /boards/sponsors?eventId={id}
 ```
 **200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now.
 
-Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG, JPEG, WebP or SVG up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
+Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG, JPEG or WebP up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
 
 ```http
 GET /boards/ticker?eventId={id}

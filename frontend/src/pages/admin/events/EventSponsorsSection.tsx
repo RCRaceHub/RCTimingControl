@@ -29,14 +29,14 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
 
   function handleAdd() {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed || add.isPending) return;
     add.mutate(trimmed, { onSuccess: () => setName(''), onError: fail });
   }
 
   function move(index: number, by: -1 | 1) {
     const ids = sponsors.map(s => s.id);
     const target = index + by;
-    if (target < 0 || target >= ids.length) return;
+    if (order.isPending || target < 0 || target >= ids.length) return;
     [ids[index], ids[target]] = [ids[target], ids[index]];
     order.mutate(ids, { onError: fail });
   }
@@ -53,7 +53,7 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
     <div className="space-y-4 max-w-2xl">
       <p className="text-sm text-muted-foreground">
         The overlay's sponsor bar shows these along the foot of the page, one after another. Add the sponsor's name,
-        then a logo (PNG, JPEG, WebP or SVG, up to 2 MB); a sponsor without a logo shows its name.
+        then a logo (PNG, JPEG or WebP, up to 2 MB); a sponsor without a logo shows its name.
       </p>
       {sponsors.length === 0 && <p className="text-sm text-muted-foreground">No sponsors yet.</p>}
       <ul className="space-y-2">
@@ -81,7 +81,7 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
                   {sponsor.logoUrl ? 'Replace logo' : 'Add logo'}
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    accept="image/png,image/jpeg,image/webp"
                     className="sr-only"
                     aria-label={`Logo file for ${sponsor.name}`}
                     onChange={e => {
