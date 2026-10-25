@@ -6,6 +6,8 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -17,9 +19,12 @@ import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
+import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -33,6 +38,9 @@ import java.util.Objects;
  * official check and adjust the result before the finals run. An edit is allowed only while both finals are still
  * PENDING, the same lock as everywhere else (a final is locked once it is called to the grid), and each runs in one
  * transaction with its audit row on the request thread. Moving does not have to keep the finals the same size.
+ *
+ * <p>It also holds the confirmation step of the line-up screen: once qualifying has ended the cockpit gives way to
+ * that screen ({@link #review}) until race control confirms the line-ups ({@link #confirm}).
  */
 @Service
 @Transactional
@@ -47,6 +55,7 @@ public class FinalsLineupService {
     private final QualifyingStandingsService qualifyingStandingsService;
     private final AutoFinalsSeedingService autoFinalsSeedingService;
     private final AuditService audit;
+    private final EventRepository eventRepository;
 
     public FinalsLineupService(EventClassRepository eventClassRepository,
                                RacingClassRepository racingClassRepository,
@@ -56,7 +65,8 @@ public class FinalsLineupService {
                                CompetitorRepository competitorRepository,
                                QualifyingStandingsService qualifyingStandingsService,
                                AutoFinalsSeedingService autoFinalsSeedingService,
-                               AuditService audit) {
+                               AuditService audit,
+                               EventRepository eventRepository) {
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
@@ -66,6 +76,7 @@ public class FinalsLineupService {
         this.qualifyingStandingsService = qualifyingStandingsService;
         this.autoFinalsSeedingService = autoFinalsSeedingService;
         this.audit = audit;
+        this.eventRepository = eventRepository;
     }
 
     /** One line-up per class of the event that has finals, finals in letter order (A first). */
@@ -104,6 +115,83 @@ public class FinalsLineupService {
                     finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING), defaultCars, lineup));
         }
         return lineups;
+    }
+
+    /**
+     * Whether the finals line-up screen must be shown for the event: true when it has finals, every qualifying heat
+     * of every class with finals is finished, no final has left PENDING and the line-ups are unconfirmed. Read only.
+     *
+     * @throws EntityNotFoundException if there is no such event
+     */
+    @Transactional(readOnly = true)
+    public FinalsReviewDto review(Long eventId) {
+        Event event = eventRepository.getOrThrow(eventId);
+        boolean required = event.getFinalsLineupConfirmedAt() == null && hasCalculableFinals(eventId)
+                && blocker(eventId, false) == null;
+        return new FinalsReviewDto(required, event.getFinalsLineupConfirmedAt());
+    }
+
+    /**
+     * Confirms the event's finals line-ups so the cockpit returns and the finals can be called. Refused until
+     * qualifying is over, every class that can have its finals calculated has them, and while a final has started.
+     * Confirming again keeps the first confirmation. Audited; runs in one transaction on the request thread.
+     *
+     * @throws EntityNotFoundException if there is no such event
+     * @throws StateConflictException  if the event has no finals, qualifying is not over, a class is still to be
+     *                                 calculated or a final has started
+     */
+    public FinalsReviewDto confirm(Actor actor, Long eventId) {
+        Event event = eventRepository.getOrThrow(eventId);
+        if (!hasCalculableFinals(eventId)) {
+            throw new StateConflictException("This event has no finals that can be calculated, so there is nothing to confirm");
+        }
+        String reason = blocker(eventId, true);
+        if (reason != null) {
+            throw new StateConflictException(reason);
+        }
+        if (event.getFinalsLineupConfirmedAt() == null) {
+            event.setFinalsLineupConfirmedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+            eventRepository.save(event);
+            audit.entry(actor, "FINALS_LINEUP_CONFIRMED").entity("event", eventId).event(eventId)
+                    .summary("Confirmed the finals line-ups for " + event.getName()).record();
+        }
+        return new FinalsReviewDto(false, event.getFinalsLineupConfirmedAt());
+    }
+
+    /** Whether some class has finals and has finished qualifying with a heat that ran, so there is a line-up to confirm. */
+    private boolean hasCalculableFinals(Long eventId) {
+        return eventClassRepository.findByEventId(eventId).stream().anyMatch(
+                c -> !raceRepository.findByEventClassIdAndRoundType(c.getId(), RoundType.FINAL).isEmpty()
+                        && autoFinalsSeedingService.qualifyingComplete(c.getId()));
+    }
+
+    /**
+     * Why the line-ups can't be reviewed or confirmed yet, or null when they can: an unfinished qualifying heat or a
+     * started final always stops it; {@code needCalculated} also stops it while a class that has finished
+     * qualifying has no drivers on its finals. A class whose qualifying heats were all abandoned has nothing to
+     * calculate and never holds it up.
+     */
+    private String blocker(Long eventId, boolean needCalculated) {
+        for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
+            List<Race> finals = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL);
+            if (finals.isEmpty()) {
+                continue;
+            }
+            String name = className(eventClass);
+            if (finals.stream().anyMatch(f -> f.getStatus() != RaceStatus.PENDING)) {
+                return "A final has already been called or started, so the line-ups are locked";
+            }
+            List<Race> qualifiers = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.QUALIFIER);
+            if (qualifiers.stream().anyMatch(q -> q.getStatus() != RaceStatus.FINISHED)) {
+                return "Qualifying is not finished for " + name;
+            }
+            if (needCalculated && autoFinalsSeedingService.qualifyingComplete(eventClass.getId())
+                    && finals.stream().filter(f -> !FinalLegs.isExtraLeg(f)).allMatch(f ->
+                    raceEntryRepository.findByRaceIdOrderByGridPosition(f.getId()).isEmpty())) {
+                return "Calculate the finals for " + name + " first";
+            }
+        }
+        return null;
     }
 
     /**

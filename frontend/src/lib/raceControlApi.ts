@@ -641,6 +641,23 @@ export async function getFinalsLineup(eventId: number): Promise<FinalsLineupDto[
   return data;
 }
 
+export type FinalsReviewDto = {
+  /** Qualifying is over, no final has been called and the line-ups are unconfirmed: the line-up screen replaces the cockpit. */
+  required: boolean;
+  confirmedAt: string | null;
+};
+
+export async function getFinalsReview(eventId: number): Promise<FinalsReviewDto> {
+  const { data } = await api.get<FinalsReviewDto>(`/api/v1/race-control/event/${eventId}/finals-review`);
+  return data;
+}
+
+/** Confirms the event's finals line-ups, which brings the cockpit back. */
+export async function confirmFinalsLineup(eventId: number): Promise<FinalsReviewDto> {
+  const { data } = await api.post<FinalsReviewDto>(`/api/v1/race-control/event/${eventId}/finals-lineup/confirm`);
+  return data;
+}
+
 export async function moveFinalsDriver(
   raceId: number,
   req: { entryId: number; targetRaceId: number; targetPosition: number | null },

@@ -666,6 +666,56 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
                 .isInstanceOf(StateConflictException.class);
     }
 
+    @Test
+    void theLineupScreenIsRequiredOnceQualifyingEndsUntilConfirmedAndComesBackWhenFinalsAreCalculatedAgain() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        Actor actor = Actor.system("test");
+
+        // Qualifying still running: no screen, and nothing to confirm
+        assertThat(finalsLineupService.review(eventId).required()).isFalse();
+        assertThatThrownBy(() -> finalsLineupService.confirm(actor, eventId)).isInstanceOf(StateConflictException.class);
+
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            finishWithResult(heat, buggies, 1);
+        }
+        // Qualifying is over: the screen is required, but the line-ups must be calculated before they are confirmed
+        assertThat(finalsLineupService.review(eventId).required()).isTrue();
+        assertThatThrownBy(() -> finalsLineupService.confirm(actor, eventId)).isInstanceOf(StateConflictException.class);
+
+        autoFinalsSeedingService.reseed(actor, eventId, buggyClass, null);
+        var confirmed = finalsLineupService.confirm(actor, eventId);
+        assertThat(confirmed.confirmedAt()).isNotNull();
+        assertThat(finalsLineupService.review(eventId).required()).isFalse();
+        assertThat(finalsLineupService.confirm(actor, eventId).confirmedAt()).isEqualTo(confirmed.confirmedAt());
+
+        // Calculating again replaces the line-ups, so they have to be confirmed again
+        autoFinalsSeedingService.reseed(actor, eventId, buggyClass, null);
+        assertThat(finalsLineupService.review(eventId).required()).isTrue();
+        assertThat(finalsLineupService.review(eventId).confirmedAt()).isNull();
+
+        // A final called to the grid locks the line-ups and ends the screen
+        jdbc.update("update races set status = 'GRID' where id = ?", finalOf(buggyClass, "A").getId());
+        assertThat(finalsLineupService.review(eventId).required()).isFalse();
+        assertThatThrownBy(() -> finalsLineupService.confirm(actor, eventId)).isInstanceOf(StateConflictException.class);
+    }
+
+    @Test
+    void theLineupScreenIsNotRequiredWhenEveryQualifyingHeatWasAbandoned() {
+        long buggyClass = addClass("Buggy");
+        addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            jdbc.update("update races set status = 'FINISHED', abandoned_at = 1 where id = ?", heat.getId());
+        }
+        assertThat(finalsLineupService.review(eventId).required()).isFalse();
+        assertThatThrownBy(() -> finalsLineupService.confirm(Actor.system("test"), eventId))
+                .isInstanceOf(StateConflictException.class);
+    }
+
     private long addClass(String name) {
         return addClass(name, "{\"type\":\"TIMED\"}");
     }

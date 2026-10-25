@@ -53,6 +53,17 @@ public class Event implements CreatedAt, UpdatedAt {
     /** Whether auto run switches itself on when a race of the event is started by hand (#338). Off by default, so only Go starts it. */
     private boolean autoRunAutoStart = false;
 
+    /**
+     * When race control confirmed the finals line-ups on the review screen that follows qualifying, or null while
+     * they are unconfirmed. Calculating the finals again clears it.
+     */
+    private Instant finalsLineupConfirmedAt;
+
+    public Instant getFinalsLineupConfirmedAt() { return finalsLineupConfirmedAt; }
+    public void setFinalsLineupConfirmedAt(Instant finalsLineupConfirmedAt) {
+        this.finalsLineupConfirmedAt = finalsLineupConfirmedAt;
+    }
+
     public int getAutoRunGapSeconds() { return autoRunGapSeconds; }
     public void setAutoRunGapSeconds(int autoRunGapSeconds) { this.autoRunGapSeconds = autoRunGapSeconds; }
 

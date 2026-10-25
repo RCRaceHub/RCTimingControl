@@ -34,7 +34,7 @@ stateDiagram-v2
 2. publishes `RaceStatusChangedEvent` and broadcasts to `/topic/race/{id}/state`;
 3. `applyFinishingOrderToNextRace`: a practice or qualifier heat sets the starting grid of the same heat in the next round; a lower final promotes bump-up drivers into the next final up and broadcasts a bump-up alert;
 4. `ResultSnapshotService.snapshot` persists the result snapshot (the only time positions are stored);
-Finals are not seeded by the finish: an official presses Calculate finals, and `AutoFinalsSeedingService.reseed` seeds them from the snapshots; `FinalsLineupService` then edits the grids until a final is called.
+Finals are not seeded by the finish: an official presses Calculate finals, and `AutoFinalsSeedingService.reseed` seeds them from the snapshots; `FinalsLineupService` then edits the grids until a final is called. Once every qualifying heat is finished the cockpit gives way to the finals line-up screen (`FinalsLineupService.review`, `events.finals_lineup_confirmed_at`) until race control confirms the line-ups; seeding again clears the confirmation.
 
 ## Rounds around a race
 
