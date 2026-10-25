@@ -84,13 +84,17 @@ rctiming.https.enabled=true
 rctiming.https.port=8443
 ```
 
-After a restart, devices open `https://timing.local:8443/` (the About page lists every secure address). The app creates a club certificate authority valid for 10 years and a server certificate valid for 1 year that covers the laptop's names and addresses. The server certificate is renewed automatically within 30 days of expiry, and re-issued when the laptop gains a new address or name; the app checks every 10 minutes and picks the change up without a restart. The certificates live in the `tls` folder of the data folder. Back that folder up with the rest of the data folder, and keep it private, because whoever holds the authority's key can issue certificates the club's devices trust.
+You can also switch it on from **Club profile → Secure connection**, which writes these lines for you; it still takes a restart. After a restart, devices open `https://timing.local:8443/` (the About page lists every secure address). The app creates a club certificate authority valid for 10 years and a server certificate valid for 1 year that covers the laptop's names and addresses. The server certificate is renewed automatically within 30 days of expiry, and re-issued when the laptop gains a new address or name; the app checks every 10 minutes and picks the change up without a restart. The certificates live in the `tls` folder of the data folder. Back that folder up with the rest of the data folder, and keep it private, because whoever holds the authority's key can issue certificates the club's devices trust.
 
 Each device warns about the certificate until it trusts the club authority. On the About page, download the club certificate and follow the steps shown there for Windows, macOS, iOS, Android or Linux. This is needed once per device, and the 10-year lifetime means it will not need repeating soon.
 
 If something goes wrong on the day, an administrator can open **Club profile → Secure connection** and press **Make a new server certificate** (devices keep trusting it) or **Make a new club certificate** (a new authority and a new server certificate; every device must download and trust the new certificate again, so the app asks first). Both are recorded in the audit log.
 
 On Linux the backup folder must be one the `rctiming` user can write to. For a folder on the laptop's own disk, create it with `sudo install -d -o rctiming -g rctiming /srv/rctiming-backups`. A USB stick or network share has to be mounted so that user can write to it, for example with `uid=rctiming,gid=rctiming` in its mount options. The desktop's automatic mount under `/media/<your name>` is private to you, so the service can't use it.
+
+## Backing up the settings on their own
+
+**Club profile → Settings file** downloads the club's configuration as one small JSON file: the club's details, announcer settings and default voice, live timing thresholds, decoder address, where results are published, the privacy notice and the governing bodies. It leaves out race history, officials and passwords, the sign-in key, the logo, uploaded horn sounds and the RaceHub address (which can carry a secret), so it is safe to keep with the club's papers. On a new install, or after a reset, choose the file under **Use a settings file**; the page lists what it holds and which parts would change anything, and nothing is changed until you press Import. Governing bodies are added or updated by code and never removed. This does not replace backups: the full data folder and the scheduled backups still hold everything else, and every setting changed in the app is already kept in the database and survives a restart.
 
 ## Sending results to RaceHub
 

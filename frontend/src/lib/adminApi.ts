@@ -680,6 +680,13 @@ export interface LiveTimingSettingsDto {
 }
 
 /** The HTTPS state (#503): the addresses, the hosts the certificate covers, and when the certificates run out (UTC ISO) */
+/** One part of a club settings file: what it is and whether importing it would change anything (#510) */
+export interface SettingsSectionDto {
+  name: string;
+  summary: string;
+  changes: boolean;
+}
+
 export interface TlsStatusDto {
   enabled: boolean;
   port: number;
@@ -901,6 +908,14 @@ export const adminApi = {
     regenerateTlsServer: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-server').then(r => r.data),
     /** A new CA: every device must install it again */
     regenerateTlsCa: () => api.post<TlsStatusDto>('/api/v1/admin/tls/regenerate-ca').then(r => r.data),
+    /** This install's settings as a file to save (#510) */
+    exportSettings: () =>
+      api
+        .get<Blob>('/api/v1/admin/club/settings/export', { responseType: 'blob' })
+        .then(r => ({ blob: r.data, filename: filenameFrom(r.headers['content-disposition']) ?? 'rctiming-club-settings.json' })),
+    /** Previews (apply false) or imports a settings file read from disk; the answer lists its sections */
+    importSettings: (file: unknown, apply: boolean) =>
+      api.post<SettingsSectionDto[]>('/api/v1/admin/club/settings/import', file, { params: { apply } }).then(r => r.data),
     /** Switches HTTPS on or off for the next start by writing the settings file */
     changeTlsSetting: (enabled: boolean, port?: number) =>
       api.put<TlsStatusDto>('/api/v1/admin/tls/setting', { enabled, port }).then(r => r.data),

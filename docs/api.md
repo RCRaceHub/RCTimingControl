@@ -1048,6 +1048,22 @@ All three return the state: `enabled`, `port`, `urls`, `names` (what the server 
 
 Anyone on the venue network can download the club authority's certificate (the public part only) from `GET /api/v1/about/ca.crt`, a PEM file sent as an attachment. It answers 404 when HTTPS is off. `GET /api/v1/about` also returns `httpsEnabled` and `httpsAddresses`.
 
+## Admin — Club settings file
+
+Administrators only (#510).
+
+```
+GET  /api/v1/admin/club/settings/export
+POST /api/v1/admin/club/settings/import?apply=false
+PUT  /api/v1/admin/tls/setting
+```
+
+`export` downloads a JSON file with `format` `rctc-club-settings`, `version` 1 and the sections `club`, `audio` (without horn sound files), `voiceId`, `liveTiming`, `decoder`, `resultsPublishTarget`, `privacyNotice` and `governingBodies`. A missing section is left alone on import.
+
+`import` takes that file as the body. With `apply=false` (the default) it changes nothing and answers the sections in the file as `[{name, summary, changes}]`; with `apply=true` it applies them in one transaction, each through the same checks and audit rows as the Club page, and answers the same list. 400 for a file that is not a settings file, is another version, or holds an invalid setting; then nothing is changed.
+
+`PUT /api/v1/admin/tls/setting` takes `{enabled, port?}` and writes `rctiming.https.enabled` and `rctiming.https.port` to `application.properties` in the data folder; it takes effect at the next restart. The state answered by `GET /api/v1/admin/tls` gains `switchedOn`, `configuredPort` and `restartNeeded`.
+
 ## Error responses
 
 All errors use [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457):

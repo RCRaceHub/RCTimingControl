@@ -224,6 +224,7 @@
 - [x] **INSTALL-01**: One installer per system (Windows, macOS, Linux) installs the app with its own Java runtime as a background service (#23, #24)
 - [x] **INSTALL-02**: A demo club and a simulated decoder can be turned on from the installed app for trying it out (#24)
 - [x] **INSTALL-03**: Optional HTTPS beside HTTP, signed by a club certificate authority the app makes itself (10 years; server certificate 1 year, renewed automatically), downloadable from the About page, and regenerable by an administrator in an emergency (#503)
+- [x] **INSTALL-04**: The club's configuration can be saved as one settings file and read back on another install with a preview, and HTTPS can be switched on or off from the Club page (#510)
 - [x] **RESULTS-EXPORT-01**: Results Export v1 is pushed to RaceHub through an outbound queue that waits for a connection (#27)
 - [x] **LIVE-FEED-01**: A live feed relay lets remote viewers follow timing (#28)
 - [x] **OVERLAY-01**: A streaming overlay page shows live timing in OBS (#29)
@@ -431,6 +432,8 @@
 | BACKUP-01 | #22 | Complete |
 | INSTALL-01 | #23, #24 | Complete |
 | INSTALL-02 | #24 | Complete |
+| INSTALL-03 | #503 | Complete |
+| INSTALL-04 | #510 | Complete |
 | RESULTS-EXPORT-01 | #27 | Complete |
 | LIVE-FEED-01 | #28 | Complete |
 | OVERLAY-01 | #29 | Complete |
