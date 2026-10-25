@@ -17,6 +17,7 @@ const BOARD_LINKS: BoardLink[] = [
   { path: '/boards/results', label: 'Race results', takesEvent: true },
   { path: '/qualifying', label: 'Qualifying standings', takesEvent: true },
   { path: '/finals', label: 'Finals', takesEvent: true },
+  { path: '/podium', label: 'Podium', takesEvent: true },
   { path: '/boards/overlay', label: 'Streaming overlay', takesEvent: true },
   { path: '/events', label: 'Event schedule', takesEvent: false },
 ];

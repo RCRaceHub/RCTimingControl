@@ -13,6 +13,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
+import dev.monkeypatch.rctiming.query.boards.PodiumBoardDto;
 import dev.monkeypatch.rctiming.query.boards.LiveQualifyingDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
@@ -21,6 +22,7 @@ import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsBoardService;
+import dev.monkeypatch.rctiming.service.PodiumBoardService;
 import dev.monkeypatch.rctiming.service.LiveQualifyingService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
@@ -58,6 +60,7 @@ public class BoardController {
     private final BoardTickerService boardTickerService;
     private final FinalLegsService finalLegsService;
     private final FinalsBoardService finalsBoardService;
+    private final PodiumBoardService podiumBoardService;
     private final LastLapTimeout lastLapTimeout;
     private final LiveQualifyingService liveQualifyingService;
     private final ClubProfileService clubProfileService;
@@ -72,6 +75,7 @@ public class BoardController {
                            BoardTickerService boardTickerService,
                            FinalLegsService finalLegsService,
                            FinalsBoardService finalsBoardService,
+                           PodiumBoardService podiumBoardService,
                            LastLapTimeout lastLapTimeout,
                            LiveQualifyingService liveQualifyingService,
                            ClubProfileService clubProfileService) {
@@ -86,6 +90,7 @@ public class BoardController {
         this.boardTickerService = boardTickerService;
         this.finalLegsService = finalLegsService;
         this.finalsBoardService = finalsBoardService;
+        this.podiumBoardService = podiumBoardService;
         this.lastLapTimeout = lastLapTimeout;
         this.liveQualifyingService = liveQualifyingService;
     }
@@ -167,6 +172,18 @@ public class BoardController {
         return boardQuery.resolveEvent(eventId)
                 .map(event -> new FinalsBoardDto(event.id(), event.name(), finalsBoardService.forEventPublic(event.id())))
                 .orElse(new FinalsBoardDto(null, null, List.of()));
+    }
+
+    /**
+     * Each class's podium and category leaders, for the podium page.
+     *
+     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     */
+    @GetMapping("/podium")
+    public PodiumBoardDto podium(@RequestParam(required = false) Long eventId) {
+        return boardQuery.resolveEvent(eventId)
+                .map(event -> new PodiumBoardDto(event.id(), event.name(), podiumBoardService.forEventPublic(event.id())))
+                .orElse(new PodiumBoardDto(null, null, List.of()));
     }
 
     /**

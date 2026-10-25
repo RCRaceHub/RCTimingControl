@@ -126,6 +126,32 @@ export type FinalsBoardDto = {
   classes: FinalsBoardClass[];
 };
 
+export type PodiumPlace = { position: number; driverName: string; carNumber: string | null };
+
+export type PodiumCategoryLeader = {
+  category: string;
+  driverName: string;
+  carNumber: string | null;
+  /** The driver's place in the class's finals taken together; 1 for the class winner. */
+  overallPosition: number;
+};
+
+export type PodiumBoardClass = {
+  eventClassId: number;
+  className: string;
+  /** Every final of the class has finished; until then the category leaders are the best so far. */
+  complete: boolean;
+  /** The first three of the A final; empty until it has finished. */
+  podium: PodiumPlace[];
+  categoryLeaders: PodiumCategoryLeader[];
+};
+
+export type PodiumBoardDto = {
+  eventId: number | null;
+  eventName: string | null;
+  classes: PodiumBoardClass[];
+};
+
 function eventParams(eventId: number | null | undefined) {
   return eventId ? { params: { eventId } } : undefined;
 }
@@ -180,6 +206,11 @@ export async function getLiveQualifying(eventId?: number | null): Promise<LiveQu
 
 export async function getFinalsBoard(eventId?: number | null): Promise<FinalsBoardDto> {
   const { data } = await api.get<FinalsBoardDto>('/api/v1/boards/finals', eventParams(eventId));
+  return data;
+}
+
+export async function getPodiumBoard(eventId?: number | null): Promise<PodiumBoardDto> {
+  const { data } = await api.get<PodiumBoardDto>('/api/v1/boards/podium', eventParams(eventId));
   return data;
 }
 

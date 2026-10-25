@@ -20,6 +20,7 @@ const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
 const FinalsResultsPage = lazy(() => import('@/pages/finals/FinalsResultsPage'));
+const PodiumPage = lazy(() => import('@/pages/finals/PodiumPage'));
 const QualifyingStandingsPage = lazy(() => import('@/pages/qualifying/QualifyingStandingsPage'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
@@ -194,6 +195,7 @@ const router = createBrowserRouter([
       { path: '/events', element: <EventSchedulePage /> },
       { path: '/qualifying', element: <QualifyingStandingsPage /> },
       { path: '/finals', element: <FinalsResultsPage /> },
+      { path: '/podium', element: <PodiumPage /> },
       { path: '/results/:raceId', element: <PublicResultsPage /> },
       { path: '/championships/:id', element: <PublicChampionshipPage /> },
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },

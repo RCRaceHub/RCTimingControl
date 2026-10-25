@@ -15,6 +15,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 | Results | `/boards/results` | The results of the last finished race | A second screen by the timing desk or the drivers' stand |
 | Qualifying standings | `/qualifying` | The overall qualifying table for every class: each round's place (R1, R2 and so on), dropped rounds struck through, total points, laps and best lap. It refreshes by itself as heats finish | Phones (via the QR code), a tablet in the pits, or a TV |
 | Finals results | `/finals` | Every class's finals, A first then B, C and so on, each best first with car, laps, time and best lap. An A final run in legs shows the combined result (points in each leg, dropped legs struck through). A final that has not run says so. It refreshes by itself as finals finish, and has a Print button and a QR code | Phones (via the QR code), a tablet in the pits, or a TV |
+| Podium | `/podium` | Each class's first three from its A final (for an A final run in legs, from the combined order), as large coloured places with car numbers. Under them, the best-placed driver of each category (Junior, Vet and so on) among the class's finals taken together, with their overall place; the heading reads "Category leader" until every final of the class has finished, then "Category winner". Categories are the tags set on a competitor (Competitors page); a driver with no tag appears only in the podium. A class shows "The A final has not finished yet" until it has. It refreshes by itself, and has a Print button (one class per page) and a QR code | A TV for the prize-giving, phones or a printout |
 | Event schedule | `/events` | The events, with each finished race's results linked under its round and class (Heat 1, Heat 2, or Results for a final), plus the qualifying standings, the finals results and the championship standings | Phones |
 | Race result | `/results/{raceId}` | One finished race with lap times per driver | Phones, reached from the schedule |
 | Championship standings | `/championships/{id}` | The championship table per class | Phones, reached from the schedule |
@@ -22,7 +23,7 @@ Addresses on this page start from the laptop's address. The About page (`/about`
 
 Officials don't have to type these addresses. A **Boards** menu sits in the Admin sidebar (above Docs) and in the top bar of race control. It lists every board and results page, and each opens in a new tab. In race control, and on an event's page in Admin, the links are already pinned to that event.
 
-Add `?event=ID` to `/boards/now-next`, `/boards/live-race`, `/boards/top`, `/boards/view/NAME`, `/boards/results`, `/boards/overlay`, `/qualifying` or `/finals` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
+Add `?event=ID` to `/boards/now-next`, `/boards/live-race`, `/boards/top`, `/boards/view/NAME`, `/boards/results`, `/boards/overlay`, `/qualifying`, `/finals` or `/podium` to follow one event. The ID is the number at the end of the event's address in Admin (for example `/admin/events/7`). Without it a board follows the event that is racing, or the most recent one in progress.
 
 ### Setting up a TV
 

@@ -20,6 +20,7 @@ export const publicQueryKeys = {
     liveQualifying: (eventId: number | null) => ['boards', 'live-qualifying', eventId] as const,
     view: (slug: string) => ['boards', 'view', slug] as const,
     finals: (eventId: number | null) => ['boards', 'finals', eventId] as const,
+    podium: (eventId: number | null) => ['boards', 'podium', eventId] as const,
     clock: (raceId: number | null) => ['boards', 'clock', raceId] as const,
     positionHistory: (raceId: number | null, laps: number) => ['boards', 'position-history', raceId, laps] as const,
     ticker: (eventId: number | null) => ['boards', 'ticker', eventId] as const,
