@@ -2,11 +2,11 @@
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
 // timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page
 // never looks like a broken overlay.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getRaceClock, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
+import { getLiveQualifying, getRaceClock, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
 import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
@@ -19,6 +19,8 @@ import {
   type TickerItem,
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
+import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
@@ -73,6 +75,9 @@ function useNow(active: boolean) {
   }, [active]);
   return now;
 }
+
+/** How often the projected qualifying places are re-read, like the Live top screen. */
+const LIVE_QUALIFYING_POLL_MS = 3000;
 
 /** How long each ticker stat stays up before the next one rolls in. */
 const TICKER_MS = 5000;
@@ -239,7 +244,10 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
 export default function OverlayBoard() {
   const [searchParams] = useSearchParams();
   const settings = useBoardSettings();
-  const { eventId, top, showClass, theme, showChart, tickerItems, showSponsors, showBars, showArrows, closeMs, showBattles } = parseOverlayOptions(searchParams, settings.closeGapMs);
+  const {
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showPredicted,
+    showBars, showArrows, closeMs, showBattles,
+  } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   useTransparentPage();
 
@@ -251,6 +259,7 @@ export default function OverlayBoard() {
     refetchInterval: BOARD_POLL_MS,
   });
 
+  const remainingAt = useRemainingAt(clock, clockReadAt);
   const battleGroups = useBattles(showBattles ? raceId : null);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const now = useNow(!!clock?.running);
@@ -259,6 +268,21 @@ export default function OverlayBoard() {
   const lapFlash = useLapFlash(allRows);
   const chartSeries = useLivePositionSeries(raceId, allRows, showChart);
   const tickerEventId = eventId ?? nowNext?.eventId ?? null;
+  // Where each driver stands in the event's qualifying table if this heat ended now, refreshed with every lap
+  const isQualifier = race?.roundType === 'QUALIFIER';
+  const { data: liveQualifying } = useQuery({
+    queryKey: publicQueryKeys.boards.liveQualifying(tickerEventId),
+    queryFn: () => getLiveQualifying(tickerEventId),
+    enabled: showQualifying && isQualifier && layout === 'tower',
+    refetchInterval: LIVE_QUALIFYING_POLL_MS,
+  });
+  const raceIdNow = race?.raceId ?? null;
+  const qualifying = useMemo(() => {
+    if (raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
+    return new Map<number, ProjectedQualifying>(
+      liveQualifying.rows.map(r => [r.entryId, { position: r.position, previousPosition: r.previousPosition }]),
+    );
+  }, [liveQualifying, raceIdNow]);
   const { data: sponsors = [] } = useQuery({
     queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
     queryFn: () => getSponsors(tickerEventId),
@@ -305,7 +329,7 @@ export default function OverlayBoard() {
   return (
     <div className="p-4">
       <section
-        className={cn('w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
+        className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
         aria-label="Live timing overlay"
       >
         <header className="flex items-center gap-3 px-4 py-2">
@@ -321,7 +345,21 @@ export default function OverlayBoard() {
             )}
           </div>
         </header>
-        {rows.length > 0 && (
+        {rows.length > 0 && layout === 'tower' && (
+          <OverlayTower
+            rows={rows}
+            allRows={allRows}
+            colours={colours}
+            lapFlash={lapFlash}
+            closeMs={closeMs}
+            showArrows={showArrows && race.finalLetter !== null}
+            barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
+            predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
+            qualifying={qualifying}
+            qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
+          />
+        )}
+        {rows.length > 0 && layout === 'table' && (
           <table className="w-full text-sm" aria-label="Running order">
             <thead className="sr-only">
               <tr>

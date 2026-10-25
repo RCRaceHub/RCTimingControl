@@ -6,17 +6,12 @@ import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { isClose } from '@/lib/lapProgress';
 import { cn } from '@/lib/utils';
+import { gapText } from './boardFormat';
 
 function gap(row: LiveTimingRowDto): string {
   if (row.position === 1) return '—';
   if (row.lapsDown > 0) return `+${row.lapsDown} ${row.lapsDown === 1 ? 'lap' : 'laps'}`;
   return row.gapToLeaderMs !== null ? `+${fmtMs(row.gapToLeaderMs)}` : '—';
-}
-
-function interval(row: LiveTimingRowDto): string {
-  if (row.position === 1) return '—';
-  if (row.intervalLapsDown > 0) return `+${row.intervalLapsDown} ${row.intervalLapsDown === 1 ? 'lap' : 'laps'}`;
-  return row.gapToAheadMs !== null ? `+${fmtMs(row.gapToAheadMs)}` : '—';
 }
 
 interface BoardLiveTableProps {
@@ -84,7 +79,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
-            <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{interval(row)}</td>
+            <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{gapText(row)}</td>
             <td className="py-3 text-right tabular-nums text-slate-300">{gap(row)}</td>
           </tr>
           );
