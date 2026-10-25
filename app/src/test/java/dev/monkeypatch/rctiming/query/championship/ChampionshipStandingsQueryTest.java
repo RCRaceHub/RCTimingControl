@@ -692,6 +692,33 @@ class ChampionshipStandingsQueryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void qualifyingPointsForGivesTheOverallQualifyingPlacesOfAClassWithNoFinalsTheirPoints() throws Exception {
+        Championship champ = makeChampionship(0, 0, null, null, ScoringSource.FINALS);
+        User first = makeUser("Qual", "One");
+        User second = makeUser("Qual", "Two");
+        addPointsScale(champ.getId(), Map.of(1, 10, 2, 8));
+
+        Event event = makeEvent("Qualifying-points-event");
+        linkEventToChampionship(champ.getId(), event.getId(), 1);
+        Long ecId = makeEventClass(event.getId());
+        Round qualRound = makeRound(event.getId(), RoundType.QUALIFIER, 1);
+        Entry a = makeEntry(first.getId(), event.getId(), ecId);
+        Entry b = makeEntry(second.getId(), event.getId(), ecId);
+        Race heat1 = makeRace(qualRound.getId(), ecId, null, 1);
+        Race heat2 = makeRace(qualRound.getId(), ecId, null, 2);
+        makeRaceEntry(heat1.getId(), a.getId());
+        makeRaceEntry(heat2.getId(), b.getId());
+        makeSnapshot(heat1.getId(), "[" + resultRow(a.getId(), 1, 12, 5000) + "]");
+        makeSnapshot(heat2.getId(), "[" + resultRow(b.getId(), 1, 10, 5000) + "]");
+
+        Map<Long, Map<Long, Integer>> points = query.qualifyingPointsFor(event.getId());
+
+        assertThat(points.values()).hasSize(1);
+        assertThat(points.values().iterator().next()).containsEntry(a.getId(), 10).containsEntry(b.getId(), 8);
+        assertThat(query.qualifyingPointsFor(makeEvent("No-championship-qualifying-event").getId())).isEmpty();
+    }
+
+    @Test
     void winningTwoQualifyingHeatsInOneClassAtOneEventPaysTheTqBonusOnce() throws Exception {
         // Two heats of the same class in one qualifying round, both won by the same driver (#133)
         Championship champ = makeChampionship(2, 0, null, null, ScoringSource.QUALIFYING);

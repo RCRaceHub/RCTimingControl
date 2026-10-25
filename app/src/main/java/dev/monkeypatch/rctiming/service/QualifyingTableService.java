@@ -92,7 +92,8 @@ public class QualifyingTableService {
             String className = racingClassRepository.findById(eventClass.getRacingClassId())
                     .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
             Map<Long, String> carNumbers = carNumbers(heats);
-            // A class with finals shows its championship points on the finals; one without scores from this table
+            // A class with finals shows its championship points on the finals; one without scores from this table.
+            // Both reads share this call's connection or snapshot, so the points agree with the table.
             Map<Long, Integer> classPoints = Map.of();
             if (finals.isEmpty()) {
                 if (championshipPoints == null) {
