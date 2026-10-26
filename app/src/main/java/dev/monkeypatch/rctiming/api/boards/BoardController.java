@@ -165,16 +165,16 @@ public class BoardController {
             if (last != null) {
                 return liveTable(event, "FINISHED", last, null);
             }
-            return new LiveQualifyingDto(event.id(), event.name(), "NONE", null, null, null, List.of());
-        }).orElse(new LiveQualifyingDto(null, null, "NONE", null, null, null, List.of()));
+            return LiveQualifyingDto.none(event.id(), event.name());
+        }).orElse(LiveQualifyingDto.none(null, null));
     }
 
     private LiveQualifyingDto liveTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
                                         List<LiveTimingRowDto> liveRows) {
         return liveQualifyingService.forHeat(race.raceId(), liveRows)
-                .map(rows -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
-                        race.className(), rows))
-                .orElse(new LiveQualifyingDto(event.id(), event.name(), "NONE", null, null, null, List.of()));
+                .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
+                        race.className(), race.roundNumber(), tables.rows(), tables.roundRows()))
+                .orElse(LiveQualifyingDto.none(event.id(), event.name()));
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */

@@ -99,6 +99,34 @@ describe('LiveTopBoard', () => {
     expect(screen.queryByText('Second')).not.toBeInTheDocument();
   });
 
+  it('shows the round and the overall order side by side when the round has rows', async () => {
+    vi.mocked(getLiveQualifying).mockResolvedValue({
+      ...table('LIVE', [row({ position: 1, entryId: 1, driverName: 'Overall Leader' })]),
+      roundNumber: 2,
+      roundRows: [
+        {
+          position: 1,
+          previousPosition: 2,
+          entryId: 2,
+          driverName: 'Round Leader',
+          carNumber: '2',
+          lapsCompleted: 11,
+          totalTimeMs: 301_000,
+          bestLapMs: 27_000,
+          live: true,
+        },
+      ],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByRole('heading', { name: 'Round 2' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Overall' })).toBeInTheDocument();
+    expect(screen.getByText('Round Leader')).toBeInTheDocument();
+    expect(screen.getByText('Overall Leader')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Round order' })).toBeInTheDocument();
+  });
+
   it('says so when there is no table', async () => {
     vi.mocked(getLiveQualifying).mockResolvedValue(table('NONE', []));
 
@@ -108,10 +136,10 @@ describe('LiveTopBoard', () => {
     expect(getLiveQualifying).toHaveBeenCalledWith(5);
   });
 
-  it('reads the top parameter, defaulting to ten', () => {
-    expect(parseTopParam(null)).toBe(10);
+  it('reads the top parameter, defaulting to thirty', () => {
+    expect(parseTopParam(null)).toBe(30);
     expect(parseTopParam('20')).toBe(20);
-    expect(parseTopParam('abc')).toBe(10);
+    expect(parseTopParam('abc')).toBe(30);
     expect(parseTopParam('500')).toBe(30);
   });
 });

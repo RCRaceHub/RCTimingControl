@@ -141,6 +141,36 @@ public class QualifyingStandingsService {
     }
 
     /**
+     * One driver's place in a single round: laps, then total time, over every heat of the round counted so far.
+     * {@code totalTimeMs} is {@link Long#MAX_VALUE} and {@code bestLapMs} too for a driver with no timed lap.
+     */
+    public record RoundStanding(Long entryId, int lapsCompleted, long totalTimeMs, long bestLapMs) {}
+
+    /**
+     * The order inside one round, best first, for the round section of the live top board: the round's finished
+     * heats plus the {@code overlay}'s heat counted as {@link #projectedResultsFor} counts it. Drivers whose heat in
+     * the round has not run are not in it yet. Empty for a class that is not ranked by low points, for a Shikabane
+     * class (its heats are separate races), and when nothing in the round is counted.
+     *
+     * @param roundId the round holding the overlay's heat
+     */
+    public List<RoundStanding> projectedRoundFor(Long eventClassId, Long roundId, Overlay overlay) {
+        Optional<RoundRules> rules = roundByRoundRules(eventClassId);
+        if (rules.isEmpty()) {
+            return List.of();
+        }
+        ScoredRounds scored = scoreRounds(eventClassId, rules.get(), overlay, new HashSet<>());
+        int index = scored.roundIds().indexOf(roundId);
+        if (scored.shikabane() || index < 0) {
+            return List.of();
+        }
+        return scored.rounds().get(index).entrySet().stream()
+                .map(e -> new RoundStanding(e.getKey(), e.getValue().laps(), e.getValue().totalTimeMs(),
+                        e.getValue().bestLapMs()))
+                .toList();
+    }
+
+    /**
      * One heat of a round counted in a different way for the live top table. With {@code include} false the heat
      * is left out, which gives the standings from before it. With {@code include} and {@code liveRows} it is counted
      * from the live positions of the heat on track; with {@code include} and null rows, from its stored result.
