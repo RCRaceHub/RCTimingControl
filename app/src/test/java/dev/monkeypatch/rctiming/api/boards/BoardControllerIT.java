@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
@@ -52,6 +53,7 @@ class BoardControllerIT extends AbstractIntegrationTest {
     @Autowired ResultSnapshotRepository resultSnapshotRepository;
     @Autowired LapTimingService lapTimingService;
     @Autowired JdbcTemplate jdbc;
+    @Autowired BoardQuery boardQuery;
 
     private BoardFixtures fx;
 
@@ -256,29 +258,18 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void liveQualifying_staysUpAfterTheFinalsHaveStartedAndFinished() {
+    void lastCompletedQualifier_isStillTheQualifyingHeatOnceAFinalHasFinished() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
-        Entry fast = fx.gridEntry(heat1, "Fast Freddie", "T-1", 1);
-        saveSnapshot(heat1, String.format("""
-                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Fast Freddie","carNumber":null,
-                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null}]
-                """, fast.getId()));
         Round finals = fx.round(RoundType.FINAL, 1, 2);
-        Race finalA = fx.race(finals, 1, RaceStatus.RUNNING);
+        Race finalA = fx.race(finals, 1, RaceStatus.FINISHED);
         finalA.setFinalLetter("A");
         fx.save(finalA);
 
-        Map running = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
-        assertThat(running.get("phase")).isEqualTo("FINISHED");
-        assertThat((List) running.get("rows")).isNotEmpty();
-
-        finalA.setStatus(RaceStatus.FINISHED);
-        fx.save(finalA);
-
-        Map done = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
-        assertThat(done.get("phase")).isEqualTo("FINISHED");
-        assertThat((List) done.get("rows")).isNotEmpty();
+        assertThat(boardQuery.lastCompletedRace(fx.event.getId())).get()
+                .extracting(r -> r.raceId()).isEqualTo(finalA.getId());
+        assertThat(boardQuery.lastCompletedQualifier(fx.event.getId())).get()
+                .extracting(r -> r.raceId()).isEqualTo(heat1.getId());
     }
 
     @Test
