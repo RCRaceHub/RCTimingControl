@@ -21,7 +21,7 @@ const BOARD_GROUPS: BoardGroup[] = [
     links: [
       { path: '/boards/now-next', label: 'Now and next', takesEvent: true },
       { path: '/boards/live-race', label: 'Live race', takesEvent: true },
-      { path: '/boards/top', label: 'Live top 10', takesEvent: true },
+      { path: '/boards/top', label: 'Live top 30', takesEvent: true },
       { path: '/boards/results', label: 'Last race result', takesEvent: true },
       { path: '/boards/overlay', label: 'Streaming overlay', takesEvent: true },
     ],

@@ -80,7 +80,8 @@ function RoundTable({ data, rows, top, density }: {
   density: Density;
 }) {
   const live = data.phase === 'LIVE';
-  const hasBaseline = rows.some((r) => r.previousPosition !== null);
+  // A driver whose heat is later in the round has no earlier place in it, so nobody is marked "New" here
+  const hasBaseline = false;
   return (
     <table className={`w-full ${density.text}`} aria-label="Round order">
       <thead>
@@ -123,7 +124,7 @@ function RoundTable({ data, rows, top, density }: {
 export function LiveTopTable({ data, top }: { data: LiveQualifyingDto; top: number }) {
   const roundRows = data.roundRows ?? [];
   if (roundRows.length === 0) {
-    return <OverallTable data={data} top={top} density={LARGE} />;
+    return <OverallTable data={data} top={top} density={top > 10 ? COMPACT : LARGE} />;
   }
   return (
     <div className="grid gap-8 xl:grid-cols-2">
