@@ -88,7 +88,7 @@ describe('FinalsLineupPanel', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPanel();
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate finals for all classes' }));
-    await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(1, { 7: 5 }));
     confirm.mockRestore();
   });
 

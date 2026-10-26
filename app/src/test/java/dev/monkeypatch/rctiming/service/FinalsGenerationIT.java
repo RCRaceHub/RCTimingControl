@@ -703,6 +703,22 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void calculatingAllClassesUsesTheCarsPerFinalTheOfficialSetForAClass() {
+        long buggyClass = addClass("Buggy");
+        List<Long> buggies = addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
+            finishWithResult(heat, buggies, 1);
+        }
+        autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId, java.util.Map.of(buggyClass, 12));
+        assertThat(gridOf(finalOf(buggyClass, "B"))).hasSize(12);
+        assertThat(gridOf(finalOf(buggyClass, "A"))).hasSize(8);
+        assertThatThrownBy(() -> autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId,
+                java.util.Map.of(buggyClass, 0))).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void theLineupScreenIsNotRequiredWhenEveryQualifyingHeatWasAbandoned() {
         long buggyClass = addClass("Buggy");
         addEntries(buggyClass, 20);

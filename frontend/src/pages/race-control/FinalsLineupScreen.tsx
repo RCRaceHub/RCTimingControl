@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -29,10 +30,16 @@ export function FinalsLineupScreen({ eventId }: Props) {
     queryKey: raceControlQueryKeys.finalsLineup(eventId),
     queryFn: () => getFinalsLineup(eventId),
   });
+  // The cars per final shown on each class's card, so Calculate all uses them rather than the format's own size
+  const carsByClass = useRef<Record<number, number>>({});
+  const onCarsChange = useCallback((eventClassId: number, cars: number | null) => {
+    if (cars !== null && Number.isInteger(cars) && cars >= 1) carsByClass.current[eventClassId] = cars;
+    else delete carsByClass.current[eventClassId];
+  }, []);
   const refresh = () => queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.all });
 
   const calculateAll = useMutation({
-    mutationFn: () => calculateAllFinals(eventId),
+    mutationFn: () => calculateAllFinals(eventId, { ...carsByClass.current }),
     onSuccess: (result) => {
       const left = Object.values(result.skipped);
       toast.success(`Finals calculated for ${result.calculated.length} ${result.calculated.length === 1 ? 'class' : 'classes'}`
@@ -69,6 +76,8 @@ export function FinalsLineupScreen({ eventId }: Props) {
   }
 
   return (
+    // The race control layout does not scroll, so this screen scrolls itself
+    <div className="h-full overflow-y-auto">
     <div className="mx-auto flex max-w-5xl flex-col gap-4 p-6" aria-label="Finals line-up">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">Qualifying is over: set the finals</h1>
@@ -104,11 +113,12 @@ export function FinalsLineupScreen({ eventId }: Props) {
       )}
       {classes.map((l) => (
         <div key={l.eventClassId} className="space-y-3">
-          <FinalsLineupPanel eventId={eventId} eventClassId={l.eventClassId} canEdit hideCalculateAll />
+          <FinalsLineupPanel eventId={eventId} eventClassId={l.eventClassId} canEdit hideCalculateAll onCarsChange={onCarsChange} />
           {l.calculated && <QualifyingTablePanel eventId={eventId} eventClassId={l.eventClassId} />}
         </div>
       ))}
       {dialog}
+    </div>
     </div>
   );
 }

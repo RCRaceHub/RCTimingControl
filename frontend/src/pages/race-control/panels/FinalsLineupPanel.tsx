@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isEntryDrag, readEntryDrag, startEntryDrag } from '@/lib/dragEntry';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -21,6 +21,8 @@ type Props = {
   canEdit: boolean;
   /** Leaves out the all-classes button, for the line-up screen that has its own. */
   hideCalculateAll?: boolean;
+  /** Told the cars per final shown for the class (null when blank), so a button elsewhere can calculate with it. */
+  onCarsChange?: (eventClassId: number, cars: number | null) => void;
 };
 
 /**
@@ -29,7 +31,7 @@ type Props = {
  * another final or swap two. Nothing is calculated by itself when qualifying ends. Editing is open until a final is
  * called to the grid; calculating again throws the edits away, so it asks first once the finals have drivers.
  */
-export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculateAll = false }: Props) {
+export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculateAll = false, onCarsChange }: Props) {
   const queryClient = useQueryClient();
   const [cars, setCars] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -38,6 +40,12 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
     queryFn: () => getFinalsLineup(eventId),
   });
   const lineup: FinalsLineupDto | undefined = data?.find((l) => l.eventClassId === eventClassId);
+
+  const carsValue = cars ?? String(lineup?.defaultCarsPerFinal || '');
+  const carsNumber = carsValue === '' ? null : Number(carsValue);
+  useEffect(() => {
+    if (lineup) onCarsChange?.(eventClassId, carsNumber);
+  }, [lineup, eventClassId, carsNumber, onCarsChange]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.all });
   const onError = (fallback: string) => (err: unknown) => toast.error(getApiErrorMessage(err, fallback));
@@ -51,7 +59,8 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
     onError: onError('Could not calculate the finals'),
   });
   const calculateAll = useMutation({
-    mutationFn: () => calculateAllFinals(eventId),
+    mutationFn: () => calculateAllFinals(eventId, carsNumber !== null && Number.isInteger(carsNumber) && carsNumber >= 1
+      ? { [eventClassId]: carsNumber } : {}),
     onSuccess: (result) => {
       const left = Object.values(result.skipped);
       const message = `Finals calculated for ${result.calculated.length} ${result.calculated.length === 1 ? 'class' : 'classes'}`
@@ -86,8 +95,6 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
   }
   if (!lineup) return null;
 
-  const carsValue = cars ?? String(lineup.defaultCarsPerFinal || '');
-  const carsNumber = carsValue === '' ? null : Number(carsValue);
   const canCalculate = canEdit && lineup.qualifyingComplete && !lineup.started && !calculate.isPending
     && (carsNumber === null || (Number.isInteger(carsNumber) && carsNumber >= 1));
 
