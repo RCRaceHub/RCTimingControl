@@ -256,6 +256,32 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void liveQualifying_staysUpAfterTheFinalsHaveStartedAndFinished() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
+        Entry fast = fx.gridEntry(heat1, "Fast Freddie", "T-1", 1);
+        saveSnapshot(heat1, String.format("""
+                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Fast Freddie","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null}]
+                """, fast.getId()));
+        Round finals = fx.round(RoundType.FINAL, 1, 2);
+        Race finalA = fx.race(finals, 1, RaceStatus.RUNNING);
+        finalA.setFinalLetter("A");
+        fx.save(finalA);
+
+        Map running = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
+        assertThat(running.get("phase")).isEqualTo("FINISHED");
+        assertThat((List) running.get("rows")).isNotEmpty();
+
+        finalA.setStatus(RaceStatus.FINISHED);
+        fx.save(finalA);
+
+        Map done = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
+        assertThat(done.get("phase")).isEqualTo("FINISHED");
+        assertThat((List) done.get("rows")).isNotEmpty();
+    }
+
+    @Test
     void qualifyingBoard_withNoQualifyingHeatsHasNoTables() {
         Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
 

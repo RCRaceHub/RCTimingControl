@@ -145,8 +145,8 @@ public class BoardController {
 
     /**
      * The qualifying table of the class on track with the running heat counted from its live positions (#480). When
-     * no qualifying heat is running it shows the one that finished last, so the table keeps who moved until the next
-     * race starts.
+     * no qualifying heat is running it shows the one that finished last, so the table keeps who moved, and stays up
+     * as the final qualifying standings while the finals run.
      *
      * @param eventId the event to show; defaults to the event racing now, else the latest in progress
      */
@@ -159,8 +159,10 @@ public class BoardController {
                         .map(LiveRaceState::calculatePositions).orElse(List.of());
                 return liveTable(event, "LIVE", running, live);
             }
-            BoardRaceDto last = boardQuery.lastCompletedRace(event.id()).orElse(null);
-            if (running == null && last != null && "QUALIFIER".equals(last.roundType())) {
+            // Not a qualifying heat on track: keep the last qualifying heat's table up, including while the finals
+            // run, so the board is never empty once qualifying has been raced
+            BoardRaceDto last = boardQuery.lastCompletedQualifier(event.id()).orElse(null);
+            if (last != null) {
                 return liveTable(event, "FINISHED", last, null);
             }
             return new LiveQualifyingDto(event.id(), event.name(), "NONE", null, null, null, List.of());
