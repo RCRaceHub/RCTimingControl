@@ -1,6 +1,6 @@
 # Messaging module for RCTC: design (draft 1)
 
-Status: idea, not scheduled (label `idea`, milestone "Ideas backlog"). Tracker #542 with sub-issues #543 to #549; the AI commentator assistant is #552. Analysis only; no code written. This records the context so the ideas can be discussed later.
+Status: idea, not scheduled (label `idea`, milestone "Ideas backlog"). Tracker #542 with sub-issues #543 to #549; the AI commentator assistant is #552; the system log channel is #TBD. Analysis only; no code written. This records the context so the ideas can be discussed later.
 
 ## 1. Decision
 
@@ -185,6 +185,27 @@ Idea: the assistant is a participant in the messaging module. The commentator as
 1. Stats engine and suggestion cards on the commentator desk (no AI).
 2. Chat "ask" with the tool-calling assistant over the same queries.
 3. Local model option, if it proves usable on club hardware.
+
+### 8d. System log channel (idea from Dave: use chat for remote logs)
+
+Idea: the messaging module gets a read-only "System log" channel that RCTC itself posts to, so officials (and Dave) can follow what the system is doing without sitting at the race control laptop. Not decided, not built.
+
+**What would be posted** (a short, human readable line each, with a severity):
+- Decoder connected, disconnected, silent for N seconds, or restarted.
+- Timing faults: unknown-transponder bursts, a gap in decoder passing numbers, a car with no passings, clock or anchor problems.
+- Race lifecycle oddities: a race stopped by an error, a restart or abandon, a marshal absence recorded.
+- Housekeeping: backup finished or failed, disk space low, results export or live feed failing and retrying, a login lockout.
+- Application WARN and ERROR entries, filtered to a short safe summary (no stack traces, no personal data).
+
+**How it fits.** A new conversation kind `LOG` next to DIRECT, GROUP and ROLE. Posting is by the system only; people read, mute and filter by severity. It reuses the same tables, STOMP delivery and unread badge. A small `SystemLogPublisher` listens to the existing Spring events and a logging appender, and a throttle collapses repeats ("decoder disconnected, 14 times in 5 minutes"). Retention for this channel can be shorter than chat (for example 7 days). Admins see it by default; other roles by choice. It does not replace the log files or the audit log, which stay the full record.
+
+**Local-only and offline.** On the venue network it works exactly like chat: the browser has the same STOMP connection and nothing leaves the building. Because it is stored, someone who opens a browser mid-meeting sees what has happened so far.
+
+**What "remote" means decides the design**
+- **Elsewhere on the venue LAN** (a marshal's phone, the announcer's tablet, a second laptop): no extra work.
+- **Off-site** (Dave at home, a club official watching a meeting): RCTC takes no inbound connections and is not on the internet, so this needs an outbound path, as the live feed already does with its one outbound WebSocket to a relay (`livefeed/`). Options: reuse that relay for a log stream (opt-in, display names only), or send severe alerts only by email or a push service, or have the laptop upload a log bundle after the meeting. Each has a cost in setup and in what leaves the venue, so it should be a deliberate club setting, off by default.
+
+**Risks.** Noise (hence severity levels and throttling), leaking personal data or internals into a channel others can read (hence summaries only, role-limited), and a log flood slowing the database (bounded rate, separate retention, never on the timing thread).
 
 ## 9. Privacy, retention, backups
 
