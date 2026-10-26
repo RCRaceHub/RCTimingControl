@@ -4,13 +4,14 @@
 <style>body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}pre{background:#f3f3f3;padding:.8rem;overflow:auto}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}pre{background:#222}}</style>
 </head><body>
 <h1>RC Timing Control apt repository</h1>
+<p><strong>Until the first final release (1.0), the stable channel is empty. Use the testing channel below.</strong></p>
 <p>For Ubuntu, Debian and other Debian-based Linux on 64-bit Intel or AMD (amd64) and 64-bit ARM such as a Raspberry Pi 4 or 5 (arm64). Run these on the venue laptop:</p>
 <pre>sudo install -d -m 0755 /etc/apt/keyrings
 sudo curl -fsSL -o /etc/apt/keyrings/rctc-archive-keyring.gpg https://rcracehub.github.io/RCTimingControl/apt/rctc-archive-keyring.gpg
 sudo curl -fsSL -o /etc/apt/sources.list.d/rctimingcontrol.sources https://rcracehub.github.io/RCTimingControl/apt/rctimingcontrol.sources
 sudo apt update
 sudo apt install rctimingcontrol</pre>
-<p>That installs the <strong>stable</strong> channel, the newest final release. To follow the <strong>testing</strong> channel instead, which also gets alpha and other pre-releases, use <code>rctimingcontrol-testing.sources</code> in place of <code>rctimingcontrol.sources</code> in the second command. Use only one of the two.</p>
+<p>That installs the <strong>stable</strong> channel, the newest final release. To follow the <strong>testing</strong> channel instead, which also gets alpha and other pre-releases, use <code>rctimingcontrol-testing.sources</code> in place of <code>rctimingcontrol.sources</code> in the second command. Use only one of the two; to switch, delete the other file from <code>/etc/apt/sources.list.d/</code> and run <code>sudo apt update</code>.</p>
 <p>Then open <a href="http://localhost:8080">http://localhost:8080</a> to set up the club. Later releases arrive with <code>sudo apt update &amp;&amp; sudo apt upgrade</code>; the service restarts and keeps its data.</p>
 <p>Packages are signed. The key is <a href="rctc-archive-keyring.asc">rctc-archive-keyring.asc</a>.</p>
 </body></html>

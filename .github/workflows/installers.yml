@@ -228,8 +228,6 @@ jobs:
       pages: write
       id-token: write
     concurrency: apt-repo
-    env:
-      GH_TOKEN: ${{ github.token }}
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -258,15 +256,19 @@ jobs:
       # final release already published, so an alpha never replaces what stable users get.
       - name: Pick the packages for each channel
         if: steps.key.outputs.set == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p testing stable
           cp installers/*.deb testing/
           if [[ "$GITHUB_REF_NAME" == *-* || "$GITHUB_REF_NAME" == v0.* ]]; then
+            # The carried-over release may predate arm64, so stable is not held to every architecture
+            echo "APT_LENIENT_SUITES=stable" >> "$GITHUB_ENV"
             last=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
-            if [ -n "$last" ]; then
-              gh release download "$last" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir stable
-            else
+            if [ -z "$last" ]; then
               echo "::notice::No final release yet, so the stable channel is empty"
+            elif ! gh release download "$last" --repo "$GITHUB_REPOSITORY" --pattern 'rctimingcontrol_*.deb' --dir stable; then
+              echo "::warning::Release $last has no packages, so the stable channel is empty"
             fi
           else
             cp installers/*.deb stable/
@@ -292,6 +294,12 @@ jobs:
           echo "deb [signed-by=$site/rctc-archive-keyring.gpg] file://$site testing main" | sudo tee /etc/apt/sources.list.d/rctc-test.list
           sudo apt-get update
           apt-cache policy rctimingcontrol | tee /dev/stderr | grep -q "Candidate: $expected"
+          # The stable channel must also be a valid signed repository, even when it is empty
+          echo "deb [signed-by=$site/rctc-archive-keyring.gpg] file://$site stable main" | sudo tee /etc/apt/sources.list.d/rctc-test.list
+          sudo apt-get update
+          if ls stable/*_amd64.deb >/dev/null 2>&1; then
+            apt-cache policy rctimingcontrol | grep -q "Candidate: $(dpkg-deb -f stable/*_amd64.deb Version)"
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         if: steps.key.outputs.set == 'true'

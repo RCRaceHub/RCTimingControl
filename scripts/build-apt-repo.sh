@@ -7,7 +7,9 @@
 # included. A folder with no .deb files, or one that does not exist, leaves the suite empty.
 # <site-dir> is the folder published as the web site. It is rebuilt from scratch each time, so there
 # is no database to keep in step, and each suite serves only the .deb files given: one release.
-# Older releases stay on the GitHub releases page. The signing key must already be in the gpg
+# Older releases stay on the GitHub releases page. Every suite with packages must carry both
+# amd64 and arm64, except the suites named (space separated) in APT_LENIENT_SUITES, for a release
+# carried over from before arm64 existed. The signing key must already be in the gpg
 # keyring (APT_GPG_KEY in CI).
 set -euo pipefail
 
@@ -23,6 +25,7 @@ trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/conf"
 : > "$WORK/conf/distributions"
 for spec in "$@"; do
+  [[ "$spec" == *=* ]] || { echo "Expected <suite>=<deb-dir>, got '$spec'" >&2; exit 2; }
   suite="${spec%%=*}"
   cat >> "$WORK/conf/distributions" <<CONF
 Origin: RC Timing Control
@@ -49,7 +52,7 @@ for spec in "$@"; do
     count=$((count + 1))
   done
   total=$((total + count))
-  if [ "$count" -gt 0 ]; then
+  if [ "$count" -gt 0 ] && [[ " ${APT_LENIENT_SUITES:-} " != *" $suite "* ]]; then
     # A release must carry every architecture the docs promise
     for arch in amd64 arm64; do
       grep -q '^Package: rctimingcontrol' "$SITE/dists/$suite/main/binary-$arch/Packages" \
