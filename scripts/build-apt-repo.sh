@@ -23,7 +23,7 @@ Origin: RC Timing Control
 Label: RC Timing Control
 Codename: $SUITE
 Suite: $SUITE
-Architectures: amd64
+Architectures: amd64 arm64
 Components: main
 Description: RC Timing Control, race timing for RC car clubs
 SignWith: $KEY

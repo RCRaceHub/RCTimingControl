@@ -28,11 +28,18 @@ jobs:
         include:
           - name: Linux installer (deb)
             os: ubuntu-24.04
+            artifact: installer-linux-amd64
+          # Raspberry Pi 4 and 5, and ARM laptops; jpackage builds for the machine it runs on
+          - name: Linux ARM installer (deb)
+            os: ubuntu-24.04-arm
+            artifact: installer-linux-arm64
           - name: macOS installer (pkg)
             os: macos-14
+            artifact: installer-macos
           # windows-2022 has the WiX 3 toolset jpackage needs
           - name: Windows installer (msi)
             os: windows-2022
+            artifact: installer-windows
     defaults:
       run:
         shell: bash
@@ -173,7 +180,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: installer-${{ runner.os }}
+          name: ${{ matrix.artifact }}
           path: newer/*
           if-no-files-found: error
 
@@ -231,8 +238,9 @@ jobs:
       - uses: actions/download-artifact@v8
         if: steps.key.outputs.set == 'true'
         with:
-          name: installer-Linux
+          pattern: installer-linux-*
           path: installers
+          merge-multiple: true
 
       - name: Build the repository
         if: steps.key.outputs.set == 'true'

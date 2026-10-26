@@ -11,7 +11,7 @@ RC Timing Control installs as one package on the laptop that sits by the decoder
 |--------|------|
 | Windows | `RCTimingControl-<version>.msi` |
 | macOS | `RCTimingControl-<version>.pkg` |
-| Linux | `rctimingcontrol_<version>_amd64.deb` |
+| Linux | `rctimingcontrol_<version>_amd64.deb`, or `_arm64.deb` on ARM |
 
 To build an installer yourself, see [Building the installers](#building-the-installers).
 
@@ -21,7 +21,7 @@ To build an installer yourself, see [Building the installers](#building-the-inst
 
 **macOS.** The package is not signed yet, so double-clicking it shows a warning. Right-click the `.pkg` file, choose **Open**, then **Open** again. Or open **System Settings → Privacy & Security** and choose **Open Anyway**.
 
-**Linux.** On Ubuntu, Debian or another Debian-based system (64-bit Intel or AMD), install from the club's apt repository, so later releases arrive with the laptop's normal updates:
+**Linux.** On Ubuntu, Debian or another Debian-based system (64-bit Intel or AMD, or 64-bit ARM such as a Raspberry Pi 4 or 5), install from the club's apt repository, so later releases arrive with the laptop's normal updates:
 
 ```bash
 sudo install -d -m 0755 /etc/apt/keyrings
@@ -38,6 +38,8 @@ With no internet at the track, or to install one particular release, download it
 ```bash
 sudo apt install ./rctimingcontrol_<version>_amd64.deb
 ```
+
+(Use the `_arm64.deb` on ARM.)
 
 ## First run
 
