@@ -712,8 +712,9 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
             finishWithResult(heat, buggies, 1);
         }
         autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId, Map.of(buggyClass, 12));
-        assertThat(gridOf(finalOf(buggyClass, "B"))).hasSize(12);
-        assertThat(gridOf(finalOf(buggyClass, "A"))).hasSize(8);
+        // Finals fill from the top, so the lowest final is the short one
+        assertThat(gridOf(finalOf(buggyClass, "A"))).hasSize(12);
+        assertThat(gridOf(finalOf(buggyClass, "B"))).hasSize(8);
         assertThatThrownBy(() -> autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId,
                 Map.of(buggyClass, 0))).isInstanceOf(IllegalArgumentException.class);
     }
