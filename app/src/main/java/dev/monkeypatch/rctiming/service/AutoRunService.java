@@ -306,6 +306,18 @@ public class AutoRunService {
         }
     }
 
+    /**
+     * Asks the planner to look at the run order again on its next tick, such as after the finals were reordered, so
+     * the race it is counting down to is still the next one. Not synchronized and only sets a flag, since callers
+     * hold the write connection that the scheduler may be waiting for while it holds the monitor.
+     */
+    public void requestReplan(long eventId) {
+        Plan plan = plans.get(eventId);
+        if (plan != null) {
+            plan.replan = true;
+        }
+    }
+
     /** Plans in memory only, as the listener runs in the start's write transaction. The next tick fills it in. */
     private void armWhenStartedByHand(long raceId) {
         Race race = raceRepository.findById(raceId).orElse(null);

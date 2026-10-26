@@ -27,7 +27,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** Reordering the finals of an event where the A final runs in legs. */
+/** Reordering the finals of an event where the A final runs in legs. Lives here to reuse {@link BoardFixtures}. */
 class FinalsRunOrderIT extends AbstractIntegrationTest {
 
     @Autowired FinalsRunOrderService service;

@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
-import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
@@ -31,7 +30,7 @@ import java.util.Objects;
  * <p>A move swaps the final with its neighbour in the run order, which must also be a pending final that can move,
  * and then gives every race of the event a {@code run_rank} (see {@code RunOrderSort}), so the order reads the same
  * everywhere (race control, the boards, the pre-race check). Regenerating the rounds replaces the races, and with
- * them the ranks. Runs in one transaction with its audit row, on the caller's thread.
+ * them the ranks; adding or removing a final when the finals are recalculated clears them. Runs in one transaction with its audit row, on the caller's thread.
  */
 @Service
 @Transactional
@@ -43,19 +42,22 @@ public class FinalsRunOrderService {
     private final RaceFormatService raceFormatService;
     private final RunOrderQuery runOrderQuery;
     private final AuditService audit;
+    private final AutoRunService autoRunService;
 
     public FinalsRunOrderService(RaceRepository raceRepository,
                                  RoundRepository roundRepository,
                                  EventClassRepository eventClassRepository,
                                  RaceFormatService raceFormatService,
                                  RunOrderQuery runOrderQuery,
-                                 AuditService audit) {
+                                 AuditService audit,
+                                 AutoRunService autoRunService) {
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
         this.runOrderQuery = runOrderQuery;
         this.audit = audit;
+        this.autoRunService = autoRunService;
     }
 
     /**
@@ -100,6 +102,9 @@ public class FinalsRunOrderService {
                 raceRepository.save(each);
             }
         }
+
+        // Auto run may be counting down to the race that has just moved
+        autoRunService.requestReplan(eventId);
 
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("direction", earlier ? "UP" : "DOWN");

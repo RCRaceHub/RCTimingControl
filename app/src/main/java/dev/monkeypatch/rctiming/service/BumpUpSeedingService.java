@@ -141,6 +141,8 @@ public class BumpUpSeedingService {
             Race anchor = f == 1 && zombie != null ? zombie : above;
             Round aboveRound = roundRepository.findById(anchor.getRoundId()).orElseThrow();
             int sequence = aboveRound.getSequenceInEvent();
+            // A final added to the run order puts any reordering of the finals back to the generated order
+            raceRepository.clearRunRanks(aboveRound.getEventId());
             for (Round later : roundRepository.findByEventIdOrderBySequenceInEvent(aboveRound.getEventId())) {
                 if (later.getSequenceInEvent() >= sequence) {
                     later.setSequenceInEvent(later.getSequenceInEvent() + 1);
@@ -225,6 +227,7 @@ public class BumpUpSeedingService {
                     raceRepository.save(unused);
                 } else {
                     Long roundId = unused.getRoundId();
+                    roundRepository.findById(roundId).ifPresent(r -> raceRepository.clearRunRanks(r.getEventId()));
                     raceRepository.delete(unused);
                     if (raceRepository.findByRoundIdOrderBySequenceInRound(roundId).isEmpty()) {
                         roundRepository.deleteById(roundId);
