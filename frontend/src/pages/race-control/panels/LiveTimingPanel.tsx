@@ -70,19 +70,19 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             : wsStatus === 'connected' ? 'Waiting for first passing…' : 'Connecting to timing…'}
         </p>
       ) : (
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">Pos</TableHead>
-              <TableHead>Car</TableHead>
+              <TableHead className="w-14">Pos</TableHead>
+              <TableHead className="w-16">Car</TableHead>
               <TableHead>Driver</TableHead>
-              <TableHead className="text-right">Laps</TableHead>
-              <TableHead className="text-right">Total Time</TableHead>
-              <TableHead className="text-right">Last Lap</TableHead>
-              <TableHead className="text-right">Best Lap</TableHead>
-              <TableHead className="text-right">Interval</TableHead>
-              <TableHead className="text-right">Leader</TableHead>
-              {elim.shikabane && <TableHead className="text-right">Shikabane</TableHead>}
+              <TableHead className="w-16 text-right">Laps</TableHead>
+              <TableHead className="w-28 text-right">Total Time</TableHead>
+              <TableHead className="w-24 text-right">Last Lap</TableHead>
+              <TableHead className="w-24 text-right">Best Lap</TableHead>
+              <TableHead className="w-24 text-right">Interval</TableHead>
+              <TableHead className="w-24 text-right">Leader</TableHead>
+              {elim.shikabane && <TableHead className="w-32 text-right">Shikabane</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -106,34 +106,36 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="font-mono font-semibold">{row.position}{showArrows && <PositionArrow row={row} rows={sorted} />}</TableCell>
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
-                  <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2" />
-                  <span>{row.driverName}</span>
-                  {row.finished && <FinishedFlag />}
-                  {close && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
-                      CLOSE
-                    </Badge>
-                  )}
-                  {elim.deadOrder.has(row.entryId) && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
-                      DEAD #{elim.deadOrder.get(row.entryId)}
-                    </Badge>
-                  )}
-                  {(elim.revivals.get(row.entryId) ?? 0) > 0 && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-2 text-chart-2">
-                      ZOMBIE{(elim.revivals.get(row.entryId) ?? 0) > 1 ? ` x${elim.revivals.get(row.entryId)}` : ''}
-                    </Badge>
-                  )}
-                  {jumpStartEntryIds?.has(row.entryId) && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
-                      JUMP START
-                    </Badge>
-                  )}
-                  {lappedEntryIds.has(row.entryId) && (
-                    <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-chart-3 text-chart-3">
-                      LAPPED
-                    </Badge>
-                  )}
+                  <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
+                    <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2 shrink-0" />
+                    <span className="min-w-0 truncate">{row.driverName}</span>
+                    {row.finished && <FinishedFlag />}
+                    {close && (
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
+                        CLOSE
+                      </Badge>
+                    )}
+                    {elim.deadOrder.has(row.entryId) && (
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-destructive text-destructive">
+                        DEAD #{elim.deadOrder.get(row.entryId)}
+                      </Badge>
+                    )}
+                    {(elim.revivals.get(row.entryId) ?? 0) > 0 && (
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-chart-2 text-chart-2">
+                        ZOMBIE{(elim.revivals.get(row.entryId) ?? 0) > 1 ? ` x${elim.revivals.get(row.entryId)}` : ''}
+                      </Badge>
+                    )}
+                    {jumpStartEntryIds?.has(row.entryId) && (
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-destructive text-destructive">
+                        JUMP START
+                      </Badge>
+                    )}
+                    {lappedEntryIds.has(row.entryId) && (
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-chart-3 text-chart-3">
+                        LAPPED
+                      </Badge>
+                    )}
+                  </div>
                   {status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
                 </TableCell>
                 <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
