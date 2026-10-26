@@ -221,7 +221,7 @@ sequenceDiagram
 
 The Now and next board polls the same ticker endpoint for the next drivers and marshals.
 
-The Live top screen (`/boards/top`) and the overlay's timing tower (the projected qualifying place on each row of a qualifying heat) poll `GET /boards/live-qualifying` every three seconds. `BoardController` picks the qualifying heat (the one on track, else the last one finished) and passes the heat's live rows from `LapTimingService.peek` to `LiveQualifyingService`. That asks `QualifyingStandingsService.projectedResultsFor` twice: once with the heat counted (`Overlay.live`, or `Overlay.stored` after it finished) and once without it (`Overlay.without`) for the places before. Only the board's response is built; nothing is stored.
+The Live top screen (`/boards/top`) and the overlay's timing tower (the projected qualifying place on each row of a qualifying heat) poll `GET /boards/live-qualifying` every three seconds. `BoardController` picks the qualifying heat (the one on track, else the last qualifying heat finished, even once the finals are running) and passes the heat's live rows from `LapTimingService.peek` to `LiveQualifyingService`. That asks `QualifyingStandingsService.projectedResultsFor` twice: once with the heat counted (`Overlay.live`, or `Overlay.stored` after it finished) and once without it (`Overlay.without`) for the places before. Only the board's response is built; nothing is stored.
 
 ```mermaid
 sequenceDiagram
