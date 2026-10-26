@@ -19,6 +19,9 @@ updates:
       # Spring Boot 4 is a migration, not a bump: planned in #567
       - dependency-name: "org.springframework.boot"
         update-types: ["version-update:semver-major"]
+      # 3.x is built on Jackson 3, which needs jackson-annotations newer than Boot 3.4's BOM: wait for #567
+      - dependency-name: "com.networknt:json-schema-validator"
+        update-types: ["version-update:semver-major"]
 
   # 2. GitHub Actions Workflow Updates (Optional but recommended)
   - package-ecosystem: "github-actions"
