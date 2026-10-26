@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import FinalsResultsPage from './FinalsResultsPage';
+import { FinalsResults } from './FinalsResults';
 
 vi.mock('@/lib/boardsApi', () => ({ getFinalsBoard: vi.fn() }));
 vi.mock('@/lib/api', () => ({
@@ -16,8 +16,8 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/finals?event=7']}>
-        <FinalsResultsPage />
+      <MemoryRouter>
+        <FinalsResults eventId={7} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -30,7 +30,7 @@ const row = (position: number, entryId: number, driverName: string) => ({
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('FinalsResultsPage', () => {
+describe('FinalsResults', () => {
   it('shows each final of a class, the A final from its legs, and a final not run yet', async () => {
     vi.mocked(getFinalsBoard).mockResolvedValue({
       eventId: 7,

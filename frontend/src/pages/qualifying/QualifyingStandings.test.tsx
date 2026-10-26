@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import QualifyingStandingsPage from './QualifyingStandingsPage';
+import { QualifyingStandings } from './QualifyingStandings';
 
 vi.mock('@/lib/boardsApi', () => ({ getQualifyingBoard: vi.fn() }));
 vi.mock('@/lib/api', () => ({
@@ -12,12 +12,12 @@ vi.mock('@/lib/api', () => ({
 
 import { getQualifyingBoard } from '@/lib/boardsApi';
 
-function renderPage(path = '/qualifying?event=7') {
+function renderPage(eventId: number | null = 7) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={[path]}>
-        <QualifyingStandingsPage />
+      <MemoryRouter>
+        <QualifyingStandings eventId={eventId} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -25,7 +25,7 @@ function renderPage(path = '/qualifying?event=7') {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('QualifyingStandingsPage', () => {
+describe('QualifyingStandings', () => {
   it('shows each class with its drivers in order, and points when the class ranks by them', async () => {
     vi.mocked(getQualifyingBoard).mockResolvedValue({
       eventId: 7,
@@ -77,7 +77,7 @@ describe('QualifyingStandingsPage', () => {
       ],
     });
 
-    renderPage('/qualifying');
+    renderPage(null);
 
     expect(await screen.findByText('Solo')).toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Points' })).not.toBeInTheDocument();

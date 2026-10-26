@@ -1,16 +1,9 @@
-// Public finals results, for a phone or a printout: each class's A, B and C finals, best first. Polls so a final
-// appears as it finishes.
-import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+// Each class's A, B and C finals, best first, shown on the Results page's Finals tab.
 import { useQuery } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
 import { getFinalsBoard, type FinalLegs, type FinalsBoardClass, type FinalsBoardFinal } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
-import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
+import { BOARD_POLL_MS } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-import { QrLink } from '@/components/QrLink';
-import PrivacyLink from '@/components/layout/PrivacyLink';
-import { Button } from '@/components/ui/button';
 import { DnfBadge } from '@/components/DnfBadge';
 
 const TH = 'px-3 py-2';
@@ -123,68 +116,30 @@ function ClassSection({ cls }: { cls: FinalsBoardClass }) {
   );
 }
 
-export default function FinalsResultsPage() {
-  const [searchParams] = useSearchParams();
-  const eventId = parseEventParam(searchParams.get('event'));
-  const printedAt = useMemo(() => new Date().toLocaleString(), []);
-
+/** Every class's finals for the Results page's Finals tab; polls so a final appears as it finishes. */
+export function FinalsResults({ eventId }: { eventId: number | null }) {
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.finals(eventId),
     queryFn: () => getFinalsBoard(eventId),
     refetchInterval: BOARD_POLL_MS,
   });
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = data?.eventName ? `Finals — ${data.eventName}` : 'Finals results';
-    return () => {
-      document.title = previous;
-    };
-  }, [data?.eventName]);
-
   if (isPending) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading finals results…</div>;
+    return <p className="text-sm text-muted-foreground">Loading finals results…</p>;
   }
-
   if (isError && !data) {
     return (
-      <div className="p-8 text-sm text-destructive">
+      <p className="text-sm text-destructive">
         The results could not be loaded. Check the connection; this page tries again on its own.
-      </div>
+      </p>
     );
   }
-
-  const path = data?.eventId ? `/finals?event=${data.eventId}` : '/finals';
-
+  if (!data || data.classes.length === 0) {
+    return <p className="text-sm text-muted-foreground">No finals yet.</p>;
+  }
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:p-8 print:p-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Finals results</h1>
-        {data?.eventName && <p className="text-muted-foreground">{data.eventName}</p>}
-        <p className="text-xs text-muted-foreground print:hidden">Updates by itself as finals finish.</p>
-        <p className="hidden text-xs text-muted-foreground print:block">
-          Printed {printedAt}. For the live results, scan the code.
-        </p>
-        <div className="print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Print
-          </Button>
-        </div>
-      </header>
-
-      {!data || data.classes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No finals yet.</p>
-      ) : (
-        <div className="space-y-6">
-          {data.classes.map((cls) => <ClassSection key={cls.eventClassId} cls={cls} />)}
-        </div>
-      )}
-
-      <div className="flex justify-center pt-4">
-        <QrLink path={path} caption="Scan to follow the finals on your phone" size={144} />
-      </div>
-      <PrivacyLink />
+    <div className="space-y-6">
+      {data.classes.map((cls) => <ClassSection key={cls.eventClassId} cls={cls} />)}
     </div>
   );
 }

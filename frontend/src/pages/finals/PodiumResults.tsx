@@ -1,15 +1,9 @@
-// Public podium: each class's first three from its A final, and the best-placed driver of each category (Junior,
-// Vet and so on) among its finals. For a TV, a phone or a printout; polls so a podium appears as the final finishes.
-import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+// Each class's first three from its A final, and the best-placed driver of each category (Junior, Vet and so on)
+// among its finals, shown on the Results page's Podium tab.
 import { useQuery } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
 import { getPodiumBoard, type PodiumBoardClass } from '@/lib/boardsApi';
-import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
+import { BOARD_POLL_MS } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-import { QrLink } from '@/components/QrLink';
-import PrivacyLink from '@/components/layout/PrivacyLink';
-import { Button } from '@/components/ui/button';
 
 const PLACE_STYLE: Record<number, string> = {
   1: 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-100',
@@ -68,68 +62,30 @@ function ClassSection({ cls }: { cls: PodiumBoardClass }) {
   );
 }
 
-export default function PodiumPage() {
-  const [searchParams] = useSearchParams();
-  const eventId = parseEventParam(searchParams.get('event'));
-  const printedAt = useMemo(() => new Date().toLocaleString(), []);
-
+/** Each class's podium for the Results page's Podium tab; polls so a podium appears as the final finishes. */
+export function PodiumResults({ eventId }: { eventId: number | null }) {
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.podium(eventId),
     queryFn: () => getPodiumBoard(eventId),
     refetchInterval: BOARD_POLL_MS,
   });
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = data?.eventName ? `Podium — ${data.eventName}` : 'Podium';
-    return () => {
-      document.title = previous;
-    };
-  }, [data?.eventName]);
-
   if (isPending) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading the podium…</div>;
+    return <p className="text-sm text-muted-foreground">Loading the podium…</p>;
   }
-
   if (isError && !data) {
     return (
-      <div className="p-8 text-sm text-destructive">
+      <p className="text-sm text-destructive">
         The results could not be loaded. Check the connection; this page tries again on its own.
-      </div>
+      </p>
     );
   }
-
-  const path = data?.eventId ? `/podium?event=${data.eventId}` : '/podium';
-
+  if (!data || data.classes.length === 0) {
+    return <p className="text-sm text-muted-foreground">No finals have finished yet.</p>;
+  }
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:p-8 print:p-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Podium</h1>
-        {data?.eventName && <p className="text-muted-foreground">{data.eventName}</p>}
-        <p className="text-xs text-muted-foreground print:hidden">Updates by itself as finals finish.</p>
-        <p className="hidden text-xs text-muted-foreground print:block">
-          Printed {printedAt}. For the live results, scan the code.
-        </p>
-        <div className="print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Print
-          </Button>
-        </div>
-      </header>
-
-      {!data || data.classes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No finals have finished yet.</p>
-      ) : (
-        <div className="space-y-8">
-          {data.classes.map((cls) => <ClassSection key={cls.eventClassId} cls={cls} />)}
-        </div>
-      )}
-
-      <div className="flex justify-center pt-4">
-        <QrLink path={path} caption="Scan to see the podium on your phone" size={144} />
-      </div>
-      <PrivacyLink />
+    <div className="space-y-8">
+      {data.classes.map((cls) => <ClassSection key={cls.eventClassId} cls={cls} />)}
     </div>
   );
 }

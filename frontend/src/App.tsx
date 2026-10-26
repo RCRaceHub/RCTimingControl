@@ -19,9 +19,8 @@ import OverlayBoard from '@/pages/boards/OverlayBoard';
 const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
-const FinalsResultsPage = lazy(() => import('@/pages/finals/FinalsResultsPage'));
-const PodiumPage = lazy(() => import('@/pages/finals/PodiumPage'));
-const QualifyingStandingsPage = lazy(() => import('@/pages/qualifying/QualifyingStandingsPage'));
+const ResultsPage = lazy(() => import('@/pages/results/ResultsPage'));
+const ResultsRedirect = lazy(() => import('@/pages/results/ResultsRedirect'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
 const EventDetailPage = lazy(() => import('@/pages/admin/events/EventDetailPage'));
@@ -195,9 +194,10 @@ const router = createBrowserRouter([
       },
       { path: '/setup', element: <SetupLayout /> },
       { path: '/events', element: <EventSchedulePage /> },
-      { path: '/qualifying', element: <QualifyingStandingsPage /> },
-      { path: '/finals', element: <FinalsResultsPage /> },
-      { path: '/podium', element: <PodiumPage /> },
+      { path: '/results', element: <ResultsPage /> },
+      { path: '/qualifying', element: <ResultsRedirect tab="qualifying" /> },
+      { path: '/finals', element: <ResultsRedirect tab="finals" /> },
+      { path: '/podium', element: <ResultsRedirect tab="podium" /> },
       { path: '/results/:raceId', element: <PublicResultsPage /> },
       { path: '/championships/:id', element: <PublicChampionshipPage /> },
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },

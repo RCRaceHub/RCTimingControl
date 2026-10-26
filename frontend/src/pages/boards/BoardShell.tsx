@@ -25,7 +25,7 @@ export function BoardShell({
       {showQr && (
         <div className="mt-auto flex justify-end">
           <QrLink
-            path={eventId ? `/qualifying?event=${eventId}` : '/qualifying'}
+            path={eventId ? `/results?tab=qualifying&event=${eventId}` : '/results?tab=qualifying'}
             caption="Scan for qualifying standings"
             size={112}
             onDark
