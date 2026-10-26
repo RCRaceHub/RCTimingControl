@@ -61,7 +61,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     // Checks Results Export v1 documents against their published JSON schema (#27)
-    testImplementation("com.networknt:json-schema-validator:1.5.8")
+    testImplementation("com.networknt:json-schema-validator:3.0.8")
 
     // Generates the record <-> entity mappers at compile time (see docs/development.md, "Mapping")
     implementation("org.mapstruct:mapstruct:1.6.3")
