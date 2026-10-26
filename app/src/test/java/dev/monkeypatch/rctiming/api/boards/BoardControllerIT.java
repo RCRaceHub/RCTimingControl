@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.boards;
 
-import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
@@ -17,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import org.junit.jupiter.api.AfterEach;

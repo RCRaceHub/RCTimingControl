@@ -96,7 +96,7 @@ public class BoardQuery {
 
     /**
      * The qualifying heat that finished most recently, whatever has been raced since, so the qualifying table can
-     * stay up once the finals have started.
+     * stay up once the finals have started. It is the latest across all classes, not the class now on track.
      */
     public Optional<BoardRaceDto> lastCompletedQualifier(long eventId) {
         return first(eventId, RACES.STATUS.eq("FINISHED").and(ROUNDS.TYPE.eq("QUALIFIER")),
