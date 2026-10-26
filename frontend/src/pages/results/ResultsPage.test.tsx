@@ -93,6 +93,14 @@ describe('ResultsPage', () => {
     expect(await screen.findByText('No results have counted yet.')).toBeInTheDocument();
   });
 
+  it('ignores an unknown tab and a championship tab the event does not have', async () => {
+    vi.mocked(getFinalsBoard).mockResolvedValue(finalsWith(0));
+    renderAt('/results?event=7&tab=championship');
+
+    expect(await screen.findByText('No qualifying results yet.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Qualifying' })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('redirects the old /finals address to its tab, keeping the event', async () => {
     vi.mocked(getFinalsBoard).mockResolvedValue(finalsWith(0));
     renderAt('/finals?event=7');

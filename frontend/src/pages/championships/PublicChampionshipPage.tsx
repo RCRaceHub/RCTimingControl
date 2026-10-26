@@ -70,7 +70,7 @@ export function ChampionshipStandings({ championshipId }: { championshipId: numb
   const groups = groupByClass(rows, names, info.data?.splits ?? []);
 
   return (
-    <div>
+    <>
       {groups.length === 0 && <p className="text-sm text-muted-foreground">No results have counted yet.</p>}
       {groups.map((group) => (
         <section
@@ -120,7 +120,7 @@ export function ChampionshipStandings({ championshipId }: { championshipId: numb
           </p>
         </section>
       ))}
-    </div>
+    </>
   );
 }
 

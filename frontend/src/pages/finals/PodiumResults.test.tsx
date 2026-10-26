@@ -16,7 +16,7 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter initialEntries={['/podium?event=7']}>
+      <MemoryRouter>
         <PodiumResults eventId={7} />
       </MemoryRouter>
     </QueryClientProvider>,

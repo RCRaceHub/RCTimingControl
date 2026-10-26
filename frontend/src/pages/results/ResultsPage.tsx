@@ -40,8 +40,8 @@ export default function ResultsPage() {
   const eventParam = parseEventParam(searchParams.get('event'));
   const printedAt = useMemo(() => new Date().toLocaleString(), []);
 
-  // The qualifying board answers for "the current event" too, so it names the event for the header and the QR code;
-  // its query is shared with the Qualifying tab, so this costs no extra request there.
+  // The qualifying board answers for "the current event" too, so it names the event for the header and the QR code.
+  // The tabs keep using `eventParam` so their query keys match these ones and never change when the event resolves.
   const qualifying = useQuery({
     queryKey: publicQueryKeys.boards.qualifying(eventParam),
     queryFn: () => getQualifyingBoard(eventParam),
@@ -65,16 +65,18 @@ export default function ResultsPage() {
 
   const requested = parseTab(searchParams.get('tab'));
   const available = TABS.filter((t) => t !== 'championship' || championshipId !== null);
+  // Hold the tab until what decides it has loaded, so the page doesn't open on one tab and jump to another
+  const deciding = requested === null ? finals.isPending : requested === 'championship' && schedule.isPending;
   const tab: ResultsTab =
     requested && available.includes(requested) ? requested : anyFinalFinished ? 'finals' : 'qualifying';
 
   useEffect(() => {
     const previous = document.title;
-    document.title = eventName ? `Results — ${eventName}` : 'Results';
+    document.title = eventName ? `${TAB_LABEL[tab]} — ${eventName}` : 'Results';
     return () => {
       document.title = previous;
     };
-  }, [eventName]);
+  }, [eventName, tab]);
 
   const select = (next: string) => {
     const params = new URLSearchParams(searchParams);
@@ -103,23 +105,27 @@ export default function ResultsPage() {
         </div>
       </header>
 
-      <Tabs value={tab} onValueChange={select}>
-        <TabsList className="print:hidden">
-          {available.map((t) => (
-            <TabsTrigger key={t} value={t}>{TAB_LABEL[t]}</TabsTrigger>
-          ))}
-        </TabsList>
-        <TabsContent value="qualifying" className="mt-4"><QualifyingStandings eventId={eventId} /></TabsContent>
-        <TabsContent value="finals" className="mt-4"><FinalsResults eventId={eventId} /></TabsContent>
-        <TabsContent value="podium" className="mt-4"><PodiumResults eventId={eventId} /></TabsContent>
-        {championshipId !== null && (
-          <TabsContent value="championship" className="mt-4">
-            <ChampionshipStandings championshipId={championshipId} />
-          </TabsContent>
-        )}
-      </Tabs>
+      {deciding ? (
+        <p className="text-sm text-muted-foreground">Loading results…</p>
+      ) : (
+        <Tabs value={tab} onValueChange={select}>
+          <TabsList className="print:hidden">
+            {available.map((t) => (
+              <TabsTrigger key={t} value={t}>{TAB_LABEL[t]}</TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="qualifying" className="mt-4"><QualifyingStandings eventId={eventParam} /></TabsContent>
+          <TabsContent value="finals" className="mt-4"><FinalsResults eventId={eventParam} /></TabsContent>
+          <TabsContent value="podium" className="mt-4"><PodiumResults eventId={eventParam} /></TabsContent>
+          {championshipId !== null && (
+            <TabsContent value="championship" className="mt-4">
+              <ChampionshipStandings championshipId={championshipId} />
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
 
-      <div className="flex justify-center pt-4 print:break-before-avoid">
+      <div className="flex justify-center pt-4">
         <QrLink path={path} caption="Scan to follow the results on your phone" size={144} />
       </div>
       <PrivacyLink />
