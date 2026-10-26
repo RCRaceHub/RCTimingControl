@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.sponsor;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -14,14 +15,15 @@ import java.util.Iterator;
 /**
  * Turns an uploaded sponsor logo into the one shape the overlay's sponsor bar and the Overlay Designer preview expect
  * (#518): a PNG with transparency, in sRGB, no wider than {@link #MAX_WIDTH} or taller than {@link #MAX_HEIGHT}
- * pixels, with any empty margin trimmed so logos sit at a similar visual size. The sponsor bar shows a logo about 72
- * pixels tall, so the limits leave room for a high-density screen without storing a camera-sized photo.
+ * pixels, with transparent margin trimmed (an opaque background, such as a white JPEG, is kept as it is). The sponsor
+ * bar shows a logo about 72 pixels tall, so the limits leave room for a high-density screen without storing a
+ * camera-sized photo.
  *
  * <p>Re-encoding also drops everything that is not pixels (EXIF, GPS, ICC profiles, and the DPI a design tool
- * recorded, which the browser ignores anyway: only the pixel size matters on screen). An image is never scaled up,
- * since that only blurs it; the bar fixes the displayed height instead. Pure and stateless: called by {@link
- * EventSponsorService#uploadLogo} on the request thread, and throws only {@link IllegalArgumentException}, which the
- * API answers as 400.
+ * recorded, which the browser ignores anyway: only the pixel size matters on screen). The stored file is never
+ * scaled up, since that only blurs it; the sponsor bar fixes the displayed height instead. Pure and stateless: called by
+ * {@code EventSponsorService.uploadLogo} on the request thread, and throws only {@link IllegalArgumentException},
+ * which the API answers as 400.
  */
 final class SponsorLogoProcessor {
 
@@ -30,11 +32,13 @@ final class SponsorLogoProcessor {
     /** Largest pixel height kept. */
     static final int MAX_HEIGHT = 240;
     /** Smaller than this on either side (after trimming) is too small to read on stream. */
-    static final int MIN_SIDE = 32;
+    static final int MIN_SIDE = 16;
     /** Refuse bigger sources before decoding them, so a small file that expands to gigabytes cannot exhaust memory. */
-    private static final long MAX_SOURCE_PIXELS = 25_000_000L;
+    private static final long MAX_SOURCE_PIXELS = 10_000_000L;
     /** Alpha at or below this counts as empty when trimming margins. */
     private static final int EMPTY_ALPHA = 8;
+
+    private static final String UNREADABLE = "The file is not a readable PNG or JPEG image";
 
     private SponsorLogoProcessor() {
     }
@@ -67,29 +71,36 @@ final class SponsorLogoProcessor {
     }
 
     private static BufferedImage decode(byte[] source) {
-        try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(source))) {
-            Iterator<ImageReader> readers = in == null ? null : ImageIO.getImageReaders(in);
-            if (readers == null || !readers.hasNext()) {
-                throw new IllegalArgumentException("The file is not a readable PNG or JPEG image");
+        // A memory cache, not ImageIO's default temp file: the bytes are already in memory
+        try (ImageInputStream in = new MemoryCacheImageInputStream(new ByteArrayInputStream(source))) {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (!readers.hasNext()) {
+                throw new IllegalArgumentException(UNREADABLE);
             }
             ImageReader reader = readers.next();
             try {
                 reader.setInput(in, true, true);
+                String format = reader.getFormatName().toLowerCase();
+                if (!format.equals("png") && !format.equals("jpeg")) {
+                    throw new IllegalArgumentException(UNREADABLE);
+                }
                 long pixels = (long) reader.getWidth(0) * reader.getHeight(0);
                 if (pixels > MAX_SOURCE_PIXELS) {
                     throw new IllegalArgumentException("The image is too large to process: "
                             + reader.getWidth(0) + " x " + reader.getHeight(0) + " pixels");
                 }
-                return reader.read(0);
+                try {
+                    return reader.read(0);
+                } catch (IOException | RuntimeException e) {
+                    // CMYK JPEGs and corrupt files; the JDK's own wording is not shown
+                    throw new IllegalArgumentException(UNREADABLE + " (CMYK JPEGs are not supported: export the "
+                            + "logo as RGB)", e);
+                }
             } finally {
                 reader.dispose();
             }
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (IOException | RuntimeException e) {
-            // CMYK JPEGs and corrupt files land here
-            throw new IllegalArgumentException("The file is not a readable PNG or JPEG image (CMYK JPEGs are not "
-                    + "supported: export the logo as RGB)", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(UNREADABLE, e);
         }
     }
 
@@ -136,7 +147,8 @@ final class SponsorLogoProcessor {
 
     /** Scales down to fit {@link #MAX_WIDTH} x {@link #MAX_HEIGHT} in halving steps, which keeps edges smooth. */
     private static BufferedImage fit(BufferedImage image) {
-        double scale = Math.min(1.0, Math.min((double) MAX_WIDTH / image.getWidth(), (double) MAX_HEIGHT / image.getHeight()));
+        double scale = Math.min(1.0,
+                Math.min((double) MAX_WIDTH / image.getWidth(), (double) MAX_HEIGHT / image.getHeight()));
         int targetW = Math.max(1, (int) Math.round(image.getWidth() * scale));
         int targetH = Math.max(1, (int) Math.round(image.getHeight() * scale));
         BufferedImage current = image;
@@ -145,10 +157,6 @@ final class SponsorLogoProcessor {
         }
         if (current.getWidth() != targetW || current.getHeight() != targetH) {
             current = resize(current, targetW, targetH);
-        }
-        if (current == image && image.getRaster().getParent() != null) {
-            // A cropped view shares its parent's pixels; copy so only the logo is written
-            current = resize(image, image.getWidth(), image.getHeight());
         }
         return current;
     }

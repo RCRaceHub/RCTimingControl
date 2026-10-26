@@ -53,7 +53,7 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
     <div className="space-y-4 max-w-2xl">
       <p className="text-sm text-muted-foreground">
         The overlay's sponsor bar shows these along the foot of the page, one after another. Add the sponsor's name,
-        then a logo (PNG or JPEG, up to 2 MB, at least 32 pixels each way). A logo with a transparent background looks best; it is trimmed and resized for you. A sponsor without a logo shows its name.
+        then a logo (PNG or JPEG, up to 2 MB, at least 16 pixels each way). A logo with a transparent background looks best; transparent margin is trimmed and it is resized for you. A sponsor without a logo shows its name.
       </p>
       {sponsors.length === 0 && <p className="text-sm text-muted-foreground">No sponsors yet.</p>}
       <ul className="space-y-2">

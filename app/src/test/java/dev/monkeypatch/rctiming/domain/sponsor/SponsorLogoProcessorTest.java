@@ -36,7 +36,8 @@ class SponsorLogoProcessorTest {
 
     @Test
     void largePhotoIsShrunkToFitKeepingAspect() throws IOException {
-        BufferedImage out = decode(SponsorLogoProcessor.normalise(encode(solid(3000, 1000, BufferedImage.TYPE_INT_RGB), "jpg")));
+        byte[] source = encode(solid(3000, 1000, BufferedImage.TYPE_INT_RGB), "jpg");
+        BufferedImage out = decode(SponsorLogoProcessor.normalise(source));
 
         assertThat(out.getHeight()).isLessThanOrEqualTo(SponsorLogoProcessor.MAX_HEIGHT);
         assertThat(out.getWidth()).isLessThanOrEqualTo(SponsorLogoProcessor.MAX_WIDTH);
@@ -45,7 +46,8 @@ class SponsorLogoProcessorTest {
 
     @Test
     void smallLogoIsNeverScaledUp() throws IOException {
-        BufferedImage out = decode(SponsorLogoProcessor.normalise(encode(solid(120, 60, BufferedImage.TYPE_INT_ARGB), "png")));
+        byte[] source = encode(solid(120, 60, BufferedImage.TYPE_INT_ARGB), "png");
+        BufferedImage out = decode(SponsorLogoProcessor.normalise(source));
 
         assertThat(out.getWidth()).isEqualTo(120);
         assertThat(out.getHeight()).isEqualTo(60);
@@ -68,7 +70,7 @@ class SponsorLogoProcessorTest {
 
     @Test
     void tooSmallIsRefused() throws IOException {
-        byte[] tiny = encode(solid(20, 20, BufferedImage.TYPE_INT_ARGB), "png");
+        byte[] tiny = encode(solid(10, 10, BufferedImage.TYPE_INT_ARGB), "png");
 
         assertThatThrownBy(() -> SponsorLogoProcessor.normalise(tiny))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("too small");
@@ -85,6 +87,39 @@ class SponsorLogoProcessorTest {
     @Test
     void notAnImageIsRefused() {
         assertThatThrownBy(() -> SponsorLogoProcessor.normalise("<svg onload=alert(1)/>".getBytes()))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("not a readable");
+    }
+
+    @Test
+    void tallImageIsLimitedByHeight() throws IOException {
+        byte[] source = encode(solid(500, 1200, BufferedImage.TYPE_INT_ARGB), "png");
+        BufferedImage out = decode(SponsorLogoProcessor.normalise(source));
+
+        assertThat(out.getHeight()).isEqualTo(SponsorLogoProcessor.MAX_HEIGHT);
+        assertThat(out.getWidth()).isEqualTo(100);
+    }
+
+    @Test
+    void trimmedImageThatIsAlsoScaledKeepsOnlyTheLogo() throws IOException {
+        BufferedImage padded = new BufferedImage(2000, 1000, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = padded.createGraphics();
+        g.setColor(Color.BLUE);
+        g.fillRect(500, 250, 1000, 500);
+        g.dispose();
+
+        BufferedImage out = decode(SponsorLogoProcessor.normalise(encode(padded, "png")));
+
+        assertThat(out.getHeight()).isEqualTo(SponsorLogoProcessor.MAX_HEIGHT);
+        assertThat(out.getWidth()).isEqualTo(480);
+        assertThat(out.getRGB(out.getWidth() / 2, out.getHeight() / 2)).isEqualTo(Color.BLUE.getRGB());
+        assertThat(out.getRGB(0, 0) >>> 24).isEqualTo(255);
+    }
+
+    @Test
+    void anotherFormatIsRefusedEvenIfLabelledPng() throws IOException {
+        byte[] gif = encode(solid(100, 100, BufferedImage.TYPE_INT_RGB), "gif");
+
+        assertThatThrownBy(() -> SponsorLogoProcessor.normalise(gif))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("not a readable");
     }
 }
