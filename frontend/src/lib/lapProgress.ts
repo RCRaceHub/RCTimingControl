@@ -40,14 +40,33 @@ export function lapProgress(
 }
 
 /**
+ * Whether every car in the race has had at least one lap counted. Until then the order is only who crossed the
+ * line first off the grid, so nobody is lapped yet.
+ */
+export function everyoneOffLapZero(rows: ReadonlyArray<{ lapsCompleted: number }>): boolean {
+  return rows.every((row) => row.lapsCompleted >= 1);
+}
+
+/**
+ * The rows with no car marked as laps down while any car is still on lap 0, so "+1 lap" and the like wait until
+ * the whole field has crossed the line once. Returns the same array when nothing needs holding back.
+ */
+export function holdBackLapped(rows: LiveTimingRowDto[]): LiveTimingRowDto[] {
+  if (everyoneOffLapZero(rows) || !rows.some((row) => row.lapsDown > 0 || row.intervalLapsDown > 0)) return rows;
+  return rows.map((row) => (row.lapsDown > 0 || row.intervalLapsDown > 0 ? { ...row, lapsDown: 0, intervalLapsDown: 0 } : row));
+}
+
+/**
  * Whether a car is running close behind the one in front: on the same lap and within {@code thresholdMs}. The
- * leader and a car a lap or more down are never close. A threshold of 0 or less switches the flag off.
+ * leader and a car a lap or more down are never close, and nor is a car that has not yet had a lap counted (the
+ * field is still bunched up from the start, as with battles). A threshold of 0 or less switches the flag off.
  *
  * <p>This follows the scored order, not the track: the gap is the difference of the two cars' last crossings
  * (time penalties included), so it changes only at the line.
  */
 export function isClose(row: LiveTimingRowDto, thresholdMs: number): boolean {
-  if (thresholdMs <= 0 || row.position === 1 || row.intervalLapsDown > 0 || row.finished) return false;
+  if (thresholdMs <= 0 || row.position === 1 || row.intervalLapsDown > 0 || row.finished
+    || row.lapsCompleted < 1) return false;
   return row.gapToAheadMs !== null && row.gapToAheadMs <= thresholdMs;
 }
 

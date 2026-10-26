@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isClose, lapProgress, placesGained, predictedLaps } from './lapProgress';
+import { everyoneOffLapZero, holdBackLapped, isClose, lapProgress, placesGained, predictedLaps } from './lapProgress';
 import type { LiveTimingRowDto } from './raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -49,6 +49,11 @@ describe('isClose', () => {
     expect(isClose(row({ gapToAheadMs: null }), 1000)).toBe(false);
     expect(isClose(row({}), 0)).toBe(false);
   });
+
+  it('waits until the car has had a lap counted', () => {
+    expect(isClose(row({ lapsCompleted: 0, gapToAheadMs: 300 }), 1000)).toBe(false);
+    expect(isClose(row({ lapsCompleted: 1, gapToAheadMs: 300 }), 1000)).toBe(true);
+  });
 });
 
 describe('placesGained', () => {
@@ -93,5 +98,23 @@ describe('predictedLaps', () => {
     expect(predictedLaps(row({}), 100_000, null)).toBeNull();
     expect(predictedLaps(row({}), 100_000, 0)).toBeNull();
     expect(predictedLaps(row({ finished: true }), 100_000, 25_000)).toBeNull();
+  });
+});
+
+describe('holdBackLapped', () => {
+  const lapped = row({ entryId: 2, lapsCompleted: 1, lapsDown: 1, intervalLapsDown: 1 });
+  const onLapZero = row({ entryId: 3, lapsCompleted: 0 });
+
+  it('clears laps down while any car is still on lap 0', () => {
+    const rows = holdBackLapped([row({ entryId: 1, position: 1, lapsCompleted: 2 }), lapped, onLapZero]);
+    expect(rows[1].lapsDown).toBe(0);
+    expect(rows[1].intervalLapsDown).toBe(0);
+    expect(everyoneOffLapZero([row({ lapsCompleted: 0 }), row({ lapsCompleted: 1 })])).toBe(false);
+  });
+
+  it('leaves the rows alone once every car has had a lap counted', () => {
+    const rows = [row({ entryId: 1, position: 1, lapsCompleted: 2 }), lapped];
+    expect(holdBackLapped(rows)).toBe(rows);
+    expect(rows[1].lapsDown).toBe(1);
   });
 });
