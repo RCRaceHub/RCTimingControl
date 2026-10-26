@@ -28,11 +28,18 @@ jobs:
         include:
           - name: Linux installer (deb)
             os: ubuntu-24.04
+            artifact: installer-linux-amd64
+          # Raspberry Pi 4 and 5, and ARM laptops; jpackage builds for the machine it runs on
+          - name: Linux ARM installer (deb)
+            os: ubuntu-24.04-arm
+            artifact: installer-linux-arm64
           - name: macOS installer (pkg)
             os: macos-14
+            artifact: installer-macos
           # windows-2022 has the WiX 3 toolset jpackage needs
           - name: Windows installer (msi)
             os: windows-2022
+            artifact: installer-windows
     defaults:
       run:
         shell: bash
@@ -173,7 +180,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: installer-${{ runner.os }}
+          name: ${{ matrix.artifact }}
           path: newer/*
           if-no-files-found: error
 
@@ -203,6 +210,102 @@ jobs:
             |--------|------|
             | Windows 10 or 11 (64-bit) | the `.msi` |
             | macOS 12 or later | the `.pkg` |
-            | Ubuntu or another Debian-based Linux | the `.deb` |
+            | Ubuntu or another Debian-based Linux | the `.deb`, or install with `apt` from the repository in the install guide |
 
             It installs RC Timing Control as a service that starts with the computer. Then open http://localhost:8080 to set up the club. See the [install guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/installing.md) for each system, and [trying it out](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/trial-quickstart.md) to explore it with a demo club and a simulated decoder.
+
+  # Publishes the .deb files as a signed apt repository on GitHub Pages, so Linux laptops install
+  # and upgrade with apt. Does nothing until the APT_GPG_KEY secret holds a passphrase-less signing
+  # key and Pages is set to deploy from GitHub Actions (see the local releasing notes). Deployed as
+  # a Pages artifact, not committed, so the 100 MB packages never enter git history.
+  apt-repo:
+    name: Publish the apt repository
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: installer
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency: apt-repo
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Check the signing key is set
+        id: key
+        env:
+          APT_GPG_KEY: ${{ secrets.APT_GPG_KEY }}
+        run: |
+          if [ -n "$APT_GPG_KEY" ]; then echo "set=true" >> "$GITHUB_OUTPUT"; else echo "::notice::APT_GPG_KEY is not set, so the apt repository was not published"; fi
+
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.set == 'true'
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        if: steps.key.outputs.set == 'true'
+        with:
+          pattern: installer-linux-*
+          path: installers
+          merge-multiple: true
+
+      # `testing` carries this tag, whatever it is. `stable` carries this tag when it is a final
+      # release (the same rule the release job uses for pre-releases), and otherwise the newest
+      # final release already published, so an alpha never replaces what stable users get.
+      - name: Pick the packages for each channel
+        if: steps.key.outputs.set == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p testing stable
+          cp installers/*.deb testing/
+          if [[ "$GITHUB_REF_NAME" == *-* || "$GITHUB_REF_NAME" == v0.* ]]; then
+            # The carried-over release may predate arm64, so stable is not held to every architecture
+            echo "APT_LENIENT_SUITES=stable" >> "$GITHUB_ENV"
+            last=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
+            if [ -z "$last" ]; then
+              echo "::notice::No final release yet, so the stable channel is empty"
+            elif ! gh release download "$last" --repo "$GITHUB_REPOSITORY" --pattern 'rctimingcontrol_*.deb' --dir stable; then
+              echo "::warning::Release $last has no packages, so the stable channel is empty"
+            fi
+          else
+            cp installers/*.deb stable/
+          fi
+          ls -l testing stable
+
+      - name: Build the repository
+        if: steps.key.outputs.set == 'true'
+        env:
+          APT_GPG_KEY: ${{ secrets.APT_GPG_KEY }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y reprepro
+          echo "$APT_GPG_KEY" | gpg --batch --import
+          key=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+          scripts/build-apt-repo.sh "$RUNNER_TEMP/site" "$key" stable=stable testing=testing
+          mkdir -p site-out && cp -r "$RUNNER_TEMP/site" site-out/apt
+
+      - name: Check apt accepts it and sees the package
+        if: steps.key.outputs.set == 'true'
+        run: |
+          site="$RUNNER_TEMP/site"
+          expected=$(dpkg-deb -f testing/*_amd64.deb Version)
+          echo "deb [signed-by=$site/rctc-archive-keyring.gpg] file://$site testing main" | sudo tee /etc/apt/sources.list.d/rctc-test.list
+          sudo apt-get update
+          apt-cache policy rctimingcontrol | tee /dev/stderr | grep -q "Candidate: $expected"
+          # The stable channel must also be a valid signed repository, even when it is empty
+          echo "deb [signed-by=$site/rctc-archive-keyring.gpg] file://$site stable main" | sudo tee /etc/apt/sources.list.d/rctc-test.list
+          sudo apt-get update
+          if ls stable/*_amd64.deb >/dev/null 2>&1; then
+            apt-cache policy rctimingcontrol | grep -q "Candidate: $(dpkg-deb -f stable/*_amd64.deb Version)"
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.key.outputs.set == 'true'
+        with:
+          path: site-out
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
+        if: steps.key.outputs.set == 'true'
