@@ -192,6 +192,21 @@ export type LiveQualifyingRow = {
   waiting: boolean;
 };
 
+/** One driver in the order inside the heat's round: laps, then total time. */
+export type LiveRoundRow = {
+  position: number;
+  /** The place before the heat counted; null for a driver not yet in the round. */
+  previousPosition: number | null;
+  entryId: number;
+  driverName: string;
+  carNumber: string | null;
+  lapsCompleted: number;
+  totalTimeMs: number | null;
+  bestLapMs: number | null;
+  /** The driver is in the heat on track (or the one that just ended). */
+  live: boolean;
+};
+
 export type LiveQualifyingDto = {
   eventId: number | null;
   eventName: string | null;
@@ -200,7 +215,11 @@ export type LiveQualifyingDto = {
   raceId: number | null;
   raceLabel: string | null;
   className: string | null;
+  roundNumber?: number | null;
+  /** The overall order, as it would stand if the heat ended now. */
   rows: LiveQualifyingRow[];
+  /** The order inside the heat's round; empty when the class has no rounds to show. */
+  roundRows?: LiveRoundRow[];
 };
 
 export async function getLiveQualifying(eventId?: number | null): Promise<LiveQualifyingDto> {

@@ -409,6 +409,40 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void theRoundTableRanksTheHeatsOfOneRoundByLapsAndLeavesOutDriversWhoseHeatHasNotRun() {
+        long buggyClass = addClass("Buggy", ROUND_BY_ROUND_ALL);
+        addEntries(buggyClass, 20);
+        roundGeneratorService.generate(new RoundGenerationRequest(eventId, 0, 1, 10, List.of(
+                new ClassFinalsConfig(buggyClass, 2))));
+        List<Race> heats = raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER);
+        Race first = heats.get(0);
+        Race second = heats.get(1);
+        List<Long> firstGrid = raceEntryRepository.findByRaceIdOrderByGridPosition(first.getId()).stream()
+                .map(RaceEntry::getEntryId).toList();
+        List<Long> secondGrid = raceEntryRepository.findByRaceIdOrderByGridPosition(second.getId()).stream()
+                .map(RaceEntry::getEntryId).toList();
+        List<long[]> rows = new ArrayList<>();
+        firstGrid.forEach(id -> rows.add(new long[] {id, 10, 60_000}));
+        storeResult(first, rows, false);
+        List<LiveTimingRowDto> live = new ArrayList<>();
+        for (int i = 0; i < secondGrid.size(); i++) {
+            int laps = i == 0 ? 12 : 9;
+            live.add(new LiveTimingRowDto(secondGrid.get(i), "d", "1", i + 1, laps, 0L, 14_000L, 13_000L, 14_000L,
+                    13_000L, 0, 0, null, null, 300_000L + i, false, 0L));
+        }
+
+        var round = qualifyingStandingsService.projectedRoundFor(buggyClass, first.getRoundId(),
+                QualifyingStandingsService.Overlay.live(second.getId(), live));
+        var before = qualifyingStandingsService.projectedRoundFor(buggyClass, first.getRoundId(),
+                QualifyingStandingsService.Overlay.without(second.getId()));
+
+        assertThat(round).hasSize(20);
+        assertThat(round.get(0).entryId()).isEqualTo(secondGrid.get(0));
+        assertThat(round.get(0).lapsCompleted()).isEqualTo(12);
+        assertThat(before).extracting(r -> r.entryId()).containsExactlyInAnyOrderElementsOf(firstGrid);
+    }
+
+    @Test
     void roundByRoundQualifyingSharesAPlaceOnAnExactTieAndSkipsARoundWhoseHeatsWereAllAbandoned() {
         long buggyClass = addClass("Buggy", ROUND_BY_ROUND_ALL);
         List<Long> drivers = addEntries(buggyClass, 3);

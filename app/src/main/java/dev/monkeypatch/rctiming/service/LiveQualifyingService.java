@@ -13,6 +13,7 @@ import dev.monkeypatch.rctiming.query.boards.LiveQualifyingDto;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.Overlay;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.ProjectedResults;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.QualifyingResult;
+import dev.monkeypatch.rctiming.service.QualifyingStandingsService.RoundStanding;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.springframework.stereotype.Service;
 
@@ -59,9 +60,12 @@ public class LiveQualifyingService {
      * it has finished, when its stored result is counted. Empty when the heat is not a qualifying heat or its class
      * is not ranked by low points. Drivers whose only heat is still to come are not in a first round's table, so
      * they show as waiting only from the second round on. Names are as the public may see them (#265).
+     *
+     * <p>The round table counts the heat the same way as the overall one, so both move with every lap. Drivers whose
+     * heat in the round has not run are left out of the round table until it does.
      */
     @ReadTransaction
-    public Optional<List<LiveQualifyingDto.Row>> forHeat(long raceId, List<LiveTimingRowDto> liveRows) {
+    public Optional<Tables> forHeat(long raceId, List<LiveTimingRowDto> liveRows) {
         Race race = raceRepository.findById(raceId).orElse(null);
         if (race == null) {
             return Optional.empty();
@@ -100,7 +104,34 @@ public class LiveQualifyingService {
                     result.hasBestLap() ? result.bestLapMs() : null, inHeat.contains(entryId),
                     after.waiting().contains(entryId)));
         }
-        return Optional.of(rows);
+        return Optional.of(new Tables(rows, roundRows(race, counted, carNumbers, names, inHeat)));
+    }
+
+    /** The overall order and the order inside the heat's round, as {@link #forHeat} builds them. */
+    public record Tables(List<LiveQualifyingDto.Row> rows, List<LiveQualifyingDto.RoundRow> roundRows) {}
+
+    private List<LiveQualifyingDto.RoundRow> roundRows(Race race, Overlay counted, Map<Long, String> carNumbers,
+                                                       PublicNames.Snapshot names, Set<Long> inHeat) {
+        Long eventClassId = race.getEventClassId();
+        List<RoundStanding> after = qualifyingStandingsService.projectedRoundFor(eventClassId, race.getRoundId(), counted);
+        Map<Long, Integer> before = new HashMap<>();
+        List<RoundStanding> baseline = qualifyingStandingsService
+                .projectedRoundFor(eventClassId, race.getRoundId(), Overlay.without(race.getId()));
+        for (int i = 0; i < baseline.size(); i++) {
+            before.put(baseline.get(i).entryId(), i + 1);
+        }
+        List<LiveQualifyingDto.RoundRow> rows = new ArrayList<>();
+        for (int i = 0; i < after.size(); i++) {
+            RoundStanding standing = after.get(i);
+            Long entryId = standing.entryId();
+            rows.add(new LiveQualifyingDto.RoundRow(i + 1, before.get(entryId), entryId,
+                    driverName(entryId, carNumbers.get(entryId), names), carNumbers.get(entryId),
+                    standing.lapsCompleted(),
+                    standing.totalTimeMs() == Long.MAX_VALUE ? null : standing.totalTimeMs(),
+                    standing.bestLapMs() == Long.MAX_VALUE ? null : standing.bestLapMs(),
+                    inHeat.contains(entryId)));
+        }
+        return rows;
     }
 
     /** Each entry's car number across the class's qualifying heats. */
