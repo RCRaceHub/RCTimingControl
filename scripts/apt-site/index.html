@@ -10,6 +10,7 @@ sudo curl -fsSL -o /etc/apt/keyrings/rctc-archive-keyring.gpg https://rcracehub.
 sudo curl -fsSL -o /etc/apt/sources.list.d/rctimingcontrol.sources https://rcracehub.github.io/RCTimingControl/apt/rctimingcontrol.sources
 sudo apt update
 sudo apt install rctimingcontrol</pre>
+<p>That installs the <strong>stable</strong> channel, the newest final release. To follow the <strong>testing</strong> channel instead, which also gets alpha and other pre-releases, use <code>rctimingcontrol-testing.sources</code> in place of <code>rctimingcontrol.sources</code> in the second command. Use only one of the two.</p>
 <p>Then open <a href="http://localhost:8080">http://localhost:8080</a> to set up the club. Later releases arrive with <code>sudo apt update &amp;&amp; sudo apt upgrade</code>; the service restarts and keeps its data.</p>
 <p>Packages are signed. The key is <a href="rctc-archive-keyring.asc">rctc-archive-keyring.asc</a>.</p>
 </body></html>
