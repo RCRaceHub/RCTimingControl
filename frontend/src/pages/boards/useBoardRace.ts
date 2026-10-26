@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStomp } from '@/hooks/race-control/useStomp';
 import type { LiveTimingRowDto, RaceStateChangeDto } from '@/lib/raceControlApi';
 import { getBoardLiveTiming, getNowNext } from '@/lib/boardsApi';
+import { holdBackLapped } from '@/lib/lapProgress';
 import { BOARD_POLL_MS } from './boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
@@ -41,7 +42,7 @@ export function useBoardRace(eventId: number | null) {
 
   const rows = useMemo(() => {
     const source = liveRows ?? seedRows ?? [];
-    return [...source].sort((a, b) => a.position - b.position);
+    return holdBackLapped([...source].sort((a, b) => a.position - b.position));
   }, [liveRows, seedRows]);
 
   return { nowNext, isPending, isError, currentRace, raceId, rows };

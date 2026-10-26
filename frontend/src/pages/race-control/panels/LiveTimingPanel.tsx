@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
@@ -19,7 +20,7 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
-import { isClose } from '@/lib/lapProgress';
+import { holdBackLapped, isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
@@ -36,7 +37,8 @@ type Props = {
 };
 
 export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds, showArrows = false }: Props) {
-  const { rows: sorted, wsStatus, snapshotFailed } = useLiveTiming(raceId);
+  const { rows: liveRows, wsStatus, snapshotFailed } = useLiveTiming(raceId);
+  const sorted = useMemo(() => holdBackLapped(liveRows), [liveRows]);
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);

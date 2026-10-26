@@ -54,7 +54,7 @@ Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide
 
 ### Live timing thresholds
 
-An admin sets the thresholds under **Club**, on the **Live timing** tab; they apply to every timing screen and take effect in a race in progress at its next update. There are six, and each shows what it does on the page: the **battle gap** (default 2 s; 0 switches battles off), the **closing or growing** limit (0.15 s a lap), the **gaining fast** limit (0.3 s a lap, never below the previous one), the **battle hold** (2 laps), the **close car tint** (1 s; 0 switches the amber row off) and the **late lap bar** margin (1 s past the car's average lap before the bar turns red). The Club page has three tabs: Profile (details and logo), Live timing and Privacy notice.
+An admin sets the thresholds under **Club**, on the **Live timing** tab; they apply to every timing screen and take effect in a race in progress at its next update. There are six, and each shows what it does on the page: the **battle gap** (default 2 s; 0 switches battles off), the **closing or growing** limit (0.15 s a lap), the **gaining fast** limit (0.3 s a lap, never below the previous one), the **battle hold** (2 laps), the **close car tint** (1 s; 0 switches the amber row off; it and the CLOSE badge wait until a car has had a lap counted). Nobody is shown as lapped (the LAPPED badge and "+1 lap" gaps) until every car has had at least one lap counted and the **late lap bar** margin (1 s past the car's average lap before the bar turns red). The Club page has three tabs: Profile (details and logo), Live timing and Privacy notice.
 
 ### Options on the Live race screen and board views
 

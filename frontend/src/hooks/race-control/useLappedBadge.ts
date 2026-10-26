@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
+import { everyoneOffLapZero } from '@/lib/lapProgress';
 
 interface HasLapInfo {
   entryId: number;
@@ -11,7 +12,7 @@ interface HasLapInfo {
  *
  * The debounce prevents the "LAPPED" badge from flashing during the brief
  * window between the leader crossing the line and the backmarker doing so
- * on the same lap (typically 1-5 seconds at club RC speeds).
+ * on the same lap (typically 1-5 seconds at club RC speeds). Nobody is lapped while any car is still on lap 0.
  */
 export function useLappedBadge(rows: HasLapInfo[], debounceMs = 5000): Set<number> {
   const firstLappedAt = useRef<Map<number, number>>(new Map());
@@ -21,7 +22,7 @@ export function useLappedBadge(rows: HasLapInfo[], debounceMs = 5000): Set<numbe
     const map = firstLappedAt.current;
     const now = Date.now();
 
-    if (rows.length === 0) {
+    if (rows.length === 0 || !everyoneOffLapZero(rows)) {
       map.clear();
     } else {
       const leaderLaps = Math.max(...rows.map((r) => r.lapsCompleted));

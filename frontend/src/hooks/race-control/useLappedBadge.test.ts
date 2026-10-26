@@ -15,6 +15,12 @@ describe('useLappedBadge', () => {
     expect(result.current.size).toBe(0);
   });
 
+  it('marks nobody while any car is still on lap 0', () => {
+    const { result } = renderHook(() => useLappedBadge(laps(2, 1, 0), 5000));
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(result.current.size).toBe(0);
+  });
+
   it('marks a car only after it has been a lap down for the whole debounce', () => {
     const { result, rerender } = renderHook(({ rows }) => useLappedBadge(rows, 5000), {
       initialProps: { rows: laps(6, 5) },
