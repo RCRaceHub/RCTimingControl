@@ -24,7 +24,8 @@ class RaceHighlightsTest {
 
     @Test
     void nobodyGainingOrLosingLeavesTheMarkOut() {
-        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(run("Ada", 1, 1), run("Bea", 2, 2), run("Cy", null, 3)));
+        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
+                run("Ada", 1, 1), run("Bea", 2, 2), run("Cy", null, 3)));
 
         assertThat(scope.gained()).isNull();
         assertThat(scope.lost()).isNull();

@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
 import dev.monkeypatch.rctiming.query.boards.RaceHighlightsDto;
+import dev.monkeypatch.rctiming.query.racecontrol.ResultPointsCache;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
@@ -49,10 +50,12 @@ public class RaceHighlightsService {
      * @return the heat's marks and the round's; a mark is null when nobody earned it
      */
     public RaceHighlightsDto forRace(long raceId) {
-        List<RaceHighlights.Run> heat = liveRuns(raceId).orElseGet(() -> finishedRuns(raceId));
+        // One cache for the request, so the class's standings behind each heat's points are worked out once
+        ResultPointsCache cache = new ResultPointsCache();
+        List<RaceHighlights.Run> heat = liveRuns(raceId).orElseGet(() -> finishedRuns(raceId, cache));
         List<RaceHighlights.Run> round = new ArrayList<>(heat);
         for (long finishedId : boardQuery.finishedRaceIdsInRound(raceId)) {
-            round.addAll(finishedRuns(finishedId));
+            round.addAll(finishedRuns(finishedId, cache));
         }
         return new RaceHighlightsDto(RaceHighlights.of(heat), RaceHighlights.of(round));
     }
@@ -71,16 +74,16 @@ public class RaceHighlightsService {
         for (LiveTimingRowDto row : rows) {
             String name = names.of(competitors.get(row.entryId()), row.driverName(), row.carNumber());
             runs.add(new RaceHighlights.Run(name, row.startPosition(), row.position(),
-                    new ArrayList<>(state.get().lapTimesSnapshot(row.entryId()))));
+                    state.get().lapTimesSnapshot(row.entryId())));
         }
         return Optional.of(runs);
     }
 
     /** The runs of a finished heat from its stored result, in finishing order; empty when it has none yet. */
-    private List<RaceHighlights.Run> finishedRuns(long raceId) {
+    private List<RaceHighlights.Run> finishedRuns(long raceId, ResultPointsCache cache) {
         ResultSnapshotDto snapshot;
         try {
-            snapshot = resultSnapshotQuery.load(raceId);
+            snapshot = resultSnapshotQuery.load(raceId, cache);
         } catch (EntityNotFoundException e) {
             // Finished but not yet snapshotted
             return List.of();
