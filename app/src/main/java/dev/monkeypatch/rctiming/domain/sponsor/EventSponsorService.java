@@ -17,14 +17,16 @@ import java.util.Set;
 /**
  * The sponsors of an event (#518): the list officials keep and the overlay's sponsor bar reads. Called by {@code
  * AdminEventSponsorController} (each change is one write transaction with an audit row) and by the anonymous boards
- * endpoint (reads). Logos are PNG, JPEG or WebP up to 2 MB (no SVG: the files are served from the app's own origin, where a script in one would run), kept in object storage like the club logo; a replaced
- * or deleted sponsor's old file stays in storage. A sponsor is a business, so nothing here is personal data.
+ * endpoint (reads). Logos are PNG or JPEG up to 2 MB (no SVG: the files are served from the app's own origin, where
+ * a script in one would run; no WebP, which the JDK cannot decode). Each is decoded and normalised by
+ * {@code SponsorLogoProcessor} (trimmed, fitted to the sponsor bar's size, stored as PNG) and kept in object storage
+ * like the club logo; a replaced or deleted sponsor's old file stays in storage. A sponsor is a business, so nothing here is personal data.
  */
 @Service
 @Transactional
 public class EventSponsorService {
 
-    private static final Set<String> LOGO_TYPES = Set.of("image/png", "image/jpeg", "image/webp");
+    private static final Set<String> LOGO_TYPES = Set.of("image/png", "image/jpeg");
     private static final long LOGO_MAX_BYTES = 2 * 1024 * 1024L;
     private static final int NAME_MAX = 255;
 
@@ -128,7 +130,8 @@ public class EventSponsorService {
     /**
      * Stores the uploaded image as the sponsor's logo.
      *
-     * @throws IllegalArgumentException (400) if the file is missing, not an allowed image type, over 2 MB or unreadable
+     * @throws IllegalArgumentException (400) if the file is missing, not an allowed image type, over 2 MB,
+     *         unreadable, too large to decode or too small
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if the sponsor is not on this event
      */
     public EventSponsor uploadLogo(Actor actor, long eventId, long sponsorId, MultipartFile file) {
@@ -137,24 +140,24 @@ public class EventSponsorService {
         }
         String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
         if (!LOGO_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("Unsupported content type: " + file.getContentType() + ". Allowed: " + LOGO_TYPES);
+            throw new IllegalArgumentException("Unsupported content type: " + file.getContentType()
+                    + ". Allowed: " + LOGO_TYPES);
         }
         if (file.getSize() > LOGO_MAX_BYTES) {
             throw new IllegalArgumentException("File too large: max " + LOGO_MAX_BYTES + " bytes");
         }
-        EventSponsor sponsor = ofEvent(eventId, sponsorId);
         byte[] bytes;
         try {
             bytes = file.getBytes();
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
         }
-        String extension = switch (contentType) {
-            case "image/png" -> "png";
-            case "image/jpeg" -> "jpg";
-            default -> "webp";
-        };
-        sponsor.setLogoUrl(storage.upload("sponsors/" + sponsorId + "-" + System.currentTimeMillis() + "." + extension, bytes));
+        // Decoding and scaling can take seconds: do it before the sponsor is loaded, as short a time as possible on
+        // the write connection the timing thread shares
+        byte[] normalised = SponsorLogoProcessor.normalise(bytes);
+        EventSponsor sponsor = ofEvent(eventId, sponsorId);
+        sponsor.setLogoUrl(storage.upload(
+                "sponsors/" + sponsorId + "-" + System.currentTimeMillis() + ".png", normalised));
         repository.save(sponsor);
         audit.entry(actor, "EVENT_SPONSOR_LOGO_CHANGED").entity("event_sponsor", sponsorId).event(eventId)
                 .summary("Replaced the logo of the sponsor " + sponsor.getName()).record();
