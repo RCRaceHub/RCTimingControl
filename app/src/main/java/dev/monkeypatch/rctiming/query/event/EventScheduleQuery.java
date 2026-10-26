@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.query.event;
 
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +72,7 @@ public class EventScheduleQuery {
                 .join(RACING_CLASSES).on(RACING_CLASSES.ID.eq(EVENT_CLASSES.RACING_CLASS_ID))
                 .where(ROUNDS.EVENT_ID.in(eventIds))
                 .and(RACES.STATUS.eq("FINISHED"))
-                .orderBy(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
-                        RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
+                .orderBy(RunOrderSort.ascending())
                 .fetchGroups(r -> r.get(ROUNDS.EVENT_ID), r -> new EventScheduleDto.FinishedRace(
                         r.get(RACES.ID),
                         RaceLabel.round(r.get(ROUNDS.TYPE), r.get(ROUNDS.ROUND_NUMBER), r.get(RACES.FINAL_LETTER)),

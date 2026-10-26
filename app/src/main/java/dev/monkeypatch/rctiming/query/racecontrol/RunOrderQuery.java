@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.query.racecontrol;
 
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;
 
@@ -54,8 +55,7 @@ public class RunOrderQuery {
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
                 .join(RACING_CLASSES).on(RACING_CLASSES.ID.eq(EVENT_CLASSES.RACING_CLASS_ID))
                 .where(ROUNDS.EVENT_ID.eq(eventId))
-                .orderBy(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
-                        RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
+                .orderBy(RunOrderSort.ascending())
                 .fetch(r -> new RunOrderItemDto(
                         r.get(RACES.ID),
                         r.get(RACES.EVENT_CLASS_ID),

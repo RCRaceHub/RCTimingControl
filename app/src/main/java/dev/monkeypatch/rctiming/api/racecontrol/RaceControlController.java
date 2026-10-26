@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MarshalAdjustmentRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveEntryRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveFinalRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.SkipToRaceRequest;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -29,6 +30,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsLineupService;
+import dev.monkeypatch.rctiming.service.FinalsRunOrderService;
 import dev.monkeypatch.rctiming.service.HeatMoveService;
 import dev.monkeypatch.rctiming.service.MarshalService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
@@ -79,6 +81,7 @@ public class RaceControlController {
     private final FinalLegsService finalLegsService;
     private final AutoFinalsSeedingService finalsSeedingService;
     private final HeatMoveService heatMoveService;
+    private final FinalsRunOrderService finalsRunOrderService;
     private final FinalsLineupService finalsLineupService;
 
     public RaceControlController(RunOrderQuery runOrderQuery,
@@ -94,6 +97,7 @@ public class RaceControlController {
                                   FinalLegsService finalLegsService,
                                   AutoFinalsSeedingService finalsSeedingService,
                                   HeatMoveService heatMoveService,
+                                  FinalsRunOrderService finalsRunOrderService,
                                   FinalsLineupService finalsLineupService) {
         this.runOrderQuery = runOrderQuery;
         this.eventResultsQuery = eventResultsQuery;
@@ -108,6 +112,7 @@ public class RaceControlController {
         this.finalLegsService = finalLegsService;
         this.finalsSeedingService = finalsSeedingService;
         this.heatMoveService = heatMoveService;
+        this.finalsRunOrderService = finalsRunOrderService;
         this.finalsLineupService = finalsLineupService;
     }
 
@@ -274,6 +279,19 @@ public class RaceControlController {
     public ResponseEntity<Void> moveEntry(@PathVariable long raceId, @Valid @RequestBody MoveEntryRequest request) {
         heatMoveService.moveEntry(CurrentOfficial.actor(), raceId, request.entryId(), request.targetRaceId(),
                 request.allRounds());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Moves a pending final one place earlier or later in the event's run order, so the legs of a final run in legs
+     * can sit between other finals. {@code POST /race/{raceId}/move-final}; 204 on success. 404 for an unknown race;
+     * 409 if no final of the event runs in legs, the final or the one it swaps with has been called or started or
+     * belongs to a Bump Up class, or the move would reverse two legs of one final. Recorded in the audit log.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/move-final")
+    public ResponseEntity<Void> moveFinal(@PathVariable long raceId, @Valid @RequestBody MoveFinalRequest request) {
+        finalsRunOrderService.move(CurrentOfficial.actor(), raceId, request.direction() == MoveFinalRequest.Direction.UP);
         return ResponseEntity.noContent().build();
     }
 

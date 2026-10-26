@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.query.boards;
 
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -141,8 +142,7 @@ public class BoardQuery {
     }
 
     private static List<SortField<?>> runOrder() {
-        return List.of(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
-                RACES.HEAT_NUMBER.asc(), RACES.ID.asc());
+        return RunOrderSort.ascending();
     }
 
     private Optional<BoardRaceDto> first(long eventId, Condition status, List<SortField<?>> order) {
