@@ -306,6 +306,6 @@ jobs:
         with:
           path: site-out
 
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
         id: deploy
         if: steps.key.outputs.set == 'true'
