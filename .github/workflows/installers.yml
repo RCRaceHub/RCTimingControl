@@ -203,6 +203,68 @@ jobs:
             |--------|------|
             | Windows 10 or 11 (64-bit) | the `.msi` |
             | macOS 12 or later | the `.pkg` |
-            | Ubuntu or another Debian-based Linux | the `.deb` |
+            | Ubuntu or another Debian-based Linux | the `.deb`, or install with `apt` from the repository in the install guide |
 
             It installs RC Timing Control as a service that starts with the computer. Then open http://localhost:8080 to set up the club. See the [install guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/installing.md) for each system, and [trying it out](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/trial-quickstart.md) to explore it with a demo club and a simulated decoder.
+
+  # Publishes the .deb as a signed apt repository on GitHub Pages, so Linux laptops install and
+  # upgrade with apt. Does nothing until the APT_GPG_KEY secret is set (see docs/installing.md).
+  apt-repo:
+    name: Publish the apt repository
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency: apt-repo
+    env:
+      APT_GPG_KEY: ${{ secrets.APT_GPG_KEY }}
+    steps:
+      - name: Check the signing key is set
+        id: key
+        run: |
+          if [ -n "$APT_GPG_KEY" ]; then echo "set=true" >> "$GITHUB_OUTPUT"; else echo "::notice::APT_GPG_KEY is not set, so the apt repository was not published"; fi
+
+      - uses: actions/checkout@v7
+        if: steps.key.outputs.set == 'true'
+
+      - uses: actions/download-artifact@v8
+        if: steps.key.outputs.set == 'true'
+        with:
+          name: installer-Linux
+          path: installers
+
+      - name: Build the repository
+        if: steps.key.outputs.set == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y reprepro
+          echo "$APT_GPG_KEY" | gpg --batch --import
+          key=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+          scripts/build-apt-repo.sh "$RUNNER_TEMP/site" "$key" installers/*.deb
+
+      - name: Check apt accepts it and sees the package
+        if: steps.key.outputs.set == 'true'
+        run: |
+          site="$RUNNER_TEMP/site"
+          echo "deb [signed-by=$site/rctc-archive-keyring.gpg] file://$site stable main" | sudo tee /etc/apt/sources.list.d/rctc-test.list
+          sudo apt-get update
+          apt-cache policy rctimingcontrol | grep -q "Candidate: ${GITHUB_REF_NAME#v}"
+          sudo rm /etc/apt/sources.list.d/rctc-test.list
+
+      - name: Publish to GitHub Pages
+        if: steps.key.outputs.set == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch --depth=1 origin gh-pages
+            git worktree add "$RUNNER_TEMP/pages" FETCH_HEAD
+            cd "$RUNNER_TEMP/pages" && git checkout -B gh-pages
+          else
+            git worktree add --detach "$RUNNER_TEMP/pages"
+            cd "$RUNNER_TEMP/pages" && git checkout --orphan gh-pages && git rm -rfq . && touch .nojekyll
+          fi
+          rm -rf apt && cp -r "$RUNNER_TEMP/site" apt
+          git add -A
+          git commit -m "apt repository for ${GITHUB_REF_NAME}"
+          git push origin gh-pages
