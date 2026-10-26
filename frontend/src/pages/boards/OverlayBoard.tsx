@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getLiveQualifying, getRaceClock, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
+import { getLiveQualifying, getRaceClock, getRaceHighlights, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
 import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
@@ -170,7 +170,13 @@ function OverlayTicker({
     enabled: raceId !== null && items.has('fastest'),
     refetchInterval: BOARD_POLL_MS * 6,
   });
-  const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round));
+  const { data: highlights } = useQuery({
+    queryKey: publicQueryKeys.boards.highlights(raceId),
+    queryFn: () => getRaceHighlights(raceId!),
+    enabled: raceId !== null && (items.has('gain') || items.has('loss') || items.has('pace')),
+    refetchInterval: BOARD_POLL_MS * 4,
+  });
+  const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round), highlights);
   // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
   // jump mid-scroll
   const [shown, setShown] = useState<string[] | null>(null);

@@ -18,11 +18,13 @@ import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
 import dev.monkeypatch.rctiming.query.boards.PodiumBoardDto;
 import dev.monkeypatch.rctiming.query.boards.LiveQualifyingDto;
+import dev.monkeypatch.rctiming.query.boards.RaceHighlightsDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
+import dev.monkeypatch.rctiming.service.RaceHighlightsService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsBoardService;
 import dev.monkeypatch.rctiming.service.PodiumBoardService;
@@ -69,6 +71,7 @@ public class BoardController {
     private final ClubProfileService clubProfileService;
     private final EventSponsorService eventSponsorService;
     private final DriverMediaService driverMediaService;
+    private final RaceHighlightsService raceHighlightsService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -85,7 +88,9 @@ public class BoardController {
                            LiveQualifyingService liveQualifyingService,
                            ClubProfileService clubProfileService,
                            EventSponsorService eventSponsorService,
-                           DriverMediaService driverMediaService) {
+                           DriverMediaService driverMediaService,
+                           RaceHighlightsService raceHighlightsService) {
+        this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
         this.eventSponsorService = eventSponsorService;
@@ -310,6 +315,16 @@ public class BoardController {
         return fastest == null
                 ? new RoundFastestLapDto(null, null)
                 : new RoundFastestLapDto(fastest.bestLapMs(), fastest.driverName());
+    }
+
+    /**
+     * The standouts of this heat and of its round for the overlay's ticker: most places gained and lost against the
+     * grid, and the best three and five lap average. The heat is live while it runs and from its stored result once
+     * it has finished.
+     */
+    @GetMapping("/races/{raceId}/highlights")
+    public RaceHighlightsDto highlights(@PathVariable long raceId) {
+        return raceHighlightsService.forRace(raceId);
     }
 
     /** The A final's combined result when the race is one of its legs, matched by class name; else null. */

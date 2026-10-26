@@ -22,6 +22,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getBoardLiveTiming: vi.fn(),
   getRaceClock: vi.fn(),
   getRoundFastestLap: vi.fn(),
+  getRaceHighlights: vi.fn(),
   getPositionHistory: vi.fn(),
   getTicker: vi.fn(),
   getSponsors: vi.fn(),
@@ -33,6 +34,7 @@ import {
   getNowNext,
   getPositionHistory,
   getRaceClock,
+  getRaceHighlights,
   getRoundFastestLap,
   getTicker,
   getSponsors,
@@ -108,6 +110,7 @@ beforeEach(() => {
   vi.mocked(getRaceClock).mockResolvedValue(clock());
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
   vi.mocked(getPositionHistory).mockResolvedValue([]);
+  vi.mocked(getRaceHighlights).mockResolvedValue({ heat: { gained: null, lost: null, avg3: null, avg5: null }, round: { gained: null, lost: null, avg3: null, avg5: null } });
   vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getSponsors).mockResolvedValue([]);
   vi.mocked(getLiveQualifying).mockResolvedValue({ eventId: null, eventName: null, phase: 'NONE', raceId: null, raceLabel: null, className: null, rows: [] });
@@ -161,6 +164,24 @@ describe('OverlayBoard', () => {
 
     const driver = await screen.findByText('Grace Hopper');
     expect(driver.closest('[role="row"]')).toHaveClass('bg-purple-500/40');
+  });
+
+  it('scrolls the heat\'s and the round\'s standouts, leaving out a round mark that repeats the heat\'s', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceHighlights).mockResolvedValue({
+      heat: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 2 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: null },
+      round: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 4 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: { driverName: 'Katherine Johnson', value: 14_300 } },
+    });
+    renderOverlay();
+
+    const ticker = await screen.findByLabelText('Ticker');
+    await within(ticker).findByText(/Most places gained in this heat: Ada Lovelace \(\+3\)/);
+    expect(ticker).not.toHaveTextContent('Most places gained in the round');
+    expect(ticker).toHaveTextContent('Most places lost in this heat: Sam Second (−2)');
+    expect(ticker).toHaveTextContent('Most places lost in the round: Sam Second (−4)');
+    expect(ticker).toHaveTextContent('Best 3 lap average in this heat: 14.100 · Ada Lovelace');
+    expect(ticker).toHaveTextContent('Best 5 lap average in the round: 14.300 · Katherine Johnson');
   });
 
   it('puts the separator image between ticker items in place of the diamond', async () => {
@@ -403,7 +424,7 @@ describe('overlay options', () => {
       showClass: true,
       theme: 'dark',
       showChart: true,
-      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest']),
+      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace']),
       showSponsors: true,
       layout: 'tower',
       showQualifying: true,

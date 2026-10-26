@@ -1,5 +1,5 @@
 import { fmtMs } from '@/lib/format';
-import type { TickerDto } from '@/lib/boardsApi';
+import type { HighlightMark, RaceHighlightsDto, TickerDto } from '@/lib/boardsApi';
 import type { GapMode } from '@/hooks/useGapView';
 import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
@@ -47,7 +47,7 @@ export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: nu
 }
 
 /** What the overlay's ticker can scroll; `?ticker=` names the ones to show, `?ticker=hide` shows none. */
-export const TICKER_ITEMS = ['next', 'drivers', 'marshals', 'tq', 'fastest'] as const;
+export const TICKER_ITEMS = ['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace'] as const;
 export type TickerItem = (typeof TICKER_ITEMS)[number];
 
 function parseTickerItems(value: string | null): Set<TickerItem> {
@@ -158,11 +158,28 @@ function nameList(names: string[]): string {
     : `${names.slice(0, TICKER_MAX_NAMES).join(', ')} and ${names.length - TICKER_MAX_NAMES} more`;
 }
 
+function sameMark(a: HighlightMark | null, b: HighlightMark | null): boolean {
+  return a !== null && b !== null && a.driverName === b.driverName && a.value === b.value;
+}
+
+/** A standout for the heat and, where the round has a different one, for the round; either may be missing. */
+function markSegments(
+  heat: HighlightMark | null,
+  round: HighlightMark | null,
+  text: (label: string, mark: HighlightMark) => string,
+): string[] {
+  const segments: string[] = [];
+  if (heat) segments.push(text('this heat', heat));
+  if (round && !sameMark(heat, round)) segments.push(text('the round', round));
+  return segments;
+}
+
 /** The ticker's items, in the order they scroll, for the parts the official switched on and that have something. */
 export function tickerSegments(
   items: Set<TickerItem>,
   ticker: TickerDto | undefined,
   roundBest: { lapMs: number; driverName: string } | null,
+  highlights?: RaceHighlightsDto,
 ): string[] {
   const segments: string[] = [];
   if (items.has('next') && ticker?.nextRace) segments.push(`Next: ${ticker.nextRace}`);
@@ -180,6 +197,18 @@ export function tickerSegments(
   }
   if (items.has('fastest') && roundBest) {
     segments.push(`Fastest lap of the round: ${fmtMs(roundBest.lapMs)} · ${roundBest.driverName}`);
+  }
+  if (highlights) {
+    const places = (verb: string, sign: string) => (label: string, mark: HighlightMark) =>
+      `Most places ${verb} in ${label}: ${mark.driverName} (${sign}${mark.value})`;
+    const pace = (laps: number) => (label: string, mark: HighlightMark) =>
+      `Best ${laps} lap average in ${label}: ${fmtMs(mark.value)} · ${mark.driverName}`;
+    if (items.has('gain')) segments.push(...markSegments(highlights.heat.gained, highlights.round.gained, places('gained', '+')));
+    if (items.has('loss')) segments.push(...markSegments(highlights.heat.lost, highlights.round.lost, places('lost', '−')));
+    if (items.has('pace')) {
+      segments.push(...markSegments(highlights.heat.avg3, highlights.round.avg3, pace(3)));
+      segments.push(...markSegments(highlights.heat.avg5, highlights.round.avg5, pace(5)));
+    }
   }
   return segments;
 }

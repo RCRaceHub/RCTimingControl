@@ -899,6 +899,11 @@ GET /boards/races/{raceId}/round-fastest-lap
 **200 OK** — `{ "lapMs": 18500, "driverName": "Sam Second" }`, the fastest lap in the other finished heats of the race's round and class, for the overlay's stats ticker. Names follow the public name rule. Both fields are null when no other heat has finished.
 
 ```http
+GET /boards/races/{raceId}/highlights
+```
+**200 OK** — `{ "heat": S, "round": S }` where `S` is `{ "gained": M, "lost": M, "avg3": M, "avg5": M }` and `M` is `{ "driverName": "Ada Lovelace", "value": 3 }` or null. The standouts of the heat (live while it runs, from its stored result once finished) and of the round (every other finished heat of the round and class plus this one), for the overlay's ticker. `gained` and `lost` count places against the grid (a car with no grid place counts for neither); `avg3` and `avg5` are the best average lap, in milliseconds, over three and five laps in a row (an unknown lap time breaks a run; a stored result from before lap times were kept gives none). A mark is null when nobody earned it. Names follow the public name rule.
+
+```http
 GET /boards/races/{raceId}/position-history
 ```
 **200 OK** — `[ { "lap": 1, "entryId": 31, "position": 2 }, ... ]`, the place each car held at the end of every lap so far, by the order the cars crossed the line, for the live position chart. `[]` for a race with no live state (not started, or finished: its stored result has the history). If a marshal adjustment has changed any car's lap count the crossing order can't be trusted, so every place is the car's current position.

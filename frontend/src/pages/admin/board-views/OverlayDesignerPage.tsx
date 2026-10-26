@@ -16,6 +16,9 @@ const TICKER_LABELS: Record<TickerItem, string> = {
   marshals: 'Marshals',
   tq: 'Top qualifiers',
   fastest: 'Fastest laps',
+  gain: 'Most places gained',
+  loss: 'Most places lost',
+  pace: 'Best 3 and 5 lap average',
 };
 
 /** The size the overlay is drawn at on stream, so the preview shows it as OBS will. */

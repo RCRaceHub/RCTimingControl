@@ -27,5 +27,6 @@ export const publicQueryKeys = {
     sponsors: (eventId: number | null) => ['boards', 'sponsors', eventId] as const,
     media: (raceId: number | null) => ['boards', 'media', raceId] as const,
     roundFastest: (raceId: number | null) => ['boards', 'round-fastest', raceId] as const,
+    highlights: (raceId: number | null) => ['boards', 'highlights', raceId] as const,
   },
 };

@@ -451,7 +451,7 @@ export default function MeetingGuidePage() {
             name, <span className="font-mono text-xs">theme=light</span> gives dark text on a light
             panel, <span className="font-mono text-xs">chart=hide</span> leaves out the position chart,
             <span className="font-mono text-xs"> ticker=hide</span> leaves out the ticker (or name the
-            items to scroll: <span className="font-mono text-xs">ticker=next,drivers,marshals,tq,fastest</span>),
+            items to scroll: <span className="font-mono text-xs">ticker=next,drivers,marshals,tq,fastest,gain,loss,pace</span>; gain, loss and pace are the most places gained or lost and the best 3 and 5 lap average, for the heat and the round),
             <span className="font-mono text-xs"> gap=leader</span> shows the tower&apos;s gap to the leader
             (GAP) in place of the interval to the car ahead (INT), and
             <span className="font-mono text-xs"> gap=auto</span> takes turns every
