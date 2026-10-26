@@ -31,7 +31,7 @@ sudo apt update
 sudo apt install rctimingcontrol
 ```
 
-The packages are signed, and apt checks the signature against that key. The service starts as soon as the install finishes. To update later, run `sudo apt update && sudo apt upgrade`; the service restarts and keeps its data. The repository holds the newest release only; older ones stay on the GitHub releases page. The laptop needs the internet only to install and update, not for racing.
+The packages are signed, and apt checks the signature against that key. The service starts as soon as the install finishes. To update later, run `sudo apt update && sudo apt upgrade`; the service restarts and keeps its data. The repository has two channels. **stable**, which the commands above use, carries the newest final release. **testing** also carries alpha and other pre-releases, for trying a new version before race day; to follow it, download `rctimingcontrol-testing.sources` instead of `rctimingcontrol.sources` (use only one of the two, and delete the other file from `/etc/apt/sources.list.d/` to switch). Until the first final release (1.0), stable is empty, so use testing: download `rctimingcontrol-testing.sources` in the second command above. Each channel holds one release; older ones stay on the GitHub releases page. The laptop needs the internet only to install and update, not for racing.
 
 With no internet at the track, or to install one particular release, download its `.deb` from the releases page and run:
 
