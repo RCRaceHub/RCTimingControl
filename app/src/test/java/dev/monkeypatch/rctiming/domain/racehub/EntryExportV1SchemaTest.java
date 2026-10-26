@@ -3,10 +3,11 @@ package dev.monkeypatch.rctiming.domain.racehub;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -15,7 +16,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,10 +78,10 @@ class EntryExportV1SchemaTest {
         return (ObjectNode) objectMapper.readTree(json);
     }
 
-    private static Set<ValidationMessage> validate(JsonNode document) throws IOException {
+    private static List<Error> validate(JsonNode document) throws IOException {
         try (InputStream schema = new ClassPathResource("racehub/entry-export-v1.schema.json").getInputStream()) {
-            JsonSchema jsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schema);
-            return jsonSchema.validate(document);
+            Schema jsonSchema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(schema);
+            return jsonSchema.validate(document.toString(), InputFormat.JSON);
         }
     }
 }

@@ -2,10 +2,11 @@ package dev.monkeypatch.rctiming.resultsexport;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.InputFormat;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -15,7 +16,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -68,10 +68,10 @@ class ResultsExportV1GoldenTest {
         assertThat(validate(broken)).isNotEmpty();
     }
 
-    static Set<ValidationMessage> validate(JsonNode document) throws IOException {
+    static List<Error> validate(JsonNode document) throws IOException {
         try (InputStream schema = new ClassPathResource("resultsexport/results-export-v1.schema.json").getInputStream()) {
-            JsonSchema jsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schema);
-            return jsonSchema.validate(document);
+            Schema jsonSchema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(schema);
+            return jsonSchema.validate(document.toString(), InputFormat.JSON);
         }
     }
 
