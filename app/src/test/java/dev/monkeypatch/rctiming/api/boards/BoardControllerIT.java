@@ -16,6 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.Round;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import org.junit.jupiter.api.AfterEach;
@@ -52,6 +53,7 @@ class BoardControllerIT extends AbstractIntegrationTest {
     @Autowired ResultSnapshotRepository resultSnapshotRepository;
     @Autowired LapTimingService lapTimingService;
     @Autowired JdbcTemplate jdbc;
+    @Autowired BoardQuery boardQuery;
 
     private BoardFixtures fx;
 
@@ -253,6 +255,21 @@ class BoardControllerIT extends AbstractIntegrationTest {
             assertThat(rows).extracting(r -> r.get("driverName")).containsExactly("Fast Freddie", "A. L.");
             assertThat(rows).extracting(r -> r.get("lapsCompleted")).containsExactly(12, 10);
         });
+    }
+
+    @Test
+    void lastCompletedQualifier_isStillTheQualifyingHeatOnceAFinalHasFinished() {
+        Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
+        Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
+        Round finals = fx.round(RoundType.FINAL, 1, 2);
+        Race finalA = fx.race(finals, 1, RaceStatus.FINISHED);
+        finalA.setFinalLetter("A");
+        fx.save(finalA);
+
+        assertThat(boardQuery.lastCompletedRace(fx.event.getId())).get()
+                .extracting(r -> r.raceId()).isEqualTo(finalA.getId());
+        assertThat(boardQuery.lastCompletedQualifier(fx.event.getId())).get()
+                .extracting(r -> r.raceId()).isEqualTo(heat1.getId());
     }
 
     @Test
