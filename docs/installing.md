@@ -11,7 +11,7 @@ RC Timing Control installs as one package on the laptop that sits by the decoder
 |--------|------|
 | Windows | `RCTimingControl-<version>.msi` |
 | macOS | `RCTimingControl-<version>.pkg` |
-| Linux | `rctimingcontrol_<version>_amd64.deb` |
+| Linux | `rctimingcontrol_<version>_amd64.deb`, or `_arm64.deb` on ARM |
 
 To build an installer yourself, see [Building the installers](#building-the-installers).
 
@@ -21,13 +21,25 @@ To build an installer yourself, see [Building the installers](#building-the-inst
 
 **macOS.** The package is not signed yet, so double-clicking it shows a warning. Right-click the `.pkg` file, choose **Open**, then **Open** again. Or open **System Settings → Privacy & Security** and choose **Open Anyway**.
 
-**Linux.** Run:
+**Linux.** On Ubuntu, Debian or another Debian-based system (64-bit Intel or AMD, or 64-bit ARM such as a Raspberry Pi 4 or 5), install from the club's apt repository, so later releases arrive with the laptop's normal updates:
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo curl -fsSL -o /etc/apt/keyrings/rctc-archive-keyring.gpg https://rcracehub.github.io/RCTimingControl/apt/rctc-archive-keyring.gpg
+sudo curl -fsSL -o /etc/apt/sources.list.d/rctimingcontrol.sources https://rcracehub.github.io/RCTimingControl/apt/rctimingcontrol.sources
+sudo apt update
+sudo apt install rctimingcontrol
+```
+
+The packages are signed, and apt checks the signature against that key. The service starts as soon as the install finishes. To update later, run `sudo apt update && sudo apt upgrade`; the service restarts and keeps its data. The repository holds the newest release only; older ones stay on the GitHub releases page. The laptop needs the internet only to install and update, not for racing.
+
+With no internet at the track, or to install one particular release, download its `.deb` from the releases page and run:
 
 ```bash
 sudo apt install ./rctimingcontrol_<version>_amd64.deb
 ```
 
-The service starts as soon as the install finishes.
+(Use the `_arm64.deb` on ARM.)
 
 ## First run
 
