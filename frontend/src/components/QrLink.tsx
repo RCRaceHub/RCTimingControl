@@ -27,7 +27,7 @@ export function shareableUrl(
 }
 
 type Props = {
-  /** The page to open, such as "/qualifying?event=3". */
+  /** The page to open, such as "/results?tab=qualifying&event=3". */
   path: string;
   /** What scanning leads to, shown under the code. */
   caption: string;

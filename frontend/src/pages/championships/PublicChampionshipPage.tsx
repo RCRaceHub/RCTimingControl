@@ -43,12 +43,9 @@ function groupByClass(rows: StandingsRowDto[], names: Map<number, string>, split
   return [...groups.values()].sort((a, b) => rank(a) - rank(b) || inOrder(a, b));
 }
 
-export default function PublicChampionshipPage() {
-  const { id } = useParams<{ id: string }>();
-  const championshipId = Number(id);
+/** The standings tables for a championship, one per class. Used by the Results page's Championship tab and the standalone page below. */
+export function ChampionshipStandings({ championshipId }: { championshipId: number }) {
   const validId = Number.isFinite(championshipId) && championshipId > 0;
-  const printedAt = useMemo(() => new Date().toLocaleString(), []);
-
   const { data: rows, isLoading, isError } = useQuery({
     queryKey: publicQueryKeys.championship(championshipId),
     queryFn: () => getPublicChampionshipStandings(championshipId),
@@ -61,48 +58,20 @@ export default function PublicChampionshipPage() {
     enabled: validId,
   });
 
-  const title = info.data?.name ? `${info.data.name} standings` : 'Championship Standings';
-  useEffect(() => {
-    const previous = document.title;
-    document.title = title;
-    return () => {
-      document.title = previous;
-    };
-  }, [title]);
-
   // Wait for the names too, so the tables don't re-sort when they arrive; a failed read just falls back to "Class N"
   if (isLoading || info.isLoading) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading standings…</div>;
+    return <p className="text-sm text-muted-foreground">Loading standings…</p>;
   }
-
   if (isError || !rows) {
-    return (
-      <div className="p-8 text-sm text-destructive">
-        Championship standings are not available.
-      </div>
-    );
+    return <p className="text-sm text-destructive">Championship standings are not available.</p>;
   }
 
   const names = new Map((info.data?.classes ?? []).map((c) => [c.racingClassId, c.name]));
   const groups = groupByClass(rows, names, info.data?.splits ?? []);
 
   return (
-    <div className="mx-auto max-w-4xl p-8 print:p-4">
-      <header className="mb-6 space-y-1">
-        <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="hidden text-xs text-muted-foreground print:block">
-          Printed {printedAt}. For the live standings, scan the code.
-        </p>
-        <div className="print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Print
-          </Button>
-        </div>
-      </header>
-
+    <div>
       {groups.length === 0 && <p className="text-sm text-muted-foreground">No results have counted yet.</p>}
-
       {groups.map((group) => (
         <section
           key={group.key}
@@ -151,6 +120,46 @@ export default function PublicChampionshipPage() {
           </p>
         </section>
       ))}
+    </div>
+  );
+}
+
+/** The standalone championship page (`/championships/:id`), linked from the schedule and by QR code. */
+export default function PublicChampionshipPage() {
+  const { id } = useParams<{ id: string }>();
+  const championshipId = Number(id);
+  const printedAt = useMemo(() => new Date().toLocaleString(), []);
+  const info = useQuery({
+    queryKey: publicQueryKeys.championshipInfo(championshipId),
+    queryFn: () => getPublicChampionshipInfo(championshipId),
+    enabled: Number.isFinite(championshipId) && championshipId > 0,
+  });
+
+  const title = info.data?.name ? `${info.data.name} standings` : 'Championship Standings';
+  useEffect(() => {
+    const previous = document.title;
+    document.title = title;
+    return () => {
+      document.title = previous;
+    };
+  }, [title]);
+
+  return (
+    <div className="mx-auto max-w-4xl p-8 print:p-4">
+      <header className="mb-6 space-y-1">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="hidden text-xs text-muted-foreground print:block">
+          Printed {printedAt}. For the live standings, scan the code.
+        </p>
+        <div className="print:hidden">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            Print
+          </Button>
+        </div>
+      </header>
+
+      <ChampionshipStandings championshipId={championshipId} />
 
       <div className="flex justify-center pt-4">
         <QrLink path={`/championships/${championshipId}`} caption="Scan to follow the standings on your phone" size={144} />

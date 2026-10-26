@@ -1,18 +1,10 @@
-// Public overall qualifying standings, for a phone or a printout (opened from a QR code on the boards).
-// Polls so the order moves as heats finish.
-import { useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+// The overall qualifying tables, shown on the Results page's Qualifying tab.
 import { useQuery } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
 import { getQualifyingBoard, type QualifyingBoardTable } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
-import { BOARD_POLL_MS, parseEventParam } from '@/pages/boards/boardFormat';
+import { BOARD_POLL_MS } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-import { QrLink } from '@/components/QrLink';
 import { RoundHeaderCells, RoundPlaceCells, roundCount } from '@/components/QualifyingRounds';
-import PrivacyLink from '@/components/layout/PrivacyLink';
-import { Button } from '@/components/ui/button';
-
 
 function ClassTable({ table }: { table: QualifyingBoardTable }) {
   const byPoints = table.rows.some((r) => r.points !== null);
@@ -73,68 +65,30 @@ function ClassTable({ table }: { table: QualifyingBoardTable }) {
   );
 }
 
-export default function QualifyingStandingsPage() {
-  const [searchParams] = useSearchParams();
-  const eventId = parseEventParam(searchParams.get('event'));
-  const printedAt = useMemo(() => new Date().toLocaleString(), []);
-
+/** The qualifying tables for the Results page's Qualifying tab; polls so the order moves as heats finish. */
+export function QualifyingStandings({ eventId }: { eventId: number | null }) {
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.qualifying(eventId),
     queryFn: () => getQualifyingBoard(eventId),
     refetchInterval: BOARD_POLL_MS,
   });
 
-  useEffect(() => {
-    const previous = document.title;
-    document.title = data?.eventName ? `Qualifying — ${data.eventName}` : 'Qualifying standings';
-    return () => {
-      document.title = previous;
-    };
-  }, [data?.eventName]);
-
   if (isPending) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading qualifying standings…</div>;
+    return <p className="text-sm text-muted-foreground">Loading qualifying standings…</p>;
   }
-
   if (isError && !data) {
     return (
-      <div className="p-8 text-sm text-destructive">
+      <p className="text-sm text-destructive">
         The standings could not be loaded. Check the connection; this page tries again on its own.
-      </div>
+      </p>
     );
   }
-
-  const path = data?.eventId ? `/qualifying?event=${data.eventId}` : '/qualifying';
-
+  if (!data || data.tables.length === 0) {
+    return <p className="text-sm text-muted-foreground">No qualifying results yet.</p>;
+  }
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:p-8 print:p-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold">Qualifying standings</h1>
-        {data?.eventName && <p className="text-muted-foreground">{data.eventName}</p>}
-        <p className="text-xs text-muted-foreground print:hidden">Updates by itself as heats finish.</p>
-        <p className="hidden text-xs text-muted-foreground print:block">
-          Printed {printedAt}. For the live standings, scan the code.
-        </p>
-        <div className="print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Print
-          </Button>
-        </div>
-      </header>
-
-      {!data || data.tables.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No qualifying results yet.</p>
-      ) : (
-        <div className="space-y-6">
-          {data.tables.map((table) => <ClassTable key={table.eventClassId} table={table} />)}
-        </div>
-      )}
-
-      <div className="flex justify-center pt-4">
-        <QrLink path={path} caption="Scan to follow the standings on your phone" size={144} />
-      </div>
-      <PrivacyLink />
+    <div className="space-y-6">
+      {data.tables.map((table) => <ClassTable key={table.eventClassId} table={table} />)}
     </div>
   );
 }

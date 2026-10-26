@@ -95,27 +95,13 @@ export default function EventSchedulePage() {
                   </div>
                 ))}
                 <div className="flex flex-wrap items-center gap-2">
-                  {event.finishedRaces.length > 0 && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/qualifying?event=${event.id}`}>
-                        Qualifying Standings
-                      </Link>
-                    </Button>
-                  )}
-                  {event.finishedRaces.some((r) => r.isFinal) && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/finals?event=${event.id}`}>
-                        Finals Results
-                      </Link>
-                    </Button>
-                  )}
-                  {event.championshipId !== null && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/championships/${event.championshipId}`}>
-                        Championship Standings
-                      </Link>
-                    </Button>
-                  )}
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/results?event=${event.id}`}>
+                      {event.championshipId !== null
+                        ? 'Event results and championship'
+                        : 'Event results'}
+                    </Link>
+                  </Button>
                 </div>
               </div>
             )}

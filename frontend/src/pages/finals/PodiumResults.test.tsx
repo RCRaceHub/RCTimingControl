@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import PodiumPage from './PodiumPage';
+import { PodiumResults } from './PodiumResults';
 
 vi.mock('@/lib/boardsApi', () => ({ getPodiumBoard: vi.fn() }));
 vi.mock('@/lib/api', () => ({
@@ -17,7 +17,7 @@ function renderPage() {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={['/podium?event=7']}>
-        <PodiumPage />
+        <PodiumResults eventId={7} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -25,7 +25,7 @@ function renderPage() {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('PodiumPage', () => {
+describe('PodiumResults', () => {
   it('shows each class podium and its category leaders', async () => {
     vi.mocked(getPodiumBoard).mockResolvedValue({
       eventId: 7,
