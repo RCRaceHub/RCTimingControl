@@ -146,6 +146,7 @@ function OverlayTicker({
   items,
   panelClass,
   bottom,
+  separatorImage,
 }: {
   eventId: number | null;
   raceId: number | null;
@@ -154,6 +155,8 @@ function OverlayTicker({
   panelClass: string;
   /** How far the strip sits above the foot of the page, so it clears the sponsor bar when that is showing. */
   bottom: string;
+  /** The address of an image between items instead of the diamond; null keeps the diamond. */
+  separatorImage: string | null;
 }) {
   const { data: ticker } = useQuery({
     queryKey: publicQueryKeys.boards.ticker(eventId),
@@ -188,8 +191,8 @@ function OverlayTicker({
         {display.map((segment, index) => (
           <span key={index}>
             {index > 0 && (
-              <span className="mx-16 opacity-50" aria-hidden="true">
-                ◆
+              <span className="mx-16 inline-flex items-center align-middle opacity-50" aria-hidden="true">
+                {separatorImage ? <img src={separatorImage} alt="" className="h-9 w-auto max-w-[8rem] object-contain" /> : '◆'}
               </span>
             )}
             {segment}
@@ -245,7 +248,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,
-    showPredicted, showBars, showArrows, closeMs, showBattles,
+    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
@@ -320,6 +323,7 @@ export default function OverlayBoard() {
           items={tickerItems}
           panelClass={colours.panel}
           bottom={tickerBottom}
+          separatorImage={separatorImage}
         />
         {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
       </div>
@@ -459,6 +463,7 @@ export default function OverlayBoard() {
         items={tickerItems}
         panelClass={colours.panel}
         bottom={tickerBottom}
+        separatorImage={separatorImage}
       />
       {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
     </div>

@@ -163,6 +163,19 @@ describe('OverlayBoard', () => {
     expect(driver.closest('[role="row"]')).toHaveClass('bg-purple-500/40');
   });
 
+  it('puts the separator image between ticker items in place of the diamond', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Final A', nextDrivers: ['Ada Lovelace'], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [],
+    });
+    const { container } = renderOverlay('/boards/overlay?separator=/storage/logo.png');
+
+    await screen.findByText(/On the grid/);
+    expect(container.querySelector('[aria-label="Ticker"] img')).toHaveAttribute('src', '/storage/logo.png');
+    expect(screen.getByLabelText('Ticker')).not.toHaveTextContent('◆');
+  });
+
   it('ticker starts with the heat\'s fastest lap, then the round\'s fastest', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
@@ -396,6 +409,7 @@ describe('overlay options', () => {
       showQualifying: true,
       gap: 'int',
       gapEverySeconds: 6,
+      separatorImage: null,
       showBars: true,
       showArrows: true,
       showPredicted: true,

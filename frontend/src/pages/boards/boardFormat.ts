@@ -74,6 +74,17 @@ function parseGapEvery(value: string | null): number {
     : DEFAULT_GAP_EVERY_S;
 }
 
+/**
+ * Reads `?separator=`: the address of a small image to put between ticker items instead of the diamond. Only a
+ * web address or a path on this server is taken (never `javascript:`, `data:` or a protocol-relative address);
+ * anything else, or no value, keeps the diamond (null).
+ */
+export function parseSeparatorImage(value: string | null): string | null {
+  const v = value?.trim();
+  if (!v || v.toLowerCase() === 'diamond') return null;
+  return /^https?:\/\/\S+$/i.test(v) || /^\/(?!\/)\S*$/.test(v) ? v : null;
+}
+
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
@@ -92,6 +103,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showQualifying: params.get('qual')?.toLowerCase() !== 'hide',
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
+    separatorImage: parseSeparatorImage(params.get('separator')),
     ...parseLiveRaceOptions(params, defaultCloseMs),
   };
 }
@@ -185,6 +197,8 @@ export type OverlayDesign = {
   showQualifying: boolean;
   gap: GapMode;
   gapEverySeconds: number;
+  /** The address of an image to put between ticker items instead of the diamond; null keeps the diamond. */
+  separatorImage: string | null;
   showPredicted: boolean;
   showBars: boolean;
   showArrows: boolean;
@@ -206,6 +220,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showQualifying: true,
   gap: 'int',
   gapEverySeconds: DEFAULT_GAP_EVERY_S,
+  separatorImage: null,
   showPredicted: true,
   showBars: true,
   showArrows: true,
@@ -233,6 +248,7 @@ export function overlayQuery(design: OverlayDesign): string {
     q.set('ticker', TICKER_ITEMS.filter((item) => design.tickerItems.includes(item)).join(','));
   }
   if (!design.showSponsors) q.set('sponsors', 'hide');
+  if (parseSeparatorImage(design.separatorImage) !== null) q.set('separator', design.separatorImage!.trim());
   if (design.layout === 'table') q.set('layout', 'table');
   if (!design.showQualifying) q.set('qual', 'hide');
   if (design.gap !== 'int') q.set('gap', design.gap);

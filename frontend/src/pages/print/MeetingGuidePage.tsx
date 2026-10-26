@@ -457,6 +457,8 @@ export default function MeetingGuidePage() {
             <span className="font-mono text-xs"> gap=auto</span> takes turns every
             <span className="font-mono text-xs"> gapevery=SECONDS</span> (default 6),
             <span className="font-mono text-xs"> sponsors=hide</span> leaves out the sponsor bar,
+            <span className="font-mono text-xs"> separator=ADDRESS</span> puts a small image (a web address or a path such as
+            /storage/… for the club logo) between ticker items in place of the diamond,
             <span className="font-mono text-xs"> layout=table</span> draws a table in place of the tower,
             <span className="font-mono text-xs"> predict=hide</span> leaves out predicted laps,
             <span className="font-mono text-xs"> qual=hide</span> leaves out the qualifying place,

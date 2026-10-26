@@ -121,6 +121,7 @@ Options go on the end of the address:
 | `predict=hide` | Leave out the predicted laps |
 | `qual=hide` | Leave out the projected qualifying place |
 | `sponsors=hide` | Leave out the sponsor bar |
+| `separator=ADDRESS` | Put a small image between ticker items in place of the diamond: a web address (`https://…`) or a path on this server (`/storage/…`, as the club logo's). Anything else keeps the diamond; the Overlay Designer has a field for it |
 | `ticker=next,drivers,marshals,tq,fastest` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round |
 
 For example `/boards/overlay?top=6&theme=light`.

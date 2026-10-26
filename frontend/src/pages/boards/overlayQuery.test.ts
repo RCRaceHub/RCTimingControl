@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseOverlayOptions } from './boardFormat';
+import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
 
 describe('overlayQuery', () => {
   it('writes nothing for the default design', () => {
@@ -41,5 +41,24 @@ describe('overlayQuery', () => {
     expect(leaderGapText(lapped)).toBe('+2 laps');
     expect(leaderGapText({ ...lapped, lapsDown: 0, gapToLeaderMs: 3_400 })).toMatch(/^\+/);
     expect(leaderGapText({ ...lapped, position: 1 })).toBe('—');
+  });
+});
+
+describe('ticker separator image', () => {
+  it('round trips an image address and leaves the diamond out of the query', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, separatorImage: '/storage/logo.png' });
+    expect(query).toBe('?separator=%2Fstorage%2Flogo.png');
+    expect(parseOverlayOptions(new URLSearchParams(query)).separatorImage).toBe('/storage/logo.png');
+  });
+
+  it('takes only web addresses and server paths', () => {
+    expect(parseSeparatorImage('https://club.example/logo.png')).toBe('https://club.example/logo.png');
+    expect(parseSeparatorImage(' diamond ')).toBeNull();
+    expect(parseSeparatorImage('javascript:alert(1)')).toBeNull();
+    expect(parseSeparatorImage('data:image/png;base64,AAAA')).toBeNull();
+    expect(parseSeparatorImage('//evil.example/x.png')).toBeNull();
+    expect(parseSeparatorImage(null)).toBeNull();
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, separatorImage: 'javascript:alert(1)' })).toBe('');
   });
 });

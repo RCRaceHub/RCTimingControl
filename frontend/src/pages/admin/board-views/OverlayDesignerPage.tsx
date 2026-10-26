@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayQuery,
+  DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayQuery, parseSeparatorImage,
   type OverlayDesign, type TickerItem,
 } from '@/pages/boards/boardFormat';
 
@@ -45,6 +45,7 @@ export default function OverlayDesignerPage() {
   const [topText, setTopText] = useState(String(DEFAULT_OVERLAY_DESIGN.top));
   const [eventText, setEventText] = useState('');
   const [gapEveryText, setGapEveryText] = useState(String(DEFAULT_OVERLAY_DESIGN.gapEverySeconds));
+  const [separatorText, setSeparatorText] = useState('');
 
   const query = overlayQuery(design);
   const path = `/boards/overlay${query}`;
@@ -183,6 +184,21 @@ export default function OverlayDesignerPage() {
             <legend className="text-sm font-medium">Look</legend>
             <Check label="Sponsor bar" checked={design.showSponsors} onChange={(v) => set('showSponsors', v)} />
             <Check label="Light theme" checked={design.theme === 'light'} onChange={(v) => set('theme', v ? 'light' : 'dark')} />
+            <div className="space-y-1.5">
+              <Label htmlFor="ov-separator">Ticker separator image (blank keeps the diamond)</Label>
+              <Input
+                id="ov-separator"
+                placeholder="https://… or /storage/…"
+                value={separatorText}
+                onChange={(e) => {
+                  setSeparatorText(e.target.value);
+                  set('separatorImage', e.target.value);
+                }}
+              />
+              {separatorText.trim() !== '' && parseSeparatorImage(separatorText) === null && (
+                <p className="text-xs text-destructive">Use a web address (https://…) or a path on this server (/…).</p>
+              )}
+            </div>
           </fieldset>
 
           <fieldset className="space-y-2">
@@ -210,6 +226,7 @@ export default function OverlayDesignerPage() {
               setTopText(String(DEFAULT_OVERLAY_DESIGN.top));
               setEventText('');
               setGapEveryText(String(DEFAULT_OVERLAY_DESIGN.gapEverySeconds));
+              setSeparatorText('');
             }}
           >
             Reset to the default
