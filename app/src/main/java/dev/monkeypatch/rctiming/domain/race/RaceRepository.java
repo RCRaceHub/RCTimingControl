@@ -66,6 +66,17 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
         return dsl.fetchExists(RACES, RACES.EVENT_CLASS_ID.eq(eventClassId));
     }
 
+    /**
+     * Puts the event's run order back to the generated one by clearing every race's {@code run_rank}; for the
+     * services that add or remove races of an event whose finals were reordered. Runs in the caller's transaction.
+     */
+    public void clearRunRanks(Long eventId) {
+        dsl.update(RACES).setNull(RACES.RUN_RANK)
+                .where(RACES.RUN_RANK.isNotNull())
+                .and(RACES.ROUND_ID.in(DSL.select(ROUNDS.ID).from(ROUNDS).where(ROUNDS.EVENT_ID.eq(eventId))))
+                .execute();
+    }
+
     /** For BumpUpSeedingService: a class's races in rounds of the given type, such as its finals. */
     public List<Race> findByEventClassIdAndRoundType(Long eventClassId, RoundType roundType) {
         return dsl.select(RACES.fields()).from(RACES)

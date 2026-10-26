@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.competitor.SpeechName;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
@@ -62,7 +63,6 @@ public class PreRaceReadinessQuery {
                         RACES.HEAT_NUMBER,
                         RACES.FINAL_LETTER,
                         RACES.STATUS,
-                        RACES.SEQUENCE_IN_ROUND,
                         RACES.EVENT_CLASS_ID,
                         RACES.BUMP_SLOTS,
                         ROUNDS.EVENT_ID,
@@ -83,7 +83,6 @@ public class PreRaceReadinessQuery {
 
         int heatNumber = targetRow.get(RACES.HEAT_NUMBER);
         String finalLetter = targetRow.get(RACES.FINAL_LETTER);
-        int sequenceInRound = targetRow.get(RACES.SEQUENCE_IN_ROUND);
         long eventId = targetRow.get(ROUNDS.EVENT_ID);
         int sequenceInEvent = targetRow.get(ROUNDS.SEQUENCE_IN_EVENT);
         int roundNumber = targetRow.get(ROUNDS.ROUND_NUMBER);
@@ -93,27 +92,22 @@ public class PreRaceReadinessQuery {
         // Build raceLabel from round type
         String raceLabel = RaceLabel.of(roundType, roundNumber, className, heatNumber, finalLetter);
 
-        // Resolve the previous race in the event run order
-        // "Previous" = highest (sequence_in_event, sequence_in_round) tuple strictly less than target
-        var previousRaceRow = dsl
-                .select(RACES.ID, ROUNDS.EVENT_ID)
+        // Resolve the previous race in the event run order (see RunOrderSort: a reordered event has ranks)
+        List<Long> runOrder = dsl
+                .select(RACES.ID)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .where(ROUNDS.EVENT_ID.eq(eventId))
-                .and(
-                        ROUNDS.SEQUENCE_IN_EVENT.lt(sequenceInEvent)
-                        .or(ROUNDS.SEQUENCE_IN_EVENT.eq(sequenceInEvent)
-                                .and(RACES.SEQUENCE_IN_ROUND.lt(sequenceInRound)))
-                )
-                .orderBy(ROUNDS.SEQUENCE_IN_EVENT.desc(), RACES.SEQUENCE_IN_ROUND.desc())
-                .limit(1)
-                .fetchOne();
+                .orderBy(RunOrderSort.ascending())
+                .fetch(RACES.ID);
+        int position = runOrder.indexOf(raceId);
+        Long previousRaceId = position > 0 ? runOrder.get(position - 1) : null;
 
-        boolean firstRaceOfEvent = (previousRaceRow == null);
+        boolean firstRaceOfEvent = (previousRaceId == null);
 
         // The first race of the event has no race before it, so the last race of its own round
         // marshals it, the way the last heat of a round marshals the first heat of the next.
-        Long marshalRaceId = previousRaceRow != null ? previousRaceRow.get(RACES.ID) : null;
+        Long marshalRaceId = previousRaceId;
         if (marshalRaceId == null) {
             var lastInRound = dsl
                     .select(RACES.ID)

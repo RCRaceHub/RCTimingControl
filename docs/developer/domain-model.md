@@ -56,6 +56,7 @@ classDiagram
         finishedAt
         abandonedAt
         bumpSlots
+        runRank
     }
     class RaceEntry {
         raceId

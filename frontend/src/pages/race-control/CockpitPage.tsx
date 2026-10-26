@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useHelpContent } from '@/context/HelpContext';
 import { RaceControlHelp } from '@/help/RaceControlHelp';
@@ -40,7 +40,7 @@ import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDi
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
 import { FinalsLineupScreen } from './FinalsLineupScreen';
 import { Button } from '@/components/ui/button';
-import { getFinalsReview, type RunOrderItemDto } from '@/lib/raceControlApi';
+import { getFinalsReview, moveFinal, type RunOrderItemDto } from '@/lib/raceControlApi';
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -109,6 +109,11 @@ function CockpitView() {
   const { canRunEvent: canControlRace } = useRoles();
   const [generatorOpen, setGeneratorOpen] = useState(false);
   const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const onMoveFinal = (raceId: number, direction: 'UP' | 'DOWN') =>
+    moveFinal(raceId, direction)
+      .then(() => queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.runOrder(eventId) }))
+      .catch(commandFailed('Moving the final'));
 
   // Unknown transponder link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -628,6 +633,7 @@ function CockpitView() {
             items={runOrder}
             selectedRaceId={selectedRaceId}
             onSelect={setSelectedRaceId}
+            onMoveFinal={canControlRace ? onMoveFinal : undefined}
           />
         )}
 

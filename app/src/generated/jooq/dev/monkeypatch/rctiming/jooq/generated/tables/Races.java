@@ -141,6 +141,11 @@ public class Races extends TableImpl<RacesRecord> {
      */
     public final TableField<RacesRecord, Integer> BUMP_SLOTS = createField(DSL.name("bump_slots"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
 
+    /**
+     * The column <code>races.run_rank</code>.
+     */
+    public final TableField<RacesRecord, Integer> RUN_RANK = createField(DSL.name("run_rank"), SQLDataType.INTEGER, this, "");
+
     private Races(Name alias, Table<RacesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

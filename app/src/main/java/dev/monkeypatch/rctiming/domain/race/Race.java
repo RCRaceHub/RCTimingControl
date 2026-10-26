@@ -45,6 +45,13 @@ public class Race implements CreatedAt, UpdatedAt {
      */
     private int bumpSlots;
 
+    /**
+     * Where the race runs in the whole event once an official has reordered the finals (1 first), null while the
+     * run order is still the one the generator laid out (round, then {@code sequenceInRound}). Reordering gives every
+     * race of the event a rank at once, so within an event the ranks are all set or all null.
+     */
+    private Integer runRank;
+
     private Instant createdAt;
 
     private Instant updatedAt;
@@ -84,6 +91,8 @@ public class Race implements CreatedAt, UpdatedAt {
 
     public int getBumpSlots() { return bumpSlots; }
     public void setBumpSlots(int bumpSlots) { this.bumpSlots = bumpSlots; }
+    public Integer getRunRank() { return runRank; }
+    public void setRunRank(Integer runRank) { this.runRank = runRank; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

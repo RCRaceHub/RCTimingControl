@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.format.PointsFinalsConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatConfigConverter;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -93,8 +94,7 @@ public class EventResultsQuery {
                 .join(RACING_CLASSES).on(RACING_CLASSES.ID.eq(EVENT_CLASSES.RACING_CLASS_ID))
                 .join(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
                 .where(ROUNDS.EVENT_ID.eq(eventId), raceFilter)
-                .orderBy(ROUNDS.SEQUENCE_IN_EVENT.asc(), RACES.SEQUENCE_IN_ROUND.asc(),
-                        RACES.HEAT_NUMBER.asc(), RACES.ID.asc())
+                .orderBy(RunOrderSort.ascending())
                 .fetch();
 
         List<Long> raceIds = finished.getValues(RACES.ID);

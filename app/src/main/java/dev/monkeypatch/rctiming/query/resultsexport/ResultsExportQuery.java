@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.race.PenaltyType;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.query.RunOrderSort;
 import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.championship.RoundResultDto;
 import dev.monkeypatch.rctiming.query.championship.StandingsRowDto;
@@ -104,7 +105,7 @@ public class ResultsExportQuery {
                 .leftJoin(RESULT_SNAPSHOTS).on(RESULT_SNAPSHOTS.RACE_ID.eq(RACES.ID))
                 .where(ROUNDS.EVENT_ID.eq(eventId))
                 .and(RACES.STATUS.eq("FINISHED"))
-                .orderBy(ROUNDS.SEQUENCE_IN_EVENT, RACES.SEQUENCE_IN_ROUND, RACES.ID)
+                .orderBy(RunOrderSort.ascending())
                 .fetch();
 
         Map<Long, List<PenaltyRow>> penalties = penalties(eventId);

@@ -200,6 +200,11 @@ export async function skipToRace(raceId: number, targetRaceId: number): Promise<
   await api.post(`/api/v1/race-control/race/${raceId}/skip-to`, { targetRaceId });
 }
 
+/** Moves a pending final one place earlier or later in the event's run order (only when a final runs in legs). */
+export async function moveFinal(raceId: number, direction: 'UP' | 'DOWN'): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/move-final`, { direction });
+}
+
 export async function marshalAdjustment(
   raceId: number,
   req: MarshalAdjustmentRequest,
