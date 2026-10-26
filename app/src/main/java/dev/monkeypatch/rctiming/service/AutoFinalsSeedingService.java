@@ -115,7 +115,7 @@ public class AutoFinalsSeedingService {
     public CalculateAllResult reseedAll(Actor actor, Long eventId, Map<Long, Integer> carsPerFinal) {
         Map<Long, Integer> cars = carsPerFinal == null ? Map.of() : carsPerFinal;
         if (cars.values().stream().anyMatch(c -> c == null || c < 1 || c > 100)) {
-            throw new IllegalArgumentException("carsPerFinal must be at least 1");
+            throw new IllegalArgumentException("carsPerFinal must be 1 to 100");
         }
         List<EventClass> classes = eventClassRepository.findByEventId(eventId);
         if (classes.isEmpty()) {

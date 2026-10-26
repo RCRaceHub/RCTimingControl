@@ -75,50 +75,50 @@ export function FinalsLineupScreen({ eventId }: Props) {
     calculateAll.mutate();
   }
 
+  // The race control layout does not scroll, so this screen scrolls itself
   return (
-    // The race control layout does not scroll, so this screen scrolls itself
     <div className="h-full overflow-y-auto">
-    <div className="mx-auto flex max-w-5xl flex-col gap-4 p-6" aria-label="Finals line-up">
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold">Qualifying is over: set the finals</h1>
-        <p className="text-sm text-muted-foreground">
-          Calculate the finals from the qualifying results, change who is in each final if you need to, then confirm
-          the line-up to go back to race control and call the first final.
-        </p>
-      </header>
+      <div className="mx-auto flex max-w-5xl flex-col gap-4 p-6" aria-label="Finals line-up">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold">Qualifying is over: set the finals</h1>
+          <p className="text-sm text-muted-foreground">
+            Calculate the finals from the qualifying results, change who is in each final if you need to, then confirm
+            the line-up to go back to race control and call the first final.
+          </p>
+        </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="outline" onClick={onCalculateAll} disabled={calculateAll.isPending}>
-          {calculateAll.isPending ? 'Calculating…' : anyCalculated ? 'Calculate all finals again' : 'Calculate finals for all classes'}
-        </Button>
-        <Button
-          onClick={() => confirmLineup.mutate()}
-          disabled={confirmLineup.isPending || isPending || toCalculate.length > 0 || !anyCalculated}
-        >
-          {confirmLineup.isPending ? 'Confirming…' : 'Confirm line-up and go to race control'}
-        </Button>
-        {toCalculate.length > 0 && (
-          <span className="text-sm text-muted-foreground">
-            Calculate the finals for {toCalculate.map((l) => l.className).join(', ')} before confirming.
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={onCalculateAll} disabled={calculateAll.isPending}>
+            {calculateAll.isPending ? 'Calculating…' : anyCalculated ? 'Calculate all finals again' : 'Calculate finals for all classes'}
+          </Button>
+          <Button
+            onClick={() => confirmLineup.mutate()}
+            disabled={confirmLineup.isPending || isPending || toCalculate.length > 0 || !anyCalculated}
+          >
+            {confirmLineup.isPending ? 'Confirming…' : 'Confirm line-up and go to race control'}
+          </Button>
+          {toCalculate.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              Calculate the finals for {toCalculate.map((l) => l.className).join(', ')} before confirming.
+            </span>
+          )}
+        </div>
+
+        {isPending && <p role="status" className="text-sm text-muted-foreground">Loading…</p>}
+        {isError && (
+          <div role="alert" className="text-sm text-destructive">
+            Could not load the finals line-ups.{' '}
+            <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
+          </div>
         )}
+        {classes.map((l) => (
+          <div key={l.eventClassId} className="space-y-3">
+            <FinalsLineupPanel eventId={eventId} eventClassId={l.eventClassId} canEdit hideCalculateAll onCarsChange={onCarsChange} />
+            {l.calculated && <QualifyingTablePanel eventId={eventId} eventClassId={l.eventClassId} />}
+          </div>
+        ))}
+        {dialog}
       </div>
-
-      {isPending && <p role="status" className="text-sm text-muted-foreground">Loading…</p>}
-      {isError && (
-        <div role="alert" className="text-sm text-destructive">
-          Could not load the finals line-ups.{' '}
-          <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-        </div>
-      )}
-      {classes.map((l) => (
-        <div key={l.eventClassId} className="space-y-3">
-          <FinalsLineupPanel eventId={eventId} eventClassId={l.eventClassId} canEdit hideCalculateAll onCarsChange={onCarsChange} />
-          {l.calculated && <QualifyingTablePanel eventId={eventId} eventClassId={l.eventClassId} />}
-        </div>
-      ))}
-      {dialog}
-    </div>
     </div>
   );
 }

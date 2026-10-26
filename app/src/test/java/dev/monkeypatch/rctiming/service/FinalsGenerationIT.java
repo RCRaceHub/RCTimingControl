@@ -711,11 +711,11 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         for (Race heat : raceRepository.findByEventClassIdAndRoundType(buggyClass, RoundType.QUALIFIER)) {
             finishWithResult(heat, buggies, 1);
         }
-        autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId, java.util.Map.of(buggyClass, 12));
+        autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId, Map.of(buggyClass, 12));
         assertThat(gridOf(finalOf(buggyClass, "B"))).hasSize(12);
         assertThat(gridOf(finalOf(buggyClass, "A"))).hasSize(8);
         assertThatThrownBy(() -> autoFinalsSeedingService.reseedAll(Actor.system("test"), eventId,
-                java.util.Map.of(buggyClass, 0))).isInstanceOf(IllegalArgumentException.class);
+                Map.of(buggyClass, 0))).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
