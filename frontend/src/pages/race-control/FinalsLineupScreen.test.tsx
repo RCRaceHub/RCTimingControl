@@ -55,4 +55,13 @@ describe('FinalsLineupScreen', () => {
     expect(await screen.findByText(/Calculate the finals for Truggy before confirming/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /confirm line-up/i })).toBeDisabled();
   });
+
+  it('calculates all classes with the cars per final shown on the cards', async () => {
+    mockGet.mockResolvedValue([lineup(1, 'Buggy', false), lineup(2, 'Truggy', false)]);
+    mockCalculateAll.mockResolvedValue({ calculated: [1, 2], skipped: {} });
+    renderScreen();
+    await screen.findByText('Finals line-up: Truggy');
+    fireEvent.click(screen.getByRole('button', { name: /calculate finals for all classes/i }));
+    await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(7, { 1: 5, 2: 5 }));
+  });
 });

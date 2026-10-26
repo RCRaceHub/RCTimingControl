@@ -602,9 +602,17 @@ export async function calculateFinals(
 
 export type CalculateAllFinalsResult = { calculated: number[]; skipped: Record<string, string> };
 
-/** Calculates the finals of every class of the event that is ready; the others are left alone and named in `skipped`. */
-export async function calculateAllFinals(eventId: number): Promise<CalculateAllFinalsResult> {
-  const { data } = await api.post<CalculateAllFinalsResult>(`/api/v1/race-control/event/${eventId}/seed-all-finals`);
+/**
+ * Calculates the finals of every class of the event that is ready; the others are left alone and named in `skipped`.
+ * `carsPerFinal` gives the cars per final by event class id for the classes the official set a number for; a class
+ * not listed uses its format's own grid size.
+ */
+export async function calculateAllFinals(
+  eventId: number,
+  carsPerFinal: Record<number, number> = {},
+): Promise<CalculateAllFinalsResult> {
+  const { data } = await api.post<CalculateAllFinalsResult>(
+    `/api/v1/race-control/event/${eventId}/seed-all-finals`, { carsPerFinal });
   return data;
 }
 

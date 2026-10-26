@@ -100,18 +100,23 @@ public class AutoFinalsSeedingService {
     }
 
     /**
-     * Calculates the finals of every class of the event that is ready, in one go, with each class's own default
-     * layout (the format's grid size, or an even split). A class is ready when it has finals, every qualifying heat is
+     * Calculates the finals of every class of the event that is ready, in one go, with the cars per final the official
+     * set for the class, else its own default layout (the format's grid size, or an even split). A class is ready when it has finals, every qualifying heat is
      * finished (not all abandoned) and no final has started; any other class is left alone and named in the result,
      * so one class that is not ready never stops the rest. If a ready class then fails to calculate, the whole call is
      * rolled back and nothing changes. Like {@link #reseed}, it throws away hand edits to the
      * line-ups of the classes it calculates. Runs in one transaction on the request thread.
      *
+     * @param carsPerFinal cars per final by event class id, null or missing for a class's default
      * @return the ids of the classes calculated and, for each class left alone, why
      * @throws EntityNotFoundException if the event has no classes
      */
     @Transactional
-    public CalculateAllResult reseedAll(Actor actor, Long eventId) {
+    public CalculateAllResult reseedAll(Actor actor, Long eventId, Map<Long, Integer> carsPerFinal) {
+        Map<Long, Integer> cars = carsPerFinal == null ? Map.of() : carsPerFinal;
+        if (cars.values().stream().anyMatch(c -> c == null || c < 1 || c > 100)) {
+            throw new IllegalArgumentException("carsPerFinal must be 1 to 100");
+        }
         List<EventClass> classes = eventClassRepository.findByEventId(eventId);
         if (classes.isEmpty()) {
             throw new EntityNotFoundException("Event " + eventId + " has no classes");
@@ -132,7 +137,7 @@ public class AutoFinalsSeedingService {
             } else if (!qualifyingComplete(classId)) {
                 skipped.put(classId, "Qualifying is not finished");
             } else {
-                seed(actor, classId, null);
+                seed(actor, classId, cars.get(classId));
                 calculated.add(classId);
             }
         }

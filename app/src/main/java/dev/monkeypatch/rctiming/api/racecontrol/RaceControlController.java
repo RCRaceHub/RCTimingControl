@@ -19,6 +19,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateAllFinalsRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateFinalsRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsMoveRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
@@ -186,15 +187,18 @@ public class RaceControlController {
      * Calculates the finals of every class of the event that is ready, once qualifying is done. Classes that are not
      * ready (qualifying unfinished, a final started, no finals) are left alone and listed in the answer.
      *
-     * <p>{@code POST /event/{eventId}/seed-all-finals}; no body. 200 with {@code calculated} (event class ids) and
-     * {@code skipped} (event class id to reason). 404 if the event has no classes. Recorded in the audit log, one
+     * <p>{@code POST /event/{eventId}/seed-all-finals}; optional body {@code {"carsPerFinal": {"<eventClassId>": n}}} for the classes the
+     * official set a number for (ids not in the event are ignored; 400 outside 1 to 100). 200 with {@code calculated}
+     * (event class ids) and {@code skipped} (event class id to reason). 404 if the event has no classes. Recorded in the audit log, one
      * entry for each class calculated.
      */
     @Audited("audit_log")
     @PostMapping("/event/{eventId}/seed-all-finals")
     @Transactional
-    public AutoFinalsSeedingService.CalculateAllResult seedAllFinals(@PathVariable long eventId) {
-        return finalsSeedingService.reseedAll(CurrentOfficial.actor(), eventId);
+    public AutoFinalsSeedingService.CalculateAllResult seedAllFinals(
+            @PathVariable long eventId, @Valid @RequestBody(required = false) CalculateAllFinalsRequest request) {
+        return finalsSeedingService.reseedAll(CurrentOfficial.actor(), eventId,
+                request == null ? null : request.carsPerFinal());
     }
 
     /**

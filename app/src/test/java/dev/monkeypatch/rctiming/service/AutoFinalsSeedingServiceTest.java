@@ -95,7 +95,7 @@ class AutoFinalsSeedingServiceTest {
         when(races.findByEventClassIdAndRoundType(3L, RoundType.QUALIFIER)).thenReturn(List.of(race(RaceStatus.RUNNING)));
         var service = new AutoFinalsSeedingService(races, classes, null, bumpUp, null, null, null);
 
-        var result = service.reseedAll(Actor.system("test"), 9L);
+        var result = service.reseedAll(Actor.system("test"), 9L, null);
 
         assertThat(result.calculated()).isEmpty();
         assertThat(result.skipped()).containsOnlyKeys(1L, 2L, 3L);
