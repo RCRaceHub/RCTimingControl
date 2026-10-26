@@ -53,7 +53,7 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
     <div className="space-y-4 max-w-2xl">
       <p className="text-sm text-muted-foreground">
         The overlay's sponsor bar shows these along the foot of the page, one after another. Add the sponsor's name,
-        then a logo (PNG, JPEG or WebP, up to 2 MB); a sponsor without a logo shows its name.
+        then a logo (PNG or JPEG, up to 2 MB, at least 32 pixels each way). A logo with a transparent background looks best; it is trimmed and resized for you. A sponsor without a logo shows its name.
       </p>
       {sponsors.length === 0 && <p className="text-sm text-muted-foreground">No sponsors yet.</p>}
       <ul className="space-y-2">
@@ -81,7 +81,7 @@ export default function EventSponsorsSection({ eventId, canEdit }: EventSponsors
                   {sponsor.logoUrl ? 'Replace logo' : 'Add logo'}
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/webp"
+                    accept="image/png,image/jpeg"
                     className="sr-only"
                     aria-label={`Logo file for ${sponsor.name}`}
                     onChange={e => {

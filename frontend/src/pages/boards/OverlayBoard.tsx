@@ -229,7 +229,7 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
     >
       {shown.map(sponsor =>
         sponsor.logoUrl ? (
-          <img key={sponsor.id} src={sponsor.logoUrl} alt={sponsor.name} className="max-h-[4.5rem] max-w-[14rem] object-contain" />
+          <img key={sponsor.id} src={sponsor.logoUrl} alt={sponsor.name} className="h-[4.5rem] w-auto max-w-[14rem] object-contain" />
         ) : (
           <span key={sponsor.id} className="text-3xl font-bold">
             {sponsor.name}
