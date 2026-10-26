@@ -206,6 +206,7 @@ sequenceDiagram
     participant LO as LapOrder
     participant BTS as BoardTickerService
     participant Q as BoardQuery,<br/>PreRaceReadinessQuery,<br/>QualifyingTableService
+    participant RHS as RaceHighlightsService
 
     B->>BC: GET /boards/races/{id}/position-history<br/>(when total laps change)
     BC->>LRS: lapOrder() (under the state lock)
@@ -217,7 +218,15 @@ sequenceDiagram
     BTS->>Q: next race, grid call, marshal duty, top qualifiers
     BTS-->>BC: names through PublicNames
     BC-->>B: TickerDto
+    B->>BC: GET /boards/races/{id}/highlights (every 20 s)
+    BC->>RHS: forRace(raceId)
+    RHS->>LRS: live rows and lap times, else the stored result and grid
+    RHS->>Q: other finished heats of the round
+    RHS-->>BC: RaceHighlights.of(runs) for the heat and the round
+    BC-->>B: RaceHighlightsDto
 ```
+
+The ticker's standouts (most places gained and lost, best 3 and 5 lap average) come from `RaceHighlightsService`, which gathers one run per car (a live heat from `LiveRaceState`, a finished one from its stored result and grid) and hands them to the pure `RaceHighlights`; the round is every other finished heat of the round and class plus the heat itself.
 
 The Now and next board polls the same ticker endpoint for the next drivers and marshals.
 

@@ -116,6 +116,16 @@ public class BoardQuery {
                 .fetch(RACES.ID);
     }
 
+    /** The 1-based grid place of each entry in a race; an entry with no grid place is left out. */
+    public Map<Long, Integer> gridPositions(long raceId) {
+        Map<Long, Integer> grid = new HashMap<>();
+        dsl.select(RACE_ENTRIES.ENTRY_ID, RACE_ENTRIES.GRID_POSITION)
+                .from(RACE_ENTRIES)
+                .where(RACE_ENTRIES.RACE_ID.eq(raceId), RACE_ENTRIES.GRID_POSITION.isNotNull())
+                .forEach(r -> grid.put(r.get(RACE_ENTRIES.ENTRY_ID), r.get(RACE_ENTRIES.GRID_POSITION)));
+        return grid;
+    }
+
     /** The competitor behind each entry, so a board can apply that competitor's public name setting. */
     public Map<Long, Long> competitorIds(Collection<Long> entryIds) {
         if (entryIds.isEmpty()) {

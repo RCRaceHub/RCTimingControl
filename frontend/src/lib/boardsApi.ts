@@ -321,6 +321,25 @@ export async function getTicker(eventId?: number | null): Promise<TickerDto> {
   return data;
 }
 
+/** A driver and the number that earned a standout: places gained or lost, or an average lap in milliseconds. */
+export type HighlightMark = { driverName: string; value: number };
+
+/** The standouts of a set of runs: places gained and lost against the grid, and the best 3 and 5 lap average. */
+export type HighlightScope = {
+  gained: HighlightMark | null;
+  lost: HighlightMark | null;
+  avg3: HighlightMark | null;
+  avg5: HighlightMark | null;
+};
+
+/** The standouts of a heat (live while it runs) and of its round, for the overlay's ticker. */
+export type RaceHighlightsDto = { heat: HighlightScope; round: HighlightScope };
+
+export async function getRaceHighlights(raceId: number): Promise<RaceHighlightsDto> {
+  const { data } = await api.get<RaceHighlightsDto>(`/api/v1/boards/races/${raceId}/highlights`);
+  return data;
+}
+
 /** A sponsor of an event: its name and the address of its logo, if it has one. */
 export type SponsorDto = { id: number; name: string; logoUrl: string | null };
 
