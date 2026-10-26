@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the signed apt repository that serves the Linux package (#apt), from the .deb files of
+# Builds the signed apt repository that serves the Linux package, from the .deb files of
 # every release. Run by the apt-repo job of the Installers workflow, and by hand to try it out.
 #   build-apt-repo.sh <site-dir> <key-id> <new.deb>...
 # <site-dir> is the folder published as the web site. It is rebuilt from scratch each time, so there
@@ -8,6 +8,7 @@
 # keyring (APT_GPG_KEY in CI).
 set -euo pipefail
 
+[ $# -ge 3 ] || { echo "usage: $0 <site-dir> <key-id> <deb>..." >&2; exit 2; }
 SITE="$1"; KEY="$2"; shift 2
 SUITE=stable
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -39,4 +40,9 @@ gpg --batch --yes --armor --export "$KEY" > "$SITE/rctc-archive-keyring.asc"
 
 cp "$HERE/apt-site/index.html" "$HERE/apt-site/rctimingcontrol.sources" "$SITE/"
 touch "$SITE/.nojekyll"
+# A release must carry every architecture the docs promise
+for arch in amd64 arm64; do
+  grep -q '^Package: rctimingcontrol' "$SITE/dists/$SUITE/main/binary-$arch/Packages" \
+    || { echo "No $arch package in the repository" >&2; exit 1; }
+done
 echo "Built the apt repository in $SITE"
