@@ -1,7 +1,7 @@
 import type { EventResultsRace } from '@/lib/raceControlApi';
 import { averageLapMs, lapTimesFor } from '@/lib/heatSheet';
 import { startPosition } from '@/lib/eventPrint';
-import { fmtMs } from '@/lib/format';
+import { fmtMs, resultGapLabel } from '@/lib/format';
 import { DnfBadge } from '@/components/DnfBadge';
 
 /**
@@ -12,6 +12,7 @@ import { DnfBadge } from '@/components/DnfBadge';
  */
 export function HeatResultTable({ race }: { race: EventResultsRace }) {
   const { positions, lapHistory } = race.result;
+  const leaderLaps = Math.max(...positions.map((r) => r.lapsCompleted));
   const hasPoints = positions.some((r) => r.points != null);
   const hasChampionshipPoints = positions.some((r) => r.championshipPoints != null);
   return (
@@ -45,7 +46,7 @@ export function HeatResultTable({ race }: { race: EventResultsRace }) {
               {fmtMs(averageLapMs(lapTimesFor(row.entryId, lapHistory)))}
             </td>
             <td className="py-1.5 text-right font-mono text-muted-foreground">
-              {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
+              {resultGapLabel(row, leaderLaps)}
             </td>
             {hasPoints && <td className="py-1.5 pl-4 text-right font-mono">{row.points ?? '—'}</td>}
             {hasChampionshipPoints && (

@@ -10,6 +10,24 @@ export function fmtMs(ms: number | null | undefined): string {
   return m > 0 ? `${m}:${String(secs).padStart(2, '0')}.${millis}` : `${secs}.${millis}`;
 }
 
+/**
+ * A gap as every screen shows it: "+1 lap" or "+2 laps" for a car laps down, else "+" and the time behind, and a
+ * dash for the leader and for a car with no gap yet. Use this on any screen that shows a gap so they all agree.
+ */
+export function gapLabel(position: number, lapsDown: number, gapMs: number | null | undefined): string {
+  if (position === 1) return '—';
+  if (lapsDown > 0) return `+${lapsDown} ${lapsDown === 1 ? 'lap' : 'laps'}`;
+  return gapMs !== null && gapMs !== undefined ? `+${fmtMs(gapMs)}` : '—';
+}
+
+/** The gap to the leader for a finished-race result row, working out the laps down from the leader's lap count. */
+export function resultGapLabel(
+  row: { position: number; lapsCompleted: number; gapToLeaderMs: number | null },
+  leaderLaps: number,
+): string {
+  return gapLabel(row.position, leaderLaps - row.lapsCompleted, row.gapToLeaderMs);
+}
+
 type RaceRound = Pick<RunOrderItemDto, 'roundType' | 'roundNumber' | 'finalLetter'>;
 
 /** The round a race belongs to: "Final A", "Qualifier 2" ("Q2" when short) or "Practice". */

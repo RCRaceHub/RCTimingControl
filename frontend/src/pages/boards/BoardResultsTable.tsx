@@ -1,14 +1,7 @@
 import type { ResultRow } from '@/lib/raceControlApi';
-import { fmtMs } from '@/lib/format';
+import { fmtMs, resultGapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { DnfBadge } from '@/components/DnfBadge';
-
-function gap(row: ResultRow, leaderLaps: number): string {
-  if (row.position === 1) return '—';
-  const down = leaderLaps - row.lapsCompleted;
-  if (down > 0) return `+${down} ${down === 1 ? 'lap' : 'laps'}`;
-  return row.gapToLeaderMs !== null ? `+${fmtMs(row.gapToLeaderMs)}` : '—';
-}
 
 export function BoardResultsTable({ results }: { results: ResultRow[] }) {
   if (results.length === 0) {
@@ -41,7 +34,7 @@ export function BoardResultsTable({ results }: { results: ResultRow[] }) {
             <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}<DnfBadge dnf={row.dnf} className="ml-3 text-lg font-semibold text-red-400" /></td>
             <td className="py-3 pr-4 text-right tabular-nums">{row.totalTimeMs > 0 ? fmtMs(row.totalTimeMs) : '—'}</td>
             <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
-            <td className={`py-3 text-right tabular-nums text-slate-300 ${hasPoints ? 'pr-4' : ''}`}>{gap(row, leaderLaps)}</td>
+            <td className={`py-3 text-right tabular-nums text-slate-300 ${hasPoints ? 'pr-4' : ''}`}>{resultGapLabel(row, leaderLaps)}</td>
             {hasPoints && <td className="py-3 text-right font-semibold tabular-nums">{row.points ?? '—'}</td>}
             {hasChampionshipPoints && (
               <td className="py-3 pl-4 text-right font-semibold tabular-nums">{row.championshipPoints ?? '—'}</td>

@@ -1,4 +1,4 @@
-import { fmtMs } from '@/lib/format';
+import { fmtMs, gapLabel } from '@/lib/format';
 import type { HighlightMark, RaceHighlightsDto, TickerDto } from '@/lib/boardsApi';
 import type { GapMode } from '@/hooks/useGapView';
 import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
@@ -110,16 +110,12 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
 
 /** The gap to the leader a tower row shows: laps down, or the time behind the leader; a dash for the leader. */
 export function leaderGapText(row: LiveTimingRowDto): string {
-  if (row.position === 1) return '—';
-  if (row.lapsDown > 0) return `+${row.lapsDown} ${row.lapsDown === 1 ? 'lap' : 'laps'}`;
-  return row.gapToLeaderMs !== null ? `+${fmtMs(row.gapToLeaderMs)}` : '—';
+  return gapLabel(row.position, row.lapsDown, row.gapToLeaderMs);
 }
 
 /** The gap a tower row shows: laps down, or the time behind the car ahead; a dash for the leader and for no gap yet. */
 export function gapText(row: LiveTimingRowDto): string {
-  if (row.position === 1) return '—';
-  if (row.intervalLapsDown > 0) return `+${row.intervalLapsDown} ${row.intervalLapsDown === 1 ? 'lap' : 'laps'}`;
-  return row.gapToAheadMs !== null ? `+${fmtMs(row.gapToAheadMs)}` : '—';
+  return gapLabel(row.position, row.intervalLapsDown, row.gapToAheadMs);
 }
 
 /** Race time as m:ss, rounded down to the second. */
