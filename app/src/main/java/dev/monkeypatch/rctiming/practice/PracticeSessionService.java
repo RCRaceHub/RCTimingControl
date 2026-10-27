@@ -5,6 +5,8 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriver;
+import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSession;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSessionRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeStatus;
@@ -19,7 +21,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,25 +39,31 @@ public class PracticeSessionService {
 
     private static final Logger log = LoggerFactory.getLogger(PracticeSessionService.class);
 
+    /** How far back a new session looks for transponder names to keep. */
+    private static final Duration CARRY_OVER_WINDOW = Duration.ofHours(24);
+
     private final PracticeSessionRepository sessionRepository;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final PracticeTimingService timingService;
     private final AuditService audit;
     private final RaceRepository raceRepository;
+    private final PracticeDriverRepository driverRepository;
 
     public PracticeSessionService(PracticeSessionRepository sessionRepository,
                                   EventRepository eventRepository,
                                   UserRepository userRepository,
                                   PracticeTimingService timingService,
                                   AuditService audit,
-                                  RaceRepository raceRepository) {
+                                  RaceRepository raceRepository,
+                                  PracticeDriverRepository driverRepository) {
         this.sessionRepository = sessionRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.timingService = timingService;
         this.audit = audit;
         this.raceRepository = raceRepository;
+        this.driverRepository = driverRepository;
     }
 
     /**
@@ -131,8 +143,35 @@ public class PracticeSessionService {
                 .event(session.getEventId())
                 .summary("Started the practice session " + session.getName())
                 .before(PracticeStatus.IDLE).after(session.getStatus()).record();
+        carryOverDrivers(session);
         timingService.startSession(session);
         return toDto(session);
+    }
+
+    /**
+     * Names are saved per session, so a new session would otherwise forget who each transponder is. Copies the
+     * newest name given to each transponder in the sessions started in the last {@link #CARRY_OVER_WINDOW} into
+     * the session starting, where an official can still change it. Runs in the start transaction.
+     */
+    private void carryOverDrivers(PracticeSession session) {
+        Instant now = Instant.now();
+        Map<String, Long> latest = new LinkedHashMap<>();
+        for (PracticeSession earlier : sessionRepository.findStartedBetween(now.minus(CARRY_OVER_WINDOW), now)) {
+            if (earlier.getId().equals(session.getId())) {
+                continue;
+            }
+            // Oldest session first, so a later naming replaces an earlier one
+            for (PracticeDriver d : driverRepository.findByPracticeSessionId(earlier.getId())) {
+                latest.put(d.getTransponderNumber(), d.getCompetitorId());
+            }
+        }
+        latest.forEach((transponder, competitorId) -> {
+            PracticeDriver driver = new PracticeDriver();
+            driver.setPracticeSessionId(session.getId());
+            driver.setTransponderNumber(transponder);
+            driver.setCompetitorId(competitorId);
+            driverRepository.save(driver);
+        });
     }
 
     /**
