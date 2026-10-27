@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * Qualifying heats then bump-up finals (FORMAT-02, FORMAT-12): {@code qualifyingHeats} heats of
  * {@code heatDurationMinutes}, of which the best {@code bestHeatsCount} are meant to count. {@code gridSize} is the
  * racers per final and {@code bumpSpots} the places in each higher final filled by the final below. Heats take
- * {@code qualifyingStartType} and finals {@code finalsStartType}. The number of finals comes from the entry count at
+ * {@code qualifyingStartType}; finals always start on the grid and {@code finalsStartType} is ignored. The number of finals comes from the entry count at
  * event time, not from the config.
  *
  * <p>Durations are in minutes. {@code racePaddingMinutes} is kept so saved configs still load and is not

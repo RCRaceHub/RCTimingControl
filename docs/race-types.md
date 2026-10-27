@@ -57,7 +57,7 @@ The grid matters most in a staggered start (section 2), where it is the order dr
 
 ## 2. How a race starts
 
-The start type is set in the format, separately for heats and for finals (a Timed format has one start type for both).
+The start type is set in the format for practice and qualifying heats. Finals of a Bump-up or Points finals format always start on the grid; a Timed format has one start type for every round.
 It is read when the grid is called, so a format change made after the rounds were generated applies from then on. A
 class with no format, or none set, starts heats staggered and finals on the grid.
 

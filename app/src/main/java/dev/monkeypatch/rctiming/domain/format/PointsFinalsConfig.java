@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Qualifying heats, then {@code finalsCount} finals scored on points (FORMAT-04). Heats run for
- * {@code heatDurationMinutes} with {@code qualifyingStartType}; finals run for {@code finalDurationMinutes} with
- * {@code finalsStartType}. {@code qualifyingHeats} and {@code finalsCount} are the round generator's starting numbers
+ * {@code heatDurationMinutes} with {@code qualifyingStartType}; finals run for {@code finalDurationMinutes} and
+ * always start on the grid ({@code finalsStartType} is ignored). {@code qualifyingHeats} and {@code finalsCount} are the round generator's starting numbers
  * in the browser form, which the official can change; the backend takes the counts from the generation request.
  *
  * <p>Durations are in minutes. {@code racePaddingMinutes} is kept so saved configs still load and is not
