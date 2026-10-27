@@ -40,7 +40,7 @@ Phones, tablets and other computers on the same network can use the demo too, at
 
 ### One event for each race type
 
-Besides the Wyvern Winter Series rounds, the demo has seven open events named `Demo: ...`, each with a field sized to show how that kind of race is handled. None has a run order yet, so open the event and generate the rounds yourself.
+The demo has seven open events named `Demo: ...`, each with a field sized to show how that kind of race is handled. None has a run order yet, so open the event and generate the rounds yourself.
 
 | Event | Format | Drivers | What to look at |
 |---|---|---|---|
