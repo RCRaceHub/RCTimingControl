@@ -142,6 +142,37 @@ describe('LiveTopBoard', () => {
     expect(parseTopParam('abc')).toBe(30);
     expect(parseTopParam('500')).toBe(30);
   });
+  it('shows a final run in legs as the leg on track beside the combined order', async () => {
+    vi.mocked(getLiveQualifying).mockResolvedValue({
+      ...table('LIVE', [row({ position: 1, previousPosition: 2, driverName: 'Leg Leader', points: 3 })]),
+      roundNumber: 2,
+      roundType: 'FINAL',
+      heading: 'Buggy A final',
+      roundTitle: 'Leg 2 of 3',
+      overallTitle: 'Combined',
+      roundRows: [
+        {
+          position: 1,
+          previousPosition: null,
+          entryId: 1,
+          driverName: 'Leg Leader',
+          carNumber: '1',
+          lapsCompleted: 5,
+          totalTimeMs: 90_000,
+          bestLapMs: 17_000,
+          live: true,
+        },
+      ],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByRole('heading', { name: 'Buggy A final' })).toBeInTheDocument();
+    expect(screen.getByText('Leg 2 of 3')).toBeInTheDocument();
+    expect(screen.getByText('Combined')).toBeInTheDocument();
+    expect(screen.getByText('Points')).toBeInTheDocument();
+  });
+
   it('ranks practice by the event setting, with a Practice round beside the overall order', async () => {
     vi.mocked(getLiveQualifying).mockResolvedValue({
       ...table('LIVE', [row({ position: 1, previousPosition: null, driverName: 'Quick Sam', points: null, bestLapMs: 41_000 })]),

@@ -217,7 +217,11 @@ export type LiveQualifyingDto = {
   className: string | null;
   roundNumber?: number | null;
   /** QUALIFIER or PRACTICE; absent or null with nothing to show. */
-  roundType?: 'QUALIFIER' | 'PRACTICE' | null;
+  roundType?: 'QUALIFIER' | 'PRACTICE' | 'FINAL' | null;
+  /** For a final: the board's title ("Buggy A final") and the headings over the leg and the combined order. */
+  heading?: string | null;
+  roundTitle?: string | null;
+  overallTitle?: string | null;
   /** For practice, what the time columns hold, such as "Best 3 laps in a row"; null for qualifying. */
   rankingLabel?: string | null;
   /** The overall order, as it would stand if the heat ended now. */

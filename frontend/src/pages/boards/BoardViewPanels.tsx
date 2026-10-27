@@ -86,7 +86,7 @@ function LiveTopPanel({ ctx, top }: { ctx: PanelContext; top: number }) {
     <div>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-3xl font-bold lg:text-4xl">
-          {data.className} {data.roundType === 'PRACTICE' ? 'practice' : 'qualifying'}
+          {data.heading ?? `${data.className} ${data.roundType === 'PRACTICE' ? 'practice' : 'qualifying'}`}
         </h2>
         <p className="text-xl text-slate-400">
           {data.phase === 'LIVE' ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}

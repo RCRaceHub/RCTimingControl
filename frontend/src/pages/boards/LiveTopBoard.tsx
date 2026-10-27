@@ -48,7 +48,7 @@ export default function LiveTopBoard() {
     <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h1 className="text-4xl font-bold lg:text-6xl">
-          {data.className} {data.roundType === 'PRACTICE' ? 'practice' : 'qualifying'}
+          {data.heading ?? `${data.className} ${data.roundType === 'PRACTICE' ? 'practice' : 'qualifying'}`}
         </h1>
         <p className="text-2xl text-slate-400 lg:text-3xl">
           {live ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}

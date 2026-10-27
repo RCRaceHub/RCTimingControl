@@ -29,6 +29,7 @@ import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsBoardService;
 import dev.monkeypatch.rctiming.service.PodiumBoardService;
 import dev.monkeypatch.rctiming.service.RaceHighlightsService;
+import dev.monkeypatch.rctiming.service.LiveFinalService;
 import dev.monkeypatch.rctiming.service.LiveQualifyingService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
@@ -71,6 +72,7 @@ public class BoardController {
     private final PodiumBoardService podiumBoardService;
     private final LastLapTimeout lastLapTimeout;
     private final LiveQualifyingService liveQualifyingService;
+    private final LiveFinalService liveFinalService;
     private final ClubProfileService clubProfileService;
     private final EventSponsorService eventSponsorService;
     private final DriverMediaService driverMediaService;
@@ -89,6 +91,7 @@ public class BoardController {
                            PodiumBoardService podiumBoardService,
                            LastLapTimeout lastLapTimeout,
                            LiveQualifyingService liveQualifyingService,
+                           LiveFinalService liveFinalService,
                            ClubProfileService clubProfileService,
                            EventSponsorService eventSponsorService,
                            DriverMediaService driverMediaService,
@@ -110,6 +113,7 @@ public class BoardController {
         this.podiumBoardService = podiumBoardService;
         this.lastLapTimeout = lastLapTimeout;
         this.liveQualifyingService = liveQualifyingService;
+        this.liveFinalService = liveFinalService;
     }
 
     /**
@@ -172,6 +176,16 @@ public class BoardController {
                         .map(BoardController::liveLapTimes).orElse(Map.of());
                 return practiceTable(event, "LIVE", running, lapTimes);
             }
+            if (running != null && "FINAL".equals(running.roundType())) {
+                List<LiveTimingRowDto> live = lapTimingService.peek(running.raceId())
+                        .map(LiveRaceState::calculatePositions).orElse(List.of());
+                return finalTable(event, "LIVE", running, live);
+            }
+            // Between races the final that finished last stays up, until the next race starts
+            BoardRaceDto lastRace = boardQuery.lastCompletedRace(event.id()).orElse(null);
+            if (lastRace != null && "FINAL".equals(lastRace.roundType())) {
+                return finalTable(event, "FINISHED", lastRace, null);
+            }
             // Not a qualifying heat on track: keep the last qualifying heat's table up, including while the finals
             // run, so the board is never empty once qualifying has been raced
             BoardRaceDto last = boardQuery.lastCompletedQualifier(event.id()).orElse(null);
@@ -191,7 +205,7 @@ public class BoardController {
                                         List<LiveTimingRowDto> liveRows) {
         return liveQualifyingService.forHeat(race.raceId(), liveRows)
                 .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
-                        race.className(), race.roundNumber(), "QUALIFIER", null, tables.rows(), tables.roundRows()))
+                        race.className(), race.roundNumber(), "QUALIFIER", null, null, null, null, tables.rows(), tables.roundRows()))
                 .orElse(LiveQualifyingDto.none(event.id(), event.name()));
     }
 
@@ -200,8 +214,17 @@ public class BoardController {
         PracticeRanking ranking = boardQuery.practiceRanking(event.id());
         return liveQualifyingService.forPracticeHeat(race.raceId(), lapTimes, ranking)
                 .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
-                        race.className(), race.roundNumber(), "PRACTICE", ranking.label(), tables.rows(),
-                        tables.roundRows()))
+                        race.className(), race.roundNumber(), "PRACTICE", ranking.label(), null, null, null,
+                        tables.rows(), tables.roundRows()))
+                .orElse(LiveQualifyingDto.none(event.id(), event.name()));
+    }
+
+    private LiveQualifyingDto finalTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
+                                         List<LiveTimingRowDto> liveRows) {
+        return liveFinalService.forLeg(race.raceId(), liveRows)
+                .map(t -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
+                        race.className(), t.leg(), "FINAL", null, race.className() + " " + t.finalLetter() + " final",
+                        "Leg " + t.leg() + " of " + t.legs(), "Combined", t.rows(), t.roundRows()))
                 .orElse(LiveQualifyingDto.none(event.id(), event.name()));
     }
 
