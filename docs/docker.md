@@ -45,11 +45,11 @@ Besides the Wyvern Winter Series rounds, the demo has seven open events named `D
 | Event | Format | Drivers | What to look at |
 |---|---|---|---|
 | Demo: Timed, rolling start | Timed, rolling start | 8 | Clock starts at the first car across the line |
-| Demo: Timed, grid start with finals | Timed, grid start | 12 | Two heats, two finals of 6 |
-| Demo: Bump-up finals | Bump up, 6 per final | 16 | A, B and C finals, the lowest the smallest, with 2 bump-up places |
+| Demo: Timed, grid start with finals | Timed, grid start | 12 | Choose a maximum of 6 cars per heat for two heats, then two finals |
+| Demo: Bump-up finals | Bump up, 6 per final | 14 | A, B and C finals of 6 with 2 bump-up places |
 | Demo: Points finals | Points finals, 4 per final | 12 | Three finals filled from the top |
-| Demo: Points finals in legs | Points finals, BRCA rules | 11 | A final in 3 legs with the best 2 counting, round by round qualifying |
-| Demo: Shikabane heats and mains | Shikabane, 5 lap heats | 14 | A, B and C mains, promotion and the zombie round |
+| Demo: Points finals in legs | Points finals, BRCA rules | 10 | A final in 3 legs with the best 2 counting, round by round qualifying |
+| Demo: Shikabane heats and mains | Shikabane, 5 lap heats | 14 | A, B and C mains of 6, promotion and the zombie round |
 | Demo: Shikabane timed heats | Shikabane, 3 minute heats | 8 | Heats only, eliminations by hand |
 
 Open practice is not an event: start it from race control. Pat Drift and Max Lap also have a secondary transponder (204 and 207) that the simulator does not play, for trying a swap. Because the simulator plays all sixteen transponders whichever race is running, cars not in that race show up as unknown transponders; dismiss them, or run `simulate --mode=generative --transponders=...` yourself with just the cars you want.

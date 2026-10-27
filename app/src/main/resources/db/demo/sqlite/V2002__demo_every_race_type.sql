@@ -3,7 +3,7 @@
 -- Transponders 101-116 are the ones the simulator plays by default (RcTimingApplication.simulatorArguments).
 -- Open practice is not an event; start it from Race control > Practice.
 
--- 1. the sixteen drivers: the eight from V2000 plus eight more, car transponders in step with the roster order
+-- 1. the sixteen drivers: the eight from V2000 plus eight more, transponder number is 100 plus the roster position
 INSERT INTO competitors (display_name) VALUES
     ('Ruth Chassis'), ('Omar Pinion'), ('Tess Droop'), ('Ivan Camber'),
     ('Hana Toe'), ('Zed Caster'), ('Fay Spur'), ('Gus Wishbone');
@@ -17,7 +17,7 @@ INSERT INTO race_format_templates (name, config) VALUES
     ('Bump-up Finals, 6 per final', '{"type":"BUMP_UP","qualifyingHeats":3,"heatDurationMinutes":5,"bestHeatsCount":2,"gridSize":6,"bumpSpots":2,"qualifyingStartType":"GRID","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5}'),
     ('Points Finals, 4 per final', '{"type":"POINTS_FINALS","qualifyingHeats":3,"finalsCount":3,"finalDurationMinutes":5,"heatDurationMinutes":5,"qualifyingStartType":"STAGGER","finalsStartType":"GRID","qualifyingType":"FTQ","racePaddingMinutes":2,"staggerIntervalSeconds":5,"carsPerFinal":4,"fillTopFirst":true}'),
     ('Points Finals, BRCA legs', '{"type":"POINTS_FINALS","qualifyingHeats":3,"finalsCount":2,"finalDurationMinutes":5,"heatDurationMinutes":5,"qualifyingStartType":"GRID","finalsStartType":"GRID","qualifyingType":"ROUND_BY_ROUND","racePaddingMinutes":2,"staggerIntervalSeconds":5,"bestHeatsCount":2,"splitTiedPlaces":true,"brcaQualifying":true,"maxRaceWindowSeconds":400,"carsPerFinal":5,"fillTopFirst":true,"finalLegs":3,"legsCounted":2}'),
-    ('Shikabane, laps and mains', '{"type":"SHIKABANE","heatDurationMinutes":5,"startType":"GRID","staggerIntervalSeconds":3,"falseStartPenaltyPoints":3,"zombieBonusPoints":1,"heatLaps":5,"mains":3,"mainGridSize":5,"promotionSpots":2,"zombieRound":true,"finalsStartType":"GRID"}'),
+    ('Shikabane, laps and mains', '{"type":"SHIKABANE","heatDurationMinutes":5,"startType":"GRID","staggerIntervalSeconds":3,"falseStartPenaltyPoints":3,"zombieBonusPoints":1,"heatLaps":5,"mains":3,"mainGridSize":6,"promotionSpots":2,"zombieRound":true,"finalsStartType":"GRID"}'),
     ('Shikabane, timed heats', '{"type":"SHIKABANE","heatDurationMinutes":3,"startType":"STAGGER","staggerIntervalSeconds":3,"falseStartPenaltyPoints":3,"zombieBonusPoints":1,"heatLaps":0,"mains":0,"mainGridSize":0,"promotionSpots":0,"zombieRound":false}');
 
 -- 4. one event per race type
@@ -40,8 +40,8 @@ FROM (
     UNION ALL SELECT 'Demo: Bump-up finals', '13.5 Touring', 'Bump-up Finals, 6 per final', 3, 6, 2
     UNION ALL SELECT 'Demo: Points finals', 'F1 Open', 'Points Finals, 4 per final', 3, 4, 0
     UNION ALL SELECT 'Demo: Points finals in legs', 'Stock Buggy', 'Points Finals, BRCA legs', 2, 5, 0
-    UNION ALL SELECT 'Demo: Shikabane heats and mains', 'Shikabane Open', 'Shikabane, laps and mains', 3, 5, 0
-    UNION ALL SELECT 'Demo: Shikabane timed heats', 'Shikabane Open', 'Shikabane, timed heats', 1, 8, 0
+    UNION ALL SELECT 'Demo: Shikabane heats and mains', 'Shikabane Open', 'Shikabane, laps and mains', 3, 6, 0
+    UNION ALL SELECT 'Demo: Shikabane timed heats', 'Shikabane Open', 'Shikabane, timed heats', 0, 0, 0
 ) c
 JOIN race_format_templates t ON t.name = c.template;
 
@@ -73,9 +73,9 @@ JOIN event_classes ec ON ec.event_id = e.id
 WHERE r.pos <= CASE e.name
     WHEN 'Demo: Timed, rolling start' THEN 8
     WHEN 'Demo: Timed, grid start with finals' THEN 12
-    WHEN 'Demo: Bump-up finals' THEN 16
+    WHEN 'Demo: Bump-up finals' THEN 14
     WHEN 'Demo: Points finals' THEN 12
-    WHEN 'Demo: Points finals in legs' THEN 11
+    WHEN 'Demo: Points finals in legs' THEN 10
     WHEN 'Demo: Shikabane heats and mains' THEN 14
     WHEN 'Demo: Shikabane timed heats' THEN 8
 END
