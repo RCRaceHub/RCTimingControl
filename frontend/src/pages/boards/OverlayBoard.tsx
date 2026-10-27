@@ -30,6 +30,7 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
+import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useBattles } from '@/hooks/race-control/useBattles';
@@ -420,6 +421,7 @@ export default function OverlayBoard() {
                                           </td>
                     <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
                     <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
+                      <RowStateIcon flash={flash} close={close} className="ml-1" />
                       {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
                       {row.finished && <FinishedFlag className="ml-1" />}
                       {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}

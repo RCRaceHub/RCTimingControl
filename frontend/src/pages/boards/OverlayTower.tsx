@@ -6,6 +6,7 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
+import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
@@ -184,6 +185,7 @@ export function OverlayTower({
               <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
               <span className="relative flex min-w-0 flex-1 items-center font-semibold">
                 <ScrollingName name={row.driverName} />
+                <RowStateIcon flash={flash} close={close} className="ml-1" />
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
                 {row.finished && <FinishedFlag className="ml-1" />}
                 {barClock && !row.finished && (
