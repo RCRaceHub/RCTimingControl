@@ -1,4 +1,4 @@
-// Anonymous spectator board: the top of the qualifying table for the class on track, with the running heat counted
+// Anonymous spectator board: the top of the practice or qualifying table for the class on track, with the running heat counted
 // from its live positions (#480). While a heat runs the order is a projection; once it ends the settled order stays
 // up, with who moved, until the next race starts.
 import { useSearchParams } from 'react-router-dom';
@@ -47,7 +47,9 @@ export default function LiveTopBoard() {
   return (
     <BoardShell eventName={data.eventName} eventId={data.eventId} showQr>
       <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <h1 className="text-4xl font-bold lg:text-6xl">{data.className} qualifying</h1>
+        <h1 className="text-4xl font-bold lg:text-6xl">
+          {data.className} {data.roundType === 'PRACTICE' ? 'practice' : 'qualifying'}
+        </h1>
         <p className="text-2xl text-slate-400 lg:text-3xl">
           {live ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}
         </p>
