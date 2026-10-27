@@ -40,14 +40,17 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
   const rows = data.rows.slice(0, top);
   const hasBaseline = data.rows.some((r) => r.previousPosition !== null);
   const practice = data.roundType === 'PRACTICE';
+  // A final of one leg has no points to show, so its table gives laps instead
+  const showLaps = practice || data.rows.every((r) => r.points === null);
+  const label = practice ? 'Practice order' : data.roundType === 'FINAL' ? 'Final order' : 'Qualifying order';
   return (
-    <table className={`w-full ${density.text}`} aria-label={practice ? 'Practice order' : 'Qualifying order'}>
+    <table className={`w-full ${density.text}`} aria-label={label}>
       <thead>
         <tr className={`border-b border-slate-700 text-left text-slate-400 ${density.head}`}>
           <th className={density.cell}>Pos</th>
           <th className={density.cell}>Driver</th>
           <th className={density.cell}>Car</th>
-          {practice ? (
+          {showLaps ? (
             <th className={`${density.cell} text-right`}>Laps</th>
           ) : (
             <th className={`${density.cell} text-right`}>Points</th>
@@ -66,7 +69,7 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
               {live && row.waiting && <span className="ml-3 text-slate-500">heat to come</span>}
             </td>
             <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>
-            {practice ? (
+            {showLaps ? (
               <td className={`${density.cell} text-right tabular-nums`}>{row.lapsCompleted}</td>
             ) : (
               <td className={`${density.cell} text-right font-semibold tabular-nums`}>{row.points ?? '—'}</td>
@@ -156,16 +159,18 @@ export function LiveTopTable({ data, top, showLegend = false }: { data: LiveQual
       <div className="grid gap-8 xl:grid-cols-2">
         <section aria-label="Round">
           <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
-            {data.roundType === 'PRACTICE'
-              ? `Practice ${data.roundNumber ?? ''}`.trim()
-              : data.roundNumber
-                ? `Round ${data.roundNumber}`
-                : 'This round'}
+            {data.roundTitle
+              ? data.roundTitle
+              : data.roundType === 'PRACTICE'
+                ? `Practice ${data.roundNumber ?? ''}`.trim()
+                : data.roundNumber
+                  ? `Round ${data.roundNumber}`
+                  : 'This round'}
           </h2>
           <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
         </section>
         <section aria-label="Overall">
-          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">Overall</h2>
+          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">{data.overallTitle ?? 'Overall'}</h2>
           <OverallTable data={data} top={top} density={COMPACT} />
         </section>
       </div>

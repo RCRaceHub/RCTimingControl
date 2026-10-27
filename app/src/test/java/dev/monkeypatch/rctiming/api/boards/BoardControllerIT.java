@@ -325,6 +325,44 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void liveTop_forAFinalRunInLegsShowsTheLastLegBesideTheCombinedOrder() {
+        Round aRound = fx.round(RoundType.FINAL, 1, 1);
+        Race leg1 = fx.race(aRound, 1, RaceStatus.FINISHED);
+        leg1.setFinalLetter("A");
+        fx.save(leg1);
+        Entry ada = fx.gridEntry(leg1, "Ada Lovelace", "T-1", 1);
+        Entry bob = fx.gridEntry(leg1, "Bob Builder", "T-2", 2);
+        saveSnapshot(leg1, String.format("""
+                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Ada Lovelace","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null},
+                 {"position":2,"entryId":%d,"competitorId":null,"driverName":"Bob Builder","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":301000,"bestLapMs":19500,"gapToLeaderMs":1000}]
+                """, ada.getId(), bob.getId()));
+        Race leg2 = fx.race(aRound, 2, RaceStatus.FINISHED);
+        leg2.setFinalLetter("A");
+        fx.save(leg2);
+        saveSnapshot(leg2, String.format("""
+                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Bob Builder","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":299000,"bestLapMs":19000,"gapToLeaderMs":null},
+                 {"position":2,"entryId":%d,"competitorId":null,"driverName":"Ada Lovelace","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":301000,"bestLapMs":19500,"gapToLeaderMs":2000}]
+                """, bob.getId(), ada.getId()));
+
+        Map body = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
+
+        assertThat(body.get("roundType")).isEqualTo("FINAL");
+        assertThat(body.get("phase")).isEqualTo("FINISHED");
+        assertThat(body.get("roundTitle")).isEqualTo("Leg 2 of 2");
+        assertThat(body.get("overallTitle")).isEqualTo("Combined");
+        assertThat((List<Map>) body.get("roundRows")).extracting(r -> r.get("driverName"))
+                .containsExactly("Bob Builder", "Ada Lovelace");
+        List<Map> rows = (List<Map>) body.get("rows");
+        // 3 points each (1 + 2); Bob has the least time over the two legs
+        assertThat(rows).extracting(r -> r.get("driverName")).containsExactly("Bob Builder", "Ada Lovelace");
+        assertThat(rows).extracting(r -> r.get("points")).containsExactly(3, 3);
+    }
+
+    @Test
     void qualifyingBoard_withNoQualifyingHeatsHasNoTables() {
         Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
 

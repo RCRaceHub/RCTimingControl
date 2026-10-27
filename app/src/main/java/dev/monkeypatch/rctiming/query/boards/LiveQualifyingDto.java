@@ -16,7 +16,16 @@ import java.util.List;
  * rankingLabel} names it ("Fastest lap", "Best 3 laps in a row"), {@code bestLapMs} of every row is the ranked time,
  * {@code points} and {@code totalTimeMs} are null, and {@code roundRows} is the heat's round (one practice session).
  *
- * @param roundType   {@code QUALIFIER} or {@code PRACTICE}, null for {@code NONE}
+ * <p>For a final, {@code roundType} is {@code FINAL}: {@code roundRows} is the leg on track (or the one that just
+ * ended) and {@code rows} the final's combined order over its legs, with the leg on track counted as if it ended now
+ * and {@code points} the total (lowest wins). A final of one leg has {@code rows} only, the leg's own order.
+ * {@code heading}, {@code roundTitle} and {@code overallTitle} then name them ("Buggy A final", "Leg 2 of 3",
+ * "Combined"); they are null for practice and qualifying, where the board words them itself.
+ *
+ * @param roundType   {@code QUALIFIER}, {@code PRACTICE} or {@code FINAL}, null for {@code NONE}
+ * @param heading     the board's title for a final, null otherwise
+ * @param roundTitle  the heading over {@code roundRows} for a final, null otherwise
+ * @param overallTitle the heading over {@code rows} for a final, null otherwise
  * @param rankingLabel what {@code bestLapMs} holds for a practice heat, null for qualifying
  * @param raceId      the heat being shown, null for {@code NONE}
  * @param raceLabel   the heat's label, such as "Qualifying 2 — Stock Buggy — Heat 1"
@@ -28,12 +37,13 @@ import java.util.List;
  */
 public record LiveQualifyingDto(Long eventId, String eventName, String phase, Long raceId, String raceLabel,
                                 String className, Integer roundNumber, String roundType, String rankingLabel,
+                                String heading, String roundTitle, String overallTitle,
                                 List<Row> rows, List<RoundRow> roundRows) {
 
     /** The answer when there is nothing to show. */
     public static LiveQualifyingDto none(Long eventId, String eventName) {
-        return new LiveQualifyingDto(eventId, eventName, "NONE", null, null, null, null, null, null, List.of(),
-                List.of());
+        return new LiveQualifyingDto(eventId, eventName, "NONE", null, null, null, null, null, null, null, null,
+                null, List.of(), List.of());
     }
 
     /**
