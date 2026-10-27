@@ -165,6 +165,16 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: '/race-control/practice',
+        element: (
+          <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <RaceControlErrorBoundary>
+              <PracticeLandingPage />
+            </RaceControlErrorBoundary>
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: '/race-control/practice/day',
         element: (
           <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>

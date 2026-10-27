@@ -22,6 +22,7 @@ import {
   Tv,
   MonitorPlay,
   Tag,
+  Timer,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,6 +52,7 @@ const eventsGroup: NavEntry[] = [
 
 const operationsGroup: NavEntry[] = [
   { to: '/admin/race-control', label: 'Race Control', Icon: Flag },
+  { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true },
   { to: '/admin/competitors', label: 'Competitors', Icon: Users },
   { to: '/setup', label: 'Setup Wizard', Icon: Wand2 },
 ];
@@ -137,7 +139,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Operations
         </p>
-        {visibleTo(operationsGroup, isAdmin).map(({ to, label, Icon }) => (
+        {visibleTo(operationsGroup, isAdmin, canRunEvent).map(({ to, label, Icon }) => (
           <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
         ))}
         {isAdmin &&
