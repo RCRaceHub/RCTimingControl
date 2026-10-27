@@ -72,8 +72,8 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
               <td className="py-3 pr-4 font-semibold">
                 <CarThumb url={media?.get(row.entryId)?.carPhotoUrl} className="mr-3 h-10 w-16" />
                 {row.driverName}
-              <RowStateIcon flash={undefined} close={close} className="ml-3" />
-              {row.finished && <FinishedFlag />}
+                <RowStateIcon flash={undefined} close={close} className="ml-3" />
+                {row.finished && <FinishedFlag />}
                 {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
               </td>
               <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
