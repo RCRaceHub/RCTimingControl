@@ -163,6 +163,11 @@ public class Events extends TableImpl<EventsRecord> {
      */
     public final TableField<EventsRecord, String> PRACTICE_RANKING = createField(DSL.name("practice_ranking"), SQLDataType.VARCHAR(10).nullable(false).defaultValue(DSL.field(DSL.raw("'FASTEST'"), SQLDataType.VARCHAR)), this, "");
 
+    /**
+     * The column <code>events.final_legs_scope</code>.
+     */
+    public final TableField<EventsRecord, String> FINAL_LEGS_SCOPE = createField(DSL.name("final_legs_scope"), SQLDataType.VARCHAR(10).nullable(false).defaultValue(DSL.field(DSL.raw("'A_ONLY'"), SQLDataType.VARCHAR)), this, "");
+
     private Events(Name alias, Table<EventsRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

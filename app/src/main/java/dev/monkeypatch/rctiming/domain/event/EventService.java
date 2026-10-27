@@ -131,6 +131,27 @@ public class EventService {
         return ranking;
     }
 
+    /**
+     * Chooses which finals are run in legs for the event, recording the change only when it differs. It is read when
+     * the rounds are generated, so finals that already exist keep their legs. Runs in its own transaction on the
+     * write connection.
+     *
+     * @return the scope now in force
+     */
+    public FinalLegsScope setFinalLegsScope(Actor actor, Long id, FinalLegsScope scope) {
+        Event event = getEventOrThrow(id);
+        FinalLegsScope before = event.getFinalLegsScope();
+        if (before == scope) {
+            return scope;
+        }
+        event.setFinalLegsScope(scope);
+        eventRepository.save(event);
+        audit.entry(actor, "FINAL_LEGS_SCOPE_CHANGED").entity("event", id).event(id)
+                .summary("Set finals in legs to \"" + scope.label() + "\" for " + event.getName())
+                .before(before.name()).after(scope.name()).record();
+        return scope;
+    }
+
     /** Sets how auto run (#338) paces the event, recording the change only when something differs. */
     public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds,
                                  boolean holdBeforeFinals, boolean autoStart) {

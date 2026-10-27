@@ -390,13 +390,15 @@ public class BoardController {
         return raceHighlightsService.forRace(raceId);
     }
 
-    /** The A final's combined result when the race is one of its legs, matched by class name; else null. */
+    /** The final's combined result when the race is one of its legs, matched by class name and letter; else null. */
     private FinalLegsDto legsOf(long eventId, BoardRaceDto race) {
-        if (race == null || !"A".equals(race.finalLetter())) {
+        if (race == null || race.finalLetter() == null) {
             return null;
         }
         return finalLegsService.forEventPublic(eventId).stream()
-                .filter(legs -> legs.className().equals(race.className())).findFirst().orElse(null);
+                .filter(legs -> legs.className().equals(race.className())
+                        && legs.finalLetter().equals(race.finalLetter()))
+                .findFirst().orElse(null);
     }
 
     private List<ResultSnapshotDto.ResultRow> resultRows(BoardRaceDto race) {

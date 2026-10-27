@@ -67,14 +67,14 @@ function StandingsBlock({ table }: { table: QualifyingTable }) {
   );
 }
 
-/** The A final's combined result when it ran in legs: points in each leg (a dropped leg struck through) and the total. */
+/** A final's combined result when it ran in legs: points in each leg (a dropped leg struck through) and the total. */
 function LegsBlock({ legs }: { legs: FinalLegs }) {
   const heading = legs.complete
-    ? `Final A overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
-    : `Final A after ${legs.legsFinished} of ${legs.legs} legs`;
+    ? `Final ${legs.finalLetter} overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
+    : `Final ${legs.finalLetter} after ${legs.legsFinished} of ${legs.legs} legs`;
   const legNumbers = Array.from({ length: legs.rows[0]?.legPoints.length ?? 0 }, (_, i) => i + 1);
   return (
-    <section className="mb-6 break-inside-avoid" aria-label="Final A overall">
+    <section className="mb-6 break-inside-avoid" aria-label={`Final ${legs.finalLetter} overall`}>
       <h3 className="mb-1 text-base font-semibold">{heading}</h3>
       <table className="w-full border-collapse text-sm">
         <thead>
@@ -183,7 +183,6 @@ export default function PrintEventResultsPage() {
   const round: Round = { type: roundType, number: roundNumber };
   const classes = groupByClass(data.races);
   const standingsByClass = new Map((standings.data ?? []).map((t) => [t.eventClassId, t]));
-  const legsByClass = new Map((finalLegs.data ?? []).map((l) => [l.eventClassId, l]));
 
   const sections = classes.map((group) => {
     const heats = view === 'round' ? racesOfRound(group.races, round.type, round.number) : [];
@@ -241,7 +240,9 @@ export default function PrintEventResultsPage() {
             {finals.length > 0 && (
               <div>
                 {view === 'pack' && <h2 className="mb-2 text-lg font-semibold">Finals</h2>}
-                {legsByClass.has(group.eventClassId) && <LegsBlock legs={legsByClass.get(group.eventClassId)!} />}
+                {(finalLegs.data ?? [])
+                  .filter((l) => l.eventClassId === group.eventClassId)
+                  .map((l) => <LegsBlock key={l.finalLetter} legs={l} />)}
                 {finals.map((race) => <HeatBlock key={race.raceId} race={race} />)}
               </div>
             )}

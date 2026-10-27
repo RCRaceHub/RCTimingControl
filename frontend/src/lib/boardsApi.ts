@@ -55,6 +55,8 @@ export type FinalLegsRow = {
 export type FinalLegs = {
   eventClassId: number;
   className: string;
+  /** The final these legs belong to: A, or any final when the event runs every final in legs. */
+  finalLetter: string;
   legs: number;
   legsFinished: number;
   legsCounted: number;

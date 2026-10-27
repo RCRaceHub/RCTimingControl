@@ -273,6 +273,20 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (String) get(17);
     }
 
+    /**
+     * Setter for <code>events.final_legs_scope</code>.
+     */
+    public void setFinalLegsScope(String value) {
+        set(18, value);
+    }
+
+    /**
+     * Getter for <code>events.final_legs_scope</code>.
+     */
+    public String getFinalLegsScope() {
+        return (String) get(18);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -296,7 +310,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart, Instant finalsLineupConfirmedAt, String practiceRanking) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart, Instant finalsLineupConfirmedAt, String practiceRanking, String finalLegsScope) {
         super(Events.EVENTS);
 
         setId(id);
@@ -317,6 +331,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setAutoRunAutoStart(autoRunAutoStart);
         setFinalsLineupConfirmedAt(finalsLineupConfirmedAt);
         setPracticeRanking(practiceRanking);
+        setFinalLegsScope(finalLegsScope);
         resetChangedOnNotNull();
     }
 }

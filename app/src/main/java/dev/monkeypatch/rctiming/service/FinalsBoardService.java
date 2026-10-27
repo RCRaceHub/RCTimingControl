@@ -64,8 +64,9 @@ public class FinalsBoardService {
      */
     @ReadTransaction
     public List<FinalsBoardDto.ClassFinals> forEventPublic(Long eventId) {
-        Map<Long, FinalLegsDto> legsByClass = finalLegsService.forEventPublic(eventId).stream()
-                .collect(Collectors.toMap(FinalLegsDto::eventClassId, Function.identity()));
+        Map<String, FinalLegsDto> legsByFinal = finalLegsService.forEventPublic(eventId).stream()
+                .collect(Collectors.toMap(l -> legsKey(l.eventClassId(), l.finalLetter()), Function.identity(),
+                        (first, second) -> first));
         PublicNames.Snapshot names = publicNames.snapshot();
         // The event's championship points are worked out once for all its finals
         ResultPointsCache pointsCache = new ResultPointsCache();
@@ -83,7 +84,7 @@ public class FinalsBoardService {
             List<FinalsBoardDto.Final> rows = new ArrayList<>();
             int finished = 0;
             for (Race race : finals) {
-                FinalLegsDto legs = "A".equals(race.getFinalLetter()) ? legsByClass.get(eventClass.getId()) : null;
+                FinalLegsDto legs = legsByFinal.get(legsKey(eventClass.getId(), race.getFinalLetter()));
                 RaceStatus status = race.getStatus();
                 if (legs != null && !legs.complete() && status == RaceStatus.FINISHED) {
                     // Leg 1 is over but the final is not
@@ -100,6 +101,10 @@ public class FinalsBoardService {
             classes.add(new FinalsBoardDto.ClassFinals(eventClass.getId(), className, finished, finals.size(), rows));
         }
         return classes;
+    }
+
+    private static String legsKey(Long eventClassId, String finalLetter) {
+        return eventClassId + ":" + finalLetter;
     }
 
     private List<ResultSnapshotDto.ResultRow> resultRows(long raceId, PublicNames.Snapshot names,

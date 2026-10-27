@@ -115,19 +115,23 @@ last lap timeout, carries no mark. 0 means no window; the track's max last lap w
 
 ### A final in legs
 
-A Points Finals format can run the **A final** as several legs (BRCA: 3). Only the A final has legs; the lower finals
-stay a single race. The round generator makes one race for each leg in the A final's round, and every leg starts from the
+A Points Finals format can run a final as several legs (BRCA: 3). The event's **Finals in legs** setting (race control's
+status bar; `GET/PUT /api/v1/race-control/events/{eventId}/final-legs-scope`) says which finals: **the A final only**
+(the default, as at nationals) or **every final**. It is read when the rounds are generated, so choose it first; finals
+that already exist keep their legs. A final that is not in legs is a single race. The round generator makes one race for
+each leg in the final's round, and every leg starts from the
 same grid, in qualifying order: seeding and any change to the line-up in the finals panel reach all the legs that have not
-been called yet. In the run order leg 1 is "A Final" and the others "A Final, Leg 2" and so on.
+been called yet. In the run order leg 1 is "A Final" and the others "A Final, Leg 2" and so on (likewise for B and the rest when every
+final runs in legs).
 
 In each leg a driver scores their finishing place (1 for the winner, ranked by laps then time as in section 1). A driver
 who did not run a leg scores one more than the number of drivers in the final. The **legs counted** setting (BRCA: 2)
 keeps each driver's best legs, the lowest total wins, and a tie goes to the best single counting leg, then the second
 best (1 + 3 beats 2 + 2), then the most laps and the least time over the counting legs. Until every leg has finished the order shows the legs run so far.
-Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`.
+Officials see it from `GET /api/v1/race-control/event/{eventId}/final-legs`, which lists every final that has legs.
 
-Championship points use the combined order (see section 5): the A final is placed from it once every leg has finished, and
-its winner earns the A-final bonus. The public results board shows the combined order while the A final's last finished leg is the race on show, and the finals printouts always show it, with each leg's points and the legs that count.
+Championship points use the combined order (see section 5): each final in legs is placed from it once every leg has
+finished, and the A final's winner earns the A-final bonus. The public results board shows the combined order while the A final's last finished leg is the race on show, and the finals printouts always show it, with each leg's points and the legs that count.
 
 ### Shikabane heats
 

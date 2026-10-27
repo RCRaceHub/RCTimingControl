@@ -6,8 +6,8 @@ import type { FinalLegs } from '@/lib/boardsApi';
  */
 export function BoardLegsTable({ legs }: { legs: FinalLegs }) {
   const heading = legs.complete
-    ? `A Final overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
-    : `A Final after ${legs.legsFinished} of ${legs.legs} legs`;
+    ? `${legs.finalLetter} Final overall, best ${legs.legsCounted || legs.legs} of ${legs.legs} legs`
+    : `${legs.finalLetter} Final after ${legs.legsFinished} of ${legs.legs} legs`;
   const legNumbers = Array.from({ length: legs.rows[0]?.legPoints.length ?? 0 }, (_, i) => i + 1);
   return (
     <section className="mt-10" aria-label="A final overall">

@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.FinalLegsScope;
 import dev.monkeypatch.rctiming.domain.format.BumpUpConfig;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
@@ -164,6 +165,7 @@ public class AutoFinalsSeedingService {
         }
         List<Long> standings = qualifyingStandingsService.standingsFor(eventClassId);
         EventClass eventClass = eventClassRepository.getOrThrow(eventClassId);
+        Event event = eventRepository.getOrThrow(eventClass.getEventId());
         // The zombie round is not one of the A, B, C mains the field is split over
         int existing = (int) finals.stream()
                 .filter(f -> !BumpUpSeedingService.ZOMBIE_LETTER.equals(f.getFinalLetter()))
@@ -171,7 +173,8 @@ public class AutoFinalsSeedingService {
         // Finals an earlier calculation dropped as unused come back, so fewer cars per final can use them again
         int finalsCount = eventClass.getFinalsCount() != null && eventClass.getFinalsCount() > existing
                 ? bumpUpSeedingService.restoreFinals(eventClassId, eventClass.getFinalsCount(),
-                        raceFormatService.startType(eventClass, RoundType.FINAL))
+                        raceFormatService.startType(eventClass, RoundType.FINAL),
+                        event.getFinalLegsScope() == FinalLegsScope.ALL ? raceFormatService.finalLegs(eventClass) : 1)
                 : existing;
         int[] layout = layout(raceFormatService.getEffectiveConfig(eventClass), standings.size(), finalsCount, carsPerFinal);
         boolean fillTopFirst = raceFormatService.getEffectiveConfig(eventClass) instanceof PointsFinalsConfig points
@@ -183,7 +186,6 @@ public class AutoFinalsSeedingService {
         after.put("carsPerFinal", layout[0]);
         after.put("bumpCount", layout[1]);
         after.put("qualifyingOrder", standings);
-        Event event = eventRepository.getOrThrow(eventClass.getEventId());
         if (event.getFinalsLineupConfirmedAt() != null) {
             event.setFinalsLineupConfirmedAt(null);
             eventRepository.save(event);

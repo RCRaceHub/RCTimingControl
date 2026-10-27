@@ -115,6 +115,17 @@ public class BumpUpSeedingService {
      * @return the number of A, B, C finals the class has afterwards
      */
     public int restoreFinals(Long eventClassId, int intendedCount, StartType startType) {
+        return restoreFinals(eventClassId, intendedCount, startType, 1);
+    }
+
+    /**
+     * As {@link #restoreFinals(Long, int, StartType)}, but each restored final is run in {@code legs} legs: races
+     * numbered as heats 1 to {@code legs} in its round, for an event that runs every final in legs.
+     *
+     * @param legs how many legs each restored final has, 1 for a single race
+     * @return the number of A, B, C finals the class has afterwards
+     */
+    public int restoreFinals(Long eventClassId, int intendedCount, StartType startType, int legs) {
         List<Race> all = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         Map<String, Race> byLetter = new HashMap<>();
         for (Race race : all) {
@@ -156,15 +167,20 @@ public class BumpUpSeedingService {
             round.setSequenceInEvent(sequence);
             round.setStatus(RoundStatus.PENDING);
             round = roundRepository.save(round);
-            Race race = new Race();
-            race.setRoundId(round.getId());
-            race.setEventClassId(eventClassId);
-            race.setHeatNumber(1);
-            race.setSequenceInRound(1);
-            race.setFinalLetter(letter);
-            race.setStartType(startType);
-            race.setStatus(RaceStatus.PENDING);
-            byLetter.put(letter, raceRepository.save(race));
+            for (int leg = 1; leg <= Math.max(1, legs); leg++) {
+                Race race = new Race();
+                race.setRoundId(round.getId());
+                race.setEventClassId(eventClassId);
+                race.setHeatNumber(leg);
+                race.setSequenceInRound(leg);
+                race.setFinalLetter(letter);
+                race.setStartType(startType);
+                race.setStatus(RaceStatus.PENDING);
+                Race saved = raceRepository.save(race);
+                if (leg == 1) {
+                    byLetter.put(letter, saved);
+                }
+            }
         }
         return byLetter.size();
     }
@@ -193,6 +209,7 @@ public class BumpUpSeedingService {
         // A main one more bump place for its winner
         List<Race> zombieRaces = finals.stream().filter(f -> ZOMBIE_LETTER.equals(f.getFinalLetter())).toList();
         // Later legs of a final copy leg 1's grid at the end, so they are not finals of their own here
+        List<Race> everyLeg = finals;
         finals = new ArrayList<>(finals.stream().filter(f -> !ZOMBIE_LETTER.equals(f.getFinalLetter()))
                 .filter(f -> !FinalLegs.isExtraLeg(f)).toList());
         if (finals.isEmpty()) {
@@ -220,15 +237,23 @@ public class BumpUpSeedingService {
             int needed = finalsNeeded(qualifyingStandings.size(), carsPerFinal, bumpCount);
             while (finals.size() > needed) {
                 Race unused = finals.remove(0);
-                raceEntryRepository.deleteAll(raceEntryRepository.findByRaceIdOrderByGridPosition(unused.getId()));
-                if (raceRepository.hasRecordsAgainstRace(unused.getId())) {
+                // Every leg of the unused final goes together, so none is left behind with an empty grid
+                List<Race> legs = everyLeg.stream()
+                        .filter(f -> Objects.equals(f.getRoundId(), unused.getRoundId())
+                                && Objects.equals(f.getFinalLetter(), unused.getFinalLetter()))
+                        .toList();
+                legs.forEach(leg -> raceEntryRepository.deleteAll(
+                        raceEntryRepository.findByRaceIdOrderByGridPosition(leg.getId())));
+                if (legs.stream().anyMatch(leg -> raceRepository.hasRecordsAgainstRace(leg.getId()))) {
                     // A penalty or incident was raised against it early: keep the race rather than lose the record
-                    unused.setBumpSlots(0);
-                    raceRepository.save(unused);
+                    legs.forEach(leg -> {
+                        leg.setBumpSlots(0);
+                        raceRepository.save(leg);
+                    });
                 } else {
                     Long roundId = unused.getRoundId();
                     roundRepository.findById(roundId).ifPresent(r -> raceRepository.clearRunRanks(r.getEventId()));
-                    raceRepository.delete(unused);
+                    legs.forEach(raceRepository::delete);
                     if (raceRepository.findByRoundIdOrderBySequenceInRound(roundId).isEmpty()) {
                         roundRepository.deleteById(roundId);
                     }
