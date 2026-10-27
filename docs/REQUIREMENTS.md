@@ -73,7 +73,7 @@
 - [x] **FORMAT-05**: Race format config is type-discriminated; only fields valid for the chosen type are accepted and required fields are validated
 - [x] **FORMAT-06**: Assigning a format to an event class takes a snapshot of the template at assignment time; subsequent template edits do not affect existing events
 - [x] **FORMAT-07**: Admin can override individual format config fields at the event-class level without modifying the underlying template
-- [x] **FORMAT-08**: Start type is configurable per class per phase: STAGGER (car numbers called sequentially at configured interval), GRID (all start simultaneously on buzzer), ROLLING (time starts on first crossing after buzzer); qualifying and finals may use different start types
+- [x] **FORMAT-08**: Start type is configurable per class per phase: STAGGER (car numbers called sequentially at configured interval), GRID (all start simultaneously on buzzer), ROLLING (time starts on first crossing after buzzer); qualifying and finals may use different start types (in every format)
 - [x] **FORMAT-09**: Qualifying type is configurable: FTQ (fastest time across all heats), ROUND_BY_ROUND (low points: each finished round scores the driver's place, the best X of the Y rounds count, lowest total wins, ties by most laps then quickest lap; the default for new formats; the other types rank by total laps then best lap until their own rules are built), FASTEST_LAP (best single lap from any heat), CONSECUTIVE_LAPS (best N consecutive laps)
 - [x] **FORMAT-10**: Gap between successive races is configurable per class
 - [x] **FORMAT-11**: Stagger start interval is configurable (default 1 second between car number calls)

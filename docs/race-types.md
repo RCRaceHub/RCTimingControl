@@ -57,7 +57,7 @@ The grid matters most in a staggered start (section 2), where it is the order dr
 
 ## 2. How a race starts
 
-The start type is set in the format, separately for heats and for finals (a Timed format has one start type for both).
+The start type is set in the format, separately for heats and for finals. Every format with finals has a finals start (new formats default to grid); a Timed or Shikabane format saved before that setting existed uses its start type for finals too.
 It is read when the grid is called, so a format change made after the rounds were generated applies from then on. A
 class with no format, or none set, starts heats staggered and finals on the grid.
 
@@ -148,13 +148,14 @@ result is ranked.
 
 ### 4.1 Timed
 
-A **single timed race** per heat: it runs for the format's duration, with one start type (grid, stagger or rolling) for
-every round. Use it for a class that races a set time and needs no particular finals layout.
+A **single timed race** per heat: it runs for the format's duration, with a start type (grid, stagger or rolling) for
+heats and a finals start for any final round. Use it for a class that races a set time and needs no particular finals layout.
 
 | Setting | What it does |
 |---|---|
 | Duration (min) | The length of every race: practice, qualifying and finals |
-| Start type | How every race starts |
+| Start type | How practice and qualifying races start |
+| Finals start | How a final starts (grid by default) |
 | Stagger interval (s) | Seconds between drivers in a staggered start |
 | Qualifying type | How qualifying is ranked ([Scoring](scoring.md#2-qualifying-order)) |
 
@@ -254,6 +255,7 @@ the **lowest total wins**.
 | Cars per main, Promotion spots | The size of each main, and how many places of a lower main move up into the one above |
 | Heat laps | A heat ends after this many laps (typically 3 in Japanese club racing, sometimes 5). 0 runs it for the heat duration instead |
 | Start type, stagger interval (s) | How heats start, as above |
+| Mains start | How the mains start (grid by default) |
 | False start penalty (points) | Points added to a car given a false start |
 | Zombie bonus (points) | Points taken off a car for each time it is revived |
 

@@ -13,6 +13,7 @@ const QUALIFYING_TYPES: QualifyingType[] = ['FTQ', 'ROUND_BY_ROUND', 'FASTEST_LA
 const TIMED_DEFAULTS: Omit<import('@/lib/adminApi').TimedRaceConfig, 'type'> = {
   durationMinutes: 5,
   startType: 'STAGGER',
+  finalsStartType: 'GRID',
   qualifyingType: 'ROUND_BY_ROUND',
   racePaddingMinutes: 2,
   staggerIntervalSeconds: 5,
@@ -46,6 +47,7 @@ const POINTS_FINALS_DEFAULTS: Omit<import('@/lib/adminApi').PointsFinalsConfig, 
 const SHIKABANE_DEFAULTS: Omit<import('@/lib/adminApi').ShikabaneConfig, 'type'> = {
   heatDurationMinutes: 5,
   startType: 'GRID',
+  finalsStartType: 'GRID',
   staggerIntervalSeconds: 5,
   falseStartPenaltyPoints: 3,
   zombieBonusPoints: 1,
@@ -191,6 +193,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Duration (min)" value={value.durationMinutes} onChange={v => patch('durationMinutes', v)} />
           <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
+          <StartTypeField label="Finals Start" value={value.finalsStartType ?? value.startType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
         </div>
       )}
@@ -275,6 +278,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Heat Duration (min, if timed)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
           <NumField label="Stagger Interval (s)" value={value.staggerIntervalSeconds} onChange={v => patch('staggerIntervalSeconds', v)} />
           <StartTypeField label="Start Type" value={value.startType} onChange={v => patch('startType', v)} />
+          <StartTypeField label="Mains Start" value={value.finalsStartType ?? value.startType} onChange={v => patch('finalsStartType', v)} />
           <NumField label="False Start Penalty (points)" value={value.falseStartPenaltyPoints} onChange={v => patch('falseStartPenaltyPoints', v)} />
           <NumField label="Zombie Bonus (points)" value={value.zombieBonusPoints} onChange={v => patch('zombieBonusPoints', v)} />
           <NumField label="Mains (0 = none, max 3)" value={value.mains} onChange={v => patch('mains', v)} />

@@ -29,6 +29,8 @@ export interface TimedRaceConfig {
   type: 'TIMED';
   durationMinutes: number;
   startType: StartType;
+  /** Start of a final round; absent in older saved formats, which then use startType. */
+  finalsStartType?: StartType;
   qualifyingType: QualifyingType;
   racePaddingMinutes: number;
   staggerIntervalSeconds: number;
@@ -117,6 +119,8 @@ export interface ShikabaneConfig {
   type: 'SHIKABANE';
   heatDurationMinutes: number;
   startType: StartType;
+  /** Start of a main; absent in older saved formats, which then use startType. */
+  finalsStartType?: StartType;
   staggerIntervalSeconds: number;
   falseStartPenaltyPoints: number;
   zombieBonusPoints: number;

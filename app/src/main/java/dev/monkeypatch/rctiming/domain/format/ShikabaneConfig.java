@@ -9,7 +9,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * <p>A heat ends after {@code heatLaps} laps when that is more than 0 (each car takes the flag on its last lap and
  * the heat is over when every car that crossed the line has), otherwise it runs for {@code heatDurationMinutes}.
- * Either way it starts with {@code startType}; {@code staggerIntervalSeconds} is the
+ * Either way it starts with {@code startType} (mains with {@code finalsStartType}, or {@code startType} when that
+ * is null in an older saved config); {@code staggerIntervalSeconds} is the
  * seconds between car number calls in a stagger start. {@code falseStartPenaltyPoints} is added to a car that
  * jumps the start and {@code zombieBonusPoints} is taken off a driver who revives a dead car.
  *
@@ -31,5 +32,15 @@ public record ShikabaneConfig(
     int mains,
     int mainGridSize,
     int promotionSpots,
-    boolean zombieRound
-) implements RaceFormatConfig {}
+    boolean zombieRound,
+    StartType finalsStartType
+) implements RaceFormatConfig {
+
+    /** A config with no separate finals start: mains use {@code startType}. */
+    public ShikabaneConfig(int heatDurationMinutes, StartType startType, int staggerIntervalSeconds,
+                           int falseStartPenaltyPoints, int zombieBonusPoints, int heatLaps, int mains,
+                           int mainGridSize, int promotionSpots, boolean zombieRound) {
+        this(heatDurationMinutes, startType, staggerIntervalSeconds, falseStartPenaltyPoints, zombieBonusPoints,
+                heatLaps, mains, mainGridSize, promotionSpots, zombieRound, null);
+    }
+}
