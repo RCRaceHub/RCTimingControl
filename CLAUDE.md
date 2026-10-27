@@ -176,7 +176,7 @@ A later initiative extracted the shared decoder-protocol parser (`decoder-protoc
 ## General Good Developer Rules
 
 1. If you raise any processes, start services or ui services, you MUST stop them after you are finished.
-2. Use the `gh` CLI for all GitHub operations (push, PR creation, issue management). The repo uses SSH git remotes with `gh auth` managing the underlying token. Remote URL: `git@github.com:oggthemiffed/RCTimingControl.git`.
+2. Use the `gh` CLI for all GitHub operations (push, PR creation, issue management). The repo uses SSH git remotes with `gh auth` managing the underlying token. Remote URL: `git@github.com:RCRaceHub/RCTimingControl.git`.
 3. If you see the context getting filled up to a serious level (75% and above) please stop and give me a restart prompt to continue the task after i have cleared the context
 4. **Sensitive documentation must NEVER be committed to the repo.** Any doc you generate that contains any of the following must be saved as `docs/local-*.md` or `*.local.md` (both patterns are gitignored) and never staged or committed:
    - Registry paths, container image locations, or package repository URLs specific to this project
