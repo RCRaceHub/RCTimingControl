@@ -6,6 +6,8 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
+import { RowStateIcon } from '@/components/StateIcon';
+import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
@@ -36,7 +38,7 @@ interface OverlayTowerProps {
   allRows: LiveTimingRowDto[];
   colours: TowerColours;
   /** The flash colour class of each car's latest lap, by entry id. */
-  lapFlash: Map<number, string | undefined>;
+  lapFlash: Map<number, FlashColor | undefined>;
   closeMs: number;
   showArrows: boolean;
   /** How the lap bars read the clock; omitted to leave the bars out. */
@@ -184,6 +186,10 @@ export function OverlayTower({
               <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
               <span className="relative flex min-w-0 flex-1 items-center font-semibold">
                 <ScrollingName name={row.driverName} />
+                {/* The slot is always there, so the name box keeps its width and the scroll does not restart on each flash */}
+                <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm">
+                  <RowStateIcon flash={flash} close={close} />
+                </span>
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
                 {row.finished && <FinishedFlag className="ml-1" />}
                 {barClock && !row.finished && (

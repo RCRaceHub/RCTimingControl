@@ -1,3 +1,5 @@
+import { STATE_INFO, StateIcon } from '@/components/StateIcon';
+import type { StateKind } from '@/components/StateIcon';
 import { cn } from '@/lib/utils';
 
 /** The groups of colours the timing views use; a view lists the ones it shows. */
@@ -7,7 +9,12 @@ interface LegendItem {
   /** A solid Tailwind background in the hue of the row tint it explains; empty for a plain lead-in. */
   swatch: string;
   label: string;
+  /** The row icon that goes with the colour, so the key shows both; none for the movement colours. */
+  icon?: StateKind;
 }
+
+/** A key entry for a state that has an icon: the colour swatch, the icon and the words, all from {@code STATE_INFO}. */
+const state = (swatch: string, icon: StateKind): LegendItem => ({ swatch, icon, label: STATE_INFO[icon].label });
 
 /**
  * What each colour means, in one place so every view says the same thing. The lap colours are the ones
@@ -17,12 +24,12 @@ interface LegendItem {
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
     { swatch: '', label: 'Flashes after each lap:' },
-    { swatch: 'bg-purple-500', label: 'Fastest lap of the race' },
-    { swatch: 'bg-blue-500', label: 'Driver’s best lap' },
-    { swatch: 'bg-green-500', label: 'As quick as, or quicker than, their last lap' },
-    { swatch: 'bg-red-500', label: 'Slower than their last lap or their average' },
+    state('bg-purple-500', 'race-best'),
+    state('bg-blue-500', 'personal-best'),
+    state('bg-green-500', 'improving'),
+    state('bg-red-500', 'slow'),
   ],
-  close: [{ swatch: 'bg-amber-500', label: 'Close to the car ahead' }],
+  close: [state('bg-amber-500', 'close')],
   movement: [
     { swatch: 'bg-emerald-500', label: 'Moved up' },
     { swatch: 'bg-rose-500', label: 'Moved down' },
@@ -61,6 +68,7 @@ export function TimingLegend({ kinds, size = 'small', className }: TimingLegendP
           {item.swatch && (
             <span aria-hidden="true" className={cn('inline-block rounded-sm', board ? 'h-4 w-4' : 'h-2.5 w-2.5', item.swatch)} />
           )}
+          {item.icon && <StateIcon kind={item.icon} decorative className={board ? 'h-5 w-5' : 'h-3.5 w-3.5'} />}
           {item.label}
         </li>
       ))}

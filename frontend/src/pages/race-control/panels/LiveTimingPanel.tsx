@@ -20,6 +20,7 @@ import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
+import { RowStateIcon } from '@/components/StateIcon';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { holdBackLapped, isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
@@ -110,6 +111,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
                     <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2 shrink-0" />
                     <span className="min-w-0 truncate">{row.driverName}</span>
+                    {/* The CLOSE badge below already says close, so only the lap flash gets an icon here */}
+                    <RowStateIcon flash={flash} close={false} className="ml-2" />
                     {row.finished && <FinishedFlag />}
                     {close && (
                       <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
