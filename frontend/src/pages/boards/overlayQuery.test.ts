@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
+import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
 
 describe('overlayQuery', () => {
   it('writes nothing for the default design', () => {
@@ -19,6 +19,14 @@ describe('overlayQuery', () => {
       eventId: 7, top: 8, theme: 'light', layout: 'table', showSponsors: false, showChart: false, closeMs: 2000,
     });
     expect([...read.tickerItems]).toEqual(['next', 'tq']);
+  });
+
+  it('writes the colour key only when asked, and the boards default the other way', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showLegend: true })).toBe('?legend=show');
+    expect(parseOverlayOptions(new URLSearchParams('?legend=show')).showLegend).toBe(true);
+    expect(parseOverlayOptions(new URLSearchParams('')).showLegend).toBe(false);
+    expect(parseLiveRaceOptions(new URLSearchParams('')).showLegend).toBe(true);
+    expect(parseLiveRaceOptions(new URLSearchParams('?legend=hide')).showLegend).toBe(false);
   });
 
   it('hides the whole ticker when no item is chosen', () => {

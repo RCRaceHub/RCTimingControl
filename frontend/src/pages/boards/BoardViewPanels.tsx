@@ -21,6 +21,7 @@ export type PanelContext = {
   rows: LiveTimingRowDto[];
   barClock: LapBarClock | undefined;
   closeMs: number;
+  showLegend: boolean;
   showArrows: boolean;
   predicted: PredictedClock | undefined;
   /** Headshots, car photos and driver sponsors of the race on track, by entry id (#520). */
@@ -63,6 +64,7 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
           media={ctx.media}
           barClock={race.status === 'RUNNING' ? ctx.barClock : undefined}
           closeMs={ctx.closeMs}
+          showLegend={ctx.showLegend}
           showArrows={ctx.showArrows && race.finalLetter !== null}
           predicted={ctx.predicted}
         />
@@ -92,7 +94,7 @@ function LiveTopPanel({ ctx, top }: { ctx: PanelContext; top: number }) {
           {data.phase === 'LIVE' ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}
         </p>
       </div>
-      <LiveTopTable data={data} top={top} />
+      <LiveTopTable data={data} top={top} showLegend={ctx.showLegend} />
     </div>
   );
 }

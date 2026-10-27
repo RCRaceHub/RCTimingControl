@@ -2,6 +2,7 @@
 // #481): the order inside the round on track and the overall order, side by side.
 import { type LiveQualifyingDto, type LiveQualifyingRow, type LiveRoundRow } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
+import { TimingLegend } from '@/components/TimingLegend';
 
 /** How a driver's place changed: positive is up the table, null when they had no earlier place. */
 function placesGained(row: LiveQualifyingRow | LiveRoundRow): number | null {
@@ -139,31 +140,41 @@ function RoundTable({ data, rows, top, density }: {
 
 /**
  * The live tables of the first {@code top} places. When the class has a round to show, the round's order and the
- * overall order sit side by side, each under its own heading; otherwise the overall order fills the board.
+ * overall order sit side by side, each under its own heading; otherwise the overall order fills the board. With
+ * {@code showLegend} a key to the movement colours sits under the tables.
  */
-export function LiveTopTable({ data, top }: { data: LiveQualifyingDto; top: number }) {
+export function LiveTopTable({ data, top, showLegend = false }: { data: LiveQualifyingDto; top: number; showLegend?: boolean }) {
   const roundRows = data.roundRows ?? [];
+  const legend = showLegend && <TimingLegend kinds={['movement']} size="board" className="mt-3 text-slate-400" />;
   if (roundRows.length === 0) {
-    return <OverallTable data={data} top={top} density={top > 10 ? COMPACT : LARGE} />;
+    return (
+      <>
+        <OverallTable data={data} top={top} density={top > 10 ? COMPACT : LARGE} />
+        {legend}
+      </>
+    );
   }
   return (
-    <div className="grid gap-8 xl:grid-cols-2">
-      <section aria-label="Round">
-        <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
-          {data.roundTitle
-            ? data.roundTitle
-            : data.roundType === 'PRACTICE'
-            ? `Practice ${data.roundNumber ?? ''}`.trim()
-            : data.roundNumber
-              ? `Round ${data.roundNumber}`
-              : 'This round'}
-        </h2>
-        <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
-      </section>
-      <section aria-label="Overall">
-        <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">{data.overallTitle ?? 'Overall'}</h2>
-        <OverallTable data={data} top={top} density={COMPACT} />
-      </section>
-    </div>
+    <>
+      <div className="grid gap-8 xl:grid-cols-2">
+        <section aria-label="Round">
+          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
+            {data.roundTitle
+              ? data.roundTitle
+              : data.roundType === 'PRACTICE'
+                ? `Practice ${data.roundNumber ?? ''}`.trim()
+                : data.roundNumber
+                  ? `Round ${data.roundNumber}`
+                  : 'This round'}
+          </h2>
+          <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
+        </section>
+        <section aria-label="Overall">
+          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">{data.overallTitle ?? 'Overall'}</h2>
+          <OverallTable data={data} top={top} density={COMPACT} />
+        </section>
+      </div>
+      {legend}
+    </>
   );
 }

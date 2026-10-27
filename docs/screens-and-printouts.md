@@ -50,6 +50,8 @@ In a **final**, a small green ▲ or red ▼ beside the position shows the place
 
 Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide` the arrows, `predict=hide` the Pred column, and `close=SECONDS` sets how near counts as close (`close=0` switches the tint off). Race control's live timing shows the same bar and a CLOSE badge, using the club's close gap (the Club page, Live timing tab).
 
+**Colour key.** A small key under the live timing says what the colours mean: a row flashes purple for the fastest lap of the race, blue for the driver's own best lap, green when a lap is as quick as or quicker than their last, and red when it is slower than usual; amber marks a car close to the one ahead. The Live race screen, board views, race control and the referee screen show it, and the Live top screen shows its own key for the places moved. `legend=hide` leaves it out of a board. The streaming overlay leaves it out unless you tick **Colour key** in the overlay designer or add `legend=show`.
+
 **Battles.** While the race is running, a strip under the table shows cars running close together: two cars on the same lap within the club's battle gap (2 seconds unless an admin changes it under Club, Live timing; 0 switches battles off everywhere), labelled "Battle for P4", with the gap and an arrow for whether it is closing (green ▲) or growing (red ▼) lap on lap, and the change per lap. A chain of close cars shows as one line, "Train P4–P7". An underlined gap means the car behind is closing by 0.3 seconds a lap or more. The strip shows two battles at a time and cycles through any more every five seconds. The timing laptop works the battles out (see the API guide), so every screen agrees; the referee's screen has the same Battles panel. A pair stays a battle for two laps after it drops outside the gap, and a lap taken away by a marshal starts its trend again.
 
 ### Live timing thresholds
@@ -68,6 +70,7 @@ Options go on the end of the address. They also work on a [board view](#board-vi
 | `predict=hide` | Leave out the **Pred** column in a race with a set length |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; `close=0` turns the tint off) |
 | `battles=hide` | Leave out the battles strip |
+| `legend=hide` | Leave out the small colour key under the table (shown by default) |
 
 ## The Live top screen
 
@@ -79,7 +82,7 @@ During practice the same screen shows **Practice 1** (the session on track) besi
 
 During the finals the board shows the final on track. A final run in legs (the A final at nationals) has the leg on track under "Leg 2 of 3" beside **Combined**, the final's order over its legs so far: points (a driver's place in each leg added up, lowest wins, with the format's number of counting legs and the same tie-breaks as the finals result), with the running leg counted as if it ended now and arrows for who moved. A final of one leg shows its own order, with laps and best lap. Between finals the one that finished last stays up until the next race starts. Names follow each competitor's public name setting.
 
-Options on the end of the address: `top=20` shows fewer places (thirty by default and at most thirty) and `event=ID` follows one event.
+Options on the end of the address: `top=20` shows fewer places (thirty by default and at most thirty) and `event=ID` follows one event. A small colour key under the tables (moved up, moved down, new, heat on track) can be left out with `legend=hide`.
 
 ## Board views
 
@@ -119,6 +122,7 @@ Options go on the end of the address:
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; 0 turns it off) |
 | `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running, and only once the first lap has been counted) |
+| `legend=show` | Add a small colour key (lap colours and close tint) at the foot of the panel; off by default so it stays off the video |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `layout=table` | The older table (laps, total time and last lap) instead of the tower |
