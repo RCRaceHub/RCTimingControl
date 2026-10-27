@@ -64,16 +64,16 @@ Go to **[http://localhost:8080](http://localhost:8080)** and sign in as `admin@e
 
 ### Run a race with live timing
 
-The demo event, **Wyvern Winter Series Round 4**, is still open for entries, so it has no races yet. These steps take it through a race day.
+The demo has seven open events named **Demo: ...**, one for each race type (listed in [Docker](docker.md#one-event-for-each-race-type)), and none has races yet. These steps use **Demo: Bump-up finals**. These steps take it through a race day.
 
-1. Go to **Admin** → **Events** and open **Wyvern Winter Series Round 4**.
+1. Go to **Admin** → **Events** and open **Demo: Bump-up finals**.
 2. Click **Close Entries** and confirm, then click **Start Event**. The event is now In Progress.
 3. Go to **Race Control** in the sidebar and choose the event. The bar at the top shows **DECODER connected** while the simulated decoder is running.
 4. Click **Generate Rounds**, keep the suggested practice, qualifying and finals settings, and click **Generate Rounds** again. The run order appears on the left with the first race selected.
 5. Click **Call Grid**, then **Start Race**. Laps from the simulated decoder appear within about 15 seconds and the running order updates as you watch.
 6. When you have seen enough, click **Finish Race** and confirm. The result is saved and shown. Pick the next race in the run order to carry on.
 
-Round 4 has three classes, so you can see different race types: **13.5 Touring** runs bump-up finals with a stagger-start qualifier, **Stock Buggy** is a single timed race with a staggered start, and **F1 Open** runs points finals. Round 3, the past event, used a timed race with a rolling start.
+The other events show the other race types: timed races, points finals (also in legs), and Shikabane.
 
 While a race is running, open these in other tabs or on a phone (see the About page for the address to use):
 
