@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Printer } from 'lucide-react';
-import { fmtMs } from '@/lib/format';
+import { fmtMs, resultGapLabel } from '@/lib/format';
 import { formatTime } from '@/lib/dates';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { DnfBadge } from '@/components/DnfBadge';
@@ -58,6 +58,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
 
   const hasPoints = data.positions.some((r) => r.points != null);
   const hasChampionshipPoints = data.positions.some((r) => r.championshipPoints != null);
+  const leaderLaps = Math.max(...data.positions.map((r) => r.lapsCompleted));
 
   return (
     <div className="flex flex-col gap-4">
@@ -115,7 +116,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
               <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
               <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
               <TableCell className="text-right font-mono text-muted-foreground">
-                {row.position === 1 ? '—' : fmtMs(row.gapToLeaderMs)}
+                {resultGapLabel(row, leaderLaps)}
               </TableCell>
               {hasPoints && <TableCell className="text-right font-mono">{row.points ?? '—'}</TableCell>}
               {hasChampionshipPoints && (

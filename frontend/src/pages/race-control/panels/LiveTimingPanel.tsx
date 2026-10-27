@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { EliminationButtons } from './EliminationButtons';
 import { cn } from '@/lib/utils';
-import { fmtMs } from '@/lib/format';
+import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { PositionArrow } from '@/components/PositionArrow';
@@ -143,14 +143,10 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="text-right font-mono">{fmtMs(row.lastLapMs)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
                 <TableCell className="text-right font-mono text-muted-foreground">
-                  {row.position === 1 ? '—'
-                    : row.intervalLapsDown > 0 ? `+${row.intervalLapsDown} Lap${row.intervalLapsDown > 1 ? 's' : ''}`
-                    : fmtMs(row.gapToAheadMs)}
+                  {gapLabel(row.position, row.intervalLapsDown, row.gapToAheadMs)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-muted-foreground">
-                  {row.position === 1 ? '—'
-                    : row.lapsDown > 0 ? `+${row.lapsDown} Lap${row.lapsDown > 1 ? 's' : ''}`
-                    : fmtMs(row.gapToLeaderMs)}
+                  {gapLabel(row.position, row.lapsDown, row.gapToLeaderMs)}
                 </TableCell>
                 {elim.shikabane && (
                   <TableCell className="text-right">
