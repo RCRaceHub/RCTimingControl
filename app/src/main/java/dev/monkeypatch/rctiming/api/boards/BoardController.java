@@ -27,10 +27,10 @@ import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.BoardTickerService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsBoardService;
-import dev.monkeypatch.rctiming.service.PodiumBoardService;
-import dev.monkeypatch.rctiming.service.RaceHighlightsService;
 import dev.monkeypatch.rctiming.service.LiveFinalService;
 import dev.monkeypatch.rctiming.service.LiveQualifyingService;
+import dev.monkeypatch.rctiming.service.PodiumBoardService;
+import dev.monkeypatch.rctiming.service.RaceHighlightsService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Anonymous read API for the spectator boards on a venue TV (L12). It has no {@code @PreAuthorize}:
@@ -179,12 +180,19 @@ public class BoardController {
             if (running != null && "FINAL".equals(running.roundType())) {
                 List<LiveTimingRowDto> live = lapTimingService.peek(running.raceId())
                         .map(LiveRaceState::calculatePositions).orElse(List.of());
-                return finalTable(event, "LIVE", running, live);
+                Optional<LiveQualifyingDto> table = finalTable(event, "LIVE", running, live);
+                if (table.isPresent()) {
+                    return table.get();
+                }
             }
-            // Between races the final that finished last stays up, until the next race starts
+            // Between races the final that finished last stays up until another race finishes. A final with
+            // nothing to show (no passing yet, abandoned) falls through to the tables below, so the board is never empty
             BoardRaceDto lastRace = boardQuery.lastCompletedRace(event.id()).orElse(null);
             if (lastRace != null && "FINAL".equals(lastRace.roundType())) {
-                return finalTable(event, "FINISHED", lastRace, null);
+                Optional<LiveQualifyingDto> table = finalTable(event, "FINISHED", lastRace, null);
+                if (table.isPresent()) {
+                    return table.get();
+                }
             }
             // Not a qualifying heat on track: keep the last qualifying heat's table up, including while the finals
             // run, so the board is never empty once qualifying has been raced
@@ -205,7 +213,8 @@ public class BoardController {
                                         List<LiveTimingRowDto> liveRows) {
         return liveQualifyingService.forHeat(race.raceId(), liveRows)
                 .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
-                        race.className(), race.roundNumber(), "QUALIFIER", null, null, null, null, tables.rows(), tables.roundRows()))
+                        race.className(), race.roundNumber(), "QUALIFIER", null, null, null, null,
+                        tables.rows(), tables.roundRows()))
                 .orElse(LiveQualifyingDto.none(event.id(), event.name()));
     }
 
@@ -219,13 +228,12 @@ public class BoardController {
                 .orElse(LiveQualifyingDto.none(event.id(), event.name()));
     }
 
-    private LiveQualifyingDto finalTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
-                                         List<LiveTimingRowDto> liveRows) {
+    private Optional<LiveQualifyingDto> finalTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
+                                                   List<LiveTimingRowDto> liveRows) {
         return liveFinalService.forLeg(race.raceId(), liveRows)
                 .map(t -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
                         race.className(), t.leg(), "FINAL", null, race.className() + " " + t.finalLetter() + " final",
-                        "Leg " + t.leg() + " of " + t.legs(), "Combined", t.rows(), t.roundRows()))
-                .orElse(LiveQualifyingDto.none(event.id(), event.name()));
+                        "Leg " + t.leg() + " of " + t.legs(), "Combined", t.rows(), t.roundRows()));
     }
 
     /** The lap times of every car in a running heat, by entry id. */

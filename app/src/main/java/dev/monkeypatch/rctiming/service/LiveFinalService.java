@@ -35,8 +35,9 @@ import java.util.Set;
  * finished), and, when the final is run in legs, its combined order over the legs run so far with the leg on track
  * counted from its live positions as if it ended now. A final of one leg has only its own order. It only reads, and is
  * called from the anonymous board endpoint on a request thread, which hands it the leg's live positions (the live
- * timing state lives in the {@code timing} package, which this class does not depend on). Scoring is
- * {@link FinalLegScoring}, the same as the combined result on the finals board, so the board and the result agree.
+ * timing state lives in the {@code timing} package, which this class does not depend on); a stopped leg is shown
+ * like a running one. Scoring is {@link FinalLegScoring}, as for the A final's combined result on the finals board.
+ * Only the A final has legs today, so every other final has the one table.
  */
 @Service
 public class LiveFinalService {
@@ -133,8 +134,9 @@ public class LiveFinalService {
         for (ResultSnapshotDto.ResultRow r : legOrder) {
             roundRows.add(new LiveQualifyingDto.RoundRow(roundRows.size() + 1, null, r.entryId(),
                     driverName(r.entryId(), carNumbers.get(r.entryId()), names), carNumbers.get(r.entryId()),
-                    r.lapsCompleted(), r.lapsCompleted() == 0 ? null : r.totalTimeMs(), r.bestLapMs(),
-                    liveRows != null));
+                    r.lapsCompleted(),
+                    r.lapsCompleted() == 0 || r.totalTimeMs() == Long.MAX_VALUE ? null : r.totalTimeMs(),
+                    r.bestLapMs(), liveRows != null));
         }
 
         // Everyone on the first leg's grid is in the final, so a driver who has not run a leg still scores for it
@@ -180,7 +182,8 @@ public class LiveFinalService {
             FinalLegScoring.Standing s = standings.get(i);
             rows.add(new LiveQualifyingDto.Row(i + 1, before.get(s.entryId()), s.entryId(),
                     driverName(s.entryId(), carNumbers.get(s.entryId()), names), carNumbers.get(s.entryId()),
-                    s.points(), s.laps(), bestLap.get(s.entryId()), inLeg.contains(s.entryId()), false));
+                    s.points(), s.laps(), bestLap.get(s.entryId()),
+                    liveRows != null && inLeg.contains(s.entryId()), false));
         }
         return Optional.of(new Tables(race.getFinalLetter(), legNumber, legs.size(), rows, roundRows));
     }
