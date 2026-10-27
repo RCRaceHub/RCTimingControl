@@ -203,6 +203,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Grid Size" value={value.gridSize} onChange={v => patch('gridSize', v)} />
           <NumField label="Bump Spots" value={value.bumpSpots} onChange={v => patch('bumpSpots', v)} />
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
+          <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
         </div>
       )}
@@ -234,6 +235,7 @@ export function FormatConfigFields({ value, onChange }: Props) {
           <NumField label="Final Duration (min)" value={value.finalDurationMinutes} onChange={v => patch('finalDurationMinutes', v)} />
           <NumField label="Heat Duration (min)" value={value.heatDurationMinutes} onChange={v => patch('heatDurationMinutes', v)} />
           <StartTypeField label="Qualifying Start" value={value.qualifyingStartType} onChange={v => patch('qualifyingStartType', v)} />
+          <StartTypeField label="Finals Start" value={value.finalsStartType} onChange={v => patch('finalsStartType', v)} />
           <QualTypeField value={value.qualifyingType} onChange={v => patch('qualifyingType', v)} />
           <NumField label="Best Heats Count (0 = all)" value={value.bestHeatsCount ?? 0} onChange={v => patchScoring('bestHeatsCount', v)} />
           <NumField label="Max Race Window (s, 0 = none)" value={value.maxRaceWindowSeconds ?? 0} onChange={v => patchScoring('maxRaceWindowSeconds', v)} />

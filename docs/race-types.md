@@ -169,7 +169,8 @@ has the best qualifiers, and its last places are filled by the best finishers fr
 | Setting | What it does |
 |---|---|
 | Heat duration (min) | The length of practice and qualifying races and of finals (finals use the heat length) |
-| Qualifying start type | How practice and qualifying heats start. Finals always start on the grid |
+| Qualifying start type | How practice and qualifying heats start |
+| Finals start type | How finals start |
 | Grid size | Cars per final |
 | Bump spots | Places in each higher final filled by the final below (at most grid size - 1) |
 | Best heats count | How many of a driver's qualifying rounds count (low-points qualifying only; 0 means all) |
@@ -221,7 +222,7 @@ race of its own.
 |---|---|
 | Heat duration (min) | The length of practice and qualifying races |
 | Final duration (min) | The length of each final |
-| Qualifying start type | How heats start. Finals always start on the grid |
+| Qualifying start type, finals start type | How heats and finals start |
 | Stagger interval (s), qualifying type | As above |
 
 Seeding gives each final `ceil(drivers / finals)` cars, filled from the bottom: with 14 drivers and two finals, the B

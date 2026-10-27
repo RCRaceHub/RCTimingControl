@@ -104,12 +104,12 @@ class RaceFormatServiceTest {
         EventClass bumpUp = classWith(new BumpUpConfig(3, 5, 2, 10, 2, StartType.GRID, StartType.ROLLING,
                 QualifyingType.FTQ, 2, 0));
         assertThat(service.startType(bumpUp, RoundType.PRACTICE)).isEqualTo(StartType.GRID);
-        assertThat(service.startType(bumpUp, RoundType.FINAL)).isEqualTo(StartType.GRID);
+        assertThat(service.startType(bumpUp, RoundType.FINAL)).isEqualTo(StartType.ROLLING);
 
         EventClass points = classWith(new PointsFinalsConfig(3, 2, 8, 5, StartType.ROLLING, StartType.STAGGER,
                 QualifyingType.FTQ, 2, 0));
         assertThat(service.startType(points, RoundType.QUALIFIER)).isEqualTo(StartType.ROLLING);
-        assertThat(service.startType(points, RoundType.FINAL)).isEqualTo(StartType.GRID);
+        assertThat(service.startType(points, RoundType.FINAL)).isEqualTo(StartType.STAGGER);
     }
 
     @Test
