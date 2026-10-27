@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getLiveQualifying } from '@/lib/boardsApi';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { LiveTopTable } from './LiveTopTable';
-import { parseEventParam, parseTopParam } from './boardFormat';
+import { parseEventParam, parseLegendParam, parseTopParam } from './boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 
 /** The table changes with every lap, so it polls faster than the other boards. */
@@ -16,6 +16,7 @@ export default function LiveTopBoard() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const top = parseTopParam(searchParams.get('top'));
+  const showLegend = parseLegendParam(searchParams.get('legend'), true);
 
   const { data, isPending, isError } = useQuery({
     queryKey: publicQueryKeys.boards.liveQualifying(eventId),
@@ -52,7 +53,7 @@ export default function LiveTopBoard() {
           {live ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}
         </p>
       </div>
-      <LiveTopTable data={data} top={top} />
+      <LiveTopTable data={data} top={top} showLegend={showLegend} />
     </BoardShell>
   );
 }

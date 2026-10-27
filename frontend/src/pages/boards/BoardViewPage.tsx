@@ -20,7 +20,7 @@ export default function BoardViewPage() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showLegend } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
 
   const { data: view, isPending, isError, error } = useQuery({
     queryKey: publicQueryKeys.boards.view(slug),
@@ -60,6 +60,7 @@ export default function BoardViewPage() {
 
   const ctx = { eventId, nowNext, rows, barClock: showBars ? barClock : undefined,
     closeMs,
+    showLegend,
     showArrows,
     media,
     predicted: showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined,

@@ -24,6 +24,7 @@ import { useGapView } from '@/hooks/useGapView';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
+import { TimingLegend } from '@/components/TimingLegend';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -254,7 +255,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,
-    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles,
+    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
@@ -435,6 +436,9 @@ export default function OverlayBoard() {
               })}
             </tbody>
           </table>
+        )}
+        {showLegend && rows.length > 0 && (
+          <TimingLegend kinds={['lap', 'close']} className={cn('border-t px-4 py-1.5 text-[10px]', colours.row, colours.muted)} />
         )}
       </section>
       {/* Battles and fastest laps sit apart from the tower, bottom left, clear of the ticker and sponsor bar; the

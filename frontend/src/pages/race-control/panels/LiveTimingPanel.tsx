@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
+import { TimingLegend } from '@/components/TimingLegend';
 import { useEliminations } from '@/hooks/race-control/useEliminations';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import {
@@ -70,6 +71,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             : wsStatus === 'connected' ? 'Waiting for first passing…' : 'Connecting to timing…'}
         </p>
       ) : (
+        <>
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
@@ -162,6 +164,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             })}
           </TableBody>
         </Table>
+        <TimingLegend kinds={['lap', 'close']} className="mt-2 text-muted-foreground" />
+        </>
       )}
     </div>
   );

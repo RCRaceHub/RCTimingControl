@@ -436,6 +436,7 @@ describe('overlay options', () => {
       showPredicted: true,
       closeMs: 1000,
       showBattles: true,
+      showLegend: false,
     });
     expect(parseOverlayOptions(new URLSearchParams('layout=table&qual=hide'))).toMatchObject({ layout: 'table', showQualifying: false });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);

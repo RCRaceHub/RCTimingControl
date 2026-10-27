@@ -8,6 +8,7 @@ import { isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
+import { TimingLegend } from '@/components/TimingLegend';
 import { gapText } from './boardFormat';
 
 function gap(row: LiveTimingRowDto): string {
@@ -28,6 +29,8 @@ interface BoardLiveTableProps {
   predicted?: PredictedClock;
   /** Car photos by entry id, shown beside the driver's name (#521); omitted or empty leaves the rows as they were. */
   media?: Map<number, RaceMediaDto>;
+  /** Show the key to the close-running tint under the table (`legend=hide` on the address turns it off). */
+  showLegend?: boolean;
 }
 
 /** What the predicted laps column needs: the device clock offset and the race time left at a device time. */
@@ -42,8 +45,9 @@ export interface PredictedClock {
  * round its lap against its average. Given {@code predicted} it adds the laps each car is on course to finish
  * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
-export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media }: BoardLiveTableProps) {
+export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
   return (
+    <>
     <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
       <thead>
         <tr className="border-b border-slate-700 text-left text-lg text-slate-400 lg:text-2xl">
@@ -91,5 +95,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
         })}
       </tbody>
     </table>
+    {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
+    </>
   );
 }
