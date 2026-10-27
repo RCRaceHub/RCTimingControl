@@ -59,6 +59,28 @@ describe('AutoRunPanel', () => {
     expect(autoRun.stop.mutate).toHaveBeenCalled();
   });
 
+  it('offers 2 min and 60s presets and a box for any other start-in time', () => {
+    const autoRun = autoRunOf(stateOf({
+      armed: true, phase: 'WAITING', nextRaceId: 4, nextRaceLabel: 'Heat 1',
+      startAt: new Date(Date.now() + 300_000).toISOString(),
+    }));
+    render(<AutoRunPanel autoRun={autoRun} canControl />);
+
+    fireEvent.click(screen.getByRole('button', { name: '2 min' }));
+    expect(autoRun.skipTo.mutate).toHaveBeenLastCalledWith(120);
+    fireEvent.click(screen.getByRole('button', { name: '60s' }));
+    expect(autoRun.skipTo.mutate).toHaveBeenLastCalledWith(60);
+
+    const set = screen.getByRole('button', { name: 'Set' });
+    expect(set).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Start in (seconds)'), { target: { value: '45' } });
+    fireEvent.click(set);
+    expect(autoRun.skipTo.mutate).toHaveBeenLastCalledWith(45);
+
+    fireEvent.change(screen.getByLabelText('Start in (seconds)'), { target: { value: '601' } });
+    expect(set).toBeDisabled();
+  });
+
   it('says why it is holding for the finals and resumes', () => {
     const autoRun = autoRunOf(stateOf({
       armed: true, phase: 'HELD', heldReason: 'FINALS', nextRaceId: 9, nextRaceLabel: 'A Final — Buggy',

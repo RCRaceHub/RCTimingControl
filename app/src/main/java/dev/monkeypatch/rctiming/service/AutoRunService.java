@@ -209,7 +209,7 @@ public class AutoRunService {
     }
 
     /**
-     * Brings the next start forward to {@code seconds} from now, as the 30s and 10s buttons of RC-Timing do. It
+     * Brings the next start forward to {@code seconds} from now, as the 2 min, 60s, 30s and 10s buttons and the seconds box of the Auto run panel do. It
      * never pushes a start back, and does nothing to the plan unless the event is counting down; warnings that
      * would now be too early are marked as given so they are not spoken.
      */
