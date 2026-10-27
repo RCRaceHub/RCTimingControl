@@ -84,7 +84,7 @@ export function DecoderStatusBar({ children }: { children?: ReactNode }) {
   return (
     <div className="flex h-8 items-center gap-3 px-4 bg-card border-b shrink-0">
       <StatusPill component="DECODER" state={decoderState} />
-      {children && <div className="ml-auto">{children}</div>}
+      {children && <div className="ml-auto flex items-center gap-4">{children}</div>}
     </div>
   );
 }
