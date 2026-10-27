@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import type { AutoRunStateDto } from '@/lib/raceControlApi';
 import { formatCountdown, useCountdown } from '@/lib/useCountdown';
 import type { useAutoRun } from '@/hooks/race-control/useAutoRun';
+import { MAX_RESULTS_HOLD_SECONDS, useResultsHold } from '@/hooks/race-control/useResultsHold';
 
 type AutoRun = ReturnType<typeof useAutoRun>;
 
@@ -33,6 +34,7 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
   const [hold, setHold] = useState<boolean | null>(null);
   const [autoStart, setAutoStart] = useState<boolean | null>(null);
   const { mutate: saveSettings } = autoRun.settings;
+  const [resultsHold, setResultsHold] = useResultsHold();
 
   const gapValue = gap ?? String(state?.gapSeconds ?? '');
   const gapSeconds = Number(gapValue);
@@ -155,6 +157,22 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
           </div>
         </>
       )}
+
+      <div className="flex items-center gap-2">
+        <Label htmlFor="auto-run-results-hold" className="text-xs">Keep results on screen after a race (seconds)</Label>
+        <Input
+          id="auto-run-results-hold"
+          type="number"
+          min={0}
+          max={MAX_RESULTS_HOLD_SECONDS}
+          className="h-8 w-20"
+          value={resultsHold}
+          onChange={(e) => {
+            const seconds = parseInt(e.target.value, 10);
+            setResultsHold(Number.isFinite(seconds) ? Math.min(MAX_RESULTS_HOLD_SECONDS, Math.max(0, seconds)) : 0);
+          }}
+        />
+      </div>
     </section>
   );
 }
