@@ -64,6 +64,12 @@ public class Event implements CreatedAt, UpdatedAt {
         this.finalsLineupConfirmedAt = finalsLineupConfirmedAt;
     }
 
+    /** How practice is ranked on the live top board; fastest lap until race control chooses otherwise. */
+    private PracticeRanking practiceRanking = PracticeRanking.FASTEST;
+
+    public PracticeRanking getPracticeRanking() { return practiceRanking; }
+    public void setPracticeRanking(PracticeRanking practiceRanking) { this.practiceRanking = practiceRanking; }
+
     public int getAutoRunGapSeconds() { return autoRunGapSeconds; }
     public void setAutoRunGapSeconds(int autoRunGapSeconds) { this.autoRunGapSeconds = autoRunGapSeconds; }
 

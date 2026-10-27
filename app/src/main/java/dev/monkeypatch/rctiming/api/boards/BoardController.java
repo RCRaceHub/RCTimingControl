@@ -10,6 +10,8 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
+import dev.monkeypatch.rctiming.domain.event.EventService;
+import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
@@ -44,7 +46,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Anonymous read API for the spectator boards on a venue TV (L12). It has no {@code @PreAuthorize}:
@@ -72,6 +76,7 @@ public class BoardController {
     private final EventSponsorService eventSponsorService;
     private final DriverMediaService driverMediaService;
     private final RaceHighlightsService raceHighlightsService;
+    private final EventService eventService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -89,7 +94,9 @@ public class BoardController {
                            ClubProfileService clubProfileService,
                            EventSponsorService eventSponsorService,
                            DriverMediaService driverMediaService,
-                           RaceHighlightsService raceHighlightsService) {
+                           RaceHighlightsService raceHighlightsService,
+                           EventService eventService) {
+        this.eventService = eventService;
         this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
@@ -164,11 +171,21 @@ public class BoardController {
                         .map(LiveRaceState::calculatePositions).orElse(List.of());
                 return liveTable(event, "LIVE", running, live);
             }
+            if (running != null && "PRACTICE".equals(running.roundType())) {
+                Map<Long, List<Long>> lapTimes = lapTimingService.peek(running.raceId())
+                        .map(BoardController::liveLapTimes).orElse(Map.of());
+                return practiceTable(event, "LIVE", running, lapTimes);
+            }
             // Not a qualifying heat on track: keep the last qualifying heat's table up, including while the finals
             // run, so the board is never empty once qualifying has been raced
             BoardRaceDto last = boardQuery.lastCompletedQualifier(event.id()).orElse(null);
             if (last != null) {
                 return liveTable(event, "FINISHED", last, null);
+            }
+            // No qualifying yet: the practice table, if the event has practised
+            BoardRaceDto practice = boardQuery.lastCompletedPractice(event.id()).orElse(null);
+            if (practice != null) {
+                return practiceTable(event, "FINISHED", practice, null);
             }
             return LiveQualifyingDto.none(event.id(), event.name());
         }).orElse(LiveQualifyingDto.none(null, null));
@@ -178,8 +195,27 @@ public class BoardController {
                                         List<LiveTimingRowDto> liveRows) {
         return liveQualifyingService.forHeat(race.raceId(), liveRows)
                 .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
-                        race.className(), race.roundNumber(), tables.rows(), tables.roundRows()))
+                        race.className(), race.roundNumber(), "QUALIFIER", null, tables.rows(), tables.roundRows()))
                 .orElse(LiveQualifyingDto.none(event.id(), event.name()));
+    }
+
+    private LiveQualifyingDto practiceTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
+                                            Map<Long, List<Long>> lapTimes) {
+        PracticeRanking ranking = eventService.findByIdOrThrow(event.id()).getPracticeRanking();
+        return liveQualifyingService.forPracticeHeat(race.raceId(), lapTimes, ranking)
+                .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
+                        race.className(), race.roundNumber(), "PRACTICE", ranking.label(), tables.rows(),
+                        tables.roundRows()))
+                .orElse(LiveQualifyingDto.none(event.id(), event.name()));
+    }
+
+    /** The lap times of every car in a running heat, by entry id. */
+    private static Map<Long, List<Long>> liveLapTimes(LiveRaceState state) {
+        Map<Long, List<Long>> times = new HashMap<>();
+        for (LiveTimingRowDto row : state.calculatePositions()) {
+            times.put(row.entryId(), state.lapTimesSnapshot(row.entryId()));
+        }
+        return times;
     }
 
     /** @param eventId the event to show; defaults to the event racing now, else the latest in progress */

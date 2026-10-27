@@ -38,15 +38,20 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
   const live = data.phase === 'LIVE';
   const rows = data.rows.slice(0, top);
   const hasBaseline = data.rows.some((r) => r.previousPosition !== null);
+  const practice = data.roundType === 'PRACTICE';
   return (
-    <table className={`w-full ${density.text}`} aria-label="Qualifying order">
+    <table className={`w-full ${density.text}`} aria-label={practice ? 'Practice order' : 'Qualifying order'}>
       <thead>
         <tr className={`border-b border-slate-700 text-left text-slate-400 ${density.head}`}>
           <th className={density.cell}>Pos</th>
           <th className={density.cell}>Driver</th>
           <th className={density.cell}>Car</th>
-          <th className={`${density.cell} text-right`}>Points</th>
-          <th className={`${density.cell} text-right`}>Best lap</th>
+          {practice ? (
+            <th className={`${density.cell} text-right`}>Laps</th>
+          ) : (
+            <th className={`${density.cell} text-right`}>Points</th>
+          )}
+          <th className={`${density.cell} text-right`}>{practice ? (data.rankingLabel ?? 'Best') : 'Best lap'}</th>
           <th className="py-2 text-right">Moved</th>
         </tr>
       </thead>
@@ -60,8 +65,14 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
               {live && row.waiting && <span className="ml-3 text-slate-500">heat to come</span>}
             </td>
             <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>
-            <td className={`${density.cell} text-right font-semibold tabular-nums`}>{row.points ?? '—'}</td>
-            <td className={`${density.cell} text-right tabular-nums`}>{fmtMs(row.bestLapMs)}</td>
+            {practice ? (
+              <td className={`${density.cell} text-right tabular-nums`}>{row.lapsCompleted}</td>
+            ) : (
+              <td className={`${density.cell} text-right font-semibold tabular-nums`}>{row.points ?? '—'}</td>
+            )}
+            <td className={`${density.cell} text-right tabular-nums ${practice ? 'font-semibold' : ''}`}>
+              {fmtMs(row.bestLapMs)}
+            </td>
             <td className="text-right tabular-nums">
               <Movement row={row} hasBaseline={hasBaseline} />
             </td>
@@ -72,7 +83,10 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
   );
 }
 
-/** The order inside the round on track: laps, then total time, over the round's heats counted so far. */
+/**
+ * The order inside the round on track: laps, then total time, over the round's heats counted so far. In practice the
+ * round is the session, ranked by the event's practice time instead.
+ */
 function RoundTable({ data, rows, top, density }: {
   data: LiveQualifyingDto;
   rows: LiveRoundRow[];
@@ -82,6 +96,7 @@ function RoundTable({ data, rows, top, density }: {
   const live = data.phase === 'LIVE';
   // A driver whose heat is later in the round has no earlier place in it, so nobody is marked "New" here
   const hasBaseline = false;
+  const practice = data.roundType === 'PRACTICE';
   return (
     <table className={`w-full ${density.text}`} aria-label="Round order">
       <thead>
@@ -90,8 +105,8 @@ function RoundTable({ data, rows, top, density }: {
           <th className={density.cell}>Driver</th>
           <th className={density.cell}>Car</th>
           <th className={`${density.cell} text-right`}>Laps</th>
-          <th className={`${density.cell} text-right`}>Time</th>
-          <th className={`${density.cell} text-right`}>Best lap</th>
+          {!practice && <th className={`${density.cell} text-right`}>Time</th>}
+          <th className={`${density.cell} text-right`}>{practice ? (data.rankingLabel ?? 'Best') : 'Best lap'}</th>
           <th className="py-2 text-right">Moved</th>
         </tr>
       </thead>
@@ -105,8 +120,10 @@ function RoundTable({ data, rows, top, density }: {
             </td>
             <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>
             <td className={`${density.cell} text-right font-semibold tabular-nums`}>{row.lapsCompleted}</td>
-            <td className={`${density.cell} text-right tabular-nums`}>{fmtMs(row.totalTimeMs)}</td>
-            <td className={`${density.cell} text-right tabular-nums`}>{fmtMs(row.bestLapMs)}</td>
+            {!practice && <td className={`${density.cell} text-right tabular-nums`}>{fmtMs(row.totalTimeMs)}</td>}
+            <td className={`${density.cell} text-right tabular-nums ${practice ? 'font-semibold' : ''}`}>
+              {fmtMs(row.bestLapMs)}
+            </td>
             <td className="text-right tabular-nums">
               <Movement row={row} hasBaseline={hasBaseline} />
             </td>
@@ -130,7 +147,11 @@ export function LiveTopTable({ data, top }: { data: LiveQualifyingDto; top: numb
     <div className="grid gap-8 xl:grid-cols-2">
       <section aria-label="Round">
         <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
-          {data.roundNumber ? `Round ${data.roundNumber}` : 'This round'}
+          {data.roundType === 'PRACTICE'
+            ? `Practice ${data.roundNumber ?? ''}`.trim()
+            : data.roundNumber
+              ? `Round ${data.roundNumber}`
+              : 'This round'}
         </h2>
         <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
       </section>

@@ -100,7 +100,16 @@ public class BoardQuery {
      * stay up once the finals have started. It is the latest across all classes, not the class now on track.
      */
     public Optional<BoardRaceDto> lastCompletedQualifier(long eventId) {
-        return first(eventId, RACES.STATUS.eq("FINISHED").and(ROUNDS.TYPE.eq("QUALIFIER")),
+        return lastCompletedOfType(eventId, "QUALIFIER");
+    }
+
+    /** The practice heat that finished most recently, for the practice table before qualifying has started. */
+    public Optional<BoardRaceDto> lastCompletedPractice(long eventId) {
+        return lastCompletedOfType(eventId, "PRACTICE");
+    }
+
+    private Optional<BoardRaceDto> lastCompletedOfType(long eventId, String roundType) {
+        return first(eventId, RACES.STATUS.eq("FINISHED").and(ROUNDS.TYPE.eq(roundType)),
                 List.of(RACES.FINISHED_AT.desc().nullsLast(), RACES.ID.desc()));
     }
 

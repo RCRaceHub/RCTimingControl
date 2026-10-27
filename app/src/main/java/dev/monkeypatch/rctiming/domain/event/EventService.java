@@ -111,6 +111,26 @@ public class EventService {
         return enabled;
     }
 
+    /**
+     * Chooses how practice is ranked on the live top board for the event, recording the change only when it differs.
+     * Runs in its own transaction on the write connection.
+     *
+     * @return the ranking now in force
+     */
+    public PracticeRanking setPracticeRanking(Actor actor, Long id, PracticeRanking ranking) {
+        Event event = getEventOrThrow(id);
+        PracticeRanking before = event.getPracticeRanking();
+        if (before == ranking) {
+            return ranking;
+        }
+        event.setPracticeRanking(ranking);
+        eventRepository.save(event);
+        audit.entry(actor, "PRACTICE_RANKING_CHANGED").entity("event", id).event(id)
+                .summary("Ranked practice by " + ranking.label().toLowerCase() + " for " + event.getName())
+                .before(before.name()).after(ranking.name()).record();
+        return ranking;
+    }
+
     /** Sets how auto run (#338) paces the event, recording the change only when something differs. */
     public Event setAutoRunSettings(Actor actor, Long id, int gapSeconds,
                                  boolean holdBeforeFinals, boolean autoStart) {

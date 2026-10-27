@@ -216,6 +216,10 @@ export type LiveQualifyingDto = {
   raceLabel: string | null;
   className: string | null;
   roundNumber?: number | null;
+  /** QUALIFIER or PRACTICE; absent or null with nothing to show. */
+  roundType?: 'QUALIFIER' | 'PRACTICE' | null;
+  /** For practice, what the time columns hold, such as "Best 3 laps in a row"; null for qualifying. */
+  rankingLabel?: string | null;
   /** The overall order, as it would stand if the heat ended now. */
   rows: LiveQualifyingRow[];
   /** The order inside the heat's round; empty when the class has no rounds to show. */
