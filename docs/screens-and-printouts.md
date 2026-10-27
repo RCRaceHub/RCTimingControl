@@ -44,7 +44,7 @@ A few things help at the track:
 
 Each driver has a thin **lap bar** under the name: it fills as the car goes round, measured against that driver's own average lap since they last crossed the line. It is green while the lap is shorter than the average, yellow once it reaches the average, and red once it is the club's late margin past it (1 s unless changed on the Club page, Live timing tab). After a stop the bars count from the resume, so a stoppage is not counted against anyone. The bars compare the timing laptop's passing times with the clock of the device showing the board; the board works out the difference from the passings as they arrive, so a TV with a wrong clock settles after the first lap or two.
 
-A car on the same lap within one second of the car ahead gets an amber row. This follows the scored order (the gap between the two cars' last crossings, penalties included), so it changes only at the line. The **Ahead** column is that gap, and **Gap** is the gap to the leader.
+A car on the same lap within one second of the car ahead gets an amber row and a double-chevron icon beside the name, so it can be seen without relying on the colour. This follows the scored order (the gap between the two cars' last crossings, penalties included), so it changes only at the line. The **Ahead** column is that gap, and **Gap** is the gap to the leader.
 
 In a **final**, a small green ▲ or red ▼ beside the position shows the places a car has gained or lost against its grid place (nothing when it has held its place). Race control's live timing shows the same arrows for a final. In a race with a set length, a **Pred** column shows the laps each car is on course to finish with, worked out from its average lap and the time left; the race ends for a car on its first crossing after time is up, so that lap is counted.
 
@@ -120,7 +120,7 @@ Options go on the end of the address:
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; 0 turns it off) |
 | `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running, and only once the first lap has been counted) |
-| `legend=show` | Add a small colour key (lap colours and close tint) at the foot of the panel; off by default so it stays off the video |
+| `legend=show` | Add a small colour key (lap colours and close tint, each with its icon) at the foot of the panel; off by default so it stays off the video |
 | `chart=hide` | Leave out the position chart |
 | `ticker=hide` | Leave out the ticker |
 | `layout=table` | The older table (laps, total time and last lap) instead of the tower |
