@@ -68,7 +68,7 @@ export function TimingLegend({ kinds, size = 'small', className }: TimingLegendP
           {item.swatch && (
             <span aria-hidden="true" className={cn('inline-block rounded-sm', board ? 'h-4 w-4' : 'h-2.5 w-2.5', item.swatch)} />
           )}
-          {item.icon && <StateIcon kind={item.icon} className={board ? 'h-5 w-5' : 'h-3.5 w-3.5'} />}
+          {item.icon && <StateIcon kind={item.icon} decorative className={board ? 'h-5 w-5' : 'h-3.5 w-3.5'} />}
           {item.label}
         </li>
       ))}

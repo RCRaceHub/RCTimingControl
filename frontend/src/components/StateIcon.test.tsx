@@ -4,9 +4,14 @@ import { RowStateIcon, STATE_INFO, StateIcon } from './StateIcon';
 import type { StateKind } from './StateIcon';
 
 describe('StateIcon', () => {
-  it('labels each state in words, for the screen reader and the tooltip', () => {
+  it('labels each state in words, for the screen reader', () => {
     render(<StateIcon kind="race-best" />);
     expect(screen.getByRole('img', { name: 'Fastest lap of the race' })).toHaveAttribute('data-state', 'race-best');
+  });
+
+  it('can be hidden from the screen reader where the words sit beside it', () => {
+    render(<StateIcon kind="close" decorative />);
+    expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('gives every state its own icon, so no state depends on colour alone', () => {

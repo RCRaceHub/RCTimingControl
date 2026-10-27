@@ -16,6 +16,12 @@ describe('TimingLegend', () => {
     ]);
   });
 
+  it('shows an icon beside each lap and close colour, hidden from the screen reader as the words follow it', () => {
+    const { container } = render(<TimingLegend kinds={['lap', 'close']} />);
+    expect(container.querySelectorAll('[data-state]')).toHaveLength(5);
+    expect(screen.queryByRole('img')).toBeNull();
+  });
+
   it('explains the movement colours for the qualifying tables', () => {
     render(<TimingLegend kinds={['movement']} size="board" />);
     expect(screen.getByText('Moved up')).toBeInTheDocument();

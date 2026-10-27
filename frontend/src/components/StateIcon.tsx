@@ -8,7 +8,7 @@ export type StateKind = FlashColor | 'close';
 
 interface StateInfo {
   icon: LucideIcon;
-  /** What the icon says, for the screen reader, the tooltip and the colour key. */
+  /** What the icon says, for the screen reader and the colour key. */
   label: string;
   /** The text colour of the icon, in the hue of the row tint it goes with. */
   tone: string;
@@ -31,12 +31,11 @@ export const STATE_INFO: Record<StateKind, StateInfo> = {
  * The icon for a row's current state, sized to the text around it. The filled star for the race's fastest lap
  * is the one icon with a solid shape, so it stands out from the outlined ones at a distance.
  */
-export function StateIcon({ kind, className }: { kind: StateKind; className?: string }) {
+export function StateIcon({ kind, className, decorative = false }: { kind: StateKind; className?: string; decorative?: boolean }) {
   const { icon: Icon, label, tone } = STATE_INFO[kind];
   return (
     <Icon
-      role="img"
-      aria-label={label}
+      {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}
       data-state={kind}
       className={cn('inline-block h-[1em] w-[1em] shrink-0 align-[-0.125em]', tone, className)}
       fill={kind === 'race-best' ? 'currentColor' : 'none'}
@@ -49,7 +48,7 @@ export function StateIcon({ kind, className }: { kind: StateKind; className?: st
  * The icon for a row: its lap flash while one is showing, otherwise the close icon when it is close, otherwise
  * nothing. A lap flash wins over close for the same reason it wins over the close tint.
  */
-export function RowStateIcon({ flash, close, className }: { flash?: string; close: boolean; className?: string }) {
-  const kind: StateKind | null = flash && flash in STATE_INFO ? (flash as StateKind) : close ? 'close' : null;
+export function RowStateIcon({ flash, close, className }: { flash?: FlashColor; close: boolean; className?: string }) {
+  const kind: StateKind | null = flash ?? (close ? 'close' : null);
   return kind ? <StateIcon kind={kind} className={className} /> : null;
 }
