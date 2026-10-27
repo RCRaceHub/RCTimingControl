@@ -136,18 +136,18 @@ export function LiveTopTable({ data, top, showLegend = false }: { data: LiveQual
   }
   return (
     <>
-    <div className="grid gap-8 xl:grid-cols-2">
-      <section aria-label="Round">
-        <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
-          {data.roundNumber ? `Round ${data.roundNumber}` : 'This round'}
-        </h2>
-        <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
-      </section>
-      <section aria-label="Overall">
-        <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">Overall</h2>
-        <OverallTable data={data} top={top} density={COMPACT} />
-      </section>
-    </div>
+      <div className="grid gap-8 xl:grid-cols-2">
+        <section aria-label="Round">
+          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">
+            {data.roundNumber ? `Round ${data.roundNumber}` : 'This round'}
+          </h2>
+          <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
+        </section>
+        <section aria-label="Overall">
+          <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">Overall</h2>
+          <OverallTable data={data} top={top} density={COMPACT} />
+        </section>
+      </div>
     {legend}
     </>
   );

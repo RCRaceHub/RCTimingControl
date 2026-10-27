@@ -115,6 +115,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
     ...parseLiveRaceOptions(params, defaultCloseMs),
+    // After the spread on purpose: the overlay's key is off unless asked, the boards' is on
     showLegend: parseLegendParam(params.get('legend'), false),
   };
 }

@@ -438,7 +438,7 @@ export default function OverlayBoard() {
           </table>
         )}
         {showLegend && rows.length > 0 && (
-          <TimingLegend kinds={['lap', 'close']} className={cn('border-t px-4 py-1.5 text-[10px]', colours.row, colours.muted)} />
+          <TimingLegend kinds={closeMs > 0 ? ['lap', 'close'] : ['lap']} className={cn('border-t px-4 py-1.5 text-[10px]', colours.row, colours.muted)} />
         )}
       </section>
       {/* Battles and fastest laps sit apart from the tower, bottom left, clear of the ticker and sponsor bar; the

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export type LegendKind = 'lap' | 'close' | 'movement';
 
 interface LegendItem {
-  /** A solid Tailwind background that matches the row tint it explains. */
+  /** A solid Tailwind background in the hue of the row tint it explains; empty for a plain lead-in. */
   swatch: string;
   label: string;
 }
@@ -16,10 +16,11 @@ interface LegendItem {
  */
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
+    { swatch: '', label: 'Flashes after each lap:' },
     { swatch: 'bg-purple-500', label: 'Fastest lap of the race' },
     { swatch: 'bg-blue-500', label: 'Driver’s best lap' },
-    { swatch: 'bg-green-500', label: 'Faster than their last lap' },
-    { swatch: 'bg-red-500', label: 'Slower than usual' },
+    { swatch: 'bg-green-500', label: 'As quick as, or quicker than, their last lap' },
+    { swatch: 'bg-red-500', label: 'Slower than their last lap or their average' },
   ],
   close: [{ swatch: 'bg-amber-500', label: 'Close to the car ahead' }],
   movement: [
@@ -57,7 +58,9 @@ export function TimingLegend({ kinds, size = 'small', className }: TimingLegendP
     >
       {kinds.flatMap((kind) => ITEMS[kind]).map((item) => (
         <li key={item.label} className="flex items-center gap-1.5">
-          <span aria-hidden="true" className={cn('inline-block rounded-sm', board ? 'h-4 w-4' : 'h-2.5 w-2.5', item.swatch)} />
+          {item.swatch && (
+            <span aria-hidden="true" className={cn('inline-block rounded-sm', board ? 'h-4 w-4' : 'h-2.5 w-2.5', item.swatch)} />
+          )}
           {item.label}
         </li>
       ))}

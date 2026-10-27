@@ -48,53 +48,53 @@ export interface PredictedClock {
 export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
   return (
     <>
-    <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
-      <thead>
-        <tr className="border-b border-slate-700 text-left text-lg text-slate-400 lg:text-2xl">
-          <th className="py-2 pr-4">Pos</th>
-          <th className="py-2 pr-4">Car</th>
-          <th className="py-2 pr-4">Driver</th>
-          <th className="py-2 pr-4 text-right">Laps</th>
-          {predicted && <th className="py-2 pr-4 text-right">Pred</th>}
-          <th className="py-2 pr-4 text-right">Total</th>
-          <th className="py-2 pr-4 text-right">Last</th>
-          <th className="py-2 pr-4 text-right">Best</th>
-          <th className="py-2 pr-4 text-right">Ahead</th>
-          <th className="py-2 text-right">Gap</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => {
-          const close = isClose(row, closeMs);
-          return (
-          <tr
-            key={row.entryId}
-            className={cn('border-b border-slate-800', close && 'bg-amber-500/20')}
-            data-close={close || undefined}
-          >
-            <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
-            <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
-            <td className="py-3 pr-4 font-semibold">
-              <CarThumb url={media?.get(row.entryId)?.carPhotoUrl} className="mr-3 h-10 w-16" />
-              {row.driverName}{row.finished && <FinishedFlag />}
-              {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
-            </td>
-            <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
-            {predicted && (
-              <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
-                <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
-              </td>
-            )}
-            <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
-            <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
-            <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
-            <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{gapText(row)}</td>
-            <td className="py-3 text-right tabular-nums text-slate-300">{gap(row)}</td>
+      <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
+        <thead>
+          <tr className="border-b border-slate-700 text-left text-lg text-slate-400 lg:text-2xl">
+            <th className="py-2 pr-4">Pos</th>
+            <th className="py-2 pr-4">Car</th>
+            <th className="py-2 pr-4">Driver</th>
+            <th className="py-2 pr-4 text-right">Laps</th>
+            {predicted && <th className="py-2 pr-4 text-right">Pred</th>}
+            <th className="py-2 pr-4 text-right">Total</th>
+            <th className="py-2 pr-4 text-right">Last</th>
+            <th className="py-2 pr-4 text-right">Best</th>
+            <th className="py-2 pr-4 text-right">Ahead</th>
+            <th className="py-2 text-right">Gap</th>
           </tr>
-          );
-        })}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const close = isClose(row, closeMs);
+            return (
+            <tr
+              key={row.entryId}
+              className={cn('border-b border-slate-800', close && 'bg-amber-500/20')}
+              data-close={close || undefined}
+            >
+              <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
+              <td className="py-3 pr-4 tabular-nums">{row.carNumber ?? '—'}</td>
+              <td className="py-3 pr-4 font-semibold">
+                <CarThumb url={media?.get(row.entryId)?.carPhotoUrl} className="mr-3 h-10 w-16" />
+                {row.driverName}{row.finished && <FinishedFlag />}
+                {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
+              </td>
+              <td className="py-3 pr-4 text-right tabular-nums">{row.lapsCompleted}</td>
+              {predicted && (
+                <td className="py-3 pr-4 text-right tabular-nums text-slate-300">
+                  <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
+                </td>
+              )}
+              <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
+              <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
+              <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
+              <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{gapText(row)}</td>
+              <td className="py-3 text-right tabular-nums text-slate-300">{gap(row)}</td>
+            </tr>
+            );
+          })}
+        </tbody>
+      </table>
     {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
     </>
   );
