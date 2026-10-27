@@ -37,7 +37,10 @@ function subscribe(listener: () => void) {
  */
 export function useResultsHold(): [number, (seconds: number) => void] {
   const seconds = useSyncExternalStore(subscribe, read, () => DEFAULT_RESULTS_HOLD_SECONDS);
-  const setSeconds = useCallback((next: number) => {
+  const setSeconds = useCallback((requested: number) => {
+    const next = Number.isFinite(requested)
+      ? Math.min(MAX_RESULTS_HOLD_SECONDS, Math.max(0, Math.round(requested)))
+      : DEFAULT_RESULTS_HOLD_SECONDS;
     try {
       localStorage.setItem(STORAGE_KEY, String(next));
       unsaved = null;

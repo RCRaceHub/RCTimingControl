@@ -49,6 +49,9 @@ import { ClassSwatch } from '@/components/ClassSwatch';
 import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 
+/** Statuses of a race that has results worth reading. */
+const RESULT_STATUSES: string[] = ['RUNNING', 'STOPPED', 'FINISHED'];
+
 /** The heading for the selected race, led by the class colour when the club picked one. */
 function RaceHeading({ item }: { item: RunOrderItemDto | undefined }) {
   return (
@@ -106,16 +109,27 @@ function CockpitView() {
   const [holdingResultsOf, setHoldingResultsOf] = useState<{ from: number; to: number } | null>(null);
   if (autoRunRaceId !== followedRaceId) {
     setFollowedRaceId(autoRunRaceId);
-    if (autoRunRaceId !== null) {
+    if (autoRunRaceId === null) {
+      // Auto run was switched off: stay where the director is
+      setHoldingResultsOf(null);
+    } else if (holdingResultsOf) {
+      // The next race changed again during the hold (skipped or emptied): keep holding, for the new one
+      setHoldingResultsOf({ from: holdingResultsOf.from, to: autoRunRaceId });
+    } else {
       const previous = runOrder.find((r) => r.raceId === followedRaceId);
       const resultsOnScreen = holdSeconds > 0 && followedRaceId !== null && selectedRaceId === followedRaceId
-        && previous !== undefined && ['RUNNING', 'STOPPED', 'FINISHED'].includes(previous.status);
-      if (resultsOnScreen) setHoldingResultsOf({ from: followedRaceId, to: autoRunRaceId });
-      else {
-        setHoldingResultsOf(null);
+        && previous !== undefined && RESULT_STATUSES.includes(previous.status);
+      if (resultsOnScreen) {
+        setHoldingResultsOf({ from: followedRaceId, to: autoRunRaceId });
+      } else {
         setSelectedRaceId(autoRunRaceId);
       }
     }
+  }
+  // A restart of the held race puts it back to pending: nothing to hold on
+  const heldFromStatus = holdingResultsOf ? runOrder.find((r) => r.raceId === holdingResultsOf.from)?.status : undefined;
+  if (holdingResultsOf && heldFromStatus !== undefined && !RESULT_STATUSES.includes(heldFromStatus)) {
+    setHoldingResultsOf(null);
   }
   // Moves on when the hold is up, or at once if the next race is already on the grid so its calls are heard
   const heldTargetStatus = holdingResultsOf
