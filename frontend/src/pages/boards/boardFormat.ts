@@ -27,9 +27,18 @@ export function parseTopParam(value: string | null): number {
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
 /**
+ * Reads {@code ?legend=}: {@code hide} leaves the colour key out and {@code show} puts it in; anything else takes
+ * {@code shownByDefault}, which is on for the boards and off for the streaming overlay.
+ */
+export function parseLegendParam(value: string | null, shownByDefault: boolean): boolean {
+  const v = value?.toLowerCase();
+  return v === 'hide' ? false : v === 'show' ? true : shownByDefault;
+}
+
+/**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), and {@code close=SECONDS} sets how near the car ahead counts as
+ * {@code battles=hide} the battles strip (#505), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  */
 export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -40,6 +49,7 @@ export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: nu
     showArrows: params.get('arrows')?.toLowerCase() !== 'hide',
     showPredicted: params.get('predict')?.toLowerCase() !== 'hide',
     showBattles: params.get('battles')?.toLowerCase() !== 'hide',
+    showLegend: parseLegendParam(params.get('legend'), true),
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : defaultCloseMs,
@@ -105,6 +115,8 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
     ...parseLiveRaceOptions(params, defaultCloseMs),
+    // After the spread on purpose: the overlay's key is off unless asked, the boards' is on
+    showLegend: parseLegendParam(params.get('legend'), false),
   };
 }
 
@@ -228,6 +240,8 @@ export type OverlayDesign = {
   showBars: boolean;
   showArrows: boolean;
   showBattles: boolean;
+  /** Show the colour key; off unless asked, as it sits over the video. */
+  showLegend: boolean;
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;
 };
@@ -250,6 +264,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showBars: true,
   showArrows: true,
   showBattles: true,
+  showLegend: false,
   closeSeconds: null,
 };
 
@@ -284,6 +299,7 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showBars) q.set('bars', 'hide');
   if (!design.showArrows) q.set('arrows', 'hide');
   if (!design.showBattles) q.set('battles', 'hide');
+  if (design.showLegend) q.set('legend', 'show');
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
   const text = q.toString().replace(/%2C/g, ',');
   return text ? `?${text}` : '';

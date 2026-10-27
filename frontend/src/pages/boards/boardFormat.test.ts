@@ -10,6 +10,7 @@ describe('parseLiveRaceOptions', () => {
       showArrows: true,
       showPredicted: true,
       showBattles: true,
+      showLegend: true,
       closeMs: 1000,
     });
     expect(parse('battles=HIDE').showBattles).toBe(false);

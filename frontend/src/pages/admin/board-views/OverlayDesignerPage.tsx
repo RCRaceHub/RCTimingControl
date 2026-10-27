@@ -168,6 +168,7 @@ export default function OverlayDesignerPage() {
             <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />
             <Check label="Places gained arrows" checked={design.showArrows} onChange={(v) => set('showArrows', v)} />
             <Check label="Battles" checked={design.showBattles} onChange={(v) => set('showBattles', v)} />
+            <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
             <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />
           </fieldset>
 

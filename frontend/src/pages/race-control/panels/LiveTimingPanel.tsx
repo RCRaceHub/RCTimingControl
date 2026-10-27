@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
+import { TimingLegend } from '@/components/TimingLegend';
 import { useEliminations } from '@/hooks/race-control/useEliminations';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import {
@@ -158,6 +159,9 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             })}
           </TableBody>
         </Table>
+      )}
+      {sorted.length > 0 && (
+        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close'] : ['lap']} className="mt-2 text-muted-foreground" />
       )}
     </div>
   );

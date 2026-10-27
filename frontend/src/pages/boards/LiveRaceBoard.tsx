@@ -27,7 +27,7 @@ export default function LiveRaceBoard() {
   const series = useLivePositionSeries(raceId, rows);
 
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showBattles } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
   const battleGroups = useBattles(showBattles ? raceId : null);
   const media = useRaceMedia(raceId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
@@ -81,6 +81,7 @@ export default function LiveRaceBoard() {
           media={media}
           barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
           closeMs={closeMs}
+          showLegend={showLegend}
           showArrows={showArrows && currentRace.finalLetter !== null}
           predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
         />
