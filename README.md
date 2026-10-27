@@ -6,7 +6,7 @@ RC club race timing and race control, replacing RCResults. It runs on a laptop a
 
 ## Install on a venue laptop
 
-Download the installer for the laptop from the [latest release](https://github.com/oggthemiffed/RCTimingControl/releases/latest): the `.msi` for Windows, the `.pkg` for macOS or the `.deb` for Ubuntu and other Debian-based Linux. It carries its own Java runtime and installs the app as a background service that starts with the laptop.
+Download the installer for the laptop from the [latest release](https://github.com/RCRaceHub/RCTimingControl/releases/latest): the `.msi` for Windows, the `.pkg` for macOS or the `.deb` for Ubuntu and other Debian-based Linux. It carries its own Java runtime and installs the app as a background service that starts with the laptop.
 
 1. Run the installer.
 2. Open **http://localhost:8080** on the laptop and follow the setup wizard to create the first official and the club.
@@ -21,7 +21,7 @@ The club's server can also run in Docker on a laptop or a small server on the cl
 To explore the app with a demo club and a simulated decoder sending live laps, the quickest way on any system is Docker:
 
 ```bash
-git clone https://github.com/oggthemiffed/RCTimingControl.git
+git clone https://github.com/RCRaceHub/RCTimingControl.git
 cd RCTimingControl
 docker compose -f docker-compose.demo.yml up --build
 ```

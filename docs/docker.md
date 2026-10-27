@@ -6,7 +6,7 @@ Docker runs the same app on Windows, macOS and Linux. It's the quickest way to t
 
 - **Windows or macOS:** [Docker Desktop](https://www.docker.com/products/docker-desktop/), installed and running.
 - **Linux:** Docker Engine with the Compose plugin (`docker compose version` should print a version).
-- A copy of this repository: `git clone https://github.com/oggthemiffed/RCTimingControl.git`, or **Code → Download ZIP** on GitHub, unzipped.
+- A copy of this repository: `git clone https://github.com/RCRaceHub/RCTimingControl.git`, or **Code → Download ZIP** on GitHub, unzipped.
 
 The first start builds the app inside Docker, which takes several minutes. Later starts reuse the build.
 

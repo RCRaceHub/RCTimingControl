@@ -20,7 +20,7 @@ With Docker on your computer, you can skip the install: follow [docker.md](docke
 
 ## Step 1: Install the app
 
-Download the installer for your computer from the [latest release](https://github.com/oggthemiffed/RCTimingControl/releases/latest) and install it as described in [installing.md](installing.md). Don't set the club up yet.
+Download the installer for your computer from the [latest release](https://github.com/RCRaceHub/RCTimingControl/releases/latest) and install it as described in [installing.md](installing.md). Don't set the club up yet.
 
 ## Step 2: Turn on the demo club
 

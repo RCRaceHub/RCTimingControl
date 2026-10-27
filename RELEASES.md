@@ -1,6 +1,6 @@
 # Releases
 
-Each release on the [Releases page](https://github.com/oggthemiffed/RCTimingControl/releases) has installers for Windows (`.msi`), macOS (`.pkg`) and Debian-based Linux (`.deb`); see [docs/installing.md](docs/installing.md). Versions starting with `0.` are pre-releases. The About page shows which version is installed.
+Each release on the [Releases page](https://github.com/RCRaceHub/RCTimingControl/releases) has installers for Windows (`.msi`), macOS (`.pkg`) and Debian-based Linux (`.deb`); see [docs/installing.md](docs/installing.md). Versions starting with `0.` are pre-releases. The About page shows which version is installed.
 
 ---
 

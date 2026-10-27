@@ -282,7 +282,7 @@ Run `make help` to see all targets. Quick reference:
 
 ### Picking up a piece of work
 
-1. Check [GitHub Issues](https://github.com/oggthemiffed/RCTimingControl/issues) for the next task
+1. Check [GitHub Issues](https://github.com/RCRaceHub/RCTimingControl/issues) for the next task
 2. Read `CLAUDE.md` for architecture context before starting — it's the primary reference for any AI-assisted session
 3. Read `docs/PROJECT.md` for requirements and `docs/REQUIREMENTS.md` for the full requirement list
 
