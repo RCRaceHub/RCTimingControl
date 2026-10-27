@@ -10,7 +10,6 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
-import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
@@ -76,7 +75,6 @@ public class BoardController {
     private final EventSponsorService eventSponsorService;
     private final DriverMediaService driverMediaService;
     private final RaceHighlightsService raceHighlightsService;
-    private final EventService eventService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
@@ -94,9 +92,7 @@ public class BoardController {
                            ClubProfileService clubProfileService,
                            EventSponsorService eventSponsorService,
                            DriverMediaService driverMediaService,
-                           RaceHighlightsService raceHighlightsService,
-                           EventService eventService) {
-        this.eventService = eventService;
+                           RaceHighlightsService raceHighlightsService) {
         this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
@@ -201,7 +197,7 @@ public class BoardController {
 
     private LiveQualifyingDto practiceTable(BoardQuery.BoardEvent event, String phase, BoardRaceDto race,
                                             Map<Long, List<Long>> lapTimes) {
-        PracticeRanking ranking = eventService.findByIdOrThrow(event.id()).getPracticeRanking();
+        PracticeRanking ranking = boardQuery.practiceRanking(event.id());
         return liveQualifyingService.forPracticeHeat(race.raceId(), lapTimes, ranking)
                 .map(tables -> new LiveQualifyingDto(event.id(), event.name(), phase, race.raceId(), race.label(),
                         race.className(), race.roundNumber(), "PRACTICE", ranking.label(), tables.rows(),

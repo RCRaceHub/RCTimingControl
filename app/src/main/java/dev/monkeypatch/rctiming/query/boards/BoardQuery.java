@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.boards;
 
+import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.RunOrderSort;
@@ -71,6 +72,13 @@ public class BoardQuery {
                 .orderBy(EVENTS.EVENT_DATE.desc(), EVENTS.ID.desc())
                 .limit(1)
                 .fetchOptional(r -> new BoardEvent(r.get(EVENTS.ID), r.get(EVENTS.NAME)));
+    }
+
+    /** How the event ranks practice, read on the read pool because the board polls it anonymously. */
+    public PracticeRanking practiceRanking(long eventId) {
+        return dsl.select(EVENTS.PRACTICE_RANKING).from(EVENTS).where(EVENTS.ID.eq(eventId))
+                .fetchOptional(r -> PracticeRanking.valueOf(r.get(EVENTS.PRACTICE_RANKING)))
+                .orElse(PracticeRanking.FASTEST);
     }
 
     /** The race on track: a running race, or failing that a stopped one. */

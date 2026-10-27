@@ -53,6 +53,9 @@ public class Event implements CreatedAt, UpdatedAt {
     /** Whether auto run switches itself on when a race of the event is started by hand (#338). Off by default, so only Go starts it. */
     private boolean autoRunAutoStart = false;
 
+    /** How practice is ranked on the live top board; fastest lap until race control chooses otherwise. */
+    private PracticeRanking practiceRanking = PracticeRanking.FASTEST;
+
     /**
      * When race control confirmed the finals line-ups on the review screen that follows qualifying, or null while
      * they are unconfirmed. Calculating the finals again clears it.
@@ -63,9 +66,6 @@ public class Event implements CreatedAt, UpdatedAt {
     public void setFinalsLineupConfirmedAt(Instant finalsLineupConfirmedAt) {
         this.finalsLineupConfirmedAt = finalsLineupConfirmedAt;
     }
-
-    /** How practice is ranked on the live top board; fastest lap until race control chooses otherwise. */
-    private PracticeRanking practiceRanking = PracticeRanking.FASTEST;
 
     public PracticeRanking getPracticeRanking() { return practiceRanking; }
     public void setPracticeRanking(PracticeRanking practiceRanking) { this.practiceRanking = practiceRanking; }

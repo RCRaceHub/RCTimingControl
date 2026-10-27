@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -160,10 +161,10 @@ public class LiveQualifyingService {
             return Optional.empty();
         }
         Long roundId = race.getRoundId();
-        List<PracticeStanding> inRound = practiceOrder(lapsByHeat, ranking, h -> roundId.equals(roundOfHeat.get(h)));
+        List<PracticeStanding> inRound = practiceOrder(lapsByHeat, ranking, h -> Objects.equals(roundId, roundOfHeat.get(h)));
         Map<Long, Integer> overallBefore = places(practiceOrder(lapsByHeat, ranking, h -> h != raceId));
         Map<Long, Integer> roundBefore = places(practiceOrder(lapsByHeat, ranking,
-                h -> h != raceId && roundId.equals(roundOfHeat.get(h))));
+                h -> h != raceId && Objects.equals(roundId, roundOfHeat.get(h))));
 
         Set<Long> inHeat = new HashSet<>();
         raceEntryRepository.findByRaceIdOrderByGridPosition(raceId).forEach(e -> inHeat.add(e.getEntryId()));
