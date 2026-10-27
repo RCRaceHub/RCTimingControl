@@ -77,6 +77,7 @@ export default function FormatStep({ onNext, onBack }: Props) {
               type: 'TIMED' as const,
               durationMinutes: duration,
               startType: 'STAGGER' as const,
+              finalsStartType: 'GRID' as const,
               qualifyingType: 'FTQ' as const,
               racePaddingMinutes: 2,
               staggerIntervalSeconds: 5,

@@ -3,8 +3,9 @@ package dev.monkeypatch.rctiming.domain.format;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * A single timed race: it runs for {@code durationMinutes} and starts with {@code startType}. {@code finalsStartType} is the start of a final round;
- * when it is null (older saved configs) finals use {@code startType} too.
+ * A single timed race: it runs for {@code durationMinutes} and starts with {@code startType}.
+ * {@code finalsStartType} is the start of a final round; when it is null (older saved configs) finals use
+ * {@code startType} too.
  *
  * <p>Durations are in minutes. {@code racePaddingMinutes} is kept so saved configs still load and is not
  * read (the gap between races is the event's auto run gap). {@code staggerIntervalSeconds} is the seconds between

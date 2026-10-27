@@ -126,6 +126,12 @@ class RaceFormatServiceTest {
     }
 
     @Test
+    void startType_timedWithNoFinalsStartUsesItsStartForFinals() {
+        EventClass timed = classWith(new TimedRaceConfig(5, StartType.STAGGER, QualifyingType.FTQ, 2, 0));
+        assertThat(service.startType(timed, RoundType.FINAL)).isEqualTo(StartType.STAGGER);
+    }
+
+    @Test
     void startType_withNoneInTheFormat_isStaggeredForHeatsAndGridForFinals() {
         EventClass unset = classWith(new TimedRaceConfig(5, null, QualifyingType.FTQ, 2, 0));
         assertThat(service.startType(unset, RoundType.QUALIFIER)).isEqualTo(StartType.STAGGER);
