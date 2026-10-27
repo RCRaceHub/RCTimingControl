@@ -120,7 +120,7 @@ function StatsTicker({
   const [label, value] = stats[tick % stats.length];
   return (
     <div
-      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm', rowClass)}
+      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm [contain:inline-size]', rowClass)}
       aria-label="Race stats"
       aria-live="off"
     >
@@ -444,17 +444,18 @@ export default function OverlayBoard() {
         )}
       </section>
       {/* Battles and fastest laps sit apart from the tower, bottom left, clear of the ticker and sponsor bar; the
-          panel hides itself while neither has anything to show */}
+          panel hides itself while neither has anything to show. It widens to keep each battle on one line, up to
+          the position chart; the stats row ignores its own text width so rolling stats don't resize the panel */}
       <section
         className={cn(
-          'fixed left-4 w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
+          'fixed left-4 w-max min-w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
           colours.panel,
         )}
-        style={{ bottom: chartBottom }}
+        style={{ bottom: chartBottom, maxWidth: showChart && chartSeries.length > 0 ? 'calc(100vw - 34rem)' : 'calc(100vw - 2rem)' }}
         aria-label="Battles and fastest laps"
       >
         {showBattles && lapCounted && race.status === 'RUNNING' && (
-          <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm', colours.row)} />
+          <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm [&>*]:flex-nowrap [&>*]:whitespace-nowrap', colours.row)} />
         )}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
