@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { PlusCircle, PlayCircle, CheckCircle2, Loader2, Dumbbell } from 'lucide-react';
+import { PlusCircle, PlayCircle, CheckCircle2, Loader2, Dumbbell, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useHelpContent } from '@/context/HelpContext';
@@ -34,6 +34,15 @@ export function PracticeLandingPage() {
   return (
     <div className="flex flex-col h-full">
       <header className="flex items-center gap-3 px-4 py-3 border-b shrink-0">
+        {eventId === undefined && (
+          <Link
+            to="/admin/race-control"
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+        )}
         <h1 className="text-base font-semibold">Practice Sessions</h1>
         <Button asChild size="sm" variant="outline" className="ml-auto">
           <Link to="/race-control/practice/day">Day view</Link>
