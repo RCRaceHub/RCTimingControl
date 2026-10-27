@@ -71,7 +71,6 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             : wsStatus === 'connected' ? 'Waiting for first passing…' : 'Connecting to timing…'}
         </p>
       ) : (
-        <>
         <Table className="table-fixed">
           <TableHeader>
             <TableRow>
@@ -164,8 +163,9 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             })}
           </TableBody>
         </Table>
-        <TimingLegend kinds={['lap', 'close']} className="mt-2 text-muted-foreground" />
-        </>
+      )}
+      {sorted.length > 0 && (
+        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close'] : ['lap']} className="mt-2 text-muted-foreground" />
       )}
     </div>
   );
