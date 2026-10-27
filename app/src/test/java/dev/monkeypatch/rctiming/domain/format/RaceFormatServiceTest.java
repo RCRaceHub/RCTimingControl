@@ -113,6 +113,19 @@ class RaceFormatServiceTest {
     }
 
     @Test
+    void startType_timedAndShikabaneUseTheirFinalsStartWhenSet() {
+        EventClass timed = classWith(new TimedRaceConfig(5, StartType.STAGGER, QualifyingType.FTQ, 2, 0,
+                StartType.GRID));
+        assertThat(service.startType(timed, RoundType.QUALIFIER)).isEqualTo(StartType.STAGGER);
+        assertThat(service.startType(timed, RoundType.FINAL)).isEqualTo(StartType.GRID);
+
+        EventClass shikabane = classWith(new ShikabaneConfig(5, StartType.STAGGER, 0, 3, 1, 0, 1, 10, 2, false,
+                StartType.GRID));
+        assertThat(service.startType(shikabane, RoundType.QUALIFIER)).isEqualTo(StartType.STAGGER);
+        assertThat(service.startType(shikabane, RoundType.FINAL)).isEqualTo(StartType.GRID);
+    }
+
+    @Test
     void startType_withNoneInTheFormat_isStaggeredForHeatsAndGridForFinals() {
         EventClass unset = classWith(new TimedRaceConfig(5, null, QualifyingType.FTQ, 2, 0));
         assertThat(service.startType(unset, RoundType.QUALIFIER)).isEqualTo(StartType.STAGGER);
