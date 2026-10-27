@@ -117,4 +117,14 @@ describe('AutoRunPanel', () => {
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
+
+  it('lets any official set how long results stay on screen', () => {
+    localStorage.clear();
+    render(<AutoRunPanel autoRun={autoRunOf(stateOf())} canControl={false} />);
+
+    const field = screen.getByLabelText(/Keep results on screen/);
+    expect(field).toHaveValue(30);
+    fireEvent.change(field, { target: { value: '45' } });
+    expect(localStorage.getItem('rc-results-hold-seconds')).toBe('45');
+  });
 });
