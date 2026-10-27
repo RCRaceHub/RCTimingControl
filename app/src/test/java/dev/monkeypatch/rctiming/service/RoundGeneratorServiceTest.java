@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
@@ -54,6 +55,8 @@ class RoundGeneratorServiceTest {
     private RaceFormatService raceFormatService;
     @Mock
     private ChampionshipSeedingQuery championshipSeeding;
+    @Mock
+    private EventRepository eventRepository;
 
     @InjectMocks
     private RoundGeneratorService service;

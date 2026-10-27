@@ -464,8 +464,8 @@ public class ChampionshipStandingsQuery {
         return results;
     }
 
-    /** The races that are the legs of one final: its round and class. */
-    private record LegGroup(Long roundId, Long eventClassId) {}
+    /** The races that are the legs of one final: its round, class and letter. */
+    private record LegGroup(Long roundId, Long eventClassId, String finalLetter) {}
 
     /** One leg of a final, whether or not it has finished. */
     private record Leg(Long raceId, int heatNumber, Long eventId) {}
@@ -478,7 +478,7 @@ public class ChampionshipStandingsQuery {
      */
     private void combineFinalLegs(List<Long> eventIds, Map<Long, EventResults> results) {
         Map<LegGroup, List<Leg>> groups = new LinkedHashMap<>();
-        dsl.select(RACES.ID, RACES.ROUND_ID, RACES.EVENT_CLASS_ID, RACES.HEAT_NUMBER, ROUNDS.EVENT_ID)
+        dsl.select(RACES.ID, RACES.ROUND_ID, RACES.EVENT_CLASS_ID, RACES.FINAL_LETTER, RACES.HEAT_NUMBER, ROUNDS.EVENT_ID)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .where(ROUNDS.EVENT_ID.in(eventIds))
@@ -486,7 +486,8 @@ public class ChampionshipStandingsQuery {
                 .and(RACES.FINAL_LETTER.isNotNull())
                 .orderBy(RACES.HEAT_NUMBER.asc())
                 .forEach(r -> groups.computeIfAbsent(
-                                new LegGroup(r.get(RACES.ROUND_ID), r.get(RACES.EVENT_CLASS_ID)), k -> new ArrayList<>())
+                                new LegGroup(r.get(RACES.ROUND_ID), r.get(RACES.EVENT_CLASS_ID),
+                                        r.get(RACES.FINAL_LETTER)), k -> new ArrayList<>())
                         .add(new Leg(r.get(RACES.ID), r.get(RACES.HEAT_NUMBER), r.get(ROUNDS.EVENT_ID))));
         groups.forEach((group, legs) -> {
             EventResults event = legs.size() < 2 ? null : results.get(legs.get(0).eventId());
