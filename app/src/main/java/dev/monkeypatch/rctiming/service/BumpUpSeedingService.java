@@ -239,7 +239,7 @@ public class BumpUpSeedingService {
                 Race unused = finals.remove(0);
                 // Every leg of the unused final goes together, so none is left behind with an empty grid
                 List<Race> legs = everyLeg.stream()
-                        .filter(f -> f.getRoundId().equals(unused.getRoundId())
+                        .filter(f -> Objects.equals(f.getRoundId(), unused.getRoundId())
                                 && Objects.equals(f.getFinalLetter(), unused.getFinalLetter()))
                         .toList();
                 legs.forEach(leg -> raceEntryRepository.deleteAll(
