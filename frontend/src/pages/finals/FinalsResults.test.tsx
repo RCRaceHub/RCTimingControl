@@ -44,7 +44,7 @@ describe('FinalsResults', () => {
           {
             letter: 'A', status: 'FINISHED', abandoned: false, results: [row(1, 1, 'Leg Leader')],
             legs: {
-              eventClassId: 1, className: '1/10 Buggy', legs: 3, legsFinished: 3, legsCounted: 2, complete: true,
+              eventClassId: 1, className: '1/10 Buggy', finalLetter: 'A', legs: 3, legsFinished: 3, legsCounted: 2, complete: true,
               rows: [{
                 position: 1, entryId: 2, competitorId: null, driverName: 'Overall Winner', carNumber: '2',
                 points: 2, laps: 60, timeMs: 900000, legPoints: [1, 1, 3], counted: [true, true, false],

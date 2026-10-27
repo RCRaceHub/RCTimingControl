@@ -402,6 +402,21 @@ export async function setPracticeRanking(eventId: number, ranking: PracticeRanki
   return data.ranking;
 }
 
+export type FinalLegsScope = 'A_ONLY' | 'ALL';
+
+export async function getFinalLegsScope(eventId: number): Promise<FinalLegsScope> {
+  const { data } = await api.get<{ scope: FinalLegsScope }>(`/api/v1/race-control/events/${eventId}/final-legs-scope`);
+  return data.scope;
+}
+
+export async function setFinalLegsScope(eventId: number, scope: FinalLegsScope): Promise<FinalLegsScope> {
+  const { data } = await api.put<{ scope: FinalLegsScope }>(
+    `/api/v1/race-control/events/${eventId}/final-legs-scope`,
+    { scope },
+  );
+  return data.scope;
+}
+
 // ── Auto run (#338) ──────────────────────────────────────────────────────────
 
 export type AutoRunPhase = 'WAITING' | 'RACING' | 'HELD';

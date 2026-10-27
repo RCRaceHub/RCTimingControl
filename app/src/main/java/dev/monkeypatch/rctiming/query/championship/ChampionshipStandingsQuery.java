@@ -464,16 +464,16 @@ public class ChampionshipStandingsQuery {
         return results;
     }
 
-    /** The races that are the legs of one A final: its round and class. */
+    /** The races that are the legs of one final: its round and class. */
     private record LegGroup(Long roundId, Long eventClassId) {}
 
-    /** One leg of an A final, whether or not it has finished. */
+    /** One leg of a final, whether or not it has finished. */
     private record Leg(Long raceId, int heatNumber, Long eventId) {}
 
     /**
-     * Replaces the finished legs of an A final run in legs (#427) with one race that carries the combined result, so
+     * Replaces the finished legs of a final run in legs (#427) with one race that carries the combined result, so
      * the final is placed, and its winner bonus paid, from the combined order. Until every leg has finished the legs
-     * are left out altogether, so the A final is not placed from the legs run so far; the finals below it wait for it
+     * are left out altogether, so the final is not placed from the legs run so far; the finals below it wait for it
      * as for any final that is still to run. The combined race takes the first leg's id.
      */
     private void combineFinalLegs(List<Long> eventIds, Map<Long, EventResults> results) {
@@ -483,7 +483,7 @@ public class ChampionshipStandingsQuery {
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .where(ROUNDS.EVENT_ID.in(eventIds))
                 .and(ROUNDS.TYPE.eq("FINAL"))
-                .and(RACES.FINAL_LETTER.eq("A"))
+                .and(RACES.FINAL_LETTER.isNotNull())
                 .orderBy(RACES.HEAT_NUMBER.asc())
                 .forEach(r -> groups.computeIfAbsent(
                                 new LegGroup(r.get(RACES.ROUND_ID), r.get(RACES.EVENT_CLASS_ID)), k -> new ArrayList<>())

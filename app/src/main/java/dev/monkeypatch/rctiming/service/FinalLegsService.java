@@ -28,16 +28,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
- * Works out the combined result of an A final run in legs (#427) from the results stored when each leg finished, so
- * the order cannot be made up by whoever asks for it. Only classes whose A final has two or more legs are listed.
+ * Works out the combined result of each final run in legs (#427) from the results stored when each leg finished, so
+ * the order cannot be made up by whoever asks for it. Only finals with two or more legs are listed: the A final, or
+ * every final of a class when the event runs them all in legs.
  * The legs' own results are untouched; this only reads them.
  */
 @Service
 public class FinalLegsService {
-
-    private static final String TOP_FINAL = "A";
 
     private final EventClassRepository eventClassRepository;
     private final RacingClassRepository racingClassRepository;
@@ -84,18 +84,23 @@ public class FinalLegsService {
     private List<FinalLegsDto> combined(Long eventId, PublicNames.Snapshot restricted) {
         List<FinalLegsDto> results = new ArrayList<>();
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
-            List<Race> legs = raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL)
-                    .stream().filter(r -> TOP_FINAL.equals(r.getFinalLetter()))
-                    .sorted(Comparator.comparingInt(Race::getHeatNumber)).toList();
-            if (legs.size() < 2) {
-                continue;
-            }
-            results.add(combine(eventClass, legs, restricted));
+            // The legs of each final, by letter in order; a final of one race has none (the zombie round is one race)
+            Map<String, List<Race>> byLetter = new TreeMap<>();
+            raceRepository.findByEventClassIdAndRoundType(eventClass.getId(), RoundType.FINAL).stream()
+                    .filter(r -> r.getFinalLetter() != null)
+                    .sorted(Comparator.comparingInt(Race::getHeatNumber))
+                    .forEach(r -> byLetter.computeIfAbsent(r.getFinalLetter(), k -> new ArrayList<>()).add(r));
+            byLetter.forEach((letter, legs) -> {
+                if (legs.size() >= 2) {
+                    results.add(combine(eventClass, letter, legs, restricted));
+                }
+            });
         }
         return results;
     }
 
-    private FinalLegsDto combine(EventClass eventClass, List<Race> legs, PublicNames.Snapshot restricted) {
+    private FinalLegsDto combine(EventClass eventClass, String finalLetter, List<Race> legs,
+                                 PublicNames.Snapshot restricted) {
         // Everyone on the first leg's grid is in the final, so a driver who missed a later leg still scores for it
         Set<Long> drivers = new LinkedHashSet<>();
         raceEntryRepository.findByRaceIdOrderByGridPosition(legs.get(0).getId())
@@ -137,7 +142,7 @@ public class FinalLegsService {
         }
         String className = racingClassRepository.findById(eventClass.getRacingClassId())
                 .map(RacingClass::getName).orElse("Class " + eventClass.getRacingClassId());
-        return new FinalLegsDto(eventClass.getId(), className, legs.size(), finished, legsCounted,
+        return new FinalLegsDto(eventClass.getId(), className, finalLetter, legs.size(), finished, legsCounted,
                 finished == legs.size(), rows);
     }
 }

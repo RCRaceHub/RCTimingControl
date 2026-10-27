@@ -363,6 +363,38 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void finalsBoard_combinesTheLegsOfAFinalOtherThanAWhenItRunsInLegs() {
+        Round bRound = fx.round(RoundType.FINAL, 2, 1);
+        Race leg1 = fx.race(bRound, 1, RaceStatus.FINISHED);
+        leg1.setFinalLetter("B");
+        fx.save(leg1);
+        Entry ada = fx.gridEntry(leg1, "Ada Lovelace", "T-1", 1);
+        Entry bob = fx.gridEntry(leg1, "Bob Builder", "T-2", 2);
+        saveSnapshot(leg1, String.format("""
+                [{"position":1,"entryId":%d,"competitorId":null,"driverName":"Ada Lovelace","carNumber":null,
+                  "lapsCompleted":12,"totalTimeMs":300000,"bestLapMs":19000,"gapToLeaderMs":null},
+                 {"position":2,"entryId":%d,"competitorId":null,"driverName":"Bob Builder","carNumber":null,
+                  "lapsCompleted":11,"totalTimeMs":301000,"bestLapMs":19500,"gapToLeaderMs":1000}]
+                """, ada.getId(), bob.getId()));
+        Race leg2 = fx.race(bRound, 2, RaceStatus.PENDING);
+        leg2.setFinalLetter("B");
+        fx.save(leg2);
+
+        Map body = get("/api/v1/boards/finals?eventId=" + fx.event.getId());
+
+        List<Map> classes = (List<Map>) body.get("classes");
+        List<Map> finals = (List<Map>) classes.get(0).get("finals");
+        Map bFinal = finals.get(0);
+        assertThat(bFinal.get("letter")).isEqualTo("B");
+        // Leg 1 is over but the final is not, so it is still running
+        assertThat(bFinal.get("status")).isEqualTo("RUNNING");
+        Map legs = (Map) bFinal.get("legs");
+        assertThat(legs.get("finalLetter")).isEqualTo("B");
+        assertThat(((Number) legs.get("legs")).intValue()).isEqualTo(2);
+        assertThat(((Number) legs.get("legsFinished")).intValue()).isEqualTo(1);
+    }
+
+    @Test
     void qualifyingBoard_withNoQualifyingHeatsHasNoTables() {
         Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
 

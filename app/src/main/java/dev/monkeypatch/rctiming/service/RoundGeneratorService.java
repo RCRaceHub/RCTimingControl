@@ -4,6 +4,9 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.FinalLegsScope;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
@@ -54,6 +57,7 @@ public class RoundGeneratorService {
     private final EventClassRepository eventClassRepository;
     private final RaceFormatService raceFormatService;
     private final ChampionshipSeedingQuery championshipSeeding;
+    private final EventRepository eventRepository;
 
     public RoundGeneratorService(RoundRepository roundRepository,
                                   RaceRepository raceRepository,
@@ -61,7 +65,8 @@ public class RoundGeneratorService {
                                   EntryRepository entryRepository,
                                   EventClassRepository eventClassRepository,
                                   RaceFormatService raceFormatService,
-                                  ChampionshipSeedingQuery championshipSeeding) {
+                                  ChampionshipSeedingQuery championshipSeeding,
+                                  EventRepository eventRepository) {
         this.roundRepository = roundRepository;
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
@@ -69,6 +74,7 @@ public class RoundGeneratorService {
         this.eventClassRepository = eventClassRepository;
         this.raceFormatService = raceFormatService;
         this.championshipSeeding = championshipSeeding;
+        this.eventRepository = eventRepository;
     }
 
     /**
@@ -302,6 +308,8 @@ public class RoundGeneratorService {
             // One round per final. Finals run lowest first (C, then B, then A), the bump-ups from each going
             // into the next. The rounds are made in reverse letter order so the lowest final gets the earliest
             // sequenceInEvent; the round number still follows the letter (A is 1).
+            FinalLegsScope legsScope = eventRepository.findById(request.eventId())
+                    .map(Event::getFinalLegsScope).orElse(FinalLegsScope.A_ONLY);
             for (EventClass ec : eventClasses) {
                 int finalsCount = resolveFinalsCount(ec);
                 // Remembered so a later finals calculation can put back a final it dropped as unused
@@ -317,8 +325,8 @@ public class RoundGeneratorService {
                         sequenceStart = persistFinal(ec, BumpUpSeedingService.ZOMBIE_LETTER, finalsCount + 1,
                                 sequenceStart, 1);
                     }
-                    // Only the A final is run in legs
-                    int legs = f == 0 ? Math.max(1, raceFormatService.finalLegs(ec)) : 1;
+                    // The A final, or every final when the event says so, is run in legs
+                    int legs = legsScope.appliesTo(f) ? Math.max(1, raceFormatService.finalLegs(ec)) : 1;
                     sequenceStart = persistFinal(ec, String.valueOf((char) ('A' + f)), f + 1, sequenceStart, legs);
                 }
             }

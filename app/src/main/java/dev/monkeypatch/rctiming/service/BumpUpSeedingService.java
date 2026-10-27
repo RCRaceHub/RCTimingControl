@@ -115,6 +115,14 @@ public class BumpUpSeedingService {
      * @return the number of A, B, C finals the class has afterwards
      */
     public int restoreFinals(Long eventClassId, int intendedCount, StartType startType) {
+        return restoreFinals(eventClassId, intendedCount, startType, 1);
+    }
+
+    /**
+     * As {@link #restoreFinals(Long, int, StartType)}, but each restored final is run in {@code legs} legs: races
+     * numbered as heats 1 to {@code legs} in its round, for an event that runs every final in legs.
+     */
+    public int restoreFinals(Long eventClassId, int intendedCount, StartType startType, int legs) {
         List<Race> all = raceRepository.findByEventClassIdAndRoundType(eventClassId, RoundType.FINAL);
         Map<String, Race> byLetter = new HashMap<>();
         for (Race race : all) {
@@ -156,15 +164,20 @@ public class BumpUpSeedingService {
             round.setSequenceInEvent(sequence);
             round.setStatus(RoundStatus.PENDING);
             round = roundRepository.save(round);
-            Race race = new Race();
-            race.setRoundId(round.getId());
-            race.setEventClassId(eventClassId);
-            race.setHeatNumber(1);
-            race.setSequenceInRound(1);
-            race.setFinalLetter(letter);
-            race.setStartType(startType);
-            race.setStatus(RaceStatus.PENDING);
-            byLetter.put(letter, raceRepository.save(race));
+            for (int leg = 1; leg <= Math.max(1, legs); leg++) {
+                Race race = new Race();
+                race.setRoundId(round.getId());
+                race.setEventClassId(eventClassId);
+                race.setHeatNumber(leg);
+                race.setSequenceInRound(leg);
+                race.setFinalLetter(letter);
+                race.setStartType(startType);
+                race.setStatus(RaceStatus.PENDING);
+                Race saved = raceRepository.save(race);
+                if (leg == 1) {
+                    byLetter.put(letter, saved);
+                }
+            }
         }
         return byLetter.size();
     }

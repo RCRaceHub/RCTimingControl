@@ -21,6 +21,7 @@ export const raceControlQueryKeys = {
   decoderStatus: () => ['race-control', 'decoder-status'] as const,
   liveFeedStatus: () => ['race-control', 'live-feed-status'] as const,
   autoRun: (eventId: number) => ['race-control', 'auto-run', eventId] as const,
+  finalLegsScope: (eventId: number) => ['race-control', 'final-legs-scope', eventId] as const,
   practiceRanking: (eventId: number) => ['race-control', 'practice-ranking', eventId] as const,
   liveFeedSetting: (eventId: number) => ['race-control', 'live-feed-setting', eventId] as const,
   practice: {

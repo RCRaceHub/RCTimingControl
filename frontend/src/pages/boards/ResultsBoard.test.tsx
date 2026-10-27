@@ -150,6 +150,7 @@ describe('ResultsBoard', () => {
       legs: {
         eventClassId: 3,
         className: '1/10 Buggy',
+        finalLetter: 'A',
         legs: 3,
         legsFinished: 2,
         legsCounted: 2,

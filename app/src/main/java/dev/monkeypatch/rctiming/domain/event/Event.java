@@ -67,6 +67,12 @@ public class Event implements CreatedAt, UpdatedAt {
         this.finalsLineupConfirmedAt = finalsLineupConfirmedAt;
     }
 
+    /** Which finals are run in legs when the finals are calculated; the A final only until race control chooses. */
+    private FinalLegsScope finalLegsScope = FinalLegsScope.A_ONLY;
+
+    public FinalLegsScope getFinalLegsScope() { return finalLegsScope; }
+    public void setFinalLegsScope(FinalLegsScope finalLegsScope) { this.finalLegsScope = finalLegsScope; }
+
     public PracticeRanking getPracticeRanking() { return practiceRanking; }
     public void setPracticeRanking(PracticeRanking practiceRanking) { this.practiceRanking = practiceRanking; }
 
