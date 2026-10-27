@@ -10,6 +10,17 @@ import { MAX_RESULTS_HOLD_SECONDS, useResultsHold } from '@/hooks/race-control/u
 
 type AutoRun = ReturnType<typeof useAutoRun>;
 
+/** The longest countdown the server accepts for "start in" (AutoRunController: 0 to 600 seconds). */
+const MAX_START_IN_SECONDS = 600;
+
+/** Quick "start in" buttons, longest first; the box next to them takes any other number of seconds. */
+const START_IN_PRESETS = [
+  { seconds: 120, label: '2 min' },
+  { seconds: 60, label: '60s' },
+  { seconds: 30, label: '30s' },
+  { seconds: 10, label: '10s' },
+];
+
 function heldText(state: AutoRunStateDto): string {
   switch (state.heldReason) {
     case 'FINALS':
@@ -23,8 +34,8 @@ function heldText(state: AutoRunStateDto): string {
 
 /**
  * Automatic race progression (#338): runs the event's races one after another, with the gap between them and
- * a hold before the finals. Go starts it (and resumes it after a hold); the 30s and 10s buttons bring the
- * next start forward. Settings are saved on the event as they are changed.
+ * a hold before the finals. Go starts it (and resumes it after a hold); the start-in buttons (2 min, 60s, 30s, 10s)
+ * and the seconds box bring the next start forward, never back. Settings are saved on the event as they are changed.
  */
 export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canControl: boolean }) {
   const { state } = autoRun;
@@ -33,9 +44,13 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
   const [gap, setGap] = useState<string | null>(null);
   const [hold, setHold] = useState<boolean | null>(null);
   const [autoStart, setAutoStart] = useState<boolean | null>(null);
+  const [startIn, setStartIn] = useState('');
   const { mutate: saveSettings } = autoRun.settings;
   const [resultsHold, setResultsHold] = useResultsHold();
 
+  const startInSeconds = Number(startIn);
+  const startInValid = startIn !== '' && Number.isInteger(startInSeconds) && startInSeconds >= 0
+    && startInSeconds <= MAX_START_IN_SECONDS;
   const gapValue = gap ?? String(state?.gapSeconds ?? '');
   const gapSeconds = Number(gapValue);
   const gapValid = gapValue !== '' && Number.isInteger(gapSeconds) && gapSeconds >= 0 && gapSeconds <= 3600;
@@ -114,14 +129,35 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
             )}
             {state.phase === 'WAITING' && (
               <>
-                <Button size="sm" variant="outline" onClick={() => autoRun.skipTo.mutate(30)}
-                        disabled={autoRun.skipTo.isPending}>
-                  30s
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => autoRun.skipTo.mutate(10)}
-                        disabled={autoRun.skipTo.isPending}>
-                  10s
-                </Button>
+                {START_IN_PRESETS.map(({ seconds, label }) => (
+                  <Button key={seconds} size="sm" variant="outline" onClick={() => autoRun.skipTo.mutate(seconds)}
+                          disabled={autoRun.skipTo.isPending}>
+                    {label}
+                  </Button>
+                ))}
+                <form
+                  className="flex items-center gap-1"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (startInValid) autoRun.skipTo.mutate(Number(startIn));
+                  }}
+                >
+                  <Label htmlFor="auto-run-start-in" className="sr-only">Start in (seconds)</Label>
+                  <Input
+                    id="auto-run-start-in"
+                    type="number"
+                    min={0}
+                    max={MAX_START_IN_SECONDS}
+                    placeholder="secs"
+                    className="h-8 w-20"
+                    value={startIn}
+                    onChange={(e) => setStartIn(e.target.value)}
+                  />
+                  <Button type="submit" size="sm" variant="outline"
+                          disabled={!startInValid || autoRun.skipTo.isPending}>
+                    Set
+                  </Button>
+                </form>
               </>
             )}
           </div>
