@@ -168,7 +168,8 @@ public class RaceFormatService {
 
     /**
      * How a race in this class starts, from its format by round type: heats and practice take the qualifying start
-     * and finals the finals start, while a timed format has one start for both. With no format, or none set in it,
+     * while finals of a bump-up or points format always start on the grid whatever {@code finalsStartType} holds
+     * (a stagger or rolling start applies to practice and qualifying only), while a timed format has one start for both. With no format, or none set in it,
      * heats are staggered and finals start on the grid, as rounds were generated before the format was read (#142).
      */
     @Transactional(readOnly = true)
@@ -177,8 +178,8 @@ public class RaceFormatService {
         StartType fromFormat = eventClass == null || eventClass.getConfigSnapshot() == null ? null
                 : switch (getEffectiveConfig(eventClass)) {
                     case TimedRaceConfig timed -> timed.startType();
-                    case BumpUpConfig bumpUp -> isFinal ? bumpUp.finalsStartType() : bumpUp.qualifyingStartType();
-                    case PointsFinalsConfig points -> isFinal ? points.finalsStartType() : points.qualifyingStartType();
+                    case BumpUpConfig bumpUp -> isFinal ? StartType.GRID : bumpUp.qualifyingStartType();
+                    case PointsFinalsConfig points -> isFinal ? StartType.GRID : points.qualifyingStartType();
                     case ShikabaneConfig shikabane -> shikabane.startType();
                 };
         if (fromFormat != null) {

@@ -167,7 +167,7 @@ class FinalsGenerationIT extends AbstractIntegrationTest {
         assertThat(raceRepository.findByEventClassIdAndRoundType(rollingClass, RoundType.QUALIFIER))
                 .extracting(Race::getStartType).containsOnly(StartType.GRID);
         assertThat(raceRepository.findByEventClassIdAndRoundType(rollingClass, RoundType.FINAL))
-                .extracting(Race::getStartType).containsExactly(StartType.ROLLING);
+                .extracting(Race::getStartType).containsExactly(StartType.GRID);
     }
 
     @Test
