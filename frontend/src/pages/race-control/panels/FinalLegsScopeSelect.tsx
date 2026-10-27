@@ -11,7 +11,7 @@ const OPTIONS: { value: FinalLegsScope; label: string }[] = [
 
 /**
  * Which finals of this event are run in legs: the A final only (nationals), or every final. The number of legs comes
- * from the class's format. It is read when the finals are calculated, so it must be chosen before then; finals that
+ * from the class's format. It is read when the rounds are generated, so it must be chosen before then; finals that
  * already exist keep their legs. Anyone can see it; the race director and admins can change it.
  */
 export function FinalLegsScopeSelect({ eventId }: { eventId: number }) {
@@ -28,7 +28,7 @@ export function FinalLegsScopeSelect({ eventId }: { eventId: number }) {
   return (
     <label
       className="flex items-center gap-2 text-xs text-muted-foreground"
-      title="Read when the finals are calculated; finals already calculated keep their legs"
+      title="Read when the rounds are generated; finals that already exist keep their legs"
     >
       Finals in legs
       <select

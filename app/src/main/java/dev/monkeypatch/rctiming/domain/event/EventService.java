@@ -133,7 +133,7 @@ public class EventService {
 
     /**
      * Chooses which finals are run in legs for the event, recording the change only when it differs. It is read when
-     * the finals are calculated, so finals that already exist keep their legs. Runs in its own transaction on the
+     * the rounds are generated, so finals that already exist keep their legs. Runs in its own transaction on the
      * write connection.
      *
      * @return the scope now in force
@@ -147,7 +147,7 @@ public class EventService {
         event.setFinalLegsScope(scope);
         eventRepository.save(event);
         audit.entry(actor, "FINAL_LEGS_SCOPE_CHANGED").entity("event", id).event(id)
-                .summary("Set legs for " + scope.label().toLowerCase() + " for " + event.getName())
+                .summary("Set finals in legs to \"" + scope.label() + "\" for " + event.getName())
                 .before(before.name()).after(scope.name()).record();
         return scope;
     }

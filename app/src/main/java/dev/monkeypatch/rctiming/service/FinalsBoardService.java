@@ -65,7 +65,7 @@ public class FinalsBoardService {
     @ReadTransaction
     public List<FinalsBoardDto.ClassFinals> forEventPublic(Long eventId) {
         Map<String, FinalLegsDto> legsByFinal = finalLegsService.forEventPublic(eventId).stream()
-                .collect(Collectors.toMap(l -> legsKey(l.eventClassId(), l.finalLetter()), Function.identity()));
+                .collect(Collectors.toMap(l -> legsKey(l.eventClassId(), l.finalLetter()), Function.identity(), (first, second) -> first));
         PublicNames.Snapshot names = publicNames.snapshot();
         // The event's championship points are worked out once for all its finals
         ResultPointsCache pointsCache = new ResultPointsCache();

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Which finals of an event are run in legs: the A final only, or every final. Under
  * {@code /api/v1/race-control/events/{eventId}/final-legs-scope}. Any official can read it; changing it needs
- * RACE_DIRECTOR or ADMIN. It is read when the finals are calculated, so it must be set before then.
+ * RACE_DIRECTOR or ADMIN. It is read when the rounds are generated, so it must be set before then.
  */
 @RestController
 @RequestMapping("/api/v1/race-control")

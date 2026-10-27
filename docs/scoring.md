@@ -117,8 +117,8 @@ last lap timeout, carries no mark. 0 means no window; the track's max last lap w
 
 A Points Finals format can run a final as several legs (BRCA: 3). The event's **Finals in legs** setting (race control's
 status bar; `GET/PUT /api/v1/race-control/events/{eventId}/final-legs-scope`) says which finals: **the A final only**
-(the default, as at nationals) or **every final**. It is read when the finals are calculated, so choose it first; finals
-already calculated keep their legs. A final that is not in legs is a single race. The round generator makes one race for
+(the default, as at nationals) or **every final**. It is read when the rounds are generated, so choose it first; finals
+that already exist keep their legs. A final that is not in legs is a single race. The round generator makes one race for
 each leg in the final's round, and every leg starts from the
 same grid, in qualifying order: seeding and any change to the line-up in the finals panel reach all the legs that have not
 been called yet. In the run order leg 1 is "A Final" and the others "A Final, Leg 2" and so on (likewise for B and the rest when every
