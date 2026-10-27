@@ -72,12 +72,12 @@ public class RcTimingApplication {
     }
 
     /**
-     * With no arguments, {@code simulate} plays the demo club's eight transponders (#24), so
+     * With no arguments, {@code simulate} plays the demo club's sixteen transponders (#24), so
      * {@code RCTimingControl simulate} next to the demo data gives live laps straight away.
      */
     static String[] simulatorArguments(String[] given) {
         return given.length > 0 ? given : new String[] {
-                "--mode=generative", "--port=5100", "--transponders=101,102,103,104,105,106,107,108",
+                "--mode=generative", "--port=5100", "--transponders=101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116",
                 "--interval-ms=13000", "--jitter-ms=2500"};
     }
 

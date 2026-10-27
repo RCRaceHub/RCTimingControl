@@ -52,7 +52,7 @@ Open a terminal (Command Prompt on Windows) and run:
 | macOS | `/Applications/RCTimingControl.app/Contents/MacOS/RCTimingControl simulate` |
 | Linux | `/opt/rctimingcontrol/bin/RCTimingControl simulate` |
 
-It sends laps for the demo club's eight transponders on port 5100, where the demo club's decoder settings point. Leave the window open. Press `Ctrl+C` to stop it.
+It sends laps for the demo club's sixteen transponders (101 to 116) on port 5100, where the demo club's decoder settings point. Leave the window open. Press `Ctrl+C` to stop it.
 
 ## Step 4: Open the app
 

@@ -148,7 +148,7 @@ The `demo` profile loads the Wyvern RC Club (`db/demo/{vendor}`), and `simulate`
 ```bash
 ./gradlew -PbundleFrontend :app:bootJar
 java -jar app/build/libs/app.jar --spring.profiles.active=demo --rctiming.database.data-directory=/tmp/rctiming-demo
-java -jar app/build/libs/app.jar simulate   # in a second terminal; no arguments plays the demo transponders
+java -jar app/build/libs/app.jar simulate   # in a second terminal; no arguments plays the demo transponders 101 to 116
 ```
 
 Open http://localhost:8080 and sign in as `admin@example.com` / `trial123`. The e2e suite runs against this setup. For an installed copy, see [trial-quickstart.md](trial-quickstart.md).
