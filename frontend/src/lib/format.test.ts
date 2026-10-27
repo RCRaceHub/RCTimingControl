@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fmtMs, roundName } from './format';
+import { fmtMs, gapLabel, resultGapLabel, roundName } from './format';
 
 describe('fmtMs', () => {
   it('shows a dash for missing or zero times', () => {
@@ -27,5 +27,28 @@ describe('roundName', () => {
     const q2 = { roundType: 'QUALIFIER', roundNumber: 2, finalLetter: null } as const;
     expect(roundName(q2)).toBe('Qualifier 2');
     expect(roundName(q2, true)).toBe('Q2');
+  });
+});
+
+describe('gapLabel', () => {
+  it('shows a dash for the leader and for no gap yet', () => {
+    expect(gapLabel(1, 0, null)).toBe('—');
+    expect(gapLabel(2, 0, null)).toBe('—');
+  });
+
+  it('shows laps down in preference to a time', () => {
+    expect(gapLabel(3, 1, 1234)).toBe('+1 lap');
+    expect(gapLabel(4, 2, null)).toBe('+2 laps');
+  });
+
+  it('shows the time behind with a plus', () => {
+    expect(gapLabel(2, 0, 1234)).toBe('+1.234');
+  });
+});
+
+describe('resultGapLabel', () => {
+  it('works out laps down from the leader and ignores the missing time', () => {
+    expect(resultGapLabel({ position: 5, lapsCompleted: 9, gapToLeaderMs: null }, 10)).toBe('+1 lap');
+    expect(resultGapLabel({ position: 2, lapsCompleted: 10, gapToLeaderMs: 2500 }, 10)).toBe('+2.500');
   });
 });

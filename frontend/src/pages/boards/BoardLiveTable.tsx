@@ -1,5 +1,5 @@
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { fmtMs } from '@/lib/format';
+import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { PredictedLaps } from '@/components/PredictedLaps';
@@ -10,12 +10,6 @@ import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
 import { TimingLegend } from '@/components/TimingLegend';
 import { gapText } from './boardFormat';
-
-function gap(row: LiveTimingRowDto): string {
-  if (row.position === 1) return '—';
-  if (row.lapsDown > 0) return `+${row.lapsDown} ${row.lapsDown === 1 ? 'lap' : 'laps'}`;
-  return row.gapToLeaderMs !== null ? `+${fmtMs(row.gapToLeaderMs)}` : '—';
-}
 
 interface BoardLiveTableProps {
   rows: LiveTimingRowDto[];
@@ -89,13 +83,13 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
               <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{gapText(row)}</td>
-              <td className="py-3 text-right tabular-nums text-slate-300">{gap(row)}</td>
+              <td className="py-3 text-right tabular-nums text-slate-300">{gapLabel(row.position, row.lapsDown, row.gapToLeaderMs)}</td>
             </tr>
             );
           })}
         </tbody>
       </table>
-    {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
+      {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
     </>
   );
 }

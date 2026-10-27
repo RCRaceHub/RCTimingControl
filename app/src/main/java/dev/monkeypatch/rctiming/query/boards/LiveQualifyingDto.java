@@ -12,6 +12,12 @@ import java.util.List;
  * (the order is settled, and {@code previousPosition} still shows who moved), and {@code NONE} when there is no
  * qualifying heat to show.
  *
+ * <p>For a practice heat the tables are ranked by the event's practice ranking instead of low points: {@code
+ * rankingLabel} names it ("Fastest lap", "Best 3 laps in a row"), {@code bestLapMs} of every row is the ranked time,
+ * {@code points} and {@code totalTimeMs} are null, and {@code roundRows} is the heat's round (one practice session).
+ *
+ * @param roundType   {@code QUALIFIER} or {@code PRACTICE}, null for {@code NONE}
+ * @param rankingLabel what {@code bestLapMs} holds for a practice heat, null for qualifying
  * @param raceId      the heat being shown, null for {@code NONE}
  * @param raceLabel   the heat's label, such as "Qualifying 2 — Stock Buggy — Heat 1"
  * @param className   the class the table is for
@@ -21,11 +27,13 @@ import java.util.List;
  *                    counted so far. Empty for a class whose heats are separate races (Shikabane).
  */
 public record LiveQualifyingDto(Long eventId, String eventName, String phase, Long raceId, String raceLabel,
-                                String className, Integer roundNumber, List<Row> rows, List<RoundRow> roundRows) {
+                                String className, Integer roundNumber, String roundType, String rankingLabel,
+                                List<Row> rows, List<RoundRow> roundRows) {
 
     /** The answer when there is nothing to show. */
     public static LiveQualifyingDto none(Long eventId, String eventName) {
-        return new LiveQualifyingDto(eventId, eventName, "NONE", null, null, null, null, List.of(), List.of());
+        return new LiveQualifyingDto(eventId, eventName, "NONE", null, null, null, null, null, null, List.of(),
+                List.of());
     }
 
     /**

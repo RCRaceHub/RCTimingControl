@@ -12,6 +12,7 @@ import { useAudioAllowed } from '@/hooks/race-control/useAudioAllowed';
 import { useRaceClock } from '@/hooks/race-control/useRaceClock';
 import { useStartCountdown } from '@/hooks/race-control/useStartCountdown';
 import { useAutoRun } from '@/hooks/race-control/useAutoRun';
+import { useResultsHold } from '@/hooks/race-control/useResultsHold';
 import { AutoRunPanel } from './panels/AutoRunPanel';
 import { useAnnouncements, type NextRaceCall } from '@/hooks/race-control/useAnnouncements';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
@@ -47,6 +48,9 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
+
+/** Statuses of a race that has results worth reading. */
+const RESULT_STATUSES: string[] = ['RUNNING', 'STOPPED', 'FINISHED'];
 
 /** The heading for the selected race, led by the class colour when the club picked one. */
 function RaceHeading({ item }: { item: RunOrderItemDto | undefined }) {
@@ -99,11 +103,48 @@ function CockpitView() {
 
   // While auto run is on the page follows the race it is on, so its announcements and clock are the ones heard
   const autoRunRaceId = autoRunArmed ? autoRun.state?.nextRaceId ?? null : null;
+  // When the race on screen has just finished, the results stay up for the results hold before moving on
+  const [holdSeconds] = useResultsHold();
   const [followedRaceId, setFollowedRaceId] = useState<number | null>(null);
+  const [holdingResultsOf, setHoldingResultsOf] = useState<{ from: number; to: number } | null>(null);
   if (autoRunRaceId !== followedRaceId) {
     setFollowedRaceId(autoRunRaceId);
-    if (autoRunRaceId !== null) setSelectedRaceId(autoRunRaceId);
+    if (autoRunRaceId === null) {
+      // Auto run was switched off: stay where the director is
+      setHoldingResultsOf(null);
+    } else if (holdingResultsOf) {
+      // The next race changed again during the hold (skipped or emptied): keep holding, for the new one
+      setHoldingResultsOf({ from: holdingResultsOf.from, to: autoRunRaceId });
+    } else {
+      const previous = runOrder.find((r) => r.raceId === followedRaceId);
+      const resultsOnScreen = holdSeconds > 0 && followedRaceId !== null && selectedRaceId === followedRaceId
+        && previous !== undefined && RESULT_STATUSES.includes(previous.status);
+      if (resultsOnScreen) {
+        setHoldingResultsOf({ from: followedRaceId, to: autoRunRaceId });
+      } else {
+        setSelectedRaceId(autoRunRaceId);
+      }
+    }
   }
+  // A restart of the held race puts it back to pending: nothing to hold on
+  const heldFromStatus = holdingResultsOf ? runOrder.find((r) => r.raceId === holdingResultsOf.from)?.status : undefined;
+  if (holdingResultsOf && heldFromStatus !== undefined && !RESULT_STATUSES.includes(heldFromStatus)) {
+    setHoldingResultsOf(null);
+  }
+  // Moves on when the hold is up, or at once if the next race is already on the grid so its calls are heard
+  const heldTargetStatus = holdingResultsOf
+    ? runOrder.find((r) => r.raceId === holdingResultsOf.to)?.status
+    : undefined;
+  const moveOnNow = heldTargetStatus === 'GRID' || heldTargetStatus === 'RUNNING';
+  useEffect(() => {
+    if (!holdingResultsOf) return;
+    const timer = setTimeout(() => {
+      // Left alone if the director picked another race meanwhile
+      setSelectedRaceId((current) => (current === holdingResultsOf.from ? holdingResultsOf.to : current));
+      setHoldingResultsOf(null);
+    }, moveOnNow ? 0 : holdSeconds * 1000);
+    return () => clearTimeout(timer);
+  }, [holdingResultsOf, holdSeconds, moveOnNow]);
 
   // Generating rounds and finishing races are race director commands; referees also see the cockpit
   const { canRunEvent: canControlRace } = useRoles();

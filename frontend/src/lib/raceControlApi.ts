@@ -387,6 +387,21 @@ export async function setLiveFeedSetting(eventId: number, enabled: boolean): Pro
   return data;
 }
 
+export type PracticeRanking = 'FASTEST' | 'BEST_2' | 'BEST_3';
+
+export async function getPracticeRanking(eventId: number): Promise<PracticeRanking> {
+  const { data } = await api.get<{ ranking: PracticeRanking }>(`/api/v1/race-control/events/${eventId}/practice-ranking`);
+  return data.ranking;
+}
+
+export async function setPracticeRanking(eventId: number, ranking: PracticeRanking): Promise<PracticeRanking> {
+  const { data } = await api.put<{ ranking: PracticeRanking }>(
+    `/api/v1/race-control/events/${eventId}/practice-ranking`,
+    { ranking },
+  );
+  return data.ranking;
+}
+
 // ── Auto run (#338) ──────────────────────────────────────────────────────────
 
 export type AutoRunPhase = 'WAITING' | 'RACING' | 'HELD';

@@ -1,10 +1,13 @@
 package dev.monkeypatch.rctiming.api.boards;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
+import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.EventService;
+import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -54,6 +57,7 @@ class BoardControllerIT extends AbstractIntegrationTest {
     @Autowired LapTimingService lapTimingService;
     @Autowired JdbcTemplate jdbc;
     @Autowired BoardQuery boardQuery;
+    @Autowired EventService eventService;
 
     private BoardFixtures fx;
 
@@ -291,6 +295,36 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void liveTop_beforeQualifyingShowsPracticeRankedByTheEventsSetting() {
+        Race session1 = fx.race(fx.round(RoundType.PRACTICE, 1, 1), 1, RaceStatus.FINISHED);
+        Entry ada = fx.gridEntry(session1, "Ada Lovelace", "T-1", 1);
+        Entry bob = fx.gridEntry(session1, "Bob Builder", "T-2", 2);
+        saveLapHistory(session1, lap(1, ada, 15000) + "," + lap(2, ada, 14000) + ","
+                + lap(1, bob, 12500) + "," + lap(2, bob, 16000));
+        Race session2 = fx.race(fx.round(RoundType.PRACTICE, 2, 2), 1, RaceStatus.FINISHED);
+        saveLapHistory(session2, lap(1, ada, 14500) + "," + lap(2, ada, 13000));
+
+        Map fastest = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
+
+        assertThat(fastest.get("roundType")).isEqualTo("PRACTICE");
+        assertThat(fastest.get("phase")).isEqualTo("FINISHED");
+        assertThat(((Number) fastest.get("roundNumber")).intValue()).isEqualTo(2);
+        assertThat(fastest.get("rankingLabel")).isEqualTo("Fastest lap");
+        assertThat((List<Map>) fastest.get("rows")).extracting(r -> r.get("driverName"))
+                .containsExactly("Bob Builder", "Ada Lovelace");
+        assertThat((List<Map>) fastest.get("roundRows")).extracting(r -> r.get("driverName"))
+                .containsExactly("Ada Lovelace");
+
+        eventService.setPracticeRanking(Actor.system("test"), fx.event.getId(), PracticeRanking.BEST_2);
+        Map bestTwo = get("/api/v1/boards/live-qualifying?eventId=" + fx.event.getId());
+
+        assertThat(bestTwo.get("rankingLabel")).isEqualTo("Best 2 laps in a row");
+        List<Map> rows = (List<Map>) bestTwo.get("rows");
+        assertThat(rows).extracting(r -> r.get("driverName")).containsExactly("Ada Lovelace", "Bob Builder");
+        assertThat(rows).extracting(r -> ((Number) r.get("bestLapMs")).longValue()).containsExactly(27500L, 28500L);
+    }
+
+    @Test
     void qualifyingBoard_withNoQualifyingHeatsHasNoTables() {
         Map body = get("/api/v1/boards/qualifying?eventId=" + fx.event.getId());
 
@@ -462,6 +496,21 @@ class BoardControllerIT extends AbstractIntegrationTest {
 
     private static long raceId(Map body, String key) {
         return ((Number) ((Map) body.get(key)).get("raceId")).longValue();
+    }
+
+    private static String lap(int lapNumber, Entry entry, long lapTimeMs) {
+        return String.format("{\"lapNumber\":%d,\"entryId\":%d,\"position\":1,\"lapTimeMs\":%d}",
+                lapNumber, entry.getId(), lapTimeMs);
+    }
+
+    private void saveLapHistory(Race race, String lapsJson) {
+        ResultSnapshot snapshot = new ResultSnapshot();
+        snapshot.setRaceId(race.getId());
+        snapshot.setFinishedAt(race.getFinishedAt() != null ? race.getFinishedAt() : Instant.now());
+        snapshot.setPositionsJson("[]");
+        snapshot.setLapHistoryJson("[" + lapsJson + "]");
+        snapshot.setCreatedAt(Instant.now());
+        resultSnapshotRepository.save(snapshot);
     }
 
     private void saveSnapshot(Race race, String positionsJson) {

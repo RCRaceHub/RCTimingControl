@@ -259,6 +259,20 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         return (Instant) get(16);
     }
 
+    /**
+     * Setter for <code>events.practice_ranking</code>.
+     */
+    public void setPracticeRanking(String value) {
+        set(17, value);
+    }
+
+    /**
+     * Getter for <code>events.practice_ranking</code>.
+     */
+    public String getPracticeRanking() {
+        return (String) get(17);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -282,7 +296,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
     /**
      * Create a detached, initialised EventsRecord
      */
-    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart, Instant finalsLineupConfirmedAt) {
+    public EventsRecord(Long id, String name, LocalDate eventDate, String status, Instant createdAt, Instant updatedAt, Long trackId, Instant racehubLastImportAt, Long racehubLastRevision, String racehubEventId, Long resultsExportRevision, String resultsExportPending, Boolean liveFeedEnabled, Integer autoRunGapSeconds, Boolean autoRunHoldBeforeFinals, Boolean autoRunAutoStart, Instant finalsLineupConfirmedAt, String practiceRanking) {
         super(Events.EVENTS);
 
         setId(id);
@@ -302,6 +316,7 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setAutoRunHoldBeforeFinals(autoRunHoldBeforeFinals);
         setAutoRunAutoStart(autoRunAutoStart);
         setFinalsLineupConfirmedAt(finalsLineupConfirmedAt);
+        setPracticeRanking(practiceRanking);
         resetChangedOnNotNull();
     }
 }

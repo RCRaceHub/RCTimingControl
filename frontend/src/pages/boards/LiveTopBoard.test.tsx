@@ -142,4 +142,33 @@ describe('LiveTopBoard', () => {
     expect(parseTopParam('abc')).toBe(30);
     expect(parseTopParam('500')).toBe(30);
   });
+  it('ranks practice by the event setting, with a Practice round beside the overall order', async () => {
+    vi.mocked(getLiveQualifying).mockResolvedValue({
+      ...table('LIVE', [row({ position: 1, previousPosition: null, driverName: 'Quick Sam', points: null, bestLapMs: 41_000 })]),
+      roundNumber: 1,
+      roundType: 'PRACTICE',
+      rankingLabel: 'Best 3 laps in a row',
+      roundRows: [
+        {
+          position: 1,
+          previousPosition: null,
+          entryId: 1,
+          driverName: 'Quick Sam',
+          carNumber: '1',
+          lapsCompleted: 8,
+          totalTimeMs: null,
+          bestLapMs: 41_000,
+          live: true,
+        },
+      ],
+    });
+
+    renderBoard();
+
+    expect(await screen.findByText('Practice 1')).toBeInTheDocument();
+    expect(screen.getByText('Overall')).toBeInTheDocument();
+    expect(screen.getAllByText('Best 3 laps in a row')).toHaveLength(2);
+    expect(screen.queryByText('Points')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Buggy practice' })).toBeInTheDocument();
+  });
 });
