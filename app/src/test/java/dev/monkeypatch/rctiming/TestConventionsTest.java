@@ -20,8 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TestConventionsTest {
 
     private static final Path TEST_SOURCES = Path.of("src/test/java");
+    private static final Path PACKAGE = Path.of("dev/monkeypatch/rctiming");
 
-    /** Files whose {@code Thread.sleep} is deliberate, with why. */
+    /** Files, relative to {@code dev/monkeypatch/rctiming/}, whose {@code Thread.sleep} is deliberate, with why. */
     private static final Set<String> SLEEP_ALLOWED = Set.of(
             // A fake decoder that stays silent or trickles bytes, to test the probe's timeouts.
             "timing/DecoderProbeTest.java",
@@ -41,7 +42,7 @@ class TestConventionsTest {
         List<String> violations;
         try (Stream<Path> files = Files.walk(TEST_SOURCES)) {
             violations = files.filter(p -> p.toString().endsWith(".java"))
-                    .filter(p -> !SLEEP_ALLOWED.contains(TEST_SOURCES.relativize(p).toString().replace('\\', '/')))
+                    .filter(p -> SLEEP_ALLOWED.stream().noneMatch(allowed -> p.endsWith(PACKAGE.resolve(allowed))))
                     .filter(TestConventionsTest::sleeps)
                     .map(p -> TEST_SOURCES.relativize(p).toString())
                     .toList();
