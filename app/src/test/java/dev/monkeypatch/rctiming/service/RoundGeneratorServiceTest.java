@@ -349,4 +349,59 @@ class RoundGeneratorServiceTest {
         assertThat(RoundGeneratorService.heatCount(2, 10, 1)).isEqualTo(2);
         assertThat(new RoundGenerationRequest(1L, 0, 1, 4, 10, List.of()).minCarsPerHeat()).isEqualTo(4);
     }
+
+    private RaceEntry gridEntry(long entryId, Integer grid, int car) {
+        RaceEntry re = new RaceEntry();
+        re.setEntryId(entryId);
+        re.setGridPosition(grid);
+        re.setCarNumber(car);
+        return re;
+    }
+
+    @Test
+    void applyPreviousRoundFinishingOrder_gridsByFinishAndKeepsCarNumbers() {
+        Race race = new Race();
+        race.setStatus(RaceStatus.PENDING);
+        when(raceRepository.getOrThrow(9L)).thenReturn(race);
+        RaceEntry a = gridEntry(1L, null, 1);
+        RaceEntry b = gridEntry(2L, null, 2);
+        RaceEntry c = gridEntry(3L, null, 3);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(9L)).thenReturn(List.of(a, b, c));
+
+        service.applyPreviousRoundFinishingOrder(9L, List.of(3L, 1L, 2L));
+
+        assertThat(c.getGridPosition()).isEqualTo(1);
+        assertThat(a.getGridPosition()).isEqualTo(2);
+        assertThat(b.getGridPosition()).isEqualTo(3);
+        assertThat(a.getCarNumber()).isEqualTo(1);
+        assertThat(c.getCarNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void applyPreviousRoundFinishingOrder_putsCarsMissingFromTheResultBehindTheFinishers() {
+        Race race = new Race();
+        race.setStatus(RaceStatus.GRID);
+        when(raceRepository.getOrThrow(9L)).thenReturn(race);
+        RaceEntry a = gridEntry(1L, 1, 1);
+        RaceEntry dns = gridEntry(2L, 2, 2);
+        RaceEntry c = gridEntry(3L, 3, 3);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(9L)).thenReturn(List.of(a, dns, c));
+
+        service.applyPreviousRoundFinishingOrder(9L, List.of(3L, 1L));
+
+        assertThat(c.getGridPosition()).isEqualTo(1);
+        assertThat(a.getGridPosition()).isEqualTo(2);
+        assertThat(dns.getGridPosition()).isEqualTo(3);
+    }
+
+    @Test
+    void applyPreviousRoundFinishingOrder_leavesARaceThatHasStartedAlone() {
+        Race race = new Race();
+        race.setStatus(RaceStatus.RUNNING);
+        when(raceRepository.getOrThrow(9L)).thenReturn(race);
+
+        service.applyPreviousRoundFinishingOrder(9L, List.of(3L, 1L));
+
+        verify(raceEntryRepository, never()).save(any(RaceEntry.class));
+    }
 }

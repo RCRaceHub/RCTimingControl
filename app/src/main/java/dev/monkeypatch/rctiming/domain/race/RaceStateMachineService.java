@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -16,6 +17,8 @@ import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -221,9 +224,10 @@ public class RaceStateMachineService {
 
         // On RUNNING/STOPPED → FINISHED: propagate finishing order, then persist result snapshot
         if (target == RaceStatus.FINISHED) {
-            // For a Shikabane heat this is replaced by ShikabaneGridService below
-            applyFinishingOrderToNextRace(race);
+            // For a Shikabane heat the grid is replaced by ShikabaneGridService below
             resultSnapshotService.snapshot(race.getId());
+            // After the snapshot, so the next heat's grid follows the stored result with its corrections
+            applyFinishingOrderToNextRace(race);
             // A Shikabane main is promoted from its stored result, which puts the dead cars behind the survivors
             if (isShikabane(race) && isFinal(race)) {
                 applyBumpUpPromotion(race, resultSnapshotService.finishingOrder(race.getId()));
@@ -266,6 +270,23 @@ public class RaceStateMachineService {
      * Bump-up finals are handled separately by BumpUpSeedingService — not here.
      */
     private void applyFinishingOrderToNextRace(Race finishedRace) {
+        applyFinishingOrderToNextRace(finishedRace, false);
+    }
+
+    /**
+     * Re-applies a finished heat's corrected result to the same heat of the next round, after a penalty or marshal
+     * lap changed it. Runs after {@code ResultSnapshotService} has rebuilt the stored result, in the correction's
+     * transaction. The next heat is left alone once it has started.
+     */
+    @EventListener
+    @Order(2)
+    public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
+        raceRepository.findById(event.raceId())
+                .filter(r -> r.getStatus() == RaceStatus.FINISHED)
+                .ifPresent(r -> applyFinishingOrderToNextRace(r, true));
+    }
+
+    private void applyFinishingOrderToNextRace(Race finishedRace, boolean fromStoredResultOnly) {
         // Only apply for PRACTICE and QUALIFIER rounds
         Round finishedRound = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
         if (finishedRound == null) {
@@ -314,16 +335,19 @@ public class RaceStateMachineService {
             return;
         }
 
-        // Get finishing order from in-memory state
-        Optional<LiveRaceState> state = lapTimingService.peek(finishedRace.getId());
-        if (state.isEmpty()) {
-            log.info("Race {} finished with no in-memory state — skipping finishing-order propagation", finishedRace.getId());
-            return;
+        // The stored result is the one that counts, corrections included; the live state is a fallback
+        List<Long> finishingEntryIds = resultSnapshotService.finishingOrder(finishedRace.getId());
+        if (finishingEntryIds.isEmpty() && !fromStoredResultOnly) {
+            Optional<LiveRaceState> state = lapTimingService.peek(finishedRace.getId());
+            if (state.isEmpty()) {
+                log.info("Race {} finished with no result or in-memory state — skipping finishing-order propagation",
+                        finishedRace.getId());
+                return;
+            }
+            finishingEntryIds = state.get().calculatePositions().stream()
+                    .map(LiveTimingRowDto::entryId)
+                    .toList();
         }
-
-        List<Long> finishingEntryIds = state.get().calculatePositions().stream()
-                .map(LiveTimingRowDto::entryId)
-                .toList();
 
         if (finishingEntryIds.isEmpty()) {
             return;
