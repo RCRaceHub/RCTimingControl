@@ -117,7 +117,7 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
 | `rctiming.network.addresses` / `rctiming.network.mdns-name` | empty | Addresses the About page shows (needed in a container) and the `.local` name advertised on the network |
 | `rctiming.https.enabled` / `rctiming.https.port` | `false` / `8443` | Optional local HTTPS connector using the club's own certificate |
-| `app.jwt.secret`, `app.jwt.access-token-ttl-ms`, `app.jwt.refresh-token-ttl-ms` | generated / 15 min / 7 days | Signing secret (stored in the database when blank) and token lifetimes |
+| `app.jwt.secret`, `app.jwt.access-token-ttl-ms`, `app.jwt.refresh-token-ttl-ms` | generated / 15 min / 7 days | Signing secret (a random `jwt-secret` file in the data folder when blank) and token lifetimes |
 | `storage.local-path` / `storage.public-base-url` | database folder / `/storage` | Where uploaded images are kept and the URL they are served from |
 | `rctiming.results-site.directory` / `rctiming.results-site.refresh-minutes` | empty / `5` | Folder the standalone results site is written to and how often it is rebuilt |
 

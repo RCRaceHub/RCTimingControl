@@ -51,7 +51,8 @@ class LanAddressesTest {
 
     @Test
     void theNameIsAnnouncedOnlyOnTheBindAddressWhenOneIsSet() {
-        assertThat(new LanAddresses("192.168.1.9", new NetworkProperties(List.of(), "timing")).announceAddresses()).containsExactly("192.168.1.9");
+        LanAddresses addresses = new LanAddresses("192.168.1.9", new NetworkProperties(List.of(), "timing"));
+        assertThat(addresses.announceAddresses()).containsExactly("192.168.1.9");
     }
 
     private static void started(LanAddresses addresses, int port) {

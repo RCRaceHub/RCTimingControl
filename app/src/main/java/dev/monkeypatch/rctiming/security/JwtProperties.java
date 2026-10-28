@@ -15,4 +15,10 @@ public record JwtProperties(
         @DefaultValue("") String secret,
         @DefaultValue("900000") long accessTokenTtlMs,
         @DefaultValue("604800000") long refreshTokenTtlMs) {
+
+    /** Leaves the signing key out so a log line or a configprops dump can never leak it. */
+    @Override
+    public String toString() {
+        return "JwtProperties[accessTokenTtlMs=" + accessTokenTtlMs + ", refreshTokenTtlMs=" + refreshTokenTtlMs + "]";
+    }
 }

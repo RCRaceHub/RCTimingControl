@@ -39,7 +39,8 @@ public class TlsController {
     private final SettingsFile settings;
     private final int httpPort;
 
-    public TlsController(TlsService tls, AuditService audit, SettingsFile settings, ObjectProvider<ServerProperties> server) {
+    public TlsController(TlsService tls, AuditService audit, SettingsFile settings,
+            ObjectProvider<ServerProperties> server) {
         ServerProperties properties = server.getIfAvailable();
         this.httpPort = properties == null || properties.getPort() == null ? 8080 : properties.getPort();
         this.tls = tls;
