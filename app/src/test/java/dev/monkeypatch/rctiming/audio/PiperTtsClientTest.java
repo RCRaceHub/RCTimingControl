@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PiperTtsClientTest {
@@ -171,8 +172,7 @@ class PiperTtsClientTest {
         PiperTtsClient client = clientFor(true);
         client.synthesize("Test racer", "en_GB-cori-medium");
 
-        // Give thread time to capture
-        Thread.sleep(100);
+        await().atMost(Duration.ofSeconds(5)).until(() -> captured[0] != null);
         assertNotNull(captured[0], "Should have captured the synthesize request");
         assertTrue(captured[0].contains("en_GB-cori-medium"), "Voice name should appear in request");
         assertTrue(captured[0].contains("synthesize"), "Event type should be 'synthesize'");
