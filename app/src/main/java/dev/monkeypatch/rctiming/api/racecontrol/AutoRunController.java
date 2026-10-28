@@ -1,16 +1,15 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AutoRunSettingsRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.SkipRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
-import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.AutoRunService.AutoRunState;
+import dev.monkeypatch.rctiming.service.AutoRunService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,26 +37,6 @@ public class AutoRunController {
     public AutoRunController(AutoRunService autoRunService, EventService eventService) {
         this.autoRunService = autoRunService;
         this.eventService = eventService;
-    }
-
-    /**
-     * The body of {@code POST /skip-to}.
-     *
-     * @param seconds how long from now the next race should start, 0 to 600
-     */
-    public record SkipRequest(@NotNull @Min(0) @Max(600) Integer seconds) {
-    }
-
-    /**
-     * The body of {@code PUT /settings}.
-     *
-     * @param gapSeconds       the time between a race finishing and the next starting, 0 to 3600
-     * @param holdBeforeFinals whether auto run stops after the last qualifier
-     * @param autoStart        whether auto run switches itself on when a race is started by hand
-     */
-    public record AutoRunSettingsRequest(@NotNull @Min(0) @Max(3600) Integer gapSeconds,
-                                         @NotNull Boolean holdBeforeFinals,
-                                         @NotNull Boolean autoStart) {
     }
 
     /** Whether auto run is on for the event and what it will do next. {@code GET}; read only. */

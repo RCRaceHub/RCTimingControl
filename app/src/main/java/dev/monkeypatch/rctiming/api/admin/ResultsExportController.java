@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.PublishTargetRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
@@ -12,7 +14,6 @@ import dev.monkeypatch.rctiming.resultsexport.ResultsSiteService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -65,8 +66,7 @@ public class ResultsExportController {
     public record ResultsExportsDto(boolean sendingEnabled, String resultsUrl, String savedUrl,
                                     List<String> missingSettings, ResultsPublishTarget publishTarget,
                                     ResultsPublishTarget chosenTarget,
-                                    List<ResultsOutboxQuery.OutboxRow> exports) {
-    }
+                                    List<ResultsOutboxQuery.OutboxRow> exports) {}
 
     @GetMapping("/results-exports")
     public ResultsExportsDto list() {
@@ -80,10 +80,6 @@ public class ResultsExportController {
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 
-    /** @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies */
-    public record ResultsUrlRequest(@Size(max = 500) String resultsUrl) {
-    }
-
     @Audited("audit_log")
     @PutMapping("/results-exports/address")
     public ResultsExportsDto setAddress(@RequestBody @Valid ResultsUrlRequest request) {
@@ -92,10 +88,6 @@ public class ResultsExportController {
         }
         clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
         return list();
-    }
-
-    /** @param target where to publish results; null clears the choice, so the default applies */
-    public record PublishTargetRequest(ResultsPublishTarget target) {
     }
 
     @Audited("audit_log")

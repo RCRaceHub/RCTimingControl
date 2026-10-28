@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioTemplateCreateRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioTemplateRequest;
 import dev.monkeypatch.rctiming.domain.audiotemplate.AudioTemplate;
 import dev.monkeypatch.rctiming.domain.audiotemplate.AudioTemplateService;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,14 +42,6 @@ public class AudioTemplateController {
         static AudioTemplateDto of(AudioTemplate t) {
             return new AudioTemplateDto(t.getId(), t.getName(), AudioSettingsController.AudioSettingsDto.of(t.getSettings()));
         }
-    }
-
-    /** The body of a save or an update: the template's name (on an update, left out to keep it). */
-    public record AudioTemplateRequest(@Size(max = 80) String name) {
-    }
-
-    /** The body of a save: the template's name. */
-    public record AudioTemplateCreateRequest(@NotBlank @Size(max = 80) String name) {
     }
 
     /** Every template, by name. {@code GET}. */

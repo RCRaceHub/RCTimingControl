@@ -9,7 +9,9 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderL
 
 /**
  * Repository for retroactive transponder link audit records. Rows are only ever added, by
- * {@code TransponderLinkService}, in the same transaction as the link request that caused them.
+ * {@code TransponderLinkService}, in the same transaction as the link request that caused them. Mapped by hand, not
+ * with MapStruct: the entity is built by constructor and has no setters, so there is nothing for a generated mapper
+ * to fill.
  */
 @Repository
 public class UnknownTransponderLinkAuditRepository

@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.SponsorsRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService.CompetitorMediaView;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,9 +39,6 @@ public class AdminDriverMediaController {
     public AdminDriverMediaController(DriverMediaService service) {
         this.service = service;
     }
-
-    /** The body of a sponsors change: up to five names. */
-    public record SponsorsRequest(@Size(max = 5) List<String> names) {}
 
     /** The answer for a car photo: its address, null when the entry has none. */
     public record CarPhotoResponse(String url) {}
