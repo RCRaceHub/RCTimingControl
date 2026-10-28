@@ -388,7 +388,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void brcaNumberHeldByAnotherCompetitor_isAWarningNotAnError() {
+    void brcaNumberHeldByAnotherCompetitor_blocksTheImportAndNamesWhoHoldsIt() {
         Competitor other = new Competitor();
         other.setDisplayName("Other Holder " + run);
         other.setBrcaNumber("BR" + run);
@@ -396,18 +396,19 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
 
-        assertThat(resp.getBody().get("blocked").asBoolean()).isFalse();
-        assertThat(resp.getBody().get("warnings").toString())
-                .contains("Ada Lovelace").contains("BRCA number BR" + run);
+        assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
+        assertThat(resp.getBody().get("errors").toString())
+                .contains("Ada Lovelace").contains("BRCA number BR" + run)
+                .contains("Other Holder " + run + " (already stored)");
     }
 
     @Test
-    void brcaNumberOfTheSameDriver_isNotWarnedAbout() {
+    void brcaNumberOfTheSameDriver_isNotBlocked() {
         importFixture("entries-v1-initial.json", false);
 
         ResponseEntity<JsonNode> again = importFixture("entries-v1-update.json", true);
 
-        assertThat(again.getBody().get("warnings").toString()).doesNotContain("BRCA number");
+        assertThat(again.getBody().get("errors").toString()).doesNotContain("BRCA number");
     }
 
     @Test
