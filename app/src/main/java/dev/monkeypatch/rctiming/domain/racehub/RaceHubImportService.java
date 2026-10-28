@@ -103,7 +103,7 @@ public class RaceHubImportService {
      * or the system for the automatic fetch); it is not needed, and may be null, for a dry run.
      *
      * <p>Runs in one write transaction, a dry run included. Nothing is saved when the result is blocked (unmapped
-     * classes, invalid rows, a BRCA number shared by two competitors, or a driver who would have two entries in a class). Withdrawals are applied before the
+     * classes, invalid rows, a BRCA number shared by two competitors from the same source, or a driver who would have two entries in a class). Withdrawals are applied before the
      * other rows so a replacement entry does not meet the old one in the one-active-entry index. A real import that
      * changes entries writes one audit row.
      *
@@ -354,7 +354,7 @@ public class RaceHubImportService {
                         existing == null ? Set.of() : swapped.getOrDefault(existing.getId(), Set.of()));
                 String name = row.driverDisplayName() != null ? row.driverDisplayName() : label;
                 warnings.addAll(transponders.differences(name));
-                checkBrcaShared(row, name, source, brcaHolders, brcaChecked, errors);
+                checkBrcaShared(row, name, source, brcaHolders, brcaChecked, errors, warnings);
             }
             plan.add(new Planned(row, action, existing, eventClassId, transponders));
         }
@@ -365,35 +365,46 @@ public class RaceHubImportService {
     private record BrcaHolder(String driverProfileId, String name) {}
 
     /**
-     * Blocks the import when a driver's BRCA number is held by a different competitor, either already stored or by
-     * another driver earlier in this file. A number belongs to one person, so the clash is fixed at its source (the
-     * driver's profile in the sending system, or by merging the two competitors from the possible-duplicates review)
-     * rather than carried into the results. The message names the number, the driver in the file and who else holds
-     * it, so the official can see what to correct. A blank number never matches. A driver is checked once however
-     * many classes they enter, so the repository is read once per driver per import.
+     * Checks a driver's BRCA number against the other competitors. It blocks the import when the number is held by
+     * another driver earlier in this file, or by a different competitor already stored from the same source: a
+     * number belongs to one person, so the clash is fixed at its source (the driver's profile in the sending system)
+     * rather than carried into the results. A competitor held from another source, or added by hand, is only a
+     * warning, because it is usually the same person known in two places; a block would stop the second record
+     * being created, so the two could never be merged from the possible-duplicates review. The message names the
+     * number, the driver in the file and who else holds it. A blank number never matches. A driver is checked once
+     * however many classes they enter, so the repository is read once per driver per import.
      *
      * @param brcaHolders the first driver seen with each number in this import, shared across the rows
      * @param checked     the driver ids already checked in this import
-     * @param errors      gets one message per clashing driver, which blocks the import
+     * @param errors      gets one message per blocking clash
+     * @param warnings    gets one message per clash with a competitor from another source
      */
     private void checkBrcaShared(ExportEntry row, String name, String source, Map<String, BrcaHolder> brcaHolders,
-                                 Set<String> checked, List<String> errors) {
+                                 Set<String> checked, List<String> errors, List<String> warnings) {
         String brca = blankToNull(row.brcaNumber());
         if (brca == null || !checked.add(row.driverProfileId())) {
             return;
         }
         BrcaHolder earlier = brcaHolders.putIfAbsent(brca, new BrcaHolder(row.driverProfileId(), name));
-        List<String> others = new ArrayList<>();
+        List<String> blocking = new ArrayList<>();
+        List<String> elsewhere = new ArrayList<>();
         if (earlier != null && !earlier.driverProfileId().equals(row.driverProfileId())) {
-            others.add(earlier.name() + " (in this file)");
+            blocking.add(earlier.name() + " (in this file)");
         }
-        competitorRepository.findByBrcaNumber(brca).stream()
-                .filter(c -> !(Objects.equals(source, c.getExternalSource())
-                        && row.driverProfileId().equals(c.getExternalId())))
-                .forEach(c -> others.add(c.getDisplayName() + " (already stored)"));
-        if (!others.isEmpty()) {
-            errors.add(name + " has BRCA number " + brca + ", which " + String.join(" and ", others)
-                    + " also has. Fix the number at its source, or merge the two competitors, then import again");
+        for (Competitor c : competitorRepository.findByBrcaNumber(brca)) {
+            boolean sameSource = Objects.equals(source, c.getExternalSource());
+            if (sameSource && row.driverProfileId().equals(c.getExternalId())) {
+                continue;
+            }
+            (sameSource ? blocking : elsewhere).add(c.getDisplayName() + " (already stored)");
+        }
+        if (!blocking.isEmpty()) {
+            errors.add(name + " has BRCA number " + brca + ", which " + String.join(" and ", blocking)
+                    + " also has. Fix the number at its source, then import again");
+        }
+        if (!elsewhere.isEmpty()) {
+            warnings.add(name + " has BRCA number " + brca + ", which " + String.join(" and ", elsewhere)
+                    + " also has. If they are the same person, merge them from the possible-duplicates review");
         }
     }
 
