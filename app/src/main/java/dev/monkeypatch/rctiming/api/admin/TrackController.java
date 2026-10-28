@@ -12,7 +12,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,8 +57,8 @@ public class TrackController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public TrackDto createTrack(Authentication auth, @RequestBody @Valid CreateTrackRequest request) {
-        return TrackDto.from(trackService.create(CurrentOfficial.actor(auth),
+    public TrackDto createTrack(@RequestBody @Valid CreateTrackRequest request) {
+        return TrackDto.from(trackService.create(CurrentOfficial.actor(),
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
@@ -67,8 +66,8 @@ public class TrackController {
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public TrackDto updateTrack(Authentication auth, @PathVariable Long id, @RequestBody @Valid CreateTrackRequest request) {
-        return TrackDto.from(trackService.update(CurrentOfficial.actor(auth), id,
+    public TrackDto updateTrack(@PathVariable Long id, @RequestBody @Valid CreateTrackRequest request) {
+        return TrackDto.from(trackService.update(CurrentOfficial.actor(), id,
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
@@ -80,8 +79,8 @@ public class TrackController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTrack(Authentication auth, @PathVariable Long id) {
-        trackService.delete(CurrentOfficial.actor(auth), id);
+    public void deleteTrack(@PathVariable Long id) {
+        trackService.delete(CurrentOfficial.actor(), id);
     }
 
     /** Adds a decoder loop to a track. {@code POST /{trackId}/loops}; ADMIN; answers 201. Audited. */
@@ -89,9 +88,9 @@ public class TrackController {
     @PostMapping("/{trackId}/loops")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public DecoderLoopDto addDecoderLoop(Authentication auth, @PathVariable Long trackId,
+    public DecoderLoopDto addDecoderLoop(@PathVariable Long trackId,
                                           @RequestBody @Valid CreateDecoderLoopRequest request) {
-        return DecoderLoopDto.from(trackService.addDecoderLoop(CurrentOfficial.actor(auth), trackId,
+        return DecoderLoopDto.from(trackService.addDecoderLoop(CurrentOfficial.actor(), trackId,
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
@@ -99,9 +98,9 @@ public class TrackController {
     @Audited("audit_log")
     @PutMapping("/loops/{loopId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public DecoderLoopDto updateDecoderLoop(Authentication auth, @PathVariable Long loopId,
+    public DecoderLoopDto updateDecoderLoop(@PathVariable Long loopId,
                                              @RequestBody @Valid CreateDecoderLoopRequest request) {
-        return DecoderLoopDto.from(trackService.updateDecoderLoop(CurrentOfficial.actor(auth), loopId,
+        return DecoderLoopDto.from(trackService.updateDecoderLoop(CurrentOfficial.actor(), loopId,
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
@@ -110,8 +109,8 @@ public class TrackController {
     @DeleteMapping("/loops/{loopId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDecoderLoop(Authentication auth, @PathVariable Long loopId) {
-        trackService.deleteDecoderLoop(CurrentOfficial.actor(auth), loopId);
+    public void deleteDecoderLoop(@PathVariable Long loopId) {
+        trackService.deleteDecoderLoop(CurrentOfficial.actor(), loopId);
     }
 
     /**
@@ -122,9 +121,9 @@ public class TrackController {
     @PostMapping("/{trackId}/thresholds")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public TrackLapThresholdDto setLapThreshold(Authentication auth, @PathVariable Long trackId,
+    public TrackLapThresholdDto setLapThreshold(@PathVariable Long trackId,
                                                  @RequestBody @Valid CreateThresholdRequest request) {
-        return TrackLapThresholdDto.from(trackService.setLapThreshold(CurrentOfficial.actor(auth), trackId,
+        return TrackLapThresholdDto.from(trackService.setLapThreshold(CurrentOfficial.actor(), trackId,
                 request.racingClassId(), request.minLapMs(), request.maxLastLapMs()));
     }
 
@@ -133,7 +132,7 @@ public class TrackController {
     @DeleteMapping("/thresholds/{thresholdId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteLapThreshold(Authentication auth, @PathVariable Long thresholdId) {
-        trackService.deleteLapThreshold(CurrentOfficial.actor(auth), thresholdId);
+    public void deleteLapThreshold(@PathVariable Long thresholdId) {
+        trackService.deleteLapThreshold(CurrentOfficial.actor(), thresholdId);
     }
 }

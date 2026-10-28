@@ -15,7 +15,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -82,8 +81,8 @@ public class AdminEntryController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public EntryResult createEntry(Authentication auth, @RequestBody @Valid AdminCreateEntryRequest req) {
-        EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(auth),
+    public EntryResult createEntry(@RequestBody @Valid AdminCreateEntryRequest req) {
+        EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(),
                 new EntryService.WalkIn(req.eventId(), req.eventClassId(), req.competitorId(), req.competitorName(),
                         req.primaryTransponder(), req.secondaryTransponder(), req.confirmNewCompetitor(),
                         req.thirdTransponder(), req.fourthTransponder()));
@@ -98,8 +97,7 @@ public class AdminEntryController {
     @PostMapping("/{id}/withdraw")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     public EntryDto withdrawEntry(@PathVariable Long id,
-                                  Authentication auth,
                                   @RequestBody @Valid AdminWithdrawRequest req) {
-        return EntryDto.from(entryService.adminWithdraw(id, CurrentOfficial.id(auth), req.reason()));
+        return EntryDto.from(entryService.adminWithdraw(id, CurrentOfficial.id(), req.reason()));
     }
 }

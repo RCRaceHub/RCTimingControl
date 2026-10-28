@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,8 +54,8 @@ public class AdminBoardViewController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     @ResponseStatus(HttpStatus.CREATED)
-    public BoardViewDto create(Authentication auth, @RequestBody @Valid BoardViewRequest request) {
-        return dto(service.create(CurrentOfficial.actor(auth), request.slug(), request.name(), request.columns(),
+    public BoardViewDto create(@RequestBody @Valid BoardViewRequest request) {
+        return dto(service.create(CurrentOfficial.actor(), request.slug(), request.name(), request.columns(),
                 request.panels()));
     }
 
@@ -64,8 +63,8 @@ public class AdminBoardViewController {
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public BoardViewDto update(Authentication auth, @PathVariable Long id, @RequestBody @Valid BoardViewRequest request) {
-        return dto(service.update(CurrentOfficial.actor(auth), id, request.slug(), request.name(), request.columns(),
+    public BoardViewDto update(@PathVariable Long id, @RequestBody @Valid BoardViewRequest request) {
+        return dto(service.update(CurrentOfficial.actor(), id, request.slug(), request.name(), request.columns(),
                 request.panels()));
     }
 
@@ -74,8 +73,8 @@ public class AdminBoardViewController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(Authentication auth, @PathVariable Long id) {
-        service.delete(CurrentOfficial.actor(auth), id);
+    public void delete(@PathVariable Long id) {
+        service.delete(CurrentOfficial.actor(), id);
     }
 
     private BoardViewDto dto(BoardView view) {

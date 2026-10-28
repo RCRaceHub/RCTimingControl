@@ -10,7 +10,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,9 +47,9 @@ public class EventClassController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventClassDto addClassToEvent(Authentication auth, @PathVariable Long eventId,
+    public EventClassDto addClassToEvent(@PathVariable Long eventId,
                                           @RequestBody @Valid AddEventClassRequest request) {
-        return EventClassDto.from(eventClassService.addClassToEvent(CurrentOfficial.actor(auth), eventId,
+        return EventClassDto.from(eventClassService.addClassToEvent(CurrentOfficial.actor(), eventId,
                 request.racingClassId(), request.templateId()));
     }
 
@@ -63,9 +62,9 @@ public class EventClassController {
     @DeleteMapping("/{classId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeClassFromEvent(Authentication auth, @PathVariable Long eventId, @PathVariable Long classId,
+    public void removeClassFromEvent(@PathVariable Long eventId, @PathVariable Long classId,
                                      @RequestParam(defaultValue = "false") boolean withdrawEntries) {
-        eventClassService.removeClassFromEvent(CurrentOfficial.actor(auth), eventId, classId, withdrawEntries);
+        eventClassService.removeClassFromEvent(CurrentOfficial.actor(), eventId, classId, withdrawEntries);
     }
 
     /**
@@ -75,10 +74,10 @@ public class EventClassController {
     @Audited("audit_log")
     @PutMapping("/{classId}/overrides")
     @PreAuthorize("hasRole('ADMIN')")
-    public EventClassDto updateOverrides(Authentication auth, @PathVariable Long eventId,
+    public EventClassDto updateOverrides(@PathVariable Long eventId,
                                           @PathVariable Long classId,
                                           @RequestBody @Valid UpdateEventClassOverrideRequest request) {
-        return EventClassDto.from(eventClassService.updateOverrides(CurrentOfficial.actor(auth), eventId, classId,
+        return EventClassDto.from(eventClassService.updateOverrides(CurrentOfficial.actor(), eventId, classId,
                 request.override()));
     }
 
@@ -89,9 +88,9 @@ public class EventClassController {
     @Audited("audit_log")
     @PostMapping("/combine")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<EventClassDto> combineClasses(Authentication auth, @PathVariable Long eventId,
+    public List<EventClassDto> combineClasses(@PathVariable Long eventId,
                                                @RequestBody @Valid CombineClassesRequest request) {
-        return eventClassService.combineClasses(CurrentOfficial.actor(auth), eventId, request.eventClassIds()).stream()
+        return eventClassService.combineClasses(CurrentOfficial.actor(), eventId, request.eventClassIds()).stream()
                 .map(EventClassDto::from)
                 .toList();
     }

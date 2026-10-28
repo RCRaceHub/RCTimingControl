@@ -12,7 +12,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -73,7 +72,7 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PutMapping("/setting")
-    public TlsStateDto change(Authentication auth, @RequestBody @Valid TlsSettingRequest request) {
+    public TlsStateDto change(@RequestBody @Valid TlsSettingRequest request) {
         if (request.port() != null && request.port() == httpPort) {
             throw new IllegalArgumentException(
                     "Port " + httpPort + " is already used by plain HTTP; choose another for HTTPS");
@@ -82,7 +81,7 @@ public class TlsController {
         if (request.port() != null) {
             settings.set("rctiming.https.port", String.valueOf(request.port()));
         }
-        audit.entry(CurrentOfficial.actor(auth), "TLS_SETTING_CHANGED").entity("tls", "setting")
+        audit.entry(CurrentOfficial.actor(), "TLS_SETTING_CHANGED").entity("tls", "setting")
                 .summary((request.enabled() ? "Switched HTTPS on" : "Switched HTTPS off")
                         + " for the next start" + (request.port() == null ? "" : " on port " + request.port()))
                 .recordStandalone();
@@ -112,10 +111,10 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PostMapping("/regenerate-server")
-    public TlsStateDto regenerateServer(Authentication auth) {
+    public TlsStateDto regenerateServer() {
         requireEnabled();
         tls.regenerateServer();
-        audit.entry(CurrentOfficial.actor(auth), "TLS_SERVER_CERTIFICATE_REGENERATED").entity("tls", "server")
+        audit.entry(CurrentOfficial.actor(), "TLS_SERVER_CERTIFICATE_REGENERATED").entity("tls", "server")
                 .summary("Made the HTTPS server certificate again").recordStandalone();
         return state();
     }
@@ -126,10 +125,10 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PostMapping("/regenerate-ca")
-    public TlsStateDto regenerateCa(Authentication auth) {
+    public TlsStateDto regenerateCa() {
         requireEnabled();
         tls.regenerateCa();
-        audit.entry(CurrentOfficial.actor(auth), "TLS_CA_REGENERATED").entity("tls", "ca")
+        audit.entry(CurrentOfficial.actor(), "TLS_CA_REGENERATED").entity("tls", "ca")
                 .summary("Made the club certificate authority again; devices must install the new one").recordStandalone();
         return state();
     }

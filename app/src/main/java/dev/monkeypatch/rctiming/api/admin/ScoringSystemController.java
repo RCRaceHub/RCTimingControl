@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,8 +63,8 @@ public class ScoringSystemController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ScoringSystemDto create(Authentication auth, @RequestBody @Valid ScoringSystemRequest request) {
-        return ScoringSystemDto.from(service.create(CurrentOfficial.actor(auth), request.name(), request.config()));
+    public ScoringSystemDto create(@RequestBody @Valid ScoringSystemRequest request) {
+        return ScoringSystemDto.from(service.create(CurrentOfficial.actor(), request.name(), request.config()));
     }
 
     /** Copies a system, built-in or not, under a new name. {@code POST /{id}/clone}; ADMIN; 201; 404; 409. Audited. */
@@ -73,18 +72,18 @@ public class ScoringSystemController {
     @PostMapping("/{id}/clone")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ScoringSystemDto cloneSystem(Authentication auth, @PathVariable Long id,
+    public ScoringSystemDto cloneSystem(@PathVariable Long id,
                                         @RequestBody @Valid CloneScoringSystemRequest request) {
-        return ScoringSystemDto.from(service.cloneSystem(CurrentOfficial.actor(auth), id, request.name()));
+        return ScoringSystemDto.from(service.cloneSystem(CurrentOfficial.actor(), id, request.name()));
     }
 
     /** Changes a custom system. {@code PUT /{id}}; ADMIN; 400 for a bad config; 409 for a built-in. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ScoringSystemDto update(Authentication auth, @PathVariable Long id,
+    public ScoringSystemDto update(@PathVariable Long id,
                                    @RequestBody @Valid ScoringSystemRequest request) {
-        return ScoringSystemDto.from(service.update(CurrentOfficial.actor(auth), id, request.name(), request.config()));
+        return ScoringSystemDto.from(service.update(CurrentOfficial.actor(), id, request.name(), request.config()));
     }
 
     /** Deletes a custom system. {@code DELETE /{id}}; ADMIN; 204; 409 for a built-in. Audited. */
@@ -92,8 +91,8 @@ public class ScoringSystemController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(Authentication auth, @PathVariable Long id) {
-        service.delete(CurrentOfficial.actor(auth), id);
+    public void delete(@PathVariable Long id) {
+        service.delete(CurrentOfficial.actor(), id);
     }
 
     /**
@@ -118,12 +117,10 @@ public class ScoringSystemController {
     @PostMapping(value = "/import", consumes = {MediaType.APPLICATION_JSON_VALUE, "application/yaml"})
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ScoringSystemDto importSystem(
-            Authentication auth,
-            @RequestParam(defaultValue = "Imported scoring system") String name,
+    public ScoringSystemDto importSystem(@RequestParam(defaultValue = "Imported scoring system") String name,
             @RequestBody String body,
             @RequestHeader("Content-Type") String contentType) {
         return ScoringSystemDto.from(service.importConfig(
-                CurrentOfficial.actor(auth), name, codec.read(body, FileType.of(contentType))));
+                CurrentOfficial.actor(), name, codec.read(body, FileType.of(contentType))));
     }
 }

@@ -25,7 +25,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -124,8 +123,8 @@ public class AdminCompetitorController {
     @Audited("audit_log")
     @PostMapping("/merge")
     @PreAuthorize("hasRole('ADMIN')")
-    public CompetitorMergeService.Result merge(Authentication auth, @Valid @RequestBody MergeRequest body) {
-        return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id(auth));
+    public CompetitorMergeService.Result merge(@Valid @RequestBody MergeRequest body) {
+        return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id());
     }
 
     /**
@@ -135,12 +134,12 @@ public class AdminCompetitorController {
      */
     @GetMapping("/{id}/personal-data")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> personalData(Authentication auth, @PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> personalData(@PathVariable Long id) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"competitor-" + id + ".json\"")
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(exportService.export(id, CurrentOfficial.id(auth)));
+                .body(exportService.export(id, CurrentOfficial.id()));
     }
 
     /**
@@ -151,8 +150,8 @@ public class AdminCompetitorController {
     @Audited("audit_log")
     @PostMapping("/{id}/anonymise")
     @PreAuthorize("hasRole('ADMIN')")
-    public CompetitorAnonymiseService.Result anonymise(Authentication auth, @PathVariable Long id) {
-        return anonymiseService.anonymise(id, CurrentOfficial.id(auth));
+    public CompetitorAnonymiseService.Result anonymise(@PathVariable Long id) {
+        return anonymiseService.anonymise(id, CurrentOfficial.id());
     }
 
     /** Who changed how a competitor's name is said aloud, and when. {@code GET /{id}/changes}; ADMIN. */
@@ -176,9 +175,9 @@ public class AdminCompetitorController {
      */
     @Audited("competitor_audit_log")
     @PutMapping("/{id}/spoken-name")
-    public CompetitorSummaryDto setSpokenName(Authentication auth, @PathVariable Long id,
+    public CompetitorSummaryDto setSpokenName(@PathVariable Long id,
                                               @RequestBody SpokenNameRequest body) {
-        Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id(auth));
+        Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
@@ -194,9 +193,9 @@ public class AdminCompetitorController {
     @Audited("audit_log")
     @PutMapping("/{id}/name-visibility")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorSummaryDto setNameVisibility(Authentication auth, @PathVariable Long id,
+    public CompetitorSummaryDto setNameVisibility(@PathVariable Long id,
                                                   @Valid @RequestBody NameVisibilityRequest body) {
-        Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id(auth));
+        Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
@@ -212,9 +211,9 @@ public class AdminCompetitorController {
     @Audited("audit_log")
     @PutMapping("/{id}/categories")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorSummaryDto setCategories(Authentication auth, @PathVariable Long id,
+    public CompetitorSummaryDto setCategories(@PathVariable Long id,
                                               @Valid @RequestBody CategoriesRequest body) {
-        Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id(auth));
+        Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }

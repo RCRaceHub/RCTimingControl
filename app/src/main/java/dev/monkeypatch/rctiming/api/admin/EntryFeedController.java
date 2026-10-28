@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,17 +49,17 @@ public class EntryFeedController {
      */
     @Audited("audit_log")
     @PutMapping
-    public EntryFeedDto save(Authentication auth, @PathVariable long eventId,
+    public EntryFeedDto save(@PathVariable long eventId,
                              @RequestBody @Valid SaveRequest request) {
-        return EntryFeedDto.of(feedService.save(CurrentOfficial.actor(auth), eventId, request.url(), request.token(),
+        return EntryFeedDto.of(feedService.save(CurrentOfficial.actor(), eventId, request.url(), request.token(),
                 Boolean.TRUE.equals(request.autoFetch())));
     }
 
     /** Removes the event's feed settings. {@code DELETE}; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping
-    public ResponseEntity<Void> delete(Authentication auth, @PathVariable long eventId) {
-        feedService.delete(CurrentOfficial.actor(auth), eventId);
+    public ResponseEntity<Void> delete(@PathVariable long eventId) {
+        feedService.delete(CurrentOfficial.actor(), eventId);
         return ResponseEntity.noContent().build();
     }
 
@@ -85,8 +84,8 @@ public class EntryFeedController {
      */
     @Audited("audit_log")
     @PostMapping("/apply")
-    public ResponseEntity<RaceHubImportResult> apply(Authentication auth, @PathVariable long eventId) {
-        RaceHubImportResult result = feedService.applyHeld(CurrentOfficial.actor(auth), eventId);
+    public ResponseEntity<RaceHubImportResult> apply(@PathVariable long eventId) {
+        RaceHubImportResult result = feedService.applyHeld(CurrentOfficial.actor(), eventId);
         return ImportResponses.of(result);
     }
 

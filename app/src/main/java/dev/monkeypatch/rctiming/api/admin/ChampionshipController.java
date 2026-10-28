@@ -20,7 +20,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,8 +78,8 @@ public class ChampionshipController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ChampionshipDto create(Authentication auth, @RequestBody @Valid CreateChampionshipRequest request) {
-        return ChampionshipDto.from(championshipService.create(CurrentOfficial.actor(auth), settings(request)));
+    public ChampionshipDto create(@RequestBody @Valid CreateChampionshipRequest request) {
+        return ChampionshipDto.from(championshipService.create(CurrentOfficial.actor(), settings(request)));
     }
 
     /**
@@ -90,9 +89,9 @@ public class ChampionshipController {
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ChampionshipDto update(Authentication auth, @PathVariable Long id,
+    public ChampionshipDto update(@PathVariable Long id,
                                    @RequestBody @Valid UpdateChampionshipRequest request) {
-        return ChampionshipDto.from(championshipService.update(CurrentOfficial.actor(auth), id, settings(request)));
+        return ChampionshipDto.from(championshipService.update(CurrentOfficial.actor(), id, settings(request)));
     }
 
     /**
@@ -103,9 +102,9 @@ public class ChampionshipController {
     @PostMapping("/{id}/classes")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ChampionshipClassDto addClass(Authentication auth, @PathVariable Long id,
+    public ChampionshipClassDto addClass(@PathVariable Long id,
                                           @RequestBody @Valid AddChampionshipClassRequest request) {
-        return ChampionshipClassDto.from(championshipService.addClass(CurrentOfficial.actor(auth), id,
+        return ChampionshipClassDto.from(championshipService.addClass(CurrentOfficial.actor(), id,
                 request.racingClassId(), request.bestXFromYX(), request.bestXFromYY()));
     }
 
@@ -117,8 +116,8 @@ public class ChampionshipController {
     @DeleteMapping("/{id}/classes/{racingClassId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeClass(Authentication auth, @PathVariable Long id, @PathVariable Long racingClassId) {
-        championshipService.removeClass(CurrentOfficial.actor(auth), id, racingClassId);
+    public void removeClass(@PathVariable Long id, @PathVariable Long racingClassId) {
+        championshipService.removeClass(CurrentOfficial.actor(), id, racingClassId);
     }
 
     /**
@@ -129,9 +128,9 @@ public class ChampionshipController {
     @PostMapping("/{id}/events")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ChampionshipEventLinkDto linkEvent(Authentication auth, @PathVariable Long id,
+    public ChampionshipEventLinkDto linkEvent(@PathVariable Long id,
                                                @RequestBody @Valid AddChampionshipEventRequest request) {
-        return ChampionshipEventLinkDto.from(championshipService.linkEvent(CurrentOfficial.actor(auth), id,
+        return ChampionshipEventLinkDto.from(championshipService.linkEvent(CurrentOfficial.actor(), id,
                 request.eventId(), request.roundNumber()));
     }
 
@@ -140,8 +139,8 @@ public class ChampionshipController {
     @DeleteMapping("/{id}/events/{eventId}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void unlinkEvent(Authentication auth, @PathVariable Long id, @PathVariable Long eventId) {
-        championshipService.unlinkEvent(CurrentOfficial.actor(auth), id, eventId);
+    public void unlinkEvent(@PathVariable Long id, @PathVariable Long eventId) {
+        championshipService.unlinkEvent(CurrentOfficial.actor(), id, eventId);
     }
 
     /**
@@ -152,12 +151,12 @@ public class ChampionshipController {
     @Audited("audit_log")
     @PutMapping("/{id}/points-scale")
     @PreAuthorize("hasRole('ADMIN')")
-    public List<PointsScaleEntryDto> replacePointsScale(Authentication auth, @PathVariable Long id,
+    public List<PointsScaleEntryDto> replacePointsScale(@PathVariable Long id,
                                                          @RequestBody @Valid UpdatePointsScaleRequest request) {
         List<ChampionshipService.ScalePoint> scale = request.entries().stream()
                 .map(e -> new ChampionshipService.ScalePoint(e.position(), e.points()))
                 .toList();
-        return championshipService.replacePointsScale(CurrentOfficial.actor(auth), id, scale).stream()
+        return championshipService.replacePointsScale(CurrentOfficial.actor(), id, scale).stream()
                 .map(PointsScaleEntryDto::from)
                 .toList();
     }
@@ -170,8 +169,8 @@ public class ChampionshipController {
     @Audited("audit_log")
     @PostMapping("/{id}/scoring-system/{systemId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ChampionshipDto applyScoringSystem(Authentication auth, @PathVariable Long id, @PathVariable Long systemId) {
-        return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(auth), id, systemId));
+    public ChampionshipDto applyScoringSystem(@PathVariable Long id, @PathVariable Long systemId) {
+        return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(), id, systemId));
     }
 
     /** The body of {@code PUT /{id}/split-categories}: the tags to split the standings by; empty for none. */
@@ -185,10 +184,10 @@ public class ChampionshipController {
     @Audited("audit_log")
     @PutMapping("/{id}/split-categories")
     @PreAuthorize("hasRole('ADMIN')")
-    public ChampionshipDto setSplitCategories(Authentication auth, @PathVariable Long id,
+    public ChampionshipDto setSplitCategories(@PathVariable Long id,
                                               @RequestBody @Valid SplitCategoriesRequest request) {
         return ChampionshipDto.from(championshipService.setSplitCategories(
-                CurrentOfficial.actor(auth), id, request.categories()));
+                CurrentOfficial.actor(), id, request.categories()));
     }
 
     /** The drivers excluded from events of the championship. {@code GET /{id}/exclusions}; read only. */
@@ -208,9 +207,8 @@ public class ChampionshipController {
     @PostMapping("/{id}/exclusions")
     @ResponseStatus(HttpStatus.CREATED)
     public ChampionshipExclusionDto createExclusion(@PathVariable Long id,
-                                                     Authentication auth,
                                                      @RequestBody @Valid CreateExclusionRequest request) {
-        return ChampionshipExclusionDto.from(championshipService.createExclusion(CurrentOfficial.actor(auth), id,
+        return ChampionshipExclusionDto.from(championshipService.createExclusion(CurrentOfficial.actor(), id,
                 request.driverId(), request.eventId(), request.reason()));
     }
 
@@ -221,8 +219,8 @@ public class ChampionshipController {
     @Audited("audit_log")
     @DeleteMapping("/{id}/exclusions/{exclusionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteExclusion(Authentication auth, @PathVariable Long id, @PathVariable Long exclusionId) {
-        championshipService.deleteExclusion(CurrentOfficial.actor(auth), id, exclusionId);
+    public void deleteExclusion(@PathVariable Long id, @PathVariable Long exclusionId) {
+        championshipService.deleteExclusion(CurrentOfficial.actor(), id, exclusionId);
     }
 
     /**

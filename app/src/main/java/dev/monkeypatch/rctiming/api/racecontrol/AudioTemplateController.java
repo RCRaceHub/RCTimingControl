@@ -9,7 +9,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -63,16 +62,16 @@ public class AudioTemplateController {
     @Audited("audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AudioTemplateDto create(Authentication auth, @RequestBody @Valid AudioTemplateCreateRequest request) {
-        return AudioTemplateDto.of(service.createFromCurrent(CurrentOfficial.actor(auth), request.name()));
+    public AudioTemplateDto create(@RequestBody @Valid AudioTemplateCreateRequest request) {
+        return AudioTemplateDto.of(service.createFromCurrent(CurrentOfficial.actor(), request.name()));
     }
 
     /** Replaces a template's settings with the ones in force now. {@code PUT /{id}}; 400; 404; 409. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    public AudioTemplateDto update(Authentication auth, @PathVariable Long id,
+    public AudioTemplateDto update(@PathVariable Long id,
                                    @RequestBody(required = false) @Valid AudioTemplateRequest request) {
-        return AudioTemplateDto.of(service.overwriteWithCurrent(CurrentOfficial.actor(auth), id,
+        return AudioTemplateDto.of(service.overwriteWithCurrent(CurrentOfficial.actor(), id,
                 request == null ? null : request.name()));
     }
 
@@ -82,15 +81,15 @@ public class AudioTemplateController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/apply")
-    public AudioSettingsController.AudioSettingsDto apply(Authentication auth, @PathVariable Long id) {
-        return AudioSettingsController.AudioSettingsDto.of(service.apply(CurrentOfficial.actor(auth), id));
+    public AudioSettingsController.AudioSettingsDto apply(@PathVariable Long id) {
+        return AudioSettingsController.AudioSettingsDto.of(service.apply(CurrentOfficial.actor(), id));
     }
 
     /** Deletes a template. {@code DELETE /{id}}; 204; 404. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(Authentication auth, @PathVariable Long id) {
-        service.delete(CurrentOfficial.actor(auth), id);
+    public void delete(@PathVariable Long id) {
+        service.delete(CurrentOfficial.actor(), id);
     }
 }
