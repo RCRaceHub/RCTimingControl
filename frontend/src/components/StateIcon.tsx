@@ -41,8 +41,17 @@ export const STATE_INFO: Record<StateKind, StateInfo> = {
  * {@link useHighContrast} puts on the page; these classes key off it. The icon gets a thick stroke and a dark outline
  * so it survives compressed stream video, and a short text tag appears beside it.
  */
-const HIGH_CONTRAST_ICON = '[[data-contrast=high]_&]:stroke-[3.5] [[data-contrast=high]_&]:drop-shadow-[0_0_1px_rgba(0,0,0,0.95)]';
-const HIGH_CONTRAST_TAG = '[[data-contrast=high]_&]:ml-0.5 [[data-contrast=high]_&]:inline [[data-contrast=high]_&]:text-[0.65em] [[data-contrast=high]_&]:[text-shadow:0_0_2px_rgba(0,0,0,0.95)]';
+// Whole class names, not built from parts, so Tailwind finds them when it scans the source
+const HIGH_CONTRAST_ICON = [
+  '[[data-contrast=high]_&]:stroke-[3.5]',
+  '[[data-contrast=high]_&]:drop-shadow-[0_0_1px_rgba(0,0,0,0.95)]',
+].join(' ');
+const HIGH_CONTRAST_TAG = [
+  '[[data-contrast=high]_&]:ml-0.5',
+  '[[data-contrast=high]_&]:inline',
+  '[[data-contrast=high]_&]:text-[0.8em]',
+  '[[data-contrast=high]_&]:[text-shadow:0_0_2px_rgba(0,0,0,0.95)]',
+].join(' ');
 
 /**
  * The icon for a row's current state, sized to the text around it. The filled star for the race's fastest lap
