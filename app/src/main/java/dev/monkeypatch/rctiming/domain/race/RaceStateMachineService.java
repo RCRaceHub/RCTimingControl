@@ -264,29 +264,28 @@ public class RaceStateMachineService {
     }
 
     /**
-     * When a race finishes, look up the next race in the same heat across the next round
-     * for PRACTICE/QUALIFIER rounds, and apply the finishing order as the starting grid.
-     *
-     * Bump-up finals are handled separately by BumpUpSeedingService — not here.
-     */
-    private void applyFinishingOrderToNextRace(Race finishedRace) {
-        applyFinishingOrderToNextRace(finishedRace, false);
-    }
-
-    /**
      * Re-applies a finished heat's corrected result to the same heat of the next round, after a penalty or marshal
      * lap changed it. Runs after {@code ResultSnapshotService} has rebuilt the stored result, in the correction's
-     * transaction. The next heat is left alone once it has started.
+     * transaction. Only practice and qualifying heats are looked at (a corrected final does not promote again).
+     * The next heat is left alone once it has started; a heat already called to the grid is re-gridded.
      */
     @EventListener
     @Order(2)
     public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
         raceRepository.findById(event.raceId())
                 .filter(r -> r.getStatus() == RaceStatus.FINISHED)
-                .ifPresent(r -> applyFinishingOrderToNextRace(r, true));
+                .filter(r -> roundRepository.findById(r.getRoundId())
+                        .map(round -> round.getType() != RoundType.FINAL).orElse(false))
+                .ifPresent(this::applyFinishingOrderToNextRace);
     }
 
-    private void applyFinishingOrderToNextRace(Race finishedRace, boolean fromStoredResultOnly) {
+    /**
+     * When a race finishes, look up the next race in the same heat across the next round
+     * for PRACTICE/QUALIFIER rounds, and apply the finishing order as the starting grid.
+     *
+     * Bump-up finals are handled separately by BumpUpSeedingService — not here.
+     */
+    private void applyFinishingOrderToNextRace(Race finishedRace) {
         // Only apply for PRACTICE and QUALIFIER rounds
         Round finishedRound = roundRepository.findById(finishedRace.getRoundId()).orElse(null);
         if (finishedRound == null) {
@@ -335,20 +334,8 @@ public class RaceStateMachineService {
             return;
         }
 
-        // The stored result is the one that counts, corrections included; the live state is a fallback
+        // The stored result is the one that counts, corrections included
         List<Long> finishingEntryIds = resultSnapshotService.finishingOrder(finishedRace.getId());
-        if (finishingEntryIds.isEmpty() && !fromStoredResultOnly) {
-            Optional<LiveRaceState> state = lapTimingService.peek(finishedRace.getId());
-            if (state.isEmpty()) {
-                log.info("Race {} finished with no result or in-memory state — skipping finishing-order propagation",
-                        finishedRace.getId());
-                return;
-            }
-            finishingEntryIds = state.get().calculatePositions().stream()
-                    .map(LiveTimingRowDto::entryId)
-                    .toList();
-        }
-
         if (finishingEntryIds.isEmpty()) {
             return;
         }
