@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
+import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
 import { speakWithBrowser } from '@/lib/speech';
@@ -132,6 +133,8 @@ export function AudioSettingsPanel() {
             </div>
           ) : settings ? (
             <>
+              <AudioTemplatesBar />
+
               <p className="text-xs font-semibold text-muted-foreground pt-2">
                 Announcement Types
               </p>

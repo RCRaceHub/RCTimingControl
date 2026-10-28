@@ -5,6 +5,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
@@ -63,6 +64,11 @@ public class Tables {
      * The table <code>audit_log</code>.
      */
     public static final AuditLog AUDIT_LOG = AuditLog.AUDIT_LOG;
+
+    /**
+     * The table <code>audio_templates</code>.
+     */
+    public static final AudioTemplates AUDIO_TEMPLATES = AudioTemplates.AUDIO_TEMPLATES;
 
     /**
      * The table <code>board_views</code>.

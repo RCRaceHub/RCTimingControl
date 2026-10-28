@@ -190,6 +190,10 @@ erDiagram
         int columns "1 to 3"
         json panels "ordered: type, top, span; no foreign keys, a layout only"
     }
+    audio_templates {
+        text name "unique ignoring case"
+        json settings "a ClubAudioSettings copy without the club's sound files; no foreign keys"
+    }
     overlay_themes {
         text name "unique, e.g. BRCA, Club"
         json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; no foreign keys, a look only"
