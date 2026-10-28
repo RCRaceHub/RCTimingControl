@@ -25,6 +25,7 @@ import {
   useCreateChampionship,
 } from '@/hooks/admin/useAdminChampionships';
 import type { ChampionshipDto } from '@/lib/adminApi';
+import { QueryError } from '@/components/QueryError';
 
 export default function ChampionshipListPage() {
   const navigate = useNavigate();
@@ -53,10 +54,7 @@ export default function ChampionshipListPage() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load championships.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load championships." onRetry={refetch} />
       )}
 
       {isLoading ? (

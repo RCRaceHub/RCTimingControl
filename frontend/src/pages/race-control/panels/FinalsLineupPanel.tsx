@@ -15,6 +15,7 @@ import {
 } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { getApiErrorMessage } from '@/lib/errors';
+import { QueryError } from '@/components/QueryError';
 
 type Props = {
   eventId: number;
@@ -89,10 +90,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
   if (isPending) return <p role="status" className="text-sm text-muted-foreground">Loading…</p>;
   if (isError) {
     return (
-      <div role="alert" className="text-sm text-destructive">
-        Could not load the finals line-up.{' '}
-        <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-      </div>
+      <QueryError message="Could not load the finals line-up." onRetry={refetch} />
     );
   }
   if (!lineup) return null;

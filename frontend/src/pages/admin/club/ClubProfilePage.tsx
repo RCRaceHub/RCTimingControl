@@ -16,6 +16,7 @@ import HttpsCard from './HttpsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 import SettingsFileCard from './SettingsFileCard';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
+import { QueryError } from '@/components/QueryError';
 
 const schema = z.object({
   name: z.string().min(1, 'Club name is required'),
@@ -104,10 +105,7 @@ export default function ClubProfilePage() {
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-        <p className="text-muted-foreground">Failed to load club profile.</p>
-        <Button variant="outline" onClick={() => void refetch()}>Retry</Button>
-      </div>
+      <QueryError variant="page" message="Failed to load club profile." onRetry={refetch} />
     );
   }
 

@@ -3,6 +3,7 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 import { getQualifying } from '@/lib/raceControlApi';
 import { fmtMs } from '@/lib/format';
 import { RoundHeaderCells, RoundPlaceCells, roundCount } from '@/components/QualifyingRounds';
+import { QueryError } from '@/components/QueryError';
 
 /**
  * A class's overall qualifying table, the order its finals are calculated from. The finals are calculated, and
@@ -32,10 +33,7 @@ export function QualifyingTablePanel({
       </h2>
       {isPending && <p role="status" className="text-sm text-muted-foreground">Loading…</p>}
       {isError && (
-        <div role="alert" className="text-sm text-destructive">
-          Could not load the qualifying table.{' '}
-          <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-        </div>
+        <QueryError message="Could not load the qualifying table." onRetry={refetch} />
       )}
       {table && (
         <>

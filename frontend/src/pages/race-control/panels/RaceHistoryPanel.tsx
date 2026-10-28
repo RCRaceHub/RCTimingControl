@@ -3,6 +3,7 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 import { getRaceHistory } from '@/lib/raceControlApi';
 import type { RaceHistoryKind, RunOrderItemDto } from '@/lib/raceControlApi';
 import { formatTime } from '@/lib/dates';
+import { QueryError } from '@/components/QueryError';
 
 type RaceStatus = RunOrderItemDto['status'];
 
@@ -36,10 +37,7 @@ export function RaceHistoryPanel({ raceId, status }: { raceId: number; status: R
         <p role="status" className="text-sm text-muted-foreground">Loading…</p>
       )}
       {isError && (
-        <div role="alert" className="text-sm text-destructive">
-          Could not load the race history.{' '}
-          <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-        </div>
+        <QueryError message="Could not load the race history." onRetry={refetch} />
       )}
       {data && data.length === 0 && (
         <p className="text-sm text-muted-foreground">Nothing has been recorded for this race yet.</p>
