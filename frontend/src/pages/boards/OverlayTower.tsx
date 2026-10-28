@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
+import { OnPaceIcon } from '@/components/OnPaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
@@ -190,6 +191,12 @@ export function OverlayTower({
                 <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm">
                   <RowStateIcon flash={flash} close={close} />
                 </span>
+                {/* Its own slot, like the flash icon, so the name keeps its width when the thumbs up comes and goes */}
+                {barClock && (
+                  <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm">
+                    {!row.finished && <OnPaceIcon row={row} clock={barClock} />}
+                  </span>
+                )}
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
                 {row.finished && <FinishedFlag className="ml-1" />}
                 {barClock && !row.finished && (

@@ -1,10 +1,10 @@
-import { ChevronsRight, Star, Timer, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronsRight, Star, ThumbsUp, Timer, TrendingDown, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import { cn } from '@/lib/utils';
 
-/** The states a timing row shows an icon for: the lap flashes, and a car running close to the one ahead. */
-export type StateKind = FlashColor | 'close';
+/** The states a timing row shows an icon for: the lap flashes, and a car running close to the one ahead and a car on pace for its predicted laps. */
+export type StateKind = FlashColor | 'close' | 'on-pace';
 
 interface StateInfo {
   icon: LucideIcon;
@@ -25,6 +25,7 @@ export const STATE_INFO: Record<StateKind, StateInfo> = {
   improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-green-500' },
   slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-red-500' },
   close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-amber-500' },
+  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-green-500' },
 };
 
 /**

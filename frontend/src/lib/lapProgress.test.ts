@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { everyoneOffLapZero, holdBackLapped, isClose, lapProgress, placesGained, predictedLaps } from './lapProgress';
+import { everyoneOffLapZero, holdBackLapped, isClose, lapProgress, onPace, placesGained, predictedLaps } from './lapProgress';
 import type { LiveTimingRowDto } from './raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -116,5 +116,30 @@ describe('holdBackLapped', () => {
     const rows = [row({ entryId: 1, position: 1, lapsCompleted: 2 }), lapped];
     expect(holdBackLapped(rows)).toBe(rows);
     expect(rows[1].lapsDown).toBe(1);
+  });
+});
+
+describe('onPace', () => {
+  it('is on pace while the last lap was no slower than the average and the current lap is not late', () => {
+    expect(onPace(row({ lastLapMs: 10_000 }), 104_000)).toBe(true);
+    expect(onPace(row({ lastLapMs: 9_000 }), 110_999)).toBe(true);
+  });
+
+  it('is off pace once the current lap runs late', () => {
+    expect(onPace(row({}), 111_000)).toBe(false);
+  });
+
+  it('is off pace when the last lap was slower than the average', () => {
+    expect(onPace(row({ lastLapMs: 10_001 }), 104_000)).toBe(false);
+  });
+
+  it('is on pace with no last lap to judge, and off with no average or after the flag', () => {
+    expect(onPace(row({ lastLapMs: null }), 104_000)).toBe(true);
+    expect(onPace(row({ avgLapMs: null }), 104_000)).toBe(false);
+    expect(onPace(row({ finished: true }), 104_000)).toBe(false);
+  });
+
+  it('does not count a stoppage against the lap', () => {
+    expect(onPace(row({}), 144_000, 140_000)).toBe(true);
   });
 });

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
+import { OnPaceIcon } from '@/components/OnPaceIcon';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
@@ -111,6 +112,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
                     <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2 shrink-0" />
                     <span className="min-w-0 truncate">{row.driverName}</span>
+                    {status === 'RUNNING' && <OnPaceIcon row={row} clock={barClock} className="ml-1" />}
                     {/* The CLOSE badge below already says close, so only the lap flash gets an icon here */}
                     <RowStateIcon flash={flash} close={false} className="ml-2" />
                     {row.finished && <FinishedFlag />}
@@ -164,7 +166,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
         </Table>
       )}
       {sorted.length > 0 && (
-        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close'] : ['lap']} className="mt-2 text-muted-foreground" />
+        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close', 'pace'] : ['lap', 'pace']} className="mt-2 text-muted-foreground" />
       )}
     </div>
   );

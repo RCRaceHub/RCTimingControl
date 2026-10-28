@@ -40,6 +40,28 @@ export function lapProgress(
 }
 
 /**
+ * Whether a car is on pace to make the laps {@link predictedLaps} counts on, which assume it keeps running its
+ * average lap: its last lap was no slower than that average, and the lap it is on is not yet running late (the
+ * bar has not turned red). Not on pace, and so no icon, for a car with no average yet or one that has finished.
+ *
+ * @param row the car's live timing row
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock, as for {@link lapProgress}
+ * @param lateMarginMs how far past its average a lap runs before it counts as late, the club's setting
+ */
+export function onPace(
+  row: LiveTimingRowDto,
+  nowMs: number,
+  notBeforeMs?: number | null,
+  lateMarginMs: number = LATE_AFTER_AVERAGE_MS,
+): boolean {
+  const progress = lapProgress(row, nowMs, notBeforeMs, lateMarginMs);
+  const average = row.avgLapMs;
+  if (!progress || progress.state === 'late' || !average) return false;
+  return row.lastLapMs == null || row.lastLapMs <= average;
+}
+
+/**
  * Whether every car in the race has had at least one lap counted. Until then the order is only who crossed the
  * line first off the grid, so nobody is lapped yet.
  */
