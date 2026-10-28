@@ -8,6 +8,11 @@ export function useNetworkName() {
     queryKey: setupQueryKeys.networkName(),
     queryFn: getNetworkName,
     retry: false,
+    // After a restart the name is announced within about 30 seconds; look until it is (or the page is left)
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      return d && d.configuredName && !d.announcedHost && !d.restartNeeded && !d.overriddenByEnvironment ? 5000 : false;
+    },
   });
 }
 

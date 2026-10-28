@@ -48,13 +48,18 @@ public class NetworkNameController {
     /**
      * The name in the settings file (a bare host label, empty when there is none), the name actually being announced
      * (such as {@code rctiming.local}, empty until an interface has taken it), the suggestion, and whether the file
-     * and the running app disagree so a restart is needed.
+     * and the running app disagree so a restart is needed. {@code overriddenByEnvironment} is true when the
+     * {@code RCTIMING_NETWORK_MDNS_NAME} environment variable (as set in Docker) decides the name, so the file has
+     * no effect.
      */
     public record NetworkNameDto(String configuredName, String announcedHost, String suggestedName,
-                                 boolean restartNeeded) {
+                                 boolean restartNeeded, boolean overriddenByEnvironment) {
     }
 
-    /** The body of {@code PUT}: a host name such as {@code rctiming} or {@code rctiming.local}; blank switches the name off. */
+    /**
+     * The body of {@code PUT}: a host name such as {@code rctiming} or {@code rctiming.local}; blank switches the
+     * name off.
+     */
     public record NetworkNameRequest(@NotNull String name) {
     }
 
@@ -67,11 +72,16 @@ public class NetworkNameController {
     /**
      * Saves the name to {@code application.properties} for the next start. {@code PUT}; 400 when the name is not a
      * usable host name (letters, digits and hyphens, up to 63 characters, with or without {@code .local}). A blank
-     * name switches the announcement off. Audited. Nothing changes until the app restarts.
+     * name switches the announcement off. 409 when the environment variable decides the name, because the file would
+     * be ignored. Audited. Nothing changes until the app restarts.
      */
     @Audited("audit_log")
     @PutMapping
     public NetworkNameDto change(Authentication auth, @RequestBody @Valid NetworkNameRequest request) {
+        if (overriddenByEnvironment()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "The name is set by RCTIMING_NETWORK_MDNS_NAME; change it where the app is started");
+        }
         String label = "";
         if (!request.name().isBlank()) {
             label = MdnsAdvertiser.hostLabel(request.name()).orElseThrow(() -> new ResponseStatusException(
@@ -88,8 +98,16 @@ public class NetworkNameController {
     private NetworkNameDto state() {
         String configured = settings.get(SETTING).flatMap(MdnsAdvertiser::hostLabel).orElse("");
         // The file is read at start-up, so a file that differs from the label this run started with needs a restart
-        boolean restartNeeded = !configured.equals(mdns.configuredLabel().orElse(""));
+        boolean overridden = overriddenByEnvironment();
+        boolean restartNeeded = !overridden && !configured.equals(mdns.configuredLabel().orElse(""));
         Optional<String> announced = mdns.announcedHost();
-        return new NetworkNameDto(configured, announced.orElse(null), SUGGESTED, restartNeeded);
+        return new NetworkNameDto(configured, announced.orElse(null), SUGGESTED, restartNeeded,
+                overridden);
+    }
+
+    /** An environment variable wins over the settings file, as the Docker image sets it. */
+    private static boolean overriddenByEnvironment() {
+        String value = System.getenv("RCTIMING_NETWORK_MDNS_NAME");
+        return value != null && !value.isBlank();
     }
 }

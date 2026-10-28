@@ -54,7 +54,8 @@ class NetworkNameControllerIT extends AbstractIntegrationTest {
 
     @Test
     void aRaceDirectorIsForbidden() {
-        var get = restTemplate.exchange(URL, HttpMethod.GET, new HttpEntity<>(headers(Role.RACE_DIRECTOR)), String.class);
+        var get = restTemplate.exchange(URL, HttpMethod.GET,
+                new HttpEntity<>(headers(Role.RACE_DIRECTOR)), String.class);
         var put = restTemplate.exchange(URL, HttpMethod.PUT,
                 new HttpEntity<>("{\"name\": \"rctiming\"}", headers(Role.RACE_DIRECTOR)), String.class);
 
@@ -81,7 +82,8 @@ class NetworkNameControllerIT extends AbstractIntegrationTest {
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         userRepository.save(user);
-        var login = restTemplate.postForEntity("/api/v1/auth/login", new LoginRequest(email, "pass12345"), AuthResponse.class);
+        var login = restTemplate.postForEntity("/api/v1/auth/login",
+                new LoginRequest(email, "pass12345"), AuthResponse.class);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(login.getBody().accessToken());

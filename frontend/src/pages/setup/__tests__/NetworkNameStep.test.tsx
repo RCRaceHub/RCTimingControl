@@ -28,7 +28,7 @@ beforeEach(() => {
     configuredName: '',
     announcedHost: null,
     suggestedName: 'rctiming',
-    restartNeeded: false,
+    restartNeeded: false, overriddenByEnvironment: false,
   });
 });
 
@@ -38,7 +38,7 @@ describe('NetworkNameStep', () => {
       configuredName: 'rctiming',
       announcedHost: null,
       suggestedName: 'rctiming',
-      restartNeeded: true,
+      restartNeeded: true, overriddenByEnvironment: false,
     });
     const onNext = renderStep();
 
@@ -52,7 +52,7 @@ describe('NetworkNameStep', () => {
 
   it('strips a typed .local before saving', async () => {
     vi.mocked(setupApi.saveNetworkName).mockResolvedValue({
-      configuredName: 'timing', announcedHost: null, suggestedName: 'rctiming', restartNeeded: true,
+      configuredName: 'timing', announcedHost: null, suggestedName: 'rctiming', restartNeeded: true, overriddenByEnvironment: false,
     });
     renderStep();
 
@@ -73,7 +73,7 @@ describe('NetworkNameStep', () => {
 
   it('shows the address and the check once the name is announced', async () => {
     vi.mocked(setupApi.getNetworkName).mockResolvedValue({
-      configuredName: 'rctiming', announcedHost: 'rctiming.local', suggestedName: 'rctiming', restartNeeded: false,
+      configuredName: 'rctiming', announcedHost: 'rctiming.local', suggestedName: 'rctiming', restartNeeded: false, overriddenByEnvironment: false,
     });
     renderStep();
 
@@ -83,11 +83,24 @@ describe('NetworkNameStep', () => {
 
   it('tells the person to restart after a change', async () => {
     vi.mocked(setupApi.getNetworkName).mockResolvedValue({
-      configuredName: 'rctiming', announcedHost: null, suggestedName: 'rctiming', restartNeeded: true,
+      configuredName: 'rctiming', announcedHost: null, suggestedName: 'rctiming', restartNeeded: true, overriddenByEnvironment: false,
     });
     renderStep();
 
     expect(await screen.findByRole('status')).toHaveTextContent('restarted');
+  });
+});
+
+describe('NetworkNameStep when the environment decides the name', () => {
+  it('explains it and does not offer to save', async () => {
+    vi.mocked(setupApi.getNetworkName).mockResolvedValue({
+      configuredName: '', announcedHost: 'timing.local', suggestedName: 'rctiming', restartNeeded: false,
+      overriddenByEnvironment: true,
+    });
+    renderStep();
+
+    expect(await screen.findByText(/RCTIMING_NETWORK_MDNS_NAME/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save and Finish' })).toBeDisabled();
   });
 });
 

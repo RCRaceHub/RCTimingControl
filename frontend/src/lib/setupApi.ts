@@ -92,8 +92,7 @@ export async function createSetupStaff(req: SetupStaffRequest): Promise<void> {
   await api.post('/api/v1/setup/staff', req);
 }
 
-
-/** The laptop's network name settings, answer of {@code GET /api/v1/setup/network-name}. */
+/** The laptop's network name settings, answer of GET /api/v1/setup/network-name. */
 export type NetworkNameDto = {
   /** The name in the settings file, such as "rctiming"; empty when none is set. */
   configuredName: string;
@@ -102,6 +101,8 @@ export type NetworkNameDto = {
   suggestedName: string;
   /** The saved name differs from the one this run started with. */
   restartNeeded: boolean;
+  /** The RCTIMING_NETWORK_MDNS_NAME environment variable decides the name, so the file has no effect. */
+  overriddenByEnvironment: boolean;
 };
 
 export async function getNetworkName(): Promise<NetworkNameDto> {

@@ -157,7 +157,9 @@ export default function SetupLayout() {
       else if (!progress.format) setCurrentStep(3);
       else if (!progress.staff) setCurrentStep(4);
       else if (!progress.decoder) setCurrentStep(5);
-      else setCurrentStep(7); // all required steps complete: show the summary
+      // All required steps are done. On first load show the summary; after that (saving the decoder step refetches
+      // the progress) stay on, or move to, the optional network step instead of jumping past it
+      else setCurrentStep((s) => (seenProgress === undefined ? 7 : s <= 5 ? 6 : s));
     }
   }
 

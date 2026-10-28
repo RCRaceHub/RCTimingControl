@@ -18,8 +18,10 @@ interface Props {
  * Whether this browser can reach the app by its network name. A cross-origin request in no-cors mode settles when
  * the name resolves and the server answers, whatever the answer says, and fails when the name does not resolve.
  */
-async function nameAnswers(host: string): Promise<boolean> {
+async function nameAnswers(host: string): Promise<boolean | null> {
   const port = window.location.port ? `:${window.location.port}` : '';
+  // A page opened over https may not call an http address (mixed content), so the check cannot be made from there
+  if (window.location.protocol === 'https:') return null;
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 5000);
   try {
@@ -42,7 +44,7 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
   const { data, isLoading, isError } = useNetworkName();
   const save = useSaveNetworkName();
   const [name, setName] = useState<string | null>(null);
-  const [check, setCheck] = useState<'idle' | 'checking' | 'ok' | 'failed'>('idle');
+  const [check, setCheck] = useState<'idle' | 'checking' | 'ok' | 'failed' | 'unavailable'>('idle');
 
   if (isLoading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
   if (isError || !data) {
@@ -68,7 +70,8 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
   async function runCheck() {
     if (!data?.announcedHost) return;
     setCheck('checking');
-    setCheck((await nameAnswers(data.announcedHost)) ? 'ok' : 'failed');
+    const answered = await nameAnswers(data.announcedHost);
+    setCheck(answered === null ? 'unavailable' : answered ? 'ok' : 'failed');
   }
 
   return (
@@ -89,7 +92,9 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
             value={value}
             onChange={(e) => setName(e.target.value)}
             className="max-w-xs"
+            maxLength={68}
             autoComplete="off"
+            disabled={data.overriddenByEnvironment}
           />
           <span className="text-sm text-muted-foreground">.local</span>
         </div>
@@ -98,11 +103,17 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
         </p>
       </div>
 
+      {data.overriddenByEnvironment && (
+        <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+          The name is set by the <code>RCTIMING_NETWORK_MDNS_NAME</code> environment variable (in the compose file or
+          the service), so it cannot be changed here.
+        </p>
+      )}
+
       {data.restartNeeded && (
         <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
           The name is saved. It starts working after RC Timing is restarted (restart the service, or the container).
-          Then come back to this step to check it. In Docker, set <code>RCTIMING_NETWORK_MDNS_NAME</code> in the
-          compose file instead.
+          Then come back to this step to check it.
         </p>
       )}
 
@@ -120,6 +131,12 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
               Check this device can reach it
             </Button>
             {check === 'ok' && <span role="status">This device reached {data.announcedHost}.</span>}
+            {check === 'unavailable' && (
+              <span role="status">
+                This page was opened over HTTPS, so the browser will not check an http address from it. Open
+                the wizard at its http address, or try the link above from another device.
+              </span>
+            )}
             {check === 'failed' && (
               <span role="status" className="text-destructive">
                 This device could not reach {data.announcedHost}. Windows 10 and later, macOS, iOS and Android
@@ -141,7 +158,7 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
       <div className="flex gap-2">
         {onBack && <Button variant="outline" onClick={onBack}>Back</Button>}
         <Button variant="ghost" onClick={onNext}>Skip for now</Button>
-        <Button onClick={() => saveName(true)} disabled={save.isPending}>Save and Finish</Button>
+        <Button onClick={() => saveName(true)} disabled={save.isPending || data.overriddenByEnvironment}>Save and Finish</Button>
       </div>
     </div>
   );
