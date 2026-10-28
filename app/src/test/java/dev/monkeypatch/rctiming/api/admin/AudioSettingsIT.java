@@ -346,8 +346,12 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(uploadHorn("finish", "audio/mpeg", new byte[2 * 1024 * 1024], 1000).getStatusCode())
                 .isIn(HttpStatus.BAD_REQUEST, HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @Test
+    void aHornNameThatIsNotOneOfTheClubSoundsIsNotFound() {
         assertThat(uploadHorn("siren", "audio/mpeg", new byte[]{1}, 1000).getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
