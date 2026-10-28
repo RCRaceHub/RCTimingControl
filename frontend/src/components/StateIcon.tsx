@@ -15,6 +15,8 @@ interface StateInfo {
   label: string;
   /** The text colour of the icon, in the hue of the row tint it goes with. */
   tone: string;
+  /** The two-letter tag shown beside the icon in high-contrast mode, so the state reads without icon or colour. */
+  tag: string;
 }
 
 /**
@@ -23,31 +25,60 @@ interface StateInfo {
  * up, it does not replace it. The colour key ({@code TimingLegend}) lists the same icons.
  */
 export const STATE_INFO: Record<StateKind, StateInfo> = {
-  'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-purple-500' },
-  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-info' },
-  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-success' },
-  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive' },
-  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-warning' },
-  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-success' },
-  lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-info' },
-  penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-warning' },
-  'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-muted-foreground' },
+  'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-purple-500', tag: 'FL' },
+  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-info', tag: 'PB' },
+  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-success', tag: 'UP' },
+  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive', tag: 'SL' },
+  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-warning', tag: 'CL' },
+  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-success', tag: 'ON' },
+  lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-info', tag: 'LAP' },
+  penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-warning', tag: 'PEN' },
+  'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-muted-foreground', tag: 'NS' },
 };
+
+/**
+ * High contrast (#591, {@code contrast=high} on a board address) is a {@code data-contrast="high"} attribute that
+ * {@link useHighContrast} puts on the page; these classes key off it. The icon gets a thick stroke and a dark outline
+ * so it survives compressed stream video, and a short text tag appears beside it.
+ */
+// Whole class names, not built from parts, so Tailwind finds them when it scans the source
+const HIGH_CONTRAST_ICON = [
+  '[[data-contrast=high]_&]:stroke-[3.5]',
+  '[[data-contrast=high]_&]:drop-shadow-[0_0_1px_rgba(0,0,0,0.95)]',
+].join(' ');
+const HIGH_CONTRAST_TAG = [
+  '[[data-contrast=high]_&]:ml-0.5',
+  '[[data-contrast=high]_&]:inline',
+  '[[data-contrast=high]_&]:text-[0.8em]',
+  '[[data-contrast=high]_&]:[text-shadow:0_0_2px_rgba(0,0,0,0.95)]',
+].join(' ');
 
 /**
  * The icon for a row's current state, sized to the text around it. The filled star for the race's fastest lap
  * is the one icon with a solid shape, so it stands out from the outlined ones at a distance.
  */
 export function StateIcon({ kind, className, decorative = false }: { kind: StateKind; className?: string; decorative?: boolean }) {
-  const { icon: Icon, label, tone } = STATE_INFO[kind];
+  const { icon: Icon, label, tone, tag } = STATE_INFO[kind];
   return (
-    <Icon
-      {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}
-      data-state={kind}
-      className={cn('inline-block h-[1em] w-[1em] shrink-0 align-[-0.125em]', tone, className)}
-      fill={kind === 'race-best' ? 'currentColor' : 'none'}
-      strokeWidth={2.5}
-    />
+    <>
+      <Icon
+        {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}
+        data-state={kind}
+        className={cn(
+          'inline-block h-[1em] w-[1em] shrink-0 align-[-0.125em]',
+          HIGH_CONTRAST_ICON,
+          tone,
+          className,
+        )}
+        fill={kind === 'race-best' ? 'currentColor' : 'none'}
+        strokeWidth={2.5}
+      />
+      {!decorative && (
+        <span aria-hidden="true" data-tag={tag} className={cn('hidden font-bold tabular-nums', HIGH_CONTRAST_TAG, tone)}>
+          {tag}
+        </span>
+      )}
+    </>
   );
 }
 

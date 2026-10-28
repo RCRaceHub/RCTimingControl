@@ -8,6 +8,7 @@ import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardViewPanel } from './BoardViewPanels';
+import { useHighContrast } from '@/hooks/useHighContrast';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useBoardViewQuery, useRaceClockQuery } from '@/hooks/useBoardQueries';
@@ -17,7 +18,8 @@ export default function BoardViewPage() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showLegend } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showLegend, highContrast } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  useHighContrast(highContrast);
 
   const { data: view, isPending, isError, error } = useBoardViewQuery(slug);
   const { nowNext, currentRace, rows } = useBoardRace(eventId);

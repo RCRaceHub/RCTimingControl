@@ -20,6 +20,7 @@ import {
   type TickerItem,
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useHighContrast } from '@/hooks/useHighContrast';
 import { TqPace } from '@/components/TqPace';
 import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
 import { useGapView } from '@/hooks/useGapView';
@@ -264,8 +265,9 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
-    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend, highContrast,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
+  useHighContrast(highContrast);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
   // The laps column takes turns between laps done and predicted laps on the same period as the gap

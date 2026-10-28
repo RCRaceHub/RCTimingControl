@@ -210,12 +210,12 @@ export function OverlayTower({
               <span className="relative flex min-w-0 flex-1 items-center font-semibold">
                 <ScrollingName name={row.driverName} />
                 {/* The slot is always there, so the name box keeps its width and the scroll does not restart on each flash */}
-                <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm">
+                <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
                   <RowStateIcon flash={flash} close={close} />
                 </span>
                 {/* Its own slot, like the flash icon, so the name keeps its width when the thumbs up comes and goes */}
                 {barClock && (
-                  <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm">
+                  <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
                     {!row.finished && <OnPaceIcon row={row} clock={barClock} />}
                   </span>
                 )}
