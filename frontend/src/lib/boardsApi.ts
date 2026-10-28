@@ -331,15 +331,22 @@ export async function getTicker(eventId?: number | null): Promise<TickerDto> {
   return data;
 }
 
-/** A driver and the number that earned a standout: places gained or lost, or an average lap in milliseconds. */
+/** A driver and the number that earned a standout: places or laps, or a time in milliseconds. */
 export type HighlightMark = { driverName: string; value: number };
 
-/** The standouts of a set of runs: places gained and lost against the grid, and the best 3 and 5 lap average. */
+/**
+ * The standouts of a set of runs: places gained (the biggest climber) and lost against the grid, the best 3 and 5 lap
+ * average, the flying lap (ms under the driver's own average so far), the most consistent driver (lap time spread in
+ * ms) and the most laps beyond the driver's previous heat of the same round type.
+ */
 export type HighlightScope = {
   gained: HighlightMark | null;
   lost: HighlightMark | null;
   avg3: HighlightMark | null;
   avg5: HighlightMark | null;
+  flying: HighlightMark | null;
+  consistent: HighlightMark | null;
+  improved: HighlightMark | null;
 };
 
 /** The standouts of a heat (live while it runs) and of its round, for the overlay's ticker. */

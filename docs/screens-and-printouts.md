@@ -130,7 +130,7 @@ Options go on the end of the address:
 | `qual=hide` | Leave out the projected qualifying place |
 | `sponsors=hide` | Leave out the sponsor bar |
 | `separator=ADDRESS` | Put a small image between ticker items in place of the diamond: a web address (`https://…`) or a path on this server (`/storage/…`, as the club logo's). Anything else keeps the diamond; the Overlay Designer has a field for it |
-| `ticker=next,drivers,marshals,tq,fastest,gain,loss,pace` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round, the most places gained, the most places lost, and the best 3 and 5 lap average. The last three show the heat's standout and, where the round has a different one, the round's |
+| `ticker=next,drivers,marshals,tq,fastest,gain,loss,pace,flying,improved,steady` | Scroll only the items you name: the next race, its drivers, its marshals, the top qualifiers, the fastest lap of the round, the most places gained (the biggest climber), the most places lost, the best 3 and 5 lap average, the flying lap, the most improved driver and the most consistent driver. The last six show the heat's standout and, where the round has a different one, the round's. Each is worked out live while the heat runs. The flying lap is the lap that beat its driver's own average so far by the most (needs three laps before it). Most improved is the most laps more than the driver did in their previous heat of the same round type (practice, qualifying or final) in the same race time. Most consistent is the smallest spread of lap times over at least five laps. The first lap is left out of the flying lap and consistency, as it starts from the grid |
 
 For example `/boards/overlay?top=6&theme=light`.
 
