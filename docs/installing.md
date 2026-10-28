@@ -104,6 +104,18 @@ If something goes wrong on the day, an administrator can open **Club profile →
 
 On Linux the backup folder must be one the `rctiming` user can write to. For a folder on the laptop's own disk, create it with `sudo install -d -o rctiming -g rctiming /srv/rctiming-backups`. A USB stick or network share has to be mounted so that user can write to it, for example with `uid=rctiming,gid=rctiming` in its mount options. The desktop's automatic mount under `/media/<your name>` is private to you, so the service can't use it.
 
+## Copying backups off the laptop
+
+A backup on the laptop's own disk does not survive the laptop being lost, stolen or broken, so keep a copy somewhere else. The simplest way needs no code: point `rctiming.backup.directory` (see "Changing settings" above) at a folder that a sync tool keeps in the cloud, then restart the service.
+
+- **Windows and macOS:** install the Dropbox or Google Drive desktop app, then set `rctiming.backup.directory` to a folder inside its sync folder, for example `C:/Users/club/Dropbox/rctiming-backups`. Each backup is uploaded when the app finishes writing it.
+- **Linux:** Google has no Linux desktop client. Use a folder synced by another tool (Dropbox has a Linux client, or `rclone`/Syncthing can mirror the folder to a drive or another machine), or a mounted network share. The `rctiming` user must be able to write to the folder (see the Linux note on backup folders above).
+- **A USB stick** also works and needs no account: swap it for a second stick after each race day.
+
+Backups hold names, BRCA numbers and transponder numbers, so the sync account and folder must belong to the club and be shared only with officials who need it. Restoring from a downloaded copy uses the same command as any other backup, in "Restoring a backup" below.
+
+Uploading straight from the app to Dropbox or Google Drive, with encryption, is not built; it will be added if clubs ask for it.
+
 ## Backing up the settings on their own
 
 **Club profile → Settings file** downloads the club's configuration as one small JSON file: the club's details, announcer settings and default voice, live timing thresholds, decoder address, where results are published, the privacy notice and the governing bodies. It leaves out race history, officials and passwords, the sign-in key, the logo, uploaded horn sounds and the RaceHub address (which can carry a secret), so it is safe to keep with the club's papers. It does hold the club's contact details (email, phone, website), which you may not want to share widely. On a new install, or after a reset, choose the file under **Use a settings file**; the page lists what it holds and which parts would change anything, and nothing is changed until you press Import. Governing bodies are added or updated by code and never removed. This does not replace backups: the full data folder and the scheduled backups still hold everything else, and every setting changed in the app is already kept in the database and survives a restart.
