@@ -10,10 +10,10 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.PenaltyDto;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.PenaltyRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RefereeOrAdmin;
 import dev.monkeypatch.rctiming.service.RefereeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/referee")
-@PreAuthorize("hasAnyRole('REFEREE','ADMIN')")
+@RefereeOrAdmin
 public class RefereeController {
 
     private final RefereeService refereeService;

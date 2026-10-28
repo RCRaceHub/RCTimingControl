@@ -9,12 +9,13 @@ import dev.monkeypatch.rctiming.practice.dto.PracticeDayDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
+import dev.monkeypatch.rctiming.security.AnyOfficial;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -57,7 +58,7 @@ public class PracticeSessionController {
      */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<PracticeSessionDto> create(
             @RequestBody @Valid PracticeSessionService.CreateRequest request) {
         PracticeSessionDto session = sessionService.create(CurrentOfficial.actor(), request);
@@ -70,7 +71,7 @@ public class PracticeSessionController {
      * read in the club's time zone.
      */
     @GetMapping("/day")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public PracticeDayDto day(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Integer bestLapN) {
@@ -79,7 +80,7 @@ public class PracticeSessionController {
 
     /** Get a practice session by ID. {@code GET /{id}}; any official; 404 if there is none. */
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public ResponseEntity<PracticeSessionDto> getById(@PathVariable Long id) {
         return sessionService.findById(id)
                 .map(ResponseEntity::ok)
@@ -88,7 +89,7 @@ public class PracticeSessionController {
 
     /** List recent practice sessions, newest first (default 10). {@code GET}; any official. */
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public List<PracticeSessionDto> listRecent(
             @RequestParam(defaultValue = "10") int limit) {
         return sessionService.findRecent(limit);
@@ -100,7 +101,7 @@ public class PracticeSessionController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/start")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<PracticeSessionDto> start(@PathVariable Long id) {
         return ResponseEntity.ok(sessionService.start(CurrentOfficial.actor(), id));
     }
@@ -111,14 +112,14 @@ public class PracticeSessionController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/stop")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<PracticeSessionDto> stop(@PathVariable Long id) {
         return ResponseEntity.ok(sessionService.stop(CurrentOfficial.actor(), id));
     }
 
     /** Get live timing snapshot (rows sorted by position). {@code GET /{id}/snapshot}; any official. */
     @GetMapping("/{id}/snapshot")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public List<PracticeTimingRowDto> getSnapshot(@PathVariable Long id) {
         return timingService.getSnapshot(id);
     }
@@ -128,7 +129,7 @@ public class PracticeSessionController {
      * official.
      */
     @GetMapping("/{id}/results")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public List<PracticeTimingRowDto> getResults(@PathVariable Long id) {
         return timingService.getSnapshot(id);
     }
@@ -141,7 +142,7 @@ public class PracticeSessionController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/link-transponder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public PracticeDriverDto linkTransponder(@PathVariable Long id,
             @RequestBody PracticeDriverService.LinkRequest request) {
         return driverService.link(CurrentOfficial.actor(), id, request);
@@ -149,7 +150,7 @@ public class PracticeSessionController {
 
     /** The transponders named in a session. {@code GET /{id}/drivers}; any official. */
     @GetMapping("/{id}/drivers")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public List<PracticeDriverDto> drivers(@PathVariable Long id) {
         return driverService.list(id);
     }

@@ -4,12 +4,13 @@ import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +32,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}/sponsors")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminEventSponsorController {
 
     private final EventSponsorService service;
@@ -55,7 +56,7 @@ public class AdminEventSponsorController {
     /** Adds a sponsor at the end. {@code POST}; ADMIN or RACE_DIRECTOR; 201; 400. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.CREATED)
     public SponsorDto create(@PathVariable long eventId, @RequestBody @Valid SponsorRequest request) {
         return SponsorDto.from(service.create(CurrentOfficial.actor(), eventId, request.name()));
@@ -64,7 +65,7 @@ public class AdminEventSponsorController {
     /** Renames a sponsor. {@code PUT /{id}}; ADMIN or RACE_DIRECTOR; 400; 404. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public SponsorDto rename(@PathVariable long eventId, @PathVariable long id,
                              @RequestBody @Valid SponsorRequest request) {
         return SponsorDto.from(service.rename(CurrentOfficial.actor(), eventId, id, request.name()));
@@ -73,7 +74,7 @@ public class AdminEventSponsorController {
     /** Sets the display order. {@code PUT /order}; ADMIN or RACE_DIRECTOR; 404 for an id of another event. Audited. */
     @Audited("audit_log")
     @PutMapping("/order")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public List<SponsorDto> reorder(@PathVariable long eventId, @RequestBody SponsorOrderRequest request) {
         return service.reorder(CurrentOfficial.actor(), eventId, request.ids() == null ? List.of() : request.ids())
                 .stream().map(SponsorDto::from).toList();
@@ -82,7 +83,7 @@ public class AdminEventSponsorController {
     /** Removes a sponsor. {@code DELETE /{id}}; ADMIN or RACE_DIRECTOR; 204; 404. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable long eventId, @PathVariable long id) {
         service.delete(CurrentOfficial.actor(), eventId, id);
@@ -94,7 +95,7 @@ public class AdminEventSponsorController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/{id}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public SponsorDto uploadLogo(@PathVariable long eventId, @PathVariable long id,
                                  @RequestPart("file") MultipartFile file) {
         return SponsorDto.from(service.uploadLogo(CurrentOfficial.actor(), eventId, id, file));

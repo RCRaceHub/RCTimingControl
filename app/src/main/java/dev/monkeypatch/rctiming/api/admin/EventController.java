@@ -13,12 +13,14 @@ import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.format.EventClassService;
 import dev.monkeypatch.rctiming.query.event.AdminEventListDto;
 import dev.monkeypatch.rctiming.query.event.AdminEventQueryService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.EventRunOrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,7 +40,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/events")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class EventController {
 
     private final EventService eventService;
@@ -74,7 +76,7 @@ public class EventController {
     /** Creates an event in DRAFT. {@code POST}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public EventDto createEvent(@RequestBody @Valid CreateEventRequest request) {
         return EventDto.from(eventService.create(CurrentOfficial.actor(),
@@ -87,7 +89,7 @@ public class EventController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public EventDto updateEvent(@PathVariable Long id,
                                  @RequestBody @Valid UpdateEventRequest request) {
         return EventDto.from(eventService.update(CurrentOfficial.actor(), id,
@@ -101,7 +103,7 @@ public class EventController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/transition")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public EventDto transitionEvent(@PathVariable Long id,
                                      @RequestBody @Valid TransitionEventRequest request) {
         return EventDto.from(eventService.transition(CurrentOfficial.actor(), id, request.targetStatus()));
@@ -113,7 +115,7 @@ public class EventController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/generate-rounds")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<Void> generateRounds(@PathVariable Long id,
                                                @Valid @RequestBody GenerateRoundsRequest req) {
         runOrderService.generateRounds(CurrentOfficial.actor(), req.toServiceRequest(id));
@@ -126,7 +128,7 @@ public class EventController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/regenerate-rounds")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<Void> regenerateRounds(@PathVariable Long id,
                                                  @Valid @RequestBody GenerateRoundsRequest req) {
         runOrderService.regenerateRounds(CurrentOfficial.actor(), req.toServiceRequest(id));
@@ -140,7 +142,7 @@ public class EventController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/seed-finals")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<Void> seedFinals(@PathVariable Long id,
                                            @Valid @RequestBody SeedFinalsRequest req) {
         runOrderService.seedFinals(CurrentOfficial.actor(), id, req.eventClassId(),

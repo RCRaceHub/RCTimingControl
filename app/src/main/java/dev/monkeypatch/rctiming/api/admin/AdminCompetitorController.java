@@ -16,7 +16,10 @@ import dev.monkeypatch.rctiming.query.competitor.CompetitorDuplicateGroupDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorQueryService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorSummaryDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorTransponderDto;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +27,6 @@ import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,7 +47,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/admin/competitors")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminCompetitorController {
 
     private final CompetitorQueryService competitorQueryService;
@@ -98,7 +100,7 @@ public class AdminCompetitorController {
      * {@code GET /possible-duplicates}; ADMIN.
      */
     @GetMapping("/possible-duplicates")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<CompetitorDuplicateGroupDto> possibleDuplicates() {
         return competitorQueryService.listPossibleDuplicates();
     }
@@ -108,7 +110,7 @@ public class AdminCompetitorController {
      * {@code GET /merge-preview}; ADMIN. Changes nothing; the preview lists any {@code blockers}.
      */
     @GetMapping("/merge-preview")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public CompetitorMergeService.Preview mergePreview(@RequestParam Long keepId, @RequestParam Long duplicateId) {
         return mergeService.preview(keepId, duplicateId);
     }
@@ -122,7 +124,7 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PostMapping("/merge")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public CompetitorMergeService.Result merge(@Valid @RequestBody MergeRequest body) {
         return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id());
     }
@@ -133,7 +135,7 @@ public class AdminCompetitorController {
      * browsers must not cache.
      */
     @GetMapping("/{id}/personal-data")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ResponseEntity<Map<String, Object>> personalData(@PathVariable Long id) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"competitor-" + id + ".json\"")
@@ -149,14 +151,14 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/anonymise")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public CompetitorAnonymiseService.Result anonymise(@PathVariable Long id) {
         return anonymiseService.anonymise(id, CurrentOfficial.id());
     }
 
     /** Who changed how a competitor's name is said aloud, and when. {@code GET /{id}/changes}; ADMIN. */
     @GetMapping("/{id}/changes")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<CompetitorChangeDto> changes(@PathVariable Long id) {
         return competitorQueryService.listChanges(id);
     }
@@ -192,7 +194,7 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/name-visibility")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CompetitorSummaryDto setNameVisibility(@PathVariable Long id,
                                                   @Valid @RequestBody NameVisibilityRequest body) {
         Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id());
@@ -210,7 +212,7 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/categories")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CompetitorSummaryDto setCategories(@PathVariable Long id,
                                               @Valid @RequestBody CategoriesRequest body) {
         Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id());

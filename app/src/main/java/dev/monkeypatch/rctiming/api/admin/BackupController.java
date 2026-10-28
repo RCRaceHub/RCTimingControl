@@ -4,9 +4,9 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.backup.BackupFile;
 import dev.monkeypatch.rctiming.backup.BackupService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/backups")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class BackupController {
 
     private final BackupService backupService;

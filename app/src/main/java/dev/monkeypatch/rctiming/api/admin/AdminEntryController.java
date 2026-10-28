@@ -11,10 +11,12 @@ import dev.monkeypatch.rctiming.query.entry.AdminEntryDto;
 import dev.monkeypatch.rctiming.query.entry.AdminEntryQueryService;
 import dev.monkeypatch.rctiming.query.entry.EntryHistoryDto;
 import dev.monkeypatch.rctiming.query.entry.EntryHistoryQuery;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,7 +35,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/entries")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminEntryController {
 
     private final EntryService entryService;
@@ -63,7 +65,7 @@ public class AdminEntryController {
      * {@code GET /{id}/history}; 404 if the entry does not exist.
      */
     @GetMapping("/{id}/history")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<EntryHistoryDto> getHistory(@PathVariable long id) {
         entryRepository.requireExists(id);
         return entryHistoryQuery.forEntry(id);
@@ -80,7 +82,7 @@ public class AdminEntryController {
     @Audited("entry_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public EntryResult createEntry(@RequestBody @Valid AdminCreateEntryRequest req) {
         EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(),
                 new EntryService.WalkIn(req.eventId(), req.eventClassId(), req.competitorId(), req.competitorName(),
@@ -95,7 +97,7 @@ public class AdminEntryController {
      */
     @Audited("entry_audit_log")
     @PostMapping("/{id}/withdraw")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public EntryDto withdrawEntry(@PathVariable Long id,
                                   @RequestBody @Valid AdminWithdrawRequest req) {
         return EntryDto.from(entryService.adminWithdraw(id, CurrentOfficial.id(), req.reason()));

@@ -4,9 +4,9 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.csvimport.CsvImportResult;
 import dev.monkeypatch.rctiming.domain.csvimport.CsvImportService;
 import dev.monkeypatch.rctiming.domain.csvimport.RcTimingCsvParser;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +25,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class CsvImportController {
 
     private final CsvImportService importService;

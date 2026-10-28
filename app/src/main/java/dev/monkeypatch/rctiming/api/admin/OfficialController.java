@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.query.official.OfficialChangeDto;
 import dev.monkeypatch.rctiming.query.official.OfficialDto;
 import dev.monkeypatch.rctiming.query.official.OfficialQueryService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -15,7 +16,6 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,7 +35,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/api/v1/admin/officials")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class OfficialController {
 
     /** How many changes a page of the history holds unless the request asks for fewer or more. */

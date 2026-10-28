@@ -4,11 +4,12 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService.CompetitorMediaView;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +31,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminDriverMediaController {
 
     private final DriverMediaService service;
@@ -54,7 +55,7 @@ public class AdminDriverMediaController {
     /** Replaces the sponsors. {@code PUT /competitors/{id}/media/sponsors}; ADMIN or RACE_DIRECTOR; 400. Audited. */
     @Audited("audit_log")
     @PutMapping("/competitors/{id}/media/sponsors")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CompetitorMediaView setSponsors(@PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
         return service.setSponsors(CurrentOfficial.actor(), id, request.names() == null ? List.of() : request.names());
     }
@@ -65,7 +66,7 @@ public class AdminDriverMediaController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/competitors/{id}/media/headshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CompetitorMediaView uploadHeadshot(@PathVariable long id,
                                               @RequestPart("file") MultipartFile file) {
         return service.uploadHeadshot(CurrentOfficial.actor(), id, file);
@@ -74,7 +75,7 @@ public class AdminDriverMediaController {
     /** Removes the headshot. {@code DELETE /competitors/{id}/media/headshot}; ADMIN or RACE_DIRECTOR. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/competitors/{id}/media/headshot")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CompetitorMediaView deleteHeadshot(@PathVariable long id) {
         return service.deleteHeadshot(CurrentOfficial.actor(), id);
     }
@@ -91,7 +92,7 @@ public class AdminDriverMediaController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/entries/{id}/car-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public CarPhotoResponse uploadCarPhoto(@PathVariable long id,
                                            @RequestPart("file") MultipartFile file) {
         return new CarPhotoResponse(service.uploadCarPhoto(CurrentOfficial.actor(), id, file));
@@ -100,7 +101,7 @@ public class AdminDriverMediaController {
     /** Removes the car photo. {@code DELETE /entries/{id}/car-photo}; ADMIN or RACE_DIRECTOR; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/entries/{id}/car-photo")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCarPhoto(@PathVariable long id) {
         service.deleteCarPhoto(CurrentOfficial.actor(), id);

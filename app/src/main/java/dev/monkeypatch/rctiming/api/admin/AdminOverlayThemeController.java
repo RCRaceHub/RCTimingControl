@@ -6,9 +6,10 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayTheme;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayThemeService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/overlay-themes")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminOverlayThemeController {
 
     private final OverlayThemeService service;
@@ -46,7 +47,7 @@ public class AdminOverlayThemeController {
     /** Creates a theme. {@code POST}; ADMIN or RACE_DIRECTOR; 201; 400; 409. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.CREATED)
     public OverlayThemeDto create(@RequestBody @Valid OverlayThemeRequest request) {
         return dto(service.create(CurrentOfficial.actor(), request.name(), request.design()));
@@ -55,7 +56,7 @@ public class AdminOverlayThemeController {
     /** Changes a theme. {@code PUT /{id}}; ADMIN or RACE_DIRECTOR; 400; 404; 409. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public OverlayThemeDto update(@PathVariable Long id,
                                   @RequestBody @Valid OverlayThemeRequest request) {
         return dto(service.update(CurrentOfficial.actor(), id, request.name(), request.design()));
@@ -64,7 +65,7 @@ public class AdminOverlayThemeController {
     /** Deletes a theme. {@code DELETE /{id}}; ADMIN or RACE_DIRECTOR; 204; 404. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(CurrentOfficial.actor(), id);

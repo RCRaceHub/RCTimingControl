@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import dev.monkeypatch.rctiming.resultsexport.ResultsSiteService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
@@ -16,7 +17,6 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,7 +30,7 @@ import java.util.List;
 /** Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. */
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class ResultsExportController {
 
     private static final int OUTBOX_ROWS = 100;

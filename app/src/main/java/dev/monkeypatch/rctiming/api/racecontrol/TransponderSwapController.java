@@ -8,11 +8,11 @@ import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.query.racecontrol.EntrySearchDto;
 import dev.monkeypatch.rctiming.query.racecontrol.EntrySearchQuery;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,7 +30,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/events/{eventId}")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+@RaceControlStaff
 public class TransponderSwapController {
 
     /** What each refusal code means, for the error's detail. */
