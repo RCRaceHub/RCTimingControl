@@ -4,9 +4,7 @@
 // never looks like a broken overlay.
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getLiveQualifying, getOverlayTheme, getRaceClock, getRaceHighlights, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
 import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
@@ -30,7 +28,6 @@ import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
 import { TimingLegend, type LegendKind } from '@/components/TimingLegend';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { OnPaceIcon } from '@/components/OnPaceIcon';
@@ -42,6 +39,7 @@ import { useBattles } from '@/hooks/race-control/useBattles';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
+import { useBoardSponsorsQuery, useLiveQualifyingQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 const THEMES = {
   dark: {
@@ -102,11 +100,7 @@ function StatsTicker({
   mutedClass: string;
   rowClass: string;
 }) {
-  const { data: round } = useQuery({
-    queryKey: publicQueryKeys.boards.roundFastest(raceId),
-    queryFn: () => getRoundFastestLap(raceId),
-    refetchInterval: BOARD_POLL_MS * 6,
-  });
+  const { data: round } = useRoundFastestQuery(raceId, { intervalMs: BOARD_POLL_MS * 6 });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), TICKER_MS);
@@ -165,23 +159,14 @@ function OverlayTicker({
   /** The address of an image between items instead of the diamond; null keeps the diamond. */
   separatorImage: string | null;
 }) {
-  const { data: ticker } = useQuery({
-    queryKey: publicQueryKeys.boards.ticker(eventId),
-    queryFn: () => getTicker(eventId),
+  const { data: ticker } = useTickerQuery(eventId, {
+    intervalMs: BOARD_POLL_MS * 4,
     enabled: (['next', 'drivers', 'marshals', 'tq'] as const).some(item => items.has(item)),
-    refetchInterval: BOARD_POLL_MS * 4,
   });
-  const { data: round } = useQuery({
-    queryKey: publicQueryKeys.boards.roundFastest(raceId),
-    queryFn: () => getRoundFastestLap(raceId!),
-    enabled: raceId !== null && items.has('fastest'),
-    refetchInterval: BOARD_POLL_MS * 6,
-  });
-  const { data: highlights } = useQuery({
-    queryKey: publicQueryKeys.boards.highlights(raceId),
-    queryFn: () => getRaceHighlights(raceId!),
-    enabled: raceId !== null && (items.has('gain') || items.has('loss') || items.has('pace')),
-    refetchInterval: BOARD_POLL_MS * 4,
+  const { data: round } = useRoundFastestQuery(raceId, { intervalMs: BOARD_POLL_MS * 6, enabled: items.has('fastest') });
+  const { data: highlights } = useRaceHighlightsQuery(raceId, {
+    intervalMs: BOARD_POLL_MS * 4,
+    enabled: items.has('gain') || items.has('loss') || items.has('pace'),
   });
   const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round), highlights);
   // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
@@ -266,13 +251,7 @@ const THEME_POLL_MS = 15000;
 function useOverlayParams(): URLSearchParams {
   const [searchParams] = useSearchParams();
   const lookId = parseEventParam(searchParams.get('look'));
-  const { data: look } = useQuery({
-    queryKey: publicQueryKeys.boards.overlayTheme(lookId),
-    queryFn: () => getOverlayTheme(lookId!),
-    enabled: lookId !== null,
-    refetchInterval: THEME_POLL_MS,
-    retry: false,
-  });
+  const { data: look } = useOverlayThemeQuery(lookId, { intervalMs: THEME_POLL_MS });
   return useMemo(() => {
     if (!look) return searchParams;
     const design = { ...overlayDesignFromTheme(look.design), eventId: parseEventParam(searchParams.get('event')) };
@@ -294,12 +273,7 @@ export default function OverlayBoard() {
   useTransparentPage();
 
   const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
-  const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
-    queryKey: publicQueryKeys.boards.clock(raceId),
-    queryFn: () => getRaceClock(raceId!),
-    enabled: raceId !== null,
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS });
 
   const remainingAt = useRemainingAt(clock, clockReadAt);
   const battleGroups = useBattles(showBattles ? raceId : null);
@@ -315,11 +289,9 @@ export default function OverlayBoard() {
   const tickerEventId = eventId ?? nowNext?.eventId ?? null;
   // Where each driver stands in the event's qualifying table if this heat ended now, refreshed with every lap
   const isQualifier = race?.roundType === 'QUALIFIER';
-  const { data: liveQualifying } = useQuery({
-    queryKey: publicQueryKeys.boards.liveQualifying(tickerEventId),
-    queryFn: () => getLiveQualifying(tickerEventId),
+  const { data: liveQualifying } = useLiveQualifyingQuery(tickerEventId, {
+    intervalMs: LIVE_QUALIFYING_POLL_MS,
     enabled: (showQualifying || showTqPace) && isQualifier && layout === 'tower',
-    refetchInterval: LIVE_QUALIFYING_POLL_MS,
   });
   const raceIdNow = race?.raceId ?? null;
   const qualifying = useMemo(() => {
@@ -329,12 +301,7 @@ export default function OverlayBoard() {
     );
   }, [liveQualifying, raceIdNow, showQualifying]);
   const tqRow = liveQualifying?.raceId === raceIdNow ? liveQualifying?.rows[0] : undefined;
-  const { data: sponsors = [] } = useQuery({
-    queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
-    queryFn: () => getSponsors(tickerEventId),
-    enabled: showSponsors,
-    refetchInterval: BOARD_POLL_MS * 12,
-  });
+  const { data: sponsors = [] } = useBoardSponsorsQuery(tickerEventId, { intervalMs: BOARD_POLL_MS * 12, enabled: showSponsors });
   const sponsorsShowing = showSponsors && sponsors.length > 0;
   const tickerBottom = sponsorsShowing ? `${SPONSOR_BAR_REM}rem` : '0px';
   const chartBottom = `${(sponsorsShowing ? SPONSOR_BAR_REM : 0) + (tickerItems.size > 0 ? TICKER_REM : 0) + 1}rem`;

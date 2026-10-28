@@ -366,6 +366,7 @@ Moving to another database means:
 ### Frontend conventions
 
 - **Query keys** come from the factories in `hooks/publicQueryKeys.ts` (anything anonymous, and the boards) and `hooks/admin/adminQueryKeys.ts`. Never write a literal `queryKey: ['...']` in a page or hook; add a factory entry. Boards keys share the `'boards'` root so a race's state change refreshes them all.
+- **Queries and mutations live in hooks**, not in pages or components. A page calls a hook from `hooks/` (`useBoardQueries.ts`, `hooks/admin/useAdmin*.ts`), which owns the key, the fetcher, the polling interval and `enabled`. Where a screen needs a different interval or condition, the hook takes it as an option rather than the page rebuilding the query. The boards are converted; the race-control panels and the remaining admin pages move over as they are touched.
 - **Exports:** a page that a route loads lazily, and a layout, has a `default` export. Everything else (components, hooks, helpers) is a named export.
 - **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
 - **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.

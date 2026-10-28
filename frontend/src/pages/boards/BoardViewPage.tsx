@@ -2,18 +2,15 @@
 // the other boards. The race on track is followed once here and shared by the panels; options on the address are the
 // live race board's (bars=hide, arrows=hide, predict=hide, close=SECONDS) and event=ID.
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getRaceClock } from '@/lib/boardsApi';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
-import { getBoardView } from '@/lib/boardViewsApi';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardViewPanel } from './BoardViewPanels';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useBoardViewQuery, useRaceClockQuery } from '@/hooks/useBoardQueries';
 
 export default function BoardViewPage() {
   const { slug = '' } = useParams();
@@ -22,22 +19,12 @@ export default function BoardViewPage() {
   const settings = useBoardSettings();
   const { showBars, showArrows, showPredicted, closeMs, showLegend } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
 
-  const { data: view, isPending, isError, error } = useQuery({
-    queryKey: publicQueryKeys.boards.view(slug),
-    queryFn: () => getBoardView(slug),
-    refetchInterval: 30_000,
-    retry: false,
-  });
+  const { data: view, isPending, isError, error } = useBoardViewQuery(slug);
   const { nowNext, currentRace, rows } = useBoardRace(eventId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const raceId = currentRace?.raceId ?? null;
   const media = useRaceMedia(raceId);
-  const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
-    queryKey: publicQueryKeys.boards.clock(raceId),
-    queryFn: () => getRaceClock(raceId!),
-    enabled: raceId !== null && showPredicted,
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS, enabled: showPredicted });
   const remainingAt = useRemainingAt(clock, clockReadAt);
 
   if (isPending) {
