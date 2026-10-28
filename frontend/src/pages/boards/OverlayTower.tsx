@@ -7,6 +7,8 @@ import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { OnPaceIcon } from '@/components/OnPaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
+import { RowMarkers } from '@/components/RowBadges';
+import { useNoSignal } from '@/hooks/race-control/useNoSignal';
 import { RowStateIcon } from '@/components/StateIcon';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import { isClose } from '@/lib/lapProgress';
@@ -140,6 +142,7 @@ export function OverlayTower({
   lapsView = 'laps',
   lapsFading = false,
 }: OverlayTowerProps) {
+  const noSignal = useNoSignal(allRows, barClock);
   const tagging = classTags && new Set(allRows.map((r) => r.classColour ?? null)).size > 1;
   const showQualifying = qualifying !== undefined && qualifying.size > 0;
   const showPredicted = predicted !== undefined && lapsView === 'predicted';
@@ -181,6 +184,7 @@ export function OverlayTower({
                 'absolute inset-x-0 flex items-center gap-1.5 border-t px-2 transition-[transform,background-color] duration-700 ease-in-out',
                 colours.row,
                 bumpLine && 'border-t-2 border-t-emerald-400',
+                noSignal.has(row.entryId) && 'opacity-50',
                 close && !flash && 'bg-amber-500/25',
                 flash && FLASH_CLASS[flash],
               )}
@@ -216,6 +220,7 @@ export function OverlayTower({
                   </span>
                 )}
                 {showArrows && row.startPosition != null && <PositionArrow row={row} rows={allRows} />}
+                <RowMarkers row={row} noSignal={noSignal.has(row.entryId)} className="ml-1" />
                 {row.finished && <FinishedFlag className="ml-1" />}
                 {barClock && !row.finished && (
                   <LapProgressBar row={row} clock={barClock} className="absolute inset-x-0 -bottom-1 h-0.5" />

@@ -10,6 +10,8 @@ export interface LapBarClock {
   offsetMs: number;
   /** In the timing laptop's clock; null when the race has not been stopped and resumed. */
   resumedAtMs: number | null;
+  /** The offset has been learned from a fresh passing; until then it is 0 and a flag judged on it could be wrong. */
+  offsetKnown?: boolean;
   /** How far past its average a lap runs before the bar turns red, in milliseconds: the club's setting. */
   lateMarginMs?: number;
 }

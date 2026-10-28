@@ -33,6 +33,7 @@ export function useLapBarClock(
   useEffect(() => {
     const state = held.current;
     state.clock.offsetMs = state.estimator.observe(rows, Date.now());
+    state.clock.offsetKnown = state.estimator.known;
     if (state.resumedAtLocal !== null) state.clock.resumedAtMs = state.resumedAtLocal + state.clock.offsetMs;
   }, [rows]);
 

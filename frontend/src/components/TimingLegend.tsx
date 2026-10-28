@@ -3,7 +3,7 @@ import type { StateKind } from '@/components/StateIcon';
 import { cn } from '@/lib/utils';
 
 /** The groups of colours the timing views use; a view lists the ones it shows. */
-export type LegendKind = 'lap' | 'close' | 'pace' | 'movement';
+export type LegendKind = 'lap' | 'close' | 'pace' | 'status' | 'movement';
 
 interface LegendItem {
   /** A solid Tailwind background in the hue of the row tint it explains; empty for a plain lead-in. */
@@ -19,7 +19,7 @@ const state = (swatch: string, icon: StateKind): LegendItem => ({ swatch, icon, 
 /**
  * What each colour means, in one place so every view says the same thing. The lap colours are the ones
  * {@code useLapFlash} gives a row for a moment after a lap; close is the tint for a car running near the one
- * ahead; pace is the thumbs up for a car on pace for its predicted laps; movement is the places gained or lost in the qualifying tables.
+ * ahead; pace is the thumbs up for a car on pace for its predicted laps; status is the lapped, penalty and no-signal markers; movement is the places gained or lost in the qualifying tables.
  */
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
@@ -31,6 +31,7 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
   ],
   close: [state('bg-warning', 'close')],
   pace: [state('', 'on-pace')],
+  status: [state('', 'lapped'), state('', 'penalty'), state('', 'no-signal')],
   movement: [
     { swatch: 'bg-success', label: 'Moved up' },
     { swatch: 'bg-destructive', label: 'Moved down' },
