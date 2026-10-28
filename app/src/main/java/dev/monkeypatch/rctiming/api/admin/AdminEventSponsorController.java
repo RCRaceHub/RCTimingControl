@@ -6,7 +6,6 @@ import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -46,7 +45,7 @@ public class AdminEventSponsorController {
     public record SponsorRequest(@NotBlank @Size(max = 255) String name) {}
 
     /** The body of a reorder: the sponsor ids, first shown first. */
-    public record SponsorOrderRequest(@NotNull List<Long> ids) {}
+    public record SponsorOrderRequest(List<Long> ids) {}
 
     /** The event's sponsors in display order. {@code GET}; read only. */
     @GetMapping
@@ -76,7 +75,7 @@ public class AdminEventSponsorController {
     @Audited("audit_log")
     @PutMapping("/order")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public List<SponsorDto> reorder(Authentication auth, @PathVariable long eventId, @RequestBody @Valid SponsorOrderRequest request) {
+    public List<SponsorDto> reorder(Authentication auth, @PathVariable long eventId, @RequestBody SponsorOrderRequest request) {
         return service.reorder(CurrentOfficial.actor(auth), eventId, request.ids() == null ? List.of() : request.ids())
                 .stream().map(SponsorDto::from).toList();
     }

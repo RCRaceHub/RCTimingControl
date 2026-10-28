@@ -147,7 +147,7 @@ public class PracticeSessionController {
     public PracticeDriverDto linkTransponder(
             Authentication auth,
             @PathVariable Long id,
-            @RequestBody @Valid PracticeDriverService.LinkRequest request) {
+            @RequestBody PracticeDriverService.LinkRequest request) {
         return driverService.link(CurrentOfficial.actor(auth), id, request);
     }
 

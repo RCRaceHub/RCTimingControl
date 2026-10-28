@@ -165,7 +165,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
 
     @Test
     void anOversizedAddress_isRefusedByValidationBeforeTheServiceSeesIt() {
-        String tooLong = "https://example.test/" + "a".repeat(2048);
+        String tooLong = "https://example.test/" + "a".repeat(2000);
 
         ResponseEntity<JsonNode> response = saveFeed(tooLong, TOKEN, false);
 

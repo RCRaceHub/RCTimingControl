@@ -258,5 +258,5 @@ public class PracticeSessionService {
      * @param bestLapN     how many consecutive laps the average is taken over (default 5)
      * @param pauseSeconds how long a transponder may be quiet before its next lap starts a new run (default 180)
      */
-    public record CreateRequest(@Size(max = 100) String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
+    public record CreateRequest(@Size(max = 200) String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
 }

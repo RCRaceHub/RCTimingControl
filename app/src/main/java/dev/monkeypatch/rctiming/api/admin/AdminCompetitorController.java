@@ -166,7 +166,7 @@ public class AdminCompetitorController {
     }
 
     /** The body of {@code PUT /{id}/spoken-name}: how the name is said aloud. Null or blank clears it. */
-    public record SpokenNameRequest(@Size(max = 1000) String spokenName) {}
+    public record SpokenNameRequest(String spokenName) {}
 
     /** The body of {@code POST /spoken-name/preview}: the text to hear in the club's voice, required. */
     public record SpeechPreviewRequest(
@@ -180,7 +180,7 @@ public class AdminCompetitorController {
     @Audited("competitor_audit_log")
     @PutMapping("/{id}/spoken-name")
     public CompetitorSummaryDto setSpokenName(Authentication auth, @PathVariable Long id,
-                                              @Valid @RequestBody SpokenNameRequest body) {
+                                              @RequestBody SpokenNameRequest body) {
         Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id(auth));
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
