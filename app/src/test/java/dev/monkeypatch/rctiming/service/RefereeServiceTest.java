@@ -28,6 +28,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,10 +60,22 @@ class RefereeServiceTest {
     @Mock FinalsMarshalPenalties finalsMarshalPenalties;
     @Mock EntryRepository entryRepository;
 
+    private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
+
     private RefereeService service() {
         return new RefereeService(incidentReportRepository, penaltyRepository, marshalAbsenceRepository,
                 marshalPenaltyRepository, raceRepository, lapTimingService, eventPublisher, audit, labels,
-                finalsMarshalPenalties, entryRepository);
+                finalsMarshalPenalties, entryRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void aPenaltyIsStampedWithTheTimeFromTheClock() {
+        when(penaltyRepository.save(any())).thenAnswer(call -> call.getArgument(0));
+        when(raceRepository.findById(7L)).thenReturn(Optional.of(race(RaceStatus.RUNNING)));
+
+        Penalty penalty = service().applyPenalty(7L, 11L, PenaltyType.LAP, BigDecimal.valueOf(1), "Cut", 3L);
+
+        assertThat(penalty.getAppliedAt()).isEqualTo(NOW);
     }
 
     @Test

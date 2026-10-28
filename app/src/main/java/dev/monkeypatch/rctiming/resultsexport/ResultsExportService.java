@@ -13,10 +13,12 @@ import dev.monkeypatch.rctiming.query.resultsexport.ResultsExportQuery;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -40,11 +42,21 @@ public class ResultsExportService {
 
     private final AuditService audit;
     private final ResultsPublishSettings publishSettings;
+    private final Clock clock;
 
+    @Autowired
     public ResultsExportService(EventRepository eventRepository, RaceRepository raceRepository,
                                 RoundRepository roundRepository, ResultsOutboxRepository outboxRepository,
-                                ResultsExportQuery exportQuery, ObjectMapper objectMapper,
-                                AuditService audit, ResultsPublishSettings publishSettings) {
+                                ResultsExportQuery exportQuery, ObjectMapper objectMapper, AuditService audit,
+                                ResultsPublishSettings publishSettings) {
+        this(eventRepository, raceRepository, roundRepository, outboxRepository, exportQuery, objectMapper, audit,
+             publishSettings, Clock.systemUTC());
+    }
+
+    ResultsExportService(EventRepository eventRepository, RaceRepository raceRepository,
+                         RoundRepository roundRepository, ResultsOutboxRepository outboxRepository,
+                         ResultsExportQuery exportQuery, ObjectMapper objectMapper, AuditService audit,
+                         ResultsPublishSettings publishSettings, Clock clock) {
         this.eventRepository = eventRepository;
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
@@ -53,6 +65,7 @@ public class ResultsExportService {
         this.objectMapper = objectMapper;
         this.audit = audit;
         this.publishSettings = publishSettings;
+        this.clock = clock;
     }
 
     /**
@@ -129,7 +142,7 @@ public class ResultsExportService {
             log.debug("Event {} has no RaceHub event; results export not queued", eventId);
             return Optional.empty();
         }
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         long revision = event.nextResultsExportRevision();
         eventRepository.save(event);
 
@@ -151,14 +164,14 @@ public class ResultsExportService {
     @ReadTransaction
     public ResultsExportV1 current(long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
-        return exportQuery.build(eventId, event.getResultsExportRevision(), Instant.now());
+        return exportQuery.build(eventId, event.getResultsExportRevision(), clock.instant());
     }
 
     /** Sends a queued or failed export on the sender's next pass instead of waiting for its retry time. */
     @Transactional
     public ResultsOutboxItem retryNow(Actor actor, long itemId) {
         ResultsOutboxItem item = outboxRepository.getOrThrow(itemId);
-        if (outboxRepository.makeDue(itemId, Instant.now()) == 0) {
+        if (outboxRepository.makeDue(itemId, clock.instant()) == 0) {
             return item;
         }
         audit.entry(actor, "RESULTS_EXPORT_RETRIED").entity("results_export", itemId).event(item.getEventId())

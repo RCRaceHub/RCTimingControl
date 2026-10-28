@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsExportQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -63,11 +65,21 @@ public class ResultsSiteService {
     private final AtomicBoolean dirty = new AtomicBoolean(true);
     private final Duration refreshEvery;
     private volatile Instant lastWrite = Instant.EPOCH;
+    private final Clock clock;
 
+    @Autowired
     public ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
                               ResultsPublishSettings publishSettings, PublicNames publicNames,
                               @Value("${rctiming.results-site.directory:}") String directory,
                               @Value("${rctiming.results-site.refresh-minutes:5}") long refreshMinutes) {
+        this(eventRepository, exportQuery, publishSettings, publicNames, directory, refreshMinutes,
+                Clock.systemUTC());
+    }
+
+    ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
+                       ResultsPublishSettings publishSettings, PublicNames publicNames, String directory,
+                       long refreshMinutes, Clock clock) {
+        this.clock = clock;
         this.refreshEvery = Duration.ofMinutes(Math.max(1, refreshMinutes));
         this.eventRepository = eventRepository;
         this.exportQuery = exportQuery;
@@ -107,7 +119,7 @@ public class ResultsSiteService {
         for (Event event : eventRepository.findAll()) {
             try {
                 ResultsExportV1 export = exportQuery.build(event.getId(), event.getResultsExportRevision(),
-                        Instant.now());
+                        clock.instant());
                 clubName = export.source().clubName();
                 exports.add(withPublicNames(export, names));
             } catch (EntityNotFoundException e) {
@@ -178,7 +190,7 @@ public class ResultsSiteService {
         if (directory == null || !publishSettings.effective().includesSite()) {
             return;
         }
-        boolean stale = lastWrite.plus(refreshEvery).isBefore(Instant.now());
+        boolean stale = lastWrite.plus(refreshEvery).isBefore(clock.instant());
         if (!dirty.compareAndSet(true, false) && !stale) {
             return;
         }
@@ -188,7 +200,7 @@ public class ResultsSiteService {
                 write(page.getKey(), page.getValue());
             }
             removeStaleEventPages(pages.keySet());
-            lastWrite = Instant.now();
+            lastWrite = clock.instant();
             log.info("Results site written to {}", directory);
         } catch (IOException | RuntimeException e) {
             dirty.set(true);

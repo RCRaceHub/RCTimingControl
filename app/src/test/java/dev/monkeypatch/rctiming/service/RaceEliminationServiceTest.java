@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,6 +45,7 @@ class RaceEliminationServiceTest {
     private static final long RACE = 7L;
     private static final long ENTRY = 21L;
     private static final long USER = 3L;
+    private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
 
     private final RaceEliminationRepository eliminations = mock(RaceEliminationRepository.class);
     private final RaceRepository raceRepository = mock(RaceRepository.class);
@@ -58,7 +62,8 @@ class RaceEliminationServiceTest {
     @BeforeEach
     void setUp() {
         service = new RaceEliminationService(eliminations, raceRepository, raceEntryRepository, eventClassRepository,
-                raceFormatService, mock(ShikabaneGridService.class), pointPenalties, publisher, audit, mock(RaceAuditLabels.class));
+                raceFormatService, mock(ShikabaneGridService.class), pointPenalties, publisher, audit, mock(RaceAuditLabels.class),
+                Clock.fixed(NOW, ZoneOffset.UTC));
         race = new Race();
         race.setId(RACE);
         race.setEventClassId(5L);
@@ -82,6 +87,7 @@ class RaceEliminationServiceTest {
         assertThat(saved.getEntryId()).isEqualTo(ENTRY);
         assertThat(saved.getEliminatedBy()).isEqualTo(USER);
         assertThat(saved.isActive()).isTrue();
+        assertThat(saved.getEliminatedAt()).isEqualTo(NOW);
         verify(publisher, never()).publishEvent(any(Object.class));
     }
 

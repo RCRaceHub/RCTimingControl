@@ -16,11 +16,13 @@ import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -73,20 +75,31 @@ public class RaceStateMachineService {
     private final RaceEliminationRepository raceEliminationRepository;
     private final RacePointPenaltyRepository racePointPenaltyRepository;
     private final ShikabaneGridService shikabaneGridService;
+    private final Clock clock;
 
-    public RaceStateMachineService(LiveTimingHub liveTimingHub,
-                                   RoundGeneratorService roundGeneratorService,
-                                   RaceRepository raceRepository,
-                                   LapTimingService lapTimingService,
-                                   RoundRepository roundRepository,
-                                   ResultSnapshotService resultSnapshotService,
+    @Autowired
+    public RaceStateMachineService(LiveTimingHub liveTimingHub, RoundGeneratorService roundGeneratorService,
+                                   RaceRepository raceRepository, LapTimingService lapTimingService,
+                                   RoundRepository roundRepository, ResultSnapshotService resultSnapshotService,
                                    ApplicationEventPublisher eventPublisher,
-                                   BumpUpSeedingService bumpUpSeedingService,
-                                   RaceFormatService raceFormatService,
+                                   BumpUpSeedingService bumpUpSeedingService, RaceFormatService raceFormatService,
                                    EventClassRepository eventClassRepository,
                                    RaceEliminationRepository raceEliminationRepository,
                                    RacePointPenaltyRepository racePointPenaltyRepository,
                                    ShikabaneGridService shikabaneGridService) {
+        this(liveTimingHub, roundGeneratorService, raceRepository, lapTimingService, roundRepository,
+             resultSnapshotService, eventPublisher, bumpUpSeedingService, raceFormatService, eventClassRepository,
+             raceEliminationRepository, racePointPenaltyRepository, shikabaneGridService, Clock.systemUTC());
+    }
+
+    RaceStateMachineService(LiveTimingHub liveTimingHub, RoundGeneratorService roundGeneratorService,
+                            RaceRepository raceRepository, LapTimingService lapTimingService,
+                            RoundRepository roundRepository, ResultSnapshotService resultSnapshotService,
+                            ApplicationEventPublisher eventPublisher, BumpUpSeedingService bumpUpSeedingService,
+                            RaceFormatService raceFormatService, EventClassRepository eventClassRepository,
+                            RaceEliminationRepository raceEliminationRepository,
+                            RacePointPenaltyRepository racePointPenaltyRepository,
+                            ShikabaneGridService shikabaneGridService, Clock clock) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
         this.raceRepository = raceRepository;
@@ -100,6 +113,7 @@ public class RaceStateMachineService {
         this.raceEliminationRepository = raceEliminationRepository;
         this.racePointPenaltyRepository = racePointPenaltyRepository;
         this.shikabaneGridService = shikabaneGridService;
+        this.clock = clock;
     }
 
     // start, finish and abandon set the race's times before the transition saves it, so every
@@ -140,7 +154,7 @@ public class RaceStateMachineService {
             requireQualifyingComplete(race);
         }
         if (race.getStartedAt() == null) {
-            race.setStartedAt(Instant.now());
+            race.setStartedAt(clock.instant());
         }
         transition(race, RaceStatus.RUNNING);
     }
@@ -156,7 +170,7 @@ public class RaceStateMachineService {
      */
     public void finish(Race race) {
         requireAllowed(race, RaceStatus.FINISHED);
-        race.setFinishedAt(Instant.now());
+        race.setFinishedAt(clock.instant());
         transition(race, RaceStatus.FINISHED);
     }
 
@@ -170,7 +184,7 @@ public class RaceStateMachineService {
             throw new IllegalStateTransitionException(
                 "Cannot abandon race " + race.getId() + " in state " + race.getStatus());
         }
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         race.setFinishedAt(now);
         race.setAbandonedAt(now);
         move(race, RaceStatus.FINISHED);
