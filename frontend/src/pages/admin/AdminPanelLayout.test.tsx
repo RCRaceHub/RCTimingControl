@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import AdminPanelLayout from '../AdminPanelLayout';
+import AdminPanelLayout from './AdminPanelLayout';
 import { HelpProvider } from '@/context/HelpContext';
 
 // Mock useAuth to provide a basic admin user

@@ -6,7 +6,7 @@ import { adminQueryKeys } from './adminQueryKeys';
 /** The saved scoring systems of one kind, built-ins first. */
 export function useScoringSystems(kind: 'RACE' | 'CHAMPIONSHIP') {
   return useQuery({
-    queryKey: [...adminQueryKeys.scoringSystems.all(), kind],
+    queryKey: adminQueryKeys.scoringSystems.ofKind(kind),
     queryFn: () => adminApi.scoringSystems.list(kind),
   });
 }
@@ -14,7 +14,7 @@ export function useScoringSystems(kind: 'RACE' | 'CHAMPIONSHIP') {
 /** Every saved scoring system of both kinds, for the Scoring systems page. */
 export function useAllScoringSystems() {
   return useQuery({
-    queryKey: [...adminQueryKeys.scoringSystems.all(), 'all'],
+    queryKey: adminQueryKeys.scoringSystems.everyKind(),
     queryFn: () => adminApi.scoringSystems.list(),
   });
 }

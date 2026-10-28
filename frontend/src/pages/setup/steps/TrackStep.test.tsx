@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import TrackStep from '../steps/TrackStep';
+import TrackStep from './TrackStep';
 import { adminApi } from '@/lib/adminApi';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 

@@ -354,6 +354,13 @@ Moving to another database means:
 4. Set `rctiming.database.vendor`, and point the jOOQ codegen in `app/build.gradle.kts` at the new migrations.
 5. Run the whole test suite against it.
 
+### Frontend conventions
+
+- **Query keys** come from the factories in `hooks/publicQueryKeys.ts` (anything anonymous, and the boards) and `hooks/admin/adminQueryKeys.ts`. Never write a literal `queryKey: ['...']` in a page or hook; add a factory entry. Boards keys share the `'boards'` root so a race's state change refreshes them all.
+- **Exports:** a page that a route loads lazily, and a layout, has a `default` export. Everything else (components, hooks, helpers) is a named export.
+- **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
+- **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.
+
 ### Submitting a PR
 
 ```bash

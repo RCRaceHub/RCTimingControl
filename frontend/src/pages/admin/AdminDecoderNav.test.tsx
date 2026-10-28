@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import AdminPanelLayout from '../AdminPanelLayout';
+import AdminPanelLayout from './AdminPanelLayout';
 import { HelpProvider } from '@/context/HelpContext';
 
 // The current user's roles, changed per test.

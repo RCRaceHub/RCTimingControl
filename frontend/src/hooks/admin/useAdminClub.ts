@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
 import type { LiveTimingSettingsDto, UpdateClubProfileRequest } from '@/lib/adminApi';
+import { publicQueryKeys } from '../publicQueryKeys';
 import { adminQueryKeys } from './adminQueryKeys';
 
 export function useClubProfile() {
@@ -40,7 +41,7 @@ export function useSetPrivacyNotice() {
     mutationFn: (text: string) => adminApi.club.setPrivacyNotice(text),
     onSuccess: (saved) => {
       qc.setQueryData(adminQueryKeys.club.privacyNotice(), saved);
-      void qc.invalidateQueries({ queryKey: ['public', 'privacy-notice'] });
+      void qc.invalidateQueries({ queryKey: publicQueryKeys.privacyNotice() });
     },
   });
 }
@@ -60,7 +61,7 @@ export function useSetLiveTimingSettings() {
     onSuccess: (saved) => {
       qc.setQueryData(adminQueryKeys.club.liveTimingSettings(), saved);
       // The boards draw with the close gap and the late margin
-      void qc.invalidateQueries({ queryKey: ['boards', 'settings'] });
+      void qc.invalidateQueries({ queryKey: publicQueryKeys.boards.settings() });
     },
   });
 }
@@ -81,7 +82,7 @@ export function useRegenerateTls() {
       what === 'ca' ? adminApi.club.regenerateTlsCa() : adminApi.club.regenerateTlsServer(),
     onSuccess: (status) => {
       qc.setQueryData(adminQueryKeys.club.tls(), status);
-      void qc.invalidateQueries({ queryKey: ['public', 'about'] });
+      void qc.invalidateQueries({ queryKey: publicQueryKeys.about() });
     },
   });
 }
