@@ -10,6 +10,7 @@ import {
 import { useEntryHistory } from '@/hooks/admin/useAdminEntries';
 import type { AdminEntryDto } from '@/lib/adminApi';
 import { formatDateTime } from '@/lib/dates';
+import { QueryError } from '@/components/QueryError';
 
 /** What has happened to one entry, oldest first: added, checked in, transponder swapped, withdrawn (#140). */
 export default function EntryHistoryDialog({
@@ -32,10 +33,7 @@ export default function EntryHistoryDialog({
           <p role="status" className="text-sm text-muted-foreground">Loading…</p>
         )}
         {isError && (
-          <div role="alert" className="text-sm text-destructive">
-            Could not load the history.{' '}
-            <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-          </div>
+          <QueryError message="Could not load the history." onRetry={refetch} />
         )}
         {data && data.length === 0 && (
           <p className="text-sm text-muted-foreground">

@@ -12,6 +12,7 @@ import { getApiErrorMessage } from '@/lib/errors';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { FinalsLineupPanel } from './panels/FinalsLineupPanel';
 import { QualifyingTablePanel } from './panels/QualifyingTablePanel';
+import { QueryError } from '@/components/QueryError';
 
 type Props = {
   eventId: number;
@@ -106,10 +107,7 @@ export function FinalsLineupScreen({ eventId }: Props) {
 
         {isPending && <p role="status" className="text-sm text-muted-foreground">Loading…</p>}
         {isError && (
-          <div role="alert" className="text-sm text-destructive">
-            Could not load the finals line-ups.{' '}
-            <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-          </div>
+          <QueryError message="Could not load the finals line-ups." onRetry={refetch} />
         )}
         {classes.map((l) => (
           <div key={l.eventClassId} className="space-y-3">

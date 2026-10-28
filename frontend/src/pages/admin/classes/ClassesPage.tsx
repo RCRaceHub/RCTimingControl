@@ -23,6 +23,7 @@ import {
 } from '@/hooks/admin/useAdminRacingClasses';
 import type { RacingClassDto, RacingClassInput } from '@/lib/adminApi';
 import { getApiErrorMessage } from '@/lib/errors';
+import { QueryError } from '@/components/QueryError';
 
 /** Colours a club can pick in one click; the colour box beside them takes any other. */
 const PRESET_COLOURS = ['#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777'];
@@ -167,10 +168,7 @@ export default function ClassesPage() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load classes.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load classes." onRetry={refetch} />
       )}
 
       {isLoading ? (

@@ -8,6 +8,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { useBoardViewMutations, useBoardViews } from '@/hooks/admin/useAdminBoardViews';
 import { NEW_BOARD_VIEW, PANEL_TYPES, type BoardView, type BoardViewInput } from '@/lib/boardViewsApi';
 import { BoardViewDialog } from './BoardViewDialog';
+import { QueryError } from '@/components/QueryError';
 
 /** The server's explanation of a refused request (its problem detail), else the fallback. */
 function reason(error: unknown, fallback: string): string {
@@ -73,10 +74,7 @@ export default function BoardViewsPage() {
       </p>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load board views.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load board views." onRetry={refetch} />
       )}
 
       {isLoading ? (

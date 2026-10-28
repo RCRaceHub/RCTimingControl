@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { Plus, ArrowUpDown, RefreshCw, Flag } from 'lucide-react';
+import { Plus, ArrowUpDown, Flag } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,6 +41,7 @@ import { useHelpContent } from '@/context/HelpContext';
 import { EntryManagementHelp } from '@/help/EntryManagementHelp';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatEventDate } from '@/lib/dates';
+import { QueryError } from '@/components/QueryError';
 
 const createEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -169,13 +170,7 @@ export default function EventListPage() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load events.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Retry
-          </Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load events." onRetry={refetch} />
       )}
 
       {isLoading ? (
