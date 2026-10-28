@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -113,9 +112,8 @@ public class AdminAudioController {
     @Audited("audit_log")
     @PutMapping("/settings")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<AudioSettingsDto> saveAudioSettings(Authentication auth,
-                                                              @RequestBody @Valid AudioSettingsDto dto) {
-        clubProfileService.changeAudioSettings(CurrentOfficial.actor(auth), profile -> {
+    public ResponseEntity<AudioSettingsDto> saveAudioSettings(@RequestBody @Valid AudioSettingsDto dto) {
+        clubProfileService.changeAudioSettings(CurrentOfficial.actor(), profile -> {
             ClubAudioSettings kept = profile.getAudioSettings();
             profile.setAudioSettings(new ClubAudioSettings(
                     dto.announceCountdown(),
@@ -162,10 +160,10 @@ public class AdminAudioController {
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ClubAudioSettings.HornSounds uploadHorn(Authentication auth, @PathVariable String horn,
+    public ClubAudioSettings.HornSounds uploadHorn(@PathVariable String horn,
                                                     @RequestPart("file") MultipartFile file,
                                                     @RequestParam int durationMs) {
-        return hornSoundService.upload(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn), file, durationMs)
+        return hornSoundService.upload(CurrentOfficial.actor(), HornSoundService.Horn.of(horn), file, durationMs)
                 .hornSounds();
     }
 
@@ -176,7 +174,7 @@ public class AdminAudioController {
     @Audited("audit_log")
     @DeleteMapping("/horns/{horn}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ClubAudioSettings.HornSounds removeHorn(Authentication auth, @PathVariable String horn) {
-        return hornSoundService.remove(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn)).hornSounds();
+    public ClubAudioSettings.HornSounds removeHorn(@PathVariable String horn) {
+        return hornSoundService.remove(CurrentOfficial.actor(), HornSoundService.Horn.of(horn)).hornSounds();
     }
 }

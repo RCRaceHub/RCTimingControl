@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -52,9 +51,8 @@ public class ClubSettingsController {
      */
     @Audited("audit_log")
     @PostMapping("/import")
-    public List<ClubSettingsService.Section> importFile(Authentication auth,
-                                                        @RequestBody ClubSettingsService.SettingsFile file,
+    public List<ClubSettingsService.Section> importFile(@RequestBody ClubSettingsService.SettingsFile file,
                                                         @RequestParam(defaultValue = "false") boolean apply) {
-        return apply ? settings.apply(CurrentOfficial.actor(auth), file) : settings.preview(file);
+        return apply ? settings.apply(CurrentOfficial.actor(), file) : settings.preview(file);
     }
 }

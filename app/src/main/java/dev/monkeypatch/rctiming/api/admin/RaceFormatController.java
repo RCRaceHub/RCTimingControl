@@ -12,7 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,19 +64,19 @@ public class RaceFormatController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public RaceFormatTemplateDto createFormat(Authentication auth, @RequestBody @Valid CreateRaceFormatTemplateRequest request) {
+    public RaceFormatTemplateDto createFormat(@RequestBody @Valid CreateRaceFormatTemplateRequest request) {
         return RaceFormatTemplateDto.from(
-                raceFormatService.create(CurrentOfficial.actor(auth), request.name(), request.config()));
+                raceFormatService.create(CurrentOfficial.actor(), request.name(), request.config()));
     }
 
     /** Changes a template. {@code PUT /{id}}; ADMIN; 400 if the config is not valid. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public RaceFormatTemplateDto updateFormat(Authentication auth, @PathVariable Long id,
+    public RaceFormatTemplateDto updateFormat(@PathVariable Long id,
                                                @RequestBody @Valid CreateRaceFormatTemplateRequest request) {
         return RaceFormatTemplateDto.from(
-                raceFormatService.update(CurrentOfficial.actor(auth), id, request.name(), request.config()));
+                raceFormatService.update(CurrentOfficial.actor(), id, request.name(), request.config()));
     }
 
     /**
@@ -88,8 +87,8 @@ public class RaceFormatController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteFormat(Authentication auth, @PathVariable Long id) {
-        raceFormatService.delete(CurrentOfficial.actor(auth), id);
+    public void deleteFormat(@PathVariable Long id) {
+        raceFormatService.delete(CurrentOfficial.actor(), id);
     }
 
     /**
@@ -116,12 +115,10 @@ public class RaceFormatController {
                  consumes = {MediaType.APPLICATION_JSON_VALUE, "application/yaml"})
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public RaceFormatTemplateDto importFormat(
-            Authentication auth,
-            @RequestParam(defaultValue = "Imported template") String name,
+    public RaceFormatTemplateDto importFormat(@RequestParam(defaultValue = "Imported template") String name,
             @RequestBody String body,
             @RequestHeader("Content-Type") String contentType) {
         return RaceFormatTemplateDto.from(raceFormatService.importConfig(
-                CurrentOfficial.actor(auth), name, codec.read(body, FileType.of(contentType))));
+                CurrentOfficial.actor(), name, codec.read(body, FileType.of(contentType))));
     }
 }

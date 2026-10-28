@@ -15,7 +15,6 @@ import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,8 +66,8 @@ public class ClubProfileController {
     @Audited("audit_log")
     @PutMapping("/profile")
     @PreAuthorize("hasRole('ADMIN')")
-    public ClubProfileDto createOrUpdateProfile(Authentication auth, @RequestBody @Valid CreateClubProfileRequest request) {
-        return ClubProfileDto.from(clubProfileService.createOrUpdateProfile(CurrentOfficial.actor(auth),
+    public ClubProfileDto createOrUpdateProfile(@RequestBody @Valid CreateClubProfileRequest request) {
+        return ClubProfileDto.from(clubProfileService.createOrUpdateProfile(CurrentOfficial.actor(),
                 new ClubProfileService.ClubDetails(request.name(), request.email(), request.phone(),
                         request.websiteUrl(), request.latitude(), request.longitude(), request.timezone())));
     }
@@ -86,10 +85,9 @@ public class ClubProfileController {
     @Audited("audit_log")
     @PutMapping("/privacy-notice")
     @PreAuthorize("hasRole('ADMIN')")
-    public PrivacyNoticeEditDto changePrivacyNotice(Authentication auth,
-                                                    @RequestBody @Valid PrivacyNoticeRequest request) {
+    public PrivacyNoticeEditDto changePrivacyNotice(@RequestBody @Valid PrivacyNoticeRequest request) {
         return PrivacyNoticeEditDto.from(
-                clubProfileService.changePrivacyNotice(CurrentOfficial.actor(auth), request.text()));
+                clubProfileService.changePrivacyNotice(CurrentOfficial.actor(), request.text()));
     }
 
     /** The live timing thresholds (#505). {@code GET /live-timing-settings}; read only. */
@@ -105,10 +103,9 @@ public class ClubProfileController {
     @Audited("audit_log")
     @PutMapping("/live-timing-settings")
     @PreAuthorize("hasRole('ADMIN')")
-    public LiveTimingSettingsDto changeLiveTimingSettings(Authentication auth,
-                                                          @RequestBody @Valid LiveTimingSettingsDto request) {
+    public LiveTimingSettingsDto changeLiveTimingSettings(@RequestBody @Valid LiveTimingSettingsDto request) {
         return LiveTimingSettingsDto.from(
-                clubProfileService.changeLiveTimingSettings(CurrentOfficial.actor(auth), request.toSettings()));
+                clubProfileService.changeLiveTimingSettings(CurrentOfficial.actor(), request.toSettings()));
     }
 
     /** The governing bodies the club is affiliated to. {@code GET /affiliations}; read only. */
@@ -122,9 +119,8 @@ public class ClubProfileController {
     @PostMapping("/affiliations")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public GoverningBodyAffiliationDto createAffiliation(Authentication auth,
-                                                          @RequestBody @Valid CreateGoverningBodyRequest request) {
-        return GoverningBodyAffiliationDto.from(clubProfileService.createAffiliation(CurrentOfficial.actor(auth),
+    public GoverningBodyAffiliationDto createAffiliation(@RequestBody @Valid CreateGoverningBodyRequest request) {
+        return GoverningBodyAffiliationDto.from(clubProfileService.createAffiliation(CurrentOfficial.actor(),
                 request.code(), request.displayName(), request.membershipRequired()));
     }
 
@@ -132,9 +128,9 @@ public class ClubProfileController {
     @Audited("audit_log")
     @PutMapping("/affiliations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public GoverningBodyAffiliationDto updateAffiliation(Authentication auth, @PathVariable Long id,
+    public GoverningBodyAffiliationDto updateAffiliation(@PathVariable Long id,
                                                           @RequestBody @Valid CreateGoverningBodyRequest request) {
-        return GoverningBodyAffiliationDto.from(clubProfileService.updateAffiliation(CurrentOfficial.actor(auth), id,
+        return GoverningBodyAffiliationDto.from(clubProfileService.updateAffiliation(CurrentOfficial.actor(), id,
                 request.code(), request.displayName(), request.membershipRequired()));
     }
 
@@ -143,8 +139,8 @@ public class ClubProfileController {
     @DeleteMapping("/affiliations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteAffiliation(Authentication auth, @PathVariable Long id) {
-        clubProfileService.deleteAffiliation(CurrentOfficial.actor(auth), id);
+    public void deleteAffiliation(@PathVariable Long id) {
+        clubProfileService.deleteAffiliation(CurrentOfficial.actor(), id);
     }
 
     /**
@@ -155,9 +151,9 @@ public class ClubProfileController {
     @Audited("audit_log")
     @PutMapping(value = "/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    public LogoUploadResponse uploadLogo(Authentication auth, @RequestPart("file") MultipartFile file) {
+    public LogoUploadResponse uploadLogo(@RequestPart("file") MultipartFile file) {
         Long profileId = clubProfileService.getSingletonProfileId();
-        String url = logoUploadService.uploadLogo(CurrentOfficial.actor(auth), profileId, file);
+        String url = logoUploadService.uploadLogo(CurrentOfficial.actor(), profileId, file);
         return new LogoUploadResponse(url);
     }
 

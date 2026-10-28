@@ -8,7 +8,6 @@ import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -62,9 +61,9 @@ public class LiveFeedController {
     @Audited("audit_log")
     @PutMapping("/events/{eventId}/live-feed")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
-    public LiveFeedSettingDto update(Authentication auth, @PathVariable long eventId,
+    public LiveFeedSettingDto update(@PathVariable long eventId,
                                      @Valid @RequestBody LiveFeedSettingDto request) {
         return new LiveFeedSettingDto(
-                eventService.setLiveFeedEnabled(CurrentOfficial.actor(auth), eventId, request.enabled()));
+                eventService.setLiveFeedEnabled(CurrentOfficial.actor(), eventId, request.enabled()));
     }
 }

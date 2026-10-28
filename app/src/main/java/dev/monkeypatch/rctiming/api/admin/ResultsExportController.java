@@ -17,7 +17,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -87,11 +86,11 @@ public class ResultsExportController {
 
     @Audited("audit_log")
     @PutMapping("/results-exports/address")
-    public ResultsExportsDto setAddress(Authentication auth, @RequestBody @Valid ResultsUrlRequest request) {
+    public ResultsExportsDto setAddress(@RequestBody @Valid ResultsUrlRequest request) {
         if (request.resultsUrl() != null && !request.resultsUrl().isBlank()) {
             RaceHubResultsEndpoint.parse(request.resultsUrl());
         }
-        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(auth), request.resultsUrl());
+        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
         return list();
     }
 
@@ -101,16 +100,16 @@ public class ResultsExportController {
 
     @Audited("audit_log")
     @PutMapping("/results-exports/target")
-    public ResultsExportsDto setTarget(Authentication auth, @RequestBody PublishTargetRequest request) {
-        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(auth),
+    public ResultsExportsDto setTarget(@RequestBody PublishTargetRequest request) {
+        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(),
                 request.target() == null ? null : request.target().name());
         return list();
     }
 
     @Audited("audit_log")
     @PostMapping("/results-exports/{id}/retry")
-    public ResponseEntity<Void> retry(Authentication auth, @PathVariable long id) {
-        exportService.retryNow(CurrentOfficial.actor(auth), id);
+    public ResponseEntity<Void> retry(@PathVariable long id) {
+        exportService.retryNow(CurrentOfficial.actor(), id);
         return ResponseEntity.noContent().build();
     }
 

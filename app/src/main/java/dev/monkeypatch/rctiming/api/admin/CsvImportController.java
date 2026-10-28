@@ -7,7 +7,6 @@ import dev.monkeypatch.rctiming.domain.csvimport.RcTimingCsvParser;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,7 +44,7 @@ public class CsvImportController {
      */
     @Audited("audit_log")
     @PostMapping(value = "/csv-import", consumes = "multipart/form-data")
-    public ResponseEntity<CsvImportResult> importCsv(Authentication auth, @PathVariable Long eventId,
+    public ResponseEntity<CsvImportResult> importCsv(@PathVariable Long eventId,
                                                      @RequestParam(defaultValue = "false") boolean dryRun,
                                                      @RequestPart("file") MultipartFile file,
                                                      @RequestParam(name = "update", required = false) List<String> update,
@@ -55,7 +54,7 @@ public class CsvImportController {
         var selection = new CsvImportService.Selection(
                 update == null ? Set.of() : Set.copyOf(update), withdraw == null ? Set.of() : Set.copyOf(withdraw));
         CsvImportResult result =
-                importService.importCsv(CurrentOfficial.actor(auth), eventId, content, dryRun, selection);
+                importService.importCsv(CurrentOfficial.actor(), eventId, content, dryRun, selection);
         return ImportResponses.of(result);
     }
 }

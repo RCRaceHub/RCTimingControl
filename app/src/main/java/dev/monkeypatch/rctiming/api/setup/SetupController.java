@@ -21,7 +21,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -121,8 +120,8 @@ public class SetupController {
     @Audited("audit_log")
     @PatchMapping("/decoder-config")
     @PreAuthorize("hasRole('ADMIN')")
-    public SetupProgressDto updateDecoderConfig(Authentication auth, @RequestBody @Valid DecoderConfigUpdateRequest req) {
-        clubProfileService.updateDecoderConfig(CurrentOfficial.actor(auth),
+    public SetupProgressDto updateDecoderConfig(@RequestBody @Valid DecoderConfigUpdateRequest req) {
+        clubProfileService.updateDecoderConfig(CurrentOfficial.actor(),
                 req.decoderHost(), req.decoderPort(), req.decoderProtocol());
         return SetupProgressDto.from(setupService.getProgress());
     }
@@ -136,11 +135,11 @@ public class SetupController {
     @PostMapping("/staff")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createStaff(Authentication auth, @RequestBody @Valid SetupStaffRequest req) {
+    public void createStaff(@RequestBody @Valid SetupStaffRequest req) {
         Set<Role> roles = req.roles().stream()
                 .map(Role::valueOf)
                 .collect(Collectors.toSet());
         userService.createStaff(req.email(), req.password(), req.firstName(), req.lastName(), roles,
-                CurrentOfficial.id(auth));
+                CurrentOfficial.id());
     }
 }

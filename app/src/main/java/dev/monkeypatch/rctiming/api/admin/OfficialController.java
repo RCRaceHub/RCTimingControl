@@ -16,7 +16,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -90,9 +89,9 @@ public class OfficialController {
     @Audited("official_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OfficialDto add(@RequestBody @Valid AddOfficialRequest request, Authentication auth) {
+    public OfficialDto add(@RequestBody @Valid AddOfficialRequest request) {
         User user = officialService.add(request.email(), request.firstName(), request.lastName(),
-                request.password(), request.roles(), CurrentOfficial.id(auth));
+                request.password(), request.roles(), CurrentOfficial.id());
         return toDto(user);
     }
 
@@ -102,8 +101,8 @@ public class OfficialController {
      */
     @Audited("official_audit_log")
     @PutMapping("/{id}/roles")
-    public OfficialDto changeRoles(@PathVariable long id, @RequestBody @Valid RolesRequest request, Authentication auth) {
-        return toDto(officialService.changeRoles(id, request.roles(), CurrentOfficial.id(auth)));
+    public OfficialDto changeRoles(@PathVariable long id, @RequestBody @Valid RolesRequest request) {
+        return toDto(officialService.changeRoles(id, request.roles(), CurrentOfficial.id()));
     }
 
     /**
@@ -113,8 +112,8 @@ public class OfficialController {
     @Audited("official_audit_log")
     @PutMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void setPassword(@PathVariable long id, @RequestBody @Valid PasswordRequest request, Authentication auth) {
-        officialService.setPassword(id, request.password(), CurrentOfficial.id(auth));
+    public void setPassword(@PathVariable long id, @RequestBody @Valid PasswordRequest request) {
+        officialService.setPassword(id, request.password(), CurrentOfficial.id());
     }
 
     /**
@@ -123,15 +122,15 @@ public class OfficialController {
      */
     @Audited("official_audit_log")
     @PostMapping("/{id}/disable")
-    public OfficialDto disable(@PathVariable long id, Authentication auth) {
-        return toDto(officialService.disable(id, CurrentOfficial.id(auth)));
+    public OfficialDto disable(@PathVariable long id) {
+        return toDto(officialService.disable(id, CurrentOfficial.id()));
     }
 
     /** Enables a disabled official again. {@code POST /{id}/enable}; ADMIN. Recorded in the officials audit log. */
     @Audited("official_audit_log")
     @PostMapping("/{id}/enable")
-    public OfficialDto enable(@PathVariable long id, Authentication auth) {
-        return toDto(officialService.enable(id, CurrentOfficial.id(auth)));
+    public OfficialDto enable(@PathVariable long id) {
+        return toDto(officialService.enable(id, CurrentOfficial.id()));
     }
 
     private static OfficialDto toDto(User user) {

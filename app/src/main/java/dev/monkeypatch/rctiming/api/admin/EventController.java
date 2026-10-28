@@ -19,7 +19,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -77,8 +76,8 @@ public class EventController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventDto createEvent(Authentication auth, @RequestBody @Valid CreateEventRequest request) {
-        return EventDto.from(eventService.create(CurrentOfficial.actor(auth),
+    public EventDto createEvent(@RequestBody @Valid CreateEventRequest request) {
+        return EventDto.from(eventService.create(CurrentOfficial.actor(),
                 request.name(), request.eventDate(), request.trackId()));
     }
 
@@ -89,9 +88,9 @@ public class EventController {
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public EventDto updateEvent(Authentication auth, @PathVariable Long id,
+    public EventDto updateEvent(@PathVariable Long id,
                                  @RequestBody @Valid UpdateEventRequest request) {
-        return EventDto.from(eventService.update(CurrentOfficial.actor(auth), id,
+        return EventDto.from(eventService.update(CurrentOfficial.actor(), id,
                 request.name(), request.eventDate(), request.trackId()));
     }
 
@@ -103,9 +102,9 @@ public class EventController {
     @Audited("audit_log")
     @PostMapping("/{id}/transition")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public EventDto transitionEvent(Authentication auth, @PathVariable Long id,
+    public EventDto transitionEvent(@PathVariable Long id,
                                      @RequestBody @Valid TransitionEventRequest request) {
-        return EventDto.from(eventService.transition(CurrentOfficial.actor(auth), id, request.targetStatus()));
+        return EventDto.from(eventService.transition(CurrentOfficial.actor(), id, request.targetStatus()));
     }
 
     /**
@@ -115,9 +114,9 @@ public class EventController {
     @Audited("audit_log")
     @PostMapping("/{id}/generate-rounds")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<Void> generateRounds(Authentication auth, @PathVariable Long id,
+    public ResponseEntity<Void> generateRounds(@PathVariable Long id,
                                                @Valid @RequestBody GenerateRoundsRequest req) {
-        runOrderService.generateRounds(CurrentOfficial.actor(auth), req.toServiceRequest(id));
+        runOrderService.generateRounds(CurrentOfficial.actor(), req.toServiceRequest(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -128,9 +127,9 @@ public class EventController {
     @Audited("audit_log")
     @PostMapping("/{id}/regenerate-rounds")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<Void> regenerateRounds(Authentication auth, @PathVariable Long id,
+    public ResponseEntity<Void> regenerateRounds(@PathVariable Long id,
                                                  @Valid @RequestBody GenerateRoundsRequest req) {
-        runOrderService.regenerateRounds(CurrentOfficial.actor(auth), req.toServiceRequest(id));
+        runOrderService.regenerateRounds(CurrentOfficial.actor(), req.toServiceRequest(id));
         return ResponseEntity.noContent().build();
     }
 
@@ -142,9 +141,9 @@ public class EventController {
     @Audited("audit_log")
     @PostMapping("/{id}/seed-finals")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<Void> seedFinals(Authentication auth, @PathVariable Long id,
+    public ResponseEntity<Void> seedFinals(@PathVariable Long id,
                                            @Valid @RequestBody SeedFinalsRequest req) {
-        runOrderService.seedFinals(CurrentOfficial.actor(auth), id, req.eventClassId(),
+        runOrderService.seedFinals(CurrentOfficial.actor(), id, req.eventClassId(),
                 req.finalsCount(), req.carsPerFinal(), req.bumpCount());
         return ResponseEntity.noContent().build();
     }

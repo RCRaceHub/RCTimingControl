@@ -7,7 +7,6 @@ import dev.monkeypatch.rctiming.backup.BackupService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,9 +50,9 @@ public class BackupController {
     @Audited("audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BackupFile backupNow(Authentication auth) {
+    public BackupFile backupNow() {
         BackupFile file = backupService.backup("manual");
-        audit.entry(CurrentOfficial.actor(auth), "BACKUP_TAKEN").entity("backup", file.name())
+        audit.entry(CurrentOfficial.actor(), "BACKUP_TAKEN").entity("backup", file.name())
                 .summary("Took a backup now: " + file.name())
                 .after(file).recordStandalone();
         return file;

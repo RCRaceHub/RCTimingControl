@@ -9,7 +9,6 @@ import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,8 +55,8 @@ public class AdminDriverMediaController {
     @Audited("audit_log")
     @PutMapping("/competitors/{id}/media/sponsors")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView setSponsors(Authentication auth, @PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
-        return service.setSponsors(CurrentOfficial.actor(auth), id, request.names() == null ? List.of() : request.names());
+    public CompetitorMediaView setSponsors(@PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
+        return service.setSponsors(CurrentOfficial.actor(), id, request.names() == null ? List.of() : request.names());
     }
 
     /**
@@ -67,17 +66,17 @@ public class AdminDriverMediaController {
     @Audited("audit_log")
     @PutMapping(value = "/competitors/{id}/media/headshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView uploadHeadshot(Authentication auth, @PathVariable long id,
+    public CompetitorMediaView uploadHeadshot(@PathVariable long id,
                                               @RequestPart("file") MultipartFile file) {
-        return service.uploadHeadshot(CurrentOfficial.actor(auth), id, file);
+        return service.uploadHeadshot(CurrentOfficial.actor(), id, file);
     }
 
     /** Removes the headshot. {@code DELETE /competitors/{id}/media/headshot}; ADMIN or RACE_DIRECTOR. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/competitors/{id}/media/headshot")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView deleteHeadshot(Authentication auth, @PathVariable long id) {
-        return service.deleteHeadshot(CurrentOfficial.actor(auth), id);
+    public CompetitorMediaView deleteHeadshot(@PathVariable long id) {
+        return service.deleteHeadshot(CurrentOfficial.actor(), id);
     }
 
     /** An entry's car photo. {@code GET /entries/{id}/car-photo}; read only. */
@@ -93,9 +92,9 @@ public class AdminDriverMediaController {
     @Audited("audit_log")
     @PutMapping(value = "/entries/{id}/car-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CarPhotoResponse uploadCarPhoto(Authentication auth, @PathVariable long id,
+    public CarPhotoResponse uploadCarPhoto(@PathVariable long id,
                                            @RequestPart("file") MultipartFile file) {
-        return new CarPhotoResponse(service.uploadCarPhoto(CurrentOfficial.actor(auth), id, file));
+        return new CarPhotoResponse(service.uploadCarPhoto(CurrentOfficial.actor(), id, file));
     }
 
     /** Removes the car photo. {@code DELETE /entries/{id}/car-photo}; ADMIN or RACE_DIRECTOR; 204. Audited. */
@@ -103,7 +102,7 @@ public class AdminDriverMediaController {
     @DeleteMapping("/entries/{id}/car-photo")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCarPhoto(Authentication auth, @PathVariable long id) {
-        service.deleteCarPhoto(CurrentOfficial.actor(auth), id);
+    public void deleteCarPhoto(@PathVariable long id) {
+        service.deleteCarPhoto(CurrentOfficial.actor(), id);
     }
 }

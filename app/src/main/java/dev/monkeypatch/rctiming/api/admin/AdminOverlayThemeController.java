@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,17 +48,17 @@ public class AdminOverlayThemeController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     @ResponseStatus(HttpStatus.CREATED)
-    public OverlayThemeDto create(Authentication auth, @RequestBody @Valid OverlayThemeRequest request) {
-        return dto(service.create(CurrentOfficial.actor(auth), request.name(), request.design()));
+    public OverlayThemeDto create(@RequestBody @Valid OverlayThemeRequest request) {
+        return dto(service.create(CurrentOfficial.actor(), request.name(), request.design()));
     }
 
     /** Changes a theme. {@code PUT /{id}}; ADMIN or RACE_DIRECTOR; 400; 404; 409. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public OverlayThemeDto update(Authentication auth, @PathVariable Long id,
+    public OverlayThemeDto update(@PathVariable Long id,
                                   @RequestBody @Valid OverlayThemeRequest request) {
-        return dto(service.update(CurrentOfficial.actor(auth), id, request.name(), request.design()));
+        return dto(service.update(CurrentOfficial.actor(), id, request.name(), request.design()));
     }
 
     /** Deletes a theme. {@code DELETE /{id}}; ADMIN or RACE_DIRECTOR; 204; 404. Audited. */
@@ -67,8 +66,8 @@ public class AdminOverlayThemeController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(Authentication auth, @PathVariable Long id) {
-        service.delete(CurrentOfficial.actor(auth), id);
+    public void delete(@PathVariable Long id) {
+        service.delete(CurrentOfficial.actor(), id);
     }
 
     private OverlayThemeDto dto(OverlayTheme theme) {

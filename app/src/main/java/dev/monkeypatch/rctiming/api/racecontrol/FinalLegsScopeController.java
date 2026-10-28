@@ -7,7 +7,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -53,9 +52,9 @@ public class FinalLegsScopeController {
     @Audited("audit_log")
     @PutMapping("/events/{eventId}/final-legs-scope")
     @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
-    public FinalLegsScopeDto update(Authentication auth, @PathVariable long eventId,
+    public FinalLegsScopeDto update(@PathVariable long eventId,
                                     @Valid @RequestBody FinalLegsScopeDto request) {
         return new FinalLegsScopeDto(
-                eventService.setFinalLegsScope(CurrentOfficial.actor(auth), eventId, request.scope()));
+                eventService.setFinalLegsScope(CurrentOfficial.actor(), eventId, request.scope()));
     }
 }
