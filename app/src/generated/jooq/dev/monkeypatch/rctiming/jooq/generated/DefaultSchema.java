@@ -31,6 +31,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemes;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
@@ -209,6 +210,11 @@ public class DefaultSchema extends SchemaImpl {
     public final Penalties PENALTIES = Penalties.PENALTIES;
 
     /**
+     * The table <code>overlay_themes</code>.
+     */
+    public final OverlayThemes OVERLAY_THEMES = OverlayThemes.OVERLAY_THEMES;
+
+    /**
      * The table <code>practice_drivers</code>.
      */
     public final PracticeDrivers PRACTICE_DRIVERS = PracticeDrivers.PRACTICE_DRIVERS;
@@ -351,6 +357,7 @@ public class DefaultSchema extends SchemaImpl {
             MarshalPenalties.MARSHAL_PENALTIES,
             OfficialAuditLog.OFFICIAL_AUDIT_LOG,
             Penalties.PENALTIES,
+            OverlayThemes.OVERLAY_THEMES,
             PracticeDrivers.PRACTICE_DRIVERS,
             PracticeLaps.PRACTICE_LAPS,
             PracticeSessions.PRACTICE_SESSIONS,

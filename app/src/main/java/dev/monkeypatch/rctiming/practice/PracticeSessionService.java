@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -257,5 +258,5 @@ public class PracticeSessionService {
      * @param bestLapN     how many consecutive laps the average is taken over (default 5)
      * @param pauseSeconds how long a transponder may be quiet before its next lap starts a new run (default 180)
      */
-    public record CreateRequest(String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
+    public record CreateRequest(@Size(max = 200) String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
 }

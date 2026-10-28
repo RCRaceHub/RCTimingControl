@@ -382,7 +382,8 @@ public class BoardController {
 
     /**
      * The standouts of this heat and of its round for the overlay's ticker: most places gained and lost against the
-     * grid, and the best three and five lap average. The heat is live while it runs and from its stored result once
+     * grid, the best three and five lap average, the flying lap, the most improved on the driver's last heat and the
+     * most consistent driver. The heat is live while it runs and from its stored result once
      * it has finished.
      */
     @GetMapping("/races/{raceId}/highlights")

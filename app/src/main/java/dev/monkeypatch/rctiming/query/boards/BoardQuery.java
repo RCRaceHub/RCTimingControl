@@ -134,6 +134,61 @@ public class BoardQuery {
                 .fetch(RACES.ID);
     }
 
+    /** A competitor's earlier heat: the race and the entry the competitor raced it under. */
+    public record PreviousHeat(long raceId, long entryId) {}
+
+    /**
+     * Each competitor's most recent earlier finished heat of the same round type (practice, qualifier or final) in the
+     * same event, for comparing a run with the driver's last one. "Earlier" is by run order: the round's sequence in
+     * the event, then the race's sequence in the round. Abandoned heats are skipped, and so is any competitor with no
+     * such heat, who is left out of the map.
+     *
+     * @param raceId        the heat to compare against; an unknown race gives an empty map
+     * @param competitorIds the competitors to look up
+     */
+    public Map<Long, PreviousHeat> previousHeats(long raceId, Collection<Long> competitorIds) {
+        if (competitorIds.isEmpty()) {
+            return Map.of();
+        }
+        var thisRace = RACES.as("this_race");
+        var thisRound = ROUNDS.as("this_round");
+        Record key = dsl.select(thisRound.EVENT_ID, thisRound.TYPE, thisRound.SEQUENCE_IN_EVENT, thisRace.SEQUENCE_IN_ROUND,
+                        thisRace.EVENT_CLASS_ID)
+                .from(thisRace)
+                .join(thisRound).on(thisRound.ID.eq(thisRace.ROUND_ID))
+                .where(thisRace.ID.eq(raceId))
+                .fetchOne();
+        if (key == null) {
+            return Map.of();
+        }
+        int roundSequence = key.get(thisRound.SEQUENCE_IN_EVENT);
+        int raceSequence = key.get(thisRace.SEQUENCE_IN_ROUND);
+        Map<Long, PreviousHeat> previous = new HashMap<>();
+        // Oldest first, so a later heat replaces an earlier one
+        dsl.select(RACES.ID, ROUNDS.SEQUENCE_IN_EVENT, RACES.SEQUENCE_IN_ROUND, RACE_ENTRIES.ENTRY_ID, ENTRIES.COMPETITOR_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(RACE_ENTRIES).on(RACE_ENTRIES.RACE_ID.eq(RACES.ID))
+                .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
+                .where(ROUNDS.EVENT_ID.eq(key.get(thisRound.EVENT_ID)))
+                .and(ROUNDS.TYPE.eq(key.get(thisRound.TYPE)))
+                .and(RACES.EVENT_CLASS_ID.eq(key.get(thisRace.EVENT_CLASS_ID)))
+                .and(RACES.STATUS.eq("FINISHED"))
+                .and(RACES.ABANDONED_AT.isNull())
+                .and(RACES.ID.ne(raceId))
+                .and(ENTRIES.COMPETITOR_ID.in(competitorIds))
+                .orderBy(ROUNDS.SEQUENCE_IN_EVENT, RACES.SEQUENCE_IN_ROUND, RACES.ID)
+                .forEach(r -> {
+                    int round = r.get(ROUNDS.SEQUENCE_IN_EVENT);
+                    int race = r.get(RACES.SEQUENCE_IN_ROUND);
+                    if (round < roundSequence || (round == roundSequence && race < raceSequence)) {
+                        previous.put(r.get(ENTRIES.COMPETITOR_ID),
+                                new PreviousHeat(r.get(RACES.ID), r.get(RACE_ENTRIES.ENTRY_ID)));
+                    }
+                });
+        return previous;
+    }
+
     /** The 1-based grid place of each entry in a race; an entry with no grid place is left out. */
     public Map<Long, Integer> gridPositions(long raceId) {
         Map<Long, Integer> grid = new HashMap<>();

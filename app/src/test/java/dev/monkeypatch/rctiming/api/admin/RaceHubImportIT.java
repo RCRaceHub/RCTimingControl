@@ -388,26 +388,43 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void brcaNumberHeldByAnotherCompetitor_isAWarningNotAnError() {
+    void brcaNumberHeldByAnotherRaceHubCompetitor_blocksTheImportAndNamesWhoHoldsIt() {
         Competitor other = new Competitor();
         other.setDisplayName("Other Holder " + run);
         other.setBrcaNumber("BR" + run);
+        other.setExternalSource("RACEHUB");
+        other.setExternalId("someone-else-" + run);
         competitorRepository.save(other);
+
+        ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
+
+        assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
+        assertThat(resp.getBody().get("errors").toString())
+                .contains("Ada Lovelace").contains("BRCA number BR" + run)
+                .contains("Other Holder " + run + " (already stored)");
+    }
+
+    @Test
+    void brcaNumberHeldByAWalkIn_isAWarningNotAnError() {
+        Competitor walkIn = new Competitor();
+        walkIn.setDisplayName("Walk In " + run);
+        walkIn.setBrcaNumber("BR" + run);
+        competitorRepository.save(walkIn);
 
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
 
         assertThat(resp.getBody().get("blocked").asBoolean()).isFalse();
         assertThat(resp.getBody().get("warnings").toString())
-                .contains("Ada Lovelace").contains("BRCA number BR" + run);
+                .contains("Ada Lovelace").contains("Walk In " + run + " (already stored)");
     }
 
     @Test
-    void brcaNumberOfTheSameDriver_isNotWarnedAbout() {
+    void brcaNumberOfTheSameDriver_isNotBlocked() {
         importFixture("entries-v1-initial.json", false);
 
         ResponseEntity<JsonNode> again = importFixture("entries-v1-update.json", true);
 
-        assertThat(again.getBody().get("warnings").toString()).doesNotContain("BRCA number");
+        assertThat(again.getBody().get("errors").toString()).doesNotContain("BRCA number");
     }
 
     @Test

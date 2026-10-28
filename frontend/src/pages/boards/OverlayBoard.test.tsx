@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TOWER_ROW_REM } from './OverlayTower';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
@@ -27,6 +27,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getTicker: vi.fn(),
   getSponsors: vi.fn(),
   getLiveQualifying: vi.fn(),
+  getOverlayTheme: vi.fn(),
 }));
 
 import {
@@ -39,6 +40,7 @@ import {
   getTicker,
   getSponsors,
   getLiveQualifying,
+  getOverlayTheme,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -110,7 +112,7 @@ beforeEach(() => {
   vi.mocked(getRaceClock).mockResolvedValue(clock());
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
   vi.mocked(getPositionHistory).mockResolvedValue([]);
-  vi.mocked(getRaceHighlights).mockResolvedValue({ heat: { gained: null, lost: null, avg3: null, avg5: null }, round: { gained: null, lost: null, avg3: null, avg5: null } });
+  vi.mocked(getRaceHighlights).mockResolvedValue({ heat: { gained: null, lost: null, avg3: null, avg5: null, flying: null, consistent: null, improved: null }, round: { gained: null, lost: null, avg3: null, avg5: null, flying: null, consistent: null, improved: null } });
   vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getSponsors).mockResolvedValue([]);
   vi.mocked(getLiveQualifying).mockResolvedValue({ eventId: null, eventName: null, phase: 'NONE', raceId: null, raceLabel: null, className: null, rows: [] });
@@ -170,8 +172,8 @@ describe('OverlayBoard', () => {
     stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     vi.mocked(getRaceHighlights).mockResolvedValue({
-      heat: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 2 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: null },
-      round: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 4 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: { driverName: 'Katherine Johnson', value: 14_300 } },
+      heat: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 2 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: null, flying: { driverName: 'Ada Lovelace', value: 1_250 }, consistent: { driverName: 'Katherine Johnson', value: 180 }, improved: { driverName: 'Sam Second', value: 2 } },
+      round: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 4 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: { driverName: 'Katherine Johnson', value: 14_300 }, flying: null, consistent: null, improved: null },
     });
     renderOverlay();
 
@@ -182,6 +184,27 @@ describe('OverlayBoard', () => {
     expect(ticker).toHaveTextContent('Most places lost in the round: Sam Second (−4)');
     expect(ticker).toHaveTextContent('Best 3 lap average in this heat: 14.100 · Ada Lovelace');
     expect(ticker).toHaveTextContent('Best 5 lap average in the round: 14.300 · Katherine Johnson');
+    expect(ticker).toHaveTextContent('Flying lap in this heat: Ada Lovelace (1.250 under their average)');
+    expect(ticker).toHaveTextContent('Most improved in this heat: Sam Second (+2 laps on their last heat)');
+    expect(ticker).toHaveTextContent('Most consistent in this heat: Katherine Johnson (laps within');
+  });
+
+  it('draws with a saved theme opened by ?look=ID, ignoring other options but keeping the event', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Final A', nextDrivers: ['Ada Lovelace'], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [],
+    });
+    vi.mocked(getOverlayTheme).mockResolvedValue({
+      id: 5, name: 'Club', design: { separatorImage: '/storage/club.png', tickerItems: ['next', 'drivers'] },
+    });
+    const { container } = renderOverlay('/boards/overlay?look=5&event=7&separator=/storage/other.png');
+
+    await screen.findByText(/On the grid/);
+    await waitFor(() =>
+      expect(container.querySelector('[aria-label="Ticker"] img')).toHaveAttribute('src', '/storage/club.png'));
+    expect(getOverlayTheme).toHaveBeenCalledWith(5);
+    expect(getNowNext).toHaveBeenCalledWith(7);
   });
 
   it('puts the separator image between ticker items in place of the diamond', async () => {
@@ -424,7 +447,7 @@ describe('overlay options', () => {
       showClass: true,
       theme: 'dark',
       showChart: true,
-      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace']),
+      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace', 'flying', 'improved', 'steady']),
       showSponsors: true,
       layout: 'tower',
       showQualifying: true,

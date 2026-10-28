@@ -331,15 +331,22 @@ export async function getTicker(eventId?: number | null): Promise<TickerDto> {
   return data;
 }
 
-/** A driver and the number that earned a standout: places gained or lost, or an average lap in milliseconds. */
+/** A driver and the number that earned a standout: places or laps, or a time in milliseconds. */
 export type HighlightMark = { driverName: string; value: number };
 
-/** The standouts of a set of runs: places gained and lost against the grid, and the best 3 and 5 lap average. */
+/**
+ * The standouts of a set of runs: places gained (the biggest climber) and lost against the grid, the best 3 and 5 lap
+ * average, the flying lap (ms under the driver's own average so far), the most consistent driver (lap time spread in
+ * ms) and the most laps beyond the driver's previous heat of the same round type.
+ */
 export type HighlightScope = {
   gained: HighlightMark | null;
   lost: HighlightMark | null;
   avg3: HighlightMark | null;
   avg5: HighlightMark | null;
+  flying: HighlightMark | null;
+  consistent: HighlightMark | null;
+  improved: HighlightMark | null;
 };
 
 /** The standouts of a heat (live while it runs) and of its round, for the overlay's ticker. */
@@ -370,5 +377,14 @@ export type RaceMediaDto = {
 /** The pictures and driver sponsors for the cars of a race; cars with nothing to show, or a hidden name, are left out. */
 export async function getRaceMedia(raceId: number): Promise<RaceMediaDto[]> {
   const { data } = await api.get<RaceMediaDto[]>(`/api/v1/boards/races/${raceId}/media`);
+  return data;
+}
+
+/** A saved overlay theme: a name and the designer's choices as a JSON object (see `overlayDesignFromTheme`). */
+export type OverlayThemeDto = { id: number; name: string; design: Record<string, unknown> };
+
+/** One saved overlay theme, for the overlay opened with `?look=ID`; a 404 means there is no such theme. */
+export async function getOverlayTheme(id: number): Promise<OverlayThemeDto> {
+  const { data } = await api.get<OverlayThemeDto>(`/api/v1/boards/overlay-themes/${id}`);
   return data;
 }

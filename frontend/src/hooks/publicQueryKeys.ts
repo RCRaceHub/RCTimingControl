@@ -24,6 +24,7 @@ export const publicQueryKeys = {
     clock: (raceId: number | null) => ['boards', 'clock', raceId] as const,
     positionHistory: (raceId: number | null, laps: number) => ['boards', 'position-history', raceId, laps] as const,
     ticker: (eventId: number | null) => ['boards', 'ticker', eventId] as const,
+    overlayTheme: (id: number | null) => ['boards', 'overlay-theme', id] as const,
     sponsors: (eventId: number | null) => ['boards', 'sponsors', eventId] as const,
     media: (raceId: number | null) => ['boards', 'media', raceId] as const,
     roundFastest: (raceId: number | null) => ['boards', 'round-fastest', raceId] as const,
