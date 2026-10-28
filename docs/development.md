@@ -369,6 +369,7 @@ Moving to another database means:
 - **Queries and mutations live in hooks**, not in pages or components. A page calls a hook from `hooks/` (`useBoardQueries.ts`, `hooks/admin/useAdmin*.ts`), which owns the key, the fetcher, the polling interval and `enabled`. Where a screen needs a different interval or condition, the hook takes it as an option rather than the page rebuilding the query. The boards are converted; the race-control panels and the remaining admin pages move over as they are touched.
 - **Exports:** a page that a route loads lazily, and a layout, has a `default` export. Everything else (components, hooks, helpers) is a named export.
 - **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
+- **Small screens:** the smallest screen to support is a 1920x1080 laptop, which at 125% or 150% Windows scaling gives a browser viewport as small as 1280x600. A page must not scroll sideways at that size. Dense screens tighten under the `short` variant (viewport 820px tall or less, defined in `index.css`), as race control does for its header, run order and live timing rows.
 - **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.
 
 ### Submitting a PR

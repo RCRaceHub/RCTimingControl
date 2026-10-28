@@ -91,7 +91,7 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
   const busy = autoRun.go.isPending || autoRun.stop.isPending;
 
   return (
-    <section className="border-b px-3 py-3 flex flex-col gap-2" aria-label="Auto run" data-testid="auto-run-panel">
+    <section className="border-b px-3 py-3 short:py-2 flex flex-col gap-2 short:gap-1" aria-label="Auto run" data-testid="auto-run-panel">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Auto run</h3>
 
       {!state.armed && <p className="text-sm text-muted-foreground">Off. Races are started by hand.</p>}

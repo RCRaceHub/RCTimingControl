@@ -18,6 +18,8 @@
 @import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
+/* A short viewport: a 1920x1080 laptop at 125% or 150% Windows scaling, less the browser bars. Dense layouts tighten under it. */
+@custom-variant short (@media (max-height: 820px));
 
 @theme inline {
     --font-sans:    'Figtree Variable', ui-sans-serif, system-ui, sans-serif;

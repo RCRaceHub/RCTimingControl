@@ -73,7 +73,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             : wsStatus === 'connected' ? 'Waiting for first passing…' : 'Connecting to timing…'}
         </p>
       ) : (
-        <Table className="table-fixed">
+        <Table className="table-fixed short:[&_td]:py-1.5 short:[&_th]:h-8">
           <TableHeader>
             <TableRow>
               <TableHead className="w-14">Pos</TableHead>
