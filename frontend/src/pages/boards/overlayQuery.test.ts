@@ -99,3 +99,11 @@ describe('overlayDesignFromTheme', () => {
     expect(overlayDesignFromTheme(themeDesignToSave(design))).toEqual(design);
   });
 });
+
+describe('parseSeparatorImage', () => {
+  it('refuses a backslash path that browsers read as another host', () => {
+    expect(parseSeparatorImage('/\\evil.com/x.png')).toBeNull();
+    expect(parseSeparatorImage('//evil.com/x.png')).toBeNull();
+    expect(parseSeparatorImage('/storage/x.png')).toBe('/storage/x.png');
+  });
+});

@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
@@ -85,7 +86,8 @@ public class OverlayThemeService {
                 .summary("Removed the overlay theme " + theme.getName()).before(before).record();
     }
 
-    /** A theme's design as JSON, for the DTOs; touches no table. */
+    /** A theme's design as JSON, for the DTOs; touches no table, so it opens no transaction. */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public JsonNode designOf(OverlayTheme theme) {
         try {
             return json.readTree(theme.getDesign());

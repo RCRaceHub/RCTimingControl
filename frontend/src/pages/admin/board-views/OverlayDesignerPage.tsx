@@ -62,7 +62,7 @@ export default function OverlayDesignerPage() {
   const [themeName, setThemeName] = useState('');
   const theme = themes.find((t) => t.id === themeId) ?? null;
   const savedDesign = (t: OverlayThemeDto) => JSON.stringify(themeDesignToSave(overlayDesignFromTheme(t.design)));
-  const unsaved = theme !== null && savedDesign(theme) !== JSON.stringify(themeDesignToSave(design));
+  const unsaved = theme !== null && savedDesign(theme) !== JSON.stringify(themeDesignToSave(overlayDesignFromTheme(design)));
 
   function fillFields(next: OverlayDesign) {
     setTopText(String(next.top));
@@ -96,19 +96,18 @@ export default function OverlayDesignerPage() {
   });
   const duplicateTheme = useMutation({
     mutationFn: (source: OverlayThemeDto) => {
+      // Copies the design as it stands in the designer, edits included
       const names = new Set(themes.map((t) => t.name));
       let name = `${source.name} copy`;
       for (let n = 2; names.has(name); n++) name = `${source.name} copy ${n}`;
-      return overlayThemesAdminApi.create({ name, design: source.design });
+      return overlayThemesAdminApi.create({ name, design: themeDesignToSave(design) });
     },
     onSuccess: (copy) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'overlay-themes'] });
       toast.success(`Made ${copy.name}`);
       setThemeId(copy.id);
       setThemeName(copy.name);
-      const next = { ...overlayDesignFromTheme(copy.design), eventId: design.eventId };
-      setDesign(next);
-      fillFields(next);
+      fillFields(design);
     },
     onError: (e) => toast.error(getApiErrorMessage(e, 'Could not duplicate the theme')),
   });
@@ -229,7 +228,7 @@ export default function OverlayDesignerPage() {
                 variant="outline"
                 disabled={theme === null || deleteTheme.isPending}
                 onClick={() => {
-                  if (theme && window.confirm(`Delete the theme ${theme.name}? Overlays using it fall back to the default.`)) {
+                  if (theme && window.confirm(`Delete the theme ${theme.name}? Overlays already open keep its look until reloaded, then use their address options.`)) {
                     deleteTheme.mutate(theme.id);
                   }
                 }}

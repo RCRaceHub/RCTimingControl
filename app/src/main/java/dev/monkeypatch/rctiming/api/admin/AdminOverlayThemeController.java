@@ -57,7 +57,8 @@ public class AdminOverlayThemeController {
     @Audited("audit_log")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public OverlayThemeDto update(Authentication auth, @PathVariable Long id, @RequestBody @Valid OverlayThemeRequest request) {
+    public OverlayThemeDto update(Authentication auth, @PathVariable Long id,
+                                  @RequestBody @Valid OverlayThemeRequest request) {
         return dto(service.update(CurrentOfficial.actor(auth), id, request.name(), request.design()));
     }
 

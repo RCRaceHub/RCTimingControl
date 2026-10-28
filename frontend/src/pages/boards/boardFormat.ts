@@ -92,7 +92,7 @@ function parseGapEvery(value: string | null): number {
 export function parseSeparatorImage(value: string | null): string | null {
   const v = value?.trim();
   if (!v || v.toLowerCase() === 'diamond') return null;
-  return /^https?:\/\/\S+$/i.test(v) || /^\/(?!\/)\S*$/.test(v) ? v : null;
+  return /^https?:\/\/\S+$/i.test(v) || /^\/(?![/\\])\S*$/.test(v) ? v : null;
 }
 
 const OVERLAY_DEFAULT_TOP = 10;

@@ -90,4 +90,19 @@ describe('OverlayDesignerPage', () => {
     expect(sent.design).not.toHaveProperty('eventId');
     expect(sent.design).toHaveProperty('layout', 'tower');
   });
+
+  it('saves over the chosen theme', async () => {
+    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 2, name: 'Club', design: {} });
+    renderPage();
+    await screen.findByRole('option', { name: 'Club' });
+
+    fireEvent.change(screen.getByLabelText('Saved theme'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Places shown'), { target: { value: '9' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save theme' }));
+
+    await waitFor(() => expect(overlayThemesAdminApi.update).toHaveBeenCalled());
+    const [id, body] = vi.mocked(overlayThemesAdminApi.update).mock.calls[0];
+    expect(id).toBe(2);
+    expect(body.design).toHaveProperty('top', 9);
+  });
 });
