@@ -156,7 +156,8 @@ public class AdminAudioController {
      * ({@code start}, {@code finish}, {@code tick}, {@code lap-beep}, {@code faster-beep} or
      * {@code slower-beep}); {@code file} is the sound (at most 1 MB) and {@code durationMs} how long it plays, so
      * race control can wait that long before a spoken line. 400 for a missing, oversized or unsupported file or a
-     * duration outside 100 to 10000 ms. Answers with the club's sounds as saved.
+     * duration outside 100 to 10000 ms;
+     * 404 for a horn name that is not one of those. Answers with the club's sounds as saved.
      */
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
