@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
+import dev.monkeypatch.rctiming.domain.club.ClubProfile;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
@@ -44,8 +45,7 @@ public class AudioTemplateService {
     }
 
     /** One template by id. @throws EntityNotFoundException (404) if there is none */
-    @ReadTransaction
-    public AudioTemplate get(Long id) {
+    private AudioTemplate get(Long id) {
         return repository.getOrThrow(id);
     }
 
@@ -88,11 +88,11 @@ public class AudioTemplateService {
      */
     public ClubAudioSettings apply(Actor actor, Long id) {
         AudioTemplate template = get(id);
-        clubs.changeAudioSettings(actor, profile -> profile.setAudioSettings(
+        ClubProfile saved = clubs.changeAudioSettings(actor, profile -> profile.setAudioSettings(
                 template.getSettings().withHornSounds(profile.getAudioSettings().hornSounds())));
         audit.entry(actor, "AUDIO_TEMPLATE_APPLIED").entity("audio_template", id)
                 .summary("Applied the audio template " + template.getName()).record();
-        return clubs.audioSettings();
+        return saved.getAudioSettings();
     }
 
     /** Removes a template and records {@code AUDIO_TEMPLATE_DELETED}. @throws EntityNotFoundException (404) if it is missing */

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useConfirm } from '@/components/ConfirmDialog';
 import {
   applyAudioTemplate,
   createAudioTemplate,
@@ -11,6 +12,7 @@ import {
   updateAudioTemplate,
 } from '@/lib/audioApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
+import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 /**
  * Audio templates: pick a saved set of audio settings (BRCA meeting, Club night, Practice and so on) and apply it,
@@ -19,6 +21,7 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
  */
 export function AudioTemplatesBar() {
   const queryClient = useQueryClient();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [selectedId, setSelectedId] = useState<number | ''>('');
   const [newName, setNewName] = useState('');
 
@@ -26,19 +29,26 @@ export function AudioTemplatesBar() {
     queryKey: raceControlQueryKeys.audioTemplates(),
     queryFn: listAudioTemplates,
   });
+  // A template deleted elsewhere drops out of the list, and the picker then shows no choice
   const selected = templates.find((t) => t.id === selectedId);
 
   const refreshTemplates = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioTemplates() });
   const failed = (what: string) => (error: unknown) => {
     const status = (error as { response?: { status?: number } }).response?.status;
-    toast.error(status === 409 ? 'There is already a template with that name.' : `Could not ${what}.`);
+    if (status === 404) refreshTemplates();
+    toast.error(
+      status === 409 ? 'There is already a template with that name.'
+        : status === 404 ? 'That template no longer exists.'
+          : `Could not ${what}.`,
+    );
   };
 
   const apply = useMutation({
     mutationFn: (id: number) => applyAudioTemplate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
       toast.success(`Applied "${selected?.name}".`);
     },
     onError: failed('apply the template'),
@@ -79,7 +89,7 @@ export function AudioTemplatesBar() {
         <select
           aria-label="Audio template"
           className="h-8 rounded-md border bg-background px-2 text-sm"
-          value={selectedId}
+          value={selected ? selected.id : ''}
           onChange={(e) => setSelectedId(e.target.value === '' ? '' : Number(e.target.value))}
         >
           <option value="">Choose a template…</option>
@@ -105,8 +115,14 @@ export function AudioTemplatesBar() {
           size="sm"
           variant="outline"
           disabled={!selected || busy}
-          onClick={() => {
-            if (selected && window.confirm(`Delete the template "${selected.name}"?`)) remove.mutate(selected.id);
+          onClick={async () => {
+            if (!selected) return;
+            const confirmed = await confirm({
+              title: `Delete the template "${selected.name}"?`,
+              confirmLabel: 'Delete',
+              destructive: true,
+            });
+            if (confirmed) remove.mutate(selected.id);
           }}
         >
           Delete
@@ -131,6 +147,7 @@ export function AudioTemplatesBar() {
           Save as new
         </Button>
       </form>
+      {confirmDialog}
     </div>
   );
 }

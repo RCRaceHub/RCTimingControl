@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AudioTemplatesBar } from './AudioTemplatesBar';
 
@@ -58,11 +58,11 @@ describe('AudioTemplatesBar', () => {
 
   it('deletes the chosen template after confirming', async () => {
     vi.mocked(audioApi.deleteAudioTemplate).mockResolvedValue(undefined);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderBar();
     await screen.findByRole('option', { name: 'Practice' });
     fireEvent.change(screen.getByLabelText('Audio template'), { target: { value: '1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(await within(await screen.findByRole('dialog')).findByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(audioApi.deleteAudioTemplate).toHaveBeenCalledWith(1));
   });
 });
