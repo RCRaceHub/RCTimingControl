@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.domain.club;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.infrastructure.storage.ObjectStorageService;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class HornSoundService {
                     return horn;
                 }
             }
-            throw new IllegalArgumentException("Unknown horn: " + name
+            throw new EntityNotFoundException("Unknown horn: " + name
                     + ". Use start, finish, tick, lap-beep, faster-beep or slower-beep");
         }
     }

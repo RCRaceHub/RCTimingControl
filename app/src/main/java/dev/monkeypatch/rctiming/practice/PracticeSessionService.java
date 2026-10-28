@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -71,7 +72,8 @@ public class PracticeSessionService {
      * Creates an idle session, optionally tied to an event. {@code bestLapN} and {@code pauseSeconds} fall back to
      * the session defaults when not given.
      *
-     * @throws IllegalArgumentException for an unknown event, or a lap count or pause below 1
+     * @throws EntityNotFoundException (404) for an unknown event
+     * @throws IllegalArgumentException (400) for a lap count or pause below 1
      */
     @Transactional
     public PracticeSessionDto create(Actor actor, CreateRequest request) {
@@ -80,7 +82,7 @@ public class PracticeSessionService {
 
         if (request.eventId() != null) {
             Event event = eventRepository.findById(request.eventId())
-                    .orElseThrow(() -> new IllegalArgumentException("Event not found: " + request.eventId()));
+                    .orElseThrow(() -> new EntityNotFoundException("Event not found: " + request.eventId()));
             session.setEventId(event.getId());
         }
 

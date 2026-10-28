@@ -61,6 +61,16 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void createSession_withAnUnknownEvent_answers404() {
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/v1/practice-sessions", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", "Nowhere Practice", "eventId", 987654321L), rdHeaders()),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
     void createSession_validRequest_returns201() {
         ResponseEntity<PracticeSessionDto> response = restTemplate.exchange(
                 "/api/v1/practice-sessions", HttpMethod.POST,

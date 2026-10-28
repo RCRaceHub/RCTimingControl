@@ -10,7 +10,6 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorNameVisibilityServic
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
 import dev.monkeypatch.rctiming.domain.competitor.NameVisibility;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
-import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorChangeDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDataExportService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDuplicateGroupDto;
@@ -23,7 +22,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -229,12 +226,8 @@ public class AdminCompetitorController {
      */
     @PostMapping("/spoken-name/preview")
     public ResponseEntity<byte[]> previewSpokenName(@Valid @RequestBody SpeechPreviewRequest body) {
-        try {
-            // No club voice: null leaves it to Piper's configured default
-            byte[] wav = piperClient.synthesize(body.text().trim(), clubProfileService.defaultVoiceId().orElse(null));
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).body(wav);
-        } catch (TtsUnavailableException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The announcer voice is not available");
-        }
+        // No club voice: null leaves it to Piper's configured default
+        byte[] wav = piperClient.synthesize(body.text().trim(), clubProfileService.defaultVoiceId().orElse(null));
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).body(wav);
     }
 }
