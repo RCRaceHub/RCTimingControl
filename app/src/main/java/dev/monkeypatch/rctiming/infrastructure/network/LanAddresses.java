@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.infrastructure.network;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -51,8 +52,13 @@ public class LanAddresses {
     private volatile int port;
 
     @Autowired
-    public LanAddresses(ServerProperties server, NetworkProperties network) {
-        this(server.getAddress() == null ? "" : server.getAddress().getHostAddress(), network);
+    public LanAddresses(ObjectProvider<ServerProperties> server, NetworkProperties network) {
+        this(bindAddress(server.getIfAvailable()), network);
+    }
+
+    /** The configured {@code server.address}, or empty when none is set or there is no web server (a non-web context). */
+    private static String bindAddress(ServerProperties server) {
+        return server == null || server.getAddress() == null ? "" : server.getAddress().getHostAddress();
     }
 
     LanAddresses(String bindAddress, NetworkProperties network) {
