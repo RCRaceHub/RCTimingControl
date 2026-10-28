@@ -45,7 +45,7 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const THEMES = {
   dark: {
-    panel: 'bg-slate-950/80 text-white',
+    panel: 'dark bg-slate-950/80 text-white',
     muted: 'text-slate-300',
     row: 'border-white/10',
     position: 'bg-white/15',

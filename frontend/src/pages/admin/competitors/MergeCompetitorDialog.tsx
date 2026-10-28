@@ -125,7 +125,7 @@ export default function MergeCompetitorDialog({ duplicate, suggested = [], onOpe
             </p>
             {data.resultingSpokenName && <p>Say as afterwards: {data.resultingSpokenName}</p>}
             {data.warnings.length > 0 && (
-              <ul className="list-disc pl-5 text-amber-700 dark:text-amber-400">
+              <ul className="list-disc pl-5 text-warning">
                 {data.warnings.map(w => <li key={w}>{w}</li>)}
               </ul>
             )}

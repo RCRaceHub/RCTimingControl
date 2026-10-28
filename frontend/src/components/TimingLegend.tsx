@@ -24,18 +24,18 @@ const state = (swatch: string, icon: StateKind): LegendItem => ({ swatch, icon, 
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
     { swatch: '', label: 'Flashes after each lap:' },
-    state('bg-purple-500', 'race-best'),
-    state('bg-blue-500', 'personal-best'),
-    state('bg-green-500', 'improving'),
-    state('bg-red-500', 'slow'),
+    state('bg-race-best', 'race-best'),
+    state('bg-info', 'personal-best'),
+    state('bg-success', 'improving'),
+    state('bg-destructive', 'slow'),
   ],
-  close: [state('bg-amber-500', 'close')],
+  close: [state('bg-warning', 'close')],
   pace: [state('', 'on-pace')],
   movement: [
-    { swatch: 'bg-emerald-500', label: 'Moved up' },
-    { swatch: 'bg-rose-500', label: 'Moved down' },
-    { swatch: 'bg-sky-500', label: 'New to the table' },
-    { swatch: 'bg-amber-500', label: 'Heat on track' },
+    { swatch: 'bg-success', label: 'Moved up' },
+    { swatch: 'bg-destructive', label: 'Moved down' },
+    { swatch: 'bg-info', label: 'New to the table' },
+    { swatch: 'bg-warning', label: 'Heat on track' },
   ],
 };
 

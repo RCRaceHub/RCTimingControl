@@ -104,14 +104,14 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
       </div>
 
       {data.overriddenByEnvironment && (
-        <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+        <p role="status" className="rounded-md border border-warning/50 bg-warning/10 p-3 text-sm">
           The name is set by the <code>RCTIMING_NETWORK_MDNS_NAME</code> environment variable (in the compose file or
           the service), so it cannot be changed here.
         </p>
       )}
 
       {data.restartNeeded && (
-        <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+        <p role="status" className="rounded-md border border-warning/50 bg-warning/10 p-3 text-sm">
           The name is saved. It starts working after RC Timing is restarted (restart the service, or the container).
           Then come back to this step to check it.
         </p>

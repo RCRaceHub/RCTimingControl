@@ -183,7 +183,7 @@ export default function CompetitorsPage() {
       )}
 
       {isAdmin && duplicateGroups.length > 0 && (
-        <section aria-label="Possible duplicates" className="space-y-2 rounded-lg border border-amber-500 p-3">
+        <section aria-label="Possible duplicates" className="space-y-2 rounded-lg border border-warning p-3">
           <h2 className="text-sm font-semibold">Possible duplicates</h2>
           <p className="text-xs text-muted-foreground">
             These look like the same person entered more than once, which splits their results and points.
