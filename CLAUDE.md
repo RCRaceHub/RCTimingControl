@@ -188,7 +188,7 @@ These came out of the quality checkpoint (#606). Follow them in new code, and fi
 - **Time comes from an injected `Clock`.** Never call `Instant.now()` or `System.currentTimeMillis()` in a service. Use the pattern of a public `@Autowired` constructor that passes `Clock.systemUTC()` to a package-private one taking the `Clock`, and a fixed clock in tests.
 - **Request and response records live in the controller package's `dto/` folder**, one file each, never declared inline in a controller and never owned by a service. A service takes plain parameters or a domain type, so it does not depend on the API layer. API DTOs are hand-written, with a static `from(entity)` where one is built from an entity.
 - **Mapping:** repositories map records to entities with MapStruct, as the other repositories do; hand-written `toEntity`/`toRecord` only for entities built by constructor.
-- **Tests:** no `Thread.sleep`; wait on a condition (Awaitility or a latch) or inject a clock. Name tests for the behaviour, and put each test in the same package as the class it covers.
+- **Tests** (`docs/testing.md`): AssertJ assertions, camelCase method names that say the behaviour, `...IT` extending `AbstractIntegrationTest` for anything that starts Spring or touches the database. No `Thread.sleep`: wait with Awaitility, a latch or an injected clock (`TestConventionsTest` enforces it). Put each test in the same package as the class it covers.
 
 ### Frontend
 

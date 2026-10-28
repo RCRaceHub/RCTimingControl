@@ -20,14 +20,15 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -149,13 +150,7 @@ class DecoderListenerIT extends AbstractIntegrationTest {
     }
 
     private static void awaitUntil(String description, BooleanSupplier condition) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + WAIT_MS;
-        while (!condition.getAsBoolean()) {
-            if (System.currentTimeMillis() > deadline) {
-                fail("Timed out waiting for " + description);
-            }
-            Thread.sleep(50);
-        }
+        await(description).atMost(Duration.ofMillis(WAIT_MS)).until(condition::getAsBoolean);
     }
 
     private static ClubProfile minimalClub() {

@@ -31,11 +31,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -516,12 +518,8 @@ class BoardControllerIT extends AbstractIntegrationTest {
             lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), slow, 22_000_000L));
 
             // Passings are handled asynchronously: wait for both cars to have completed the lap
-            long deadline = System.currentTimeMillis() + 5_000;
+            await().atMost(Duration.ofSeconds(5)).until(() -> lapOne(getList(url)).size() >= 2);
             List<Map> places = getList(url);
-            while (lapOne(places).size() < 2 && System.currentTimeMillis() < deadline) {
-                Thread.sleep(50);
-                places = getList(url);
-            }
             assertThat(lapOne(places)).hasSize(2);
             // Lap 0 is the grid: the slow car set off first
             Map gridFirst = places.stream().filter(p -> lapOf(p) == 0 && ((Number) p.get("position")).intValue() == 1)
@@ -598,13 +596,8 @@ class BoardControllerIT extends AbstractIntegrationTest {
 
     /** Lap passings are handled asynchronously, so poll until the field appears. */
     private List<Map> awaitRows(String url) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 5_000;
-        List<Map> rows = getList(url);
-        while (rows.isEmpty() && System.currentTimeMillis() < deadline) {
-            Thread.sleep(50);
-            rows = getList(url);
-        }
-        return rows;
+        await().atMost(Duration.ofSeconds(5)).until(() -> !getList(url).isEmpty());
+        return getList(url);
     }
 
     private static long raceId(Map body, String key) {

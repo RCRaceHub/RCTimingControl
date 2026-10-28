@@ -23,11 +23,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -281,11 +283,8 @@ class AudioPreGenerationServiceTest {
 
         // The first ask starts the work, which may finish before it returns; the clips are there a moment later
         service.getClipMap(1L);
-        long giveUp = System.currentTimeMillis() + 5000;
-        while (service.getClipMap(1L).isEmpty() && System.currentTimeMillis() < giveUp) {
-            Thread.sleep(25);
-        }
-        assertThat(service.getClipMap(1L)).containsKey("countdown-600");
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                assertThat(service.getClipMap(1L)).containsKey("countdown-600"));
     }
 
     @Test

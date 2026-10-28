@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.awaitility.Awaitility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -600,20 +602,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     private static <T> T await(Supplier<T> check) {
-        Instant deadline = Instant.now().plus(Duration.ofSeconds(10));
-        while (Instant.now().isBefore(deadline)) {
-            T value = check.get();
-            if (value != null) {
-                return value;
-            }
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-        }
-        throw new AssertionError("Timed out waiting for the results export");
+        return Awaitility.await("the results export").atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(50))
+                .until(check::get, Objects::nonNull);
     }
 
     private void penalty(long raceId, long entryId, String type, int value, String reason) {

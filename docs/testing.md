@@ -47,6 +47,14 @@ They use `http://localhost:8080` unless `BASE_URL` says otherwise. Delete `/tmp/
 
 ---
 
+## Test conventions
+
+- **Assertions:** AssertJ (`assertThat`), not the JUnit `Assertions` class.
+- **Names:** camelCase method names that say the behaviour, such as `aRestoredBackupStartsWithTheEventsIntact`, not `snake_case`.
+- **Kind of test:** a class that starts Spring or touches the database is named `...IT` and extends `AbstractIntegrationTest`; a plain unit test is named `...Test`.
+- **Waiting:** never `Thread.sleep` to wait for the code under test. Use Awaitility (`await().atMost(...).until(...)`), a latch or an injected `Clock`. `TestConventionsTest` fails the build on a new sleep; a sleep that is part of a simulated slow peer is listed there with its reason.
+- **Time:** inject a fixed `Clock` rather than reading the real one.
+
 ## Decoder protocol parser (`decoder-protocol/`)
 
 No Docker required.
