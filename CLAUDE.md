@@ -181,6 +181,7 @@ These came out of the quality checkpoint (#606). Follow them in new code, and fi
 ### Backend
 
 - **Controllers are thin.** A controller validates input, calls one service and returns a DTO. It never injects a repository or a `DSLContext`; the logic and the transaction live in a service (for example `RaceControlService`). Read-side controllers call a query class.
+- **SQL stays in repositories and query classes.** A service never injects a `DSLContext`; add a method to a repository (a plain `@Repository` if the tables have no entity). Package layout is in `docs/development.md`.
 - **Not found is a 404 thrown by the service or query** (`EntityNotFoundException`), never checked in the controller. Errors reach clients as `ProblemDetail` through `GlobalExceptionHandler`.
 - **Real-time pushes go through `LiveTimingHub`.** Services never use `SimpMessagingTemplate` directly; add a method to the hub for a new topic.
 - **Read transactions:** read-side query classes use `@ReadTransaction` (read pool). `@Transactional(readOnly = true)` runs on the write connection, so use it only where the read must see an uncommitted write, and say why in the Javadoc.
