@@ -49,7 +49,7 @@ export default function LiveTopBoard() {
           {live ? `If ${data.raceLabel} ended now` : `After ${data.raceLabel}`}
         </p>
       </div>
-      <LiveTopTable data={data} top={top} showLegend={showLegend} />
+      <LiveTopTable data={data} top={top} showLegend={showLegend} showCar={false} />
     </BoardShell>
   );
 }
