@@ -39,6 +39,19 @@ class LiveTimingHubTest {
     }
 
     @Test
+    void anAudioCueAndAnAutoRunStateGoToTheirTopicsAtOnce() {
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+        Map<String, Object> cue = Map.of("type", "start-countdown", "seconds", 10L);
+
+        hub.broadcastAudioCue(7, cue);
+        hub.broadcastAutoRunState(3, "state");
+
+        verify(messaging).convertAndSend("/topic/race/7/audio", cue);
+        verify(messaging).convertAndSend("/topic/event/3/auto-run", "state");
+    }
+
+    @Test
     void insideATransaction_theStateIsSentOnCommitOnly() {
         TransactionSynchronizationManager.initSynchronization();
         TransactionSynchronizationManager.setActualTransactionActive(true);

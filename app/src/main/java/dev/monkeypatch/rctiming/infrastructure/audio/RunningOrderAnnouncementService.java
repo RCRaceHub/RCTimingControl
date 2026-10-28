@@ -14,11 +14,11 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
+import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +53,7 @@ public class RunningOrderAnnouncementService {
 
     private final RaceRepository raceRepository;
     private final ClubProfileService clubProfileService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final LiveTimingHub liveTimingHub;
     private final LapTimingService lapTimingService;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
@@ -65,13 +65,13 @@ public class RunningOrderAnnouncementService {
 
     public RunningOrderAnnouncementService(RaceRepository raceRepository,
                                            ClubProfileService clubProfileService,
-                                           SimpMessagingTemplate messagingTemplate,
+                                           LiveTimingHub liveTimingHub,
                                            LapTimingService lapTimingService,
                                            EntryRepository entryRepository,
                                            CompetitorRepository competitorRepository) {
         this.raceRepository = raceRepository;
         this.clubProfileService = clubProfileService;
-        this.messagingTemplate = messagingTemplate;
+        this.liveTimingHub = liveTimingHub;
         this.lapTimingService = lapTimingService;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
@@ -185,7 +185,7 @@ public class RunningOrderAnnouncementService {
                 .toList();
 
         RunningOrderAnnouncement announcement = new RunningOrderAnnouncement("running-order", positions);
-        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", announcement);
+        liveTimingHub.broadcastAudioCue(raceId, announcement);
         log.debug("Broadcast running order for race {}: top {} of {} — {}", raceId, count, rows.size(), positions);
     }
 
