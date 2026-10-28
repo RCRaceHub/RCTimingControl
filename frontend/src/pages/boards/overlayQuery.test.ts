@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
+import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayDesignFromTheme, overlayQuery, themeDesignToSave, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
 
 describe('overlayQuery', () => {
   it('writes nothing for the default design', () => {
@@ -68,5 +68,34 @@ describe('ticker separator image', () => {
     expect(parseSeparatorImage('//evil.example/x.png')).toBeNull();
     expect(parseSeparatorImage(null)).toBeNull();
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, separatorImage: 'javascript:alert(1)' })).toBe('');
+  });
+});
+
+describe('overlayDesignFromTheme', () => {
+  it('keeps what a theme sets and defaults the rest, ignoring wrong types and unknown fields', () => {
+    const design = overlayDesignFromTheme({
+      theme: 'light', layout: 'table', top: 6, showSponsors: false, gap: 'sideways', showChart: 'yes',
+      tickerItems: ['next', 'nonsense'], separatorImage: 'javascript:alert(1)', extra: 1,
+    });
+
+    expect(design.theme).toBe('light');
+    expect(design.layout).toBe('table');
+    expect(design.top).toBe(6);
+    expect(design.showSponsors).toBe(false);
+    expect(design.gap).toBe('int');
+    expect(design.showChart).toBe(true);
+    expect(design.tickerItems).toEqual(['next']);
+    expect(design.separatorImage).toBeNull();
+    expect(design.eventId).toBeNull();
+  });
+
+  it('gives the default design for something that is not an object', () => {
+    expect(overlayDesignFromTheme(null)).toEqual(DEFAULT_OVERLAY_DESIGN);
+    expect(overlayDesignFromTheme([1])).toEqual(DEFAULT_OVERLAY_DESIGN);
+  });
+
+  it('round-trips through the overlay address', () => {
+    const design = { ...DEFAULT_OVERLAY_DESIGN, theme: 'light' as const, top: 6, showSponsors: false };
+    expect(overlayDesignFromTheme(themeDesignToSave(design))).toEqual(design);
   });
 });

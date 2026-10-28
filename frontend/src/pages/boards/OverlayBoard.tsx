@@ -6,13 +6,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getLiveQualifying, getRaceClock, getRaceHighlights, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
+import { getLiveQualifying, getOverlayTheme, getRaceClock, getRaceHighlights, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
 import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
   BOARD_POLL_MS,
   fmtClock,
   heatBestLap,
+  overlayDesignFromTheme,
+  overlayQuery,
+  parseEventParam,
   parseOverlayOptions,
   roundBestLap,
   tickerSegments,
@@ -252,8 +255,32 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
   );
 }
 
-export default function OverlayBoard() {
+/** How often an overlay opened with `?look=ID` re-reads its theme, so an edit in the designer shows on stream. */
+const THEME_POLL_MS = 15000;
+
+/**
+ * The options the overlay draws with. With `?look=ID` they come from that saved theme (only `event` still comes from the
+ * address, as a theme does not pick an event); while the theme loads, or if it is gone, the address's own options apply.
+ */
+function useOverlayParams(): URLSearchParams {
   const [searchParams] = useSearchParams();
+  const lookId = parseEventParam(searchParams.get('look'));
+  const { data: look } = useQuery({
+    queryKey: publicQueryKeys.boards.overlayTheme(lookId),
+    queryFn: () => getOverlayTheme(lookId!),
+    enabled: lookId !== null,
+    refetchInterval: THEME_POLL_MS,
+    retry: false,
+  });
+  return useMemo(() => {
+    if (!look) return searchParams;
+    const design = { ...overlayDesignFromTheme(look.design), eventId: parseEventParam(searchParams.get('event')) };
+    return new URLSearchParams(overlayQuery(design));
+  }, [look, searchParams]);
+}
+
+export default function OverlayBoard() {
+  const searchParams = useOverlayParams();
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,

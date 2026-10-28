@@ -92,7 +92,7 @@ To run the races without pressing anything between them, use **Auto run** at the
 
 ### 9. Show it on screens
 
-Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/live-race`, `/boards/top` (the live qualifying table), `/boards/view/NAME` (screens you build under Admin, Board views), `/boards/results` and `/boards/overlay` on the laptop's address. An event's sponsors (name and logo) are added on its **Sponsors** tab and show in the overlay's bottom bar; **Admin, Overlay Designer** builds the overlay's address with a live preview, and a board view can include a **Driver cards** panel with headshots and driver sponsors for the commentator. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.
+Spectator boards and a streaming overlay for OBS need no sign-in: `/boards/now-next`, `/boards/live-race`, `/boards/top` (the live qualifying table), `/boards/view/NAME` (screens you build under Admin, Board views), `/boards/results` and `/boards/overlay` on the laptop's address. An event's sponsors (name and logo) are added on its **Sponsors** tab and show in the overlay's bottom bar; **Admin, Overlay Designer** builds the overlay's address with a live preview and saves looks as named themes (BRCA and Club to start), and a board view can include a **Driver cards** panel with headshots and driver sponsors for the commentator. Section 10 of the Race Meeting Guide lists what each shows and the options for the overlay; [screens-and-printouts.md](screens-and-printouts.md) covers every screen for the pits and OBS and every printout in one place.
 
 ---
 

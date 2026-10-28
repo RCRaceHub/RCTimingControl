@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TOWER_ROW_REM } from './OverlayTower';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
@@ -27,6 +27,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getTicker: vi.fn(),
   getSponsors: vi.fn(),
   getLiveQualifying: vi.fn(),
+  getOverlayTheme: vi.fn(),
 }));
 
 import {
@@ -39,6 +40,7 @@ import {
   getTicker,
   getSponsors,
   getLiveQualifying,
+  getOverlayTheme,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -182,6 +184,24 @@ describe('OverlayBoard', () => {
     expect(ticker).toHaveTextContent('Most places lost in the round: Sam Second (−4)');
     expect(ticker).toHaveTextContent('Best 3 lap average in this heat: 14.100 · Ada Lovelace');
     expect(ticker).toHaveTextContent('Best 5 lap average in the round: 14.300 · Katherine Johnson');
+  });
+
+  it('draws with a saved theme opened by ?look=ID, ignoring other options but keeping the event', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Final A', nextDrivers: ['Ada Lovelace'], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [],
+    });
+    vi.mocked(getOverlayTheme).mockResolvedValue({
+      id: 5, name: 'Club', design: { separatorImage: '/storage/club.png', tickerItems: ['next', 'drivers'] },
+    });
+    const { container } = renderOverlay('/boards/overlay?look=5&event=7&separator=/storage/other.png');
+
+    await screen.findByText(/On the grid/);
+    await waitFor(() =>
+      expect(container.querySelector('[aria-label="Ticker"] img')).toHaveAttribute('src', '/storage/club.png'));
+    expect(getOverlayTheme).toHaveBeenCalledWith(5);
+    expect(getNowNext).toHaveBeenCalledWith(7);
   });
 
   it('puts the separator image between ticker items in place of the diamond', async () => {
