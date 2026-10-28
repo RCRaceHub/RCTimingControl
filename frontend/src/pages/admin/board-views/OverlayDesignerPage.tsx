@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
+import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,7 +63,7 @@ export default function OverlayDesignerPage() {
   const [separatorText, setSeparatorText] = useState('');
 
   const queryClient = useQueryClient();
-  const { data: themes = [] } = useQuery({ queryKey: ['admin', 'overlay-themes'], queryFn: overlayThemesAdminApi.list });
+  const { data: themes = [] } = useQuery({ queryKey: adminQueryKeys.overlayThemes.all(), queryFn: overlayThemesAdminApi.list });
   const [themeId, setThemeId] = useState<number | null>(null);
   const [themeName, setThemeName] = useState('');
   const theme = themes.find((t) => t.id === themeId) ?? null;
@@ -92,7 +93,7 @@ export default function OverlayDesignerPage() {
       return id === null ? overlayThemesAdminApi.create(body) : overlayThemesAdminApi.update(id, body);
     },
     onSuccess: (saved) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'overlay-themes'] });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.all() });
       setThemeId(saved.id);
       setThemeName(saved.name);
       toast.success(`Saved the theme ${saved.name}`);
@@ -108,7 +109,7 @@ export default function OverlayDesignerPage() {
       return overlayThemesAdminApi.create({ name, design: themeDesignToSave(design) });
     },
     onSuccess: (copy) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'overlay-themes'] });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.all() });
       toast.success(`Made ${copy.name}`);
       setThemeId(copy.id);
       setThemeName(copy.name);
@@ -119,7 +120,7 @@ export default function OverlayDesignerPage() {
   const deleteTheme = useMutation({
     mutationFn: (id: number) => overlayThemesAdminApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'overlay-themes'] });
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.all() });
       setThemeId(null);
       setThemeName('');
       toast.success('Deleted the theme');

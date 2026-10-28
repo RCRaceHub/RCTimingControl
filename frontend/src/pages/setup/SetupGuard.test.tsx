@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import SetupGuard from '../SetupGuard';
+import SetupGuard from './SetupGuard';
 
 vi.mock('@/lib/setupApi', () => ({
   getSetupStatus: vi.fn(),
