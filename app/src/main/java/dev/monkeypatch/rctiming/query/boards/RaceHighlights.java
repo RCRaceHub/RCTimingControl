@@ -79,8 +79,8 @@ public final class RaceHighlights {
 
     /**
      * How far, in milliseconds, the car's best lap beat the average of the timed laps before it, or null when no lap
-     * has {@link #FLYING_MIN_PRIOR_LAPS} timed laps before it or none was quicker than that average. The first lap
-     * is left out, as in {@link #spread}.
+     * has {@code FLYING_MIN_PRIOR_LAPS} timed laps before it or none was quicker than that average. The first lap
+     * is left out, as in {@code spread}.
      */
     static Long flyingMargin(List<Long> lapTimes) {
         Long best = null;
@@ -105,7 +105,7 @@ public final class RaceHighlights {
 
     /**
      * The standard deviation, in milliseconds, of the car's timed laps after its first (the start lap runs from a
-     * standing grid and is not comparable), or null with fewer than {@link #CONSISTENT_MIN_LAPS} such laps.
+     * standing grid and is not comparable), or null with fewer than {@code CONSISTENT_MIN_LAPS} such laps.
      */
     static Long spread(List<Long> lapTimes) {
         List<Long> laps = timedAfterFirst(lapTimes);

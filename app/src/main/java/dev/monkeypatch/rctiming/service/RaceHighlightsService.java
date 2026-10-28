@@ -151,7 +151,8 @@ public class RaceHighlightsService {
                 }
             });
             List<Long> beforeLaps = before.get(previous.entryId());
-            if (beforeLaps == null) continue;
+            // A result stored without lap times can't say how many laps the driver did
+            if (beforeLaps == null || beforeLaps.stream().noneMatch(lap -> lap != null && lap > 0)) continue;
             long elapsed = own.getValue().stream().filter(lap -> lap != null && lap > 0).mapToLong(Long::longValue).sum();
             long time = 0;
             int count = 0;

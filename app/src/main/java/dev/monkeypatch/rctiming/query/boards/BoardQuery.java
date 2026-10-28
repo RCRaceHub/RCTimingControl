@@ -141,7 +141,7 @@ public class BoardQuery {
      * Each competitor's most recent earlier finished heat of the same round type (practice, qualifier or final) in the
      * same event, for comparing a run with the driver's last one. "Earlier" is by run order: the round's sequence in
      * the event, then the race's sequence in the round. Abandoned heats are skipped, and so is any competitor with no
-     * such heat, who is left out of the map. The entry may belong to another class than the one in {@code raceId}.
+     * such heat, who is left out of the map.
      *
      * @param raceId        the heat to compare against; an unknown race gives an empty map
      * @param competitorIds the competitors to look up
@@ -152,7 +152,8 @@ public class BoardQuery {
         }
         var thisRace = RACES.as("this_race");
         var thisRound = ROUNDS.as("this_round");
-        Record key = dsl.select(thisRound.EVENT_ID, thisRound.TYPE, thisRound.SEQUENCE_IN_EVENT, thisRace.SEQUENCE_IN_ROUND)
+        Record key = dsl.select(thisRound.EVENT_ID, thisRound.TYPE, thisRound.SEQUENCE_IN_EVENT, thisRace.SEQUENCE_IN_ROUND,
+                        thisRace.EVENT_CLASS_ID)
                 .from(thisRace)
                 .join(thisRound).on(thisRound.ID.eq(thisRace.ROUND_ID))
                 .where(thisRace.ID.eq(raceId))
@@ -171,6 +172,7 @@ public class BoardQuery {
                 .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                 .where(ROUNDS.EVENT_ID.eq(key.get(thisRound.EVENT_ID)))
                 .and(ROUNDS.TYPE.eq(key.get(thisRound.TYPE)))
+                .and(RACES.EVENT_CLASS_ID.eq(key.get(thisRace.EVENT_CLASS_ID)))
                 .and(RACES.STATUS.eq("FINISHED"))
                 .and(RACES.ABANDONED_AT.isNull())
                 .and(RACES.ID.ne(raceId))
