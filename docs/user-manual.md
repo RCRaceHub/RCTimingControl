@@ -18,7 +18,7 @@ If you want to look around before setting up your own club, [trial-quickstart.md
 
 ### 2. Run the setup wizard
 
-The first time, a wizard asks for the club profile, a track, a race format, the first staff account and the decoder. Everything it asks for can be changed later from the admin panel. The steps are described in the Admin Configuration Guide, section 8 (**First-Run Setup Wizard**).
+The first time, a wizard asks for the club profile, a track, a race format, the first staff account and the decoder, then offers an optional network name for the laptop. Everything it asks for can be changed later from the admin panel. The steps are described in the Admin Configuration Guide, section 8 (**First-Run Setup Wizard**).
 
 ### 3. Connect the decoder
 

@@ -431,6 +431,14 @@ export default function AdminGuidePage() {
             protocol). RCTC uses this configuration to connect to the decoder.
           </li>
           <li>
+            <span className="font-semibold">Step 6 — Network Name (optional):</span> Pick a
+            name such as <code>rctiming</code> so tablets and phones can open RCTC at
+            <code> http://rctiming.local:8080/</code> without knowing the laptop&apos;s
+            address. The name is saved for the next start, so restart RCTC, come back to
+            this step, and use <span className="font-semibold">Check this device can reach
+            it</span>. A QR code for the address is shown once the name is announced.
+          </li>
+          <li>
             <span className="font-semibold">Navigate the wizard:</span> Use
             <span className="font-semibold"> Save and Continue</span>,
             <span className="font-semibold"> Back</span> and, where a step offers it,
