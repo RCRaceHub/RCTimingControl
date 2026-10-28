@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.user;
 
 import dev.monkeypatch.rctiming.domain.StateConflictException;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +26,13 @@ public class UserService {
     }
 
     /** The official with this email, if any, in a read-only transaction. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
     /** The official with this id, if any, in a read-only transaction. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
     }

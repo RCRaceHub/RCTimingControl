@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,6 +28,11 @@ import java.util.Optional;
  * <p>The merge is one level deep: an override replaces a top-level field of the config, so it cannot change
  * part of a nested object. A key that is not a field of the config's type is not ignored either: the merge
  * fails, and every read of that class's format throws until the override is corrected.
+ *
+ * <p>The methods that only work on a class they are handed ({@code getEffectiveConfig}, {@code startType} and the
+ * like) read no table, so they are {@code SUPPORTS}: they join a transaction if there is one and take none
+ * otherwise, instead of taking the write connection the class-level {@code @Transactional} would. The template reads
+ * use {@code @ReadTransaction}.
  */
 @Service
 @Transactional
@@ -112,7 +118,7 @@ public class RaceFormatService {
      * A race's length from its class's format, by round type: finals of a points-and-finals format have their own
      * length. Null when the class has no format or the format sets no length.
      */
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public Long raceDurationMs(EventClass eventClass, RoundType roundType) {
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
             return null;
@@ -172,7 +178,7 @@ public class RaceFormatService {
      * otherwise. With no format, or none set in it, heats are staggered and finals start on the grid, as rounds
      * were generated before the format was read (#142).
      */
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public StartType startType(EventClass eventClass, RoundType roundType) {
         boolean isFinal = roundType == RoundType.FINAL;
         StartType fromFormat = eventClass == null || eventClass.getConfigSnapshot() == null ? null
@@ -194,7 +200,7 @@ public class RaceFormatService {
      * The seconds between driver calls in a stagger start, from the class's format. One second when the class has
      * no format or the format sets none (FORMAT-11).
      */
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public int staggerIntervalSeconds(EventClass eventClass) {
         if (eventClass == null || eventClass.getConfigSnapshot() == null) {
             return DEFAULT_STAGGER_INTERVAL_SECONDS;
@@ -256,20 +262,20 @@ public class RaceFormatService {
     }
 
     /** Whether any format template is set from this scoring system, so it cannot be deleted. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public boolean isScoringSystemInUse(Long scoringSystemId) {
         return templateRepository.findAll().stream().anyMatch(t ->
                 t.getConfig() instanceof PointsFinalsConfig p && scoringSystemId.equals(p.scoringSystemId()));
     }
 
     /** Every format template. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<RaceFormatTemplate> findAll() {
         return templateRepository.findAll();
     }
 
     /** A format template; a 404 if there is none. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public RaceFormatTemplate findById(Long id) {
         return templateRepository.getOrThrow(id);
     }

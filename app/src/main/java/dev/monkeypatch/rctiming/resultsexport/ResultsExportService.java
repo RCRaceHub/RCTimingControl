@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsExportQuery;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public class ResultsExportService {
     }
 
     /** Events with an export requested but not queued yet. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Long> pendingEventIds() {
         return eventRepository.findIdsWithResultsExportPending();
     }
@@ -147,7 +148,7 @@ public class ResultsExportService {
     }
 
     /** The event's results as they stand now, for download. Carries the last revision handed out; queues nothing. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public ResultsExportV1 current(long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
         return exportQuery.build(eventId, event.getResultsExportRevision(), Instant.now());

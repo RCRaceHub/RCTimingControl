@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -101,7 +102,7 @@ public class CompetitorMergeService {
     public record Result(Long keptCompetitorId, int entriesMoved, int exclusionsMoved) {}
 
     /** What {@link #merge} would do, without changing anything. Runs as a read-only transaction. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Preview preview(Long keepId, Long duplicateId) {
         requireDistinct(keepId, duplicateId);
         Competitor keep = load(keepId);

@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
 import org.springframework.stereotype.Service;
@@ -80,7 +81,7 @@ public class FinalsLineupService {
     }
 
     /** One line-up per class of the event that has finals, finals in letter order (A first). */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<FinalsLineupDto> forEvent(Long eventId) {
         List<FinalsLineupDto> lineups = new ArrayList<>();
         for (EventClass eventClass : eventClassRepository.findByEventId(eventId)) {
@@ -123,7 +124,7 @@ public class FinalsLineupService {
      *
      * @throws EntityNotFoundException if there is no such event
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public FinalsReviewDto review(Long eventId) {
         Event event = eventRepository.getOrThrow(eventId);
         boolean required = event.getFinalsLineupConfirmedAt() == null && hasCalculableFinals(eventId)

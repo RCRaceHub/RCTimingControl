@@ -21,6 +21,7 @@ import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.Row;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.UnmappedClass;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -222,7 +223,7 @@ public class RaceHubImportService {
     }
 
     /** The event's class mappings, ordered by RaceHub class id; a 404 if there is no such event. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<RaceHubClassMapping> listMappings(Long eventId) {
         eventRepository.requireExists(eventId);
         return mappingRepository.findByEventIdOrderByRacehubEventClassId(eventId);

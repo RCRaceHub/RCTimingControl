@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.race.RacePointPenalty;
 import dev.monkeypatch.rctiming.domain.race.RacePointPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -181,14 +182,14 @@ public class RaceEliminationService {
     }
 
     /** The race's rows, eliminations and revivals, oldest first. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<RaceElimination> list(long raceId) {
         raceRepository.requireExists(raceId);
         return eliminationRepository.findByRaceId(raceId);
     }
 
     /** Entry ids of the cars dead now, first to die first. Used when a heat's result is worked out. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Long> deadInOrder(long raceId) {
         return eliminationRepository.findByRaceId(raceId).stream()
                 .filter(RaceElimination::isActive)
@@ -197,7 +198,7 @@ public class RaceEliminationService {
     }
 
     /** Whether the race's class races to the Shikabane format, so race control shows the elimination buttons. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public boolean isShikabane(long raceId) {
         return isShikabane(raceRepository.getOrThrow(raceId));
     }

@@ -18,7 +18,6 @@ import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -70,7 +69,7 @@ public class FinalLegsService {
      * One combined result per class of the event whose A final has legs, in the order of the classes. An abandoned
      * leg has no result and is not counted as finished.
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<FinalLegsDto> forEvent(Long eventId) {
         return combined(eventId, null);
     }

@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.event;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,7 +176,7 @@ public class EventService {
     }
 
     /** The event, read in a read-only transaction. Throws a 404 if there is none. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Event findByIdOrThrow(Long id) {
         return getEventOrThrow(id);
     }

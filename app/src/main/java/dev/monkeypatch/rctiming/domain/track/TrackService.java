@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,13 +40,13 @@ public class TrackService {
     }
 
     /** Every track, with its decoder loops and lap thresholds. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Track> findAll() {
         return trackRepository.findAll();
     }
 
     /** A track with its loops and thresholds; a 404 if there is none. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Track findById(Long id) {
         return getTrackOrThrow(id);
     }
