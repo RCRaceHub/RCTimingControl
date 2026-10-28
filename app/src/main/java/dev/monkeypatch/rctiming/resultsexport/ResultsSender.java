@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,8 +13,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -49,9 +50,16 @@ public class ResultsSender {
     private final EventRepository eventRepository;
     private final RaceHubResultsEndpoint endpoint;
     private final RestClient restClient;
+    private final Clock clock;
 
+    @Autowired
     public ResultsSender(ResultsOutboxRepository outboxRepository, EventRepository eventRepository,
                          RaceHubResultsEndpoint endpoint, RestClient.Builder restClientBuilder) {
+        this(outboxRepository, eventRepository, endpoint, restClientBuilder, Clock.systemUTC());
+    }
+
+    ResultsSender(ResultsOutboxRepository outboxRepository, EventRepository eventRepository,
+                  RaceHubResultsEndpoint endpoint, RestClient.Builder restClientBuilder, Clock clock) {
         this.outboxRepository = outboxRepository;
         this.eventRepository = eventRepository;
         this.endpoint = endpoint;
@@ -59,6 +67,7 @@ public class ResultsSender {
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
         requestFactory.setReadTimeout(Duration.ofSeconds(20));
         this.restClient = restClientBuilder.requestFactory(requestFactory).build();
+        this.clock = clock;
     }
 
     /**
@@ -72,7 +81,7 @@ public class ResultsSender {
             return;
         }
         List<ResultsOutboxItem> due = outboxRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByIdAsc(
-                EnumSet.of(OutboxStatus.QUEUED, OutboxStatus.FAILED), Instant.now());
+                EnumSet.of(OutboxStatus.QUEUED, OutboxStatus.FAILED), clock.instant());
         // Events whose export failed in this pass: their later exports wait, so an event's exports never go
         // out of order, but other events carry on
         Set<Long> heldBack = new HashSet<>();
@@ -121,7 +130,7 @@ public class ResultsSender {
         } catch (RuntimeException e) {
             return failed(item, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
         }
-        outboxRepository.recordSent(item.getId(), Instant.now());
+        outboxRepository.recordSent(item.getId(), clock.instant());
         log.info("Sent results export revision {} of event {} to RaceHub", item.getRevision(), item.getEventId());
         return true;
     }
@@ -129,7 +138,7 @@ public class ResultsSender {
     private boolean failed(ResultsOutboxItem item, String error) {
         int attempts = item.getAttempts() + 1;
         String lastError = error.length() > MAX_ERROR_LENGTH ? error.substring(0, MAX_ERROR_LENGTH) : error;
-        outboxRepository.recordFailure(item.getId(), lastError, Instant.now().plus(backoff(attempts)));
+        outboxRepository.recordFailure(item.getId(), lastError, clock.instant().plus(backoff(attempts)));
         log.warn("Results export revision {} of event {} not sent (attempt {}): {}",
                 item.getRevision(), item.getEventId(), attempts, lastError);
         return false;

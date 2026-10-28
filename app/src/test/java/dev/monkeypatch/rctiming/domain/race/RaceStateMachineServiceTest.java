@@ -18,7 +18,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +36,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RaceStateMachineServiceTest {
+
+    private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
 
     private final RaceRepository raceRepository = mock(RaceRepository.class);
     private final RoundRepository roundRepository = mock(RoundRepository.class);
@@ -56,7 +60,7 @@ class RaceStateMachineServiceTest {
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
                 mock(BumpUpSeedingService.class), raceFormatService,
                 eventClassRepository, mock(RaceEliminationRepository.class), mock(RacePointPenaltyRepository.class),
-                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class));
+                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class), Clock.fixed(NOW, ZoneOffset.UTC));
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);
@@ -65,6 +69,17 @@ class RaceStateMachineServiceTest {
         doAnswer(inv -> savedWhenPublished.add(lastSaved))
                 .when(eventPublisher).publishEvent(any(ApplicationEvent.class));
         when(roundRepository.findById(any())).thenReturn(Optional.empty());
+    }
+
+    @Test
+    void startAndFinish_stampTheRaceWithTheTimeFromTheClock() {
+        Race race = race(RaceStatus.GRID);
+
+        service.start(race);
+        assertThat(race.getStartedAt()).isEqualTo(NOW);
+
+        service.finish(race);
+        assertThat(race.getFinishedAt()).isEqualTo(NOW);
     }
 
     @Test
