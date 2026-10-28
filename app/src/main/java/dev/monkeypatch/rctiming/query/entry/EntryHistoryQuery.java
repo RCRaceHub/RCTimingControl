@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.query.entry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.audit.AuditActors;
 import org.jooq.DSLContext;
@@ -15,6 +16,7 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
 /**
@@ -36,9 +38,14 @@ public class EntryHistoryQuery {
 
     /**
      * The entry's history, oldest first by time. The two sources are merged in memory with a stable sort, so rows
-     * with the same time keep entry-log rows ahead of audit rows. An unknown entry id gives an empty list.
+     * with the same time keep entry-log rows ahead of audit rows.
+     *
+     * @throws EntityNotFoundException if there is no such entry (HTTP 404)
      */
     public List<EntryHistoryDto> forEntry(long entryId) {
+        if (!dsl.fetchExists(ENTRIES, ENTRIES.ID.eq(entryId))) {
+            throw new EntityNotFoundException("Entry not found: " + entryId);
+        }
         List<EntryHistoryDto> all = new ArrayList<>(entryLog(entryId));
         all.addAll(auditRows(entryId));
         all.sort(Comparator.comparing(EntryHistoryDto::at));
