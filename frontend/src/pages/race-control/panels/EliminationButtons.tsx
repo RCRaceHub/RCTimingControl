@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import type { useEliminations } from '@/hooks/race-control/useEliminations';
 
 type Props = {
@@ -11,9 +12,11 @@ type Props = {
  * timing while the race runs and by the finished results, where a late mark works the result out again.
  */
 export function EliminationButtons({ entryId, elim }: Props) {
+  const { confirm, dialog } = useConfirm();
   const dead = elim.deadOrder.has(entryId);
   return (
     <span className="whitespace-nowrap">
+      {dialog}
       {!dead && (
         <Button size="sm" variant="destructive" disabled={elim.eliminate.isPending}
           onClick={() => elim.eliminate.mutate(entryId)}>
@@ -33,7 +36,11 @@ export function EliminationButtons({ entryId, elim }: Props) {
         </>
       )}
       <Button size="sm" variant="ghost" className="ml-1" disabled={elim.falseStart.isPending}
-        onClick={() => { if (window.confirm('Give this car the false start penalty?')) elim.falseStart.mutate(entryId); }}>
+        onClick={async () => {
+          if (await confirm({ title: 'Give this car the false start penalty?', confirmLabel: 'Give penalty', destructive: true })) {
+            elim.falseStart.mutate(entryId);
+          }
+        }}>
         False start
       </Button>
       <Button size="sm" variant="ghost" className="ml-1" disabled={elim.undoFalseStart.isPending}

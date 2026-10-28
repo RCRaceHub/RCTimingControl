@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -49,6 +50,7 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
  * it. A theme holds everything but the event. Open to ADMIN and RACE_DIRECTOR.
  */
 export default function OverlayDesignerPage() {
+  const { confirm, dialog } = useConfirm();
   const [design, setDesign] = useState<OverlayDesign>(DEFAULT_OVERLAY_DESIGN);
   const set = <K extends keyof OverlayDesign>(key: K, value: OverlayDesign[K]) =>
     setDesign((d) => ({ ...d, [key]: value }));
@@ -166,6 +168,7 @@ export default function OverlayDesignerPage() {
 
   return (
     <div className="space-y-6">
+      {dialog}
       <div>
         <h1 className="text-2xl font-semibold">Overlay designer</h1>
         <p className="text-sm text-muted-foreground">
@@ -230,8 +233,13 @@ export default function OverlayDesignerPage() {
                 size="sm"
                 variant="outline"
                 disabled={theme === null || deleteTheme.isPending}
-                onClick={() => {
-                  if (theme && window.confirm(`Delete the theme ${theme.name}? Overlays already open keep its look until reloaded, then use their address options.`)) {
+                onClick={async () => {
+                  if (theme && await confirm({
+                    title: `Delete the theme ${theme.name}?`,
+                    description: 'Overlays already open keep its look until reloaded, then use their address options.',
+                    confirmLabel: 'Delete',
+                    destructive: true,
+                  })) {
                     deleteTheme.mutate(theme.id);
                   }
                 }}
