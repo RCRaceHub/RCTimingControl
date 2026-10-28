@@ -91,6 +91,7 @@ public class RaceHighlightsService {
         Map<Long, Integer> grid = boardQuery.gridPositions(raceId);
         Map<Long, List<ResultSnapshotDto.PositionAtLap>> laps = new HashMap<>();
         for (ResultSnapshotDto.PositionAtLap lap : snapshot.lapHistory()) {
+            if (lap.lapNumber() < 1) continue; // lap 0 is the grid, not a lap
             laps.computeIfAbsent(lap.entryId(), k -> new ArrayList<>()).add(lap);
         }
         List<RaceHighlights.Run> runs = new ArrayList<>();

@@ -74,6 +74,10 @@ public record ResultSnapshotDto(
         }
     }
 
+    /**
+     * A car's place at the end of a lap, with that lap's time. Lap 0 is the grid: the car's starting place, with no
+     * lap time (results stored before it existed have none).
+     */
     public record PositionAtLap(int lapNumber, long entryId, int position, Long lapTimeMs) {}
 
     public record ClubBrandingDto(String clubName, String logoUrl) {}

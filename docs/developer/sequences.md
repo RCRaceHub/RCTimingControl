@@ -250,7 +250,7 @@ sequenceDiagram
 
 A saved board view (`/boards/view/{slug}`) reads only its layout from `GET /boards/views/{slug}` (`PublicBoardViewController` and `BoardViewService`). The page follows the race on track once through `useBoardRace` and each panel then polls the same public endpoints as the stand-alone boards, so a view adds no timing load of its own.
 
-`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
+`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree. Both start at lap 0, each car's place on the grid (`LapOrder.startPlaces`, from the row's start position); a car with no grid place, or a result stored before lap 0 existed, starts at lap 1. Lap 0 carries no lap time, so code reading lap times skips it.
 
 ## Live feed to the relay
 

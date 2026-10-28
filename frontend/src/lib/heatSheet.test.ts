@@ -69,6 +69,19 @@ describe('heatSheet', () => {
     expect(series[0].points).toEqual([{ lap: 1, position: 2 }, { lap: 2, position: 1 }]);
   });
 
+  it('starts a line at lap 0 on the grid place when the history has one, and a car without one at lap 1', () => {
+    const history: PositionAtLap[] = [
+      { entryId: 1, lapNumber: 0, position: 2, lapTimeMs: null },
+      { entryId: 1, lapNumber: 1, position: 1, lapTimeMs: 1 },
+      { entryId: 2, lapNumber: 1, position: 2, lapTimeMs: 1 },
+    ];
+
+    const series = positionSeries([row(1, 1), row(2, 2)], history);
+
+    expect(series[0].points).toEqual([{ lap: 0, position: 2 }, { lap: 1, position: 1 }]);
+    expect(series[1].points).toEqual([{ lap: 1, position: 2 }]);
+  });
+
   it('leaves a driver with no recorded laps out of the position chart', () => {
     expect(positionSeries([row(1, 1)], [])).toEqual([]);
   });

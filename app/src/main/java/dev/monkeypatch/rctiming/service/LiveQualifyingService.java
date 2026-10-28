@@ -241,6 +241,7 @@ public class LiveQualifyingService {
         Map<Long, List<ResultSnapshotDto.PositionAtLap>> byEntry = new HashMap<>();
         resultSnapshotRepository.findByRaceId(raceId).ifPresent(snapshot -> {
             for (ResultSnapshotDto.PositionAtLap lap : snapshotJson.lapHistory(raceId, snapshot.getLapHistoryJson())) {
+                if (lap.lapNumber() < 1) continue; // lap 0 is the grid, not a lap
                 byEntry.computeIfAbsent(lap.entryId(), k -> new ArrayList<>()).add(lap);
             }
         });

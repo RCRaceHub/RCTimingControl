@@ -72,6 +72,7 @@ export type ResultRow = {
 };
 
 export type PositionAtLap = {
+  /** 0 is the grid (the starting place, no lap time); results stored before it existed have no lap 0. */
   lapNumber: number;
   entryId: number;
   position: number;

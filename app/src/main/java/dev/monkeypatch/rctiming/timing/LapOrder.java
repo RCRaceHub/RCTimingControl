@@ -87,6 +87,19 @@ public final class LapOrder {
         return new LapOrder(rows, clocks);
     }
 
+    /**
+     * Lap 0 for a position chart: each car's place on the grid. The grid is used rather than the order of first
+     * crossing because that order is not where cars started (a rolling or staggered start, a quick car lower down
+     * the grid), and it is the same lap 0 for every car. A car without a grid position is left out.
+     */
+    public List<Place> startPlaces() {
+        return rows.stream()
+                .filter(r -> r.startPosition() != null)
+                .sorted(Comparator.comparingInt(LiveTimingRowDto::startPosition))
+                .map(r -> new Place(0, r.entryId(), r.startPosition()))
+                .toList();
+    }
+
     /** Laps completed by the leading car; zero before anyone has completed one. */
     public int leaderLaps() {
         return rows.stream().mapToInt(LiveTimingRowDto::lapsCompleted).max().orElse(0);
@@ -97,9 +110,13 @@ public final class LapOrder {
         return positionsAfterLap(lap, rows, orderClocks);
     }
 
-    /** Every place held at the end of every lap, lap by lap, for a position chart. */
+    /**
+     * Every place held at the end of every lap, lap by lap, for a position chart. It opens with lap 0, the grid
+     * order the cars set off from, so the chart shows who gained or lost places on the first lap; a car with no
+     * grid position has no lap 0 point and its line starts at lap 1.
+     */
     public List<Place> places() {
-        List<Place> places = new ArrayList<>();
+        List<Place> places = new ArrayList<>(startPlaces());
         for (int lap = 1; lap <= leaderLaps(); lap++) {
             Map<Long, Integer> atLap = placesAfterLap(lap);
             for (LiveTimingRowDto row : rows) {

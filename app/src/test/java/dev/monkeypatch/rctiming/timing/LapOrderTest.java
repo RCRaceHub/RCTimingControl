@@ -84,4 +84,26 @@ class LapOrderTest {
                 new LapOrder.Place(2, 2, 1), new LapOrder.Place(2, 1, 2));
         assertThat(order.lapTimeMs(1, 2)).isEqualTo(12_000L);
     }
+
+    @Test
+    void placesOpenWithLapZeroFromTheGridNotTheFirstCrossing() {
+        long start = 1_000_000;
+        // Car 1 started second on the grid but crossed first, so lap 0 and lap 1 differ
+        List<LiveTimingRowDto> rows = List.of(
+                withStart(row(1, 1, 1, start + 10_000), 2),
+                withStart(row(2, 2, 1, start + 11_000), 1),
+                row(3, 3, 1, start + 12_000));
+
+        LapOrder order = LapOrder.of(rows, Map.of(1L, List.of(10_000L), 2L, List.of(11_000L), 3L, List.of(12_000L)));
+
+        assertThat(order.places()).startsWith(new LapOrder.Place(0, 2, 1), new LapOrder.Place(0, 1, 2))
+                .contains(new LapOrder.Place(1, 1, 1), new LapOrder.Place(1, 2, 2))
+                .doesNotContain(new LapOrder.Place(0, 3, 3));
+        assertThat(order.places()).filteredOn(p -> p.lap() == 0).hasSize(2);
+    }
+
+    private static LiveTimingRowDto withStart(LiveTimingRowDto r, int startPosition) {
+        return new LiveTimingRowDto(r.entryId(), r.driverName(), r.carNumber(), r.position(), r.lapsCompleted(),
+                r.lastPassingTimeMs(), null, null, null, null, 0, 0, null, null, null, true, 0L, startPosition);
+    }
 }
