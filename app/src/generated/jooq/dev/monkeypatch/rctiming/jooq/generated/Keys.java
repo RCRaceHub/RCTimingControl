@@ -5,6 +5,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
@@ -51,6 +52,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UserRoles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.AuditLogRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.AudioTemplatesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.BoardViewsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventSponsorsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryPhotosRecord;
@@ -116,6 +118,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final UniqueKey<AuditLogRecord> AUDIT_LOG__PK_AUDIT_LOG = Internal.createUniqueKey(AuditLog.AUDIT_LOG, DSL.name("pk_audit_log"), new TableField[] { AuditLog.AUDIT_LOG.ID }, true);
+    public static final UniqueKey<AudioTemplatesRecord> AUDIO_TEMPLATES__PK_AUDIO_TEMPLATES = Internal.createUniqueKey(AudioTemplates.AUDIO_TEMPLATES, DSL.name("pk_audio_templates"), new TableField[] { AudioTemplates.AUDIO_TEMPLATES.ID }, true);
     public static final UniqueKey<BoardViewsRecord> BOARD_VIEWS__PK_BOARD_VIEWS = Internal.createUniqueKey(BoardViews.BOARD_VIEWS, DSL.name("pk_board_views"), new TableField[] { BoardViews.BOARD_VIEWS.ID }, true);
     public static final UniqueKey<CompetitorMediaRecord> COMPETITOR_MEDIA__PK_COMPETITOR_MEDIA = Internal.createUniqueKey(CompetitorMedia.COMPETITOR_MEDIA, DSL.name("pk_competitor_media"), new TableField[] { CompetitorMedia.COMPETITOR_MEDIA.ID }, true);
     public static final UniqueKey<CompetitorMediaRecord> COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_KEY = Internal.createUniqueKey(CompetitorMedia.COMPETITOR_MEDIA, DSL.name("competitor_media_competitor_id_key"), new TableField[] { CompetitorMedia.COMPETITOR_MEDIA.COMPETITOR_ID }, true);

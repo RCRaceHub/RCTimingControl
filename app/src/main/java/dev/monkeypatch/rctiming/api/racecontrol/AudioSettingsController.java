@@ -75,7 +75,7 @@ public class AudioSettingsController {
             ClubAudioSettings.Tuning tuning,
             boolean paceBeeps
     ) {
-        static AudioSettingsDto of(ClubAudioSettings s) {
+        public static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
                     s.countdownIntervals(),

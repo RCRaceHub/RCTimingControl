@@ -148,6 +148,33 @@ export const getAudioSettings = () =>
 export const patchAudioSettings = (settings: AudioSettingsDto) =>
   api.patch<AudioSettingsDto>('/api/v1/race-control/settings/audio', settings).then(r => r.data);
 
+// ── Audio templates ────────────────────────────────────────────────────────
+
+/** A named copy of the audio settings (never the club's own sound files) that race control can apply in one go. */
+export interface AudioTemplateDto {
+  id: number;
+  name: string;
+  settings: AudioSettingsDto;
+}
+
+const TEMPLATES_URL = '/api/v1/race-control/settings/audio/templates';
+
+export const listAudioTemplates = () => api.get<AudioTemplateDto[]>(TEMPLATES_URL).then(r => r.data);
+
+/** Save the settings in force now as a new template; rejects with 409 if the name is taken. */
+export const createAudioTemplate = (name: string) =>
+  api.post<AudioTemplateDto>(TEMPLATES_URL, { name }).then(r => r.data);
+
+/** Replace a template's settings with the ones in force now. */
+export const updateAudioTemplate = (id: number) =>
+  api.put<AudioTemplateDto>(`${TEMPLATES_URL}/${id}`, {}).then(r => r.data);
+
+/** Make a template the club's audio settings; the answer is the settings as saved. */
+export const applyAudioTemplate = (id: number) =>
+  api.post<AudioSettingsDto>(`${TEMPLATES_URL}/${id}/apply`).then(r => r.data);
+
+export const deleteAudioTemplate = (id: number) => api.delete(`${TEMPLATES_URL}/${id}`).then(() => undefined);
+
 // ── Admin audio endpoints ──────────────────────────────────────────────────
 
 /** GET admin-level audio settings (same DTO, different auth). */

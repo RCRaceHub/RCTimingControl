@@ -190,6 +190,10 @@ erDiagram
         int columns "1 to 3"
         json panels "ordered: type, top, span; no foreign keys, a layout only"
     }
+    audio_templates {
+        text name "unique ignoring case"
+        json settings "a ClubAudioSettings copy without the club's sound files; no foreign keys"
+    }
     competitors ||--o{ entries : ""
     events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
     competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
