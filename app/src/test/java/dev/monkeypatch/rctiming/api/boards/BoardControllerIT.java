@@ -499,7 +499,7 @@ class BoardControllerIT extends AbstractIntegrationTest {
             Map first = lapOne(places).stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
             assertThat(((Number) first.get("lap")).intValue()).isEqualTo(1);
             assertThat(((Number) first.get("entryId")).longValue()).isEqualTo(quickEntry.getId());
-            assertThat(places).extracting(p -> ((Number) p.get("entryId")).longValue())
+            assertThat(lapOne(places)).extracting(p -> ((Number) p.get("entryId")).longValue())
                     .containsExactlyInAnyOrder(quickEntry.getId(), slowEntry.getId());
         } finally {
             lapTimingService.releaseState(heat1.getId());
