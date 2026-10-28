@@ -43,7 +43,7 @@ export default function RaceControlLayout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <header className="flex items-center h-12 px-4 border-b bg-card shrink-0 gap-4">
+      <header className="flex items-center h-12 short:h-10 px-4 border-b bg-card shrink-0 gap-4">
         <Link
           to="/admin/race-control"
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"

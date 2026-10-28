@@ -48,7 +48,7 @@ export function RunOrderPanel({ items, selectedRaceId, onSelect, onMoveFinal }: 
           <button
             onClick={() => onSelect(item.raceId)}
             className={cn(
-              'min-w-0 flex-1 text-left px-3 py-2 rounded-md text-xs transition-colors',
+              'min-w-0 flex-1 text-left px-3 py-2 short:py-1 rounded-md text-xs transition-colors',
               'flex items-center justify-between gap-2',
               selectedRaceId === item.raceId
                 ? 'bg-primary/15 text-primary font-semibold'
