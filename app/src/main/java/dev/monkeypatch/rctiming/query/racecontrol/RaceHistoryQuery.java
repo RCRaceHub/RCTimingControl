@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.racecontrol;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.race.PenaltyType;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.audit.AuditActors;
@@ -20,6 +21,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports.INC
 import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences.MARSHAL_ABSENCES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.MARSHAL_ADJUSTMENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PENALTIES;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Users.USERS;
 
@@ -48,9 +50,14 @@ public class RaceHistoryQuery {
     /**
      * The race's history, oldest first by time. Each source is read oldest first and the merge is a stable sort, so
      * events with the same time keep penalties, then incidents, marshal laps, absences, transponder links and
-     * audit rows in that order. Empty for a race with no history or one that does not exist.
+     * audit rows in that order. Empty for a race with no history.
+     *
+     * @throws EntityNotFoundException if there is no such race (HTTP 404)
      */
     public List<RaceHistoryDto> forRace(long raceId) {
+        if (!dsl.fetchExists(RACES, RACES.ID.eq(raceId))) {
+            throw new EntityNotFoundException("Race not found: " + raceId);
+        }
         List<RaceHistoryDto> all = new ArrayList<>();
         all.addAll(penalties(raceId));
         all.addAll(incidents(raceId));

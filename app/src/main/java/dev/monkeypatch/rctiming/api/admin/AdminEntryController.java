@@ -5,7 +5,6 @@ import dev.monkeypatch.rctiming.api.admin.dto.AdminCreateEntryRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.AdminWithdrawRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.EntryDto;
 import dev.monkeypatch.rctiming.api.admin.dto.EntryResult;
-import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryService;
 import dev.monkeypatch.rctiming.query.entry.AdminEntryDto;
 import dev.monkeypatch.rctiming.query.entry.AdminEntryQueryService;
@@ -41,16 +40,13 @@ public class AdminEntryController {
     private final EntryService entryService;
     private final AdminEntryQueryService adminEntryQueryService;
     private final EntryHistoryQuery entryHistoryQuery;
-    private final EntryRepository entryRepository;
 
     public AdminEntryController(EntryService entryService,
                                 AdminEntryQueryService adminEntryQueryService,
-                                EntryHistoryQuery entryHistoryQuery,
-                                EntryRepository entryRepository) {
+                                EntryHistoryQuery entryHistoryQuery) {
         this.entryService = entryService;
         this.adminEntryQueryService = adminEntryQueryService;
         this.entryHistoryQuery = entryHistoryQuery;
-        this.entryRepository = entryRepository;
     }
 
     /** The entries in one class of an event. {@code GET /events/{eventId}/classes/{classId}}; read only. */
@@ -67,7 +63,6 @@ public class AdminEntryController {
     @GetMapping("/{id}/history")
     @AdminOnly
     public List<EntryHistoryDto> getHistory(@PathVariable long id) {
-        entryRepository.requireExists(id);
         return entryHistoryQuery.forEntry(id);
     }
 

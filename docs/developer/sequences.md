@@ -74,7 +74,8 @@ An unknown transponder is never silently credited: it goes to the race director,
 ```mermaid
 sequenceDiagram
     participant RD as Race director (browser)
-    participant C as api.racecontrol controller
+    participant C as RaceControlController
+    participant RCS as RaceControlService
     participant SM as RaceStateMachineService
     participant RRp as RaceRepository
     participant Bus as ApplicationEventPublisher
@@ -82,7 +83,8 @@ sequenceDiagram
     participant RS as ResultSnapshotService
 
     RD->>C: POST start
-    C->>SM: start(race)
+    C->>RCS: start(actor, raceId) in one write transaction
+    RCS->>SM: start(race)
     SM->>SM: requireAllowed(RUNNING), requireQualifyingComplete
     SM->>RRp: save(race with startedAt)
     SM->>Bus: RaceStatusChangedEvent(RUNNING)
@@ -91,7 +93,8 @@ sequenceDiagram
     Hub-->>RD: /topic/race/id/state
 
     RD->>C: POST finish
-    C->>SM: finish(race)
+    C->>RCS: finish(actor, raceId)
+    RCS->>SM: finish(race)
     SM->>RRp: save(race with finishedAt)
     SM->>Bus: RaceStatusChangedEvent(FINISHED)
     SM->>Hub: broadcastStateChange(FINISHED)
