@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
 import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +60,7 @@ public class PracticeSessionController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
     public ResponseEntity<PracticeSessionDto> create(
-            @RequestBody PracticeSessionService.CreateRequest request,
+            @RequestBody @Valid PracticeSessionService.CreateRequest request,
             Authentication auth) {
         PracticeSessionDto session = sessionService.create(CurrentOfficial.actor(auth), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
