@@ -45,7 +45,7 @@ export interface PredictedClock {
  */
 export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
   const legendKinds: LegendKind[] = showLegend
-    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : []), 'status' as const]
+    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : []), ...(barClock ? ['status' as const] : [])]
     : [];
   const noSignal = useNoSignal(rows, barClock);
   return (

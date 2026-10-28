@@ -17,6 +17,11 @@ export class ClockOffsetEstimator {
   private readonly samples: number[] = [];
   private primed = false;
 
+  /** Whether a fresh passing has arrived, so the offset is an estimate and not the starting 0. */
+  get known(): boolean {
+    return this.samples.length > 0;
+  }
+
   /**
    * Takes the latest rows and returns the server's clock minus this device's, in milliseconds.
    *
