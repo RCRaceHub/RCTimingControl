@@ -8,8 +8,8 @@ function fmtGap(ms: number): string {
 }
 
 const TREND_TEXT = {
-  CLOSING: { arrow: '▲', label: 'closing', className: 'text-emerald-500' },
-  GROWING: { arrow: '▼', label: 'pulling away', className: 'text-rose-500' },
+  CLOSING: { arrow: '▲', label: 'closing', className: 'text-success' },
+  GROWING: { arrow: '▼', label: 'pulling away', className: 'text-destructive' },
   HOLDING: { arrow: '▬', label: 'holding', className: 'text-muted-foreground' },
 } as const;
 

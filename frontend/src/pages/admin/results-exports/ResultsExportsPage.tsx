@@ -27,9 +27,9 @@ const STATUS_LABEL: Record<ResultsExportStatus, string> = {
 };
 
 const STATUS_COLOR: Record<ResultsExportStatus, string> = {
-  QUEUED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  FAILED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  SENT: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  QUEUED: 'bg-info/15 text-info',
+  FAILED: 'bg-destructive/15 text-destructive',
+  SENT: 'bg-success/15 text-success',
   SUPERSEDED: 'bg-muted text-muted-foreground',
 };
 
@@ -197,7 +197,7 @@ export default function ResultsExportsPage() {
       )}
 
       {data && !data.sendingEnabled && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+        <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
           <p className="font-medium">
             {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
           </p>

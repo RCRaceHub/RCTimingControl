@@ -7,7 +7,7 @@ export function DnfBadge({ dnf, className }: { dnf?: boolean; className?: string
   return (
     <span
       title="Did not finish: still on the track at the maximum race window"
-      className={className ?? 'ml-2 text-xs font-semibold text-red-600'}
+      className={className ?? 'ml-2 text-xs font-semibold text-destructive'}
     >
       DNF
     </span>

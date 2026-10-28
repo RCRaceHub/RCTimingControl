@@ -24,14 +24,14 @@ interface StateInfo {
  */
 export const STATE_INFO: Record<StateKind, StateInfo> = {
   'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-purple-500' },
-  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-blue-500' },
-  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-green-500' },
-  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-red-500' },
-  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-amber-500' },
-  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-green-500' },
-  lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-sky-400' },
-  penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-orange-500' },
-  'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-slate-400' },
+  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-info' },
+  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-success' },
+  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive' },
+  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-warning' },
+  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-success' },
+  lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-info' },
+  penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-warning' },
+  'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-muted-foreground' },
 };
 
 /**

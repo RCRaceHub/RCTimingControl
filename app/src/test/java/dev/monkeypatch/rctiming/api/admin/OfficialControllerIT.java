@@ -26,6 +26,7 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -279,11 +281,8 @@ class OfficialControllerIT extends AbstractIntegrationTest {
     }
 
     private static void awaitClosed(StompSession socket) throws InterruptedException {
-        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
-        while (socket.isConnected() && System.nanoTime() < deadline) {
-            Thread.sleep(20);
-        }
-        assertThat(socket.isConnected()).as("socket closed").isFalse();
+        await().atMost(Duration.ofSeconds(3)).untilAsserted(() ->
+                assertThat(socket.isConnected()).as("socket closed").isFalse());
     }
 
     private String createUser(Set<Role> roles, String password) {

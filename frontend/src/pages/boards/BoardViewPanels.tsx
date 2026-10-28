@@ -1,18 +1,17 @@
 // The panels a saved board view is built from (#481). Each draws one thing from the public board endpoints, so a view
 // is only a layout: the same data feeds the stand-alone boards.
-import { useQuery } from '@tanstack/react-query';
-import { getLiveQualifying, getResultsBoard, getTicker, type NowNextDto, type RaceMediaDto } from '@/lib/boardsApi';
+import { type NowNextDto, type RaceMediaDto } from '@/lib/boardsApi';
 import type { BoardPanel } from '@/lib/boardViewsApi';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import type { LapBarClock } from '@/components/LapProgressBar';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { CarThumb } from '@/components/CarThumb';
 import { BoardLiveTable, type PredictedClock } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { LiveTopTable } from './LiveTopTable';
 import { NameList, NextRacePanel } from './NextRacePanel';
 import { BOARD_POLL_MS } from './boardFormat';
+import { useLiveQualifyingQuery, useResultsBoardQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 /** What the panels share: the race on track, followed live once for the whole page. */
 export type PanelContext = {
@@ -76,11 +75,7 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
 }
 
 function LiveTopPanel({ ctx, top }: { ctx: PanelContext; top: number }) {
-  const { data } = useQuery({
-    queryKey: publicQueryKeys.boards.liveQualifying(ctx.eventId),
-    queryFn: () => getLiveQualifying(ctx.eventId),
-    refetchInterval: 3000,
-  });
+  const { data } = useLiveQualifyingQuery(ctx.eventId, { intervalMs: 3000 });
   if (!data || data.phase === 'NONE' || data.rows.length === 0) {
     return <Empty>No qualifying table yet.</Empty>;
   }
@@ -101,11 +96,7 @@ function LiveTopPanel({ ctx, top }: { ctx: PanelContext; top: number }) {
 
 function MarshalsPanel({ ctx }: { ctx: PanelContext }) {
   const tickerEventId = ctx.eventId ?? ctx.nowNext?.eventId ?? null;
-  const { data: ticker } = useQuery({
-    queryKey: publicQueryKeys.boards.ticker(tickerEventId),
-    queryFn: () => getTicker(tickerEventId),
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data: ticker } = useTickerQuery(tickerEventId, { intervalMs: BOARD_POLL_MS });
   const names = ticker?.currentMarshals ?? [];
   if (!ctx.nowNext?.currentRace || names.length === 0) {
     return (
@@ -120,12 +111,7 @@ function MarshalsPanel({ ctx }: { ctx: PanelContext }) {
 
 function LastResultPanel({ ctx }: { ctx: PanelContext }) {
   const last = ctx.nowNext?.lastCompletedRace ?? null;
-  const { data } = useQuery({
-    queryKey: publicQueryKeys.boards.results(ctx.eventId),
-    queryFn: () => getResultsBoard(ctx.eventId),
-    enabled: last !== null,
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data } = useResultsBoardQuery(ctx.eventId, { intervalMs: BOARD_POLL_MS, enabled: last !== null });
   if (!last) return <Empty>No result yet.</Empty>;
   return (
     <div>

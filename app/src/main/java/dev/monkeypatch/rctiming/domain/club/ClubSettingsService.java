@@ -49,7 +49,8 @@ public class ClubSettingsService {
 
     /**
      * The settings file. Any section may be missing from a file (null or empty) and is then left as it is on import.
-     * {@code audio} never carries horn sound files.
+     * {@code audio} never carries horn sound files. It is the on-disk file format, shared by export and import, so
+     * the controller binds it directly rather than through a {@code dto/} record.
      */
     public record SettingsFile(String format, int version, Instant exportedAt,
                                ClubProfileService.ClubDetails club, ClubAudioSettings audio, String voiceId,

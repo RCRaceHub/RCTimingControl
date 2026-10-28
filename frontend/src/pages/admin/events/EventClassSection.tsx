@@ -467,7 +467,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
                   {resolveClassName(cls.racingClassId)}
                 </span>
                 {cls.configOverride && Object.keys(cls.configOverride).length > 0 && (
-                  <Badge className="bg-amber-100 text-amber-700 text-xs">
+                  <Badge className="bg-warning/15 text-warning text-xs">
                     Overrides applied
                   </Badge>
                 )}

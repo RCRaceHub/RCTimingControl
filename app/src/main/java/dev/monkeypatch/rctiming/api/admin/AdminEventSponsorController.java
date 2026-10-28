@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.SponsorOrderRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SponsorRequest;
 import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
@@ -7,8 +9,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,12 +40,6 @@ public class AdminEventSponsorController {
     public AdminEventSponsorController(EventSponsorService service) {
         this.service = service;
     }
-
-    /** The body of a create or rename. */
-    public record SponsorRequest(@NotBlank @Size(max = 255) String name) {}
-
-    /** The body of a reorder: the sponsor ids, first shown first. */
-    public record SponsorOrderRequest(List<Long> ids) {}
 
     /** The event's sponsors in display order. {@code GET}; read only. */
     @GetMapping

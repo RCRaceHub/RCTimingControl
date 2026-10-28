@@ -1,8 +1,10 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.AddOfficialRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.PasswordRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.RolesRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.user.OfficialService;
-import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.query.official.OfficialChangeDto;
 import dev.monkeypatch.rctiming.query.official.OfficialDto;
@@ -10,11 +12,6 @@ import dev.monkeypatch.rctiming.query.official.OfficialQueryService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +24,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * The Officials page (#61): add officials, change their roles, set a new password, and disable or
@@ -50,21 +46,6 @@ public class OfficialController {
         this.officialService = officialService;
         this.officialQueryService = officialQueryService;
     }
-
-    /** The body of {@code POST}: a new official's email, name, password (8 or more characters) and roles. */
-    public record AddOfficialRequest(
-            @NotBlank @Email String email,
-            @NotBlank @Size(max = 100) String firstName,
-            @NotBlank @Size(max = 100) String lastName,
-            @NotBlank @Size(min = OfficialService.MIN_PASSWORD_LENGTH) String password,
-            @NotEmpty Set<Role> roles
-    ) {}
-
-    /** The body of {@code PUT /{id}/roles}: the official's full set of roles, which replaces the old one. */
-    public record RolesRequest(@NotEmpty Set<Role> roles) {}
-
-    /** The body of {@code PUT /{id}/password}: the new password, 8 or more characters. */
-    public record PasswordRequest(@NotNull @Size(min = OfficialService.MIN_PASSWORD_LENGTH) String password) {}
 
     /** Every official. {@code GET}; ADMIN; read only. */
     @GetMapping

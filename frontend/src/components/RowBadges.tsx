@@ -15,7 +15,7 @@ export function LappedPill({ row, className }: { row: LiveTimingRowDto; classNam
       aria-label={label}
       title={label}
       data-state="lapped"
-      className={cn('shrink-0 rounded-full border border-sky-400 px-1.5 text-[0.7em] font-bold leading-tight text-sky-400', className)}
+      className={cn('shrink-0 rounded-full border border-info px-1.5 text-[0.7em] font-bold leading-tight text-info', className)}
     >
       +{row.lapsDown}
     </span>

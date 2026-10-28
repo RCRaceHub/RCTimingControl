@@ -194,7 +194,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                   </p>
                 )}
                 {exactMatch && (
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <p className="text-xs text-warning">
                     {exactMatch.displayName} is already a driver. Pick them from the list to use their record. If
                     you add “{driverText.trim()}” as typed, you will be asked whether it is the same person.
                   </p>
@@ -228,7 +228,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
           </div>
 
           {possibleDuplicates.length > 0 && (
-            <div role="alert" className="space-y-2 rounded-md border border-amber-500 p-3 text-sm">
+            <div role="alert" className="space-y-2 rounded-md border border-warning p-3 text-sm">
               <p className="font-medium">
                 {possibleDuplicates.length === 1
                   ? `${possibleDuplicates[0].displayName} already exists${possibleDuplicates[0].homeClub ? ` (${possibleDuplicates[0].homeClub})` : ''}. Is this the same person?`

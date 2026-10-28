@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import DecoderConfigStep from '../steps/DecoderConfigStep';
+import DecoderConfigStep from './DecoderConfigStep';
 import * as setupApi from '@/lib/setupApi';
 
 vi.mock('@/lib/setupApi', () => ({

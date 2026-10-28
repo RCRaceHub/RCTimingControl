@@ -66,7 +66,7 @@ export function ClassMappingPanel({
   if (unmapped.length === 0) return null;
   const allChosen = unmapped.every(u => choices[u.key]);
   return (
-    <div className="rounded-md border border-amber-500/50 p-3 space-y-3">
+    <div className="rounded-md border border-warning/50 p-3 space-y-3">
       <div>
         <h3 className="text-sm font-semibold">Classes to map</h3>
         <p className="text-xs text-muted-foreground">{intro}</p>

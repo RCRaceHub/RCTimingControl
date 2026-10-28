@@ -23,6 +23,7 @@ import dev.monkeypatch.rctiming.timing.RaceClockService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.awaitility.Awaitility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -34,7 +35,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -431,18 +431,8 @@ class LiveFeedIT extends AbstractIntegrationTest {
     }
 
     private static void await(BooleanSupplier check) {
-        Instant deadline = Instant.now().plus(Duration.ofSeconds(10));
-        while (!check.getAsBoolean()) {
-            if (Instant.now().isAfter(deadline)) {
-                throw new AssertionError("Timed out waiting for the relay");
-            }
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-        }
+        Awaitility.await("the relay").atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(20))
+                .until(check::getAsBoolean);
     }
 
     private HttpHeaders headers(Set<Role> roles) {

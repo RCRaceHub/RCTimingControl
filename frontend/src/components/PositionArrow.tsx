@@ -16,7 +16,7 @@ export function PositionArrow({ row, rows, className }: { row: LiveTimingRowDto;
       aria-label={up ? `Up ${gained}` : `Down ${-gained}`}
       title={up ? `Up ${gained} from the grid` : `Down ${-gained} from the grid`}
       data-direction={up ? 'up' : 'down'}
-      className={cn('ml-1 whitespace-nowrap text-[0.7em] font-semibold', up ? 'text-emerald-500' : 'text-rose-500', className)}
+      className={cn('ml-1 whitespace-nowrap text-[0.7em] font-semibold', up ? 'text-success' : 'text-destructive', className)}
     >
       {up ? '▲' : '▼'}{Math.abs(gained)}
     </span>

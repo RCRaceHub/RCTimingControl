@@ -3,7 +3,7 @@ import { useTick } from '@/lib/tick';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { cn } from '@/lib/utils';
 
-const COLOURS = { under: 'bg-green-500', at: 'bg-yellow-400', late: 'bg-red-500' } as const;
+const COLOURS = { under: 'bg-success', at: 'bg-warning', late: 'bg-destructive' } as const;
 
 /** How the bars read the clock: the timing laptop's clock less this device's, and when the race last resumed. */
 export interface LapBarClock {
@@ -25,7 +25,7 @@ export function LapProgressBar({ row, clock, className }: { row: LiveTimingRowDt
   const nowMs = useTick() + clock.offsetMs;
   const progress = lapProgress(row, nowMs, clock.resumedAtMs, clock.lateMarginMs);
   return (
-    <div className={cn('h-2 w-full overflow-hidden rounded bg-slate-700/60', className)} aria-hidden="true">
+    <div className={cn('h-2 w-full overflow-hidden rounded bg-foreground/20', className)} aria-hidden="true">
       {progress && (
         <div
           data-testid="lap-progress"
