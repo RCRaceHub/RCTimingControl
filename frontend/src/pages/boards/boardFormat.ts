@@ -57,7 +57,7 @@ export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: nu
 }
 
 /** What the overlay's ticker can scroll; `?ticker=` names the ones to show, `?ticker=hide` shows none. */
-export const TICKER_ITEMS = ['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace'] as const;
+export const TICKER_ITEMS = ['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace', 'flying', 'improved', 'steady'] as const;
 export type TickerItem = (typeof TICKER_ITEMS)[number];
 
 function parseTickerItems(value: string | null): Set<TickerItem> {
@@ -216,6 +216,18 @@ export function tickerSegments(
     if (items.has('pace')) {
       segments.push(...markSegments(highlights.heat.avg3, highlights.round.avg3, pace(3)));
       segments.push(...markSegments(highlights.heat.avg5, highlights.round.avg5, pace(5)));
+    }
+    if (items.has('flying')) {
+      segments.push(...markSegments(highlights.heat.flying, highlights.round.flying, (label, mark) =>
+        `Flying lap in ${label}: ${mark.driverName} (${fmtMs(mark.value)} under their average)`));
+    }
+    if (items.has('improved')) {
+      segments.push(...markSegments(highlights.heat.improved, highlights.round.improved, (label, mark) =>
+        `Most improved in ${label}: ${mark.driverName} (+${mark.value} ${mark.value === 1 ? 'lap' : 'laps'} on their last heat)`));
+    }
+    if (items.has('steady')) {
+      segments.push(...markSegments(highlights.heat.consistent, highlights.round.consistent, (label, mark) =>
+        `Most consistent in ${label}: ${mark.driverName} (laps within ${fmtMs(mark.value)})`));
     }
   }
   return segments;

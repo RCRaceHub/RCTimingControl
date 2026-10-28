@@ -64,4 +64,56 @@ class RaceHighlightsTest {
         assertThat(scope.avg3()).isEqualTo(new RaceHighlightsDto.Mark("Bea", 11_167L));
         assertThat(scope.avg5()).isNull();
     }
+
+    @Test
+    void flyingLapIsTheBiggestMarginUnderTheDriversAverageSoFar() {
+        // The slow first lap is ignored; the 9s lap beats the 11s average of the three laps before it by 2s
+        List<Long> laps = List.of(30_000L, 11_000L, 11_000L, 11_000L, 9_000L, 10_500L);
+
+        assertThat(RaceHighlights.flyingMargin(laps)).isEqualTo(2_000L);
+        assertThat(RaceHighlights.flyingMargin(List.of(30_000L, 11_000L, 11_000L, 9_000L))).isNull();
+        assertThat(RaceHighlights.flyingMargin(List.of(30_000L, 10_000L, 10_000L, 10_000L, 10_000L))).isNull();
+    }
+
+    @Test
+    void theBiggestFlyingMarginAcrossCarsWins() {
+        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
+                run("Ada", 1, 1, 30_000L, 11_000L, 11_000L, 11_000L, 10_500L),
+                run("Bea", 2, 2, 30_000L, 11_000L, 11_000L, 11_000L, 9_000L)));
+
+        assertThat(scope.flying()).isEqualTo(new RaceHighlightsDto.Mark("Bea", 2_000L));
+    }
+
+    @Test
+    void consistencyNeedsEnoughLapsAndTheSmallestSpreadWins() {
+        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
+                run("Ada", 1, 1, 30_000L, 10_000L, 10_000L, 10_000L, 10_000L, 10_000L),
+                run("Bea", 2, 2, 30_000L, 10_000L, 12_000L, 10_000L, 12_000L, 10_000L),
+                // Perfectly even but too few laps to count
+                run("Cy", 3, 3, 30_000L, 10_000L, 10_000L, 10_000L)));
+
+        assertThat(scope.consistent()).isEqualTo(new RaceHighlightsDto.Mark("Ada", 0L));
+        assertThat(RaceHighlights.spread(List.of(30_000L, 10_000L, 12_000L, 10_000L, 12_000L, 10_000L)))
+                .isEqualTo(980L);
+        assertThat(RaceHighlights.spread(List.of(30_000L, 10_000L, 10_000L, 10_000L))).isNull();
+    }
+
+    @Test
+    void improvementIsLapsMoreThanThePreviousHeatAndNeedsAPreviousHeat() {
+        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
+                new RaceHighlights.Run("Ada", 1, 1, List.of(10_000L, 10_000L, 10_000L, 10_000L), 3),
+                new RaceHighlights.Run("Bea", 2, 2, List.of(10_000L, 10_000L, 10_000L, 10_000L), 1),
+                new RaceHighlights.Run("Cy", 3, 3, List.of(10_000L, 10_000L, 10_000L, 10_000L), 6),
+                run("Di", 4, 4, 10_000L, 10_000L, 10_000L, 10_000L)));
+
+        assertThat(scope.improved()).isEqualTo(new RaceHighlightsDto.Mark("Bea", 3L));
+    }
+
+    @Test
+    void noOneImprovingLeavesTheMarkOut() {
+        RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
+                new RaceHighlights.Run("Ada", 1, 1, List.of(10_000L, 10_000L), 2)));
+
+        assertThat(scope.improved()).isNull();
+    }
 }
