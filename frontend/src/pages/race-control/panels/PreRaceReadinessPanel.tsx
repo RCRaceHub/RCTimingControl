@@ -125,8 +125,8 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                   </TableCell>
                   <TableCell>
                     {seen.has(row.entryId)
-                      ? <span className="text-xs text-green-600">seen</span>
-                      : <span className="text-xs text-amber-600">not seen yet</span>}
+                      ? <span className="text-xs text-success">seen</span>
+                      : <span className="text-xs text-warning">not seen yet</span>}
                   </TableCell>
                 </TableRow>
               ))}

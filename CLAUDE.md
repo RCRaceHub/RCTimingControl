@@ -195,6 +195,7 @@ These came out of the quality checkpoint (#606). Follow them in new code, and fi
 - **Never use `window.confirm`, `alert` or `prompt`.** Use `useConfirm` and the shared confirm dialog.
 - **Never import axios in a page or component.** Read an API error with `getApiErrorData` / the helpers in `lib/errors.ts`.
 - **A failed query shows `QueryError`** (inline, banner or page variant), not an ad-hoc message.
+- **Colours come from theme tokens, not raw palette classes.** Use `bg-muted`, `text-destructive`, `text-success`, `text-warning`, `text-info`, `text-race-best` and tints such as `bg-success/15`; they switch with dark mode. Never write `bg-red-500`, `text-amber-600` or a `dark:` pair of palette classes. New status colours are added as tokens in `index.css`. The spectator boards and the podium sit on a fixed dark frame (the frame carries the `dark` class so tokens resolve for it) and keep their own slate palette. Build a conditional `className` with `cn()`, not a template literal.
 - Toasts use sonner; forms use React Hook Form with Zod; data fetching uses TanStack Query.
 
 ### Before you write something new

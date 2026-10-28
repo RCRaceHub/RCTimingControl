@@ -21,11 +21,11 @@ interface StateInfo {
  */
 export const STATE_INFO: Record<StateKind, StateInfo> = {
   'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-purple-500' },
-  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-blue-500' },
-  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-green-500' },
-  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-red-500' },
-  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-amber-500' },
-  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-green-500' },
+  'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-info' },
+  improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-success' },
+  slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive' },
+  close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-warning' },
+  'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-success' },
 };
 
 /**

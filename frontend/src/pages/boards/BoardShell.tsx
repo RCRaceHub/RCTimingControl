@@ -52,7 +52,7 @@ export function BoardShell({
 }) {
   const frame = useFitToScreen<HTMLDivElement>();
   return (
-    <div className="h-screen overflow-hidden bg-slate-950">
+    <div className="dark h-screen overflow-hidden bg-slate-950">
     <div ref={frame} className="flex origin-top-left flex-col gap-8 p-8 text-slate-50 lg:p-12">
       {eventName && (
         <p className="text-xl font-medium uppercase tracking-wide text-slate-400 lg:text-2xl">

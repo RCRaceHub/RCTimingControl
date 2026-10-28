@@ -57,7 +57,7 @@ export default function RaceControlSelectPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
-                <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                <Badge className="bg-destructive/15 text-destructive">
                   In Progress
                 </Badge>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />

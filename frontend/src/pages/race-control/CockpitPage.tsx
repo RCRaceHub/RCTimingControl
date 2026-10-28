@@ -714,7 +714,7 @@ function CockpitView() {
         {audio.blocked && (
           <div
             role="status"
-            className="m-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+            className="m-3 rounded border border-warning/50 bg-warning/10 p-3 text-xs"
           >
             <p>This browser is blocking sound until you click on the page.</p>
             <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={audio.unlock}>

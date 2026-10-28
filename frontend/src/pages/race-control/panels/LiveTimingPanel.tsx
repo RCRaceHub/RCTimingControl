@@ -59,7 +59,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
         <div
           className={cn(
             'h-2 w-2 rounded-full',
-            wsStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/40',
+            wsStatus === 'connected' ? 'bg-success animate-pulse' : 'bg-muted-foreground/40',
           )}
           title={wsStatus}
         />
@@ -97,12 +97,12 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 key={row.entryId}
                 className={cn(
                   'transition-colors duration-500',
-                  flash === 'race-best'      && 'bg-purple-500/30',
-                  flash === 'personal-best'  && 'bg-blue-500/30',
-                  flash === 'improving'      && 'bg-green-500/30',
-                  flash === 'slow'           && 'bg-red-500/30',
+                  flash === 'race-best'      && 'bg-race-best/30',
+                  flash === 'personal-best'  && 'bg-info/30',
+                  flash === 'improving'      && 'bg-success/30',
+                  flash === 'slow'           && 'bg-destructive/30',
                   !flash && highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
-                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-amber-500/15',
+                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-warning/15',
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
@@ -117,7 +117,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                     <RowStateIcon flash={flash} close={false} className="ml-2" />
                     {row.finished && <FinishedFlag />}
                     {close && (
-                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-warning text-warning">
                         CLOSE
                       </Badge>
                     )}
