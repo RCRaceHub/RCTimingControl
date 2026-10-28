@@ -34,6 +34,8 @@ The format's **qualifying type** decides how a class's heats are combined.
 | `ROUND_BY_ROUND` | Low points, "best X from Y" (section 2.1) |
 | `FTQ`, `FASTEST_LAP`, `CONSECUTIVE_LAPS` | All three currently rank the same way: total laps over all the class's finished qualifying heats, most first, then the single best lap, quickest first, then the entry id so exact ties always come out the same. They are separate choices in the format editor but are not yet scored differently. |
 
+Starting order: round 1 of qualifying starts in car number order; from round 2 on, each heat starts in the finishing order of the same heat in the previous round, including penalties and marshal laps (a late correction updates it until that heat starts). Cars with no result start at the back. Car numbers stay as they are.
+
 Only finished heats count. An abandoned heat's laps do not count, but everyone on its grid is still ranked (with no
 laps if they never crossed the line). Withdrawn entries are left out. Before the first round of a round by round
 class has finished, the table shows the laps order so it is never blank.

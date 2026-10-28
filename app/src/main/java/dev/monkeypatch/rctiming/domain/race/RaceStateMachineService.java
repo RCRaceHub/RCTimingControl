@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
@@ -16,6 +17,8 @@ import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -221,9 +224,10 @@ public class RaceStateMachineService {
 
         // On RUNNING/STOPPED → FINISHED: propagate finishing order, then persist result snapshot
         if (target == RaceStatus.FINISHED) {
-            // For a Shikabane heat this is replaced by ShikabaneGridService below
-            applyFinishingOrderToNextRace(race);
+            // For a Shikabane heat the grid is replaced by ShikabaneGridService below
             resultSnapshotService.snapshot(race.getId());
+            // After the snapshot, so the next heat's grid follows the stored result with its corrections
+            applyFinishingOrderToNextRace(race);
             // A Shikabane main is promoted from its stored result, which puts the dead cars behind the survivors
             if (isShikabane(race) && isFinal(race)) {
                 applyBumpUpPromotion(race, resultSnapshotService.finishingOrder(race.getId()));
@@ -257,6 +261,22 @@ public class RaceStateMachineService {
                 "Cannot transition race " + race.getId()
                 + " from " + race.getStatus() + " to " + target);
         }
+    }
+
+    /**
+     * Re-applies a finished heat's corrected result to the same heat of the next round, after a penalty or marshal
+     * lap changed it. Runs after {@code ResultSnapshotService} has rebuilt the stored result, in the correction's
+     * transaction. Only practice and qualifying heats are looked at (a corrected final does not promote again).
+     * The next heat is left alone once it has started; a heat already called to the grid is re-gridded.
+     */
+    @EventListener
+    @Order(2)
+    public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
+        raceRepository.findById(event.raceId())
+                .filter(r -> r.getStatus() == RaceStatus.FINISHED)
+                .filter(r -> roundRepository.findById(r.getRoundId())
+                        .map(round -> round.getType() != RoundType.FINAL).orElse(false))
+                .ifPresent(this::applyFinishingOrderToNextRace);
     }
 
     /**
@@ -314,17 +334,8 @@ public class RaceStateMachineService {
             return;
         }
 
-        // Get finishing order from in-memory state
-        Optional<LiveRaceState> state = lapTimingService.peek(finishedRace.getId());
-        if (state.isEmpty()) {
-            log.info("Race {} finished with no in-memory state — skipping finishing-order propagation", finishedRace.getId());
-            return;
-        }
-
-        List<Long> finishingEntryIds = state.get().calculatePositions().stream()
-                .map(LiveTimingRowDto::entryId)
-                .toList();
-
+        // The stored result is the one that counts, corrections included
+        List<Long> finishingEntryIds = resultSnapshotService.finishingOrder(finishedRace.getId());
         if (finishingEntryIds.isEmpty()) {
             return;
         }

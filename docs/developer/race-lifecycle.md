@@ -40,13 +40,14 @@ Finals are not seeded by the finish: an official presses Calculate finals, and `
 
 ```mermaid
 flowchart LR
-    P[PRACTICE round] -->|finishing order = next grid| Q[QUALIFIER rounds]
+    P[PRACTICE round] -->|finishing order = next practice grid only| Q[QUALIFIER rounds]
+    Q -->|each heat's finishing order = same heat's grid in the next round| Q
     Q -->|all heats finished, official presses Calculate finals| S[finals calculated, then reviewed and edited in the line-up panel]
     S --> F[FINAL rounds: A, B, C ...]
     F -->|B/C finish: bump-up| F
 ```
 
-Practice does not set qualifying order (qualifying starts in car number order); qualifier to qualifier does.
+Practice does not set qualifying order (qualifying starts in car number order); qualifier to qualifier does. Heat 1 of a class starts in car number order; every later round starts each heat in the finishing order of the same heat in the round before, taken from the stored result so penalties and marshal laps count, and re-applied if a correction changes it before that heat starts. Cars that did not appear in the result start behind the finishers. Car numbers never change with the grid.
 
 ## The event around the races
 
