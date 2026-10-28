@@ -11,7 +11,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -39,8 +40,9 @@ public class TlsController {
     private final int httpPort;
 
     public TlsController(TlsService tls, AuditService audit, SettingsFile settings,
-                         @Value("${server.port:8080}") int httpPort) {
-        this.httpPort = httpPort;
+            ObjectProvider<ServerProperties> server) {
+        ServerProperties properties = server.getIfAvailable();
+        this.httpPort = properties == null || properties.getPort() == null ? 8080 : properties.getPort();
         this.tls = tls;
         this.audit = audit;
         this.settings = settings;

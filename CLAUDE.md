@@ -174,6 +174,32 @@ The ten original phases are complete. Some of what they built has since been rem
 
 A later initiative extracted the shared decoder-protocol parser (`decoder-protocol/`) and built a separate offline race-day app, which was retired in #21; its plans are archived under `docs/plans/archive/`. The local-only plan then added competitors, per-event transponders, the RaceHub import and walk-ins, officials-only login, spectator boards, the SQLite database, backups and the installers. It also sends results back to RaceHub (#27) and a live feed to a relay for remote viewers (#28), and has a streaming overlay page for OBS (#29).
 
+## Code Standards
+
+These came out of the quality checkpoint (#606). Follow them in new code, and fix a neighbouring breach when you touch the file.
+
+### Backend
+
+- **Controllers are thin.** A controller validates input, calls one service and returns a DTO. It never injects a repository or a `DSLContext`; the logic and the transaction live in a service (for example `RaceControlService`). Read-side controllers call a query class.
+- **Not found is a 404 thrown by the service or query** (`EntityNotFoundException`), never checked in the controller. Errors reach clients as `ProblemDetail` through `GlobalExceptionHandler`.
+- **Real-time pushes go through `LiveTimingHub`.** Services never use `SimpMessagingTemplate` directly; add a method to the hub for a new topic.
+- **Read transactions:** read-side query classes use `@ReadTransaction` (read pool). `@Transactional(readOnly = true)` runs on the write connection, so use it only where the read must see an uncommitted write, and say why in the Javadoc.
+- **Configuration is read through `@ConfigurationProperties` records** with `@DefaultValue`, enabled by `@EnableConfigurationProperties` on the class that uses them. No `@Value` and no `Environment.getProperty`. A web setting such as `server.address` comes from Boot's `ServerProperties`, taken as an `ObjectProvider` because a non-web context (tests, the crash-recovery child) has none. New settings get a row in `docs/development.md`.
+- **Time comes from an injected `Clock`.** Never call `Instant.now()` or `System.currentTimeMillis()` in a service. Use the pattern of a public `@Autowired` constructor that passes `Clock.systemUTC()` to a package-private one taking the `Clock`, and a fixed clock in tests.
+- **Mapping:** repositories map records to entities with MapStruct, as the other repositories do; hand-written `toEntity`/`toRecord` only for entities built by constructor.
+- **Tests:** no `Thread.sleep`; wait on a condition (Awaitility or a latch) or inject a clock. Name tests for the behaviour, and put each test in the same package as the class it covers.
+
+### Frontend
+
+- **Never use `window.confirm`, `alert` or `prompt`.** Use `useConfirm` and the shared confirm dialog.
+- **Never import axios in a page or component.** Read an API error with `getApiErrorData` / the helpers in `lib/errors.ts`.
+- **A failed query shows `QueryError`** (inline, banner or page variant), not an ad-hoc message.
+- Toasts use sonner; forms use React Hook Form with Zod; data fetching uses TanStack Query.
+
+### Before you write something new
+
+Look for the existing helper first (hub method, error helper, confirm hook, properties record, clock pattern). A second way of doing the same thing is a review finding.
+
 ## General Good Developer Rules
 
 1. If you raise any processes, start services or ui services, you MUST stop them after you are finished.
