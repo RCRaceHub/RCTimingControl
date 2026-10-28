@@ -2,12 +2,10 @@
 // from its live positions (#480). While a heat runs the order is a projection; once it ends the settled order stays
 // up, with who moved, until the next race starts.
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getLiveQualifying } from '@/lib/boardsApi';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { LiveTopTable } from './LiveTopTable';
 import { parseEventParam, parseLegendParam, parseTopParam } from './boardFormat';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { useLiveQualifyingQuery } from '@/hooks/useBoardQueries';
 
 /** The table changes with every lap, so it polls faster than the other boards. */
 const LIVE_TOP_POLL_MS = 3000;
@@ -18,11 +16,7 @@ export default function LiveTopBoard() {
   const top = parseTopParam(searchParams.get('top'));
   const showLegend = parseLegendParam(searchParams.get('legend'), true);
 
-  const { data, isPending, isError } = useQuery({
-    queryKey: publicQueryKeys.boards.liveQualifying(eventId),
-    queryFn: () => getLiveQualifying(eventId),
-    refetchInterval: LIVE_TOP_POLL_MS,
-  });
+  const { data, isPending, isError } = useLiveQualifyingQuery(eventId, { intervalMs: LIVE_TOP_POLL_MS });
 
   if (isPending) {
     return (
