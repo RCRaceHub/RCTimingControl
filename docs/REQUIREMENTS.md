@@ -38,7 +38,7 @@
 ### Club Configuration
 
 - [x] **CLUB-01**: Admin can configure zero or more governing body affiliations for the club; each affiliation records a code (e.g. `BRCA`), a display name (e.g. `British Radio Car Association`), and a `membershipRequired` flag; if `membershipRequired` is true, racers must have a matching membership number on their profile to submit an entry to any event **Changed**: affiliations are still configured, but `membershipRequired` is stored and not checked, since RaceHub handles membership at booking (#18).
-- [x] **CLUB-02**: Admin can configure the club profile: name, contact details (email and phone), website URL, GPS coordinates (latitude/longitude) for public map display, IANA time zone (e.g. `Europe/London`), and logo (SVG and PNG formats both storable); profile data is used in the public portal and on printed/exported results
+- [x] **CLUB-02**: Admin can configure the club profile: name, contact details (email and phone), website URL, GPS coordinates (latitude/longitude) for public map display, IANA time zone (e.g. `Europe/London`), and logo (PNG, JPEG or WebP; SVG is refused because it can carry a script); profile data is used in the public portal and on printed/exported results
 
 ### Tracks
 
