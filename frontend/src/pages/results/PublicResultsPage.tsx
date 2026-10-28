@@ -12,7 +12,7 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { DnfBadge } from '@/components/DnfBadge';
 
 function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: PositionAtLap[] }) {
-  const laps = lapHistory.filter(l => l.entryId === entryId);
+  const laps = lapHistory.filter(l => l.entryId === entryId && l.lapNumber >= 1); // lap 0 is the grid, not a lap
   if (laps.length === 0) {
     return <p className="text-xs text-muted-foreground py-1">No lap data recorded.</p>;
   }

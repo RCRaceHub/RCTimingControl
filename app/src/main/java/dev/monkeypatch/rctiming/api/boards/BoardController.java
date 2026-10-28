@@ -330,7 +330,7 @@ public class BoardController {
     }
 
     /**
-     * Where each car stood at the end of every lap so far in a race on track, for the live position chart. Empty
+     * Where each car stood at the end of every lap so far in a race on track, for the live position chart, led by lap 0 (its grid place) where the crossing order is known. Empty
      * when the race has no live state (not started, or already finished: its stored result has the history).
      */
     @GetMapping("/races/{raceId}/position-history")

@@ -458,6 +458,14 @@ class BoardControllerIT extends AbstractIntegrationTest {
         }
     }
 
+    private static int lapOf(Map place) {
+        return ((Number) place.get("lap")).intValue();
+    }
+
+    private static List<Map> lapOne(List<Map> places) {
+        return places.stream().filter(p -> lapOf(p) == 1).toList();
+    }
+
     @Test
     void positionHistory_givesEachCarsPlaceAtTheEndOfEachLap() throws InterruptedException {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
@@ -479,15 +487,19 @@ class BoardControllerIT extends AbstractIntegrationTest {
             // Passings are handled asynchronously: wait for both cars to have completed the lap
             long deadline = System.currentTimeMillis() + 5_000;
             List<Map> places = getList(url);
-            while (places.size() < 2 && System.currentTimeMillis() < deadline) {
+            while (lapOne(places).size() < 2 && System.currentTimeMillis() < deadline) {
                 Thread.sleep(50);
                 places = getList(url);
             }
-            assertThat(places).hasSize(2);
-            Map first = places.stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
+            assertThat(lapOne(places)).hasSize(2);
+            // Lap 0 is the grid: the slow car set off first
+            Map gridFirst = places.stream().filter(p -> lapOf(p) == 0 && ((Number) p.get("position")).intValue() == 1)
+                    .findFirst().orElseThrow();
+            assertThat(((Number) gridFirst.get("entryId")).longValue()).isEqualTo(slowEntry.getId());
+            Map first = lapOne(places).stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
             assertThat(((Number) first.get("lap")).intValue()).isEqualTo(1);
             assertThat(((Number) first.get("entryId")).longValue()).isEqualTo(quickEntry.getId());
-            assertThat(places).extracting(p -> ((Number) p.get("entryId")).longValue())
+            assertThat(lapOne(places)).extracting(p -> ((Number) p.get("entryId")).longValue())
                     .containsExactlyInAnyOrder(quickEntry.getId(), slowEntry.getId());
         } finally {
             lapTimingService.releaseState(heat1.getId());
