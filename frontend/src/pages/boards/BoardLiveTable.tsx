@@ -2,6 +2,8 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
+import { RowMarkers } from '@/components/RowBadges';
+import { useNoSignal } from '@/hooks/race-control/useNoSignal';
 import { OnPaceIcon } from '@/components/OnPaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
@@ -43,8 +45,9 @@ export interface PredictedClock {
  */
 export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
   const legendKinds: LegendKind[] = showLegend
-    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : [])]
+    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : []), 'status' as const]
     : [];
+  const noSignal = useNoSignal(rows, barClock);
   return (
     <>
       <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
@@ -68,7 +71,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             return (
             <tr
               key={row.entryId}
-              className={cn('border-b border-slate-800', close && 'bg-amber-500/20')}
+              className={cn('border-b border-slate-800', close && 'bg-amber-500/20', noSignal.has(row.entryId) && 'opacity-50')}
               data-close={close || undefined}
             >
               <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
@@ -79,6 +82,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
                 {/* This board has no lap flash, so only close gets an icon */}
                 <RowStateIcon close={close} className="ml-3" />
                 {barClock && !row.finished && <OnPaceIcon row={row} clock={barClock} className="ml-2" />}
+                <RowMarkers row={row} noSignal={noSignal.has(row.entryId)} className="ml-2" />
                 {row.finished && <FinishedFlag />}
                 {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
               </td>

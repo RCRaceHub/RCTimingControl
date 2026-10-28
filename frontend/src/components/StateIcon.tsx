@@ -1,10 +1,13 @@
-import { ChevronsRight, Star, ThumbsUp, Timer, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronsRight, CircleHelp, Gavel, Layers, Star, ThumbsUp, Timer, TrendingDown, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import { cn } from '@/lib/utils';
 
-/** The states a timing row shows an icon for: the lap flashes, and a car running close to the one ahead and a car on pace for its predicted laps. */
-export type StateKind = FlashColor | 'close' | 'on-pace';
+/**
+ * The states a timing row shows an icon for: the lap flashes, a car running close to the one ahead, a car on pace
+ * for its predicted laps, a lapped car, a car with a time penalty and a car the decoder has not seen for a while.
+ */
+export type StateKind = FlashColor | 'close' | 'on-pace' | 'lapped' | 'penalty' | 'no-signal';
 
 interface StateInfo {
   icon: LucideIcon;
@@ -26,6 +29,9 @@ export const STATE_INFO: Record<StateKind, StateInfo> = {
   slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-red-500' },
   close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-amber-500' },
   'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-green-500' },
+  lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-sky-400' },
+  penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-orange-500' },
+  'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-slate-400' },
 };
 
 /**

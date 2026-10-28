@@ -61,6 +61,27 @@ export function onPace(
   return row.lastLapMs == null || row.lastLapMs <= average;
 }
 
+/** A car with no crossing for this many of its average laps counts as not seen by the decoder. */
+export const NO_SIGNAL_LAPS = 3;
+/** The shortest silence, in milliseconds, that counts as no signal, so a quick average lap does not trip it. */
+export const NO_SIGNAL_MIN_MS = 15_000;
+
+/**
+ * Whether the decoder has not seen a car for a while (#591): it has an average lap, has not finished, and has not
+ * crossed the line for {@link NO_SIGNAL_LAPS} of its average laps (and at least {@link NO_SIGNAL_MIN_MS}). The wait
+ * is counted from the last resume of a stopped race, as for {@link lapProgress}.
+ *
+ * @param row the car's live timing row
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock
+ */
+export function signalLost(row: LiveTimingRowDto, nowMs: number, notBeforeMs?: number | null): boolean {
+  const average = row.avgLapMs;
+  if (row.finished || !average || !Number.isFinite(average) || !row.lastPassingTimeMs) return false;
+  const silent = nowMs - Math.max(row.lastPassingTimeMs, notBeforeMs ?? 0);
+  return silent > Math.max(NO_SIGNAL_LAPS * average, NO_SIGNAL_MIN_MS);
+}
+
 /**
  * Whether every car in the race has had at least one lap counted. Until then the order is only who crossed the
  * line first off the grid, so nobody is lapped yet.

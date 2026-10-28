@@ -306,7 +306,7 @@ export default function OverlayBoard() {
   // The grid is bunched up until the field has spread out, so no battle call-outs before a lap has been counted
   const lapCounted = allRows.some(row => row.lapsCompleted >= 1);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
-  const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : [])];
+  const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), 'status' as const];
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
