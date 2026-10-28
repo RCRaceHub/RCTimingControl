@@ -103,7 +103,8 @@ public class RaceHubImportService {
      * or the system for the automatic fetch); it is not needed, and may be null, for a dry run.
      *
      * <p>Runs in one write transaction, a dry run included. Nothing is saved when the result is blocked (unmapped
-     * classes, invalid rows, a BRCA number shared by two competitors from the same source, or a driver who would have two entries in a class). Withdrawals are applied before the
+     * classes, invalid rows, a BRCA number shared by two competitors from the same source, or a driver who would
+     * have two entries in a class). Withdrawals are applied before the
      * other rows so a replacement entry does not meet the old one in the one-active-entry index. A real import that
      * changes entries writes one audit row.
      *

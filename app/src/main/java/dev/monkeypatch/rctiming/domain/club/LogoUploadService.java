@@ -12,7 +12,8 @@ import java.util.Set;
 
 /**
  * Stores the club's logo image in object storage and points the club profile at it. It accepts PNG, JPEG or WebP
- * up to 2 MB (never SVG, which can carry a script and would run on the app's own origin) and records {@code CLUB_LOGO_CHANGED}. The previous file stays in storage.
+ * up to 2 MB (never SVG, which can carry a script and would run on the app's own origin) and records
+ * {@code CLUB_LOGO_CHANGED}. The previous file stays in storage.
  */
 @Service
 @Transactional
