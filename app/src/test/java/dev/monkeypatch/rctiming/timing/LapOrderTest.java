@@ -102,6 +102,17 @@ class LapOrderTest {
         assertThat(order.places()).filteredOn(p -> p.lap() == 0).hasSize(2);
     }
 
+    @Test
+    void noLapZeroWhenTheCrossingOrderCannotBeWorkedOut() {
+        // Two laps counted but one lap time recorded: every place falls back to the final one, so no grid step either
+        List<LiveTimingRowDto> rows = List.of(withStart(row(1, 1, 2, 5), 2), withStart(row(2, 2, 2, 6), 1));
+
+        LapOrder order = LapOrder.of(rows, Map.of(1L, List.of(2L, 3L), 2L, List.of(6L)));
+
+        assertThat(order.startPlaces()).isEmpty();
+        assertThat(order.places()).noneMatch(p -> p.lap() == 0);
+    }
+
     private static LiveTimingRowDto withStart(LiveTimingRowDto r, int startPosition) {
         return new LiveTimingRowDto(r.entryId(), r.driverName(), r.carNumber(), r.position(), r.lapsCompleted(),
                 r.lastPassingTimeMs(), null, null, null, null, 0, 0, null, null, null, true, 0L, startPosition);

@@ -311,7 +311,9 @@ public class ResultSnapshotService {
      * The places come from {@link LapOrder}, so a position chart shows who passed whom. The state parameter is
      * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. Each car
      * with a grid position also gets a lap 0 entry (its grid place, no lap time) so the chart starts from the grid;
-     * code reading lap times must skip lap 0. A correction
+     * code reading lap times must skip lap 0.
+     *
+     * <p>A correction
      * after the race rebuilds this from the live state if it is still held, otherwise the stored history is kept.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
