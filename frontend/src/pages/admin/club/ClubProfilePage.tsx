@@ -143,7 +143,7 @@ export default function ClubProfilePage() {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            accept="image/png,image/jpeg,image/webp"
             onChange={handleFileChange}
           />
           <Button

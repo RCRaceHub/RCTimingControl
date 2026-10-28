@@ -492,13 +492,13 @@ withdraw=<entryId of a MISSING row> (repeat for each entry to withdraw)
 
 New rows are always created; only the picked changed rows are updated and only the picked missing entries are withdrawn (never deleted). A pick that no longer matches the file or the event blocks the import, so preview again.
 
-**200 OK** (or **422** for a real import blocked by bad rows, unmapped classes or a stale pick, with nothing saved):
+**200 OK** (or **422** for a real import blocked by bad rows, unmapped classes, a stale pick or a BRCA number held by two different competitors from the same source, with nothing saved):
 ```json
 {
   "dryRun": true, "blocked": false, "applied": false,
   "summary": { "newEntries": 5, "changed": 1, "unchanged": 0, "missing": 1, "skipped": 1, "created": 0, "updated": 0, "withdrawn": 0 },
   "unmappedClasses": [ { "key": "CSV:nitro truggy", "className": "Nitro Truggy", "classNumber": null, "entryCount": 2 } ],
-  "errors": [], "warnings": [ "Transponder 7123456 is used by more than one entry: Ada Lovelace, Grace Hopper", "Ada Lovelace has BRCA number 12345, which another competitor also has" ],
+  "errors": [], "warnings": [ "Transponder 7123456 is used by more than one entry: Ada Lovelace, Grace Hopper", "Ada Lovelace has BRCA number 12345, which Walk In (already stored) also has. If they are the same person, merge them from the possible-duplicates review" ],
   "rows": [ {
     "group": "CHANGED", "key": "21/brca:12345/class:11", "line": 2, "name": "Ada Lovelace",
     "brcaNumber": 12345, "className": "2WD Buggy", "classNumber": 1, "eventClassId": 11, "entryId": 301,
