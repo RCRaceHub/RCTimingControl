@@ -164,6 +164,15 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void anOversizedAddress_isRefusedByValidationBeforeTheServiceSeesIt() {
+        String tooLong = "https://example.test/" + "a".repeat(2048);
+
+        ResponseEntity<JsonNode> response = saveFeed(tooLong, TOKEN, false);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void anUnchangedRevision_isANoOp() {
         feedBody = fixture("entries-v1-initial.json");
         saveFeed(feedUrl(), TOKEN, true);

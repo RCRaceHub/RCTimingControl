@@ -101,7 +101,7 @@ public class ResultsExportController {
 
     @Audited("audit_log")
     @PutMapping("/results-exports/target")
-    public ResultsExportsDto setTarget(Authentication auth, @RequestBody PublishTargetRequest request) {
+    public ResultsExportsDto setTarget(Authentication auth, @RequestBody @Valid PublishTargetRequest request) {
         clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(auth),
                 request.target() == null ? null : request.target().name());
         return list();

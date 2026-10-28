@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.practice.PracticeSession;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSessionRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
+import jakarta.validation.constraints.Size;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -125,6 +126,6 @@ public class PracticeDriverService {
     }
 
     /** Request body for naming a transponder; see {@link #link}. */
-    public record LinkRequest(String transponderNumber, Long competitorId, String newName,
-                              Boolean confirmNewCompetitor) {}
+    public record LinkRequest(@Size(max = 200) String transponderNumber, Long competitorId,
+                              @Size(max = 400) String newName, Boolean confirmNewCompetitor) {}
 }

@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeed;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedService;
@@ -48,7 +50,8 @@ public class EntryFeedController {
      */
     @Audited("audit_log")
     @PutMapping
-    public EntryFeedDto save(Authentication auth, @PathVariable long eventId, @RequestBody SaveRequest request) {
+    public EntryFeedDto save(Authentication auth, @PathVariable long eventId,
+                             @RequestBody @Valid SaveRequest request) {
         return EntryFeedDto.of(feedService.save(CurrentOfficial.actor(auth), eventId, request.url(), request.token(),
                 Boolean.TRUE.equals(request.autoFetch())));
     }
@@ -91,7 +94,7 @@ public class EntryFeedController {
      * The body of {@code PUT}: the address of the Entry Export file, its access token (see {@code save}) and whether
      * the app fetches it by itself (null counts as off).
      */
-    public record SaveRequest(String url, String token, Boolean autoFetch) {
+    public record SaveRequest(@Size(max = 2048) String url, @Size(max = 512) String token, Boolean autoFetch) {
     }
 
     /**
