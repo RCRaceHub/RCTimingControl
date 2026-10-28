@@ -5,6 +5,8 @@ import org.springframework.boot.web.context.WebServerApplicationContext;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.boot.web.server.WebServer;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -23,7 +25,8 @@ class LanAddressesTest {
     @Test
     void configuredAddressesReplaceTheDetectedOnes() {
         // In a container the detected addresses are the container's own (#99)
-        LanAddresses addresses = new LanAddresses("", " 192.168.1.50, club-timing ,http://192.168.1.50:9000/,", "");
+        LanAddresses addresses = new LanAddresses("", new NetworkProperties(
+                List.of(" 192.168.1.50", "club-timing ", "http://192.168.1.50:9000/", ""), ""));
         started(addresses, 8080);
 
         assertThat(addresses.urls()).containsExactly(
@@ -32,7 +35,7 @@ class LanAddressesTest {
 
     @Test
     void anMdnsNameIsListedFirstAndDoesNotNeedTheDotLocal() {
-        LanAddresses addresses = new LanAddresses("192.168.1.9", "", "Timing");
+        LanAddresses addresses = new LanAddresses("192.168.1.9", new NetworkProperties(List.of(), "Timing"));
         started(addresses, 8080);
 
         assertThat(addresses.urls()).containsExactly("http://timing.local:8080/", "http://192.168.1.9:8080/");
@@ -40,7 +43,7 @@ class LanAddressesTest {
 
     @Test
     void noMdnsNameLeavesTheListAsItWas() {
-        LanAddresses addresses = new LanAddresses("192.168.1.9", "", "");
+        LanAddresses addresses = new LanAddresses("192.168.1.9", new NetworkProperties(List.of(), ""));
         started(addresses, 8080);
 
         assertThat(addresses.urls()).containsExactly("http://192.168.1.9:8080/");
@@ -48,7 +51,7 @@ class LanAddressesTest {
 
     @Test
     void theNameIsAnnouncedOnlyOnTheBindAddressWhenOneIsSet() {
-        assertThat(new LanAddresses("192.168.1.9", "", "timing").announceAddresses()).containsExactly("192.168.1.9");
+        assertThat(new LanAddresses("192.168.1.9", new NetworkProperties(List.of(), "timing")).announceAddresses()).containsExactly("192.168.1.9");
     }
 
     private static void started(LanAddresses addresses, int port) {

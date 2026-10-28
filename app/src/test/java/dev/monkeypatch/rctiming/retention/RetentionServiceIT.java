@@ -133,14 +133,14 @@ class RetentionServiceIT extends AbstractIntegrationTest {
 
     @Test
     void thePeriodsMustBeSensible() {
-        assertThatThrownBy(() -> new RetentionProperties(0, 730))
+        assertThatThrownBy(() -> new RetentionProperties(0, 730, true))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RetentionProperties(90, -1))
+        assertThatThrownBy(() -> new RetentionProperties(90, -1, true))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RetentionProperties(90, 30))
+        assertThatThrownBy(() -> new RetentionProperties(90, 30, true))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RetentionProperties(Integer.MAX_VALUE, 0))
+        assertThatThrownBy(() -> new RetentionProperties(Integer.MAX_VALUE, 0, true))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThat(new RetentionProperties(90, 0).auditDays()).isZero();
+        assertThat(new RetentionProperties(90, 0, true).auditDays()).isZero();
     }
 }

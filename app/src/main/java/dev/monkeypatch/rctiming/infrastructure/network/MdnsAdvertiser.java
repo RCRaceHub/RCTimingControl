@@ -3,8 +3,8 @@ package dev.monkeypatch.rctiming.infrastructure.network;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
  * HTTPS or localhost (the audio output page's sound card list) do not work there.
  */
 @Component
+@EnableConfigurationProperties(NetworkProperties.class)
 public class MdnsAdvertiser {
 
     private static final Logger log = LoggerFactory.getLogger(MdnsAdvertiser.class);
@@ -52,7 +53,8 @@ public class MdnsAdvertiser {
     private ScheduledExecutorService scheduler;
     private boolean stopped;
 
-    public MdnsAdvertiser(@Value("${rctiming.network.mdns-name:}") String name, LanAddresses lan) {
+    public MdnsAdvertiser(NetworkProperties network, LanAddresses lan) {
+        String name = network.mdnsName();
         this.label = hostLabel(name);
         this.lan = lan;
         if (!name.isBlank() && label.isEmpty()) {

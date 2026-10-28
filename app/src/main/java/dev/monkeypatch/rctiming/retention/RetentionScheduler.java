@@ -2,7 +2,6 @@ package dev.monkeypatch.rctiming.retention;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -20,10 +19,9 @@ public class RetentionScheduler {
     private final RetentionService retention;
     private final boolean runOnStartup;
 
-    public RetentionScheduler(RetentionService retention,
-                              @Value("${rctiming.retention.run-on-startup:true}") boolean runOnStartup) {
+    public RetentionScheduler(RetentionService retention, RetentionProperties properties) {
         this.retention = retention;
-        this.runOnStartup = runOnStartup;
+        this.runOnStartup = properties.runOnStartup();
     }
 
     /** Runs the clean-up once when the app is ready, unless {@code rctiming.retention.run-on-startup} is false. */

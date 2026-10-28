@@ -1,8 +1,9 @@
 package dev.monkeypatch.rctiming.config;
 
 import dev.monkeypatch.rctiming.infrastructure.storage.StorageFolder;
+import dev.monkeypatch.rctiming.infrastructure.storage.StorageProperties;
 import dev.monkeypatch.rctiming.persistence.DatabaseProperties;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -22,12 +23,13 @@ import java.nio.file.Path;
  * script in disguise, such as an SVG logo uploaded before SVG was refused (#525), cannot run on that origin.
  */
 @Configuration
+@EnableConfigurationProperties(StorageProperties.class)
 public class StaticStorageConfig implements WebMvcConfigurer {
 
     private final Path folder;
 
-    public StaticStorageConfig(@Value("${storage.local-path:}") String localPath, DatabaseProperties database) {
-        this.folder = StorageFolder.resolve(localPath, database);
+    public StaticStorageConfig(StorageProperties storage, DatabaseProperties database) {
+        this.folder = StorageFolder.resolve(storage.localPath(), database);
     }
 
     /** Maps {@code /storage/**} to the storage folder, the same one {@code FilesystemObjectStorageService} writes to. */

@@ -11,7 +11,7 @@ import dev.monkeypatch.rctiming.query.resultsexport.ResultsExportQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.event.TransactionPhase;
@@ -52,6 +52,7 @@ import java.util.zip.ZipOutputStream;
  * appear are removed. Only the pages the service itself writes are touched.
  */
 @Service
+@EnableConfigurationProperties(ResultsSiteProperties.class)
 public class ResultsSiteService {
 
     private static final Logger log = LoggerFactory.getLogger(ResultsSiteService.class);
@@ -70,9 +71,8 @@ public class ResultsSiteService {
     @Autowired
     public ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
                               ResultsPublishSettings publishSettings, PublicNames publicNames,
-                              @Value("${rctiming.results-site.directory:}") String directory,
-                              @Value("${rctiming.results-site.refresh-minutes:5}") long refreshMinutes) {
-        this(eventRepository, exportQuery, publishSettings, publicNames, directory, refreshMinutes,
+                              ResultsSiteProperties site) {
+        this(eventRepository, exportQuery, publishSettings, publicNames, site.directory(), site.refreshMinutes(),
                 Clock.systemUTC());
     }
 

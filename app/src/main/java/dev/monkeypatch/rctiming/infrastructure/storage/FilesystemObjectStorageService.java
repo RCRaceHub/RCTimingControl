@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.infrastructure.storage;
 
 import dev.monkeypatch.rctiming.persistence.DatabaseProperties;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -15,16 +15,15 @@ import java.nio.file.Path;
  * venue laptop needs no separate object-storage server.
  */
 @Service
+@EnableConfigurationProperties(StorageProperties.class)
 public class FilesystemObjectStorageService implements ObjectStorageService {
 
     private final Path rootDir;
     private final String publicBaseUrl;
 
-    public FilesystemObjectStorageService(@Value("${storage.local-path:}") String localPath,
-                                           @Value("${storage.public-base-url}") String publicBaseUrl,
-                                           DatabaseProperties database) {
-        this.rootDir = StorageFolder.resolve(localPath, database);
-        this.publicBaseUrl = publicBaseUrl.replaceAll("/$", "");
+    public FilesystemObjectStorageService(StorageProperties storage, DatabaseProperties database) {
+        this.rootDir = StorageFolder.resolve(storage.localPath(), database);
+        this.publicBaseUrl = storage.publicBaseUrl().replaceAll("/$", "");
         try {
             Files.createDirectories(rootDir);
         } catch (IOException e) {

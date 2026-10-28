@@ -7,7 +7,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -27,6 +27,7 @@ import java.util.List;
  * in its data folder on first start ({@link JwtSecretFile}).
  */
 @Service
+@EnableConfigurationProperties(JwtProperties.class)
 public class JwtTokenService {
 
     private final io.jsonwebtoken.security.MacAlgorithm signingAlg;
@@ -34,18 +35,15 @@ public class JwtTokenService {
     private final long accessTokenTtlMs;
     private final long refreshTokenTtlMs;
 
-    public JwtTokenService(
-            @Value("${app.jwt.secret:}") String base64Secret,
-            @Value("${app.jwt.access-token-ttl-ms}") long accessTokenTtlMs,
-            @Value("${app.jwt.refresh-token-ttl-ms}") long refreshTokenTtlMs,
-            DatabaseProperties database) {
+    public JwtTokenService(JwtProperties jwt, DatabaseProperties database) {
+        String base64Secret = jwt.secret();
         if (base64Secret == null || base64Secret.isBlank()) {
             base64Secret = JwtSecretFile.loadOrCreate(database.effectiveDataDirectory());
         }
         this.signingAlg = Jwts.SIG.HS256;
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(base64Secret));
-        this.accessTokenTtlMs = accessTokenTtlMs;
-        this.refreshTokenTtlMs = refreshTokenTtlMs;
+        this.accessTokenTtlMs = jwt.accessTokenTtlMs();
+        this.refreshTokenTtlMs = jwt.refreshTokenTtlMs();
     }
 
     /**

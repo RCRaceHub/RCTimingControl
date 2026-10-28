@@ -2,8 +2,10 @@ package dev.monkeypatch.rctiming.infrastructure.network;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.context.WebServerInitializedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -15,7 +17,6 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Set;
  * {@code 192.168.1.50} or {@code club-timing}, or full URLs when the published port differs.
  */
 @Component
+@EnableConfigurationProperties(NetworkProperties.class)
 public class LanAddresses {
 
     private static final Logger log = LoggerFactory.getLogger(LanAddresses.class);
@@ -48,14 +50,16 @@ public class LanAddresses {
     private final Optional<String> mdnsHost;
     private volatile int port;
 
-    public LanAddresses(@Value("${server.address:}") String bindAddress,
-                        @Value("${rctiming.network.addresses:}") String configuredAddresses,
-                        @Value("${rctiming.network.mdns-name:}") String mdnsName) {
-        this.mdnsHost = MdnsAdvertiser.hostLabel(mdnsName).map(label -> label + ".local");
+    @Autowired
+    public LanAddresses(ServerProperties server, NetworkProperties network) {
+        this(server.getAddress() == null ? "" : server.getAddress().getHostAddress(), network);
+    }
+
+    LanAddresses(String bindAddress, NetworkProperties network) {
+        this.mdnsHost = MdnsAdvertiser.hostLabel(network.mdnsName()).map(label -> label + ".local");
         this.bindAddress = bindAddress == null ? "" : bindAddress.trim();
-        this.configuredAddresses = configuredAddresses == null ? List.of()
-                : Arrays.stream(configuredAddresses.split(","))
-                        .map(String::trim).filter(a -> !a.isEmpty()).toList();
+        this.configuredAddresses = network.addresses().stream()
+                .map(String::trim).filter(a -> !a.isEmpty()).toList();
     }
 
     /** Learns the port the web server really bound to, which differs from the setting when it is 0 (random). */
