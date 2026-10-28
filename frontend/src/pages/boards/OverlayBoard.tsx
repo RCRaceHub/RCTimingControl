@@ -284,8 +284,8 @@ export default function OverlayBoard() {
   const searchParams = useOverlayParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap, gapEverySeconds,
-    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);

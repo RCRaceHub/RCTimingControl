@@ -301,8 +301,8 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   const design: OverlayDesign = { ...DEFAULT_OVERLAY_DESIGN, tickerItems: [...DEFAULT_OVERLAY_DESIGN.tickerItems] };
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
-  for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags', 'showPredicted', 'showBars',
-    'showArrows', 'showBattles', 'showLegend'] as const) {
+  for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
+    'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;

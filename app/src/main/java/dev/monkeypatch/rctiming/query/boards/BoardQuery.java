@@ -8,6 +8,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.SortField;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -254,6 +255,12 @@ public class BoardQuery {
     /**
      * The places that move up from a final: the bump slots of the final above it in the same class (B moves into A,
      * and the zombie round's winner into A). Zero for an A final, a heat, or when the final above does not exist.
+     * Runs on the board's read snapshot, from the thread serving the anonymous board request.
+     *
+     * <p>A final in legs has several races with the letter and only the first holds the slots, so the largest
+     * count is taken. The A final's slots include one for the zombie round's winner (see
+     * {@code BumpUpSeedingService}), which does not come from the final below until the zombie round has ended, so
+     * that place is left out of the count while a zombie race is still to finish.
      */
     private int bumpUpPlaces(long eventClassId, String finalLetter) {
         if (finalLetter == null || finalLetter.length() != 1) {
@@ -266,11 +273,16 @@ public class BoardQuery {
         if (above < 'A') {
             return 0;
         }
-        return dsl.select(RACES.BUMP_SLOTS).from(RACES)
+        int slots = dsl.select(DSL.max(RACES.BUMP_SLOTS)).from(RACES)
                 .where(RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(String.valueOf(above)))
-                .limit(1)
-                .fetchOptional(RACES.BUMP_SLOTS)
+                .fetchOptional(0, Integer.class)
                 .orElse(0);
+        if (above == 'A' && slots > 0 && dsl.fetchExists(RACES,
+                RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(ZOMBIE_LETTER),
+                RACES.STATUS.ne("FINISHED"))) {
+            slots--;
+        }
+        return slots;
     }
 
     private BoardRaceDto toDto(Record r) {

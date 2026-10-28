@@ -280,6 +280,37 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void currentRace_carriesTheBumpUpPlacesOfAFinalBelowTheOneThatTakesThem() {
+        Round finals = fx.round(RoundType.FINAL, 1, 2);
+        Race a = fx.race(finals, 1, RaceStatus.PENDING);
+        a.setFinalLetter("A");
+        a.setBumpSlots(3);
+        fx.save(a);
+        Race zombie = fx.race(finals, 2, RaceStatus.PENDING);
+        zombie.setFinalLetter("Z");
+        fx.save(zombie);
+        Race b = fx.race(finals, 3, RaceStatus.RUNNING);
+        b.setFinalLetter("B");
+        fx.save(b);
+
+        // A's third slot is kept for the zombie round's winner while that round is still to run
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(2);
+
+        zombie.setStatus(RaceStatus.FINISHED);
+        fx.save(zombie);
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(3);
+
+        a.setStatus(RaceStatus.RUNNING);
+        b.setStatus(RaceStatus.PENDING);
+        fx.save(a);
+        fx.save(b);
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(0);
+    }
+
+    @Test
     void lastCompletedQualifier_isStillTheQualifyingHeatOnceAFinalHasFinished() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
