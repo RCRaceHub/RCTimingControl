@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
 import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
 import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
+import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.backup.BackupFailedException;
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
@@ -142,6 +143,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ProblemDetail handleOfficialChangeRefused(OfficialChangeRefusedException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /** The announcer voice (Piper) can't be reached or has no such voice: 503, so the page can say so. */
+    @ExceptionHandler(TtsUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleTtsUnavailable(TtsUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "The announcer voice is not available"));
     }
 
     /** A controller refused with a status of its own, such as the announcer voice not being installed. */
