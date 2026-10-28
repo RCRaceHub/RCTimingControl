@@ -8,24 +8,13 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
-import dev.monkeypatch.rctiming.domain.race.RaceStatus;
-import org.jooq.DSLContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog.AUDIT_LOG;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.Entries.ENTRIES;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
-import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESULTS_OUTBOX;
 
 /**
  * Anonymises one competitor on request (#263): the competitor stays, so their results, laps and championship points
@@ -58,23 +47,22 @@ public class CompetitorAnonymiseService {
     private static final Ids EXPORT_IDS = new Ids("rctcCompetitorId", "rctcEntryId");
 
     private record Ids(String competitor, String entry) {}
-    private static final List<String> LIVE_STATUSES =
-            List.of(RaceStatus.GRID.name(), RaceStatus.RUNNING.name(), RaceStatus.STOPPED.name());
 
     /** What one anonymisation changed, as counts only. */
     public record Result(Long competitorId, int entries, int resultSnapshots, int exportPayloads,
                          int competitorHistoryRows, int entryHistoryRows, int auditRows) {}
 
     private final CompetitorRepository competitors;
-    private final DSLContext dsl;
+    private final CompetitorErasureRepository erasure;
     private final ObjectMapper objectMapper;
     private final AuditService audit;
     private final DriverMediaService driverMedia;
 
-    public CompetitorAnonymiseService(CompetitorRepository competitors, DSLContext dsl, ObjectMapper objectMapper,
+    public CompetitorAnonymiseService(CompetitorRepository competitors, CompetitorErasureRepository erasure,
+                                      ObjectMapper objectMapper,
                                       AuditService audit, DriverMediaService driverMedia) {
         this.competitors = competitors;
-        this.dsl = dsl;
+        this.erasure = erasure;
         this.objectMapper = objectMapper;
         this.audit = audit;
         this.driverMedia = driverMedia;
@@ -97,8 +85,7 @@ public class CompetitorAnonymiseService {
     @Transactional
     public Result anonymise(Long competitorId, Long adminUserId) {
         Competitor competitor = competitors.getOrThrow(competitorId);
-        List<Long> entryIds = dsl.select(ENTRIES.ID).from(ENTRIES)
-                .where(ENTRIES.COMPETITOR_ID.eq(competitorId)).fetch(ENTRIES.ID);
+        List<Long> entryIds = erasure.entryIdsOf(competitorId);
         refuseWhileRacing(entryIds);
         String name = anonymisedName(competitorId);
         String oldName = competitor.getDisplayName();
@@ -117,15 +104,8 @@ public class CompetitorAnonymiseService {
 
         int snapshots = rewriteSnapshots(competitorId, Set.copyOf(entryIds), name);
         int payloads = rewriteOutbox(competitorId, Set.copyOf(entryIds), name);
-        int competitorHistory = dsl.update(COMPETITOR_AUDIT_LOG)
-                .set(COMPETITOR_AUDIT_LOG.BEFORE_VALUE, (String) null)
-                .set(COMPETITOR_AUDIT_LOG.AFTER_VALUE, (String) null)
-                .where(COMPETITOR_AUDIT_LOG.COMPETITOR_ID.eq(competitorId)).execute();
-        int entryHistory = entryIds.isEmpty() ? 0 : dsl.update(ENTRY_AUDIT_LOG)
-                .set(ENTRY_AUDIT_LOG.REASON, REMOVED)
-                .set(ENTRY_AUDIT_LOG.BEFORE_SNAPSHOT, (String) null)
-                .set(ENTRY_AUDIT_LOG.AFTER_SNAPSHOT, (String) null)
-                .where(ENTRY_AUDIT_LOG.ENTRY_ID.in(entryIds)).execute();
+        int competitorHistory = erasure.blankCompetitorHistory(competitorId);
+        int entryHistory = erasure.blankEntryHistory(entryIds, REMOVED);
         int auditRows = scrubAuditLog(competitorId, entryIds, oldName, oldSpokenName);
 
         Result result = new Result(competitorId, entryIds.size(), snapshots, payloads, competitorHistory,
@@ -142,9 +122,7 @@ public class CompetitorAnonymiseService {
         if (entryIds.isEmpty()) {
             return;
         }
-        boolean racing = dsl.fetchExists(dsl.selectOne().from(RACE_ENTRIES).join(RACES)
-                .on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
-                .where(RACE_ENTRIES.ENTRY_ID.in(entryIds).and(RACES.STATUS.in(LIVE_STATUSES))));
+        boolean racing = erasure.inLiveRace(entryIds);
         if (racing) {
             throw new StateConflictException("This competitor is in a race that is on the grid, running or stopped. "
                     + "Finish or abandon it first, so the live screens do not keep the name.");
@@ -155,25 +133,13 @@ public class CompetitorAnonymiseService {
         if (entryIds.isEmpty()) {
             return 0;
         }
-        var rows = dsl.select(RESULT_SNAPSHOTS.ID, RESULT_SNAPSHOTS.POSITIONS_JSON,
-                        RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON)
-                .from(RESULT_SNAPSHOTS)
-                .where(RESULT_SNAPSHOTS.RACE_ID.in(dsl.select(RACE_ENTRIES.RACE_ID).from(RACE_ENTRIES)
-                        .where(RACE_ENTRIES.ENTRY_ID.in(entryIds))))
-                .fetch();
         int changed = 0;
-        for (var row : rows) {
-            String positions = rewrite(row.get(RESULT_SNAPSHOTS.POSITIONS_JSON), SNAPSHOT_IDS, competitorId,
-                    entryIds, name);
-            String timed = rewrite(row.get(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON), SNAPSHOT_IDS, competitorId,
-                    entryIds, name);
+        for (var row : erasure.snapshotsOfRacesWith(entryIds)) {
+            String positions = rewrite(row.positionsJson(), SNAPSHOT_IDS, competitorId, entryIds, name);
+            String timed = rewrite(row.timedPositionsJson(), SNAPSHOT_IDS, competitorId, entryIds, name);
             if (positions != null || timed != null) {
-                dsl.update(RESULT_SNAPSHOTS)
-                        .set(RESULT_SNAPSHOTS.POSITIONS_JSON,
-                                positions != null ? positions : row.get(RESULT_SNAPSHOTS.POSITIONS_JSON))
-                        .set(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON,
-                                timed != null ? timed : row.get(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON))
-                        .where(RESULT_SNAPSHOTS.ID.eq(row.get(RESULT_SNAPSHOTS.ID))).execute();
+                erasure.updateSnapshot(row.id(), positions != null ? positions : row.positionsJson(),
+                        timed != null ? timed : row.timedPositionsJson());
                 changed++;
             }
         }
@@ -186,11 +152,10 @@ public class CompetitorAnonymiseService {
      */
     private int rewriteOutbox(Long competitorId, Set<Long> entryIds, String name) {
         int changed = 0;
-        for (var row : dsl.select(RESULTS_OUTBOX.ID, RESULTS_OUTBOX.PAYLOAD).from(RESULTS_OUTBOX).fetch()) {
-            String payload = rewrite(row.get(RESULTS_OUTBOX.PAYLOAD), EXPORT_IDS, competitorId, entryIds, name);
+        for (var row : erasure.allOutboxPayloads()) {
+            String payload = rewrite(row.payload(), EXPORT_IDS, competitorId, entryIds, name);
             if (payload != null) {
-                dsl.update(RESULTS_OUTBOX).set(RESULTS_OUTBOX.PAYLOAD, payload)
-                        .where(RESULTS_OUTBOX.ID.eq(row.get(RESULTS_OUTBOX.ID))).execute();
+                erasure.updateOutboxPayload(row.id(), payload);
                 changed++;
             }
         }
@@ -202,21 +167,8 @@ public class CompetitorAnonymiseService {
      * reports, exclusions and practice links are logged under other entities, with the name in the summary.
      */
     private int scrubAuditLog(Long competitorId, List<Long> entryIds, String oldName, String oldSpokenName) {
-        Set<String> entryKeys = entryIds.stream().map(String::valueOf).collect(Collectors.toSet());
-        var aboutThem = AUDIT_LOG.ENTITY_TYPE.eq("competitor")
-                .and(AUDIT_LOG.ENTITY_ID.eq(String.valueOf(competitorId)));
-        if (!entryKeys.isEmpty()) {
-            aboutThem = aboutThem.or(AUDIT_LOG.ENTITY_TYPE.eq("entry").and(AUDIT_LOG.ENTITY_ID.in(entryKeys)));
-        }
-        for (String text : Stream.of(oldName, oldSpokenName).filter(t -> t != null && !t.isBlank()).toList()) {
-            aboutThem = aboutThem.or(AUDIT_LOG.SUMMARY.contains(text)).or(AUDIT_LOG.BEFORE_JSON.contains(text))
-                    .or(AUDIT_LOG.AFTER_JSON.contains(text));
-        }
-        return dsl.update(AUDIT_LOG)
-                .set(AUDIT_LOG.SUMMARY, REMOVED)
-                .set(AUDIT_LOG.BEFORE_JSON, (String) null)
-                .set(AUDIT_LOG.AFTER_JSON, (String) null)
-                .where(aboutThem).execute();
+        List<String> names = Stream.of(oldName, oldSpokenName).filter(t -> t != null && !t.isBlank()).toList();
+        return erasure.blankAuditLog(competitorId, entryIds, names, REMOVED);
     }
 
     /** The JSON with this competitor's names replaced, or null when it held none (or was empty). */
