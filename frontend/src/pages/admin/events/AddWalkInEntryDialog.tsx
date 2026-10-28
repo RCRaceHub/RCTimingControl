@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import axios from 'axios';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,7 @@ import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
 import { useCreateWalkInEntry } from '@/hooks/admin/useAdminEntries';
 import { adminApi, type CompetitorSummaryDto } from '@/lib/adminApi';
 import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPicker';
-import { getApiErrorMessage } from '@/lib/errors';
+import { getApiErrorData, getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 interface AddWalkInEntryDialogProps {
   eventId: number;
@@ -142,12 +141,13 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       result.warnings.forEach(w => toast.warning(w));
       handleOpenChange(false);
     } catch (err) {
-      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
-      if (axios.isAxiosError(err) && err.response?.status === 409 && data?.code === 'POSSIBLE_DUPLICATE_COMPETITOR') {
+      const data = getApiErrorData(err);
+      const status = getApiErrorStatus(err);
+      if (status === 409 && data?.code === 'POSSIBLE_DUPLICATE_COMPETITOR') {
         setPossibleDuplicates(data.matches ?? []);
-      } else if (axios.isAxiosError(err) && err.response?.status === 409) {
+      } else if (status === 409) {
         setError(getApiErrorMessage(err, 'This driver already has an entry in this class.'));
-      } else if (axios.isAxiosError(err) && (err.response?.status === 400 || err.response?.status === 422)) {
+      } else if (status === 400 || status === 422) {
         setError(getApiErrorMessage(err, 'Check the details and try again.'));
       } else {
         setError('Could not add the entry. Check your connection and try again.');

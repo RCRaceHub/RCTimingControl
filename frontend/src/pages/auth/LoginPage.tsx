@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { isAxiosError } from 'axios';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -12,6 +11,7 @@ import { Form } from '@/components/ui/form';
 import { useAuth } from '@/hooks/useAuth';
 import { NotAnOfficialError } from '@/lib/auth';
 import { TextField } from '@/components/TextField';
+import { getApiErrorData, getApiErrorStatus } from '@/lib/errors';
 
 const loginSchema = z.object({
   email: z.string().email('Valid email required'),
@@ -38,11 +38,12 @@ export default function LoginPage() {
       await login(values.email, values.password, redirectTo);
     } catch (err) {
       // The server answers 403 for a disabled official (#61), and for an account with no official role
-      if (isAxiosError(err) && err.response?.status === 403 && err.response.data?.reason === 'disabled') {
+      const status = getApiErrorStatus(err);
+      if (status === 403 && getApiErrorData(err)?.reason === 'disabled') {
         form.setError('password', { message: 'This account has been disabled. Ask a club admin to enable it.' });
-      } else if (err instanceof NotAnOfficialError || (isAxiosError(err) && err.response?.status === 403)) {
+      } else if (err instanceof NotAnOfficialError || status === 403) {
         form.setError('password', { message: 'This sign-in is for race officials only.' });
-      } else if (isAxiosError(err) && err.response?.status === 401) {
+      } else if (status === 401) {
         form.setError('password', { message: 'Invalid email or password' });
       } else {
         toast.error('Unable to reach server. Please try again.', { duration: 8000 });

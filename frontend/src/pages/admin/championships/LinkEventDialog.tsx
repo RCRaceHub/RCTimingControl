@@ -2,7 +2,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { useLinkChampionshipEvent } from '@/hooks/admin/useAdminChampionships';
 import { useAdminEventsList } from '@/hooks/admin/useAdminEvents';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const linkEventSchema = z.object({
   eventId: z.coerce.number().int().positive('Event is required'),
@@ -50,10 +50,10 @@ export function LinkEventDialog({ championshipId, open, onOpenChange }: LinkEven
       reset();
       onOpenChange(false);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
+      if (getApiErrorStatus(err) === 409) {
         toast.error(`Round ${values.roundNumber} is already assigned to another event.`);
       } else {
-        toast.error('Could not link event. Try again.');
+        toast.error(getApiErrorMessage(err, 'Could not link event. Try again.'));
       }
     }
   }
