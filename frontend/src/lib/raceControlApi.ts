@@ -95,6 +95,8 @@ export type ResultSnapshotDto = {
 
 export type LiveTimingRowDto = {
   entryId: number;
+  /** The car's class colour as #rrggbb, for the overlay's class tags when a run mixes classes (#532); absent for none. */
+  classColour?: string | null;
   driverName: string;
   carNumber: string | null;
   position: number;

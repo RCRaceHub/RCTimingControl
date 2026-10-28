@@ -16,6 +16,8 @@ export type BoardRaceDto = {
   status: 'PENDING' | 'GRID' | 'RUNNING' | 'STOPPED' | 'FINISHED';
   /** The colour the club picked for the class as #rrggbb, or null for none. */
   classColour?: string | null;
+  /** Places at the front of this final that move up into the final above it; 0 or missing for none. */
+  bumpUpPlaces?: number;
 };
 
 /** Auto run as a board shows it: a count to the next start, or why it is waiting. */

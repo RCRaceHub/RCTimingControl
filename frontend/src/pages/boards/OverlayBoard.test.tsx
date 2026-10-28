@@ -343,9 +343,37 @@ describe('OverlayBoard timing tower', () => {
 
     vi.mocked(getLiveQualifying).mockClear();
     vi.mocked(getLiveQualifying).mockResolvedValue({ ...other, raceId: 12 });
-    renderOverlay('/boards/overlay?qual=hide');
+    renderOverlay('/boards/overlay?qual=hide&tqpace=hide');
     await screen.findAllByRole('row');
     expect(getLiveQualifying).not.toHaveBeenCalled();
+  });
+
+  it('draws a line under the places that move up in a final, and bump=hide leaves it out', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100), row(3, 'Alan Turing', 14_300)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext({ ...race, roundType: 'FINAL', finalLetter: 'B', bumpUpPlaces: 2 }));
+    const { unmount } = renderOverlay();
+    const rows = await screen.findAllByRole('row');
+    expect(rows.filter((r) => r.hasAttribute('data-bump-line'))).toEqual([rows[2]]);
+    unmount();
+
+    renderOverlay('/boards/overlay?bump=hide');
+    const hidden = await screen.findAllByRole('row');
+    expect(hidden.some((r) => r.hasAttribute('data-bump-line'))).toBe(false);
+  });
+
+  it('tags rows with their class colour only when more than one class shows, and tags=hide leaves them out', async () => {
+    const mixed = [{ ...row(1, 'Grace Hopper', 13_500), classColour: '#ff0000' }, { ...row(2, 'Ada Lovelace', 14_100), classColour: '#0000ff' }];
+    stompFrames['/topic/race/12/timing'] = mixed;
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    const { container, unmount } = renderOverlay();
+    await screen.findAllByRole('row');
+    expect(container.querySelectorAll('[data-class-tag]')).toHaveLength(2);
+    unmount();
+
+    stompFrames['/topic/race/12/timing'] = mixed.map((r) => ({ ...r, classColour: '#ff0000' }));
+    const single = renderOverlay();
+    await screen.findAllByRole('row');
+    expect(single.container.querySelectorAll('[data-class-tag]')).toHaveLength(0);
   });
 
   it('heads the tower\'s columns, with PRED only when the race is timed and QUAL only in a qualifying heat', async () => {
@@ -451,6 +479,9 @@ describe('overlay options', () => {
       showSponsors: true,
       layout: 'tower',
       showQualifying: true,
+      showBumpLine: true,
+      showTqPace: true,
+      showClassTags: true,
       gap: 'int',
       gapEverySeconds: 6,
       separatorImage: null,

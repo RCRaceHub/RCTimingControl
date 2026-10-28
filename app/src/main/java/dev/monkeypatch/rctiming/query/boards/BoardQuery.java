@@ -23,6 +23,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
+import static dev.monkeypatch.rctiming.service.BumpUpSeedingService.ZOMBIE_LETTER;
 
 /**
  * jOOQ read side of the spectator boards (L12).
@@ -237,7 +238,8 @@ public class BoardQuery {
                         RACES.HEAT_NUMBER,
                         RACES.FINAL_LETTER,
                         RACES.STATUS,
-                        RACING_CLASSES.COLOUR)
+                        RACING_CLASSES.COLOUR,
+                        RACES.EVENT_CLASS_ID)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
@@ -246,10 +248,32 @@ public class BoardQuery {
                 .and(status)
                 .orderBy(order)
                 .limit(1)
-                .fetchOptional(BoardQuery::toDto);
+                .fetchOptional(this::toDto);
     }
 
-    private static BoardRaceDto toDto(Record r) {
+    /**
+     * The places that move up from a final: the bump slots of the final above it in the same class (B moves into A,
+     * and the zombie round's winner into A). Zero for an A final, a heat, or when the final above does not exist.
+     */
+    private int bumpUpPlaces(long eventClassId, String finalLetter) {
+        if (finalLetter == null || finalLetter.length() != 1) {
+            return 0;
+        }
+        if (ZOMBIE_LETTER.equals(finalLetter)) {
+            return 1;
+        }
+        char above = (char) (finalLetter.charAt(0) - 1);
+        if (above < 'A') {
+            return 0;
+        }
+        return dsl.select(RACES.BUMP_SLOTS).from(RACES)
+                .where(RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(String.valueOf(above)))
+                .limit(1)
+                .fetchOptional(RACES.BUMP_SLOTS)
+                .orElse(0);
+    }
+
+    private BoardRaceDto toDto(Record r) {
         String roundType = r.get(ROUNDS.TYPE);
         int roundNumber = r.get(ROUNDS.ROUND_NUMBER);
         String className = r.get("className", String.class);
@@ -264,6 +288,7 @@ public class BoardQuery {
                 heatNumber,
                 finalLetter,
                 r.get(RACES.STATUS),
-                r.get(RACING_CLASSES.COLOUR));
+                r.get(RACING_CLASSES.COLOUR),
+                bumpUpPlaces(r.get(RACES.EVENT_CLASS_ID), finalLetter));
     }
 }

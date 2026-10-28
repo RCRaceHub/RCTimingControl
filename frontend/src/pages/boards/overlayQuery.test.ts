@@ -21,6 +21,14 @@ describe('overlayQuery', () => {
     expect([...read.tickerItems]).toEqual(['next', 'tq']);
   });
 
+  it('writes the bump line, TQ pace and class tags switches only when off, and reads them back', () => {
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showBumpLine: false, showTqPace: false, showClassTags: false });
+    expect(query).toBe('?bump=hide&tqpace=hide&tags=hide');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ showBumpLine: false, showTqPace: false, showClassTags: false });
+    expect(parseOverlayOptions(new URLSearchParams('')))
+      .toMatchObject({ showBumpLine: true, showTqPace: true, showClassTags: true });
+  });
+
   it('writes the colour key only when asked, and the boards default the other way', () => {
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showLegend: true })).toBe('?legend=show');
     expect(parseOverlayOptions(new URLSearchParams('?legend=show')).showLegend).toBe(true);
