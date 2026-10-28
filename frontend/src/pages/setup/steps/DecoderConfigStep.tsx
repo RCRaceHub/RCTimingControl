@@ -18,7 +18,7 @@ export default function DecoderConfigStep({ onNext, onBack }: Props) {
         onSaved={onNext}
         onBack={onBack}
         onSkip={onNext}
-        saveLabel="Save and Finish"
+        saveLabel="Save and Continue"
       />
 
       <Link to="/admin/decoder" className="text-sm text-muted-foreground underline mt-4 inline-block">

@@ -64,7 +64,7 @@ public class MdnsAdvertiser {
      * Turns a configured name into a host label: {@code Timing.local} becomes {@code timing}. Empty when the setting is
      * blank or has nothing a host name can hold.
      */
-    static Optional<String> hostLabel(String name) {
+    public static Optional<String> hostLabel(String name) {
         if (name == null) {
             return Optional.empty();
         }
@@ -179,6 +179,15 @@ public class MdnsAdvertiser {
      */
     public synchronized Optional<String> announcedHost() {
         return announcers.isEmpty() ? Optional.empty() : label.map(l -> l + ".local");
+    }
+
+    /**
+     * The host label this run was started with, such as {@code timing}; empty when the setting was off. Unlike
+     * {@link #announcedHost()} it does not depend on the announcement having succeeded, so the setup wizard can tell
+     * a name that was saved but not yet started from one that is running.
+     */
+    public Optional<String> configuredLabel() {
+        return label;
     }
 
     /** Withdraws the announcements at shutdown so the name stops answering at once. */
