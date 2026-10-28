@@ -10,7 +10,7 @@ import { isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
-import { TimingLegend } from '@/components/TimingLegend';
+import { TimingLegend, type LegendKind } from '@/components/TimingLegend';
 import { gapText } from './boardFormat';
 
 interface BoardLiveTableProps {
@@ -42,6 +42,9 @@ export interface PredictedClock {
  * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
 export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
+  const legendKinds: LegendKind[] = showLegend
+    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : [])]
+    : [];
   return (
     <>
       <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
@@ -95,7 +98,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
           })}
         </tbody>
       </table>
-      {showLegend && (closeMs > 0 || barClock) && <TimingLegend kinds={[...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : [])]} size="board" className="mt-3 text-slate-400" />}
+      {legendKinds.length > 0 && <TimingLegend kinds={legendKinds} size="board" className="mt-3 text-slate-400" />}
     </>
   );
 }

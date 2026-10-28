@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import { cn } from '@/lib/utils';
 
-/** The states a timing row shows an icon for: the lap flashes, and a car running close to the one ahead, and a car on pace for its predicted laps. */
+/** The states a timing row shows an icon for: the lap flashes, and a car running close to the one ahead and a car on pace for its predicted laps. */
 export type StateKind = FlashColor | 'close' | 'on-pace';
 
 interface StateInfo {

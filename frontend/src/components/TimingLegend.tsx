@@ -30,7 +30,7 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
     state('bg-red-500', 'slow'),
   ],
   close: [state('bg-amber-500', 'close')],
-  pace: [state('bg-green-500', 'on-pace')],
+  pace: [state('', 'on-pace')],
   movement: [
     { swatch: 'bg-emerald-500', label: 'Moved up' },
     { swatch: 'bg-rose-500', label: 'Moved down' },

@@ -56,8 +56,9 @@ export function onPace(
   lateMarginMs: number = LATE_AFTER_AVERAGE_MS,
 ): boolean {
   const progress = lapProgress(row, nowMs, notBeforeMs, lateMarginMs);
-  if (!progress || progress.state === 'late') return false;
-  return row.lastLapMs == null || row.lastLapMs <= row.avgLapMs!;
+  const average = row.avgLapMs;
+  if (!progress || progress.state === 'late' || !average) return false;
+  return row.lastLapMs == null || row.lastLapMs <= average;
 }
 
 /**
