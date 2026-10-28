@@ -4,10 +4,11 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateRacingClassRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.RacingClassDto;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +27,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/classes")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class RacingClassController {
 
     private final RacingClassService racingClassService;
@@ -50,7 +51,7 @@ public class RacingClassController {
     /** Creates a class. {@code POST}; ADMIN; answers 201; 409 if the name is taken. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public RacingClassDto createRacingClass(@RequestBody @Valid CreateRacingClassRequest request) {
         return RacingClassDto.from(
@@ -61,7 +62,7 @@ public class RacingClassController {
     /** Changes a class's name, description and colour. {@code PUT /{id}}; ADMIN; 409 if the name is taken. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public RacingClassDto updateRacingClass(@PathVariable Long id,
                                              @RequestBody @Valid CreateRacingClassRequest request) {
         return RacingClassDto.from(
@@ -75,7 +76,7 @@ public class RacingClassController {
      */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRacingClass(@PathVariable Long id) {
         racingClassService.delete(CurrentOfficial.actor(), id);

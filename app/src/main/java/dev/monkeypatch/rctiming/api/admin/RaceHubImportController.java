@@ -5,9 +5,9 @@ import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassMapping;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +28,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class RaceHubImportController {
 
     private final RaceHubImportService importService;

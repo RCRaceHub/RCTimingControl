@@ -5,13 +5,13 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.infrastructure.settings.SettingsFile;
 import dev.monkeypatch.rctiming.infrastructure.tls.TlsService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -30,7 +30,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/tls")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class TlsController {
 
     private final TlsService tls;

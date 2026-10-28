@@ -4,9 +4,10 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.event.FinalLegsScope;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+@RaceControlStaff
 public class FinalLegsScopeController {
 
     private final EventService eventService;
@@ -51,7 +52,7 @@ public class FinalLegsScopeController {
      */
     @Audited("audit_log")
     @PutMapping("/events/{eventId}/final-legs-scope")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public FinalLegsScopeDto update(@PathVariable long eventId,
                                     @Valid @RequestBody FinalLegsScopeDto request) {
         return new FinalLegsScopeDto(

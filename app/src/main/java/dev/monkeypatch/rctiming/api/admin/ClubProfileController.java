@@ -9,12 +9,13 @@ import dev.monkeypatch.rctiming.api.admin.dto.LiveTimingSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.LogoUploadResponse;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LogoUploadService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/club")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class ClubProfileController {
 
     private final ClubProfileService clubProfileService;
@@ -65,7 +66,7 @@ public class ClubProfileController {
      */
     @Audited("audit_log")
     @PutMapping("/profile")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ClubProfileDto createOrUpdateProfile(@RequestBody @Valid CreateClubProfileRequest request) {
         return ClubProfileDto.from(clubProfileService.createOrUpdateProfile(CurrentOfficial.actor(),
                 new ClubProfileService.ClubDetails(request.name(), request.email(), request.phone(),
@@ -84,7 +85,7 @@ public class ClubProfileController {
      */
     @Audited("audit_log")
     @PutMapping("/privacy-notice")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public PrivacyNoticeEditDto changePrivacyNotice(@RequestBody @Valid PrivacyNoticeRequest request) {
         return PrivacyNoticeEditDto.from(
                 clubProfileService.changePrivacyNotice(CurrentOfficial.actor(), request.text()));
@@ -102,7 +103,7 @@ public class ClubProfileController {
      */
     @Audited("audit_log")
     @PutMapping("/live-timing-settings")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public LiveTimingSettingsDto changeLiveTimingSettings(@RequestBody @Valid LiveTimingSettingsDto request) {
         return LiveTimingSettingsDto.from(
                 clubProfileService.changeLiveTimingSettings(CurrentOfficial.actor(), request.toSettings()));
@@ -117,7 +118,7 @@ public class ClubProfileController {
     /** Adds a governing body. {@code POST /affiliations}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping("/affiliations")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public GoverningBodyAffiliationDto createAffiliation(@RequestBody @Valid CreateGoverningBodyRequest request) {
         return GoverningBodyAffiliationDto.from(clubProfileService.createAffiliation(CurrentOfficial.actor(),
@@ -127,7 +128,7 @@ public class ClubProfileController {
     /** Changes a governing body. {@code PUT /affiliations/{id}}; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/affiliations/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public GoverningBodyAffiliationDto updateAffiliation(@PathVariable Long id,
                                                           @RequestBody @Valid CreateGoverningBodyRequest request) {
         return GoverningBodyAffiliationDto.from(clubProfileService.updateAffiliation(CurrentOfficial.actor(), id,
@@ -137,7 +138,7 @@ public class ClubProfileController {
     /** Removes a governing body. {@code DELETE /affiliations/{id}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/affiliations/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAffiliation(@PathVariable Long id) {
         clubProfileService.deleteAffiliation(CurrentOfficial.actor(), id);
@@ -150,7 +151,7 @@ public class ClubProfileController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public LogoUploadResponse uploadLogo(@RequestPart("file") MultipartFile file) {
         Long profileId = clubProfileService.getSingletonProfileId();
         String url = logoUploadService.uploadLogo(CurrentOfficial.actor(), profileId, file);

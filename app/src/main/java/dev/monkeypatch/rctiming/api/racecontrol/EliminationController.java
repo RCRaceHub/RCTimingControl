@@ -5,10 +5,11 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.RaceEliminationRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.RaceEliminationsDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.RaceEliminationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/race/{raceId}/eliminations")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+@RaceControlStaff
 public class EliminationController {
 
     private final RaceEliminationService eliminationService;
@@ -46,7 +47,7 @@ public class EliminationController {
 
     /** Marks a car dead. {@code POST .../eliminate}; 200 with the row, 400 for a bad body. Audited. */
     @Audited("audit_log")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     @PostMapping("/eliminate")
     public ResponseEntity<RaceEliminationDto> eliminate(@PathVariable long raceId,
                                                         @Valid @RequestBody RaceEliminationRequest req) {
@@ -56,7 +57,7 @@ public class EliminationController {
 
     /** Revives a dead car (a zombie). {@code POST .../revive}; 200 with the row. Audited. */
     @Audited("audit_log")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     @PostMapping("/revive")
     public ResponseEntity<RaceEliminationDto> revive(@PathVariable long raceId,
                                                      @Valid @RequestBody RaceEliminationRequest req) {
@@ -66,7 +67,7 @@ public class EliminationController {
 
     /** Takes back an elimination made by mistake. {@code POST .../undo}; 200. Audited. */
     @Audited("audit_log")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     @PostMapping("/undo")
     public ResponseEntity<Void> undo(@PathVariable long raceId, @Valid @RequestBody RaceEliminationRequest req) {
         eliminationService.undoElimination(raceId, req.entryId(), CurrentOfficial.id());
@@ -78,7 +79,7 @@ public class EliminationController {
      * to the same car more than once.
      */
     @Audited("audit_log")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     @PostMapping("/false-start")
     public ResponseEntity<Void> falseStart(@PathVariable long raceId, @Valid @RequestBody RaceEliminationRequest req) {
         eliminationService.falseStart(raceId, req.entryId(), CurrentOfficial.id());
@@ -87,7 +88,7 @@ public class EliminationController {
 
     /** Takes back a car's latest false start. {@code POST .../false-start/undo}; 200. Audited. */
     @Audited("audit_log")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     @PostMapping("/false-start/undo")
     public ResponseEntity<Void> undoFalseStart(@PathVariable long raceId,
                                                @Valid @RequestBody RaceEliminationRequest req) {

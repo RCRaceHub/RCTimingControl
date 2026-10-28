@@ -3,13 +3,14 @@ package dev.monkeypatch.rctiming.api.racecontrol;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.AutoRunService;
 import dev.monkeypatch.rctiming.service.AutoRunService.AutoRunState;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/events/{eventId}/auto-run")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+@RaceControlStaff
 public class AutoRunController {
 
     private final AutoRunService autoRunService;
@@ -71,7 +72,7 @@ public class AutoRunController {
      */
     @Audited("audit_log")
     @PostMapping("/go")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public AutoRunState go(@PathVariable long eventId) {
         return autoRunService.go(CurrentOfficial.actor(), eventId);
     }
@@ -82,7 +83,7 @@ public class AutoRunController {
      */
     @Audited("audit_log")
     @PostMapping("/stop")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public AutoRunState stop(@PathVariable long eventId) {
         return autoRunService.stop(CurrentOfficial.actor(), eventId);
     }
@@ -93,7 +94,7 @@ public class AutoRunController {
      */
     @Audited("audit_log")
     @PostMapping("/skip-to")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public AutoRunState skipTo(@PathVariable long eventId, @Valid @RequestBody SkipRequest request) {
         return autoRunService.skipTo(CurrentOfficial.actor(), eventId, request.seconds());
     }
@@ -104,7 +105,7 @@ public class AutoRunController {
      */
     @Audited("audit_log")
     @PutMapping("/settings")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public AutoRunState settings(@PathVariable long eventId, @Valid @RequestBody AutoRunSettingsRequest request) {
         eventService.setAutoRunSettings(CurrentOfficial.actor(), eventId, request.gapSeconds(),
                 request.holdBeforeFinals(), request.autoStart());

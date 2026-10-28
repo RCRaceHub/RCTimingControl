@@ -16,10 +16,11 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipService;
 import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.championship.StandingsRowDto;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +43,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/championships")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class ChampionshipController {
 
     private final ChampionshipService championshipService;
@@ -76,7 +77,7 @@ public class ChampionshipController {
     /** Creates a championship. {@code POST}; ADMIN; answers 201; 400 for a bad body. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ChampionshipDto create(@RequestBody @Valid CreateChampionshipRequest request) {
         return ChampionshipDto.from(championshipService.create(CurrentOfficial.actor(), settings(request)));
@@ -88,7 +89,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ChampionshipDto update(@PathVariable Long id,
                                    @RequestBody @Valid UpdateChampionshipRequest request) {
         return ChampionshipDto.from(championshipService.update(CurrentOfficial.actor(), id, settings(request)));
@@ -100,7 +101,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/classes")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ChampionshipClassDto addClass(@PathVariable Long id,
                                           @RequestBody @Valid AddChampionshipClassRequest request) {
@@ -114,7 +115,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @DeleteMapping("/{id}/classes/{racingClassId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeClass(@PathVariable Long id, @PathVariable Long racingClassId) {
         championshipService.removeClass(CurrentOfficial.actor(), id, racingClassId);
@@ -126,7 +127,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/events")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ChampionshipEventLinkDto linkEvent(@PathVariable Long id,
                                                @RequestBody @Valid AddChampionshipEventRequest request) {
@@ -137,7 +138,7 @@ public class ChampionshipController {
     /** Unlinks an event from the championship. {@code DELETE /{id}/events/{eventId}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}/events/{eventId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlinkEvent(@PathVariable Long id, @PathVariable Long eventId) {
         championshipService.unlinkEvent(CurrentOfficial.actor(), id, eventId);
@@ -150,7 +151,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/points-scale")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<PointsScaleEntryDto> replacePointsScale(@PathVariable Long id,
                                                          @RequestBody @Valid UpdatePointsScaleRequest request) {
         List<ChampionshipService.ScalePoint> scale = request.entries().stream()
@@ -168,7 +169,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/scoring-system/{systemId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ChampionshipDto applyScoringSystem(@PathVariable Long id, @PathVariable Long systemId) {
         return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(), id, systemId));
     }
@@ -183,7 +184,7 @@ public class ChampionshipController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/split-categories")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ChampionshipDto setSplitCategories(@PathVariable Long id,
                                               @RequestBody @Valid SplitCategoriesRequest request) {
         return ChampionshipDto.from(championshipService.setSplitCategories(

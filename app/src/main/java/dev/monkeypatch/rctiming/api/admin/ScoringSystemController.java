@@ -8,12 +8,13 @@ import dev.monkeypatch.rctiming.domain.format.RaceFormatCodec.FileType;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringCodec;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +36,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/scoring-systems")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class ScoringSystemController {
 
     private final ScoringSystemService service;
@@ -61,7 +62,7 @@ public class ScoringSystemController {
     /** Creates a system. {@code POST}; ADMIN; 201; 400 if a value is out of range; 409 if the name is taken. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ScoringSystemDto create(@RequestBody @Valid ScoringSystemRequest request) {
         return ScoringSystemDto.from(service.create(CurrentOfficial.actor(), request.name(), request.config()));
@@ -70,7 +71,7 @@ public class ScoringSystemController {
     /** Copies a system, built-in or not, under a new name. {@code POST /{id}/clone}; ADMIN; 201; 404; 409. Audited. */
     @Audited("audit_log")
     @PostMapping("/{id}/clone")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ScoringSystemDto cloneSystem(@PathVariable Long id,
                                         @RequestBody @Valid CloneScoringSystemRequest request) {
@@ -80,7 +81,7 @@ public class ScoringSystemController {
     /** Changes a custom system. {@code PUT /{id}}; ADMIN; 400 for a bad config; 409 for a built-in. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public ScoringSystemDto update(@PathVariable Long id,
                                    @RequestBody @Valid ScoringSystemRequest request) {
         return ScoringSystemDto.from(service.update(CurrentOfficial.actor(), id, request.name(), request.config()));
@@ -89,7 +90,7 @@ public class ScoringSystemController {
     /** Deletes a custom system. {@code DELETE /{id}}; ADMIN; 204; 409 for a built-in. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         service.delete(CurrentOfficial.actor(), id);
@@ -115,7 +116,7 @@ public class ScoringSystemController {
      */
     @Audited("audit_log")
     @PostMapping(value = "/import", consumes = {MediaType.APPLICATION_JSON_VALUE, "application/yaml"})
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
     public ScoringSystemDto importSystem(@RequestParam(defaultValue = "Imported scoring system") String name,
             @RequestBody String body,

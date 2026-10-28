@@ -19,6 +19,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.EventResultsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
+import dev.monkeypatch.rctiming.security.AnyOfficial;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateAllFinalsRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateFinalsRequest;
@@ -27,6 +28,8 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsLineupService;
@@ -37,7 +40,6 @@ import dev.monkeypatch.rctiming.service.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,7 +67,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/race-control")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+@DirectorOrAdmin
 public class RaceControlController {
 
     private final RunOrderQuery runOrderQuery;
@@ -122,7 +124,7 @@ public class RaceControlController {
      * picks a race (#107). Read only.
      */
     @GetMapping("/event/{eventId}/run-order")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
     }
@@ -133,7 +135,7 @@ public class RaceControlController {
      * official. Read only. 404 if there is no such event.
      */
     @GetMapping("/event/{eventId}/results")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public EventResultsDto getEventResults(@PathVariable long eventId) {
         return eventResultsQuery.forEvent(eventId);
     }
@@ -144,7 +146,7 @@ public class RaceControlController {
      * or it has no stored result.
      */
     @GetMapping("/race/{raceId}/result")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public EventResultsDto getRaceResult(@PathVariable long raceId) {
         return eventResultsQuery.forRace(raceId);
     }
@@ -154,7 +156,7 @@ public class RaceControlController {
      * {@code GET /event/{eventId}/final-legs}, race director, referee or admin. Read only; empty when no class has legs.
      */
     @GetMapping("/event/{eventId}/final-legs")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<FinalLegsDto> getFinalLegs(@PathVariable long eventId) {
         return finalLegsService.forEvent(eventId);
     }
@@ -165,7 +167,7 @@ public class RaceControlController {
      * Read only.
      */
     @GetMapping("/event/{eventId}/qualifying")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
         return qualifyingTableService.forEvent(eventId);
     }
@@ -211,7 +213,7 @@ public class RaceControlController {
      * {@code GET /event/{eventId}/finals-lineup}. Read only.
      */
     @GetMapping("/event/{eventId}/finals-lineup")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<FinalsLineupDto> getFinalsLineup(@PathVariable long eventId) {
         return finalsLineupService.forEvent(eventId);
     }
@@ -222,7 +224,7 @@ public class RaceControlController {
      * unknown event.
      */
     @GetMapping("/event/{eventId}/finals-review")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public FinalsReviewDto getFinalsReview(@PathVariable long eventId) {
         return finalsLineupService.review(eventId);
     }

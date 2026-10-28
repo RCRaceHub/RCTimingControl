@@ -4,11 +4,12 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.query.racecontrol.RaceEntriesQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.RaceEntryDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.TransponderLinkService;
 import dev.monkeypatch.rctiming.timing.dto.LinkTransponderRequestDto;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,7 +45,7 @@ public class TransponderLinkController {
      * live timing is empty (#107). {@code GET /entries}; RACE_DIRECTOR, REFEREE or ADMIN. Read only.
      */
     @GetMapping("/entries")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR', 'REFEREE', 'ADMIN')")
+    @RaceControlStaff
     public ResponseEntity<List<RaceEntryDto>> getEntries(@PathVariable Long raceId) {
         return ResponseEntity.ok(raceEntriesQuery.findForRace(raceId));
     }
@@ -57,7 +58,7 @@ public class TransponderLinkController {
      */
     @Audited("audit_log")
     @PostMapping("/transponders/link")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR', 'ADMIN')")
+    @DirectorOrAdmin
     public ResponseEntity<Map<String, Integer>> linkTransponder(
             @PathVariable Long raceId,
             @Valid @RequestBody LinkTransponderRequestDto request) {

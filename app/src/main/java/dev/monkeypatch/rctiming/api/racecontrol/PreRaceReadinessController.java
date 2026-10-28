@@ -9,8 +9,8 @@ import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessQuery;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.timing.WarmUpCheckService;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,7 +51,7 @@ public class PreRaceReadinessController {
      * {@code GET /{raceId}/pre-race-readiness}; RACE_DIRECTOR or ADMIN. Read only; 404 if the race does not exist.
      */
     @GetMapping("/{raceId}/pre-race-readiness")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+    @DirectorOrAdmin
     public PreRaceReadinessDto get(@PathVariable long raceId) {
         PreRaceReadinessDto readiness = query.load(raceId);
         Race race = raceRepository.getOrThrow(raceId);
