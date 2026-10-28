@@ -42,6 +42,10 @@ interface OverlayTowerProps {
   lapFlash: Map<number, FlashColor | undefined>;
   closeMs: number;
   showArrows: boolean;
+  /** Places at the front of a final that move up into the final above (#530); a line is drawn beneath the last. */
+  bumpUpPlaces?: number;
+  /** Tag each row with its class colour when the rows span more than one class (#532); never drawn for one class. */
+  classTags?: boolean;
   /** How the lap bars read the clock; omitted to leave the bars out. */
   barClock?: LapBarClock;
   /** Given for a timed race, adds the laps each car is on course to finish with. */
@@ -129,11 +133,14 @@ export function OverlayTower({
   predicted,
   qualifying,
   qualifyingFinal = false,
+  bumpUpPlaces = 0,
+  classTags = false,
   gap = 'int',
   gapFading = false,
   lapsView = 'laps',
   lapsFading = false,
 }: OverlayTowerProps) {
+  const tagging = classTags && new Set(allRows.map((r) => r.classColour ?? null)).size > 1;
   const showQualifying = qualifying !== undefined && qualifying.size > 0;
   const showPredicted = predicted !== undefined && lapsView === 'predicted';
   const lapsClass = cn('transition-opacity duration-200', lapsFading && 'opacity-0');
@@ -163,19 +170,30 @@ export function OverlayTower({
           const flash = lapFlash.get(row.entryId);
           const close = isClose(row, closeMs);
           const projected = qualifying?.get(row.entryId);
+          const bumpLine = bumpUpPlaces > 0 && index === bumpUpPlaces;
           return (
             <div
               key={row.entryId}
               role="row"
               data-close={close || undefined}
+              data-bump-line={bumpLine || undefined}
               className={cn(
                 'absolute inset-x-0 flex items-center gap-1.5 border-t px-2 transition-[transform,background-color] duration-700 ease-in-out',
                 colours.row,
+                bumpLine && 'border-t-2 border-t-emerald-400',
                 close && !flash && 'bg-amber-500/25',
                 flash && FLASH_CLASS[flash],
               )}
               style={{ height: `${TOWER_ROW_REM}rem`, transform: `translateY(${index * TOWER_ROW_REM}rem)` }}
             >
+              {tagging && (
+                <span
+                  aria-hidden
+                  data-class-tag
+                  className="absolute inset-y-0.5 left-0 w-1 rounded-r"
+                  style={{ backgroundColor: row.classColour ?? 'transparent' }}
+                />
+              )}
               <span
                 className={cn(
                   'inline-flex h-6 w-6 shrink-0 text-sm items-center justify-center rounded font-bold tabular-nums',

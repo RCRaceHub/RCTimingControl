@@ -111,6 +111,9 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showSponsors: params.get('sponsors')?.toLowerCase() !== 'hide',
     layout: params.get('layout')?.toLowerCase() === 'table' ? ('table' as const) : ('tower' as const),
     showQualifying: params.get('qual')?.toLowerCase() !== 'hide',
+    showBumpLine: params.get('bump')?.toLowerCase() !== 'hide',
+    showTqPace: params.get('tqpace')?.toLowerCase() !== 'hide',
+    showClassTags: params.get('tags')?.toLowerCase() !== 'hide',
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
@@ -244,6 +247,12 @@ export type OverlayDesign = {
   showSponsors: boolean;
   layout: 'tower' | 'table';
   showQualifying: boolean;
+  /** Draw a line under the places that move up from a final (#530). */
+  showBumpLine: boolean;
+  /** Show how the running heat's pace compares with the event's top qualifier (#531). */
+  showTqPace: boolean;
+  /** Tag each tower row with its class colour when more than one class shows (#532). */
+  showClassTags: boolean;
   gap: GapMode;
   gapEverySeconds: number;
   /** The address of an image to put between ticker items instead of the diamond; null keeps the diamond. */
@@ -269,6 +278,9 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showSponsors: true,
   layout: 'tower',
   showQualifying: true,
+  showBumpLine: true,
+  showTqPace: true,
+  showClassTags: true,
   gap: 'int',
   gapEverySeconds: DEFAULT_GAP_EVERY_S,
   separatorImage: null,
@@ -289,8 +301,8 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   const design: OverlayDesign = { ...DEFAULT_OVERLAY_DESIGN, tickerItems: [...DEFAULT_OVERLAY_DESIGN.tickerItems] };
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
-  for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showPredicted', 'showBars',
-    'showArrows', 'showBattles', 'showLegend'] as const) {
+  for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
+    'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
@@ -340,6 +352,9 @@ export function overlayQuery(design: OverlayDesign): string {
   if (parseSeparatorImage(design.separatorImage) !== null) q.set('separator', design.separatorImage!.trim());
   if (design.layout === 'table') q.set('layout', 'table');
   if (!design.showQualifying) q.set('qual', 'hide');
+  if (!design.showBumpLine) q.set('bump', 'hide');
+  if (!design.showTqPace) q.set('tqpace', 'hide');
+  if (!design.showClassTags) q.set('tags', 'hide');
   if (design.gap !== 'int') q.set('gap', design.gap);
   if (design.gap === 'auto' && design.gapEverySeconds !== DEFAULT_GAP_EVERY_S) {
     q.set('gapevery', String(design.gapEverySeconds));
@@ -352,4 +367,35 @@ export function overlayQuery(design: OverlayDesign): string {
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
   const text = q.toString().replace(/%2C/g, ',');
   return text ? `?${text}` : '';
+}
+
+/** Milliseconds as a signed number of seconds to three places, such as +0.123 or -0.045. */
+function signedSeconds(ms: number): string {
+  return `${ms > 0 ? '+' : ms < 0 ? '-' : ''}${(Math.abs(ms) / 1000).toFixed(3)}`;
+}
+
+/**
+ * How the running heat's leader compares with the event's top qualifier (#531), as a line for the overlay. A timed
+ * heat compares the laps the leader is on course to finish with against the laps the TQ completed; otherwise (or
+ * before the leader has a prediction) it compares best laps. Null with no TQ, with the TQ in the running heat
+ * (nobody to chase), or with nothing to compare yet.
+ *
+ * @param leader the first car in the running heat
+ * @param tq the first row of the event's qualifying table
+ * @param predicted the laps the leader is on course to finish with, or null for a heat with no time limit
+ */
+export function tqPaceText(
+  leader: LiveTimingRowDto | undefined,
+  tq: { live: boolean; lapsCompleted: number; bestLapMs: number | null } | undefined,
+  predicted: number | null,
+): string | null {
+  if (!leader || !tq || tq.live) return null;
+  if (predicted !== null && tq.lapsCompleted > 0) {
+    const diff = predicted - tq.lapsCompleted;
+    return `TQ pace: ${predicted} laps on course (TQ ${tq.lapsCompleted}, ${diff > 0 ? '+' : ''}${diff})`;
+  }
+  if (leader.bestLapMs != null && tq.bestLapMs != null) {
+    return `TQ pace: best lap ${signedSeconds(leader.bestLapMs - tq.bestLapMs)} on the TQ`;
+  }
+  return null;
 }

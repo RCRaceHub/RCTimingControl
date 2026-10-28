@@ -8,6 +8,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.SortField;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -23,6 +24,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
+import static dev.monkeypatch.rctiming.service.BumpUpSeedingService.ZOMBIE_LETTER;
 
 /**
  * jOOQ read side of the spectator boards (L12).
@@ -237,7 +239,8 @@ public class BoardQuery {
                         RACES.HEAT_NUMBER,
                         RACES.FINAL_LETTER,
                         RACES.STATUS,
-                        RACING_CLASSES.COLOUR)
+                        RACING_CLASSES.COLOUR,
+                        RACES.EVENT_CLASS_ID)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
@@ -246,10 +249,43 @@ public class BoardQuery {
                 .and(status)
                 .orderBy(order)
                 .limit(1)
-                .fetchOptional(BoardQuery::toDto);
+                .fetchOptional(this::toDto);
     }
 
-    private static BoardRaceDto toDto(Record r) {
+    /**
+     * The places that move up from a final: the bump slots of the final above it in the same class (B moves into A,
+     * and the zombie round's winner into A). Zero for an A final, a heat, or when the final above does not exist.
+     * Runs on the board's read snapshot, from the thread serving the anonymous board request.
+     *
+     * <p>A final in legs has several races with the letter and only the first holds the slots, so the largest
+     * count is taken. The A final's slots include one for the zombie round's winner (see
+     * {@code BumpUpSeedingService}), which does not come from the final below until the zombie round has ended, so
+     * that place is left out of the count while a zombie race is still to finish.
+     */
+    private int bumpUpPlaces(long eventClassId, String finalLetter) {
+        if (finalLetter == null || finalLetter.length() != 1) {
+            return 0;
+        }
+        if (ZOMBIE_LETTER.equals(finalLetter)) {
+            return 1;
+        }
+        char above = (char) (finalLetter.charAt(0) - 1);
+        if (above < 'A') {
+            return 0;
+        }
+        int slots = dsl.select(DSL.max(RACES.BUMP_SLOTS)).from(RACES)
+                .where(RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(String.valueOf(above)))
+                .fetchOptional(0, Integer.class)
+                .orElse(0);
+        if (above == 'A' && slots > 0 && dsl.fetchExists(RACES,
+                RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(ZOMBIE_LETTER),
+                RACES.STATUS.ne("FINISHED"))) {
+            slots--;
+        }
+        return slots;
+    }
+
+    private BoardRaceDto toDto(Record r) {
         String roundType = r.get(ROUNDS.TYPE);
         int roundNumber = r.get(ROUNDS.ROUND_NUMBER);
         String className = r.get("className", String.class);
@@ -264,6 +300,7 @@ public class BoardQuery {
                 heatNumber,
                 finalLetter,
                 r.get(RACES.STATUS),
-                r.get(RACING_CLASSES.COLOUR));
+                r.get(RACING_CLASSES.COLOUR),
+                bumpUpPlaces(r.get(RACES.EVENT_CLASS_ID), finalLetter));
     }
 }

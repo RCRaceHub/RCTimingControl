@@ -22,6 +22,7 @@ import {
   type TickerItem,
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { TqPace } from '@/components/TqPace';
 import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
 import { useGapView } from '@/hooks/useGapView';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
@@ -283,8 +284,8 @@ export default function OverlayBoard() {
   const searchParams = useOverlayParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,
-    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
@@ -317,16 +318,17 @@ export default function OverlayBoard() {
   const { data: liveQualifying } = useQuery({
     queryKey: publicQueryKeys.boards.liveQualifying(tickerEventId),
     queryFn: () => getLiveQualifying(tickerEventId),
-    enabled: showQualifying && isQualifier && layout === 'tower',
+    enabled: (showQualifying || showTqPace) && isQualifier && layout === 'tower',
     refetchInterval: LIVE_QUALIFYING_POLL_MS,
   });
   const raceIdNow = race?.raceId ?? null;
   const qualifying = useMemo(() => {
-    if (raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
+    if (!showQualifying || raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
     return new Map<number, ProjectedQualifying>(
       liveQualifying.rows.map(r => [r.entryId, { position: r.position, previousPosition: r.previousPosition }]),
     );
-  }, [liveQualifying, raceIdNow]);
+  }, [liveQualifying, raceIdNow, showQualifying]);
+  const tqRow = liveQualifying?.raceId === raceIdNow ? liveQualifying?.rows[0] : undefined;
   const { data: sponsors = [] } = useQuery({
     queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
     queryFn: () => getSponsors(tickerEventId),
@@ -398,6 +400,8 @@ export default function OverlayBoard() {
             lapFlash={lapFlash}
             closeMs={closeMs}
             showArrows={showArrows && race.finalLetter !== null}
+            classTags={showClassTags}
+            bumpUpPlaces={showBumpLine ? race.bumpUpPlaces ?? 0 : 0}
             barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
             predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
             qualifying={qualifying}
@@ -406,6 +410,15 @@ export default function OverlayBoard() {
             gapFading={gapView.fading}
             lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
             lapsFading={lapsView.fading}
+          />
+        )}
+        {showTqPace && isQualifier && layout === 'tower' && race.status === 'RUNNING' && (
+          <TqPace
+            leader={allRows[0]}
+            tq={tqRow}
+            clock={barClock}
+            remainingAt={remainingAt}
+            className={cn('px-2 py-1 text-[11px] font-semibold', colours.muted)}
           />
         )}
         {rows.length > 0 && layout === 'table' && (
