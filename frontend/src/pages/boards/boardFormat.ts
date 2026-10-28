@@ -38,7 +38,7 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
+ * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  */
 export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -50,6 +50,7 @@ export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: nu
     showPredicted: params.get('predict')?.toLowerCase() !== 'hide',
     showBattles: params.get('battles')?.toLowerCase() !== 'hide',
     showLegend: parseLegendParam(params.get('legend'), true),
+    highContrast: params.get('contrast')?.toLowerCase() === 'high',
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : defaultCloseMs,
@@ -263,6 +264,8 @@ export type OverlayDesign = {
   showBattles: boolean;
   /** Show the colour key; off unless asked, as it sits over the video. */
   showLegend: boolean;
+  /** Thick outlined icons with a short text tag beside each, for poor viewing conditions and compressed video (#591). */
+  highContrast: boolean;
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;
 };
@@ -289,6 +292,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showArrows: true,
   showBattles: true,
   showLegend: false,
+  highContrast: false,
   closeSeconds: null,
 };
 
@@ -302,7 +306,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
   for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
-    'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend'] as const) {
+    'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
@@ -364,6 +368,7 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showArrows) q.set('arrows', 'hide');
   if (!design.showBattles) q.set('battles', 'hide');
   if (design.showLegend) q.set('legend', 'show');
+  if (design.highContrast) q.set('contrast', 'high');
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
   const text = q.toString().replace(/%2C/g, ',');
   return text ? `?${text}` : '';

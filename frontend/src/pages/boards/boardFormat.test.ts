@@ -12,9 +12,16 @@ describe('parseLiveRaceOptions', () => {
       showPredicted: true,
       showBattles: true,
       showLegend: true,
+      highContrast: false,
       closeMs: 1000,
     });
     expect(parse('battles=HIDE').showBattles).toBe(false);
+  });
+
+  it('turns high contrast on only for contrast=high', () => {
+    expect(parse('contrast=high').highContrast).toBe(true);
+    expect(parse('contrast=HIGH').highContrast).toBe(true);
+    expect(parse('contrast=low').highContrast).toBe(false);
   });
 
   it('hides the arrows for arrows=hide and the predicted laps for predict=hide', () => {

@@ -29,6 +29,11 @@ describe('overlayQuery', () => {
       .toMatchObject({ showBumpLine: true, showTqPace: true, showClassTags: true });
   });
 
+  it('writes contrast=high only when asked, and reads it back', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, highContrast: true })).toBe('?contrast=high');
+    expect(parseOverlayOptions(new URLSearchParams('?contrast=high')).highContrast).toBe(true);
+  });
+
   it('writes the colour key only when asked, and the boards default the other way', () => {
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showLegend: true })).toBe('?legend=show');
     expect(parseOverlayOptions(new URLSearchParams('?legend=show')).showLegend).toBe(true);
