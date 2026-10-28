@@ -11,11 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClubProfile, useUpdateClubProfile, useUploadClubLogo } from '@/hooks/admin/useAdminClub';
 import type { UpdateClubProfileRequest } from '@/lib/adminApi';
-import axios from 'axios';
 import LiveTimingSettingsCard from './LiveTimingSettingsCard';
 import HttpsCard from './HttpsCard';
 import PrivacyNoticeEditor from './PrivacyNoticeEditor';
 import SettingsFileCard from './SettingsFileCard';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const schema = z.object({
   name: z.string().min(1, 'Club name is required'),
@@ -85,10 +85,10 @@ export default function ClubProfilePage() {
       await uploadLogoMutation.mutateAsync(file);
       toast.success('Logo uploaded');
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 400) {
-        toast.error(err.response.data?.message ?? 'Upload rejected — check file type and size (max 2 MB).');
+      if (getApiErrorStatus(err) === 400) {
+        toast.error(getApiErrorMessage(err, 'Upload rejected — check file type and size (max 2 MB).'));
       } else {
-        toast.error('Logo upload failed. Try again.');
+        toast.error(getApiErrorMessage(err, 'Logo upload failed. Try again.'));
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';

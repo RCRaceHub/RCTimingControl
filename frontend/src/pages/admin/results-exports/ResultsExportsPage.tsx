@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { CloudUpload, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +11,7 @@ import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
 import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus, ResultsPublishTarget } from '@/lib/adminApi';
 import { formatDateTime } from '@/lib/dates';
+import { getApiErrorMessage } from '@/lib/errors';
 
 const REASONS: Record<ResultsExportReason, string> = {
   RACE_FINISHED: 'Race finished',
@@ -116,8 +116,7 @@ function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: stri
     setAddress.mutate(address, {
       onSuccess: () => toast.success(address.trim() ? 'RaceHub address saved.' : 'RaceHub address cleared.'),
       onError: err => {
-        const message = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
-        toast.error(typeof message === 'string' ? message : 'Could not save the RaceHub address.');
+        toast.error(getApiErrorMessage(err, 'Could not save the RaceHub address.'));
       },
     });
   }

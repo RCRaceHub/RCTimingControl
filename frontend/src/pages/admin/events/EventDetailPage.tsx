@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +46,7 @@ import EventSponsorsSection from './EventSponsorsSection';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatDateTime, formatEventDate } from '@/lib/dates';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const VALID_NEXT: Record<EventStatus, EventStatus[]> = {
   DRAFT: ['PUBLISHED'],
@@ -149,11 +149,11 @@ export default function EventDetailPage() {
       await transitionMutation.mutateAsync(target);
       toast.success(`Event is now ${eventStatusLabel[target]}`);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
+      if (getApiErrorStatus(err) === 409) {
         void refetch();
         toast.error('This transition is no longer valid. Refresh the page to see the current event status.');
       } else {
-        toast.error('Event could not be updated. Check your connection and try again.');
+        toast.error(getApiErrorMessage(err, 'Event could not be updated. Check your connection and try again.'));
       }
     }
   }

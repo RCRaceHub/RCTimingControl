@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { getApiErrorMessage } from './errors';
+import { getApiErrorData, getApiErrorMessage } from './errors';
 
 function axiosError(status: number, data: unknown) {
   const config = { headers: new AxiosHeaders() };
@@ -30,5 +30,17 @@ describe('getApiErrorMessage', () => {
 
   it('falls back for errors that are not from a request', () => {
     expect(getApiErrorMessage(new Error('boom'), 'fallback')).toBe('fallback');
+  });
+});
+
+describe('getApiErrorData', () => {
+  it('gives the body of the answer', () => {
+    expect(getApiErrorData(axiosError(409, { code: 'POSSIBLE_DUPLICATE_COMPETITOR', matches: [] })))
+      .toEqual({ code: 'POSSIBLE_DUPLICATE_COMPETITOR', matches: [] });
+  });
+
+  it('gives nothing when there was no answer', () => {
+    expect(getApiErrorData(new AxiosError('Network Error'))).toBeUndefined();
+    expect(getApiErrorData(new Error('x'))).toBeUndefined();
   });
 });

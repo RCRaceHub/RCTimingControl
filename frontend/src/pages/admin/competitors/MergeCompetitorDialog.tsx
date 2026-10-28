@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { useAdminCompetitorsList, useMergeCompetitors, useMergePreview } from '@/hooks/admin/useAdminCompetitors';
 import type { CompetitorSummaryDto } from '@/lib/adminApi';
-import { getApiErrorMessage } from '@/lib/errors';
+import { getApiErrorData, getApiErrorMessage } from '@/lib/errors';
 import { matchesCompetitor } from '@/lib/competitors';
 import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPicker';
 
@@ -69,7 +68,7 @@ export default function MergeCompetitorDialog({ duplicate, suggested = [], onOpe
       );
       close(false);
     } catch (err) {
-      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
+      const data = getApiErrorData(err);
       setError(data?.blockers?.[0] ?? getApiErrorMessage(err, 'Could not merge. Try again.'));
     }
   }
