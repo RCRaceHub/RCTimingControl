@@ -10,6 +10,7 @@ import dev.monkeypatch.rctiming.api.admin.dto.ChampionshipExclusionDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateChampionshipRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateExclusionRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.PointsScaleEntryDto;
+import dev.monkeypatch.rctiming.api.admin.dto.SplitCategoriesRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.UpdateChampionshipRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.UpdatePointsScaleRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
@@ -173,9 +174,6 @@ public class ChampionshipController {
     public ChampionshipDto applyScoringSystem(@PathVariable Long id, @PathVariable Long systemId) {
         return ChampionshipDto.from(championshipService.applyScoringSystem(CurrentOfficial.actor(), id, systemId));
     }
-
-    /** The body of {@code PUT /{id}/split-categories}: the tags to split the standings by; empty for none. */
-    public record SplitCategoriesRequest(@jakarta.validation.constraints.NotNull List<String> categories) {}
 
     /**
      * Sets the category tags (for example Junior, Vet, F-Grade) the championship also gives standings for, in

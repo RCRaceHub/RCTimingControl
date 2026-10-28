@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.TlsSettingRequest;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
@@ -8,9 +9,6 @@ import dev.monkeypatch.rctiming.infrastructure.tls.TlsService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,12 +52,7 @@ public class TlsController {
      */
     public record TlsStateDto(boolean enabled, int port, List<String> urls, List<String> names,
                               Instant caExpires, Instant serverExpires, String caFingerprint,
-                              boolean switchedOn, int configuredPort, boolean restartNeeded) {
-    }
-
-    /** The body of {@code PUT /setting}. */
-    public record TlsSettingRequest(@NotNull Boolean enabled, @Min(1) @Max(65535) Integer port) {
-    }
+                              boolean switchedOn, int configuredPort, boolean restartNeeded) {}
 
     /** Whether HTTPS is on, its addresses, the names and expiry of the certificates. {@code GET}; read only. */
     @GetMapping

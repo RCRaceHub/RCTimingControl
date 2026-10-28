@@ -1,14 +1,18 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.CategoriesRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.MergeRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.NameVisibilityRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SpeechPreviewRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SpokenNameRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorAnonymiseService;
-import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorCategoryService;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorNameVisibilityService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
-import dev.monkeypatch.rctiming.domain.competitor.NameVisibility;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorChangeDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDataExportService;
@@ -21,9 +25,6 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -115,9 +116,6 @@ public class AdminCompetitorController {
         return mergeService.preview(keepId, duplicateId);
     }
 
-    /** The body of {@code POST /merge}: the competitor to keep and the duplicate to fold into it. */
-    public record MergeRequest(@NotNull Long keepId, @NotNull Long duplicateId) {}
-
     /**
      * Moves the duplicate's entries onto the kept competitor and deletes the duplicate, in one
      * transaction (#123). 409 with the reasons when they can't be merged. {@code POST /merge}; ADMIN. Audited.
@@ -163,13 +161,6 @@ public class AdminCompetitorController {
         return competitorQueryService.listChanges(id);
     }
 
-    /** The body of {@code PUT /{id}/spoken-name}: how the name is said aloud. Null or blank clears it. */
-    public record SpokenNameRequest(String spokenName) {}
-
-    /** The body of {@code POST /spoken-name/preview}: the text to hear in the club's voice, required. */
-    public record SpeechPreviewRequest(
-            @NotBlank @Size(max = CompetitorService.MAX_SPOKEN_NAME_LENGTH) String text) {}
-
     /**
      * Set, change or clear how a competitor's name is said aloud (#119). Any official may, since it is
      * often noticed on the day; each change is recorded with who made it. {@code PUT /{id}/spoken-name}; ADMIN,
@@ -183,9 +174,6 @@ public class AdminCompetitorController {
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
-
-    /** The body of {@code PUT /{id}/name-visibility}: how the name is shown on public screens. */
-    public record NameVisibilityRequest(@NotNull NameVisibility nameVisibility) {}
 
     /**
      * Shows the competitor's full name, initials only, or no name on every public screen and in the live feed
@@ -201,9 +189,6 @@ public class AdminCompetitorController {
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
-
-    /** The body of {@code PUT /{id}/categories}: the tags the driver holds; an empty list clears them. */
-    public record CategoriesRequest(@NotNull List<@Size(max = 30) String> categories) {}
 
     /**
      * Sets the category tags a competitor holds, such as Junior, Vet or F-Grade, which a championship can split

@@ -10,7 +10,10 @@ import java.util.List;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog.OFFICIAL_AUDIT_LOG;
 
-/** Repository for {@link OfficialAuditLog} ({@code official_audit_log}). */
+/**
+ * Repository for {@link OfficialAuditLog} ({@code official_audit_log}). Mapped by hand, not with MapStruct: the entity
+ * is built by constructor and has no setters, so there is nothing for a generated mapper to fill.
+ */
 @Repository
 public class OfficialAuditLogRepository extends JooqRepository<OfficialAuditLog, OfficialAuditLogRecord> {
 

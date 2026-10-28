@@ -16,7 +16,6 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import dev.monkeypatch.rctiming.practice.dto.PracticeSessionDto;
-import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -69,34 +68,35 @@ public class PracticeSessionService {
     }
 
     /**
-     * Creates an idle session, optionally tied to an event. {@code bestLapN} and {@code pauseSeconds} fall back to
-     * the session defaults when not given.
+     * Creates an idle session, optionally tied to an event. {@code bestLapN} (the laps an average is taken over) and
+     * {@code pauseSeconds} (how long a transponder may be quiet before a new run starts) fall back to the session
+     * defaults when not given.
      *
      * @throws EntityNotFoundException (404) for an unknown event
      * @throws IllegalArgumentException (400) for a lap count or pause below 1
      */
     @Transactional
-    public PracticeSessionDto create(Actor actor, CreateRequest request) {
+    public PracticeSessionDto create(Actor actor, String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {
         PracticeSession session = new PracticeSession();
-        session.setName(request.name());
+        session.setName(name);
 
-        if (request.eventId() != null) {
-            Event event = eventRepository.findById(request.eventId())
-                    .orElseThrow(() -> new EntityNotFoundException("Event not found: " + request.eventId()));
+        if (eventId != null) {
+            Event event = eventRepository.findById(eventId)
+                    .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
             session.setEventId(event.getId());
         }
 
-        if (request.bestLapN() != null) {
-            if (request.bestLapN() < 1) {
+        if (bestLapN != null) {
+            if (bestLapN < 1) {
                 throw new IllegalArgumentException("The number of laps to average must be at least 1");
             }
-            session.setBestLapN(request.bestLapN());
+            session.setBestLapN(bestLapN);
         }
-        if (request.pauseSeconds() != null) {
-            if (request.pauseSeconds() < 1) {
+        if (pauseSeconds != null) {
+            if (pauseSeconds < 1) {
                 throw new IllegalArgumentException("The pause that starts a new run must be at least 1 second");
             }
-            session.setPauseSeconds(request.pauseSeconds());
+            session.setPauseSeconds(pauseSeconds);
         }
 
         session.setCreatedByUserId(actor.userId());
@@ -255,10 +255,4 @@ public class PracticeSessionService {
                         && raceRepository.findFirstByStatus(RaceStatus.RUNNING).isPresent()
         );
     }
-
-    /**
-     * @param bestLapN     how many consecutive laps the average is taken over (default 5)
-     * @param pauseSeconds how long a transponder may be quiet before its next lap starts a new run (default 180)
-     */
-    public record CreateRequest(@Size(max = 200) String name, Long eventId, Integer bestLapN, Integer pauseSeconds) {}
 }

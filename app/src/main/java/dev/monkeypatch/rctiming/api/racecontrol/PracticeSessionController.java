@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.PracticeSessionCreateRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.practice.PracticeDayService;
 import dev.monkeypatch.rctiming.practice.PracticeDriverService;
@@ -60,8 +61,9 @@ public class PracticeSessionController {
     @PostMapping
     @DirectorOrAdmin
     public ResponseEntity<PracticeSessionDto> create(
-            @RequestBody @Valid PracticeSessionService.CreateRequest request) {
-        PracticeSessionDto session = sessionService.create(CurrentOfficial.actor(), request);
+            @RequestBody @Valid PracticeSessionCreateRequest request) {
+        PracticeSessionDto session = sessionService.create(CurrentOfficial.actor(), request.name(), request.eventId(),
+                request.bestLapN(), request.pauseSeconds());
         return ResponseEntity.status(HttpStatus.CREATED).body(session);
     }
 

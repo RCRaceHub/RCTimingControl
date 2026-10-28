@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.SaveRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeed;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedService;
@@ -8,7 +9,6 @@ import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -87,13 +87,6 @@ public class EntryFeedController {
     public ResponseEntity<RaceHubImportResult> apply(@PathVariable long eventId) {
         RaceHubImportResult result = feedService.applyHeld(CurrentOfficial.actor(), eventId);
         return ImportResponses.of(result);
-    }
-
-    /**
-     * The body of {@code PUT}: the address of the Entry Export file, its access token (see {@code save}) and whether
-     * the app fetches it by itself (null counts as off).
-     */
-    public record SaveRequest(@Size(max = 2000) String url, @Size(max = 2048) String token, Boolean autoFetch) {
     }
 
     /**

@@ -186,7 +186,7 @@ class BackupIT extends AbstractIntegrationTest {
         practiceSessionRepository.findRunningSession()
                 .ifPresent(running -> practiceSessionService.stop(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), running.getId()));
         long sessionId = practiceSessionService
-                .create(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), new PracticeSessionService.CreateRequest("Backup race", null, 3, null)).id();
+                .create(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), "Backup race", null, 3, null).id();
         practiceSessionService.start(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), sessionId);
         AtomicBoolean racing = new AtomicBoolean(true);
         CompletableFuture<Integer> decoder = CompletableFuture.supplyAsync(() -> {

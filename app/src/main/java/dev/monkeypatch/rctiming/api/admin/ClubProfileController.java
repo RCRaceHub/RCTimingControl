@@ -1,19 +1,19 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.api.admin.dto.ClubProfileDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateClubProfileRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateGoverningBodyRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.GoverningBodyAffiliationDto;
 import dev.monkeypatch.rctiming.api.admin.dto.LiveTimingSettingsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.LogoUploadResponse;
+import dev.monkeypatch.rctiming.api.admin.dto.PrivacyNoticeRequest;
+import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LogoUploadService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -157,9 +157,6 @@ public class ClubProfileController {
         String url = logoUploadService.uploadLogo(CurrentOfficial.actor(), profileId, file);
         return new LogoUploadResponse(url);
     }
-
-    /** The body of {@code PUT /privacy-notice}. {@code text} blank means go back to the default notice. */
-    public record PrivacyNoticeRequest(@Size(max = 20000) String text) {}
 
     /**
      * The privacy notice as the editor shows it. {@code customised}: whether {@code text} is the club's own, or the
