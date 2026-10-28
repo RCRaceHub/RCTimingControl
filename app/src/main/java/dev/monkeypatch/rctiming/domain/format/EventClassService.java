@@ -13,6 +13,7 @@ import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +67,7 @@ public class EventClassService {
     }
 
     /** Every class entered in the event; a 404 if there is no such event. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<EventClass> listClassesForEvent(Long eventId) {
         eventRepository.requireExists(eventId);
         return eventClassRepository.findByEventId(eventId);

@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.track.TrackRepository;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import dev.monkeypatch.rctiming.domain.user.UserService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +41,7 @@ public class SetupService {
     }
 
     /** Read from the unauthenticated setup endpoint to decide whether to show the wizard or the sign-in page. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Status getStatus() {
         boolean bootstrapped = userRepository.count() > 0;
         boolean setupComplete = clubProfileRepository.count() > 0;
@@ -48,7 +49,7 @@ public class SetupService {
     }
 
     /** Which wizard steps are done, worked out from what is stored, so it survives a restart mid-wizard. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Progress getProgress() {
         boolean club = clubProfileRepository.count() > 0;
         boolean track = trackRepository.count() > 0;

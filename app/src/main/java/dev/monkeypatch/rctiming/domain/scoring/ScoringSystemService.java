@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,7 @@ public class ScoringSystemService {
     }
 
     /** Every system, or only those of {@code kind} when it is given; built-ins first. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<ScoringSystem> list(ScoringKind kind) {
         if (kind != null) {
             return repository.findByKind(kind);
@@ -44,7 +45,7 @@ public class ScoringSystemService {
     }
 
     /** One system. @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if there is none */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public ScoringSystem get(Long id) {
         return repository.getOrThrow(id);
     }

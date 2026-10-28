@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -72,7 +73,7 @@ public class ClubSettingsService {
     }
 
     /** This install's settings as a file. Read only. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public SettingsFile export() {
         ClubProfile profile = clubs.getProfile().orElseGet(ClubProfile::new);
         // Before the setup wizard has saved the club there are no details to export
@@ -95,7 +96,7 @@ public class ClubSettingsService {
      *
      * @throws IllegalArgumentException if the file is not a settings file this version can read (answered 400)
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Section> preview(SettingsFile file) {
         check(file);
         SettingsFile current = export();

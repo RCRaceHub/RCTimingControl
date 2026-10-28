@@ -48,7 +48,7 @@ public class ClubProfileService {
     }
 
     /** The decoder address from the profile; all fields null before a profile exists or the wizard has set them. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public DecoderSettings getDecoderSettings() {
         return clubProfileRepository.findCurrent()
                 .map(profile -> new DecoderSettings(
@@ -57,13 +57,13 @@ public class ClubProfileService {
     }
 
     /** The club's profile; empty until the setup wizard saves one. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<ClubProfile> getProfile() {
         return clubProfileRepository.findCurrent();
     }
 
     /** The announcer settings, or the defaults before a club profile exists. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public ClubAudioSettings audioSettings() {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getAudioSettings)
@@ -113,7 +113,7 @@ public class ClubProfileService {
     }
 
     /** The club's chosen announcer voice, or empty to use the Piper default. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<String> defaultVoiceId() {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getDefaultVoiceId)
@@ -173,7 +173,7 @@ public class ClubProfileService {
     public record PrivacyNotice(String clubName, String email, String phone, String text, boolean customised) {}
 
     /** The privacy notice with the club's name and contact details, for the public page and the editor. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public PrivacyNotice privacyNotice() {
         ClubProfile p = clubProfileRepository.findCurrent().orElseGet(ClubProfile::new);
         String own = p.getPrivacyNotice();
@@ -198,7 +198,7 @@ public class ClubProfileService {
     }
 
     /** Every governing body the club has added. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<GoverningBodyAffiliation> listAffiliations() {
         return affiliationRepository.findAll();
     }
@@ -292,7 +292,7 @@ public class ClubProfileService {
     }
 
     /** The RaceHub address set in the admin panel, or empty when the club has not set one. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<String> getRaceHubResultsUrl() {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getRacehubResultsUrl)
@@ -316,7 +316,7 @@ public class ClubProfileService {
     }
 
     /** The publish target the club chose (a {@code ResultsPublishTarget} name), or empty when it has not chosen. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Optional<String> getResultsPublishTarget() {
         return clubProfileRepository.findCurrent()
                 .map(ClubProfile::getResultsPublishTarget)

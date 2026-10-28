@@ -7,6 +7,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -114,7 +115,7 @@ public class TransponderSwapService {
      * The slots of each of the event's entries that have been swapped on the day, by entry id. A re-import keeps
      * these numbers (#50).
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Map<Long, Set<TransponderSlot>> swappedSlots(long eventId) {
         Map<Long, Set<TransponderSlot>> slots = new HashMap<>();
         for (EntryAuditLog log : auditLogRepository.findByEventIdAndAction(eventId, AUDIT_ACTION)) {
