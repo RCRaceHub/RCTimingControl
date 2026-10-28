@@ -2,6 +2,7 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
+import { OnPaceIcon } from '@/components/OnPaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
@@ -74,6 +75,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
                 {row.driverName}
                 {/* This board has no lap flash, so only close gets an icon */}
                 <RowStateIcon close={close} className="ml-3" />
+                {barClock && !row.finished && <OnPaceIcon row={row} clock={barClock} className="ml-2" />}
                 {row.finished && <FinishedFlag />}
                 {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
               </td>
@@ -93,7 +95,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
           })}
         </tbody>
       </table>
-      {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
+      {showLegend && (closeMs > 0 || barClock) && <TimingLegend kinds={[...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : [])]} size="board" className="mt-3 text-slate-400" />}
     </>
   );
 }

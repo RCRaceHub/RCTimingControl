@@ -22,6 +22,11 @@ describe('TimingLegend', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
+  it('explains the thumbs up for a car on pace', () => {
+    render(<TimingLegend kinds={['pace']} />);
+    expect(screen.getByText('On pace for its predicted laps')).toBeInTheDocument();
+  });
+
   it('explains the movement colours for the qualifying tables', () => {
     render(<TimingLegend kinds={['movement']} size="board" />);
     expect(screen.getByText('Moved up')).toBeInTheDocument();
