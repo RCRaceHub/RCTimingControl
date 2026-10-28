@@ -92,7 +92,7 @@ function parseGapEvery(value: string | null): number {
 export function parseSeparatorImage(value: string | null): string | null {
   const v = value?.trim();
   if (!v || v.toLowerCase() === 'diamond') return null;
-  return /^https?:\/\/\S+$/i.test(v) || /^\/(?!\/)\S*$/.test(v) ? v : null;
+  return /^https?:\/\/\S+$/i.test(v) || /^\/(?![/\\])\S*$/.test(v) ? v : null;
 }
 
 const OVERLAY_DEFAULT_TOP = 10;
@@ -279,6 +279,43 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showLegend: false,
   closeSeconds: null,
 };
+
+/**
+ * An overlay design from a saved theme's JSON: each known field is taken only when it has
+ * the right type and value, and anything missing or unknown keeps the default, so a theme from an older or newer
+ * build still opens. The event is not part of a theme and comes back null.
+ */
+export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
+  const design: OverlayDesign = { ...DEFAULT_OVERLAY_DESIGN, tickerItems: [...DEFAULT_OVERLAY_DESIGN.tickerItems] };
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
+  const r = raw as Record<string, unknown>;
+  for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showPredicted', 'showBars',
+    'showArrows', 'showBattles', 'showLegend'] as const) {
+    if (typeof r[key] === 'boolean') design[key] = r[key];
+  }
+  if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
+  if (r.layout === 'tower' || r.layout === 'table') design.layout = r.layout;
+  if (r.gap === 'int' || r.gap === 'leader' || r.gap === 'auto') design.gap = r.gap;
+  if (typeof r.top === 'number' && Number.isInteger(r.top) && r.top > 0) design.top = Math.min(r.top, OVERLAY_MAX_TOP);
+  if (typeof r.gapEverySeconds === 'number' && Number.isInteger(r.gapEverySeconds) && r.gapEverySeconds > 0) {
+    design.gapEverySeconds = Math.min(r.gapEverySeconds, GAP_EVERY_LIMIT);
+  }
+  if (typeof r.closeSeconds === 'number' && Number.isFinite(r.closeSeconds) && r.closeSeconds >= 0) {
+    design.closeSeconds = r.closeSeconds;
+  }
+  if (typeof r.separatorImage === 'string') design.separatorImage = parseSeparatorImage(r.separatorImage);
+  if (Array.isArray(r.tickerItems)) {
+    design.tickerItems = TICKER_ITEMS.filter((item) => (r.tickerItems as unknown[]).includes(item));
+  }
+  return design;
+}
+
+/** The theme's design as saved: everything the designer chooses except which event it follows. */
+export function themeDesignToSave(design: OverlayDesign): Omit<OverlayDesign, 'eventId'> {
+  const rest: Partial<OverlayDesign> = { ...design };
+  delete rest.eventId;
+  return rest as Omit<OverlayDesign, 'eventId'>;
+}
 
 /** The most places the designer offers; the overlay itself caps `top` here. */
 export const OVERLAY_TOP_LIMIT = OVERLAY_MAX_TOP;

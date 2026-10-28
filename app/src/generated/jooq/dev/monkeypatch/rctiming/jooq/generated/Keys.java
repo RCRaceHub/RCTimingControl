@@ -30,6 +30,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemes;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
@@ -76,6 +77,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.MarshalAdjustments
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.MarshalPenaltiesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.OfficialAuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PenaltiesRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.OverlayThemesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeDriversRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeLapsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.PracticeSessionsRecord;
@@ -146,6 +148,8 @@ public class Keys {
     public static final UniqueKey<MarshalPenaltiesRecord> MARSHAL_PENALTIES__PK_MARSHAL_PENALTIES = Internal.createUniqueKey(MarshalPenalties.MARSHAL_PENALTIES, DSL.name("pk_marshal_penalties"), new TableField[] { MarshalPenalties.MARSHAL_PENALTIES.ID }, true);
     public static final UniqueKey<OfficialAuditLogRecord> OFFICIAL_AUDIT_LOG__PK_OFFICIAL_AUDIT_LOG = Internal.createUniqueKey(OfficialAuditLog.OFFICIAL_AUDIT_LOG, DSL.name("pk_official_audit_log"), new TableField[] { OfficialAuditLog.OFFICIAL_AUDIT_LOG.ID }, true);
     public static final UniqueKey<PenaltiesRecord> PENALTIES__PK_PENALTIES = Internal.createUniqueKey(Penalties.PENALTIES, DSL.name("pk_penalties"), new TableField[] { Penalties.PENALTIES.ID }, true);
+    public static final UniqueKey<OverlayThemesRecord> OVERLAY_THEMES__PK_OVERLAY_THEMES = Internal.createUniqueKey(OverlayThemes.OVERLAY_THEMES, DSL.name("pk_overlay_themes"), new TableField[] { OverlayThemes.OVERLAY_THEMES.ID }, true);
+    public static final UniqueKey<OverlayThemesRecord> OVERLAY_THEMES__OVERLAY_THEMES_NAME_KEY = Internal.createUniqueKey(OverlayThemes.OVERLAY_THEMES, DSL.name("overlay_themes_name_key"), new TableField[] { OverlayThemes.OVERLAY_THEMES.NAME }, true);
     public static final UniqueKey<PracticeDriversRecord> PRACTICE_DRIVERS__PK_PRACTICE_DRIVERS = Internal.createUniqueKey(PracticeDrivers.PRACTICE_DRIVERS, DSL.name("pk_practice_drivers"), new TableField[] { PracticeDrivers.PRACTICE_DRIVERS.ID }, true);
     public static final UniqueKey<PracticeLapsRecord> PRACTICE_LAPS__PK_PRACTICE_LAPS = Internal.createUniqueKey(PracticeLaps.PRACTICE_LAPS, DSL.name("pk_practice_laps"), new TableField[] { PracticeLaps.PRACTICE_LAPS.ID }, true);
     public static final UniqueKey<PracticeSessionsRecord> PRACTICE_SESSIONS__PK_PRACTICE_SESSIONS = Internal.createUniqueKey(PracticeSessions.PRACTICE_SESSIONS, DSL.name("pk_practice_sessions"), new TableField[] { PracticeSessions.PRACTICE_SESSIONS.ID }, true);

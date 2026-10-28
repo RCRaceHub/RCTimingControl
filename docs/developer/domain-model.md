@@ -190,6 +190,10 @@ erDiagram
         int columns "1 to 3"
         json panels "ordered: type, top, span; no foreign keys, a layout only"
     }
+    overlay_themes {
+        text name "unique, e.g. BRCA, Club"
+        json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; no foreign keys, a look only"
+    }
     competitors ||--o{ entries : ""
     events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
     competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
