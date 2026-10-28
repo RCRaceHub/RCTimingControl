@@ -25,6 +25,8 @@ import java.util.Map;
  * - /topic/race/{raceId}/jump-start — cars that crossed the line before their turn in a stagger start
  * - /topic/race/{raceId}/warmup — cars of a race on the grid the decoder has seen so far
  * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
+ * - /topic/race/{raceId}/audio — spoken running orders and auto run's start cues, for the announcer's browser
+ * - /topic/event/{eventId}/auto-run — an event's auto run state, for open race control pages
  * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
 @Component
@@ -109,6 +111,23 @@ public class LiveTimingHub {
     public void broadcastBumpUpAlert(long finishedRaceId, List<Long> promotedEntryIds) {
         sendAfterCommit("/topic/race/" + finishedRaceId + "/bump-up-alert",
                 Map.of("finishedRaceId", finishedRaceId, "promotedEntryIds", promotedEntryIds));
+    }
+
+    /**
+     * Sends a cue for the announcer's browser to speak or play: a running-order line or a start countdown. Sent at
+     * once, not after a commit, because a cue is only ever heard when it is sent and describes nothing stored. Called
+     * from the running-order check and from auto run's scheduler thread.
+     */
+    public void broadcastAudioCue(long raceId, Object cue) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", cue);
+    }
+
+    /**
+     * Sends an event's auto run state to open race control pages. Sent at once; the state is rebuilt from memory and
+     * a page that misses one is right again at the next. Called from request threads and auto run's scheduler thread.
+     */
+    public void broadcastAutoRunState(long eventId, Object state) {
+        messagingTemplate.convertAndSend("/topic/event/" + eventId + "/auto-run", state);
     }
 
     /** The live feed's connection to the relay, for the race-control status bar (#28). */

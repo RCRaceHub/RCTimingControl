@@ -18,10 +18,10 @@ import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
+import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -59,7 +59,7 @@ class AutoRunServiceTest {
     private final EventRepository eventRepository = mock(EventRepository.class);
     private final RaceStateMachineService stateMachine = mock(RaceStateMachineService.class);
     private final ClubProfileService clubProfileService = mock(ClubProfileService.class);
-    private final SimpMessagingTemplate messaging = mock(SimpMessagingTemplate.class);
+    private final LiveTimingHub messaging = mock(LiveTimingHub.class);
     private final AuditService audit = mock(AuditService.class, Mockito.RETURNS_DEEP_STUBS);
     private final Event event = new Event();
     private AutoRunService service;
@@ -241,10 +241,8 @@ class AutoRunServiceTest {
         service.tick();
 
         // 180 s gap: the 2 minute warning is due, the 5 and 10 minute ones do not fit
-        verify(messaging).convertAndSend(eq("/topic/race/1/audio"),
-                (Object) argThatText("Qualifying 1 — Buggy — Heat 1 in 2 minutes."));
-        verify(messaging, never()).convertAndSend(eq("/topic/race/1/audio"),
-                (Object) argThatText("Qualifying 1 — Buggy — Heat 1 in 5 minutes."));
+        verify(messaging).broadcastAudioCue(eq(1L), argThatText("Qualifying 1 — Buggy — Heat 1 in 2 minutes."));
+        verify(messaging, never()).broadcastAudioCue(eq(1L), argThatText("Qualifying 1 — Buggy — Heat 1 in 5 minutes."));
     }
 
     @Test
@@ -256,8 +254,7 @@ class AutoRunServiceTest {
         service.tick();
         service.tick();
 
-        verify(messaging, Mockito.times(1)).convertAndSend(eq("/topic/race/1/audio"),
-                (Object) eq(Map.<String, Object>of("type", "start-countdown", "seconds", 10L)));
+        verify(messaging, Mockito.times(1)).broadcastAudioCue(eq(1L), eq(Map.<String, Object>of("type", "start-countdown", "seconds", 10L)));
     }
 
     @Test

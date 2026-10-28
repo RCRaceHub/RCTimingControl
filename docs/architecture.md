@@ -102,9 +102,10 @@ The AMB/MyLaps decoder client runs on a dedicated background thread (Netty 4.1, 
 | `/topic/race/{raceId}/marshal` | Marshal lap adjustments |
 | `/topic/race/{raceId}/unknown-transponder` | A transponder that matched no entry, for the referee |
 | `/topic/race/{raceId}/jump-start` | Cars that crossed the line before their turn in a stagger start, for the referee |
-| `/topic/race/{raceId}/audio` | Announcements for the announcer's browser |
+| `/topic/race/{raceId}/audio` | Announcements and start cues for the announcer's browser (from `LiveTimingHub`) |
 | `/topic/race/{raceId}/bump-up-alert` | Bump-up prompts when a race finishes |
 | `/topic/race/{raceId}/warmup` | Entries of a race on the grid that the decoder has seen on the warm-up lap |
+| `/topic/event/{eventId}/auto-run` | An event's auto run state, for open race control pages |
 | `/topic/practice/{sessionId}/timing`, `/unknown-transponder` | Open practice |
 | `/topic/system/decoder-status` | Whether the decoder is connected |
 | `/topic/system/live-feed-status` | Whether the live feed is connected to its relay |

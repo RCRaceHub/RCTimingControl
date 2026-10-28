@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.infrastructure.audio.RunningOrderAnnouncementService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
+import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -45,7 +46,7 @@ class RunningOrderAnnouncementServiceTest {
 
     @Mock RaceRepository raceRepository;
     @Mock ClubProfileService clubProfileService;
-    @Mock SimpMessagingTemplate messagingTemplate;
+    @Mock LiveTimingHub liveTimingHub;
     @Mock LapTimingService lapTimingService;
     @Mock EntryRepository entryRepository;
     @Mock CompetitorRepository competitorRepository;
@@ -126,13 +127,13 @@ class RunningOrderAnnouncementServiceTest {
         service.checkAndAnnounce();
 
         // No broadcast because positions list is empty
-        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        verify(liveTimingHub, never()).broadcastAudioCue(anyLong(), any(Object.class));
     }
 
     @Test
     void checkAndAnnounce_doesNotSend_whenNoRacesTracked() {
         service.checkAndAnnounce();
-        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        verify(liveTimingHub, never()).broadcastAudioCue(anyLong(), any(Object.class));
     }
 
     @Test
@@ -145,7 +146,7 @@ class RunningOrderAnnouncementServiceTest {
 
         service.checkAndAnnounce();
 
-        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        verify(liveTimingHub, never()).broadcastAudioCue(anyLong(), any(Object.class));
     }
 
     @Test
@@ -163,7 +164,7 @@ class RunningOrderAnnouncementServiceTest {
         service.checkAndAnnounce();
 
         assertThat(service.getRaceStartTimes()).doesNotContainKey(1L);
-        verify(messagingTemplate, never()).convertAndSend(any(String.class), any(Object.class));
+        verify(liveTimingHub, never()).broadcastAudioCue(anyLong(), any(Object.class));
     }
 
     @Test
@@ -211,7 +212,7 @@ class RunningOrderAnnouncementServiceTest {
         service.checkAndAnnounce();
 
         ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
-        verify(messagingTemplate).convertAndSend(eq("/topic/race/1/audio"), sent.capture());
+        verify(liveTimingHub).broadcastAudioCue(eq(1L), sent.capture());
         assertThat(((RunningOrderAnnouncementService.RunningOrderAnnouncement) sent.getValue()).positions())
                 .containsExactly("Shiv-awn Keen", "Sam Ito", "Tom Hall"); // no competitor found: the row's name, tidied
     }
@@ -230,7 +231,7 @@ class RunningOrderAnnouncementServiceTest {
         service.checkAndAnnounce();
 
         ArgumentCaptor<Object> sent = ArgumentCaptor.forClass(Object.class);
-        verify(messagingTemplate).convertAndSend(eq("/topic/race/1/audio"), sent.capture());
+        verify(liveTimingHub).broadcastAudioCue(eq(1L), sent.capture());
         assertThat(((RunningOrderAnnouncementService.RunningOrderAnnouncement) sent.getValue()).positions())
                 .hasSize(4); // half of seven, rounded up
     }
@@ -252,18 +253,18 @@ class RunningOrderAnnouncementServiceTest {
         service.onRaceStarted(1L);
         backdateRaceStart(1L, Instant.now().minusSeconds(70));
         service.checkAndAnnounce();
-        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+        verify(liveTimingHub, times(1)).broadcastAudioCue(eq(1L), any(Object.class));
 
         // 7 minutes in, the last call 2 minutes ago: not yet due on the 3 minute cadence
         service.onRaceStarted(1L);
         backdateRaceStart(1L, Instant.now().minusSeconds(420));
         lastAnnouncement(1L, Instant.now().minusSeconds(120));
         service.checkAndAnnounce();
-        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+        verify(liveTimingHub, times(1)).broadcastAudioCue(eq(1L), any(Object.class));
 
         lastAnnouncement(1L, Instant.now().minusSeconds(200));
         service.checkAndAnnounce();
-        verify(messagingTemplate, times(2)).convertAndSend(eq("/topic/race/1/audio"), any(Object.class));
+        verify(liveTimingHub, times(2)).broadcastAudioCue(eq(1L), any(Object.class));
     }
 
     // -------------------------------------------------------------------------
