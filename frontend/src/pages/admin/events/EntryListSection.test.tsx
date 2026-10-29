@@ -12,6 +12,10 @@ vi.mock('@/hooks/admin/useAdminEntries', () => ({
   useEntriesForClass: () => ({ data: entries, isLoading: false }),
   useWithdrawEntry: () => ({ mutate: vi.fn(), isPending: false }),
 }));
+vi.mock('@/hooks/admin/useDriverMedia', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/hooks/admin/useDriverMedia')>()),
+  useUploadCarPhotoFor: () => ({ mutateAsync: vi.fn() }),
+}));
 vi.mock('./AddWalkInEntryDialog', () => ({ default: () => null }));
 vi.mock('./EntryHistoryDialog', () => ({
   default: ({ entry }: { entry: AdminEntryDto }) => <p>History of {entry.displayName}</p>,
@@ -44,6 +48,13 @@ describe('EntryListSection', () => {
     signInAs([role]);
     render(<EntryListSection eventId={5} classes={classes} />);
     expect(screen.getByRole('button', { name: 'Add entry' })).toBeInTheDocument();
+  });
+
+  it('offers the car photo import once the class has an entry', () => {
+    signInAs(['RACE_DIRECTOR']);
+    entries = [adaEntry];
+    render(<EntryListSection eventId={5} classes={classes} />);
+    expect(screen.getByRole('button', { name: 'Import car photos…' })).toBeEnabled();
   });
 
   it('names each class on the class selector', () => {

@@ -13,6 +13,8 @@ import type { CompetitorSummaryDto, NameVisibility } from '@/lib/adminApi';
 import { formatCompetitorMeta, matchesCompetitor } from '@/lib/competitors';
 import AnonymiseCompetitorDialog from './AnonymiseCompetitorDialog';
 import CompetitorMediaDialog from './CompetitorMediaDialog';
+import { BulkPhotoImportDialog } from '@/components/BulkPhotoImportDialog';
+import { useUploadHeadshotFor } from '@/hooks/admin/useDriverMedia';
 import MergeCompetitorDialog from './MergeCompetitorDialog';
 import { useRoles } from '@/hooks/useRoles';
 
@@ -150,6 +152,8 @@ export default function CompetitorsPage() {
   const { data: competitors, isLoading, isError } = useAdminCompetitorsList();
   const { data: duplicateGroups = [] } = usePossibleDuplicates(isAdmin);
   const [anonymising, setAnonymising] = useState<CompetitorSummaryDto | null>(null);
+  const [importingPhotos, setImportingPhotos] = useState(false);
+  const uploadHeadshot = useUploadHeadshotFor();
   const [merging, setMerging] = useState<{ duplicate: CompetitorSummaryDto; suggested: CompetitorSummaryDto[] } | null>(null);
 
   const shown = (competitors ?? []).filter(c => matchesCompetitor(c, search));
@@ -161,6 +165,11 @@ export default function CompetitorsPage() {
         <p className="text-sm text-muted-foreground mt-1">
           Drivers imported from RaceHub or added as walk-ins. If the announcer says a name wrongly, use Say as… to type how it should sound.
         </p>
+        {canRunEvent && (competitors?.length ?? 0) > 0 && (
+          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setImportingPhotos(true)}>
+            Import headshots…
+          </Button>
+        )}
       </div>
 
       {isLoading && (
@@ -239,6 +248,15 @@ export default function CompetitorsPage() {
         key={anonymising?.id ?? 'none'}
         competitor={anonymising}
         onOpenChange={open => { if (!open) setAnonymising(null); }}
+      />
+
+      <BulkPhotoImportDialog
+        open={importingPhotos}
+        onOpenChange={setImportingPhotos}
+        title="Import headshots"
+        description="Choose many pictures at once. Each is matched to a driver by its file name, such as Alex Rowe.jpg; change or skip any that did not match."
+        targets={(competitors ?? []).map(c => ({ id: c.id, label: c.displayName }))}
+        save={(id, file) => uploadHeadshot.mutateAsync({ id, file })}
       />
 
       <MergeCompetitorDialog

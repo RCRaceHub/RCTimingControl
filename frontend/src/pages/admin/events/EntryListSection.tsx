@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import CarPhotoDialog from './CarPhotoDialog';
+import { BulkPhotoImportDialog } from '@/components/BulkPhotoImportDialog';
+import { useUploadCarPhotoFor } from '@/hooks/admin/useDriverMedia';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -248,6 +250,29 @@ function EntriesTable({
   );
 }
 
+/** "Import car photos" for the entries of one class: many pictures matched to drivers by file name (#695). */
+function CarPhotoImport({ eventId, classId }: { eventId: number; classId: number }) {
+  const [open, setOpen] = useState(false);
+  const { data: entries = [] } = useEntriesForClass(eventId, classId);
+  const upload = useUploadCarPhotoFor();
+  const active = entries.filter(e => e.status !== 'WITHDRAWN');
+  return (
+    <>
+      <Button size="sm" variant="outline" disabled={active.length === 0} onClick={() => setOpen(true)}>
+        Import car photos…
+      </Button>
+      <BulkPhotoImportDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Import car photos"
+        description="Choose many pictures at once. Each is matched to an entry in this class by the driver's name in its file name, such as Alex Rowe.jpg; change or skip any that did not match."
+        targets={active.map(e => ({ id: e.id, label: e.displayName ?? `Entry ${e.id}` }))}
+        save={(id, file) => upload.mutateAsync({ id, file })}
+      />
+    </>
+  );
+}
+
 interface EntryListSectionProps {
   eventId: number;
   classes: EventClassDto[];
@@ -293,7 +318,8 @@ export default function EntryListSection({ eventId, classes }: EntryListSectionP
       {selectedClass && (
         <>
           {canAddEntries && (
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <CarPhotoImport eventId={eventId} classId={selectedClass.id} />
               <Button size="sm" onClick={() => setAddOpen(true)}>
                 Add entry
               </Button>

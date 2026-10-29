@@ -104,6 +104,7 @@ Photos look best on the boards and the streaming overlay with a transparent back
 
 - It runs on the computer you are using, with no internet, so it works at the track.
 - The result is a PNG with a see-through background. If it would be over 2 MB it is shrunk to fit; if it still cannot be saved, the original is kept and you are told.
+- To add many at once, use **Import headshots…** on the Competitors page, or **Import car photos…** on the event's Entries tab (it works on the class you are viewing). Choose the files, and each is matched to a driver by its file name (`Alex Rowe.jpg`, `alex_rowe.png` and `rowe-alex.jpg` all match Alex Rowe; a trailing number such as `_2` is ignored). A file that matches no one, or two drivers with the same name, is shown as Skipped; pick the driver from its list or leave it skipped. The background is removed from every picture unless you untick the box, and a picture where that fails is saved as the original with a note. A picture that cannot be saved does not stop the rest.
 - It works best on a clear photo of one driver or one car. If it cuts out too much or too little, untick it and save the original, or tidy the picture in an editor first.
 
 ## After the race
