@@ -915,7 +915,7 @@ GET /boards/races/{raceId}/media
 ```
 **200 OK** — `[ { "entryId": 31, "headshotUrl": "/storage/photos/9f2c….jpg", "carPhotoUrl": null, "sponsors": ["Acme Tyres"] } ]`, the pictures and driver sponsors the public may see for the cars in a race (#520), in grid order. Cars with nothing to show are left out, and a driver whose name is set to initials only or hidden is always left out (#265).
 
-Officials manage them under `/api/v1/admin`: `GET /competitors/{id}/media` (any official; `{ headshotUrl, sponsors }`), `PUT /competitors/{id}/media/sponsors {names}` (up to 5, 100 characters each), `PUT` and `DELETE /competitors/{id}/media/headshot` (multipart `file`, PNG or JPEG up to 2 MB), and `GET`, `PUT` and `DELETE /entries/{id}/car-photo`. Changes are ADMIN or RACE_DIRECTOR and audited; 400 for a bad file or list, 404 for an unknown competitor or entry.
+Officials manage them under `/api/v1/admin`: `GET /competitors/{id}/media` (any official; `{ headshotUrl, sponsors }`), `PUT /competitors/{id}/media/sponsors {names}` (up to 5, 100 characters each), `PUT` and `DELETE /competitors/{id}/media/headshot` (multipart `file`, PNG or JPEG up to 2 MB; a PNG keeps its transparency, which is how a photo with its background removed in the browser arrives), and `GET`, `PUT` and `DELETE /entries/{id}/car-photo`. Changes are ADMIN or RACE_DIRECTOR and audited; 400 for a bad file or list, 404 for an unknown competitor or entry.
 
 ```http
 GET /boards/sponsors?eventId={id}&themeId={id}

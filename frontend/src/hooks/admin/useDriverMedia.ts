@@ -66,3 +66,21 @@ export function useCarColoursMutation(entryId: number) {
     onSuccess: colours => qc.setQueryData(carColoursKey(entryId), colours),
   });
 }
+
+/** Saves a headshot for any competitor, for the bulk import (#695); the answer replaces that competitor's cached media. */
+export function useUploadHeadshotFor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => adminApi.uploadHeadshot(id, file),
+    onSuccess: (media, { id }) => qc.setQueryData(competitorKey(id), media),
+  });
+}
+
+/** Saves a car photo for any entry, for the bulk import (#695). */
+export function useUploadCarPhotoFor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => adminApi.uploadCarPhoto(id, file),
+    onSuccess: (url, { id }) => qc.setQueryData(carPhotoKey(id), url),
+  });
+}
