@@ -128,3 +128,16 @@ describe('parseSeparatorImage', () => {
     expect(parseSeparatorImage('/storage/x.png')).toBe('/storage/x.png');
   });
 });
+
+describe('battle style', () => {
+  it('is left off the address while it is the panel and written when it is not', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, battleStyle: 'rows' })).toBe('?battlestyle=rows');
+    expect(parseOverlayOptions(new URLSearchParams('battlestyle=both')).battleStyle).toBe('both');
+    expect(parseOverlayOptions(new URLSearchParams('battlestyle=nonsense')).battleStyle).toBe('panel');
+  });
+
+  it('is read from a saved theme and ignores an unknown value', () => {
+    expect(overlayDesignFromTheme({ battleStyle: 'both' }).battleStyle).toBe('both');
+    expect(overlayDesignFromTheme({ battleStyle: 'flashy' }).battleStyle).toBe('panel');
+  });
+});

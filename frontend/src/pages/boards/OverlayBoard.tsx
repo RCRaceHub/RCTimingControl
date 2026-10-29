@@ -36,7 +36,9 @@ import { FlyingLapIcon } from '@/components/RowBadges';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
+import { BATTLE_ROW_CLASS, BattleRowTag } from '@/components/BattleRowTag';
 import { BattleStrip } from '@/components/BattleStrip';
+import { battleChasers } from '@/lib/battles';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useFeaturedDriver } from '@/hooks/useFeaturedDriver';
@@ -272,7 +274,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
-    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, lowerThird, showLegend, highContrast,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
   const colours = THEMES[theme];
@@ -288,6 +290,9 @@ export default function OverlayBoard() {
   const battleGroups = useBattles(showBattles || lowerThird === 'battle' || lowerThird === 'both' ? raceId : null);
   // The grid is bunched up until the field has spread out, so no battle call-outs before a lap has been counted
   const lapCounted = allRows.some(row => row.lapsCompleted >= 1);
+  const battleShowing = showBattles && lapCounted && race?.status === 'RUNNING';
+  // The chasing car's row, when battles are to show on the rows (#681)
+  const battleRows = battleShowing && battleStyle !== 'panel' ? battleChasers(battleGroups) : undefined;
   const featuredEntryId = useFeaturedDriver(raceId, lowerThird, battleGroups, lapCounted && race?.status === 'RUNNING');
   const media = useRaceMedia(lowerThird === 'off' ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
@@ -388,6 +393,7 @@ export default function OverlayBoard() {
             gapFading={gapView.fading}
             lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
             lapsFading={lapsView.fading}
+            battles={battleRows}
           />
         )}
         {showTqPace && isQualifier && layout === 'tower' && race.status === 'RUNNING' && (
@@ -415,6 +421,7 @@ export default function OverlayBoard() {
               {rows.map(row => {
                 const flash = lapFlash.get(row.entryId);
                 const close = isClose(row, closeMs);
+                const battle = battleRows?.get(row.entryId);
                 return (
                   <tr
                     key={row.entryId}
@@ -423,6 +430,7 @@ export default function OverlayBoard() {
                       'border-t transition-colors',
                       colours.row,
                       close && !flash && 'bg-amber-500/25',
+                      battle && BATTLE_ROW_CLASS,
                       flash === 'race-best' && 'bg-purple-500/40',
                       flash === 'personal-best' && 'bg-blue-500/40',
                       flash === 'improving' && 'bg-green-500/40',
@@ -444,6 +452,7 @@ export default function OverlayBoard() {
                       <RowStateIcon flash={flash} close={close} className="ml-1" />
                       {showBars && race.status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
                       <FlyingLapIcon row={row} className="ml-1" />
+                      {battle && <BattleRowTag link={battle} className="ml-2 inline-flex align-middle text-xs" />}
                       {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
                       {row.finished && <FinishedFlag className="ml-1" />}
                       {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
@@ -476,7 +485,7 @@ export default function OverlayBoard() {
         style={{ bottom: chartBottom, maxWidth: showChart && chartSeries.length > 0 ? 'calc(100vw - 34rem)' : 'calc(100vw - 2rem)' }}
         aria-label="Battles and fastest laps"
       >
-        {showBattles && lapCounted && race.status === 'RUNNING' && (
+        {battleShowing && battleStyle !== 'rows' && (
           <BattleStrip groups={battleGroups} className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
         )}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
