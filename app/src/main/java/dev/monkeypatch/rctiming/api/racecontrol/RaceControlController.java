@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.FeaturedDriverRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MarshalAdjustmentRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveEntryRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveFinalRequest;
@@ -365,5 +366,16 @@ public class RaceControlController {
                                                      @Valid @RequestBody SkipToRaceRequest req) {
         long eventId = raceControlService.skipTo(raceId, req.targetRaceId());
         return ResponseEntity.ok(Map.of("eventId", eventId, "activeRaceId", req.targetRaceId()));
+    }
+
+    /**
+     * Shows a lower third for one car on the streaming overlay (#533). {@code POST /race/{raceId}/featured-driver}.
+     * Changes nothing on the server except a message to the overlay, so it is not audited. 404 if the race does not
+     * exist or the entry is not in it.
+     */
+    @PostMapping("/race/{raceId}/featured-driver")
+    public ResponseEntity<Void> featureDriver(@PathVariable long raceId, @Valid @RequestBody FeaturedDriverRequest req) {
+        raceControlService.featureDriver(raceId, req.entryId());
+        return ResponseEntity.noContent().build();
     }
 }

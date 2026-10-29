@@ -38,6 +38,9 @@ import { isClose } from '@/lib/lapProgress';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
+import { useFeaturedDriver } from '@/hooks/useFeaturedDriver';
+import { useRaceMedia } from '@/hooks/useRaceMedia';
+import { FeaturedLowerThird } from './FeaturedLowerThird';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { useBoardSponsorsQuery, useLiveQualifyingQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
@@ -265,7 +268,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
-    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend, highContrast,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, lowerThird, showLegend, highContrast,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
   const colours = THEMES[theme];
@@ -278,9 +281,11 @@ export default function OverlayBoard() {
   const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS });
 
   const remainingAt = useRemainingAt(clock, clockReadAt);
-  const battleGroups = useBattles(showBattles ? raceId : null);
+  const battleGroups = useBattles(showBattles || lowerThird === 'battle' || lowerThird === 'both' ? raceId : null);
   // The grid is bunched up until the field has spread out, so no battle call-outs before a lap has been counted
   const lapCounted = allRows.some(row => row.lapsCompleted >= 1);
+  const featuredEntryId = useFeaturedDriver(raceId, lowerThird, battleGroups, lapCounted && race?.status === 'RUNNING');
+  const media = useRaceMedia(lowerThird === 'off' ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
   const now = useNow(!!clock?.running);
@@ -481,6 +486,14 @@ export default function OverlayBoard() {
           <PositionChart series={chartSeries} />
         </section>
       )}
+      <FeaturedLowerThird
+        entryId={featuredEntryId}
+        rows={allRows}
+        media={media}
+        panelClass={colours.panel}
+        mutedClass={colours.muted}
+        bottom={`calc(${chartBottom} + 7rem)`}
+      />
       <OverlayTicker
         eventId={tickerEventId}
         raceId={race.raceId}

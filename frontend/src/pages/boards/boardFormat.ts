@@ -66,6 +66,15 @@ function parseTickerItems(value: string | null): Set<TickerItem> {
   return new Set(TICKER_ITEMS.filter((item) => value.split(',').includes(item)));
 }
 
+/** What may bring up the featured-driver lower third (#533): `?lower=director`, `battle`, `off`, or both when absent. */
+export type LowerThirdMode = 'both' | 'director' | 'battle' | 'off';
+
+/** Reads `?lower=`; anything it does not know takes the default of both triggers. */
+export function parseLowerThird(value: string | null): LowerThirdMode {
+  const mode = value?.toLowerCase();
+  return mode === 'director' || mode === 'battle' || mode === 'off' ? mode : 'both';
+}
+
 /** The tower's gap from `?gap=`: the interval to the car ahead unless asked for the leader gap or the two in turn. */
 function parseGapMode(value: string | null): GapMode {
   const mode = value?.toLowerCase();
@@ -115,6 +124,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showBumpLine: params.get('bump')?.toLowerCase() !== 'hide',
     showTqPace: params.get('tqpace')?.toLowerCase() !== 'hide',
     showClassTags: params.get('tags')?.toLowerCase() !== 'hide',
+    lowerThird: parseLowerThird(params.get('lower')),
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
@@ -262,6 +272,8 @@ export type OverlayDesign = {
   showBars: boolean;
   showArrows: boolean;
   showBattles: boolean;
+  /** What brings up the featured-driver lower third (#533): the race director, a battle for the top places, both or neither. */
+  lowerThird: LowerThirdMode;
   /** Show the colour key; off unless asked, as it sits over the video. */
   showLegend: boolean;
   /** Thick outlined icons with a short text tag beside each, for poor viewing conditions and compressed video (#591). */
@@ -291,6 +303,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showBars: true,
   showArrows: true,
   showBattles: true,
+  lowerThird: 'both',
   showLegend: false,
   highContrast: false,
   closeSeconds: null,
@@ -311,6 +324,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
   if (r.layout === 'tower' || r.layout === 'table') design.layout = r.layout;
+  if (typeof r.lowerThird === 'string') design.lowerThird = parseLowerThird(r.lowerThird);
   if (r.gap === 'int' || r.gap === 'leader' || r.gap === 'auto') design.gap = r.gap;
   if (typeof r.top === 'number' && Number.isInteger(r.top) && r.top > 0) design.top = Math.min(r.top, OVERLAY_MAX_TOP);
   if (typeof r.gapEverySeconds === 'number' && Number.isInteger(r.gapEverySeconds) && r.gapEverySeconds > 0) {
@@ -367,6 +381,7 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showBars) q.set('bars', 'hide');
   if (!design.showArrows) q.set('arrows', 'hide');
   if (!design.showBattles) q.set('battles', 'hide');
+  if (design.lowerThird !== 'both') q.set('lower', design.lowerThird);
   if (design.showLegend) q.set('legend', 'show');
   if (design.highContrast) q.set('contrast', 'high');
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));

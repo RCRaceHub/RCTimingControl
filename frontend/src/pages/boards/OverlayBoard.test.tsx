@@ -490,6 +490,7 @@ describe('overlay options', () => {
       showPredicted: true,
       closeMs: 1000,
       showBattles: true,
+      lowerThird: 'both',
       showLegend: false,
       highContrast: false,
     });

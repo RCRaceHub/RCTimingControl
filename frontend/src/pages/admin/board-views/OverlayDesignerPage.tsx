@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import {
   DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayDesignFromTheme, overlayQuery,
   parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
+  parseLowerThird,
 } from '@/pages/boards/boardFormat';
 import type { OverlayThemeDto } from '@/lib/boardsApi';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
@@ -324,6 +325,19 @@ export default function OverlayDesignerPage() {
             <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />
             <Check label="Places gained arrows" checked={design.showArrows} onChange={(v) => set('showArrows', v)} />
             <Check label="Battles" checked={design.showBattles} onChange={(v) => set('showBattles', v)} />
+            <label className="flex items-center justify-between gap-2 text-sm">
+              Featured-driver lower third
+              <select
+                className="h-8 rounded border bg-background px-2"
+                value={design.lowerThird}
+                onChange={(e) => set('lowerThird', parseLowerThird(e.target.value))}
+              >
+                <option value="both">Race director and battles</option>
+                <option value="director">Race director only</option>
+                <option value="battle">Battles only</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
             <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
             <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
             <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />

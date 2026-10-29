@@ -29,6 +29,14 @@ describe('overlayQuery', () => {
       .toMatchObject({ showBumpLine: true, showTqPace: true, showClassTags: true });
   });
 
+  it('writes the lower third trigger only when it is not both, and reads it back', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, lowerThird: 'director' })).toBe('?lower=director');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=battle')).lowerThird).toBe('battle');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=off')).lowerThird).toBe('off');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=nonsense')).lowerThird).toBe('both');
+    expect(parseOverlayOptions(new URLSearchParams('')).lowerThird).toBe('both');
+  });
+
   it('writes contrast=high only when asked, and reads it back', () => {
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, highContrast: true })).toBe('?contrast=high');
     expect(parseOverlayOptions(new URLSearchParams('?contrast=high')).highContrast).toBe(true);
