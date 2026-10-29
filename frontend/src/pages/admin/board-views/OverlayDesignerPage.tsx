@@ -273,7 +273,7 @@ export default function OverlayDesignerPage() {
           <fieldset className="space-y-2" data-testid="theme-sponsors">
             <legend className="text-sm font-medium">Theme sponsors</legend>
             {theme ? (
-              <ThemeSponsors themeId={theme.id} />
+              <ThemeSponsors key={theme.id} themeId={theme.id} />
             ) : (
               <p className="text-xs text-muted-foreground">
                 Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.

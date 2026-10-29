@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
 import { adminQueryKeys } from './adminQueryKeys';
+import { publicQueryKeys } from '../publicQueryKeys';
 import type { SponsorMutations } from './useEventSponsors';
 
 /** The sponsors an overlay theme owns, in display order; none until a theme is picked. */
@@ -15,7 +16,11 @@ export function useThemeSponsors(themeId: number | null) {
 /** Every change to the list refetches it (and the overlay's own cached sponsors), so the screen shows what the server holds. */
 export function useThemeSponsorMutations(themeId: number): SponsorMutations {
   const qc = useQueryClient();
-  const refresh = () => qc.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.sponsors(themeId) });
+  const refresh = () => Promise.all([
+    qc.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.sponsors(themeId) }),
+    // The designer's preview reads the same sponsors through the public boards key
+    qc.invalidateQueries({ queryKey: publicQueryKeys.boards.sponsors(null).slice(0, 2) }),
+  ]);
   return {
     add: useMutation({ mutationFn: (name: string) => overlayThemesAdminApi.addSponsor(themeId, name), onSuccess: refresh }),
     rename: useMutation({
