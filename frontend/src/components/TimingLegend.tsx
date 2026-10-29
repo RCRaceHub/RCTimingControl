@@ -28,6 +28,7 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
     state('bg-info', 'personal-best'),
     state('bg-success', 'improving'),
     state('bg-destructive', 'slow'),
+    state('', 'flying'),
   ],
   close: [state('bg-warning', 'close')],
   pace: [state('', 'on-pace'), state('', 'off-pace')],

@@ -118,6 +118,8 @@ export type LiveTimingRowDto = {
   timePenaltyMs?: number;
   /** The car's 1-based place on the grid; absent or null when it had none. */
   startPosition?: number | null;
+  /** The car's latest lap was a flying lap (beat the average of its earlier laps); shows a flame until its next lap. */
+  flyingLap?: boolean;
 };
 
 export type RaceStateChangeDto = {
