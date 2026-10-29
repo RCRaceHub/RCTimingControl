@@ -18,6 +18,7 @@ export const raceControlQueryKeys = {
   raceClock: (raceId: number | null, status: string | undefined) =>
     ['race-control', 'race-clock', raceId, status] as const,
   audioSettings: () => ['race-control', 'audio-settings'] as const,
+  audioTemplates: () => ['race-control', 'audio-templates'] as const,
   decoderStatus: () => ['race-control', 'decoder-status'] as const,
   liveFeedStatus: () => ['race-control', 'live-feed-status'] as const,
   autoRun: (eventId: number) => ['race-control', 'auto-run', eventId] as const,

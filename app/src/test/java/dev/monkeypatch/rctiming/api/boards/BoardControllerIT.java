@@ -26,16 +26,18 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -280,6 +282,37 @@ class BoardControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void currentRace_carriesTheBumpUpPlacesOfAFinalBelowTheOneThatTakesThem() {
+        Round finals = fx.round(RoundType.FINAL, 1, 2);
+        Race a = fx.race(finals, 1, RaceStatus.PENDING);
+        a.setFinalLetter("A");
+        a.setBumpSlots(3);
+        fx.save(a);
+        Race zombie = fx.race(finals, 2, RaceStatus.PENDING);
+        zombie.setFinalLetter("Z");
+        fx.save(zombie);
+        Race b = fx.race(finals, 3, RaceStatus.RUNNING);
+        b.setFinalLetter("B");
+        fx.save(b);
+
+        // A's third slot is kept for the zombie round's winner while that round is still to run
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(2);
+
+        zombie.setStatus(RaceStatus.FINISHED);
+        fx.save(zombie);
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(3);
+
+        a.setStatus(RaceStatus.RUNNING);
+        b.setStatus(RaceStatus.PENDING);
+        fx.save(a);
+        fx.save(b);
+        assertThat(boardQuery.currentRace(fx.event.getId())).get()
+                .extracting(r -> r.bumpUpPlaces()).isEqualTo(0);
+    }
+
+    @Test
     void lastCompletedQualifier_isStillTheQualifyingHeatOnceAFinalHasFinished() {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
         Race heat1 = fx.race(q1, 1, RaceStatus.FINISHED);
@@ -458,6 +491,14 @@ class BoardControllerIT extends AbstractIntegrationTest {
         }
     }
 
+    private static int lapOf(Map place) {
+        return ((Number) place.get("lap")).intValue();
+    }
+
+    private static List<Map> lapOne(List<Map> places) {
+        return places.stream().filter(p -> lapOf(p) == 1).toList();
+    }
+
     @Test
     void positionHistory_givesEachCarsPlaceAtTheEndOfEachLap() throws InterruptedException {
         Round q1 = fx.round(RoundType.QUALIFIER, 1, 1);
@@ -477,17 +518,17 @@ class BoardControllerIT extends AbstractIntegrationTest {
             lapTimingService.onLapPassing(new LapPassingEvent(heat1.getId(), slow, 22_000_000L));
 
             // Passings are handled asynchronously: wait for both cars to have completed the lap
-            long deadline = System.currentTimeMillis() + 5_000;
+            await().atMost(Duration.ofSeconds(5)).until(() -> lapOne(getList(url)).size() >= 2);
             List<Map> places = getList(url);
-            while (places.size() < 2 && System.currentTimeMillis() < deadline) {
-                Thread.sleep(50);
-                places = getList(url);
-            }
-            assertThat(places).hasSize(2);
-            Map first = places.stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
+            assertThat(lapOne(places)).hasSize(2);
+            // Lap 0 is the grid: the slow car set off first
+            Map gridFirst = places.stream().filter(p -> lapOf(p) == 0 && ((Number) p.get("position")).intValue() == 1)
+                    .findFirst().orElseThrow();
+            assertThat(((Number) gridFirst.get("entryId")).longValue()).isEqualTo(slowEntry.getId());
+            Map first = lapOne(places).stream().filter(p -> ((Number) p.get("position")).intValue() == 1).findFirst().orElseThrow();
             assertThat(((Number) first.get("lap")).intValue()).isEqualTo(1);
             assertThat(((Number) first.get("entryId")).longValue()).isEqualTo(quickEntry.getId());
-            assertThat(places).extracting(p -> ((Number) p.get("entryId")).longValue())
+            assertThat(lapOne(places)).extracting(p -> ((Number) p.get("entryId")).longValue())
                     .containsExactlyInAnyOrder(quickEntry.getId(), slowEntry.getId());
         } finally {
             lapTimingService.releaseState(heat1.getId());
@@ -555,13 +596,8 @@ class BoardControllerIT extends AbstractIntegrationTest {
 
     /** Lap passings are handled asynchronously, so poll until the field appears. */
     private List<Map> awaitRows(String url) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + 5_000;
-        List<Map> rows = getList(url);
-        while (rows.isEmpty() && System.currentTimeMillis() < deadline) {
-            Thread.sleep(50);
-            rows = getList(url);
-        }
-        return rows;
+        await().atMost(Duration.ofSeconds(5)).until(() -> !getList(url).isEmpty());
+        return getList(url);
     }
 
     private static long raceId(Map body, String key) {

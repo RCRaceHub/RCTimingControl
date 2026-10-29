@@ -9,7 +9,7 @@ import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +58,7 @@ class SqliteConcurrencyIT extends AbstractIntegrationTest {
         practiceSessionRepository.findRunningSession()
                 .ifPresent(running -> practiceSessionService.stop(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), running.getId()));
         long sessionId = practiceSessionService
-                .create(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), new PracticeSessionService.CreateRequest("Concurrency", null, 3, null)).id();
+                .create(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), "Concurrency", null, 3, null).id();
         practiceSessionService.start(dev.monkeypatch.rctiming.domain.audit.Actor.system("test"), sessionId);
 
         Queue<Throwable> failures = new ConcurrentLinkedQueue<>();

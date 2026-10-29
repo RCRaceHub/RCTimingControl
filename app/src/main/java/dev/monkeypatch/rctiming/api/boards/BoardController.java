@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
+import dev.monkeypatch.rctiming.domain.sponsor.OverlayThemeSponsorService;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
@@ -76,6 +77,7 @@ public class BoardController {
     private final LiveFinalService liveFinalService;
     private final ClubProfileService clubProfileService;
     private final EventSponsorService eventSponsorService;
+    private final OverlayThemeSponsorService overlayThemeSponsorService;
     private final DriverMediaService driverMediaService;
     private final RaceHighlightsService raceHighlightsService;
 
@@ -95,12 +97,14 @@ public class BoardController {
                            LiveFinalService liveFinalService,
                            ClubProfileService clubProfileService,
                            EventSponsorService eventSponsorService,
+                           OverlayThemeSponsorService overlayThemeSponsorService,
                            DriverMediaService driverMediaService,
                            RaceHighlightsService raceHighlightsService) {
         this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
         this.eventSponsorService = eventSponsorService;
+        this.overlayThemeSponsorService = overlayThemeSponsorService;
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -289,12 +293,22 @@ public class BoardController {
     }
 
     /**
-     * The event's sponsors in display order, for the overlay's sponsor bar (#518). Names and logos only.
+     * The sponsors for the overlay's sponsor bar (#518), in display order. Names and logos only. The overlay theme's
+     * own sponsors when a {@code themeId} is given and that theme has any, otherwise the event's.
      *
      * @param eventId the event to show; defaults to the event racing now, else the latest in progress
+     * @param themeId the overlay theme the overlay was opened with ({@code ?look=ID}), if any; a theme that is gone
+     *     or has no sponsors falls back to the event's
      */
     @GetMapping("/sponsors")
-    public List<SponsorDto> sponsors(@RequestParam(required = false) Long eventId) {
+    public List<SponsorDto> sponsors(@RequestParam(required = false) Long eventId,
+                                     @RequestParam(required = false) Long themeId) {
+        if (themeId != null) {
+            List<SponsorDto> own = overlayThemeSponsorService.listForOverlay(themeId).stream().map(SponsorDto::from).toList();
+            if (!own.isEmpty()) {
+                return own;
+            }
+        }
         return boardQuery.resolveEvent(eventId)
                 .map(event -> eventSponsorService.list(event.id()).stream().map(SponsorDto::from).toList())
                 .orElse(List.of());
@@ -330,7 +344,7 @@ public class BoardController {
     }
 
     /**
-     * Where each car stood at the end of every lap so far in a race on track, for the live position chart. Empty
+     * Where each car stood at the end of every lap so far in a race on track, for the live position chart, led by lap 0 (its grid place) where the crossing order is known. Empty
      * when the race has no live state (not started, or already finished: its stored result has the history).
      */
     @GetMapping("/races/{raceId}/position-history")
@@ -382,7 +396,8 @@ public class BoardController {
 
     /**
      * The standouts of this heat and of its round for the overlay's ticker: most places gained and lost against the
-     * grid, and the best three and five lap average. The heat is live while it runs and from its stored result once
+     * grid, the best three and five lap average, the flying lap, the most improved on the driver's last heat and the
+     * most consistent driver. The heat is live while it runs and from its stored result once
      * it has finished.
      */
     @GetMapping("/races/{raceId}/highlights")

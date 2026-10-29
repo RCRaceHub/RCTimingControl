@@ -190,11 +190,26 @@ erDiagram
         int columns "1 to 3"
         json panels "ordered: type, top, span; no foreign keys, a layout only"
     }
+    audio_templates {
+        text name "unique ignoring case"
+        json settings "a ClubAudioSettings copy without the club's sound files; no foreign keys"
+    }
+    overlay_themes {
+        text name "unique, e.g. BRCA, Club"
+        boolean is_default "at most one true (partial unique index): the theme the plain /boards/overlay opens; club-wide"
+        json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; a look only; its sponsors are overlay_theme_sponsors"
+    }
+    overlay_themes ||--o{ overlay_theme_sponsors : "sponsors the theme owns; shown instead of the event's when any; cascade on delete"
     competitors ||--o{ entries : ""
     events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
     competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
     entries ||--o| entry_photos : "optional car photo"
+    entries ||--o| entry_car_colours : "optional car colours (#685); not personal data, so kept on anonymise"
     event_sponsors {
+        text logo_url "object storage /storage/..., random name"
+        int sort_order "display order"
+    }
+    overlay_theme_sponsors {
         text logo_url "object storage /storage/..., random name"
         int sort_order "display order"
     }
@@ -204,6 +219,9 @@ erDiagram
     }
     entry_photos {
         text car_photo_url "object storage"
+    }
+    entry_car_colours {
+        text colours "1 to 4 #rrggbb, comma separated"
     }
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""

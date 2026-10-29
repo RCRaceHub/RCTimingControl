@@ -36,7 +36,8 @@ function classifyNewLaps(rows: LiveTimingRowDto[], history: LapHistory) {
       const prevLap = lastLapMs.get(row.entryId) ?? null;
 
       let color: FlashColor;
-      if (row.overallFastestLapMs !== null && row.lastLapMs === row.overallFastestLapMs) {
+      // The first lap starts from a standstill, so it never earns the star (#591)
+      if (row.lapsCompleted > 1 && row.overallFastestLapMs !== null && row.lastLapMs === row.overallFastestLapMs) {
         color = 'race-best';
       } else if (row.lastLapMs === row.bestLapMs) {
         color = 'personal-best';
@@ -68,7 +69,7 @@ function classifyNewLaps(rows: LiveTimingRowDto[], history: LapHistory) {
  * Detects new laps by watching lapsCompleted and classifies each lap time.
  * Returns a flash colour per entry that expires after FLASH_DURATION_MS.
  *
- *  race-best      — fastest lap of the race across all drivers (purple)
+ *  race-best      — fastest lap of the race across all drivers, after the first lap (purple)
  *  personal-best  — new personal best for this driver, not race fastest (blue)
  *  improving      — faster than or equal to the driver's previous lap (green)
  *  slow           — more than SLOW_THRESHOLD_MS above running average (red)

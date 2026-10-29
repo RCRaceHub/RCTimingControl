@@ -29,3 +29,6 @@ export function useSponsorMutations(eventId: number) {
     }),
   };
 }
+
+/** The calls that change a sponsor list, as {@link useSponsorMutations} and the overlay theme's hook return them. */
+export type SponsorMutations = ReturnType<typeof useSponsorMutations>;

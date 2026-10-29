@@ -4,11 +4,9 @@
 package dev.monkeypatch.rctiming.jooq.generated;
 
 
+import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
-import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -16,12 +14,16 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipPointsScale;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Championships;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ClubProfiles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events;
 import dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffiliations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports;
@@ -29,6 +31,8 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemes;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
@@ -59,6 +63,11 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.Users;
 public class Tables {
 
     /**
+     * The table <code>audio_templates</code>.
+     */
+    public static final AudioTemplates AUDIO_TEMPLATES = AudioTemplates.AUDIO_TEMPLATES;
+
+    /**
      * The table <code>audit_log</code>.
      */
     public static final AuditLog AUDIT_LOG = AuditLog.AUDIT_LOG;
@@ -67,21 +76,6 @@ public class Tables {
      * The table <code>board_views</code>.
      */
     public static final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
-
-    /**
-     * The table <code>event_sponsors</code>.
-     */
-    public static final EventSponsors EVENT_SPONSORS = EventSponsors.EVENT_SPONSORS;
-
-    /**
-     * The table <code>entry_photos</code>.
-     */
-    public static final EntryPhotos ENTRY_PHOTOS = EntryPhotos.ENTRY_PHOTOS;
-
-    /**
-     * The table <code>competitor_media</code>.
-     */
-    public static final CompetitorMedia COMPETITOR_MEDIA = CompetitorMedia.COMPETITOR_MEDIA;
 
     /**
      * The table <code>championship_classes</code>.
@@ -119,6 +113,11 @@ public class Tables {
     public static final CompetitorAuditLog COMPETITOR_AUDIT_LOG = CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
 
     /**
+     * The table <code>competitor_media</code>.
+     */
+    public static final CompetitorMedia COMPETITOR_MEDIA = CompetitorMedia.COMPETITOR_MEDIA;
+
+    /**
      * The table <code>competitors</code>.
      */
     public static final Competitors COMPETITORS = Competitors.COMPETITORS;
@@ -144,9 +143,24 @@ public class Tables {
     public static final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
 
     /**
+     * The table <code>entry_car_colours</code>.
+     */
+    public static final EntryCarColours ENTRY_CAR_COLOURS = EntryCarColours.ENTRY_CAR_COLOURS;
+
+    /**
+     * The table <code>entry_photos</code>.
+     */
+    public static final EntryPhotos ENTRY_PHOTOS = EntryPhotos.ENTRY_PHOTOS;
+
+    /**
      * The table <code>event_classes</code>.
      */
     public static final EventClasses EVENT_CLASSES = EventClasses.EVENT_CLASSES;
+
+    /**
+     * The table <code>event_sponsors</code>.
+     */
+    public static final EventSponsors EVENT_SPONSORS = EventSponsors.EVENT_SPONSORS;
 
     /**
      * The table <code>events</code>.
@@ -182,6 +196,16 @@ public class Tables {
      * The table <code>official_audit_log</code>.
      */
     public static final OfficialAuditLog OFFICIAL_AUDIT_LOG = OfficialAuditLog.OFFICIAL_AUDIT_LOG;
+
+    /**
+     * The table <code>overlay_theme_sponsors</code>.
+     */
+    public static final OverlayThemeSponsors OVERLAY_THEME_SPONSORS = OverlayThemeSponsors.OVERLAY_THEME_SPONSORS;
+
+    /**
+     * The table <code>overlay_themes</code>.
+     */
+    public static final OverlayThemes OVERLAY_THEMES = OverlayThemes.OVERLAY_THEMES;
 
     /**
      * The table <code>penalties</code>.

@@ -151,6 +151,6 @@ public class CompetitorAuditLogRecord extends UpdatableRecordImpl<CompetitorAudi
         setBeforeValue(beforeValue);
         setAfterValue(afterValue);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

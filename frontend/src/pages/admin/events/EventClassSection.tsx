@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +36,7 @@ import {
 } from '@/hooks/admin/useAdminEventClasses';
 import { useFormatsList } from '@/hooks/admin/useAdminFormats';
 import type { EventClassDto } from '@/lib/adminApi';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const addClassSchema = z.object({
   racingClassId: z.coerce.number().int().positive('Racing class is required'),
@@ -156,12 +156,12 @@ function RemoveClassDialog({
       toast.success(`${className} removed from the event`);
       close(false);
     } catch (err) {
-      const detail = axios.isAxiosError(err) ? (err.response?.data as { detail?: string } | undefined)?.detail : undefined;
-      if (axios.isAxiosError(err) && err.response?.status === 409 && detail) {
+      const detail = getApiErrorMessage(err, '');
+      if (getApiErrorStatus(err) === 409 && detail) {
         setProblem(detail);
         setNeedsWithdraw(detail.includes('active entr'));
       } else {
-        setProblem('Could not remove the class. Try again.');
+        setProblem(getApiErrorMessage(err, 'Could not remove the class. Try again.'));
       }
     }
   }
@@ -467,7 +467,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
                   {resolveClassName(cls.racingClassId)}
                 </span>
                 {cls.configOverride && Object.keys(cls.configOverride).length > 0 && (
-                  <Badge className="bg-amber-100 text-amber-700 text-xs">
+                  <Badge className="bg-warning/15 text-warning text-xs">
                     Overrides applied
                   </Badge>
                 )}

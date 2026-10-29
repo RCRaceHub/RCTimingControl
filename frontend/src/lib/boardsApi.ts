@@ -16,6 +16,8 @@ export type BoardRaceDto = {
   status: 'PENDING' | 'GRID' | 'RUNNING' | 'STOPPED' | 'FINISHED';
   /** The colour the club picked for the class as #rrggbb, or null for none. */
   classColour?: string | null;
+  /** Places at the front of this final that move up into the final above it; 0 or missing for none. */
+  bumpUpPlaces?: number;
 };
 
 /** Auto run as a board shows it: a count to the next start, or why it is waiting. */
@@ -331,15 +333,22 @@ export async function getTicker(eventId?: number | null): Promise<TickerDto> {
   return data;
 }
 
-/** A driver and the number that earned a standout: places gained or lost, or an average lap in milliseconds. */
+/** A driver and the number that earned a standout: places or laps, or a time in milliseconds. */
 export type HighlightMark = { driverName: string; value: number };
 
-/** The standouts of a set of runs: places gained and lost against the grid, and the best 3 and 5 lap average. */
+/**
+ * The standouts of a set of runs: places gained (the biggest climber) and lost against the grid, the best 3 and 5 lap
+ * average, the flying lap (ms under the driver's own average so far), the most consistent driver (lap time spread in
+ * ms) and the most laps beyond the driver's previous heat of the same round type.
+ */
 export type HighlightScope = {
   gained: HighlightMark | null;
   lost: HighlightMark | null;
   avg3: HighlightMark | null;
   avg5: HighlightMark | null;
+  flying: HighlightMark | null;
+  consistent: HighlightMark | null;
+  improved: HighlightMark | null;
 };
 
 /** The standouts of a heat (live while it runs) and of its round, for the overlay's ticker. */
@@ -353,9 +362,14 @@ export async function getRaceHighlights(raceId: number): Promise<RaceHighlightsD
 /** A sponsor of an event: its name and the address of its logo, if it has one. */
 export type SponsorDto = { id: number; name: string; logoUrl: string | null };
 
-/** The event's sponsors in display order, for the overlay's sponsor bar (#518). */
-export async function getSponsors(eventId?: number | null): Promise<SponsorDto[]> {
-  const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', eventParams(eventId));
+/**
+ * The sponsors for the overlay's sponsor bar in display order (#518): the overlay theme's own when `themeId` is
+ * given and that theme has any, otherwise the event's.
+ */
+export async function getSponsors(eventId?: number | null, themeId?: number | null): Promise<SponsorDto[]> {
+  const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', {
+    params: { ...eventParams(eventId)?.params, ...(themeId != null ? { themeId } : {}) },
+  });
   return data;
 }
 
@@ -365,10 +379,27 @@ export type RaceMediaDto = {
   headshotUrl: string | null;
   carPhotoUrl: string | null;
   sponsors: string[];
+  /** The colours an official set on the car as #rrggbb, in order; empty when none (#685). */
+  carColours: string[];
 };
 
-/** The pictures and driver sponsors for the cars of a race; cars with nothing to show, or a hidden name, are left out. */
+/** The pictures and driver sponsors for the cars of a race; cars with nothing to show are left out, and a hidden name leaves only the car colours. */
 export async function getRaceMedia(raceId: number): Promise<RaceMediaDto[]> {
   const { data } = await api.get<RaceMediaDto[]>(`/api/v1/boards/races/${raceId}/media`);
+  return data;
+}
+
+/** A saved overlay theme: a name and the designer's choices as a JSON object (see `overlayDesignFromTheme`). */
+export type OverlayThemeDto = { id: number; name: string; design: Record<string, unknown>; isDefault: boolean };
+
+/** The club's default overlay theme, which the plain overlay address opens; null when none is set (204). */
+export async function getDefaultOverlayTheme(): Promise<OverlayThemeDto | null> {
+  const { data } = await api.get<OverlayThemeDto | ''>('/api/v1/boards/overlay-themes/default');
+  return data === '' ? null : data;
+}
+
+/** One saved overlay theme, for the overlay opened with `?look=ID`; a 404 means there is no such theme. */
+export async function getOverlayTheme(id: number): Promise<OverlayThemeDto> {
+  const { data } = await api.get<OverlayThemeDto>(`/api/v1/boards/overlay-themes/${id}`);
   return data;
 }

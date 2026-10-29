@@ -32,6 +32,7 @@ import {
 import type { RaceFormatConfig, RaceFormatTemplateDto } from '@/lib/adminApi';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { TextField } from '@/components/TextField';
+import { QueryError } from '@/components/QueryError';
 
 const DEFAULT_CONFIG: RaceFormatConfig = {
   type: 'TIMED',
@@ -162,10 +163,7 @@ export default function FormatsPage() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load format templates.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load format templates." onRetry={refetch} />
       )}
 
       {isLoading ? (

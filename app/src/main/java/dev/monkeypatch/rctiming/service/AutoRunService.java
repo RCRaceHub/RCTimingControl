@@ -19,11 +19,11 @@ import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
+import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -147,7 +147,7 @@ public class AutoRunService {
     private final EventRepository eventRepository;
     private final RaceStateMachineService stateMachine;
     private final ClubProfileService clubProfileService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final LiveTimingHub liveTimingHub;
     private final TransactionTemplate transactions;
     private final AuditService audit;
     private final Clock clock;
@@ -156,16 +156,16 @@ public class AutoRunService {
     public AutoRunService(RunOrderQuery runOrderQuery, RaceRepository raceRepository, RoundRepository roundRepository,
                           RaceEntryRepository raceEntryRepository, EventRepository eventRepository,
                           RaceStateMachineService stateMachine, ClubProfileService clubProfileService,
-                          SimpMessagingTemplate messagingTemplate, TransactionTemplate transactions,
+                          LiveTimingHub liveTimingHub, TransactionTemplate transactions,
                           AuditService audit) {
         this(runOrderQuery, raceRepository, roundRepository, raceEntryRepository, eventRepository, stateMachine,
-                clubProfileService, messagingTemplate, transactions, audit, Clock.systemUTC());
+                clubProfileService, liveTimingHub, transactions, audit, Clock.systemUTC());
     }
 
     AutoRunService(RunOrderQuery runOrderQuery, RaceRepository raceRepository, RoundRepository roundRepository,
                    RaceEntryRepository raceEntryRepository, EventRepository eventRepository,
                    RaceStateMachineService stateMachine, ClubProfileService clubProfileService,
-                   SimpMessagingTemplate messagingTemplate, TransactionTemplate transactions, AuditService audit,
+                   LiveTimingHub liveTimingHub, TransactionTemplate transactions, AuditService audit,
                    Clock clock) {
         this.runOrderQuery = runOrderQuery;
         this.raceRepository = raceRepository;
@@ -174,7 +174,7 @@ public class AutoRunService {
         this.eventRepository = eventRepository;
         this.stateMachine = stateMachine;
         this.clubProfileService = clubProfileService;
-        this.messagingTemplate = messagingTemplate;
+        this.liveTimingHub = liveTimingHub;
         this.transactions = transactions;
         this.audit = audit;
         this.clock = clock;
@@ -531,7 +531,7 @@ public class AutoRunService {
     }
 
     private void cue(Long raceId, Map<String, Object> payload) {
-        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", payload);
+        liveTimingHub.broadcastAudioCue(raceId, payload);
     }
 
     private interface RaceCommand {
@@ -563,7 +563,7 @@ public class AutoRunService {
     /** Sends the event's state to {@code /topic/event/{id}/auto-run} for open race control pages. */
     private AutoRunState publish(Event event) {
         AutoRunState state = stateOf(event, plans.get(event.getId()));
-        messagingTemplate.convertAndSend("/topic/event/" + event.getId() + "/auto-run", state);
+        liveTimingHub.broadcastAutoRunState(event.getId(), state);
         return state;
     }
 

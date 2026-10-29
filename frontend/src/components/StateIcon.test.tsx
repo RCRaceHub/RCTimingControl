@@ -20,6 +20,33 @@ describe('StateIcon', () => {
   });
 });
 
+describe('flying lap icon', () => {
+  it('is a flame labelled for the flying lap', () => {
+    render(<StateIcon kind="flying" />);
+    expect(screen.getByRole('img', { name: /Flying lap/ })).toHaveAttribute('data-state', 'flying');
+    expect(screen.getByText('FLY')).toHaveClass('hidden');
+  });
+});
+
+describe('StateIcon tags', () => {
+  it('has a short text tag for each state, hidden until high contrast is on, and not read out twice', () => {
+    render(<StateIcon kind="race-best" />);
+    const tag = screen.getByText('FL');
+    expect(tag).toHaveAttribute('aria-hidden', 'true');
+    expect(tag).toHaveClass('hidden');
+  });
+
+  it('gives every state a different tag', () => {
+    const tags = (Object.keys(STATE_INFO) as StateKind[]).map((kind) => STATE_INFO[kind].tag);
+    expect(new Set(tags).size).toBe(tags.length);
+  });
+
+  it('leaves the tag out of the colour key, where the words already sit beside the icon', () => {
+    render(<StateIcon kind="race-best" decorative />);
+    expect(screen.queryByText('FL')).toBeNull();
+  });
+});
+
 describe('RowStateIcon', () => {
   it('shows the lap flash in preference to close', () => {
     render(<RowStateIcon flash="slow" close />);

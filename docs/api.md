@@ -492,13 +492,13 @@ withdraw=<entryId of a MISSING row> (repeat for each entry to withdraw)
 
 New rows are always created; only the picked changed rows are updated and only the picked missing entries are withdrawn (never deleted). A pick that no longer matches the file or the event blocks the import, so preview again.
 
-**200 OK** (or **422** for a real import blocked by bad rows, unmapped classes or a stale pick, with nothing saved):
+**200 OK** (or **422** for a real import blocked by bad rows, unmapped classes, a stale pick or a BRCA number held by two different competitors from the same source, with nothing saved):
 ```json
 {
   "dryRun": true, "blocked": false, "applied": false,
   "summary": { "newEntries": 5, "changed": 1, "unchanged": 0, "missing": 1, "skipped": 1, "created": 0, "updated": 0, "withdrawn": 0 },
   "unmappedClasses": [ { "key": "CSV:nitro truggy", "className": "Nitro Truggy", "classNumber": null, "entryCount": 2 } ],
-  "errors": [], "warnings": [ "Transponder 7123456 is used by more than one entry: Ada Lovelace, Grace Hopper", "Ada Lovelace has BRCA number 12345, which another competitor also has" ],
+  "errors": [], "warnings": [ "Transponder 7123456 is used by more than one entry: Ada Lovelace, Grace Hopper", "Ada Lovelace has BRCA number 12345, which Walk In (already stored) also has. If they are the same person, merge them from the possible-duplicates review" ],
   "rows": [ {
     "group": "CHANGED", "key": "21/brca:12345/class:11", "line": 2, "name": "Ada Lovelace",
     "brcaNumber": 12345, "className": "2WD Buggy", "classNumber": 1, "eventClassId": 11, "entryId": 301,
@@ -705,6 +705,7 @@ POST /race-control/race/{raceId}/finals/swap
 POST /race-control/race/{raceId}/move-entry
 POST /race-control/race/{raceId}/marshal-adjustment
 POST /race-control/race/{raceId}/skip-to
+POST /race-control/race/{raceId}/featured-driver
 ```
 
 - `finals-review` answers `{ "required": true, "confirmedAt": null }`. `required` is true when the event has finals, every qualifying heat of every class with finals is finished, no final has left PENDING and the line-ups are unconfirmed; race control then shows the finals line-up screen instead of the cockpit. `POST finals-lineup/confirm` (no body) confirms the line-ups and answers the same shape with `confirmedAt` set (confirming again keeps the first time). **404** for an unknown event; **409** if the event has no finals, a qualifying heat is unfinished, a class that finished qualifying has not been calculated, or a final has started. Audited as `FINALS_LINEUP_CONFIRMED`; calculating the finals again clears the confirmation.
@@ -714,6 +715,7 @@ POST /race-control/race/{raceId}/skip-to
 - `move-entry` takes `{ "entryId", "targetRaceId", "allRounds": false }` and moves a driver out of the pending heat in the path into another pending heat of the same class, in the same round or, with `allRounds`, in every practice and qualifying round where both heats are still pending. The driver keeps their car number. **400** if the heats are the same, in different classes or events, are finals, or (without `allRounds`) are in different rounds; **409** if either heat has been called or started.
 - `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta. It answers **200** with no body, and is recorded as a marshal adjustment (who, and the race's state at the time) rather than in the audit log.
 - `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server and writes no audit row; the client keeps the active-race pointer. **404** if either race is missing, **400** if the target is in another event.
+- `featured-driver` takes `{ "entryId" }` and sends it on `/topic/race/{raceId}/featured` as `{ "raceId", "entryId" }`, so the streaming overlay shows that driver's lower third (#533). Race director or admin. **204**; it changes no data and writes no audit row. **404** if the race is missing or the entry is not in it. Anonymous clients may subscribe to the topic; it carries the entry id only.
 
 ## Race control — Entry search & transponder swap
 
@@ -916,11 +918,13 @@ GET /boards/races/{raceId}/media
 Officials manage them under `/api/v1/admin`: `GET /competitors/{id}/media` (any official; `{ headshotUrl, sponsors }`), `PUT /competitors/{id}/media/sponsors {names}` (up to 5, 100 characters each), `PUT` and `DELETE /competitors/{id}/media/headshot` (multipart `file`, PNG or JPEG up to 2 MB; a PNG keeps its transparency, which is how a photo with its background removed in the browser arrives), and `GET`, `PUT` and `DELETE /entries/{id}/car-photo`. Changes are ADMIN or RACE_DIRECTOR and audited; 400 for a bad file or list, 404 for an unknown competitor or entry.
 
 ```http
-GET /boards/sponsors?eventId={id}
+GET /boards/sponsors?eventId={id}&themeId={id}
 ```
-**200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now.
+**200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now. With `themeId` (the overlay opened with `?look=ID`) the overlay theme's own sponsors come back instead when it has any; a theme that is gone or has none falls back to the event's.
 
 Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG or JPEG up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
+
+An overlay theme's sponsors are managed the same way under `/api/v1/admin/overlay-themes/{themeId}/sponsors` (`GET` for any official; changes ADMIN or RACE_DIRECTOR, audited as `OVERLAY_THEME_SPONSOR_*`); 404 for an unknown theme or a sponsor of another theme.
 
 ```http
 GET /boards/ticker?eventId={id}

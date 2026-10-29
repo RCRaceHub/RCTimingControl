@@ -4,10 +4,10 @@ import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+@RaceControlStaff
 public class PracticeRankingController {
 
     private final EventService eventService;
@@ -52,10 +52,10 @@ public class PracticeRankingController {
      */
     @Audited("audit_log")
     @PutMapping("/events/{eventId}/practice-ranking")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
-    public PracticeRankingDto update(Authentication auth, @PathVariable long eventId,
+    @DirectorOrAdmin
+    public PracticeRankingDto update(@PathVariable long eventId,
                                      @Valid @RequestBody PracticeRankingDto request) {
         return new PracticeRankingDto(
-                eventService.setPracticeRanking(CurrentOfficial.actor(auth), eventId, request.ranking()));
+                eventService.setPracticeRanking(CurrentOfficial.actor(), eventId, request.ranking()));
     }
 }

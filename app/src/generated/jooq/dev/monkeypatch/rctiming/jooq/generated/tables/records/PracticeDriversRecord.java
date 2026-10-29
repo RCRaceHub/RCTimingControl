@@ -121,6 +121,6 @@ public class PracticeDriversRecord extends UpdatableRecordImpl<PracticeDriversRe
         setTransponderNumber(transponderNumber);
         setCompetitorId(competitorId);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

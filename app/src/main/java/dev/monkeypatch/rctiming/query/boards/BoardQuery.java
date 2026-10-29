@@ -8,6 +8,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.SortField;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -23,6 +24,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
+import static dev.monkeypatch.rctiming.service.BumpUpSeedingService.ZOMBIE_LETTER;
 
 /**
  * jOOQ read side of the spectator boards (L12).
@@ -134,6 +136,61 @@ public class BoardQuery {
                 .fetch(RACES.ID);
     }
 
+    /** A competitor's earlier heat: the race and the entry the competitor raced it under. */
+    public record PreviousHeat(long raceId, long entryId) {}
+
+    /**
+     * Each competitor's most recent earlier finished heat of the same round type (practice, qualifier or final) in the
+     * same event, for comparing a run with the driver's last one. "Earlier" is by run order: the round's sequence in
+     * the event, then the race's sequence in the round. Abandoned heats are skipped, and so is any competitor with no
+     * such heat, who is left out of the map.
+     *
+     * @param raceId        the heat to compare against; an unknown race gives an empty map
+     * @param competitorIds the competitors to look up
+     */
+    public Map<Long, PreviousHeat> previousHeats(long raceId, Collection<Long> competitorIds) {
+        if (competitorIds.isEmpty()) {
+            return Map.of();
+        }
+        var thisRace = RACES.as("this_race");
+        var thisRound = ROUNDS.as("this_round");
+        Record key = dsl.select(thisRound.EVENT_ID, thisRound.TYPE, thisRound.SEQUENCE_IN_EVENT, thisRace.SEQUENCE_IN_ROUND,
+                        thisRace.EVENT_CLASS_ID)
+                .from(thisRace)
+                .join(thisRound).on(thisRound.ID.eq(thisRace.ROUND_ID))
+                .where(thisRace.ID.eq(raceId))
+                .fetchOne();
+        if (key == null) {
+            return Map.of();
+        }
+        int roundSequence = key.get(thisRound.SEQUENCE_IN_EVENT);
+        int raceSequence = key.get(thisRace.SEQUENCE_IN_ROUND);
+        Map<Long, PreviousHeat> previous = new HashMap<>();
+        // Oldest first, so a later heat replaces an earlier one
+        dsl.select(RACES.ID, ROUNDS.SEQUENCE_IN_EVENT, RACES.SEQUENCE_IN_ROUND, RACE_ENTRIES.ENTRY_ID, ENTRIES.COMPETITOR_ID)
+                .from(RACES)
+                .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
+                .join(RACE_ENTRIES).on(RACE_ENTRIES.RACE_ID.eq(RACES.ID))
+                .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
+                .where(ROUNDS.EVENT_ID.eq(key.get(thisRound.EVENT_ID)))
+                .and(ROUNDS.TYPE.eq(key.get(thisRound.TYPE)))
+                .and(RACES.EVENT_CLASS_ID.eq(key.get(thisRace.EVENT_CLASS_ID)))
+                .and(RACES.STATUS.eq("FINISHED"))
+                .and(RACES.ABANDONED_AT.isNull())
+                .and(RACES.ID.ne(raceId))
+                .and(ENTRIES.COMPETITOR_ID.in(competitorIds))
+                .orderBy(ROUNDS.SEQUENCE_IN_EVENT, RACES.SEQUENCE_IN_ROUND, RACES.ID)
+                .forEach(r -> {
+                    int round = r.get(ROUNDS.SEQUENCE_IN_EVENT);
+                    int race = r.get(RACES.SEQUENCE_IN_ROUND);
+                    if (round < roundSequence || (round == roundSequence && race < raceSequence)) {
+                        previous.put(r.get(ENTRIES.COMPETITOR_ID),
+                                new PreviousHeat(r.get(RACES.ID), r.get(RACE_ENTRIES.ENTRY_ID)));
+                    }
+                });
+        return previous;
+    }
+
     /** The 1-based grid place of each entry in a race; an entry with no grid place is left out. */
     public Map<Long, Integer> gridPositions(long raceId) {
         Map<Long, Integer> grid = new HashMap<>();
@@ -182,7 +239,8 @@ public class BoardQuery {
                         RACES.HEAT_NUMBER,
                         RACES.FINAL_LETTER,
                         RACES.STATUS,
-                        RACING_CLASSES.COLOUR)
+                        RACING_CLASSES.COLOUR,
+                        RACES.EVENT_CLASS_ID)
                 .from(RACES)
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .join(EVENT_CLASSES).on(EVENT_CLASSES.ID.eq(RACES.EVENT_CLASS_ID))
@@ -191,10 +249,43 @@ public class BoardQuery {
                 .and(status)
                 .orderBy(order)
                 .limit(1)
-                .fetchOptional(BoardQuery::toDto);
+                .fetchOptional(this::toDto);
     }
 
-    private static BoardRaceDto toDto(Record r) {
+    /**
+     * The places that move up from a final: the bump slots of the final above it in the same class (B moves into A,
+     * and the zombie round's winner into A). Zero for an A final, a heat, or when the final above does not exist.
+     * Runs on the board's read snapshot, from the thread serving the anonymous board request.
+     *
+     * <p>A final in legs has several races with the letter and only the first holds the slots, so the largest
+     * count is taken. The A final's slots include one for the zombie round's winner (see
+     * {@code BumpUpSeedingService}), which does not come from the final below until the zombie round has ended, so
+     * that place is left out of the count while a zombie race is still to finish.
+     */
+    private int bumpUpPlaces(long eventClassId, String finalLetter) {
+        if (finalLetter == null || finalLetter.length() != 1) {
+            return 0;
+        }
+        if (ZOMBIE_LETTER.equals(finalLetter)) {
+            return 1;
+        }
+        char above = (char) (finalLetter.charAt(0) - 1);
+        if (above < 'A') {
+            return 0;
+        }
+        int slots = dsl.select(DSL.max(RACES.BUMP_SLOTS)).from(RACES)
+                .where(RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(String.valueOf(above)))
+                .fetchOptional(0, Integer.class)
+                .orElse(0);
+        if (above == 'A' && slots > 0 && dsl.fetchExists(RACES,
+                RACES.EVENT_CLASS_ID.eq(eventClassId), RACES.FINAL_LETTER.eq(ZOMBIE_LETTER),
+                RACES.STATUS.ne("FINISHED"))) {
+            slots--;
+        }
+        return slots;
+    }
+
+    private BoardRaceDto toDto(Record r) {
         String roundType = r.get(ROUNDS.TYPE);
         int roundNumber = r.get(ROUNDS.ROUND_NUMBER);
         String className = r.get("className", String.class);
@@ -209,6 +300,7 @@ public class BoardQuery {
                 heatNumber,
                 finalLetter,
                 r.get(RACES.STATUS),
-                r.get(RACING_CLASSES.COLOUR));
+                r.get(RACING_CLASSES.COLOUR),
+                bumpUpPlaces(r.get(RACES.EVENT_CLASS_ID), finalLetter));
     }
 }

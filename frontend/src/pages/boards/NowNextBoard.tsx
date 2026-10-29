@@ -3,15 +3,13 @@
 // chart are on the Live Race screen (LiveRaceBoard). Polls the public board endpoints and, while a race is on
 // track, follows its running order live (useBoardRace).
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getResultsBoard } from '@/lib/boardsApi';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardResultsTable } from './BoardResultsTable';
 import { BOARD_POLL_MS, parseEventParam } from './boardFormat';
 import { NameList, NextStart } from './NextRacePanel';
 import { useNextRaceNames } from './useNextRaceNames';
 import { useBoardRace } from './useBoardRace';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { useResultsBoardQuery } from '@/hooks/useBoardQueries';
 
 export default function NowNextBoard() {
   const [searchParams] = useSearchParams();
@@ -20,11 +18,9 @@ export default function NowNextBoard() {
   const nextRace = nowNext?.nextRace ?? null;
   const lastCompletedRace = nowNext?.lastCompletedRace ?? null;
 
-  const { data: results } = useQuery({
-    queryKey: publicQueryKeys.boards.results(eventId),
-    queryFn: () => getResultsBoard(eventId),
+  const { data: results } = useResultsBoardQuery(eventId, {
+    intervalMs: BOARD_POLL_MS,
     enabled: !currentRace && lastCompletedRace !== null,
-    refetchInterval: BOARD_POLL_MS,
   });
 
   const { nextDrivers, nextMarshals, marshalsPendingText } = useNextRaceNames(nowNext, eventId);

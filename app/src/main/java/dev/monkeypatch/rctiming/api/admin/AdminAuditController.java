@@ -3,8 +3,8 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.query.audit.AuditFilter;
 import dev.monkeypatch.rctiming.query.audit.AuditPageDto;
 import dev.monkeypatch.rctiming.query.audit.AuditQueryService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,7 +18,7 @@ import java.time.Instant;
  */
 @RestController
 @RequestMapping("/api/v1/admin/audit")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class AdminAuditController {
 
     private final AuditQueryService auditQueryService;

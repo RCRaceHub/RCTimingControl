@@ -13,9 +13,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacingClassesRecor
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
@@ -29,13 +27,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -64,7 +63,7 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
     /**
      * The column <code>racing_classes.id</code>.
      */
-    public final TableField<RacingClassesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<RacingClassesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>racing_classes.name</code>.
@@ -168,11 +167,6 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
         return Keys.RACING_CLASSES__PK_RACING_CLASSES;
     }
 
-    @Override
-    public List<UniqueKey<RacingClassesRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.RACING_CLASSES__RACING_CLASSES_NAME_KEY);
-    }
-
     private transient ChampionshipClassesPath _championshipClasses;
 
     /**
@@ -256,7 +250,7 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
      */
     @Override
     public RacingClasses where(Condition condition) {
-        return new RacingClasses(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new RacingClasses(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -323,7 +317,7 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RacingClasses whereExists(Select<?> select) {
+    public RacingClasses whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -331,7 +325,7 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RacingClasses whereNotExists(Select<?> select) {
+    public RacingClasses whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

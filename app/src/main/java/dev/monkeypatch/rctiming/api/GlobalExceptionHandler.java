@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.api;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
-import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
-import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
 import dev.monkeypatch.rctiming.backup.BackupFailedException;
-import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
+import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
+import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
+import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.DateTimeException;
 import java.util.Arrays;
@@ -100,7 +101,7 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleUnreadableBody(HttpMessageNotReadableException ex) {
         if (ex.getCause() instanceof InvalidFormatException invalid && invalid.getTargetType().isEnum()
                 && !invalid.getPath().isEmpty()) {
-            String field = invalid.getPath().get(invalid.getPath().size() - 1).getFieldName();
+            String field = invalid.getPath().get(invalid.getPath().size() - 1).getPropertyName();
             return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, field + " must be one of "
                     + Arrays.toString(invalid.getTargetType().getEnumConstants()) + ", got: " + invalid.getValue());
         }
@@ -142,6 +143,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ProblemDetail handleOfficialChangeRefused(OfficialChangeRefusedException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /** The announcer voice (Piper) can't be reached or has no such voice: 503, so the page can say so. */
+    @ExceptionHandler(TtsUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleTtsUnavailable(TtsUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "The announcer voice is not available"));
     }
 
     /** A controller refused with a status of its own, such as the announcer voice not being installed. */

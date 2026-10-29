@@ -27,7 +27,8 @@ public class OfficialQueryService {
     }
 
     /**
-     * Every official, enabled ones first, then by first and last name (ties by id). Roles are read in a separate
+     * Every official, enabled ones first, then by first and last name (ties by id). A user holding no role is not
+     * an official and cannot sign in, so it is left out. Roles are read in a separate
      * statement, so they come from the same snapshot as the users only because the class is a read transaction.
      */
     public List<OfficialDto> listAll() {
@@ -39,6 +40,7 @@ public class OfficialQueryService {
                         .add(r.get(USER_ROLES.ROLE)));
         return dsl.select(USERS.ID, USERS.EMAIL, USERS.FIRST_NAME, USERS.LAST_NAME, USERS.DISABLED_AT, USERS.CREATED_AT)
                 .from(USERS)
+                .whereExists(DSL.selectOne().from(USER_ROLES).where(USER_ROLES.USER_ID.eq(USERS.ID)))
                 .orderBy(DSL.when(USERS.DISABLED_AT.isNull(), 0).otherwise(1).asc(), USERS.FIRST_NAME.asc(), USERS.LAST_NAME.asc(), USERS.ID.asc())
                 .fetch(r -> new OfficialDto(
                         r.get(USERS.ID),

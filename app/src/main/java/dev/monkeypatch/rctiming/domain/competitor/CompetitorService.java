@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.competitor;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,7 @@ public class CompetitorService {
      * Existing competitors a typed walk-in name may be: the same name, ignoring case and spacing, from
      * any source (#123). Empty when the name is new.
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Competitor> findPossibleDuplicates(String displayName) {
         return competitorRepository.findBySameName(displayName);
     }

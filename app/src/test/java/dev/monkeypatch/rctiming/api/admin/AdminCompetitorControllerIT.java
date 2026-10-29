@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -14,7 +13,7 @@ import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.Map;
@@ -54,28 +54,28 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
 
         ResponseEntity<JsonNode> set = put(token, c.getId(), "  Shiv-awn Keen ");
         assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(set.getBody().get("spokenName").asText()).isEqualTo("Shiv-awn Keen");
+        assertThat(set.getBody().get("spokenName").asString()).isEqualTo("Shiv-awn Keen");
         assertThat(competitorRepository.findById(c.getId()).orElseThrow().getSpokenName()).isEqualTo("Shiv-awn Keen");
 
         JsonNode listed = list(token, c.getId());
-        assertThat(listed.get("spokenName").asText()).isEqualTo("Shiv-awn Keen");
-        assertThat(listed.get("displayName").asText()).isEqualTo(c.getDisplayName());
-        assertThat(listed.get("speechName").asText()).isEqualTo("Shiv-awn Keen");
+        assertThat(listed.get("spokenName").asString()).isEqualTo("Shiv-awn Keen");
+        assertThat(listed.get("displayName").asString()).isEqualTo(c.getDisplayName());
+        assertThat(listed.get("speechName").asString()).isEqualTo("Shiv-awn Keen");
 
         ResponseEntity<JsonNode> history = restTemplate.exchange("/api/v1/admin/competitors/" + c.getId() + "/changes",
                 HttpMethod.GET, new HttpEntity<>(headers(token)), JsonNode.class);
         assertThat(history.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(history.getBody()).hasSize(1);
-        assertThat(history.getBody().get(0).get("by").asText()).isEqualTo("Staff User");
-        assertThat(history.getBody().get(0).get("action").asText()).isEqualTo("SPOKEN_NAME_CHANGED");
+        assertThat(history.getBody().get(0).get("by").asString()).isEqualTo("Staff User");
+        assertThat(history.getBody().get(0).get("action").asString()).isEqualTo("SPOKEN_NAME_CHANGED");
         assertThat(history.getBody().get(0).get("before").isNull()).isTrue();
-        assertThat(history.getBody().get(0).get("after").asText()).isEqualTo("Shiv-awn Keen");
+        assertThat(history.getBody().get(0).get("after").asString()).isEqualTo("Shiv-awn Keen");
 
         ResponseEntity<JsonNode> cleared = put(token, c.getId(), "");
         assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(cleared.getBody().get("spokenName").isNull()).isTrue();
         // With none set, the display name is what is spoken (a name with nothing to tidy is unchanged)
-        assertThat(cleared.getBody().get("speechName").asText()).isEqualTo(c.getDisplayName());
+        assertThat(cleared.getBody().get("speechName").asString()).isEqualTo(c.getDisplayName());
         assertThat(competitorRepository.findById(c.getId()).orElseThrow().getSpokenName()).isNull();
     }
 
@@ -110,9 +110,9 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
                 HttpMethod.GET, new HttpEntity<>(headers(loginAs(Set.of(Role.ADMIN)))), JsonNode.class).getBody();
         assertThat(history).hasSize(2);
         // Newest first
-        assertThat(history.get(0).get("before").asText()).isEqualTo("Desk Fix-ed");
-        assertThat(history.get(0).get("after").asText()).isEqualTo("Desk Fix-ed Again");
-        assertThat(history.get(1).get("after").asText()).isEqualTo("Desk Fix-ed");
+        assertThat(history.get(0).get("before").asString()).isEqualTo("Desk Fix-ed");
+        assertThat(history.get(0).get("after").asString()).isEqualTo("Desk Fix-ed Again");
+        assertThat(history.get(1).get("after").asString()).isEqualTo("Desk Fix-ed");
     }
 
     @Test
@@ -145,7 +145,7 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
                 new HttpEntity<>(headers(admin)), JsonNode.class);
         assertThat(export.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(export.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)).contains("competitor-" + c.getId());
-        assertThat(export.getBody().get("competitor").get("display_name").asText()).isEqualTo(c.getDisplayName());
+        assertThat(export.getBody().get("competitor").get("display_name").asString()).isEqualTo(c.getDisplayName());
 
         assertThat(restTemplate.exchange(url + "/anonymise", HttpMethod.POST,
                 new HttpEntity<>(headers(admin)), JsonNode.class).getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -213,7 +213,7 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
                 HttpMethod.GET, new HttpEntity<>(headers(admin)), JsonNode.class);
         assertThat(preview.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(preview.getBody().get("canMerge").asBoolean()).isTrue();
-        assertThat(preview.getBody().get("resultingSpokenName").asText()).isEqualTo("Dup-ee");
+        assertThat(preview.getBody().get("resultingSpokenName").asString()).isEqualTo("Dup-ee");
 
         ResponseEntity<JsonNode> refused = restTemplate.exchange("/api/v1/admin/competitors/merge", HttpMethod.POST,
                 new HttpEntity<>(Map.of("keepId", keep.getId(), "duplicateId", duplicate.getId()),
@@ -262,9 +262,9 @@ class AdminCompetitorControllerIT extends AbstractIntegrationTest {
             }
         }
         assertThat(group).isNotNull();
-        assertThat(group.get("reason").asText()).isEqualTo("Same name");
+        assertThat(group.get("reason").asString()).isEqualTo("Same name");
         assertThat(group.get("competitors")).hasSize(2);
-        assertThat(group.get("competitors").findValuesAsText("displayName")).contains(b.getDisplayName());
+        assertThat(group.get("competitors").findValuesAsString("displayName")).contains(b.getDisplayName());
     }
 
     private ResponseEntity<JsonNode> put(String token, long id, String spokenName) {

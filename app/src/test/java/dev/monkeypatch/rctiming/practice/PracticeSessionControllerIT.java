@@ -12,7 +12,7 @@ import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -58,6 +58,16 @@ class PracticeSessionControllerIT extends AbstractIntegrationTest {
                 AuthResponse.class);
         assertThat(loginResp.getStatusCode()).isEqualTo(HttpStatus.OK);
         rdToken = loginResp.getBody().accessToken();
+    }
+
+    @Test
+    void createSession_withAnUnknownEvent_answers404() {
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/api/v1/practice-sessions", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", "Nowhere Practice", "eventId", 987654321L), rdHeaders()),
+                String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test

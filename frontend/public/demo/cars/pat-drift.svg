@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180">
+  <title>Demo car photo (placeholder)</title>
+  <rect width="320" height="180" fill="#e5e7eb"/>
+  <rect y="120" width="320" height="60" fill="#9ca3af"/>
+  <path d="M30 118l22-34h60l22-26h96l24 26h36l14 34z" fill="#f97316"/>
+  <path d="M122 82l20-20h72l18 20z" fill="#f97316"/>
+  <rect x="30" y="104" width="260" height="8" fill="#f97316"/>
+  <circle cx="90" cy="124" r="26" fill="#111827"/><circle cx="90" cy="124" r="12" fill="#d1d5db"/>
+  <circle cx="240" cy="124" r="26" fill="#111827"/><circle cx="240" cy="124" r="12" fill="#d1d5db"/>
+</svg>

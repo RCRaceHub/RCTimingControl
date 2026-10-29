@@ -1,8 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import org.springframework.context.ApplicationEventPublisher;
-import dev.monkeypatch.rctiming.timing.RaceClockService;
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -22,12 +19,14 @@ import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
+import dev.monkeypatch.rctiming.timing.RaceClockService;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -36,6 +35,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -140,9 +140,9 @@ class WalkInEntryIT extends AbstractIntegrationTest {
                 new HttpEntity<>(second, headers(adminToken)), JsonNode.class);
 
         JsonNode last = lastTransponders(competitorId);
-        assertThat(last.get("primaryTransponder").asText()).isEqualTo("72" + run);
-        assertThat(last.get("secondaryTransponder").asText()).isEqualTo("73" + run);
-        assertThat(last.get("thirdTransponder").asText()).isEqualTo("74" + run);
+        assertThat(last.get("primaryTransponder").asString()).isEqualTo("72" + run);
+        assertThat(last.get("secondaryTransponder").asString()).isEqualTo("73" + run);
+        assertThat(last.get("thirdTransponder").asString()).isEqualTo("74" + run);
         assertThat(last.get("fourthTransponder").isNull()).isTrue();
     }
 
@@ -172,7 +172,7 @@ class WalkInEntryIT extends AbstractIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(resp.getBody().get("warnings")).hasSize(1);
-        assertThat(resp.getBody().get("warnings").get(0).asText()).contains("67" + run);
+        assertThat(resp.getBody().get("warnings").get(0).asString()).contains("67" + run);
     }
 
     @Test
@@ -212,10 +212,10 @@ class WalkInEntryIT extends AbstractIntegrationTest {
                 "primaryTransponder", "75" + run));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        assertThat(resp.getBody().get("code").asText()).isEqualTo("POSSIBLE_DUPLICATE_COMPETITOR");
+        assertThat(resp.getBody().get("code").asString()).isEqualTo("POSSIBLE_DUPLICATE_COMPETITOR");
         assertThat(resp.getBody().get("matches")).hasSize(1);
         assertThat(resp.getBody().get("matches").get(0).get("id").asLong()).isEqualTo(existing);
-        assertThat(resp.getBody().get("matches").get(0).get("displayName").asText()).isEqualTo("Alex Rowe " + run);
+        assertThat(resp.getBody().get("matches").get(0).get("displayName").asString()).isEqualTo("Alex Rowe " + run);
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
         assertThat(competitorRepository.findBySameName("Alex Rowe " + run)).hasSize(1);
     }

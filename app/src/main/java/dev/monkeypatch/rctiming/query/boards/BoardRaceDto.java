@@ -8,6 +8,8 @@ package dev.monkeypatch.rctiming.query.boards;
  * @param finalLetter the final's letter (such as A), or null for a race that is not a final
  * @param status      the race's lifecycle status name
  * @param classColour the colour the club picked for the class as {@code #rrggbb}, or null for none (#482)
+ * @param bumpUpPlaces how many places at the front of this final move up into the final above it when it ends
+ *                    (that final's bump slots), or 0 when none do (#530)
  */
 public record BoardRaceDto(
         long raceId,
@@ -18,5 +20,6 @@ public record BoardRaceDto(
         int heatNumber,
         String finalLetter,
         String status,
-        String classColour
+        String classColour,
+        int bumpUpPlaces
 ) {}

@@ -82,6 +82,8 @@ Stateless — no server-side session. Access tokens (15-min TTL) are returned in
 
 Format configurations are stored as JSON text (checked with `json_valid`) and converted by `RaceFormatConfigConverter`, a `JsonTextConverter` the format repositories use. The Java type is a sealed interface (`RaceFormatConfig`) with three record subtypes (`TimedRaceConfig`, `BumpUpConfig`, `PointsFinalsConfig`). Jackson's `@JsonTypeInfo` on the interface provides polymorphic serde. A `type` discriminator column on the table enables SQL-side filtering without deserializing the blob.
 
+Jackson here is Jackson 3 (`tools.jackson`). `JacksonConfig` keeps the Jackson 2 defaults that Jackson 3 changed (declared property order, `null` for a primitive reads as zero, enum names), so the stored text and the API output are the same as before. See [development.md](development.md#jackson-3).
+
 Override patches (FORMAT-07) are stored in a second `configOverride` JSON column and merged at read time — base config from the template snapshot, patches applied on top. Template edits do not affect existing event classes (snapshot-at-assignment, FORMAT-06).
 
 ### Race state machine
@@ -102,9 +104,10 @@ The AMB/MyLaps decoder client runs on a dedicated background thread (Netty 4.1, 
 | `/topic/race/{raceId}/marshal` | Marshal lap adjustments |
 | `/topic/race/{raceId}/unknown-transponder` | A transponder that matched no entry, for the referee |
 | `/topic/race/{raceId}/jump-start` | Cars that crossed the line before their turn in a stagger start, for the referee |
-| `/topic/race/{raceId}/audio` | Announcements for the announcer's browser |
+| `/topic/race/{raceId}/audio` | Announcements and start cues for the announcer's browser (from `LiveTimingHub`) |
 | `/topic/race/{raceId}/bump-up-alert` | Bump-up prompts when a race finishes |
 | `/topic/race/{raceId}/warmup` | Entries of a race on the grid that the decoder has seen on the warm-up lap |
+| `/topic/event/{eventId}/auto-run` | An event's auto run state, for open race control pages |
 | `/topic/practice/{sessionId}/timing`, `/unknown-transponder` | Open practice |
 | `/topic/system/decoder-status` | Whether the decoder is connected |
 | `/topic/system/live-feed-status` | Whether the live feed is connected to its relay |

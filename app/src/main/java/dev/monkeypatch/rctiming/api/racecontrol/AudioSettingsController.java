@@ -13,11 +13,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/settings/audio")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR', 'ADMIN')")
+@DirectorOrAdmin
 public class AudioSettingsController {
 
     private final ClubProfileService clubProfileService;
@@ -75,7 +74,7 @@ public class AudioSettingsController {
             ClubAudioSettings.Tuning tuning,
             boolean paceBeeps
     ) {
-        static AudioSettingsDto of(ClubAudioSettings s) {
+        public static AudioSettingsDto of(ClubAudioSettings s) {
             return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
                     s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
                     s.countdownIntervals(),
@@ -143,9 +142,8 @@ public class AudioSettingsController {
      */
     @Audited("audit_log")
     @PatchMapping
-    public ResponseEntity<AudioSettingsDto> updateSettings(Authentication auth,
-                                                           @RequestBody @Valid AudioSettingsPatch patch) {
-        ClubProfile saved = clubProfileService.changeAudioSettings(CurrentOfficial.actor(auth),
+    public ResponseEntity<AudioSettingsDto> updateSettings(@RequestBody @Valid AudioSettingsPatch patch) {
+        ClubProfile saved = clubProfileService.changeAudioSettings(CurrentOfficial.actor(),
                 profile -> {
                     ClubAudioSettings s = profile.getAudioSettings();
                     profile.setAudioSettings(new ClubAudioSettings(

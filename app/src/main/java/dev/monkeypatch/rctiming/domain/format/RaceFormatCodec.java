@@ -1,10 +1,10 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import dev.monkeypatch.rctiming.config.JacksonConfig;
 import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidTypeIdException;
 
 /** Reads and writes a format's config as a JSON or YAML file, for export and import (FORMAT-14). */
 @Component
@@ -31,19 +31,19 @@ public class RaceFormatCodec {
     }
 
     private final ObjectMapper jsonMapper;
-    /** Spring's mapper with a YAML parser, so both file types read and write a config the same way. */
+    /** A YAML mapper set up like the JSON one, so both file types read and write a config the same way. */
     private final ObjectMapper yamlMapper;
 
     public RaceFormatCodec(ObjectMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
-        this.yamlMapper = jsonMapper.copyWith(new YAMLFactory());
+        this.yamlMapper = JacksonConfig.yamlMapper();
     }
 
     /** The config as pretty-printed text in the given file type. */
     public String write(RaceFormatConfig config, FileType fileType) {
         try {
             return mapper(fileType).writerWithDefaultPrettyPrinter().writeValueAsString(config);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Could not write the format config", e);
         }
     }
@@ -60,7 +60,7 @@ public class RaceFormatCodec {
             // Jackson's own message names the Java class
             throw new IllegalArgumentException(
                     "Failed to parse format config: type must be one of TIMED, BUMP_UP, POINTS_FINALS, SHIKABANE", e);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             String where = e.getLocation() == null ? ""
                     : " (line " + e.getLocation().getLineNr() + ", column " + e.getLocation().getColumnNr() + ")";
             throw new IllegalArgumentException("Failed to parse format config: " + e.getOriginalMessage() + where, e);

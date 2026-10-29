@@ -4,43 +4,55 @@
 // never looks like a broken overlay.
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { getLiveQualifying, getRaceClock, getRaceHighlights, getRoundFastestLap, getSponsors, getTicker } from '@/lib/boardsApi';
 import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
   BOARD_POLL_MS,
   fmtClock,
   heatBestLap,
+  overlayDesignFromTheme,
+  overlayQuery,
+  parseEventParam,
   parseOverlayOptions,
   roundBestLap,
   tickerSegments,
   type TickerItem,
 } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
+import { useHighContrast } from '@/hooks/useHighContrast';
+import { TqPace } from '@/components/TqPace';
 import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
 import { useGapView } from '@/hooks/useGapView';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
 import { PositionChart } from '@/components/print/PositionChart';
-import { TimingLegend } from '@/components/TimingLegend';
+import { TimingLegend, type LegendKind } from '@/components/TimingLegend';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
+import { PaceIcon } from '@/components/PaceIcon';
+import { FlyingLapIcon } from '@/components/RowBadges';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
+import { BATTLE_ROW_CLASS, BattleRowTag } from '@/components/BattleRowTag';
 import { BattleStrip } from '@/components/BattleStrip';
+import { DriverMark } from '@/components/DriverMark';
+import { battleChasers } from '@/lib/battles';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
+import { useFeaturedDriver } from '@/hooks/useFeaturedDriver';
+import { useRaceMedia } from '@/hooks/useRaceMedia';
+import { FeaturedLowerThird } from './FeaturedLowerThird';
+import { OverlayZones } from './OverlayZones';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
+import { useBoardSponsorsQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 const THEMES = {
   dark: {
-    panel: 'bg-slate-950/80 text-white',
+    panel: 'dark bg-slate-950/80 text-white',
     muted: 'text-slate-300',
     row: 'border-white/10',
     position: 'bg-white/15',
@@ -97,11 +109,7 @@ function StatsTicker({
   mutedClass: string;
   rowClass: string;
 }) {
-  const { data: round } = useQuery({
-    queryKey: publicQueryKeys.boards.roundFastest(raceId),
-    queryFn: () => getRoundFastestLap(raceId),
-    refetchInterval: BOARD_POLL_MS * 6,
-  });
+  const { data: round } = useRoundFastestQuery(raceId, { intervalMs: BOARD_POLL_MS * 6 });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), TICKER_MS);
@@ -120,11 +128,11 @@ function StatsTicker({
   const [label, value] = stats[tick % stats.length];
   return (
     <div
-      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm [contain:inline-size]', rowClass)}
+      className={cn('flex items-baseline gap-2 border-t px-5 py-2 text-lg [contain:inline-size]', rowClass)}
       aria-label="Race stats"
       aria-live="off"
     >
-      <span className={cn('text-xs uppercase tracking-wide', mutedClass)}>{label}</span>
+      <span className={cn('text-sm uppercase tracking-wide', mutedClass)}>{label}</span>
       <span className="min-w-0 flex-1 truncate font-semibold tabular-nums">{value}</span>
     </div>
   );
@@ -147,7 +155,6 @@ function OverlayTicker({
   rows,
   items,
   panelClass,
-  bottom,
   separatorImage,
 }: {
   eventId: number | null;
@@ -155,28 +162,17 @@ function OverlayTicker({
   rows: LiveTimingRowDto[];
   items: Set<TickerItem>;
   panelClass: string;
-  /** How far the strip sits above the foot of the page, so it clears the sponsor bar when that is showing. */
-  bottom: string;
   /** The address of an image between items instead of the diamond; null keeps the diamond. */
   separatorImage: string | null;
 }) {
-  const { data: ticker } = useQuery({
-    queryKey: publicQueryKeys.boards.ticker(eventId),
-    queryFn: () => getTicker(eventId),
+  const { data: ticker } = useTickerQuery(eventId, {
+    intervalMs: BOARD_POLL_MS * 4,
     enabled: (['next', 'drivers', 'marshals', 'tq'] as const).some(item => items.has(item)),
-    refetchInterval: BOARD_POLL_MS * 4,
   });
-  const { data: round } = useQuery({
-    queryKey: publicQueryKeys.boards.roundFastest(raceId),
-    queryFn: () => getRoundFastestLap(raceId!),
-    enabled: raceId !== null && items.has('fastest'),
-    refetchInterval: BOARD_POLL_MS * 6,
-  });
-  const { data: highlights } = useQuery({
-    queryKey: publicQueryKeys.boards.highlights(raceId),
-    queryFn: () => getRaceHighlights(raceId!),
-    enabled: raceId !== null && (items.has('gain') || items.has('loss') || items.has('pace')),
-    refetchInterval: BOARD_POLL_MS * 4,
+  const { data: round } = useRoundFastestQuery(raceId, { intervalMs: BOARD_POLL_MS * 6, enabled: items.has('fastest') });
+  const { data: highlights } = useRaceHighlightsQuery(raceId, {
+    intervalMs: BOARD_POLL_MS * 4,
+    enabled: items.has('gain') || items.has('loss') || items.has('pace'),
   });
   const segments = tickerSegments(items, ticker, roundBestLap(heatBestLap(rows), round), highlights);
   // After the first pass, new text waits for the line to finish crossing the screen, so a change never makes it
@@ -187,8 +183,7 @@ function OverlayTicker({
   const length = display.reduce((sum, segment) => sum + segment.length + TICKER_GAP_CHARS, 0);
   return (
     <div
-      className={cn('fixed inset-x-0 overflow-hidden py-3 font-sans text-3xl font-semibold', panelClass)}
-      style={{ bottom }}
+      className={cn('overflow-hidden py-3 font-sans text-3xl font-semibold', panelClass)}
       aria-label="Ticker"
     >
       <span
@@ -214,9 +209,8 @@ function OverlayTicker({
 /** Most sponsors shown at once; with more, the bar shows them in turns. */
 const SPONSORS_PER_PAGE = 6;
 const SPONSOR_PAGE_MS = 8000;
-/** The height of the sponsor bar, and of the ticker above it, which the strips and the chart stack on. */
+/** The height of the sponsor bar. */
 const SPONSOR_BAR_REM = 6;
-const TICKER_REM = 5;
 
 /**
  * A bar along the foot of the page with the event's sponsors: logos side by side, or the name where a sponsor has no
@@ -234,7 +228,7 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
   const shown = sponsors.slice((page % pages) * SPONSORS_PER_PAGE, (page % pages + 1) * SPONSORS_PER_PAGE);
   return (
     <div
-      className={cn('fixed inset-x-0 bottom-0 flex items-center justify-center gap-12 px-8 font-sans', panelClass)}
+      className={cn('flex items-center justify-center gap-12 px-8 font-sans', panelClass)}
       style={{ height: `${SPONSOR_BAR_REM}rem` }}
       aria-label="Sponsors"
     >
@@ -251,13 +245,37 @@ function SponsorBar({ sponsors, panelClass }: { sponsors: SponsorDto[]; panelCla
   );
 }
 
-export default function OverlayBoard() {
+/** How often an overlay opened with `?look=ID` re-reads its theme, so an edit in the designer shows on stream. */
+const THEME_POLL_MS = 15000;
+
+/**
+ * The options the overlay draws with. With `?look=ID` they come from that saved theme (only `event` still comes from the
+ * address, as a theme does not pick an event); while the theme loads, or if it is gone, the address's own options apply.
+ * An address with nothing but (at most) `event` is the plain link, and opens the club's default theme when one is set.
+ */
+function useOverlayParams(): { searchParams: URLSearchParams; lookId: number | null } {
   const [searchParams] = useSearchParams();
+  const lookId = parseEventParam(searchParams.get('look'));
+  const plain = lookId === null && [...searchParams.keys()].every((key) => key === 'event');
+  const { data: chosen } = useOverlayThemeQuery(lookId, { intervalMs: THEME_POLL_MS });
+  const { data: defaultLook } = useDefaultOverlayThemeQuery(plain, { intervalMs: THEME_POLL_MS });
+  const look = chosen ?? (plain ? defaultLook : null);
+  return useMemo(() => {
+    if (!look) return { searchParams, lookId };
+    const design = { ...overlayDesignFromTheme(look.design), eventId: parseEventParam(searchParams.get('event')) };
+    return { searchParams: new URLSearchParams(overlayQuery(design)), lookId: look.id };
+  }, [look, searchParams, lookId]);
+}
+
+export default function OverlayBoard() {
+  // The theme the overlay draws with (opened with, or the club's default), whose own sponsors replace the event's when it has any
+  const { searchParams, lookId } = useOverlayParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, gap, gapEverySeconds,
-    separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, showLegend,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, gap,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, placement,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
+  useHighContrast(highContrast);
   const colours = THEMES[theme];
   const gapView = useGapView(gap, gapEverySeconds);
   // The laps column takes turns between laps done and predicted laps on the same period as the gap
@@ -265,18 +283,19 @@ export default function OverlayBoard() {
   useTransparentPage();
 
   const { nowNext, isError, currentRace: race, raceId, rows: allRows } = useBoardRace(eventId);
-  const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
-    queryKey: publicQueryKeys.boards.clock(raceId),
-    queryFn: () => getRaceClock(raceId!),
-    enabled: raceId !== null,
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS });
 
   const remainingAt = useRemainingAt(clock, clockReadAt);
-  const battleGroups = useBattles(showBattles ? raceId : null);
+  const battleGroups = useBattles(showBattles || lowerThird === 'battle' || lowerThird === 'both' ? raceId : null);
   // The grid is bunched up until the field has spread out, so no battle call-outs before a lap has been counted
   const lapCounted = allRows.some(row => row.lapsCompleted >= 1);
+  const battleShowing = showBattles && lapCounted && race?.status === 'RUNNING';
+  // The chasing car's row, when battles are to show on the rows (#681)
+  const battleRows = battleShowing && battleStyle !== 'panel' ? battleChasers(battleGroups) : undefined;
+  const featuredEntryId = useFeaturedDriver(raceId, lowerThird, battleGroups, lapCounted && race?.status === 'RUNNING');
+  const media = useRaceMedia(lowerThird === 'off' && !showHeadshots && !showCarColours ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
+  const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
   const now = useNow(!!clock?.running);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
@@ -285,28 +304,32 @@ export default function OverlayBoard() {
   const tickerEventId = eventId ?? nowNext?.eventId ?? null;
   // Where each driver stands in the event's qualifying table if this heat ended now, refreshed with every lap
   const isQualifier = race?.roundType === 'QUALIFIER';
-  const { data: liveQualifying } = useQuery({
-    queryKey: publicQueryKeys.boards.liveQualifying(tickerEventId),
-    queryFn: () => getLiveQualifying(tickerEventId),
-    enabled: showQualifying && isQualifier && layout === 'tower',
-    refetchInterval: LIVE_QUALIFYING_POLL_MS,
+  const { data: liveQualifying } = useLiveQualifyingQuery(tickerEventId, {
+    intervalMs: LIVE_QUALIFYING_POLL_MS,
+    enabled: (showQualifying || showTqPace) && isQualifier && layout === 'tower',
   });
   const raceIdNow = race?.raceId ?? null;
   const qualifying = useMemo(() => {
-    if (raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
+    if (!showQualifying || raceIdNow === null || liveQualifying?.raceId !== raceIdNow) return undefined;
     return new Map<number, ProjectedQualifying>(
       liveQualifying.rows.map(r => [r.entryId, { position: r.position, previousPosition: r.previousPosition }]),
     );
-  }, [liveQualifying, raceIdNow]);
-  const { data: sponsors = [] } = useQuery({
-    queryKey: publicQueryKeys.boards.sponsors(tickerEventId),
-    queryFn: () => getSponsors(tickerEventId),
-    enabled: showSponsors,
-    refetchInterval: BOARD_POLL_MS * 12,
-  });
+  }, [liveQualifying, raceIdNow, showQualifying]);
+  const tqRow = liveQualifying?.raceId === raceIdNow ? liveQualifying?.rows[0] : undefined;
+  const { data: sponsors = [] } = useBoardSponsorsQuery(tickerEventId, lookId, { intervalMs: BOARD_POLL_MS * 12, enabled: showSponsors });
   const sponsorsShowing = showSponsors && sponsors.length > 0;
-  const tickerBottom = sponsorsShowing ? `${SPONSOR_BAR_REM}rem` : '0px';
-  const chartBottom = `${(sponsorsShowing ? SPONSOR_BAR_REM : 0) + (tickerItems.size > 0 ? TICKER_REM : 0) + 1}rem`;
+
+  const ticker = (raceIdForTicker: number | null, tickerRows: LiveTimingRowDto[]) => (
+    <OverlayTicker
+      eventId={tickerEventId}
+      raceId={raceIdForTicker}
+      rows={tickerRows}
+      items={tickerItems}
+      panelClass={colours.panel}
+      separatorImage={separatorImage}
+    />
+  );
+  const sponsorBar = sponsorsShowing ? <SponsorBar sponsors={sponsors} panelClass={colours.panel} /> : null;
 
   if (!race) {
     const upcoming = nowNext?.nextRace?.label;
@@ -316,25 +339,22 @@ export default function OverlayBoard() {
         ? 'Waiting for the timing server'
         : 'No event in progress';
     return (
-      <div className="p-4">
-        <section
-          className={cn('inline-block max-w-[26rem] rounded-lg px-4 py-2 font-sans shadow-lg', colours.panel)}
-          aria-label="Live timing overlay"
-        >
-          <p className="text-sm font-semibold">{message}</p>
-          {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
-        </section>
-        <OverlayTicker
-          eventId={tickerEventId}
-          raceId={null}
-          rows={[]}
-          items={tickerItems}
-          panelClass={colours.panel}
-          bottom={tickerBottom}
-          separatorImage={separatorImage}
-        />
-        {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
-      </div>
+      <OverlayZones
+        placement={placement}
+        blocks={{
+          tower: (
+            <section
+              className={cn('inline-block max-w-[26rem] rounded-lg px-4 py-2 font-sans shadow-lg', colours.panel)}
+              aria-label="Live timing overlay"
+            >
+              <p className="text-sm font-semibold">{message}</p>
+              {upcoming && <p className={cn('truncate text-xs', colours.muted)}>Next: {upcoming}</p>}
+            </section>
+          ),
+          ticker: ticker(null, []),
+          sponsors: sponsorBar,
+        }}
+      />
     );
   }
 
@@ -342,143 +362,184 @@ export default function OverlayBoard() {
   const clockText =
     elapsed === null ? null : clock?.durationMs != null ? fmtClock(clock.durationMs - elapsed) : fmtClock(elapsed);
 
-  return (
-    <div className="p-4">
-      <section
-        className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
-        aria-label="Live timing overlay"
-      >
-        <header className="flex items-center gap-3 px-4 py-2">
-          {showClass && <h1 className="min-w-0 flex-1 truncate text-base font-semibold">{race.label}</h1>}
-          <div className={cn('flex items-center gap-2', !showClass && 'flex-1 justify-between')}>
-            {race.status === 'STOPPED' && (
-              <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-bold uppercase text-white">Stopped</span>
-            )}
-            {clockText && (
-              <span className="text-xl font-bold tabular-nums" aria-label="Race clock">
-                {clockText}
-              </span>
-            )}
-          </div>
-        </header>
-        {rows.length > 0 && layout === 'tower' && (
-          <OverlayTower
-            rows={rows}
-            allRows={allRows}
-            colours={colours}
-            lapFlash={lapFlash}
-            closeMs={closeMs}
-            showArrows={showArrows && race.finalLetter !== null}
-            barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
-            predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
-            qualifying={qualifying}
-            qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
-            gap={gapView.view}
-            gapFading={gapView.fading}
-            lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
-            lapsFading={lapsView.fading}
-          />
-        )}
-        {rows.length > 0 && layout === 'table' && (
-          <table className="w-full text-sm" aria-label="Running order">
-            <thead className="sr-only">
-              <tr>
-                <th>Position</th>
-                <th>Car</th>
-                <th>Driver</th>
-                <th>Laps</th>
-                <th>Total time</th>
-                <th>Last lap</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(row => {
-                const flash = lapFlash.get(row.entryId);
-                const close = isClose(row, closeMs);
-                return (
-                  <tr
-                    key={row.entryId}
-                    data-close={close || undefined}
-                    className={cn(
-                      'border-t transition-colors',
-                      colours.row,
-                      close && !flash && 'bg-amber-500/25',
-                      flash === 'race-best' && 'bg-purple-500/40',
-                      flash === 'personal-best' && 'bg-blue-500/40',
-                      flash === 'improving' && 'bg-green-500/40',
-                      flash === 'slow' && 'bg-red-500/40',
-                    )}
-                  >
-                    <td className="w-10 py-1 pl-3">
-                      <span
-                        className={cn(
-                          'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
-                          colours.position,
-                        )}
-                      >
-                        {row.position}
-                      </span>
-                                          </td>
-                    <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
-                    <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
-                      <RowStateIcon flash={flash} close={close} className="ml-1" />
-                      {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
-                      {row.finished && <FinishedFlag className="ml-1" />}
-                      {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
-                    </td>
-                    <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
-                    <td className={cn('w-20 py-1 pr-2 text-right tabular-nums', colours.muted)}>
-                      {fmtMs(row.totalTimeMs)}
-                    </td>
-                    <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
-                      {fmtMs(row.lastLapMs)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        {showLegend && rows.length > 0 && (
-          <TimingLegend kinds={closeMs > 0 ? ['lap', 'close'] : ['lap']} className={cn('border-t px-4 py-1.5 text-[10px]', colours.row, colours.muted)} />
-        )}
-      </section>
-      {/* Battles and fastest laps sit apart from the tower, bottom left, clear of the ticker and sponsor bar; the
-          panel hides itself while neither has anything to show. It widens to keep each battle on one line, up to
-          the position chart; the stats row ignores its own text width so rolling stats don't resize the panel */}
-      <section
-        className={cn(
-          'fixed left-4 w-max min-w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
-          colours.panel,
-        )}
-        style={{ bottom: chartBottom, maxWidth: showChart && chartSeries.length > 0 ? 'calc(100vw - 34rem)' : 'calc(100vw - 2rem)' }}
-        aria-label="Battles and fastest laps"
-      >
-        {showBattles && lapCounted && race.status === 'RUNNING' && (
-          <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm [&>*]:flex-nowrap [&>*]:whitespace-nowrap', colours.row)} />
-        )}
-        <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
-      </section>
-      {showChart && chartSeries.length > 0 && (
-        <section
-          className={cn('fixed right-4 w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg', colours.panel)}
-          // Clear of the ticker's strip and the sponsor bar when they are showing
-          style={{ bottom: chartBottom }}
-          aria-label="Position chart"
-        >
-          <PositionChart series={chartSeries} />
-        </section>
+  const towerBlock = (
+    <section
+      className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
+      aria-label="Live timing overlay"
+    >
+      <header className="flex items-center gap-3 px-4 py-2.5">
+        {showClass && <h1 className="min-w-0 flex-1 truncate text-xl font-semibold">{race.label}</h1>}
+        <div className={cn('flex items-center gap-2', !showClass && 'flex-1 justify-between')}>
+          {race.status === 'STOPPED' && (
+            <span className="rounded bg-red-600 px-2 py-0.5 text-sm font-bold uppercase text-white">Stopped</span>
+          )}
+          {clockText && (
+            <span className="text-3xl font-bold tabular-nums" aria-label="Race clock">
+              {clockText}
+            </span>
+          )}
+        </div>
+      </header>
+      {rows.length > 0 && layout === 'tower' && (
+        <OverlayTower
+          rows={rows}
+          allRows={allRows}
+          colours={colours}
+          lapFlash={lapFlash}
+          closeMs={closeMs}
+          showArrows={showArrows && race.finalLetter !== null}
+          classTags={showClassTags}
+          media={media}
+          showHeadshots={showHeadshots}
+          showCarColours={showCarColours}
+          bumpUpPlaces={showBumpLine ? race.bumpUpPlaces ?? 0 : 0}
+          barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
+          predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
+          qualifying={qualifying}
+          qualifyingFinal={liveQualifying?.phase === 'FINISHED'}
+          gap={gapView.view}
+          gapFading={gapView.fading}
+          lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
+          lapsFading={lapsView.fading}
+          battles={battleRows}
+        />
       )}
-      <OverlayTicker
-        eventId={tickerEventId}
-        raceId={race.raceId}
-        rows={allRows}
-        items={tickerItems}
-        panelClass={colours.panel}
-        bottom={tickerBottom}
-        separatorImage={separatorImage}
-      />
-      {sponsorsShowing && <SponsorBar sponsors={sponsors} panelClass={colours.panel} />}
-    </div>
+      {showTqPace && isQualifier && layout === 'tower' && race.status === 'RUNNING' && (
+        <TqPace
+          leader={allRows[0]}
+          tq={tqRow}
+          clock={barClock}
+          remainingAt={remainingAt}
+          className={cn('px-2 py-1 text-[11px] font-semibold', colours.muted)}
+        />
+      )}
+      {rows.length > 0 && layout === 'table' && (
+        <table className="w-full text-sm" aria-label="Running order">
+          <thead className="sr-only">
+            <tr>
+              <th>Position</th>
+              <th>Car</th>
+              <th>Driver</th>
+              <th>Laps</th>
+              <th>Total time</th>
+              <th>Last lap</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => {
+              const flash = lapFlash.get(row.entryId);
+              const close = isClose(row, closeMs);
+              const battle = battleRows?.get(row.entryId);
+              return (
+                <tr
+                  key={row.entryId}
+                  data-close={close || undefined}
+                  className={cn(
+                    'border-t transition-colors',
+                    colours.row,
+                    close && !flash && 'bg-amber-500/25',
+                    battle && BATTLE_ROW_CLASS,
+                    flash === 'race-best' && 'bg-purple-500/40',
+                    flash === 'personal-best' && 'bg-blue-500/40',
+                    flash === 'improving' && 'bg-green-500/40',
+                    flash === 'slow' && 'bg-red-500/40',
+                  )}
+                >
+                  <td className="w-10 py-1 pl-3">
+                    <span
+                      className={cn(
+                        'inline-flex h-6 w-6 items-center justify-center rounded font-bold tabular-nums',
+                        colours.position,
+                      )}
+                    >
+                      {row.position}
+                    </span>
+                  </td>
+                  <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
+                  <td className="max-w-0 truncate py-1 pr-2 font-medium">
+                    <DriverMark
+                      media={media.get(row.entryId)}
+                      classColour={row.classColour}
+                      headshot={showHeadshots}
+                      colours={showCarColours}
+                      imageClassName="h-5 w-5"
+                    />
+                    {row.driverName}
+                    <RowStateIcon flash={flash} close={close} className="ml-1" />
+                    {showBars && race.status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
+                    <FlyingLapIcon row={row} className="ml-1" />
+                    {battle && <BattleRowTag link={battle} className="ml-2 inline-flex align-middle text-xs" />}
+                    {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
+                    {row.finished && <FinishedFlag className="ml-1" />}
+                    {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
+                  </td>
+                  <td className="w-12 py-1 pr-2 text-right tabular-nums">{row.lapsCompleted}</td>
+                  <td className={cn('w-20 py-1 pr-2 text-right tabular-nums', colours.muted)}>
+                    {fmtMs(row.totalTimeMs)}
+                  </td>
+                  <td className={cn('w-20 py-1 pr-4 text-right tabular-nums', colours.muted)}>
+                    {fmtMs(row.lastLapMs)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {showLegend && rows.length > 0 && (
+        <TimingLegend kinds={legendKinds} className={cn('border-t px-4 py-1.5 text-[10px]', colours.row, colours.muted)} />
+      )}
+    </section>
+  );
+
+  // Battles and fastest laps sit apart from the tower; the panel hides itself while neither has anything to show.
+  // It widens to keep each battle on one line, and the stats row ignores its own text width so rolling stats
+  // don't resize the panel
+  const battlesBlock = (
+    <section
+      className={cn(
+        'w-max min-w-[32rem] max-w-full overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
+        colours.panel,
+      )}
+      aria-label="Battles and fastest laps"
+    >
+      {battleShowing && battleStyle !== 'rows' && (
+        <BattleStrip
+          groups={battleGroups}
+          mark={showHeadshots || showCarColours ? (car) => (
+            <DriverMark media={media.get(car.entryId)} headshot={showHeadshots} colours={showCarColours} imageClassName="h-6 w-6" />
+          ) : undefined}
+          className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
+      )}
+      <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
+    </section>
+  );
+  const chartBlock =
+    showChart && chartSeries.length > 0 ? (
+      <section className={cn('w-[28rem] rounded-lg px-3 py-2 font-sans shadow-lg', colours.panel)} aria-label="Position chart">
+        <PositionChart series={chartSeries} />
+      </section>
+    ) : null;
+
+  return (
+    <OverlayZones
+      placement={placement}
+      blocks={{
+        tower: towerBlock,
+        battles: battlesBlock,
+        chart: chartBlock,
+        lowerThird: (
+          <FeaturedLowerThird
+            entryId={featuredEntryId}
+            rows={allRows}
+            media={media}
+            panelClass={colours.panel}
+            mutedClass={colours.muted}
+          />
+        ),
+        ticker: ticker(race.raceId, allRows),
+        sponsors: sponsorBar,
+      }}
+    />
   );
 }

@@ -78,6 +78,10 @@ The simulator prints each PASSING record to stdout.
 
 Set the decoder's IP address as the host in **Admin → Decoder**. Port 5100 is the RC-4 text protocol (firmware ≤ 4.4). See `docs/AMB_DECODER_PROTOCOL.md` in the source repository for protocol details.
 
+### Recording a real decoder to a file
+
+To capture real race data as test data, or to share one decoder between several programs, see [recording-the-decoder.md](recording-the-decoder.md).
+
 ---
 
 ## Status

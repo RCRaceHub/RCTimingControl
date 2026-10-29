@@ -59,7 +59,8 @@ export type PositionSeries = {
 
 /**
  * One line per driver for the position chart, in finishing order; a driver with no laps is left out. A line is the
- * place the driver held on completing each lap, as the result stored it; none when no place ever changed.
+ * place the driver held on completing each lap, as the result stored it, after a lap 0 point for the grid place when
+ * one was stored (a driver without one starts at lap 1); none when no place ever changed.
  */
 export function positionSeries(positions: ResultRow[], lapHistory: PositionAtLap[]): PositionSeries[] {
   const series = [...positions]

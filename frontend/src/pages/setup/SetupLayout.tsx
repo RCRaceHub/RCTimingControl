@@ -16,6 +16,7 @@ import TrackStep from './steps/TrackStep';
 import FormatStep from './steps/FormatStep';
 import StaffStep from './steps/StaffStep';
 import DecoderConfigStep from './steps/DecoderConfigStep';
+import NetworkNameStep from './steps/NetworkNameStep';
 import SetupCompletePage from './SetupCompletePage';
 
 type StepState = 'complete' | 'current' | 'incomplete';
@@ -62,12 +63,13 @@ function StepItem({
   );
 }
 
-const STEPS: { key: 'club' | 'track' | 'format' | 'staff' | 'decoder'; label: string }[] = [
+const STEPS: { key: 'club' | 'track' | 'format' | 'staff' | 'decoder' | 'network'; label: string }[] = [
   { key: 'club', label: 'Club Profile' },
   { key: 'track', label: 'Track' },
   { key: 'format', label: 'Race Format' },
   { key: 'staff', label: 'Staff Account' },
   { key: 'decoder', label: 'Decoder Config' },
+  { key: 'network', label: 'Network Name' },
 ];
 
 function SidebarContent({
@@ -85,7 +87,8 @@ function SidebarContent({
 
   function getStepState(key: string, index: number): StepState {
     if (!progress) return index === 0 ? 'current' : 'incomplete';
-    const isComplete = progress[key as keyof typeof progress] as boolean;
+    // The network name step is optional and has no server-side progress, so it is only ever "current" or "incomplete"
+    const isComplete = progress[key as keyof typeof progress] as boolean | undefined;
     if (isComplete) return 'complete';
     // Current = matches the active step tracked by SetupLayout
     if (index + 1 === currentStep) return 'current';
@@ -154,7 +157,9 @@ export default function SetupLayout() {
       else if (!progress.format) setCurrentStep(3);
       else if (!progress.staff) setCurrentStep(4);
       else if (!progress.decoder) setCurrentStep(5);
-      else setCurrentStep(6); // all complete: show the summary
+      // All required steps are done. On first load show the summary; after that (saving the decoder step refetches
+      // the progress) stay on, or move to, the optional network step instead of jumping past it
+      else setCurrentStep((s) => (seenProgress === undefined ? 7 : s <= 5 ? 6 : s));
     }
   }
 
@@ -180,7 +185,7 @@ export default function SetupLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  const handleNext = () => setCurrentStep((s) => Math.min(s + 1, 6));
+  const handleNext = () => setCurrentStep((s) => Math.min(s + 1, 7));
   const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
   // In re-entry mode (setup already complete), sidebar steps are clickable
@@ -202,6 +207,9 @@ export default function SetupLayout() {
       break;
     case 5:
       stepContent = <DecoderConfigStep onNext={handleNext} onBack={handleBack} />;
+      break;
+    case 6:
+      stepContent = <NetworkNameStep onNext={handleNext} onBack={handleBack} />;
       break;
     default:
       stepContent = <SetupCompletePage />;

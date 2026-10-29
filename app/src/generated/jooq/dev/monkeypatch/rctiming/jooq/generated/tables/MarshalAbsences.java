@@ -32,13 +32,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -67,7 +68,7 @@ public class MarshalAbsences extends TableImpl<MarshalAbsencesRecord> {
     /**
      * The column <code>marshal_absences.id</code>.
      */
-    public final TableField<MarshalAbsencesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<MarshalAbsencesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>marshal_absences.race_id</code>.
@@ -274,7 +275,7 @@ public class MarshalAbsences extends TableImpl<MarshalAbsencesRecord> {
      */
     @Override
     public MarshalAbsences where(Condition condition) {
-        return new MarshalAbsences(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new MarshalAbsences(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -341,7 +342,7 @@ public class MarshalAbsences extends TableImpl<MarshalAbsencesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public MarshalAbsences whereExists(Select<?> select) {
+    public MarshalAbsences whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -349,7 +350,7 @@ public class MarshalAbsences extends TableImpl<MarshalAbsencesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public MarshalAbsences whereNotExists(Select<?> select) {
+    public MarshalAbsences whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

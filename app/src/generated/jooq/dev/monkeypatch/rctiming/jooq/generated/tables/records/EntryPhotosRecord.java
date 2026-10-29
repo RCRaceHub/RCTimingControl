@@ -6,7 +6,6 @@ package dev.monkeypatch.rctiming.jooq.generated.tables.records;
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
@@ -90,6 +89,6 @@ public class EntryPhotosRecord extends UpdatableRecordImpl<EntryPhotosRecord> {
         setId(id);
         setEntryId(entryId);
         setCarPhotoUrl(carPhotoUrl);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

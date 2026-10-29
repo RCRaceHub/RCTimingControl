@@ -30,7 +30,7 @@ export default function HttpsCard() {
   }
 
   const restartNotice = data.restartNeeded && (
-    <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
+    <p role="status" className="rounded-md border border-warning/50 bg-warning/10 p-3">
       The setting is saved: HTTPS will be {data.switchedOn ? 'on' : 'off'} after RC Timing is restarted
       (restart the service, or the container).
     </p>

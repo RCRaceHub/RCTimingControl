@@ -6,14 +6,13 @@ import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.HornSoundService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -98,7 +97,7 @@ public class AdminAudioController {
 
     /** The club's audio settings and default voice. {@code GET /settings}; ADMIN or RACE_DIRECTOR. */
     @GetMapping("/settings")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public ResponseEntity<AudioSettingsDto> getAudioSettings() {
         // "" until a voice is chosen, so the page's select shows its placeholder
         return ResponseEntity.ok(AudioSettingsDto.of(
@@ -112,10 +111,9 @@ public class AdminAudioController {
      */
     @Audited("audit_log")
     @PutMapping("/settings")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ResponseEntity<AudioSettingsDto> saveAudioSettings(Authentication auth,
-                                                              @RequestBody @Valid AudioSettingsDto dto) {
-        clubProfileService.changeAudioSettings(CurrentOfficial.actor(auth), profile -> {
+    @DirectorOrAdmin
+    public ResponseEntity<AudioSettingsDto> saveAudioSettings(@RequestBody @Valid AudioSettingsDto dto) {
+        clubProfileService.changeAudioSettings(CurrentOfficial.actor(), profile -> {
             ClubAudioSettings kept = profile.getAudioSettings();
             profile.setAudioSettings(new ClubAudioSettings(
                     dto.announceCountdown(),
@@ -156,15 +154,16 @@ public class AdminAudioController {
      * ({@code start}, {@code finish}, {@code tick}, {@code lap-beep}, {@code faster-beep} or
      * {@code slower-beep}); {@code file} is the sound (at most 1 MB) and {@code durationMs} how long it plays, so
      * race control can wait that long before a spoken line. 400 for a missing, oversized or unsupported file or a
-     * duration outside 100 to 10000 ms. Answers with the club's sounds as saved.
+     * duration outside 100 to 10000 ms;
+     * 404 for a horn name that is not one of those. Answers with the club's sounds as saved.
      */
     @Audited("audit_log")
     @PutMapping(value = "/horns/{horn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ClubAudioSettings.HornSounds uploadHorn(Authentication auth, @PathVariable String horn,
+    @DirectorOrAdmin
+    public ClubAudioSettings.HornSounds uploadHorn(@PathVariable String horn,
                                                     @RequestPart("file") MultipartFile file,
                                                     @RequestParam int durationMs) {
-        return hornSoundService.upload(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn), file, durationMs)
+        return hornSoundService.upload(CurrentOfficial.actor(), HornSoundService.Horn.of(horn), file, durationMs)
                 .hornSounds();
     }
 
@@ -174,8 +173,8 @@ public class AdminAudioController {
      */
     @Audited("audit_log")
     @DeleteMapping("/horns/{horn}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public ClubAudioSettings.HornSounds removeHorn(Authentication auth, @PathVariable String horn) {
-        return hornSoundService.remove(CurrentOfficial.actor(auth), HornSoundService.Horn.of(horn)).hornSounds();
+    @DirectorOrAdmin
+    public ClubAudioSettings.HornSounds removeHorn(@PathVariable String horn) {
+        return hornSoundService.remove(CurrentOfficial.actor(), HornSoundService.Horn.of(horn)).hornSounds();
     }
 }

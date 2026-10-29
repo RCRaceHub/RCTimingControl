@@ -72,6 +72,7 @@ export type ResultRow = {
 };
 
 export type PositionAtLap = {
+  /** 0 is the grid (the starting place, no lap time); results stored before it existed have no lap 0. */
   lapNumber: number;
   entryId: number;
   position: number;
@@ -94,6 +95,8 @@ export type ResultSnapshotDto = {
 
 export type LiveTimingRowDto = {
   entryId: number;
+  /** The car's class colour as #rrggbb, for the overlay's class tags when a run mixes classes (#532); absent for none. */
+  classColour?: string | null;
   driverName: string;
   carNumber: string | null;
   position: number;
@@ -115,6 +118,8 @@ export type LiveTimingRowDto = {
   timePenaltyMs?: number;
   /** The car's 1-based place on the grid; absent or null when it had none. */
   startPosition?: number | null;
+  /** The car's latest lap was a flying lap (beat the average of its earlier laps); shows a flame until its next lap. */
+  flyingLap?: boolean;
 };
 
 export type RaceStateChangeDto = {
@@ -198,6 +203,11 @@ export async function restartRace(raceId: number): Promise<void> {
 
 export async function skipToRace(raceId: number, targetRaceId: number): Promise<void> {
   await api.post(`/api/v1/race-control/race/${raceId}/skip-to`, { targetRaceId });
+}
+
+/** Asks the streaming overlay to show a lower third for one car of the race (#533). */
+export async function featureDriver(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/featured-driver`, { entryId });
 }
 
 /** Moves a pending final one place earlier or later in the event's run order (only when a final runs in legs). */

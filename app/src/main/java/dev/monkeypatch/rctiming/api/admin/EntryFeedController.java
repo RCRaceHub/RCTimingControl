@@ -1,14 +1,15 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.SaveRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeed;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedStatus;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +27,7 @@ import java.time.Instant;
  */
 @RestController
 @RequestMapping("/api/v1/admin/events/{eventId}/entry-feed")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class EntryFeedController {
 
     private final EntryFeedService feedService;
@@ -48,16 +49,17 @@ public class EntryFeedController {
      */
     @Audited("audit_log")
     @PutMapping
-    public EntryFeedDto save(Authentication auth, @PathVariable long eventId, @RequestBody SaveRequest request) {
-        return EntryFeedDto.of(feedService.save(CurrentOfficial.actor(auth), eventId, request.url(), request.token(),
+    public EntryFeedDto save(@PathVariable long eventId,
+                             @RequestBody @Valid SaveRequest request) {
+        return EntryFeedDto.of(feedService.save(CurrentOfficial.actor(), eventId, request.url(), request.token(),
                 Boolean.TRUE.equals(request.autoFetch())));
     }
 
     /** Removes the event's feed settings. {@code DELETE}; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping
-    public ResponseEntity<Void> delete(Authentication auth, @PathVariable long eventId) {
-        feedService.delete(CurrentOfficial.actor(auth), eventId);
+    public ResponseEntity<Void> delete(@PathVariable long eventId) {
+        feedService.delete(CurrentOfficial.actor(), eventId);
         return ResponseEntity.noContent().build();
     }
 
@@ -82,16 +84,9 @@ public class EntryFeedController {
      */
     @Audited("audit_log")
     @PostMapping("/apply")
-    public ResponseEntity<RaceHubImportResult> apply(Authentication auth, @PathVariable long eventId) {
-        RaceHubImportResult result = feedService.applyHeld(CurrentOfficial.actor(auth), eventId);
+    public ResponseEntity<RaceHubImportResult> apply(@PathVariable long eventId) {
+        RaceHubImportResult result = feedService.applyHeld(CurrentOfficial.actor(), eventId);
         return ImportResponses.of(result);
-    }
-
-    /**
-     * The body of {@code PUT}: the address of the Entry Export file, its access token (see {@code save}) and whether
-     * the app fetches it by itself (null counts as off).
-     */
-    public record SaveRequest(String url, String token, Boolean autoFetch) {
     }
 
     /**

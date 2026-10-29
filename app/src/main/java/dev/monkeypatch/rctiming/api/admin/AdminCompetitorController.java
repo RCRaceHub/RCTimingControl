@@ -1,33 +1,33 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.CategoriesRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.MergeRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.NameVisibilityRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SpeechPreviewRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SpokenNameRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorAnonymiseService;
-import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorCategoryService;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorNameVisibilityService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
-import dev.monkeypatch.rctiming.domain.competitor.NameVisibility;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
-import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorChangeDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDataExportService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorDuplicateGroupDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorQueryService;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorSummaryDto;
 import dev.monkeypatch.rctiming.query.competitor.CompetitorTransponderDto;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/admin/competitors")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminCompetitorController {
 
     private final CompetitorQueryService competitorQueryService;
@@ -102,7 +101,7 @@ public class AdminCompetitorController {
      * {@code GET /possible-duplicates}; ADMIN.
      */
     @GetMapping("/possible-duplicates")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<CompetitorDuplicateGroupDto> possibleDuplicates() {
         return competitorQueryService.listPossibleDuplicates();
     }
@@ -112,13 +111,10 @@ public class AdminCompetitorController {
      * {@code GET /merge-preview}; ADMIN. Changes nothing; the preview lists any {@code blockers}.
      */
     @GetMapping("/merge-preview")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public CompetitorMergeService.Preview mergePreview(@RequestParam Long keepId, @RequestParam Long duplicateId) {
         return mergeService.preview(keepId, duplicateId);
     }
-
-    /** The body of {@code POST /merge}: the competitor to keep and the duplicate to fold into it. */
-    public record MergeRequest(@NotNull Long keepId, @NotNull Long duplicateId) {}
 
     /**
      * Moves the duplicate's entries onto the kept competitor and deletes the duplicate, in one
@@ -126,9 +122,9 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PostMapping("/merge")
-    @PreAuthorize("hasRole('ADMIN')")
-    public CompetitorMergeService.Result merge(Authentication auth, @Valid @RequestBody MergeRequest body) {
-        return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id(auth));
+    @AdminOnly
+    public CompetitorMergeService.Result merge(@Valid @RequestBody MergeRequest body) {
+        return mergeService.merge(body.keepId(), body.duplicateId(), CurrentOfficial.id());
     }
 
     /**
@@ -137,13 +133,13 @@ public class AdminCompetitorController {
      * browsers must not cache.
      */
     @GetMapping("/{id}/personal-data")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> personalData(Authentication auth, @PathVariable Long id) {
+    @AdminOnly
+    public ResponseEntity<Map<String, Object>> personalData(@PathVariable Long id) {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"competitor-" + id + ".json\"")
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(exportService.export(id, CurrentOfficial.id(auth)));
+                .body(exportService.export(id, CurrentOfficial.id()));
     }
 
     /**
@@ -153,24 +149,17 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/anonymise")
-    @PreAuthorize("hasRole('ADMIN')")
-    public CompetitorAnonymiseService.Result anonymise(Authentication auth, @PathVariable Long id) {
-        return anonymiseService.anonymise(id, CurrentOfficial.id(auth));
+    @AdminOnly
+    public CompetitorAnonymiseService.Result anonymise(@PathVariable Long id) {
+        return anonymiseService.anonymise(id, CurrentOfficial.id());
     }
 
     /** Who changed how a competitor's name is said aloud, and when. {@code GET /{id}/changes}; ADMIN. */
     @GetMapping("/{id}/changes")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<CompetitorChangeDto> changes(@PathVariable Long id) {
         return competitorQueryService.listChanges(id);
     }
-
-    /** The body of {@code PUT /{id}/spoken-name}: how the name is said aloud. Null or blank clears it. */
-    public record SpokenNameRequest(String spokenName) {}
-
-    /** The body of {@code POST /spoken-name/preview}: the text to hear in the club's voice, required. */
-    public record SpeechPreviewRequest(
-            @NotBlank @Size(max = CompetitorService.MAX_SPOKEN_NAME_LENGTH) String text) {}
 
     /**
      * Set, change or clear how a competitor's name is said aloud (#119). Any official may, since it is
@@ -179,15 +168,12 @@ public class AdminCompetitorController {
      */
     @Audited("competitor_audit_log")
     @PutMapping("/{id}/spoken-name")
-    public CompetitorSummaryDto setSpokenName(Authentication auth, @PathVariable Long id,
+    public CompetitorSummaryDto setSpokenName(@PathVariable Long id,
                                               @RequestBody SpokenNameRequest body) {
-        Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id(auth));
+        Competitor c = competitorService.setSpokenName(id, body.spokenName(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
-
-    /** The body of {@code PUT /{id}/name-visibility}: how the name is shown on public screens. */
-    public record NameVisibilityRequest(@NotNull NameVisibility nameVisibility) {}
 
     /**
      * Shows the competitor's full name, initials only, or no name on every public screen and in the live feed
@@ -196,16 +182,13 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/name-visibility")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorSummaryDto setNameVisibility(Authentication auth, @PathVariable Long id,
+    @DirectorOrAdmin
+    public CompetitorSummaryDto setNameVisibility(@PathVariable Long id,
                                                   @Valid @RequestBody NameVisibilityRequest body) {
-        Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id(auth));
+        Competitor c = nameVisibilityService.set(id, body.nameVisibility(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
-
-    /** The body of {@code PUT /{id}/categories}: the tags the driver holds; an empty list clears them. */
-    public record CategoriesRequest(@NotNull List<@Size(max = 30) String> categories) {}
 
     /**
      * Sets the category tags a competitor holds, such as Junior, Vet or F-Grade, which a championship can split
@@ -214,10 +197,10 @@ public class AdminCompetitorController {
      */
     @Audited("audit_log")
     @PutMapping("/{id}/categories")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorSummaryDto setCategories(Authentication auth, @PathVariable Long id,
+    @DirectorOrAdmin
+    public CompetitorSummaryDto setCategories(@PathVariable Long id,
                                               @Valid @RequestBody CategoriesRequest body) {
-        Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id(auth));
+        Competitor c = categoryService.set(id, body.categories(), CurrentOfficial.id());
         return new CompetitorSummaryDto(c.getId(), c.getDisplayName(), c.getBrcaNumber(), c.getHomeClub(),
                 c.getSpokenName(), c.speechName(), c.getNameVisibility().name(), c.categoryTags());
     }
@@ -229,12 +212,8 @@ public class AdminCompetitorController {
      */
     @PostMapping("/spoken-name/preview")
     public ResponseEntity<byte[]> previewSpokenName(@Valid @RequestBody SpeechPreviewRequest body) {
-        try {
-            // No club voice: null leaves it to Piper's configured default
-            byte[] wav = piperClient.synthesize(body.text().trim(), clubProfileService.defaultVoiceId().orElse(null));
-            return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).body(wav);
-        } catch (TtsUnavailableException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "The announcer voice is not available");
-        }
+        // No club voice: null leaves it to Piper's configured default
+        byte[] wav = piperClient.synthesize(body.text().trim(), clubProfileService.defaultVoiceId().orElse(null));
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("audio/wav")).body(wav);
     }
 }

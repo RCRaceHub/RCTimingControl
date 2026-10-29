@@ -22,6 +22,7 @@ import { getAudioSettings } from '@/lib/audioApi';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
+import { FeaturedDriverPanel } from './panels/FeaturedDriverPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { QualifyingTablePanel } from './panels/QualifyingTablePanel';
 import { FinalsLineupPanel } from './panels/FinalsLineupPanel';
@@ -562,6 +563,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Unknown Transponders</p>
@@ -614,6 +616,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
           </div>
         );
 
@@ -714,7 +717,7 @@ function CockpitView() {
         {audio.blocked && (
           <div
             role="status"
-            className="m-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900"
+            className="m-3 rounded border border-warning/50 bg-warning/10 p-3 text-xs"
           >
             <p>This browser is blocking sound until you click on the page.</p>
             <Button size="sm" variant="outline" className="mt-2 w-full text-xs" onClick={audio.unlock}>
@@ -745,7 +748,7 @@ function CockpitView() {
       </>
       )}
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6 short:p-3">
         {renderMainPanel()}
       </main>
 

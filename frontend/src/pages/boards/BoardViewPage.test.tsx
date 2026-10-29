@@ -98,7 +98,7 @@ describe('BoardViewPage', () => {
       },
     ]);
     vi.mocked(getRaceMedia).mockResolvedValue([
-      { entryId: 5, headshotUrl: '/storage/h.png', carPhotoUrl: '/storage/c.png', sponsors: ['Acme Tyres', 'Bolt Motors'] },
+      { entryId: 5, headshotUrl: '/storage/h.png', carPhotoUrl: '/storage/c.png', sponsors: ['Acme Tyres', 'Bolt Motors'], carColours: [] },
     ]);
 
     renderView();

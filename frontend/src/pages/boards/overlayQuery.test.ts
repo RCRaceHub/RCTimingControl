@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayQuery, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
+import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayDesignFromTheme, overlayQuery, themeDesignToSave, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
 
 describe('overlayQuery', () => {
   it('writes nothing for the default design', () => {
@@ -19,6 +19,27 @@ describe('overlayQuery', () => {
       eventId: 7, top: 8, theme: 'light', layout: 'table', showSponsors: false, showChart: false, closeMs: 2000,
     });
     expect([...read.tickerItems]).toEqual(['next', 'tq']);
+  });
+
+  it('writes the bump line, TQ pace and class tags switches only when off, and reads them back', () => {
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showBumpLine: false, showTqPace: false, showClassTags: false });
+    expect(query).toBe('?bump=hide&tqpace=hide&tags=hide');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ showBumpLine: false, showTqPace: false, showClassTags: false });
+    expect(parseOverlayOptions(new URLSearchParams('')))
+      .toMatchObject({ showBumpLine: true, showTqPace: true, showClassTags: true });
+  });
+
+  it('writes the lower third trigger only when it is not both, and reads it back', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, lowerThird: 'director' })).toBe('?lower=director');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=battle')).lowerThird).toBe('battle');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=off')).lowerThird).toBe('off');
+    expect(parseOverlayOptions(new URLSearchParams('?lower=nonsense')).lowerThird).toBe('both');
+    expect(parseOverlayOptions(new URLSearchParams('')).lowerThird).toBe('both');
+  });
+
+  it('writes contrast=high only when asked, and reads it back', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, highContrast: true })).toBe('?contrast=high');
+    expect(parseOverlayOptions(new URLSearchParams('?contrast=high')).highContrast).toBe(true);
   });
 
   it('writes the colour key only when asked, and the boards default the other way', () => {
@@ -68,5 +89,66 @@ describe('ticker separator image', () => {
     expect(parseSeparatorImage('//evil.example/x.png')).toBeNull();
     expect(parseSeparatorImage(null)).toBeNull();
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, separatorImage: 'javascript:alert(1)' })).toBe('');
+  });
+});
+
+describe('overlayDesignFromTheme', () => {
+  it('keeps what a theme sets and defaults the rest, ignoring wrong types and unknown fields', () => {
+    const design = overlayDesignFromTheme({
+      theme: 'light', layout: 'table', top: 6, showSponsors: false, gap: 'sideways', showChart: 'yes',
+      tickerItems: ['next', 'nonsense'], separatorImage: 'javascript:alert(1)', extra: 1,
+    });
+
+    expect(design.theme).toBe('light');
+    expect(design.layout).toBe('table');
+    expect(design.top).toBe(6);
+    expect(design.showSponsors).toBe(false);
+    expect(design.gap).toBe('int');
+    expect(design.showChart).toBe(true);
+    expect(design.tickerItems).toEqual(['next']);
+    expect(design.separatorImage).toBeNull();
+    expect(design.eventId).toBeNull();
+  });
+
+  it('gives the default design for something that is not an object', () => {
+    expect(overlayDesignFromTheme(null)).toEqual(DEFAULT_OVERLAY_DESIGN);
+    expect(overlayDesignFromTheme([1])).toEqual(DEFAULT_OVERLAY_DESIGN);
+  });
+
+  it('round-trips through the overlay address', () => {
+    const design = { ...DEFAULT_OVERLAY_DESIGN, theme: 'light' as const, top: 6, showSponsors: false };
+    expect(overlayDesignFromTheme(themeDesignToSave(design))).toEqual(design);
+  });
+});
+
+describe('parseSeparatorImage', () => {
+  it('refuses a backslash path that browsers read as another host', () => {
+    expect(parseSeparatorImage('/\\evil.com/x.png')).toBeNull();
+    expect(parseSeparatorImage('//evil.com/x.png')).toBeNull();
+    expect(parseSeparatorImage('/storage/x.png')).toBe('/storage/x.png');
+  });
+});
+
+describe('battle style', () => {
+  it('is left off the address while it is the panel and written when it is not', () => {
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, battleStyle: 'rows' })).toBe('?battlestyle=rows');
+    expect(parseOverlayOptions(new URLSearchParams('battlestyle=both')).battleStyle).toBe('both');
+    expect(parseOverlayOptions(new URLSearchParams('battlestyle=nonsense')).battleStyle).toBe('panel');
+  });
+
+  it('is read from a saved theme and ignores an unknown value', () => {
+    expect(overlayDesignFromTheme({ battleStyle: 'both' }).battleStyle).toBe('both');
+    expect(overlayDesignFromTheme({ battleStyle: 'flashy' }).battleStyle).toBe('panel');
+  });
+});
+
+describe('driver pictures', () => {
+  it('are left off the address until asked for and read back (#686, #688)', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showHeadshots: true, showCarColours: true });
+    expect(query).toBe('?headshots=show&carcolours=show');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ showHeadshots: true, showCarColours: true });
+    expect(parseOverlayOptions(new URLSearchParams(''))).toMatchObject({ showHeadshots: false, showCarColours: false });
+    expect(overlayDesignFromTheme({ showHeadshots: true }).showHeadshots).toBe(true);
   });
 });

@@ -1,15 +1,16 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.CarColoursRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.SponsorsRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService.CompetitorMediaView;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,13 +26,14 @@ import java.util.List;
 
 /**
  * The optional pictures and sponsors of drivers (#520), under {@code /api/v1/admin}: a competitor's headshot and
- * sponsors at {@code /competitors/{id}/media}, and an entry's car photo at {@code /entries/{id}/car-photo}. Reads
+ * sponsors at {@code /competitors/{id}/media}, and an entry's car photo at {@code /entries/{id}/car-photo} and its car
+ * colours at {@code /entries/{id}/car-colours} (#685). Reads
  * are open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad file or
  * list answers 400 and a missing competitor or entry 404.
  */
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminDriverMediaController {
 
     private final DriverMediaService service;
@@ -40,11 +42,11 @@ public class AdminDriverMediaController {
         this.service = service;
     }
 
-    /** The body of a sponsors change: up to five names. */
-    public record SponsorsRequest(@Size(max = 5) List<String> names) {}
-
     /** The answer for a car photo: its address, null when the entry has none. */
     public record CarPhotoResponse(String url) {}
+
+    /** The answer for car colours: {@code #rrggbb} values in order, empty when none are set. */
+    public record CarColoursResponse(List<String> colours) {}
 
     /** A competitor's headshot and sponsors. {@code GET /competitors/{id}/media}; read only. */
     @GetMapping("/competitors/{id}/media")
@@ -55,9 +57,9 @@ public class AdminDriverMediaController {
     /** Replaces the sponsors. {@code PUT /competitors/{id}/media/sponsors}; ADMIN or RACE_DIRECTOR; 400. Audited. */
     @Audited("audit_log")
     @PutMapping("/competitors/{id}/media/sponsors")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView setSponsors(Authentication auth, @PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
-        return service.setSponsors(CurrentOfficial.actor(auth), id, request.names() == null ? List.of() : request.names());
+    @DirectorOrAdmin
+    public CompetitorMediaView setSponsors(@PathVariable long id, @RequestBody @Valid SponsorsRequest request) {
+        return service.setSponsors(CurrentOfficial.actor(), id, request.names() == null ? List.of() : request.names());
     }
 
     /**
@@ -66,18 +68,18 @@ public class AdminDriverMediaController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/competitors/{id}/media/headshot", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView uploadHeadshot(Authentication auth, @PathVariable long id,
+    @DirectorOrAdmin
+    public CompetitorMediaView uploadHeadshot(@PathVariable long id,
                                               @RequestPart("file") MultipartFile file) {
-        return service.uploadHeadshot(CurrentOfficial.actor(auth), id, file);
+        return service.uploadHeadshot(CurrentOfficial.actor(), id, file);
     }
 
     /** Removes the headshot. {@code DELETE /competitors/{id}/media/headshot}; ADMIN or RACE_DIRECTOR. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/competitors/{id}/media/headshot")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CompetitorMediaView deleteHeadshot(Authentication auth, @PathVariable long id) {
-        return service.deleteHeadshot(CurrentOfficial.actor(auth), id);
+    @DirectorOrAdmin
+    public CompetitorMediaView deleteHeadshot(@PathVariable long id) {
+        return service.deleteHeadshot(CurrentOfficial.actor(), id);
     }
 
     /** An entry's car photo. {@code GET /entries/{id}/car-photo}; read only. */
@@ -92,18 +94,32 @@ public class AdminDriverMediaController {
      */
     @Audited("audit_log")
     @PutMapping(value = "/entries/{id}/car-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public CarPhotoResponse uploadCarPhoto(Authentication auth, @PathVariable long id,
+    @DirectorOrAdmin
+    public CarPhotoResponse uploadCarPhoto(@PathVariable long id,
                                            @RequestPart("file") MultipartFile file) {
-        return new CarPhotoResponse(service.uploadCarPhoto(CurrentOfficial.actor(auth), id, file));
+        return new CarPhotoResponse(service.uploadCarPhoto(CurrentOfficial.actor(), id, file));
     }
 
     /** Removes the car photo. {@code DELETE /entries/{id}/car-photo}; ADMIN or RACE_DIRECTOR; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/entries/{id}/car-photo")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCarPhoto(Authentication auth, @PathVariable long id) {
-        service.deleteCarPhoto(CurrentOfficial.actor(auth), id);
+    public void deleteCarPhoto(@PathVariable long id) {
+        service.deleteCarPhoto(CurrentOfficial.actor(), id);
+    }
+
+    /** An entry's car colours. {@code GET /entries/{id}/car-colours}; read only. */
+    @GetMapping("/entries/{id}/car-colours")
+    public CarColoursResponse getCarColours(@PathVariable long id) {
+        return new CarColoursResponse(service.carColours(id));
+    }
+
+    /** Replaces the car colours; an empty list clears them. {@code PUT /entries/{id}/car-colours}; ADMIN or RACE_DIRECTOR; 400. Audited. */
+    @Audited("audit_log")
+    @PutMapping("/entries/{id}/car-colours")
+    @DirectorOrAdmin
+    public CarColoursResponse setCarColours(@PathVariable long id, @RequestBody @Valid CarColoursRequest request) {
+        return new CarColoursResponse(service.setCarColours(CurrentOfficial.actor(), id, request.colours()));
     }
 }

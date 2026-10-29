@@ -43,6 +43,10 @@ import static dev.monkeypatch.rctiming.jooq.generated.Tables.USER_ROLES;
  * user who ran it. Run without an email, it lists the admins.
  * <p>
  * The data directory is found the way the app finds it, as for {@code restore}.
+ * <p>
+ * It is the one place outside the persistence and query packages that uses a {@code DSLContext} directly: it
+ * runs with the app stopped, on its own JDBC connection, so no repository bean exists to use (see "Backend
+ * package layout" in {@code docs/development.md}).
  */
 public final class ResetAdminPasswordCommand {
 

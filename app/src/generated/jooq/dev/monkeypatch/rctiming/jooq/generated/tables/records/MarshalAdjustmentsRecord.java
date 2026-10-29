@@ -181,6 +181,6 @@ public class MarshalAdjustmentsRecord extends UpdatableRecordImpl<MarshalAdjustm
         setActingUserId(actingUserId);
         setActingUserName(actingUserName);
         setAdjustedAt(adjustedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

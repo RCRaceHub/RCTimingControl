@@ -26,6 +26,6 @@ final class ImportResponses {
     }
 
     private static <T> ResponseEntity<T> answer(T result, boolean refused) {
-        return ResponseEntity.status(refused ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.OK).body(result);
+        return ResponseEntity.status(refused ? HttpStatus.UNPROCESSABLE_CONTENT : HttpStatus.OK).body(result);
     }
 }

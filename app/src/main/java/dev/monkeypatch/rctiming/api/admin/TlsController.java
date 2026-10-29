@@ -1,25 +1,22 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.TlsSettingRequest;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.infrastructure.settings.SettingsFile;
 import dev.monkeypatch.rctiming.infrastructure.tls.TlsService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -32,7 +29,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/tls")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class TlsController {
 
     private final TlsService tls;
@@ -41,8 +38,9 @@ public class TlsController {
     private final int httpPort;
 
     public TlsController(TlsService tls, AuditService audit, SettingsFile settings,
-                         @Value("${server.port:8080}") int httpPort) {
-        this.httpPort = httpPort;
+            ObjectProvider<ServerProperties> server) {
+        ServerProperties properties = server.getIfAvailable();
+        this.httpPort = properties == null || properties.getPort() == null ? 8080 : properties.getPort();
         this.tls = tls;
         this.audit = audit;
         this.settings = settings;
@@ -54,12 +52,7 @@ public class TlsController {
      */
     public record TlsStateDto(boolean enabled, int port, List<String> urls, List<String> names,
                               Instant caExpires, Instant serverExpires, String caFingerprint,
-                              boolean switchedOn, int configuredPort, boolean restartNeeded) {
-    }
-
-    /** The body of {@code PUT /setting}. */
-    public record TlsSettingRequest(@NotNull Boolean enabled, @Min(1) @Max(65535) Integer port) {
-    }
+                              boolean switchedOn, int configuredPort, boolean restartNeeded) {}
 
     /** Whether HTTPS is on, its addresses, the names and expiry of the certificates. {@code GET}; read only. */
     @GetMapping
@@ -74,16 +67,16 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PutMapping("/setting")
-    public TlsStateDto change(Authentication auth, @RequestBody @Valid TlsSettingRequest request) {
+    public TlsStateDto change(@RequestBody @Valid TlsSettingRequest request) {
         if (request.port() != null && request.port() == httpPort) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+            throw new IllegalArgumentException(
                     "Port " + httpPort + " is already used by plain HTTP; choose another for HTTPS");
         }
         settings.set("rctiming.https.enabled", String.valueOf(request.enabled()));
         if (request.port() != null) {
             settings.set("rctiming.https.port", String.valueOf(request.port()));
         }
-        audit.entry(CurrentOfficial.actor(auth), "TLS_SETTING_CHANGED").entity("tls", "setting")
+        audit.entry(CurrentOfficial.actor(), "TLS_SETTING_CHANGED").entity("tls", "setting")
                 .summary((request.enabled() ? "Switched HTTPS on" : "Switched HTTPS off")
                         + " for the next start" + (request.port() == null ? "" : " on port " + request.port()))
                 .recordStandalone();
@@ -113,10 +106,10 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PostMapping("/regenerate-server")
-    public TlsStateDto regenerateServer(Authentication auth) {
+    public TlsStateDto regenerateServer() {
         requireEnabled();
         tls.regenerateServer();
-        audit.entry(CurrentOfficial.actor(auth), "TLS_SERVER_CERTIFICATE_REGENERATED").entity("tls", "server")
+        audit.entry(CurrentOfficial.actor(), "TLS_SERVER_CERTIFICATE_REGENERATED").entity("tls", "server")
                 .summary("Made the HTTPS server certificate again").recordStandalone();
         return state();
     }
@@ -127,17 +120,17 @@ public class TlsController {
      */
     @Audited("audit_log")
     @PostMapping("/regenerate-ca")
-    public TlsStateDto regenerateCa(Authentication auth) {
+    public TlsStateDto regenerateCa() {
         requireEnabled();
         tls.regenerateCa();
-        audit.entry(CurrentOfficial.actor(auth), "TLS_CA_REGENERATED").entity("tls", "ca")
+        audit.entry(CurrentOfficial.actor(), "TLS_CA_REGENERATED").entity("tls", "ca")
                 .summary("Made the club certificate authority again; devices must install the new one").recordStandalone();
         return state();
     }
 
     private void requireEnabled() {
         if (!tls.active()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
+            throw new StateConflictException(
                     "HTTPS is switched off. Set rctiming.https.enabled=true and restart.");
         }
     }

@@ -22,6 +22,7 @@ import {
   type AudioSettingsDto,
 } from '@/lib/audioApi';
 import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
+import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { HornSoundsCard } from './HornSoundsCard';
 import { AudioRoutingCard } from './AudioRoutingCard';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
@@ -37,8 +38,10 @@ export default function AdminAudioSettingsPage() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: (s: AudioSettingsDto) => saveAdminAudioSettings(s),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+    onSuccess: async () => {
+      // Show the server's copy once it is read back, so a setting the server normalised is not left looking unsaved
+      await queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+      setLocalSettings(null);
       toast.success('Audio settings saved.');
     },
     onError: () => toast.error('Failed to save settings.'),
@@ -50,6 +53,8 @@ export default function AdminAudioSettingsPage() {
   });
 
   const displaySettings = localSettings ?? settings;
+  // Edits are kept until Save, so the page differs from the server's copy while any are waiting
+  const hasUnsaved = localSettings !== null && JSON.stringify(localSettings) !== JSON.stringify(settings);
 
   // The saved voice stays in the list even when Piper no longer offers it, so the picker never looks empty
   const savedVoiceId = displaySettings?.defaultVoiceId;
@@ -89,6 +94,14 @@ export default function AdminAudioSettingsPage() {
             </div>
           ) : displaySettings ? (
             <>
+              <AudioTemplatesBar
+                unsaved={
+                  hasUnsaved
+                    ? { save: () => saveSettingsMutation.mutateAsync(localSettings), discard: () => setLocalSettings(null) }
+                    : null
+                }
+              />
+
               {ANNOUNCEMENT_TOGGLES.map(({ key, label }) => (
                 <div key={key} className="flex items-center justify-between h-10">
                   <Label htmlFor={`admin-toggle-${key}`}>{label}</Label>
@@ -105,6 +118,7 @@ export default function AdminAudioSettingsPage() {
                 <Label htmlFor="admin-start-countdown" className="shrink-0">Start lead-in</Label>
                 <Input
                   id="admin-start-countdown"
+                  key={displaySettings.startCountdownSeconds}
                   type="number"
                   min={0}
                   max={60}

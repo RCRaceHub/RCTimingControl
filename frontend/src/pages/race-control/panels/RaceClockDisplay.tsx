@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { getForcedClose, type RaceClockDto } from '@/lib/boardsApi';
 import { fmtClock } from '@/pages/boards/boardFormat';
 
@@ -10,7 +11,7 @@ import { fmtClock } from '@/pages/boards/boardFormat';
  */
 function ForcedCloseCountdown({ raceId }: { raceId: number }) {
   const { data, dataUpdatedAt, isError } = useQuery({
-    queryKey: ['forced-close', raceId],
+    queryKey: publicQueryKeys.boards.forcedClose(raceId),
     queryFn: () => getForcedClose(raceId),
     refetchInterval: 3000,
     gcTime: 0,

@@ -132,7 +132,7 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
       {feed?.waiting && (
         <div
           role="status"
-          className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm dark:border-amber-700 dark:bg-amber-950"
+          className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border border-warning/50 bg-warning/10 px-3 py-2 text-sm"
         >
           <p className="flex-1">
             {feed.lastStatus === 'WAITING' && feed.lastMessage ? (

@@ -41,6 +41,29 @@ describe('BackupsPage', () => {
     expect(screen.getByText('/media/usb/rctiming')).toBeInTheDocument();
   });
 
+  it('shows the last backup and prompts to copy one off after a race day closes', async () => {
+    const recent = new Date(Date.now() - 3_600_000).toISOString();
+    api.backups.list.mockResolvedValue({
+      directory: '/data/backups',
+      backups: [{ name: 'rctiming-day-close.db', sizeBytes: 2048, createdAt: recent, reason: 'day-close' }],
+    });
+    renderPage();
+
+    expect(await screen.findByText('Copy a backup off the laptop')).toBeInTheDocument();
+    expect(screen.getByText(/Last backup:/)).toBeInTheDocument();
+  });
+
+  it('does not prompt when the last race day closed long ago', async () => {
+    api.backups.list.mockResolvedValue({
+      directory: '/data/backups',
+      backups: [{ name: 'old.db', sizeBytes: 2048, createdAt: '2026-01-01T22:00:00Z', reason: 'day-close' }],
+    });
+    renderPage();
+
+    await screen.findByText('old.db');
+    expect(screen.queryByText('Copy a backup off the laptop')).not.toBeInTheDocument();
+  });
+
   it('takes a backup now and refreshes the list', async () => {
     api.backups.list.mockResolvedValue({ directory: '/data/backups', backups: [] });
     api.backups.create.mockResolvedValue({

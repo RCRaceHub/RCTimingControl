@@ -5,17 +5,17 @@ import dev.monkeypatch.rctiming.api.admin.dto.AdminCreateEntryRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.AdminWithdrawRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.EntryDto;
 import dev.monkeypatch.rctiming.api.admin.dto.EntryResult;
-import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryService;
 import dev.monkeypatch.rctiming.query.entry.AdminEntryDto;
 import dev.monkeypatch.rctiming.query.entry.AdminEntryQueryService;
 import dev.monkeypatch.rctiming.query.entry.EntryHistoryDto;
 import dev.monkeypatch.rctiming.query.entry.EntryHistoryQuery;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,22 +34,19 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/entries")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class AdminEntryController {
 
     private final EntryService entryService;
     private final AdminEntryQueryService adminEntryQueryService;
     private final EntryHistoryQuery entryHistoryQuery;
-    private final EntryRepository entryRepository;
 
     public AdminEntryController(EntryService entryService,
                                 AdminEntryQueryService adminEntryQueryService,
-                                EntryHistoryQuery entryHistoryQuery,
-                                EntryRepository entryRepository) {
+                                EntryHistoryQuery entryHistoryQuery) {
         this.entryService = entryService;
         this.adminEntryQueryService = adminEntryQueryService;
         this.entryHistoryQuery = entryHistoryQuery;
-        this.entryRepository = entryRepository;
     }
 
     /** The entries in one class of an event. {@code GET /events/{eventId}/classes/{classId}}; read only. */
@@ -64,9 +61,8 @@ public class AdminEntryController {
      * {@code GET /{id}/history}; 404 if the entry does not exist.
      */
     @GetMapping("/{id}/history")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public List<EntryHistoryDto> getHistory(@PathVariable long id) {
-        entryRepository.requireExists(id);
         return entryHistoryQuery.forEntry(id);
     }
 
@@ -81,9 +77,9 @@ public class AdminEntryController {
     @Audited("entry_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
-    public EntryResult createEntry(Authentication auth, @RequestBody @Valid AdminCreateEntryRequest req) {
-        EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(auth),
+    @DirectorOrAdmin
+    public EntryResult createEntry(@RequestBody @Valid AdminCreateEntryRequest req) {
+        EntryService.WalkInResult result = entryService.adminCreateEntry(CurrentOfficial.id(),
                 new EntryService.WalkIn(req.eventId(), req.eventClassId(), req.competitorId(), req.competitorName(),
                         req.primaryTransponder(), req.secondaryTransponder(), req.confirmNewCompetitor(),
                         req.thirdTransponder(), req.fourthTransponder()));
@@ -96,10 +92,9 @@ public class AdminEntryController {
      */
     @Audited("entry_audit_log")
     @PostMapping("/{id}/withdraw")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR')")
+    @DirectorOrAdmin
     public EntryDto withdrawEntry(@PathVariable Long id,
-                                  Authentication auth,
                                   @RequestBody @Valid AdminWithdrawRequest req) {
-        return EntryDto.from(entryService.adminWithdraw(id, CurrentOfficial.id(auth), req.reason()));
+        return EntryDto.from(entryService.adminWithdraw(id, CurrentOfficial.id(), req.reason()));
     }
 }

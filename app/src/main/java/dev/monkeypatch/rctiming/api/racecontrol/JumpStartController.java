@@ -1,9 +1,8 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
-import dev.monkeypatch.rctiming.domain.race.RaceRepository;
-import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
+import dev.monkeypatch.rctiming.service.RaceControlService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,15 +17,13 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/race-control/race/{raceId}/jump-starts")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class JumpStartController {
 
-    private final LapTimingService lapTimingService;
-    private final RaceRepository raceRepository;
+    private final RaceControlService raceControlService;
 
-    public JumpStartController(LapTimingService lapTimingService, RaceRepository raceRepository) {
-        this.lapTimingService = lapTimingService;
-        this.raceRepository = raceRepository;
+    public JumpStartController(RaceControlService raceControlService) {
+        this.raceControlService = raceControlService;
     }
 
     /**
@@ -35,7 +32,6 @@ public class JumpStartController {
      */
     @GetMapping
     public List<JumpStartDto> getJumpStarts(@PathVariable long raceId) {
-        raceRepository.requireExists(raceId);
-        return lapTimingService.jumpStartsOf(raceId);
+        return raceControlService.jumpStarts(raceId);
     }
 }

@@ -3,7 +3,7 @@ import type { StateKind } from '@/components/StateIcon';
 import { cn } from '@/lib/utils';
 
 /** The groups of colours the timing views use; a view lists the ones it shows. */
-export type LegendKind = 'lap' | 'close' | 'movement';
+export type LegendKind = 'lap' | 'close' | 'pace' | 'status' | 'movement';
 
 interface LegendItem {
   /** A solid Tailwind background in the hue of the row tint it explains; empty for a plain lead-in. */
@@ -19,22 +19,25 @@ const state = (swatch: string, icon: StateKind): LegendItem => ({ swatch, icon, 
 /**
  * What each colour means, in one place so every view says the same thing. The lap colours are the ones
  * {@code useLapFlash} gives a row for a moment after a lap; close is the tint for a car running near the one
- * ahead; movement is the places gained or lost in the qualifying tables.
+ * ahead; pace is the thumbs up and down for a car on or off pace for its predicted laps; status is the lapped, penalty and no-signal markers; movement is the places gained or lost in the qualifying tables.
  */
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
     { swatch: '', label: 'Flashes after each lap:' },
-    state('bg-purple-500', 'race-best'),
-    state('bg-blue-500', 'personal-best'),
-    state('bg-green-500', 'improving'),
-    state('bg-red-500', 'slow'),
+    state('bg-race-best', 'race-best'),
+    state('bg-info', 'personal-best'),
+    state('bg-success', 'improving'),
+    state('bg-destructive', 'slow'),
+    state('', 'flying'),
   ],
-  close: [state('bg-amber-500', 'close')],
+  close: [state('bg-warning', 'close')],
+  pace: [state('', 'on-pace'), state('', 'off-pace')],
+  status: [state('', 'lapped'), state('', 'penalty'), state('', 'no-signal')],
   movement: [
-    { swatch: 'bg-emerald-500', label: 'Moved up' },
-    { swatch: 'bg-rose-500', label: 'Moved down' },
-    { swatch: 'bg-sky-500', label: 'New to the table' },
-    { swatch: 'bg-amber-500', label: 'Heat on track' },
+    { swatch: 'bg-success', label: 'Moved up' },
+    { swatch: 'bg-destructive', label: 'Moved down' },
+    { swatch: 'bg-info', label: 'New to the table' },
+    { swatch: 'bg-warning', label: 'Heat on track' },
   ],
 };
 

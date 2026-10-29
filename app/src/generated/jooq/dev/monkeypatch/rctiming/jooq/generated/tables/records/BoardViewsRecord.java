@@ -151,6 +151,6 @@ public class BoardViewsRecord extends UpdatableRecordImpl<BoardViewsRecord> {
         setPanels(panels);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

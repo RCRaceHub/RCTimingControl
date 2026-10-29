@@ -136,6 +136,6 @@ public class UnknownTransponderLinkRecord extends UpdatableRecordImpl<UnknownTra
         setEntryId(entryId);
         setLinkedByUserId(linkedByUserId);
         setLinkedAt(linkedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

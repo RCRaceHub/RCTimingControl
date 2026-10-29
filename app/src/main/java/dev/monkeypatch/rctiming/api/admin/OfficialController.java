@@ -1,22 +1,18 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.AddOfficialRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.PasswordRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.RolesRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.user.OfficialService;
-import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.query.official.OfficialChangeDto;
 import dev.monkeypatch.rctiming.query.official.OfficialDto;
 import dev.monkeypatch.rctiming.query.official.OfficialQueryService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +24,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * The Officials page (#61): add officials, change their roles, set a new password, and disable or
@@ -36,7 +31,7 @@ import java.util.Set;
  */
 @RestController
 @RequestMapping("/api/v1/admin/officials")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class OfficialController {
 
     /** How many changes a page of the history holds unless the request asks for fewer or more. */
@@ -51,21 +46,6 @@ public class OfficialController {
         this.officialService = officialService;
         this.officialQueryService = officialQueryService;
     }
-
-    /** The body of {@code POST}: a new official's email, name, password (8 or more characters) and roles. */
-    public record AddOfficialRequest(
-            @NotBlank @Email String email,
-            @NotBlank @Size(max = 100) String firstName,
-            @NotBlank @Size(max = 100) String lastName,
-            @NotBlank @Size(min = OfficialService.MIN_PASSWORD_LENGTH) String password,
-            @NotEmpty Set<Role> roles
-    ) {}
-
-    /** The body of {@code PUT /{id}/roles}: the official's full set of roles, which replaces the old one. */
-    public record RolesRequest(@NotEmpty Set<Role> roles) {}
-
-    /** The body of {@code PUT /{id}/password}: the new password, 8 or more characters. */
-    public record PasswordRequest(@NotNull @Size(min = OfficialService.MIN_PASSWORD_LENGTH) String password) {}
 
     /** Every official. {@code GET}; ADMIN; read only. */
     @GetMapping
@@ -90,9 +70,9 @@ public class OfficialController {
     @Audited("official_audit_log")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OfficialDto add(@RequestBody @Valid AddOfficialRequest request, Authentication auth) {
+    public OfficialDto add(@RequestBody @Valid AddOfficialRequest request) {
         User user = officialService.add(request.email(), request.firstName(), request.lastName(),
-                request.password(), request.roles(), CurrentOfficial.id(auth));
+                request.password(), request.roles(), CurrentOfficial.id());
         return toDto(user);
     }
 
@@ -102,8 +82,8 @@ public class OfficialController {
      */
     @Audited("official_audit_log")
     @PutMapping("/{id}/roles")
-    public OfficialDto changeRoles(@PathVariable long id, @RequestBody @Valid RolesRequest request, Authentication auth) {
-        return toDto(officialService.changeRoles(id, request.roles(), CurrentOfficial.id(auth)));
+    public OfficialDto changeRoles(@PathVariable long id, @RequestBody @Valid RolesRequest request) {
+        return toDto(officialService.changeRoles(id, request.roles(), CurrentOfficial.id()));
     }
 
     /**
@@ -113,8 +93,8 @@ public class OfficialController {
     @Audited("official_audit_log")
     @PutMapping("/{id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void setPassword(@PathVariable long id, @RequestBody @Valid PasswordRequest request, Authentication auth) {
-        officialService.setPassword(id, request.password(), CurrentOfficial.id(auth));
+    public void setPassword(@PathVariable long id, @RequestBody @Valid PasswordRequest request) {
+        officialService.setPassword(id, request.password(), CurrentOfficial.id());
     }
 
     /**
@@ -123,15 +103,15 @@ public class OfficialController {
      */
     @Audited("official_audit_log")
     @PostMapping("/{id}/disable")
-    public OfficialDto disable(@PathVariable long id, Authentication auth) {
-        return toDto(officialService.disable(id, CurrentOfficial.id(auth)));
+    public OfficialDto disable(@PathVariable long id) {
+        return toDto(officialService.disable(id, CurrentOfficial.id()));
     }
 
     /** Enables a disabled official again. {@code POST /{id}/enable}; ADMIN. Recorded in the officials audit log. */
     @Audited("official_audit_log")
     @PostMapping("/{id}/enable")
-    public OfficialDto enable(@PathVariable long id, Authentication auth) {
-        return toDto(officialService.enable(id, CurrentOfficial.id(auth)));
+    public OfficialDto enable(@PathVariable long id) {
+        return toDto(officialService.enable(id, CurrentOfficial.id()));
     }
 
     private static OfficialDto toDto(User user) {

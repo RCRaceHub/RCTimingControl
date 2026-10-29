@@ -35,7 +35,10 @@ public final class CurrentOfficial {
         }
     }
 
-    /** For code that is not handed the request's {@link Authentication}. */
+    /**
+     * The id of the signed-in official, read from the security context. Controllers use this form, so their
+     * methods don't take an {@link Authentication} just to find out who is acting.
+     */
     public static long id() {
         return id(SecurityContextHolder.getContext().getAuthentication());
     }
@@ -45,7 +48,7 @@ public final class CurrentOfficial {
         return Actor.official(id(auth));
     }
 
-    /** As {@link #actor(Authentication)}, for code that is not handed the request's {@link Authentication}. */
+    /** As {@link #actor(Authentication)}, from the security context; the form controllers use. */
     public static Actor actor() {
         return Actor.official(id());
     }

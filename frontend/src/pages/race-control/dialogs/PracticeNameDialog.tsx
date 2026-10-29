@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -18,7 +17,7 @@ import { ChosenCompetitor, CompetitorChoices } from '@/components/CompetitorPick
 import { useAdminCompetitorsList } from '@/hooks/admin/useAdminCompetitors';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import type { CompetitorSummaryDto } from '@/lib/adminApi';
-import { getApiErrorMessage } from '@/lib/errors';
+import { getApiErrorData, getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 import { linkTransponder } from '@/lib/practiceApi';
 
 interface PracticeNameDialogProps {
@@ -88,8 +87,8 @@ export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenC
       void queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.practice.results(sessionId) });
       handleOpenChange(false);
     } catch (err) {
-      const data = axios.isAxiosError(err) ? err.response?.data : undefined;
-      if (axios.isAxiosError(err) && err.response?.status === 409 && data?.code === 'POSSIBLE_DUPLICATE_COMPETITOR') {
+      const data = getApiErrorData(err);
+      if (getApiErrorStatus(err) === 409 && data?.code === 'POSSIBLE_DUPLICATE_COMPETITOR') {
         setPossibleDuplicates(data.matches ?? []);
       } else {
         setError(getApiErrorMessage(err, 'Could not name the transponder. Check your connection and try again.'));
@@ -137,7 +136,7 @@ export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenC
                   </p>
                 )}
                 {exactMatch && (
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <p className="text-xs text-warning">
                     {exactMatch.displayName} is already a driver. Pick them from the list to use their record. If
                     you add “{driverText.trim()}” as typed, you will be asked whether it is the same person.
                   </p>
@@ -147,7 +146,7 @@ export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenC
           </div>
 
           {possibleDuplicates.length > 0 && (
-            <div role="alert" className="space-y-2 rounded-md border border-amber-500 p-3 text-sm">
+            <div role="alert" className="space-y-2 rounded-md border border-warning p-3 text-sm">
               <p className="font-medium">
                 {possibleDuplicates.length === 1
                   ? `${possibleDuplicates[0].displayName} already exists. Is this the same person?`

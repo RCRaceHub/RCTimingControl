@@ -5,7 +5,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +46,8 @@ import EventSponsorsSection from './EventSponsorsSection';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatDateTime, formatEventDate } from '@/lib/dates';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
+import { QueryError } from '@/components/QueryError';
 
 const VALID_NEXT: Record<EventStatus, EventStatus[]> = {
   DRAFT: ['PUBLISHED'],
@@ -149,11 +150,11 @@ export default function EventDetailPage() {
       await transitionMutation.mutateAsync(target);
       toast.success(`Event is now ${eventStatusLabel[target]}`);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
+      if (getApiErrorStatus(err) === 409) {
         void refetch();
         toast.error('This transition is no longer valid. Refresh the page to see the current event status.');
       } else {
-        toast.error('Event could not be updated. Check your connection and try again.');
+        toast.error(getApiErrorMessage(err, 'Event could not be updated. Check your connection and try again.'));
       }
     }
   }
@@ -189,14 +190,12 @@ export default function EventDetailPage() {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-        <p className="text-muted-foreground">Failed to load event.</p>
-        <Button variant="outline" onClick={() => void refetch()}>Retry</Button>
+      <QueryError variant="page" message="Failed to load event." onRetry={refetch}>
         <Button variant="ghost" onClick={() => navigate('/admin/events')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Events
         </Button>
-      </div>
+      </QueryError>
     );
   }
 

@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,7 +142,7 @@ public class ChampionshipService {
     }
 
     /** Every championship, in a read-only transaction. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Championship> listAll() {
         return championshipRepository.findAll();
     }
@@ -151,7 +152,7 @@ public class ChampionshipService {
      *
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if there is no such championship (HTTP 404)
      */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public Detail getDetail(Long id) {
         Championship c = getChampionshipOrThrow(id);
         return new Detail(c,
@@ -349,7 +350,7 @@ public class ChampionshipService {
     }
 
     /** A championship's exclusions, newest first, each with the name of the official who recorded it. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Exclusion> listExclusions(Long championshipId) {
         championshipRepository.requireExists(championshipId);
         List<ChampionshipExclusion> exclusions =

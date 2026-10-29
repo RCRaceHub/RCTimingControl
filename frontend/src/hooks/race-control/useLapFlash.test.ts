@@ -28,7 +28,7 @@ describe('useLapFlash', () => {
     rerender({
       rows: [
         // fastest of the race
-        row(1, { lapsCompleted: 1, lastLapMs: 15000, bestLapMs: 15000, overallFastestLapMs: 15000 }),
+        row(1, { lapsCompleted: 2, lastLapMs: 15000, bestLapMs: 15000, overallFastestLapMs: 15000 }),
         // personal best, not the race's fastest
         row(2, { lapsCompleted: 1, lastLapMs: 16000, bestLapMs: 16000, overallFastestLapMs: 15000 }),
         // well above the running average
@@ -42,6 +42,12 @@ describe('useLapFlash', () => {
     expect(result.current.get(2)).toBe('personal-best');
     expect(result.current.get(3)).toBe('slow');
     expect(result.current.get(4)).toBe('improving');
+  });
+
+  it('does not give the first lap, from a standing start, the race-best star', () => {
+    const { result, rerender } = renderHook(({ rows }) => useLapFlash(rows), { initialProps: { rows: [row(1)] } });
+    rerender({ rows: [row(1, { lapsCompleted: 1, lastLapMs: 15000, bestLapMs: 15000, overallFastestLapMs: 15000 })] });
+    expect(result.current.get(1)).toBe('personal-best');
   });
 
   it('compares with the driver\'s previous lap', () => {

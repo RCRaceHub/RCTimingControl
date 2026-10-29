@@ -136,6 +136,6 @@ public class RacingClassesRecord extends UpdatableRecordImpl<RacingClassesRecord
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setColour(colour);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

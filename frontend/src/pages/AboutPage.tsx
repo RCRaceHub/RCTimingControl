@@ -45,7 +45,7 @@ export default function AboutPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Release</span>
-            <span className="text-amber-600 font-medium">Early pre-release</span>
+            <span className="text-warning font-medium">Early pre-release</span>
           </div>
         </div>
 

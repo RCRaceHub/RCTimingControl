@@ -85,11 +85,10 @@ describe('FinalsLineupPanel', () => {
 
   it('calculates the finals of every class at once', async () => {
     mockGet.mockResolvedValue(lineup());
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPanel();
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate finals for all classes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Calculate again' }));
     await waitFor(() => expect(mockCalculateAll).toHaveBeenCalledWith(1, { 7: 5 }));
-    confirm.mockRestore();
   });
 
   it('cannot calculate until qualifying is complete', async () => {
@@ -100,12 +99,10 @@ describe('FinalsLineupPanel', () => {
 
   it('asks before recalculating over existing line-ups', async () => {
     mockGet.mockResolvedValue(lineup());
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     renderPanel();
     fireEvent.click(await screen.findByRole('button', { name: 'Recalculate finals' }));
-    expect(confirm).toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(mockCalculate).not.toHaveBeenCalled();
-    confirm.mockRestore();
   });
 
   it('moves a driver to another final', async () => {

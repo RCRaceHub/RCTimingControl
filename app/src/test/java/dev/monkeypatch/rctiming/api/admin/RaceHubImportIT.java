@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -18,7 +16,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +26,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -81,7 +81,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode body = resp.getBody();
         assertThat(body.get("applied").asBoolean()).isTrue();
-        assertThat(body.get("racehubEventName").asText()).isEqualTo("Club Round 3");
+        assertThat(body.get("racehubEventName").asString()).isEqualTo("Club Round 3");
         assertThat(body.get("revision").asLong()).isEqualTo(4);
         assertSummary(body, 2, 0, 0, 0, 0, 1);
 
@@ -207,7 +207,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
             if (row.get("id").asLong() == ada.getId()) adaRow = row;
         }
         assertThat(adaRow).isNotNull();
-        assertThat(adaRow.get("importedTransponderNumber").asText()).isEqualTo("75" + run);
+        assertThat(adaRow.get("importedTransponderNumber").asString()).isEqualTo("75" + run);
 
         // Swapping to the file's number settles the difference
         swapService.swap(eventId, ada.getId(), TransponderSlot.PRIMARY, "75" + run, adminUserId);
@@ -303,12 +303,12 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(preview.getBody().get("blocked").asBoolean()).isTrue();
         JsonNode unmapped = preview.getBody().get("unmappedClasses");
         assertThat(unmapped).hasSize(1);
-        assertThat(unmapped.get(0).get("racehubEventClassId").asText()).isEqualTo("rh-class-electric-" + run);
-        assertThat(unmapped.get(0).get("rcClassName").asText()).isEqualTo("RH Electric Touring " + run);
+        assertThat(unmapped.get(0).get("racehubEventClassId").asString()).isEqualTo("rh-class-electric-" + run);
+        assertThat(unmapped.get(0).get("rcClassName").asString()).isEqualTo("RH Electric Touring " + run);
         assertThat(unmapped.get(0).get("entryCount").asInt()).isEqualTo(1);
 
         ResponseEntity<JsonNode> blocked = importFixture("entries-v1-unmapped-class.json", false);
-        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(blocked.getBody().get("applied").asBoolean()).isFalse();
         assertThat(findEntry("u1")).isNull();
     }
@@ -382,32 +382,49 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(resp.getBody().get("errors")).isEmpty();
         JsonNode warnings = resp.getBody().get("warnings");
         assertThat(warnings).hasSize(1);
-        assertThat(warnings.get(0).asText())
+        assertThat(warnings.get(0).asString())
                 .contains("71" + run).contains("Ada Lovelace").contains("Grace Hopper");
         assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
     }
 
     @Test
-    void brcaNumberHeldByAnotherCompetitor_isAWarningNotAnError() {
+    void brcaNumberHeldByAnotherRaceHubCompetitor_blocksTheImportAndNamesWhoHoldsIt() {
         Competitor other = new Competitor();
         other.setDisplayName("Other Holder " + run);
         other.setBrcaNumber("BR" + run);
+        other.setExternalSource("RACEHUB");
+        other.setExternalId("someone-else-" + run);
         competitorRepository.save(other);
+
+        ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
+
+        assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
+        assertThat(resp.getBody().get("errors").toString())
+                .contains("Ada Lovelace").contains("BRCA number BR" + run)
+                .contains("Other Holder " + run + " (already stored)");
+    }
+
+    @Test
+    void brcaNumberHeldByAWalkIn_isAWarningNotAnError() {
+        Competitor walkIn = new Competitor();
+        walkIn.setDisplayName("Walk In " + run);
+        walkIn.setBrcaNumber("BR" + run);
+        competitorRepository.save(walkIn);
 
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-update.json", true);
 
         assertThat(resp.getBody().get("blocked").asBoolean()).isFalse();
         assertThat(resp.getBody().get("warnings").toString())
-                .contains("Ada Lovelace").contains("BRCA number BR" + run);
+                .contains("Ada Lovelace").contains("Walk In " + run + " (already stored)");
     }
 
     @Test
-    void brcaNumberOfTheSameDriver_isNotWarnedAbout() {
+    void brcaNumberOfTheSameDriver_isNotBlocked() {
         importFixture("entries-v1-initial.json", false);
 
         ResponseEntity<JsonNode> again = importFixture("entries-v1-update.json", true);
 
-        assertThat(again.getBody().get("warnings").toString()).doesNotContain("BRCA number");
+        assertThat(again.getBody().get("errors").toString()).doesNotContain("BRCA number");
     }
 
     @Test
@@ -420,9 +437,9 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
                 HttpMethod.POST, new HttpEntity<>(json, adminHeaders()), JsonNode.class);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
-        assertThat(resp.getBody().get("errors").get(0).asText())
+        assertThat(resp.getBody().get("errors").get(0).asString())
                 .isEqualTo("Ada Lovelace would have 2 entries in RH Buggy " + run);
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
     }
@@ -435,7 +452,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
-        assertThat(resp.getBody().get("errors").get(0).asText()).contains("null");
+        assertThat(resp.getBody().get("errors").get(0).asString()).contains("null");
     }
 
     @Test
@@ -510,7 +527,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     @Test
     void anotherSource_hasItsOwnClassMappings() {
         ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", "OTHER", true);
-        assertThat(preview.getBody().get("unmappedClasses").get(0).get("racehubEventClassId").asText())
+        assertThat(preview.getBody().get("unmappedClasses").get(0).get("racehubEventClassId").asString())
                 .isEqualTo("OTHER:rh-class-electric-" + run);
 
         // A RaceHub mapping for the same class id does not apply to the other system's file

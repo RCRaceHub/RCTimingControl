@@ -121,6 +121,6 @@ public class GoverningBodyAffiliationsRecord extends UpdatableRecordImpl<Governi
         setDisplayName(displayName);
         setMembershipRequired(membershipRequired);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

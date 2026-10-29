@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -13,8 +11,12 @@ import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -66,7 +68,7 @@ public class EventClassService {
     }
 
     /** Every class entered in the event; a 404 if there is no such event. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<EventClass> listClassesForEvent(Long eventId) {
         eventRepository.requireExists(eventId);
         return eventClassRepository.findByEventId(eventId);
@@ -209,7 +211,7 @@ public class EventClassService {
         snapshotMap.putAll(ec.getConfigOverride());
         try {
             return objectMapper.convertValue(snapshotMap, RaceFormatConfig.class);
-        } catch (IllegalArgumentException e) {
+        } catch (JacksonException | IllegalArgumentException e) {
             throw new IllegalArgumentException("The format overrides do not fit the class's format: "
                     + e.getMessage(), e);
         }

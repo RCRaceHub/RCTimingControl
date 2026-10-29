@@ -12,28 +12,30 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 
 ## Stack
 
-**Backend:** Spring Boot 3.4.x, Java 21 (LTS), Gradle (Kotlin DSL)
+**Backend:** Spring Boot 4.1.x (Spring Framework 7, Spring Security 7), Java 21 (LTS), Gradle (Kotlin DSL). JSON is Jackson 3 (`tools.jackson`; only the annotations stay in `com.fasterxml.jackson.annotation`), see `docs/development.md` → "Jackson 3".
 
 **Frontend:** React 19 + React Router 7 + Vite, TypeScript, Tailwind CSS 4 + shadcn/ui, TanStack Query v5, TanStack Table v8, React Hook Form v7, Zod, `@stomp/stompjs` (native WebSocket — no SockJS)
 
 **Persistence:** SQLite (one file, sqlite-jdbc; WAL, one write connection plus a read pool), Flyway for migrations. The vendor is chosen in one place (`rctiming.database.vendor`, `persistence/DatabaseConfig`); vendor-specific code lives only in `persistence/vendor/`, and `PersistencePortabilityTest` enforces it. See `docs/development.md` → "Keeping the database swappable".
 
-**Data access:** jOOQ 3.19.x for every read and write, with no ORM (#69). jOOQ's DSL is generated from the Flyway schema into `app/src/generated/jooq`.
+**Data access:** jOOQ 3.21.x for every read and write, with no ORM (#69). jOOQ's DSL is generated from the Flyway schema into `app/src/generated/jooq`.
 - **Write side (domain module):** entities are plain classes holding ids, not associations. Each has a `@Repository` class extending `persistence/JooqRepository`, which maps it to its table's record (by a MapStruct mapper next to the repository; entities built by constructor are mapped by hand in `toEntity`/`toRecord`) and keeps the method names Spring Data had (`findById`, `save`, `findByEventId` and so on). There is no dirty checking: a changed entity reaches the database only through `save`, and must be saved before anything reloads it by id. Columns written once, such as creation times, go in the repository's `insertOnly()`.
 - **Read side (query module):** type-safe SQL for all projections and aggregations: scoring calculations, championship standings, lap aggregates, results views.
 - Writes run in Spring transactions on the write connection. Reads outside a transaction use the read pool and see only committed data. Read-side query classes use `@ReadTransaction` (`persistence/`): one snapshot on the read pool, so they never queue behind the writer. A read that must wait for a write in progress needs `@Transactional(readOnly = true)`, which runs on the write connection.
 
 **Race format config:** Stored as JSON text (`CHECK (json_valid(...))`) with a `type` discriminator, converted by a `JsonTextConverter` subclass in its repository. Validated against a sealed Java class hierarchy on write. Override patches (FORMAT-07) stored as a second JSON column and merged at read time. Supports JSON import/export (FORMAT-14).
 
-**Auth:** Spring Security + JWT (stateless). JJWT 0.12.x. JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
+**Auth:** Spring Security + JWT (stateless). JJWT 0.13.x with its Gson module (`jjwt-gson`; JJWT has no Jackson 3 module yet, so no Jackson 2 is on the classpath). JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
 
 **Real-time:** Spring WebSocket with STOMP in-memory broker. STOMP topics:
 - `/topic/race/{raceId}/timing` — live lap passings, positions, gaps
 - `/topic/race/{raceId}/state` — race lifecycle changes
 - `/topic/race/{raceId}/battles` — cars running close together and the trend of each gap (`timing/battle/BattleTracker`)
+- `/topic/race/{raceId}/featured` — the race director's featured-driver prompt for the OBS overlay's lower third (entry id only)
 - `/topic/race/{raceId}/marshal` — marshal lap adjustments
 - `/topic/race/{raceId}/unknown-transponder`, `/audio`, `/bump-up-alert` — race director, announcer and bump-up prompts
 - `/topic/race/{raceId}/warmup` — which cars of a race on the grid the decoder has seen on the warm-up lap
+- `/topic/event/{eventId}/auto-run` — an event's auto run state
 - `/topic/practice/{sessionId}/timing` and `/unknown-transponder` — open practice
 - `/topic/system/decoder-status` — whether the decoder is connected
 - `/topic/system/live-feed-status` — whether the live feed is connected to its relay
@@ -172,6 +174,37 @@ The ten original phases are complete. Some of what they built has since been rem
 10. Docker trial environment (replaced by the installers in #23 and #24)
 
 A later initiative extracted the shared decoder-protocol parser (`decoder-protocol/`) and built a separate offline race-day app, which was retired in #21; its plans are archived under `docs/plans/archive/`. The local-only plan then added competitors, per-event transponders, the RaceHub import and walk-ins, officials-only login, spectator boards, the SQLite database, backups and the installers. It also sends results back to RaceHub (#27) and a live feed to a relay for remote viewers (#28), and has a streaming overlay page for OBS (#29).
+
+## Code Standards
+
+These came out of the quality checkpoint (#606). Follow them in new code, and fix a neighbouring breach when you touch the file.
+
+### Backend
+
+- **Controllers are thin.** A controller validates input, calls one service and returns a DTO. It never injects a repository or a `DSLContext`; the logic and the transaction live in a service (for example `RaceControlService`). Read-side controllers call a query class.
+- **SQL stays in repositories and query classes.** A service never injects a `DSLContext`; add a method to a repository (a plain `@Repository` if the tables have no entity). Package layout is in `docs/development.md`.
+- **Not found is a 404 thrown by the service or query** (`EntityNotFoundException`), never checked in the controller. Errors reach clients as `ProblemDetail` through `GlobalExceptionHandler`.
+- **Real-time pushes go through `LiveTimingHub`.** Services never use `SimpMessagingTemplate` directly; add a method to the hub for a new topic.
+- **Read transactions:** read-side query classes use `@ReadTransaction` (read pool). `@Transactional(readOnly = true)` runs on the write connection, so use it only where the read must see an uncommitted write, and say why in the Javadoc.
+- **Configuration is read through `@ConfigurationProperties` records** with `@DefaultValue`, enabled by `@EnableConfigurationProperties` on the class that uses them. No `@Value` and no `Environment.getProperty`. A web setting such as `server.address` comes from Boot's `ServerProperties`, taken as an `ObjectProvider` because a non-web context (tests, the crash-recovery child) has none. New settings get a row in `docs/development.md`.
+- **Time comes from an injected `Clock`.** Never call `Instant.now()` or `System.currentTimeMillis()` in a service. Use the pattern of a public `@Autowired` constructor that passes `Clock.systemUTC()` to a package-private one taking the `Clock`, and a fixed clock in tests.
+- **Request and response records live in the controller package's `dto/` folder**, one file each, never declared inline in a controller and never owned by a service. A service takes plain parameters or a domain type, so it does not depend on the API layer. API DTOs are hand-written, with a static `from(entity)` where one is built from an entity.
+- **Mapping:** repositories map records to entities with MapStruct, as the other repositories do; hand-written `toEntity`/`toRecord` only for entities built by constructor.
+- **Tests** (`docs/testing.md`): AssertJ assertions, camelCase method names that say the behaviour, `...IT` extending `AbstractIntegrationTest` for anything that starts Spring or touches the database. No `Thread.sleep`: wait with Awaitility, a latch or an injected clock (`TestConventionsTest` enforces it). Put each test in the same package as the class it covers.
+
+### Frontend
+
+- **Never use `window.confirm`, `alert` or `prompt`.** Use `useConfirm` and the shared confirm dialog.
+- **Never import axios in a page or component.** Read an API error with `getApiErrorData` / the helpers in `lib/errors.ts`.
+- **A failed query shows `QueryError`** (inline, banner or page variant), not an ad-hoc message.
+- **Colours come from theme tokens, not raw palette classes.** Use `bg-muted`, `text-destructive`, `text-success`, `text-warning`, `text-info`, `text-race-best` and tints such as `bg-success/15`; they switch with dark mode. Never write `bg-red-500`, `text-amber-600` or a `dark:` pair of palette classes. New status colours are added as tokens in `index.css`. The spectator boards and the podium sit on a fixed dark frame (the frame carries the `dark` class so tokens resolve for it) and keep their own slate palette. Build a conditional `className` with `cn()`, not a template literal.
+- **Query keys come from the factories** in `hooks/publicQueryKeys.ts` and `hooks/admin/adminQueryKeys.ts`, never an inline `queryKey: ['...']`. **Exports:** `default` only for lazily routed pages and layouts, named for everything else. **Tests** sit beside the file as `Name.test.tsx`, not in `__tests__`. Details in `docs/development.md` → Frontend conventions.
+- **Queries and mutations live in hooks** (`hooks/`), not inline in pages or components; a hook takes the polling interval or `enabled` as options. Unconverted pages move over when you touch them.
+- Toasts use sonner; forms use React Hook Form with Zod; data fetching uses TanStack Query.
+
+### Before you write something new
+
+Look for the existing helper first (hub method, error helper, confirm hook, properties record, clock pattern). A second way of doing the same thing is a review finding.
 
 ## General Good Developer Rules
 

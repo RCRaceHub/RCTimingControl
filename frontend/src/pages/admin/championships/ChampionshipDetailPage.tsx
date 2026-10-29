@@ -28,6 +28,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 import { useHelpContent } from '@/context/HelpContext';
 import { ChampionshipHelp } from '@/help/ChampionshipHelp';
+import { QueryError } from '@/components/QueryError';
 
 /**
  * Greys out everything inside it unless the official is an admin. Only an admin changes a championship's
@@ -80,14 +81,12 @@ export default function ChampionshipDetailPage() {
 
   if (isError || !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-        <p className="text-muted-foreground">Failed to load championship.</p>
-        <Button variant="outline" onClick={() => void refetch()}>Retry</Button>
+      <QueryError variant="page" message="Failed to load championship." onRetry={refetch}>
         <Button variant="ghost" onClick={() => navigate('/admin/championships')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Championships
         </Button>
-      </div>
+      </QueryError>
     );
   }
 

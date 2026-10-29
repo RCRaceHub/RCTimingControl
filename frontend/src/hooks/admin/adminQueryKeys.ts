@@ -36,6 +36,12 @@ export const adminQueryKeys = {
   },
   scoringSystems: {
     all: () => ['admin', 'scoring-systems'] as const,
+    ofKind: (kind: 'RACE' | 'CHAMPIONSHIP') => ['admin', 'scoring-systems', kind] as const,
+    everyKind: () => ['admin', 'scoring-systems', 'all'] as const,
+  },
+  overlayThemes: {
+    all: () => ['admin', 'overlay-themes'] as const,
+    sponsors: (themeId: number) => ['admin', 'overlay-themes', themeId, 'sponsors'] as const,
   },
   racingClasses: {
     all: () => ['admin', 'racing-classes'] as const,

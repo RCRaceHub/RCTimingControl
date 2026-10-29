@@ -20,7 +20,6 @@ import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.service.QualifyingStandingsService.QualifyingResult;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,7 +34,7 @@ import java.util.Objects;
  * with names as each competitor allows.
  */
 @Service
-@Transactional(readOnly = true)
+@ReadTransaction
 public class QualifyingTableService {
 
     private final EventClassRepository eventClassRepository;

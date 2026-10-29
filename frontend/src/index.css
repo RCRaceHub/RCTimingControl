@@ -18,6 +18,8 @@
 @import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
+/* A short viewport: a 1920x1080 laptop at 125% or 150% Windows scaling, less the browser bars. Dense layouts tighten under it. */
+@custom-variant short (@media (max-height: 820px));
 
 @theme inline {
     --font-sans:    'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
@@ -42,6 +44,13 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+    --color-race-best: var(--race-best);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -97,6 +106,15 @@
     --accent: oklch(0.702 0.187 41.8);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.605 0.235 27);
+    /* Status colours: success (sent, on pace), warning (notices, close, pending), info (queued, personal best) and
+       race-best (the fastest lap). Use them as text-success, bg-success/15 and so on, never raw palette classes. */
+    --success: oklch(0.527 0.154 150);
+    --success-foreground: oklch(0.985 0 0);
+    --warning: oklch(0.555 0.146 49);
+    --warning-foreground: oklch(0.985 0 0);
+    --info: oklch(0.488 0.2 262);
+    --info-foreground: oklch(0.985 0 0);
+    --race-best: oklch(0.5 0.24 300);
     --border: oklch(0.922 0.004 45);
     --input: oklch(0.922 0.004 45);
     --ring: oklch(0.702 0.187 41.8);
@@ -148,6 +166,13 @@
     --accent: oklch(0.750 0.205 42.5);
     --accent-foreground: oklch(0.120 0.003 250);
     --destructive: oklch(0.704 0.191 22);
+    --success: oklch(0.723 0.19 150);
+    --success-foreground: oklch(0.2 0 0);
+    --warning: oklch(0.828 0.189 84);
+    --warning-foreground: oklch(0.2 0 0);
+    --info: oklch(0.707 0.165 255);
+    --info-foreground: oklch(0.2 0 0);
+    --race-best: oklch(0.74 0.17 300);
     --border: oklch(1 0 0 / 0.09);
     --input: oklch(1 0 0 / 0.12);
     --ring: oklch(0.750 0.205 42.5);
@@ -230,3 +255,13 @@
   100% { transform: translateX(0); }
 }
 .name-scroll[data-overflow] { animation: name-scroll 8s ease-in-out infinite; }
+
+/* The overlay's battle row (#681): the chasing car's chevrons and label pulse, held still for people who ask for less motion */
+@keyframes battle-pulse {
+  0%, 100% { opacity: 0.25; transform: translateX(-2px); }
+  50% { opacity: 1; transform: translateX(2px); }
+}
+.battle-pulse { display: inline-block; animation: battle-pulse 0.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .battle-pulse { animation: none; }
+}

@@ -15,12 +15,14 @@ import dev.monkeypatch.rctiming.domain.race.RacePointPenalty;
 import dev.monkeypatch.rctiming.domain.race.RacePointPenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,17 +51,25 @@ public class RaceEliminationService {
     private final ApplicationEventPublisher eventPublisher;
     private final AuditService audit;
     private final RaceAuditLabels labels;
+    private final Clock clock;
 
-    public RaceEliminationService(RaceEliminationRepository eliminationRepository,
-                                  RaceRepository raceRepository,
-                                  RaceEntryRepository raceEntryRepository,
-                                  EventClassRepository eventClassRepository,
-                                  RaceFormatService raceFormatService,
-                                  ShikabaneGridService gridService,
+    @Autowired
+    public RaceEliminationService(RaceEliminationRepository eliminationRepository, RaceRepository raceRepository,
+                                  RaceEntryRepository raceEntryRepository, EventClassRepository eventClassRepository,
+                                  RaceFormatService raceFormatService, ShikabaneGridService gridService,
                                   RacePointPenaltyRepository pointPenaltyRepository,
-                                  ApplicationEventPublisher eventPublisher,
-                                  AuditService audit,
+                                  ApplicationEventPublisher eventPublisher, AuditService audit,
                                   RaceAuditLabels labels) {
+        this(eliminationRepository, raceRepository, raceEntryRepository, eventClassRepository, raceFormatService,
+             gridService, pointPenaltyRepository, eventPublisher, audit, labels, Clock.systemUTC());
+    }
+
+    RaceEliminationService(RaceEliminationRepository eliminationRepository, RaceRepository raceRepository,
+                           RaceEntryRepository raceEntryRepository, EventClassRepository eventClassRepository,
+                           RaceFormatService raceFormatService, ShikabaneGridService gridService,
+                           RacePointPenaltyRepository pointPenaltyRepository,
+                           ApplicationEventPublisher eventPublisher, AuditService audit, RaceAuditLabels labels,
+                           Clock clock) {
         this.eliminationRepository = eliminationRepository;
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
@@ -70,6 +80,7 @@ public class RaceEliminationService {
         this.eventPublisher = eventPublisher;
         this.audit = audit;
         this.labels = labels;
+        this.clock = clock;
     }
 
     /**
@@ -86,7 +97,7 @@ public class RaceEliminationService {
         RaceElimination elimination = new RaceElimination();
         elimination.setRaceId(raceId);
         elimination.setEntryId(entryId);
-        elimination.setEliminatedAt(Instant.now());
+        elimination.setEliminatedAt(clock.instant());
         elimination.setEliminatedBy(userId);
         RaceElimination saved = eliminationRepository.save(elimination);
         audit.entry(Actor.official(userId), "ENTRY_ELIMINATED").entity("race_elimination", saved.getId())
@@ -107,7 +118,7 @@ public class RaceEliminationService {
         Race race = requireMarkable(raceId, entryId);
         RaceElimination elimination = eliminationRepository.findActive(raceId, entryId)
                 .orElseThrow(() -> new StateConflictException("That car is not marked eliminated"));
-        elimination.setRevivedAt(Instant.now());
+        elimination.setRevivedAt(clock.instant());
         elimination.setRevivedBy(userId);
         RaceElimination saved = eliminationRepository.save(elimination);
         audit.entry(Actor.official(userId), "ENTRY_REVIVED").entity("race_elimination", saved.getId())
@@ -151,7 +162,7 @@ public class RaceEliminationService {
         penalty.setPoints(points);
         penalty.setReason("False start");
         penalty.setAppliedBy(userId);
-        penalty.setAppliedAt(Instant.now());
+        penalty.setAppliedAt(clock.instant());
         RacePointPenalty saved = pointPenaltyRepository.save(penalty);
         audit.entry(Actor.official(userId), "FALSE_START_PENALTY").entity("race_point_penalty", saved.getId())
                 .race(raceId).event(labels.eventOf(raceId))
@@ -181,14 +192,14 @@ public class RaceEliminationService {
     }
 
     /** The race's rows, eliminations and revivals, oldest first. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<RaceElimination> list(long raceId) {
         raceRepository.requireExists(raceId);
         return eliminationRepository.findByRaceId(raceId);
     }
 
     /** Entry ids of the cars dead now, first to die first. Used when a heat's result is worked out. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<Long> deadInOrder(long raceId) {
         return eliminationRepository.findByRaceId(raceId).stream()
                 .filter(RaceElimination::isActive)
@@ -197,7 +208,7 @@ public class RaceEliminationService {
     }
 
     /** Whether the race's class races to the Shikabane format, so race control shows the elimination buttons. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public boolean isShikabane(long raceId) {
         return isShikabane(raceRepository.getOrThrow(raceId));
     }

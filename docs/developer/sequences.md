@@ -74,7 +74,8 @@ An unknown transponder is never silently credited: it goes to the race director,
 ```mermaid
 sequenceDiagram
     participant RD as Race director (browser)
-    participant C as api.racecontrol controller
+    participant C as RaceControlController
+    participant RCS as RaceControlService
     participant SM as RaceStateMachineService
     participant RRp as RaceRepository
     participant Bus as ApplicationEventPublisher
@@ -82,7 +83,8 @@ sequenceDiagram
     participant RS as ResultSnapshotService
 
     RD->>C: POST start
-    C->>SM: start(race)
+    C->>RCS: start(actor, raceId) in one write transaction
+    RCS->>SM: start(race)
     SM->>SM: requireAllowed(RUNNING), requireQualifyingComplete
     SM->>RRp: save(race with startedAt)
     SM->>Bus: RaceStatusChangedEvent(RUNNING)
@@ -91,7 +93,8 @@ sequenceDiagram
     Hub-->>RD: /topic/race/id/state
 
     RD->>C: POST finish
-    C->>SM: finish(race)
+    C->>RCS: finish(actor, raceId)
+    RCS->>SM: finish(race)
     SM->>RRp: save(race with finishedAt)
     SM->>Bus: RaceStatusChangedEvent(FINISHED)
     SM->>Hub: broadcastStateChange(FINISHED)
@@ -250,7 +253,7 @@ sequenceDiagram
 
 A saved board view (`/boards/view/{slug}`) reads only its layout from `GET /boards/views/{slug}` (`PublicBoardViewController` and `BoardViewService`). The page follows the race on track once through `useBoardRace` and each panel then polls the same public endpoints as the stand-alone boards, so a view adds no timing load of its own.
 
-`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree.
+`LapOrder` is also what `ResultSnapshotService` uses to store the lap history of a finished race, so the printed chart and the live chart agree. Both start at lap 0, each car's place on the grid (`LapOrder.startPlaces`, from the row's start position); a car with no grid place, or a result stored before lap 0 existed, starts at lap 1. Lap 0 carries no lap time, so code reading lap times skips it.
 
 ## Live feed to the relay
 

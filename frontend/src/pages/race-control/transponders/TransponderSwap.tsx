@@ -158,7 +158,7 @@ export default function TransponderSwap({ eventId }: { eventId: number }) {
           </div>
 
           {result?.kind === 'success' && (
-            <p className="text-sm font-medium text-green-700">{successMessage(result.response)}</p>
+            <p className="text-sm font-medium text-success">{successMessage(result.response)}</p>
           )}
           {result?.kind === 'error' && <p className="text-sm text-destructive">{result.message}</p>}
         </form>

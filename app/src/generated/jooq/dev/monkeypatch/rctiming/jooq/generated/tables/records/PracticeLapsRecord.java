@@ -181,6 +181,6 @@ public class PracticeLapsRecord extends UpdatableRecordImpl<PracticeLapsRecord> 
         setCrossingTime(crossingTime);
         setCreatedAt(createdAt);
         setRunNumber(runNumber);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

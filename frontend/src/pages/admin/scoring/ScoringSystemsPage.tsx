@@ -10,6 +10,7 @@ import { useAllScoringSystems, useScoringSystemMutations } from '@/hooks/admin/u
 import { adminApi } from '@/lib/adminApi';
 import type { ScoringConfig, ScoringSystemDto } from '@/lib/adminApi';
 import { NEW_CHAMPIONSHIP_CONFIG, NEW_RACE_CONFIG, ScoringSystemDialog } from './ScoringSystemDialog';
+import { QueryError } from '@/components/QueryError';
 
 /** The server's explanation of a refused request (its problem detail), else the fallback. */
 function reason(error: unknown, fallback: string): string {
@@ -153,10 +154,7 @@ export default function ScoringSystemsPage() {
       />
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load scoring systems.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load scoring systems." onRetry={refetch} />
       )}
 
       {isLoading ? (

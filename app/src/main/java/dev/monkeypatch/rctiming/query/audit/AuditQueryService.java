@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.query.audit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Service;
-import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +68,7 @@ public class AuditQueryService {
         }
         try {
             return objectMapper.readTree(json);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // The column is checked with json_valid, so this is not expected; show the text rather than fail the page
             return objectMapper.getNodeFactory().textNode(json);
         }

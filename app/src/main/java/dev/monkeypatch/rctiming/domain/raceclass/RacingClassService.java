@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.raceclass;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +28,13 @@ public class RacingClassService {
     }
 
     /** Every racing class. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<RacingClass> findAll() {
         return racingClassRepository.findAll();
     }
 
     /** A racing class; a 404 if there is none. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public RacingClass findById(Long id) {
         return getRacingClassOrThrow(id);
     }

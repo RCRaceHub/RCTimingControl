@@ -8,11 +8,11 @@ import dev.monkeypatch.rctiming.api.admin.dto.DecoderLoopDto;
 import dev.monkeypatch.rctiming.api.admin.dto.TrackDto;
 import dev.monkeypatch.rctiming.api.admin.dto.TrackLapThresholdDto;
 import dev.monkeypatch.rctiming.domain.track.TrackService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,7 +32,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/tracks")
-@PreAuthorize("hasAnyRole('ADMIN', 'RACE_DIRECTOR', 'REFEREE')")
+@RaceControlStaff
 public class TrackController {
 
     private final TrackService trackService;
@@ -56,19 +56,19 @@ public class TrackController {
     /** Creates a track. {@code POST}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
-    public TrackDto createTrack(Authentication auth, @RequestBody @Valid CreateTrackRequest request) {
-        return TrackDto.from(trackService.create(CurrentOfficial.actor(auth),
+    public TrackDto createTrack(@RequestBody @Valid CreateTrackRequest request) {
+        return TrackDto.from(trackService.create(CurrentOfficial.actor(),
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
     /** Changes a track's name, notes and length. {@code PUT /{id}}; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public TrackDto updateTrack(Authentication auth, @PathVariable Long id, @RequestBody @Valid CreateTrackRequest request) {
-        return TrackDto.from(trackService.update(CurrentOfficial.actor(auth), id,
+    @AdminOnly
+    public TrackDto updateTrack(@PathVariable Long id, @RequestBody @Valid CreateTrackRequest request) {
+        return TrackDto.from(trackService.update(CurrentOfficial.actor(), id,
                 request.name(), request.venueNotes(), request.trackLength()));
     }
 
@@ -78,40 +78,40 @@ public class TrackController {
      */
     @Audited("audit_log")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTrack(Authentication auth, @PathVariable Long id) {
-        trackService.delete(CurrentOfficial.actor(auth), id);
+    public void deleteTrack(@PathVariable Long id) {
+        trackService.delete(CurrentOfficial.actor(), id);
     }
 
     /** Adds a decoder loop to a track. {@code POST /{trackId}/loops}; ADMIN; answers 201. Audited. */
     @Audited("audit_log")
     @PostMapping("/{trackId}/loops")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
-    public DecoderLoopDto addDecoderLoop(Authentication auth, @PathVariable Long trackId,
+    public DecoderLoopDto addDecoderLoop(@PathVariable Long trackId,
                                           @RequestBody @Valid CreateDecoderLoopRequest request) {
-        return DecoderLoopDto.from(trackService.addDecoderLoop(CurrentOfficial.actor(auth), trackId,
+        return DecoderLoopDto.from(trackService.addDecoderLoop(CurrentOfficial.actor(), trackId,
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
     /** Changes a decoder loop. {@code PUT /loops/{loopId}}, by the loop's own database id; ADMIN. Audited. */
     @Audited("audit_log")
     @PutMapping("/loops/{loopId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public DecoderLoopDto updateDecoderLoop(Authentication auth, @PathVariable Long loopId,
+    @AdminOnly
+    public DecoderLoopDto updateDecoderLoop(@PathVariable Long loopId,
                                              @RequestBody @Valid CreateDecoderLoopRequest request) {
-        return DecoderLoopDto.from(trackService.updateDecoderLoop(CurrentOfficial.actor(auth), loopId,
+        return DecoderLoopDto.from(trackService.updateDecoderLoop(CurrentOfficial.actor(), loopId,
                 request.loopId(), request.displayName(), request.loopType(), request.isScoringLoop()));
     }
 
     /** Deletes a decoder loop. {@code DELETE /loops/{loopId}}, by the loop's database id; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/loops/{loopId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDecoderLoop(Authentication auth, @PathVariable Long loopId) {
-        trackService.deleteDecoderLoop(CurrentOfficial.actor(auth), loopId);
+    public void deleteDecoderLoop(@PathVariable Long loopId) {
+        trackService.deleteDecoderLoop(CurrentOfficial.actor(), loopId);
     }
 
     /**
@@ -120,20 +120,20 @@ public class TrackController {
      */
     @Audited("audit_log")
     @PostMapping("/{trackId}/thresholds")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
-    public TrackLapThresholdDto setLapThreshold(Authentication auth, @PathVariable Long trackId,
+    public TrackLapThresholdDto setLapThreshold(@PathVariable Long trackId,
                                                  @RequestBody @Valid CreateThresholdRequest request) {
-        return TrackLapThresholdDto.from(trackService.setLapThreshold(CurrentOfficial.actor(auth), trackId,
+        return TrackLapThresholdDto.from(trackService.setLapThreshold(CurrentOfficial.actor(), trackId,
                 request.racingClassId(), request.minLapMs(), request.maxLastLapMs()));
     }
 
     /** Deletes a lap threshold. {@code DELETE /thresholds/{thresholdId}}; ADMIN; 204. Audited. */
     @Audited("audit_log")
     @DeleteMapping("/thresholds/{thresholdId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteLapThreshold(Authentication auth, @PathVariable Long thresholdId) {
-        trackService.deleteLapThreshold(CurrentOfficial.actor(auth), thresholdId);
+    public void deleteLapThreshold(@PathVariable Long thresholdId) {
+        trackService.deleteLapThreshold(CurrentOfficial.actor(), thresholdId);
     }
 }

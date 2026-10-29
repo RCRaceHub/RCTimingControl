@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -11,11 +9,12 @@ import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -124,9 +126,9 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(item.getRevision()).isEqualTo(1);
         assertThat(item.getStatus()).isEqualTo(OutboxStatus.QUEUED);
         JsonNode export = json(item.getPayload());
-        assertThat(export.at("/event/racehub_event_id").asText()).isEqualTo("evt-" + run);
+        assertThat(export.at("/event/racehub_event_id").asString()).isEqualTo("evt-" + run);
         assertThat(export.at("/races/0/rctc_race_id").asLong()).isEqualTo(raceId);
-        assertThat(export.at("/races/0/status").asText()).isEqualTo("ABANDONED");
+        assertThat(export.at("/races/0/status").asString()).isEqualTo("ABANDONED");
     }
 
     @Test
@@ -145,23 +147,23 @@ class ResultsExportIT extends AbstractIntegrationTest {
         JsonNode export = json(item.getPayload());
         assertThat(ResultsExportV1GoldenTest.validate(export)).isEmpty();
         JsonNode race = export.at("/races/0");
-        assertThat(race.at("/racehub_event_class_ids/0").asText()).isEqualTo("rh-class-buggy-" + run);
-        assertThat(race.at("/status").asText()).isEqualTo("FINISHED");
+        assertThat(race.at("/racehub_event_class_ids/0").asString()).isEqualTo("rh-class-buggy-" + run);
+        assertThat(race.at("/status").asString()).isEqualTo("FINISHED");
         JsonNode first = race.at("/results/0");
-        assertThat(first.at("/external_source").asText()).isEqualTo("RACEHUB");
-        assertThat(first.at("/entry_id").asText()).isEqualTo("a1-" + run);
-        assertThat(first.at("/driver_profile_id").asText()).isEqualTo("drv-ada-" + run);
+        assertThat(first.at("/external_source").asString()).isEqualTo("RACEHUB");
+        assertThat(first.at("/entry_id").asString()).isEqualTo("a1-" + run);
+        assertThat(first.at("/driver_profile_id").asString()).isEqualTo("drv-ada-" + run);
         assertThat(first.at("/laps").asInt()).isEqualTo(12);
         // Every penalty since the race started counts in the stored result (#63)
-        assertThat(first.at("/penalties/0/reason").asText()).isEqualTo("Short cut");
+        assertThat(first.at("/penalties/0/reason").asString()).isEqualTo("Short cut");
         assertThat(first.at("/penalties/0/included_in_result").asBoolean()).isTrue();
-        assertThat(first.at("/penalties/1/reason").asText()).isEqualTo("Missed marshalling");
+        assertThat(first.at("/penalties/1/reason").asString()).isEqualTo("Missed marshalling");
         assertThat(first.at("/penalties/1/included_in_result").asBoolean()).isTrue();
         JsonNode second = race.at("/results/1");
         assertThat(second.at("/external_source").isNull()).isTrue();
         assertThat(second.at("/entry_id").isNull()).isTrue();
-        assertThat(second.at("/display_name").asText()).isEqualTo("Walk-in Wendy");
-        assertThat(second.at("/penalties/0/type").asText()).isEqualTo("TIME");
+        assertThat(second.at("/display_name").asString()).isEqualTo("Walk-in Wendy");
+        assertThat(second.at("/penalties/0/type").asString()).isEqualTo("TIME");
         assertThat(second.at("/penalties/0/value").decimalValue()).isEqualByComparingTo("5");
         assertThat(second.at("/penalties/0/included_in_result").asBoolean()).isTrue();
         // Nothing personal goes out: the import file carried an email and date of birth
@@ -227,7 +229,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         ResultsOutboxItem correction = items.get(1);
         assertThat(correction.getReason()).isEqualTo(ExportReason.CORRECTION);
         assertThat(correction.getRevision()).isGreaterThan(first.getRevision());
-        assertThat(json(correction.getPayload()).at("/races/0/results/0/penalties/0/reason").asText())
+        assertThat(json(correction.getPayload()).at("/races/0/results/0/penalties/0/reason").asString())
                 .isEqualTo("Cut the track");
         // Only the newest export needs to go
         assertThat(items.get(0).getStatus()).isEqualTo(OutboxStatus.SUPERSEDED);
@@ -257,7 +259,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
         JsonNode first = json(exportService.enqueue(eventId, ExportReason.RACE_FINISHED).orElseThrow().getPayload())
                 .at("/races/0/results/0");
-        assertThat(first.at("/penalties/0/type").asText()).isEqualTo("TIME");
+        assertThat(first.at("/penalties/0/type").asString()).isEqualTo("TIME");
         assertThat(first.at("/penalties/0/included_in_result").asBoolean()).isFalse();
     }
 
@@ -299,7 +301,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(timed.at("/0/lapsCompleted").asInt()).isEqualTo(12);
 
         JsonNode exported = json(awaitOutbox(1).get(0).getPayload()).at("/races/0/results");
-        assertThat(exported.at("/0/display_name").asText()).isEqualTo("Walk-in Wendy");
+        assertThat(exported.at("/0/display_name").asString()).isEqualTo("Walk-in Wendy");
         assertThat(exported.at("/1/laps").asInt()).isEqualTo(11);
         assertThat(exported.at("/1/penalties/0/included_in_result").asBoolean()).isTrue();
         assertThat(exported.at("/1/penalties/1/included_in_result").asBoolean()).isTrue();
@@ -326,7 +328,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
         ResultsOutboxItem item = awaitOutbox(1).get(0);
         assertThat(item.getReason()).isEqualTo(ExportReason.DAY_CLOSE);
-        assertThat(json(item.getPayload()).at("/event/status").asText()).isEqualTo("COMPLETED");
+        assertThat(json(item.getPayload()).at("/event/status").asString()).isEqualTo("COMPLETED");
     }
 
     @Test
@@ -401,7 +403,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(list.getBody().get("sendingEnabled").asBoolean()).isFalse();
         assertThat(list.getBody().get("missingSettings").toString())
                 .contains("the RaceHub address").contains("rctiming.racehub.token");
-        assertThat(list.getBody().get("exports").findValuesAsText("eventName")).contains("Results export " + run);
+        assertThat(list.getBody().get("exports").findValuesAsString("eventName")).contains("Results export " + run);
 
         ResponseEntity<Void> retry = restTemplate.exchange("/api/v1/admin/results-exports/" + item.getId() + "/retry",
                 HttpMethod.POST, new HttpEntity<>(headers()), Void.class);
@@ -416,7 +418,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         assertThat(download.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(download.getHeaders().getContentDisposition().getFilename())
                 .isEqualTo("results-event-" + eventId + "-r1.json");
-        assertThat(json(download.getBody()).at("/races/0/results/0/entry_id").asText()).isEqualTo("a1-" + run);
+        assertThat(json(download.getBody()).at("/races/0/results/0/entry_id").asString()).isEqualTo("a1-" + run);
     }
 
     @Test
@@ -425,8 +427,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/results-exports/address", HttpMethod.PUT,
                 new HttpEntity<>(Map.of("resultsUrl", url), headers()), JsonNode.class);
         assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(set.getBody().get("resultsUrl").asText()).isEqualTo(url);
-        assertThat(set.getBody().get("savedUrl").asText()).isEqualTo(url);
+        assertThat(set.getBody().get("resultsUrl").asString()).isEqualTo(url);
+        assertThat(set.getBody().get("savedUrl").asString()).isEqualTo(url);
         assertThat(jdbc.queryForList("select * from audit_log where action = 'RACEHUB_RESULTS_URL_CHANGED'"))
                 .isNotEmpty();
 
@@ -449,8 +451,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/results-exports/target", HttpMethod.PUT,
                 new HttpEntity<>(Map.of("target", "SITE"), headers()), JsonNode.class);
         assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(set.getBody().get("publishTarget").asText()).isEqualTo("SITE");
-        assertThat(set.getBody().get("chosenTarget").asText()).isEqualTo("SITE");
+        assertThat(set.getBody().get("publishTarget").asString()).isEqualTo("SITE");
+        assertThat(set.getBody().get("chosenTarget").asString()).isEqualTo("SITE");
         assertThat(jdbc.queryForList("select * from audit_log where action = 'RESULTS_PUBLISH_TARGET_CHANGED'"))
                 .isNotEmpty();
 
@@ -464,7 +466,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> cleared = restTemplate.exchange("/api/v1/admin/results-exports/target",
                 HttpMethod.PUT, new HttpEntity<>(clear, headers()), JsonNode.class);
         assertThat(cleared.getBody().get("chosenTarget").isNull()).isTrue();
-        assertThat(cleared.getBody().get("publishTarget").asText()).isEqualTo("NONE");
+        assertThat(cleared.getBody().get("publishTarget").asString()).isEqualTo("NONE");
     }
 
     @Test
@@ -495,7 +497,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
         JsonNode race = json(awaitOutbox(1).get(0).getPayload()).at("/races/0");
         assertThat(race.at("/results")).isEmpty();
-        assertThat(race.at("/racehub_event_class_ids/0").asText()).isEqualTo("rh-class-buggy-" + run);
+        assertThat(race.at("/racehub_event_class_ids/0").asString()).isEqualTo("rh-class-buggy-" + run);
     }
 
     @Test
@@ -536,7 +538,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
                 "/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
                 HttpMethod.POST, new HttpEntity<>(file, headers()), JsonNode.class);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("applied").asBoolean()).isFalse();
         assertThat(resp.getBody().toString()).contains("no RaceHub event id");
         assertThat(jdbc.queryForObject("select count(*) from entries where event_id = ?", Integer.class, eventId))
@@ -600,20 +602,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     private static <T> T await(Supplier<T> check) {
-        Instant deadline = Instant.now().plus(Duration.ofSeconds(10));
-        while (Instant.now().isBefore(deadline)) {
-            T value = check.get();
-            if (value != null) {
-                return value;
-            }
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-        }
-        throw new AssertionError("Timed out waiting for the results export");
+        return Awaitility.await("the results export").atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(50))
+                .until(check::get, Objects::nonNull);
     }
 
     private void penalty(long raceId, long entryId, String type, int value, String reason) {
@@ -624,11 +614,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     private JsonNode json(String body) {
-        try {
-            return objectMapper.readTree(body);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        return objectMapper.readTree(body);
     }
 
     private void importEntries() {

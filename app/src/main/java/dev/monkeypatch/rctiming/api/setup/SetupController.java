@@ -13,6 +13,7 @@ import dev.monkeypatch.rctiming.domain.club.DecoderSettings;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.JwtTokenService;
 import dev.monkeypatch.rctiming.service.SetupService;
@@ -20,8 +21,6 @@ import dev.monkeypatch.rctiming.timing.DecoderProbe;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -89,14 +88,14 @@ public class SetupController {
      * {@code ADMIN}.
      */
     @GetMapping("/progress")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public SetupProgressDto getProgress() {
         return SetupProgressDto.from(setupService.getProgress());
     }
 
     /** The decoder address saved in the club profile. {@code GET /api/v1/setup/decoder-config}, {@code ADMIN}. */
     @GetMapping("/decoder-config")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public DecoderConfigDto getDecoderConfig() {
         DecoderSettings settings = clubProfileService.getDecoderSettings();
         return new DecoderConfigDto(settings.host(), settings.port(), settings.protocol());
@@ -107,7 +106,7 @@ public class SetupController {
      * {@code POST /api/v1/setup/decoder-config/test}, {@code ADMIN}; 400 for a bad body.
      */
     @PostMapping("/decoder-config/test")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     public DecoderProbe.Result testDecoderConfig(@RequestBody @Valid DecoderConfigUpdateRequest req) {
         return decoderProbe.probe(req.decoderHost(), req.decoderPort(), req.decoderProtocol());
     }
@@ -120,9 +119,9 @@ public class SetupController {
      */
     @Audited("audit_log")
     @PatchMapping("/decoder-config")
-    @PreAuthorize("hasRole('ADMIN')")
-    public SetupProgressDto updateDecoderConfig(Authentication auth, @RequestBody @Valid DecoderConfigUpdateRequest req) {
-        clubProfileService.updateDecoderConfig(CurrentOfficial.actor(auth),
+    @AdminOnly
+    public SetupProgressDto updateDecoderConfig(@RequestBody @Valid DecoderConfigUpdateRequest req) {
+        clubProfileService.updateDecoderConfig(CurrentOfficial.actor(),
                 req.decoderHost(), req.decoderPort(), req.decoderProtocol());
         return SetupProgressDto.from(setupService.getProgress());
     }
@@ -134,13 +133,13 @@ public class SetupController {
      */
     @Audited("official_audit_log")
     @PostMapping("/staff")
-    @PreAuthorize("hasRole('ADMIN')")
+    @AdminOnly
     @ResponseStatus(HttpStatus.CREATED)
-    public void createStaff(Authentication auth, @RequestBody @Valid SetupStaffRequest req) {
+    public void createStaff(@RequestBody @Valid SetupStaffRequest req) {
         Set<Role> roles = req.roles().stream()
                 .map(Role::valueOf)
                 .collect(Collectors.toSet());
         userService.createStaff(req.email(), req.password(), req.firstName(), req.lastName(), roles,
-                CurrentOfficial.id(auth));
+                CurrentOfficial.id());
     }
 }

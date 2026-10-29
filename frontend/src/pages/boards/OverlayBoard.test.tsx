@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TOWER_ROW_REM } from './OverlayTower';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
 import { fmtClock, parseOverlayOptions } from './boardFormat';
+import { DEFAULT_PLACEMENT } from './overlayLayout';
 import type { BoardRaceDto, NowNextDto, RaceClockDto } from '@/lib/boardsApi';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -27,6 +28,8 @@ vi.mock('@/lib/boardsApi', () => ({
   getTicker: vi.fn(),
   getSponsors: vi.fn(),
   getLiveQualifying: vi.fn(),
+  getOverlayTheme: vi.fn(),
+  getDefaultOverlayTheme: vi.fn(),
 }));
 
 import {
@@ -39,6 +42,8 @@ import {
   getTicker,
   getSponsors,
   getLiveQualifying,
+  getOverlayTheme,
+  getDefaultOverlayTheme,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -101,6 +106,7 @@ function renderOverlay(path = '/boards/overlay') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(getDefaultOverlayTheme).mockResolvedValue(null);
   for (const key of Object.keys(stompFrames)) delete stompFrames[key];
   vi.mocked(getBoardLiveTiming).mockResolvedValue([
     row(1, 'Ada Lovelace', 13_870),
@@ -110,7 +116,7 @@ beforeEach(() => {
   vi.mocked(getRaceClock).mockResolvedValue(clock());
   vi.mocked(getRoundFastestLap).mockResolvedValue({ lapMs: null, driverName: null });
   vi.mocked(getPositionHistory).mockResolvedValue([]);
-  vi.mocked(getRaceHighlights).mockResolvedValue({ heat: { gained: null, lost: null, avg3: null, avg5: null }, round: { gained: null, lost: null, avg3: null, avg5: null } });
+  vi.mocked(getRaceHighlights).mockResolvedValue({ heat: { gained: null, lost: null, avg3: null, avg5: null, flying: null, consistent: null, improved: null }, round: { gained: null, lost: null, avg3: null, avg5: null, flying: null, consistent: null, improved: null } });
   vi.mocked(getTicker).mockResolvedValue({ nextRace: null, nextDrivers: [], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [] });
   vi.mocked(getSponsors).mockResolvedValue([]);
   vi.mocked(getLiveQualifying).mockResolvedValue({ eventId: null, eventName: null, phase: 'NONE', raceId: null, raceLabel: null, className: null, rows: [] });
@@ -170,8 +176,8 @@ describe('OverlayBoard', () => {
     stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     vi.mocked(getRaceHighlights).mockResolvedValue({
-      heat: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 2 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: null },
-      round: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 4 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: { driverName: 'Katherine Johnson', value: 14_300 } },
+      heat: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 2 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: null, flying: { driverName: 'Ada Lovelace', value: 1_250 }, consistent: { driverName: 'Katherine Johnson', value: 180 }, improved: { driverName: 'Sam Second', value: 2 } },
+      round: { gained: { driverName: 'Ada Lovelace', value: 3 }, lost: { driverName: 'Sam Second', value: 4 }, avg3: { driverName: 'Ada Lovelace', value: 14_100 }, avg5: { driverName: 'Katherine Johnson', value: 14_300 }, flying: null, consistent: null, improved: null },
     });
     renderOverlay();
 
@@ -182,6 +188,27 @@ describe('OverlayBoard', () => {
     expect(ticker).toHaveTextContent('Most places lost in the round: Sam Second (−4)');
     expect(ticker).toHaveTextContent('Best 3 lap average in this heat: 14.100 · Ada Lovelace');
     expect(ticker).toHaveTextContent('Best 5 lap average in the round: 14.300 · Katherine Johnson');
+    expect(ticker).toHaveTextContent('Flying lap in this heat: Ada Lovelace (1.250 under their average)');
+    expect(ticker).toHaveTextContent('Most improved in this heat: Sam Second (+2 laps on their last heat)');
+    expect(ticker).toHaveTextContent('Most consistent in this heat: Katherine Johnson (laps within');
+  });
+
+  it('draws with a saved theme opened by ?look=ID, ignoring other options but keeping the event', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getTicker).mockResolvedValue({
+      nextRace: 'Final A', nextDrivers: ['Ada Lovelace'], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [],
+    });
+    vi.mocked(getOverlayTheme).mockResolvedValue({
+      id: 5, name: 'Club', design: { separatorImage: '/storage/club.png', tickerItems: ['next', 'drivers'] }, isDefault: false,
+    });
+    const { container } = renderOverlay('/boards/overlay?look=5&event=7&separator=/storage/other.png');
+
+    await screen.findByText(/On the grid/);
+    await waitFor(() =>
+      expect(container.querySelector('[aria-label="Ticker"] img')).toHaveAttribute('src', '/storage/club.png'));
+    expect(getOverlayTheme).toHaveBeenCalledWith(5);
+    expect(getNowNext).toHaveBeenCalledWith(7);
   });
 
   it('puts the separator image between ticker items in place of the diamond', async () => {
@@ -320,9 +347,37 @@ describe('OverlayBoard timing tower', () => {
 
     vi.mocked(getLiveQualifying).mockClear();
     vi.mocked(getLiveQualifying).mockResolvedValue({ ...other, raceId: 12 });
-    renderOverlay('/boards/overlay?qual=hide');
+    renderOverlay('/boards/overlay?qual=hide&tqpace=hide');
     await screen.findAllByRole('row');
     expect(getLiveQualifying).not.toHaveBeenCalled();
+  });
+
+  it('draws a line under the places that move up in a final, and bump=hide leaves it out', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100), row(3, 'Alan Turing', 14_300)];
+    vi.mocked(getNowNext).mockResolvedValue(nowNext({ ...race, roundType: 'FINAL', finalLetter: 'B', bumpUpPlaces: 2 }));
+    const { unmount } = renderOverlay();
+    const rows = await screen.findAllByRole('row');
+    expect(rows.filter((r) => r.hasAttribute('data-bump-line'))).toEqual([rows[2]]);
+    unmount();
+
+    renderOverlay('/boards/overlay?bump=hide');
+    const hidden = await screen.findAllByRole('row');
+    expect(hidden.some((r) => r.hasAttribute('data-bump-line'))).toBe(false);
+  });
+
+  it('tags rows with their class colour only when more than one class shows, and tags=hide leaves them out', async () => {
+    const mixed = [{ ...row(1, 'Grace Hopper', 13_500), classColour: '#ff0000' }, { ...row(2, 'Ada Lovelace', 14_100), classColour: '#0000ff' }];
+    stompFrames['/topic/race/12/timing'] = mixed;
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    const { container, unmount } = renderOverlay();
+    await screen.findAllByRole('row');
+    expect(container.querySelectorAll('[data-class-tag]')).toHaveLength(2);
+    unmount();
+
+    stompFrames['/topic/race/12/timing'] = mixed.map((r) => ({ ...r, classColour: '#ff0000' }));
+    const single = renderOverlay();
+    await screen.findAllByRole('row');
+    expect(single.container.querySelectorAll('[data-class-tag]')).toHaveLength(0);
   });
 
   it('heads the tower\'s columns, with PRED only when the race is timed and QUAL only in a qualifying heat', async () => {
@@ -376,6 +431,38 @@ describe('OverlayBoard sponsor bar', () => {
     expect(within(bar).getByText('Bolt Batteries')).toBeInTheDocument();
   });
 
+  it('asks for the sponsors of the theme it was opened with', async () => {
+    renderOverlay('/boards/overlay?look=5&event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, 5);
+  });
+
+  it('asks for the event sponsors only when no theme is given', async () => {
+    renderOverlay('/boards/overlay?event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, null);
+  });
+
+  it('opens the default theme on the plain address, with its sponsors', async () => {
+    vi.mocked(getDefaultOverlayTheme).mockResolvedValue({
+      id: 9, name: 'Night', design: { theme: 'light' }, isDefault: true,
+    });
+    renderOverlay('/boards/overlay?event=7');
+
+    await waitFor(() => expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, 9));
+  });
+
+  it('ignores the default theme when the address carries its own options', async () => {
+    vi.mocked(getDefaultOverlayTheme).mockResolvedValue({ id: 9, name: 'Night', design: {}, isDefault: true });
+    renderOverlay('/boards/overlay?top=3&event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(getDefaultOverlayTheme).not.toHaveBeenCalled();
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, null);
+  });
+
   it('leaves the bar out when the event has no sponsors', async () => {
     renderOverlay();
 
@@ -402,6 +489,36 @@ describe('OverlayBoard battles', () => {
     expect(await screen.findByText(/Battle for P1/)).toBeInTheDocument();
   });
 
+  it('keeps battles to the panel by default', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay();
+
+    expect(await screen.findByText(/Battle for P1/)).toBeInTheDocument();
+    expect(screen.queryByTestId('battle-row-tag')).not.toBeInTheDocument();
+  });
+
+  it.each(['tower', 'table'])('marks only the chasing car in the %s with battlestyle=rows', async (layout) => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay(`/boards/overlay?layout=${layout}&battlestyle=rows`);
+
+    const tag = await screen.findByTestId('battle-row-tag');
+    expect(tag).toHaveTextContent('0.8s');
+    expect(tag).toHaveAttribute('data-trend', 'CLOSING');
+    expect(screen.getAllByTestId('battle-row-tag')).toHaveLength(1);
+    expect(screen.queryByText(/Battle for P1/)).not.toBeInTheDocument();
+  });
+
+  it('shows the panel and the row with battlestyle=both', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay('/boards/overlay?battlestyle=both');
+
+    expect(await screen.findByTestId('battle-row-tag')).toBeInTheDocument();
+    expect(screen.getByText(/Battle for P1/)).toBeInTheDocument();
+  });
+
   it('shows no battle call-outs before any lap has been counted', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     vi.mocked(getBoardLiveTiming).mockResolvedValue([
@@ -420,14 +537,20 @@ describe('overlay options', () => {
   it('falls back to the defaults for anything it does not recognise', () => {
     expect(parseOverlayOptions(new URLSearchParams('top=abc&theme=neon&class=yes'))).toEqual({
       eventId: null,
+      placement: DEFAULT_PLACEMENT,
       top: 10,
       showClass: true,
       theme: 'dark',
       showChart: true,
-      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace']),
+      tickerItems: new Set(['next', 'drivers', 'marshals', 'tq', 'fastest', 'gain', 'loss', 'pace', 'flying', 'improved', 'steady']),
       showSponsors: true,
       layout: 'tower',
       showQualifying: true,
+      showBumpLine: true,
+      showTqPace: true,
+      showClassTags: true,
+      showHeadshots: false,
+      showCarColours: false,
       gap: 'int',
       gapEverySeconds: 6,
       separatorImage: null,
@@ -436,7 +559,10 @@ describe('overlay options', () => {
       showPredicted: true,
       closeMs: 1000,
       showBattles: true,
+      battleStyle: 'panel',
+      lowerThird: 'both',
       showLegend: false,
+      highContrast: false,
     });
     expect(parseOverlayOptions(new URLSearchParams('layout=table&qual=hide'))).toMatchObject({ layout: 'table', showQualifying: false });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);

@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
+import dev.monkeypatch.rctiming.timing.dto.FeaturedDriverDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -20,11 +21,14 @@ import java.util.Map;
  * - /topic/race/{raceId}/timing — live position updates
  * - /topic/race/{raceId}/battles — cars running close together and whether each gap is closing or growing
  * - /topic/race/{raceId}/state  — race state transitions
+ * - /topic/race/{raceId}/featured — the race director's featured-driver lower third for the overlay (#533)
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
  * - /topic/race/{raceId}/jump-start — cars that crossed the line before their turn in a stagger start
  * - /topic/race/{raceId}/warmup — cars of a race on the grid the decoder has seen so far
  * - /topic/race/{raceId}/bump-up-alert — drivers promoted when a lower final finishes
+ * - /topic/race/{raceId}/audio — spoken running orders and auto run's start cues, for the announcer's browser
+ * - /topic/event/{eventId}/auto-run — an event's auto run state, for open race control pages
  * - /topic/system/decoder-status and /topic/system/live-feed-status — connection status
  */
 @Component
@@ -55,6 +59,16 @@ public class LiveTimingHub {
     }
 
     /**
+     * Tells the streaming overlay to show a lower third for one car (#533): {@code /topic/race/{raceId}/featured} carries
+     * the entry id only, and the overlay already holds the name, car number, headshot and sponsors from the public
+     * board endpoints (which leave out a hidden name). Anonymous clients may subscribe, like the timing topic. A
+     * one-off message, not state: a client that misses it shows nothing. Sent at once, from a request thread.
+     */
+    public void broadcastFeaturedDriver(long raceId, long entryId) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/featured", new FeaturedDriverDto(raceId, entryId));
+    }
+
+    /**
      * Sent once the change commits: boards refetch on this message from the read pool, which only sees
      * committed data, so sent earlier they would fetch the race as it was. Nothing is sent on a rollback.
      */
@@ -72,8 +86,10 @@ public class LiveTimingHub {
      * Sent once per number per race, from the timing thread.
      */
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
+        // (Object) picks convertAndSend(destination, payload): Spring Framework 7 also has
+        // convertAndSend(payload, headers), which a Map argument would match too.
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
-                Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+                (Object) Map.of("raceId", raceId, "transponderNumber", transponderNumber));
     }
 
     /**
@@ -83,7 +99,7 @@ public class LiveTimingHub {
      */
     public void broadcastWarmUp(long raceId, List<Long> seenEntryIds) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/warmup",
-                Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
+                (Object) Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
     }
 
     /**
@@ -109,6 +125,23 @@ public class LiveTimingHub {
     public void broadcastBumpUpAlert(long finishedRaceId, List<Long> promotedEntryIds) {
         sendAfterCommit("/topic/race/" + finishedRaceId + "/bump-up-alert",
                 Map.of("finishedRaceId", finishedRaceId, "promotedEntryIds", promotedEntryIds));
+    }
+
+    /**
+     * Sends a cue for the announcer's browser to speak or play: a running-order line or a start countdown. Sent at
+     * once, not after a commit, because a cue is only ever heard when it is sent and describes nothing stored. Called
+     * from the running-order check and from auto run's scheduler thread.
+     */
+    public void broadcastAudioCue(long raceId, Object cue) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/audio", cue);
+    }
+
+    /**
+     * Sends an event's auto run state to open race control pages. Sent at once; the state is rebuilt from memory and
+     * a page that misses one is right again at the next. Called from request threads and auto run's scheduler thread.
+     */
+    public void broadcastAutoRunState(long eventId, Object state) {
+        messagingTemplate.convertAndSend("/topic/event/" + eventId + "/auto-run", state);
     }
 
     /** The live feed's connection to the relay, for the race-control status bar (#28). */

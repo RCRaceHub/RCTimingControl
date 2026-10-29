@@ -6,9 +6,10 @@ import org.apache.tomcat.util.net.SSLHostConfig;
 import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,11 +25,11 @@ public class HttpsConnectorCustomizer implements WebServerFactoryCustomizer<Tomc
     private static final Logger log = LoggerFactory.getLogger(HttpsConnectorCustomizer.class);
 
     private final TlsService tls;
-    private final String address;
+    private final ServerProperties server;
 
-    public HttpsConnectorCustomizer(TlsService tls, @Value("${server.address:}") String address) {
+    public HttpsConnectorCustomizer(TlsService tls, ObjectProvider<ServerProperties> server) {
         this.tls = tls;
-        this.address = address;
+        this.server = server.getIfAvailable();
     }
 
     /** Runs while the web server is being built, before the app is up; does nothing when HTTPS is off. */
@@ -58,15 +59,10 @@ public class HttpsConnectorCustomizer implements WebServerFactoryCustomizer<Tomc
         certificate.setCertificateKeyPassword(tls.keyStorePassword());
         hostConfig.addCertificate(certificate);
         protocol.addSslHostConfig(hostConfig);
-        if (address != null && !address.isBlank()) {
-            try {
-                protocol.setAddress(java.net.InetAddress.getByName(address));
-            } catch (java.net.UnknownHostException e) {
-                log.error("HTTPS is off because server.address {} is not a known address", address);
-                return;
-            }
+        if (server != null && server.getAddress() != null) {
+            protocol.setAddress(server.getAddress());
         }
-        factory.addAdditionalTomcatConnectors(connector);
+        factory.addAdditionalConnectors(connector);
         tls.markActive();
 
         tls.onChange(() -> {

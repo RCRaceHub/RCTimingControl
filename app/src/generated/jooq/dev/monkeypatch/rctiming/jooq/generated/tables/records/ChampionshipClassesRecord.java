@@ -136,6 +136,6 @@ public class ChampionshipClassesRecord extends UpdatableRecordImpl<ChampionshipC
         setBestXFromYX(bestXFromYX);
         setBestXFromYY(bestXFromYY);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useConfirm } from '@/components/ConfirmDialog';
 import {
   calculateAllFinals,
   calculateFinals,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { getApiErrorMessage } from '@/lib/errors';
+import { QueryError } from '@/components/QueryError';
 
 type Props = {
   eventId: number;
@@ -33,6 +35,7 @@ type Props = {
  */
 export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculateAll = false, onCarsChange }: Props) {
   const queryClient = useQueryClient();
+  const { confirm, dialog } = useConfirm();
   const [cars, setCars] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
   const { data, isPending, isError, refetch } = useQuery({
@@ -87,10 +90,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
   if (isPending) return <p role="status" className="text-sm text-muted-foreground">Loading…</p>;
   if (isError) {
     return (
-      <div role="alert" className="text-sm text-destructive">
-        Could not load the finals line-up.{' '}
-        <button type="button" className="underline" onClick={() => refetch()}>Retry</button>
-      </div>
+      <QueryError message="Could not load the finals line-up." onRetry={refetch} />
     );
   }
   if (!lineup) return null;
@@ -101,17 +101,25 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
   const readyClasses = (data ?? []).filter((l) => l.qualifyingComplete && !l.started && l.finals.length > 0);
   const anyCalculated = (data ?? []).some((l) => l.calculated);
 
-  function onCalculateAll() {
-    if (anyCalculated
-      && !window.confirm('Calculate the finals of every class again? Any changes you made to the line-ups will be lost.')) {
+  async function onCalculateAll() {
+    if (anyCalculated && !(await confirm({
+      title: 'Calculate the finals of every class again?',
+      description: 'Any changes you made to the line-ups will be lost.',
+      confirmLabel: 'Calculate again',
+      destructive: true,
+    }))) {
       return;
     }
     calculateAll.mutate();
   }
 
-  function onCalculate() {
-    if (lineup?.calculated
-      && !window.confirm('Calculate the finals again? Any changes you made to the line-ups will be lost.')) {
+  async function onCalculate() {
+    if (lineup?.calculated && !(await confirm({
+      title: 'Calculate the finals again?',
+      description: 'Any changes you made to the line-ups will be lost.',
+      confirmLabel: 'Calculate again',
+      destructive: true,
+    }))) {
       return;
     }
     calculate.mutate(carsNumber);
@@ -119,6 +127,7 @@ export function FinalsLineupPanel({ eventId, eventClassId, canEdit, hideCalculat
 
   return (
     <Card className="p-4 space-y-3" aria-label="Finals line-up">
+      {dialog}
       <h2 className="text-sm font-semibold">Finals line-up: {lineup.className}</h2>
       {canEdit && (
         <div className="flex flex-wrap items-center gap-3">

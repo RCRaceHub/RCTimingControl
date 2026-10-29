@@ -136,6 +136,6 @@ public class OfficialAuditLogRecord extends UpdatableRecordImpl<OfficialAuditLog
         setAction(action);
         setDetail(detail);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

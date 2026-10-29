@@ -27,13 +27,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * The optional pictures and sponsors the boards can show for a driver (#520): a headshot and the driver's own
- * sponsors per competitor, and a photo of the car per entry. Called by {@code AdminDriverMediaController} (each change is
+ * sponsors per competitor, and a photo of the car and its colours per entry. Called by {@code AdminDriverMediaController} (each change is
  * one write transaction with an audit row), by the anonymise service (which erases a competitor's media) and by the
  * anonymous boards endpoint (reads).
  *
@@ -56,15 +58,18 @@ public class DriverMediaService {
     private static final String PHOTO_FOLDER = "photos";
     private static final int SPONSORS_MAX = 5;
     private static final int SPONSOR_NAME_MAX = 100;
+    private static final int CAR_COLOURS_MAX = 4;
+    private static final Pattern COLOUR = Pattern.compile("#[0-9a-f]{6}");
 
     /** What the admin screen shows for a competitor. */
     public record CompetitorMediaView(String headshotUrl, List<String> sponsors) {}
 
     /** What a public screen may show for one entry of a race; each field is null or empty when there is nothing to show. */
-    public record PublicMedia(Long entryId, String headshotUrl, String carPhotoUrl, List<String> sponsors) {}
+    public record PublicMedia(Long entryId, String headshotUrl, String carPhotoUrl, List<String> sponsors, List<String> carColours) {}
 
     private final DriverMediaRepository media;
     private final EntryPhotoRepository photos;
+    private final EntryCarColoursRepository carColours;
     private final CompetitorRepository competitors;
     private final EntryRepository entries;
     private final RaceEntryRepository raceEntries;
@@ -72,10 +77,12 @@ public class DriverMediaService {
     private final AuditService audit;
 
     public DriverMediaService(DriverMediaRepository media, EntryPhotoRepository photos,
+                              EntryCarColoursRepository carColours,
                               CompetitorRepository competitors, EntryRepository entries,
                               RaceEntryRepository raceEntries, ObjectStorageService storage, AuditService audit) {
         this.media = media;
         this.photos = photos;
+        this.carColours = carColours;
         this.competitors = competitors;
         this.entries = entries;
         this.raceEntries = raceEntries;
@@ -105,6 +112,49 @@ public class DriverMediaService {
     public String carPhoto(long entryId) {
         entries.requireExists(entryId);
         return photos.findByEntryId(entryId).map(EntryPhoto::getCarPhotoUrl).orElse(null);
+    }
+
+    /**
+     * An entry's car colours as {@code #rrggbb} values, empty when none are set.
+     *
+     * @throws EntityNotFoundException (404) if there is no such entry
+     */
+    @ReadTransaction
+    public List<String> carColours(long entryId) {
+        entries.requireExists(entryId);
+        return carColours.findByEntryId(entryId).map(c -> splitColours(c.getColours())).orElse(List.of());
+    }
+
+    /**
+     * Replaces the entry's car colours; an empty list clears them. Colours are not personal data, so a change is
+     * audited without any name.
+     *
+     * @param colours up to four {@code #rrggbb} values (any case; stored lower case); blanks and repeats are dropped
+     * @return the colours as stored
+     * @throws IllegalArgumentException (400) if there are too many or one is not {@code #rrggbb}
+     * @throws EntityNotFoundException (404) if there is no such entry
+     */
+    public List<String> setCarColours(Actor actor, long entryId, List<String> colours) {
+        Entry entry = entries.getOrThrow(entryId);
+        List<String> clean = colours == null ? List.of() : colours.stream().filter(Objects::nonNull)
+                .map(c -> c.trim().toLowerCase()).filter(c -> !c.isEmpty()).distinct().toList();
+        if (clean.size() > CAR_COLOURS_MAX || !clean.stream().allMatch(c -> COLOUR.matcher(c).matches())) {
+            throw new IllegalArgumentException("A car can have up to " + CAR_COLOURS_MAX + " colours, each as #rrggbb");
+        }
+        if (clean.isEmpty()) {
+            carColours.findByEntryId(entryId).ifPresent(c -> carColours.deleteById(c.getId()));
+        } else {
+            EntryCarColours row = carColours.findByEntryId(entryId).orElseGet(() -> {
+                EntryCarColours created = new EntryCarColours();
+                created.setEntryId(entryId);
+                return created;
+            });
+            row.setColours(String.join(",", clean));
+            carColours.save(row);
+        }
+        audit.entry(actor, "ENTRY_CAR_COLOURS_CHANGED").entity("entry", entryId).event(entry.getEventId())
+                .summary("Changed the car colours of entry #" + entryId).record();
+        return clean;
     }
 
     /**
@@ -212,6 +262,7 @@ public class DriverMediaService {
             media.deleteById(row.getId());
         });
         List<Long> entryIds = entries.findByCompetitorId(competitorId).stream().map(Entry::getId).toList();
+        // Car colours are not personal data and go with their entry, so they are left alone
         photos.findByEntryIds(entryIds).forEach(photo -> {
             deleteAfterCommit(photo.getCarPhotoUrl());
             photos.deleteById(photo.getId());
@@ -219,9 +270,9 @@ public class DriverMediaService {
     }
 
     /**
-     * What a public screen may show for each car in a race. A competitor whose name is not shown in full gets nothing
-     * at all (#265), so a hidden or initials-only driver cannot be recognised from their picture or sponsors. Cars with
-     * nothing to show are left out.
+     * What a public screen may show for each car in a race. A competitor whose name is not shown in full gets no
+     * headshot, car photo or sponsors (#265), so a hidden or initials-only driver cannot be recognised from them; only
+     * the car's colours, which are not personal data, are kept. Cars with nothing to show are left out.
      *
      * @return by entry id, in the race's grid order
      */
@@ -235,18 +286,28 @@ public class DriverMediaService {
                 .collect(Collectors.toMap(DriverMedia::getCompetitorId, m -> m));
         Map<Long, String> carOf = photos.findByEntryIds(entryIds).stream()
                 .collect(Collectors.toMap(EntryPhoto::getEntryId, EntryPhoto::getCarPhotoUrl));
+        Map<Long, List<String>> coloursOf = carColours.findByEntryIds(entryIds).stream()
+                .collect(Collectors.toMap(EntryCarColours::getEntryId, c -> splitColours(c.getColours())));
         Map<Long, PublicMedia> out = new LinkedHashMap<>();
         for (Long entryId : entryIds) {
             Long competitorId = competitorOf.get(entryId);
-            if (competitorId == null || restricted.containsKey(competitorId)) {
+            List<String> colours = coloursOf.getOrDefault(entryId, List.of());
+            if (competitorId == null) {
+                continue;
+            }
+            if (restricted.containsKey(competitorId)) {
+                // Colours are not personal data, so a hidden driver's car still shows them
+                if (!colours.isEmpty()) {
+                    out.put(entryId, new PublicMedia(entryId, null, null, List.of(), colours));
+                }
                 continue;
             }
             DriverMedia m = mediaOf.get(competitorId);
             String headshot = m == null ? null : m.getHeadshotUrl();
             List<String> sponsors = m == null ? List.of() : splitSponsors(m.getSponsors());
             String car = carOf.get(entryId);
-            if (headshot != null || car != null || !sponsors.isEmpty()) {
-                out.put(entryId, new PublicMedia(entryId, headshot, car, sponsors));
+            if (headshot != null || car != null || !sponsors.isEmpty() || !colours.isEmpty()) {
+                out.put(entryId, new PublicMedia(entryId, headshot, car, sponsors, colours));
             }
         }
         return out;
@@ -327,6 +388,10 @@ public class DriverMediaService {
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
         }
+    }
+
+    private static List<String> splitColours(String stored) {
+        return stored == null || stored.isBlank() ? List.of() : Arrays.stream(stored.split(",")).toList();
     }
 
     private static List<String> splitSponsors(String stored) {

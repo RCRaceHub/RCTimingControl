@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
 
 import { Button } from '@/components/ui/button';
 import { useExportClubSettings, useImportClubSettings } from '@/hooks/admin/useAdminClub';
 import type { SettingsSectionDto } from '@/lib/adminApi';
+import { getApiErrorMessage } from '@/lib/errors';
 
 /** The server's explanation of a refused file, such as the version it reads, when it gave one. */
 function problemDetail(error: unknown): string | undefined {
-  return axios.isAxiosError(error) ? error.response?.data?.detail : undefined;
+  return getApiErrorMessage(error, '') || undefined;
 }
 
 /**

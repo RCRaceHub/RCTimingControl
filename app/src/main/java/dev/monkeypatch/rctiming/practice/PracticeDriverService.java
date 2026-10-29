@@ -11,6 +11,7 @@ import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSession;
 import dev.monkeypatch.rctiming.domain.practice.PracticeSessionRepository;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.practice.dto.PracticeDriverDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +101,7 @@ public class PracticeDriverService {
     }
 
     /** The transponders named in the session, with the competitor each was matched to. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<PracticeDriverDto> list(Long sessionId) {
         return driverRepository.findByPracticeSessionId(sessionId).stream()
                 .map(d -> new PracticeDriverDto(d.getTransponderNumber(), d.getCompetitorId(),

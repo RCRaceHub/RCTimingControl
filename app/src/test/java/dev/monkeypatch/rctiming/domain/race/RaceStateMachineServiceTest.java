@@ -9,9 +9,7 @@ import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.service.ResultSnapshotService;
 import dev.monkeypatch.rctiming.service.RoundGeneratorService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
-import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
-import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -20,7 +18,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +36,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RaceStateMachineServiceTest {
+
+    private static final Instant NOW = Instant.parse("2026-10-28T12:00:00Z");
 
     private final RaceRepository raceRepository = mock(RaceRepository.class);
     private final RoundRepository roundRepository = mock(RoundRepository.class);
@@ -58,7 +60,7 @@ class RaceStateMachineServiceTest {
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
                 mock(BumpUpSeedingService.class), raceFormatService,
                 eventClassRepository, mock(RaceEliminationRepository.class), mock(RacePointPenaltyRepository.class),
-                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class));
+                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class), Clock.fixed(NOW, ZoneOffset.UTC));
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);
@@ -67,6 +69,17 @@ class RaceStateMachineServiceTest {
         doAnswer(inv -> savedWhenPublished.add(lastSaved))
                 .when(eventPublisher).publishEvent(any(ApplicationEvent.class));
         when(roundRepository.findById(any())).thenReturn(Optional.empty());
+    }
+
+    @Test
+    void startAndFinish_stampTheRaceWithTheTimeFromTheClock() {
+        Race race = race(RaceStatus.GRID);
+
+        service.start(race);
+        assertThat(race.getStartedAt()).isEqualTo(NOW);
+
+        service.finish(race);
+        assertThat(race.getFinishedAt()).isEqualTo(NOW);
     }
 
     @Test
@@ -331,11 +344,7 @@ class RaceStateMachineServiceTest {
         nextHeat.setEventClassId(5L);
         nextHeat.setHeatNumber(1);
         when(raceRepository.findByRoundIdOrderBySequenceInRound(4L)).thenReturn(List.of(nextHeat));
-        LiveTimingRowDto row = mock(LiveTimingRowDto.class);
-        when(row.entryId()).thenReturn(42L);
-        LiveRaceState state = mock(LiveRaceState.class);
-        when(state.calculatePositions()).thenReturn(List.of(row));
-        when(lapTimingService.peek(7L)).thenReturn(Optional.of(state));
+        when(resultSnapshotService.finishingOrder(7L)).thenReturn(List.of(42L));
         Race race = race(RaceStatus.RUNNING);
         race.setEventClassId(5L);
         race.setHeatNumber(1);

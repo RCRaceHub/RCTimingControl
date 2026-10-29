@@ -7,6 +7,7 @@ export const DOC_SOURCES = import.meta.glob(
     '../../../docs/installing.md',
     '../../../docs/docker.md',
     '../../../docs/decoder.md',
+    '../../../docs/recording-the-decoder.md',
     '../../../docs/screens-and-printouts.md',
     '../../../docs/race-types.md',
     '../../../docs/shikabane-guide.md',

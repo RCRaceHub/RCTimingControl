@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { isAxiosError } from 'axios';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { AuthUser } from '@/providers/AuthProvider';
 import { setupQueryKeys } from '@/hooks/setup/setupQueryKeys';
 import { TextField } from '@/components/TextField';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const bootstrapSchema = z
   .object({
@@ -73,15 +73,11 @@ export default function AdminBootstrapGate() {
       await queryClient.invalidateQueries({ queryKey: setupQueryKeys.status() });
       navigate('/setup', { replace: true });
     } catch (err) {
-      if (isAxiosError(err)) {
-        if (err.response?.status === 409) {
-          toast.error('Setup is already complete. Please log in instead.');
-          navigate('/login');
-        } else {
-          toast.error('Something went wrong. Check your connection and try again.');
-        }
+      if (getApiErrorStatus(err) === 409) {
+        toast.error('Setup is already complete. Please log in instead.');
+        navigate('/login');
       } else {
-        toast.error('Something went wrong. Check your connection and try again.');
+        toast.error(getApiErrorMessage(err, 'Something went wrong. Check your connection and try again.'));
       }
     } finally {
       setIsPending(false);

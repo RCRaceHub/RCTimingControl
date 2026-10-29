@@ -11,15 +11,16 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * Stores the club's logo image in object storage and points the club profile at it. It accepts PNG, JPEG, WebP or SVG
- * up to 2 MB and records {@code CLUB_LOGO_CHANGED}. The previous file stays in storage.
+ * Stores the club's logo image in object storage and points the club profile at it. It accepts PNG, JPEG or WebP
+ * up to 2 MB (never SVG, which can carry a script and would run on the app's own origin) and records
+ * {@code CLUB_LOGO_CHANGED}. The previous file stays in storage.
  */
 @Service
 @Transactional
 public class LogoUploadService {
 
     private static final Set<String> ALLOWED_CONTENT_TYPES =
-            Set.of("image/png", "image/jpeg", "image/webp", "image/svg+xml");
+            Set.of("image/png", "image/jpeg", "image/webp");
 
     private static final long MAX_BYTES = 2 * 1024 * 1024L; // 2 MB
 
@@ -60,7 +61,6 @@ public class LogoUploadService {
             case "image/png" -> "png";
             case "image/jpeg" -> "jpg";
             case "image/webp" -> "webp";
-            case "image/svg+xml" -> "svg";
             default -> "bin";
         };
         String key = "club-logos/" + clubProfileId + "-" + System.currentTimeMillis() + "." + extension;

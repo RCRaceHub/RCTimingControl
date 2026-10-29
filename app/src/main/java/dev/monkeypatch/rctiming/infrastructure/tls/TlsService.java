@@ -6,8 +6,8 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
  * checks the names every ten minutes.
  */
 @Component
+@EnableConfigurationProperties(HttpsProperties.class)
 public class TlsService {
 
     private static final Logger log = LoggerFactory.getLogger(TlsService.class);
@@ -73,10 +74,8 @@ public class TlsService {
     private volatile boolean active;
 
     @Autowired
-    public TlsService(@Value("${rctiming.https.enabled:false}") boolean enabled,
-                      @Value("${rctiming.https.port:8443}") int port,
-                      DatabaseProperties database, LanAddresses lan) {
-        this(enabled, port, database.effectiveDataDirectory().resolve("tls"), lan, Clock.systemUTC());
+    public TlsService(HttpsProperties https, DatabaseProperties database, LanAddresses lan) {
+        this(https.enabled(), https.port(), database.effectiveDataDirectory().resolve("tls"), lan, Clock.systemUTC());
     }
 
     TlsService(boolean enabled, int port, Path folder, LanAddresses lan, Clock clock) {

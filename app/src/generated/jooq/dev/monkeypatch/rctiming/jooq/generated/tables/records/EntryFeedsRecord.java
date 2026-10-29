@@ -256,6 +256,6 @@ public class EntryFeedsRecord extends UpdatableRecordImpl<EntryFeedsRecord> {
         setHeldRevision(heldRevision);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

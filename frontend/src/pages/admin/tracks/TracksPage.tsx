@@ -26,6 +26,7 @@ import {
 import { useTracksList, useCreateTrack, useUpdateTrack, useDeleteTrack } from '@/hooks/admin/useAdminTracks';
 import type { TrackDto } from '@/lib/adminApi';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { QueryError } from '@/components/QueryError';
 
 // A blank number box means "not set"; coercing the blank string would make it 0
 const optionalSeconds = (message: string) =>
@@ -211,10 +212,7 @@ export default function TracksPage() {
       </div>
 
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-4">
-          <p className="text-sm text-destructive">Failed to load tracks.</p>
-          <Button variant="outline" size="sm" onClick={() => refetch()}>Retry</Button>
-        </div>
+        <QueryError variant="banner" message="Failed to load tracks." onRetry={refetch} />
       )}
 
       {isLoading ? (

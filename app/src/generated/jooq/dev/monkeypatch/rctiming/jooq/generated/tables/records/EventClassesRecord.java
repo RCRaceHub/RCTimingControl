@@ -226,6 +226,6 @@ public class EventClassesRecord extends UpdatableRecordImpl<EventClassesRecord> 
         setFinalsCount(finalsCount);
         setCarsPerFinal(carsPerFinal);
         setBumpCount(bumpCount);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

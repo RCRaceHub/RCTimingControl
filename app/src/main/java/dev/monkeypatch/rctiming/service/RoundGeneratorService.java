@@ -125,27 +125,35 @@ public class RoundGeneratorService {
     /**
      * Sets gridPosition on RaceEntry rows for a specific race using the finishing order
      * from the previous round's same heat. Best finisher (index 0) gets gridPosition=1.
+     * Entries missing from the finishing order (cars that never crossed the line, or were added to the heat
+     * since) start behind the others, in the order they already had, so the grid is always 1 to n with no gaps
+     * or repeats. Car numbers are not touched: they change only at a reseed.
      *
-     * <p>Called by the race state machine when a round completes, to set up
-     * start positions for the corresponding race in the next round.
+     * <p>Called by the race state machine when a heat finishes, and again when a correction changes that
+     * heat's result, to set up start positions for the same heat in the next round. Joins the caller's
+     * transaction. Does nothing to a race that has already started.
      *
      * @param newRaceId              the race whose grid positions to update
      * @param entryIdsInFinishingOrder entry IDs ordered best-first from the previous round
      */
     public void applyPreviousRoundFinishingOrder(Long newRaceId,
                                                   List<Long> entryIdsInFinishingOrder) {
-        List<RaceEntry> entries = raceEntryRepository.findByRaceIdOrderByGridPosition(newRaceId);
-        // Build a map from entryId → finishing position (1-based)
-        Map<Long, Integer> positionMap = new HashMap<>();
-        for (int i = 0; i < entryIdsInFinishingOrder.size(); i++) {
-            positionMap.put(entryIdsInFinishingOrder.get(i), i + 1);
+        Race race = raceRepository.getOrThrow(newRaceId);
+        if (race.getStatus() != RaceStatus.PENDING && race.getStatus() != RaceStatus.GRID) {
+            return;
         }
-        for (RaceEntry entry : entries) {
-            Integer pos = positionMap.get(entry.getEntryId());
-            if (pos != null) {
-                entry.setGridPosition(pos);
-                raceEntryRepository.save(entry);
-            }
+        List<RaceEntry> entries = raceEntryRepository.findByRaceIdOrderByGridPosition(newRaceId);
+        Map<Long, Integer> finishPosition = new HashMap<>();
+        for (int i = 0; i < entryIdsInFinishingOrder.size(); i++) {
+            finishPosition.putIfAbsent(entryIdsInFinishingOrder.get(i), i + 1);
+        }
+        // Stable sort: finishers by finish, then the rest in their existing order
+        List<RaceEntry> ordered = new ArrayList<>(entries);
+        ordered.sort(Comparator.comparingInt(e -> finishPosition.getOrDefault(e.getEntryId(), Integer.MAX_VALUE)));
+        int grid = 1;
+        for (RaceEntry entry : ordered) {
+            entry.setGridPosition(grid++);
+            raceEntryRepository.save(entry);
         }
     }
 

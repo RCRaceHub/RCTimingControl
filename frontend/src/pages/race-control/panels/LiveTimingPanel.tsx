@@ -19,11 +19,14 @@ import { cn } from '@/lib/utils';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
+import { PaceIcon } from '@/components/PaceIcon';
+import { FlyingLapIcon } from '@/components/RowBadges';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { holdBackLapped, isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
+import { carColoursFor } from '@/lib/carColours';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 
@@ -58,7 +61,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
         <div
           className={cn(
             'h-2 w-2 rounded-full',
-            wsStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/40',
+            wsStatus === 'connected' ? 'bg-success animate-pulse' : 'bg-muted-foreground/40',
           )}
           title={wsStatus}
         />
@@ -72,7 +75,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
             : wsStatus === 'connected' ? 'Waiting for first passing…' : 'Connecting to timing…'}
         </p>
       ) : (
-        <Table className="table-fixed">
+        <Table className="table-fixed short:[&_td]:py-1.5 short:[&_th]:h-8">
           <TableHeader>
             <TableRow>
               <TableHead className="w-14">Pos</TableHead>
@@ -96,12 +99,12 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 key={row.entryId}
                 className={cn(
                   'transition-colors duration-500',
-                  flash === 'race-best'      && 'bg-purple-500/30',
-                  flash === 'personal-best'  && 'bg-blue-500/30',
-                  flash === 'improving'      && 'bg-green-500/30',
-                  flash === 'slow'           && 'bg-red-500/30',
+                  flash === 'race-best'      && 'bg-race-best/30',
+                  flash === 'personal-best'  && 'bg-info/30',
+                  flash === 'improving'      && 'bg-success/30',
+                  flash === 'slow'           && 'bg-destructive/30',
                   !flash && highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
-                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-amber-500/15',
+                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-warning/15',
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
@@ -109,13 +112,19 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
                   <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
-                    <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2 shrink-0" />
+                    <CarThumb
+                      url={media.get(row.entryId)?.carPhotoUrl}
+                      colours={carColoursFor(media.get(row.entryId)?.carColours, row.classColour)}
+                      className="mr-2 shrink-0"
+                    />
                     <span className="min-w-0 truncate">{row.driverName}</span>
+                    {status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
+                    <FlyingLapIcon row={row} className="ml-1" />
                     {/* The CLOSE badge below already says close, so only the lap flash gets an icon here */}
                     <RowStateIcon flash={flash} close={false} className="ml-2" />
                     {row.finished && <FinishedFlag />}
                     {close && (
-                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-amber-500 text-amber-500">
+                      <Badge variant="outline" className="ml-2 shrink-0 text-[10px] px-1 py-0 border-warning text-warning">
                         CLOSE
                       </Badge>
                     )}
@@ -164,7 +173,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
         </Table>
       )}
       {sorted.length > 0 && (
-        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close'] : ['lap']} className="mt-2 text-muted-foreground" />
+        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close', 'pace'] : ['lap', 'pace']} className="mt-2 text-muted-foreground" />
       )}
     </div>
   );

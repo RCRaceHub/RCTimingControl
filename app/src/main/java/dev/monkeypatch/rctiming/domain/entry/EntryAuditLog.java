@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.domain.entry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.persistence.CreatedAt;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.Map;
@@ -71,7 +71,7 @@ public class EntryAuditLog implements CreatedAt {
     public static String snapshot(ObjectMapper objectMapper, Map<String, ?> values) {
         try {
             return objectMapper.writeValueAsString(values);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Failed to serialize audit snapshot", e);
         }
     }

@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.PublishTargetRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
@@ -9,15 +11,13 @@ import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import dev.monkeypatch.rctiming.resultsexport.ResultsSiteService;
+import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +31,7 @@ import java.util.List;
 /** Results sent to RaceHub (#27): what is queued and sent, retry now, and an event's results file. */
 @RestController
 @RequestMapping("/api/v1/admin")
-@PreAuthorize("hasRole('ADMIN')")
+@AdminOnly
 public class ResultsExportController {
 
     private static final int OUTBOX_ROWS = 100;
@@ -66,8 +66,7 @@ public class ResultsExportController {
     public record ResultsExportsDto(boolean sendingEnabled, String resultsUrl, String savedUrl,
                                     List<String> missingSettings, ResultsPublishTarget publishTarget,
                                     ResultsPublishTarget chosenTarget,
-                                    List<ResultsOutboxQuery.OutboxRow> exports) {
-    }
+                                    List<ResultsOutboxQuery.OutboxRow> exports) {}
 
     @GetMapping("/results-exports")
     public ResultsExportsDto list() {
@@ -81,36 +80,28 @@ public class ResultsExportController {
                 outboxQuery.latest(OUTBOX_ROWS));
     }
 
-    /** @param resultsUrl the RaceHub address; blank clears it, so the settings file's applies */
-    public record ResultsUrlRequest(@Size(max = 500) String resultsUrl) {
-    }
-
     @Audited("audit_log")
     @PutMapping("/results-exports/address")
-    public ResultsExportsDto setAddress(Authentication auth, @RequestBody @Valid ResultsUrlRequest request) {
+    public ResultsExportsDto setAddress(@RequestBody @Valid ResultsUrlRequest request) {
         if (request.resultsUrl() != null && !request.resultsUrl().isBlank()) {
             RaceHubResultsEndpoint.parse(request.resultsUrl());
         }
-        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(auth), request.resultsUrl());
+        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
         return list();
-    }
-
-    /** @param target where to publish results; null clears the choice, so the default applies */
-    public record PublishTargetRequest(ResultsPublishTarget target) {
     }
 
     @Audited("audit_log")
     @PutMapping("/results-exports/target")
-    public ResultsExportsDto setTarget(Authentication auth, @RequestBody PublishTargetRequest request) {
-        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(auth),
+    public ResultsExportsDto setTarget(@RequestBody PublishTargetRequest request) {
+        clubProfileService.updateResultsPublishTarget(CurrentOfficial.actor(),
                 request.target() == null ? null : request.target().name());
         return list();
     }
 
     @Audited("audit_log")
     @PostMapping("/results-exports/{id}/retry")
-    public ResponseEntity<Void> retry(Authentication auth, @PathVariable long id) {
-        exportService.retryNow(CurrentOfficial.actor(auth), id);
+    public ResponseEntity<Void> retry(@PathVariable long id) {
+        exportService.retryNow(CurrentOfficial.actor(), id);
         return ResponseEntity.noContent().build();
     }
 

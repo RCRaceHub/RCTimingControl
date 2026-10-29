@@ -85,6 +85,18 @@ describe('LiveTopBoard', () => {
     expect(screen.queryByText('on track')).not.toBeInTheDocument();
   });
 
+  it('leaves the car number column out of the tables', async () => {
+    vi.mocked(getLiveQualifying).mockResolvedValue(
+      table('LIVE', [row({ position: 1, entryId: 1, driverName: 'First', carNumber: '7' })]),
+    );
+
+    renderBoard();
+
+    expect(await screen.findByText('First')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Car' })).not.toBeInTheDocument();
+    expect(screen.queryByText('7')).not.toBeInTheDocument();
+  });
+
   it('shows only the top places asked for', async () => {
     vi.mocked(getLiveQualifying).mockResolvedValue(
       table('LIVE', [

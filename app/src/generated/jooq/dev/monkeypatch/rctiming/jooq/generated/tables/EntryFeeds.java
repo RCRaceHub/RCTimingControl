@@ -27,13 +27,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -62,7 +63,7 @@ public class EntryFeeds extends TableImpl<EntryFeedsRecord> {
     /**
      * The column <code>entry_feeds.id</code>.
      */
-    public final TableField<EntryFeedsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<EntryFeedsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>entry_feeds.event_id</code>.
@@ -267,7 +268,7 @@ public class EntryFeeds extends TableImpl<EntryFeedsRecord> {
      */
     @Override
     public EntryFeeds where(Condition condition) {
-        return new EntryFeeds(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new EntryFeeds(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -334,7 +335,7 @@ public class EntryFeeds extends TableImpl<EntryFeedsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EntryFeeds whereExists(Select<?> select) {
+    public EntryFeeds whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -342,7 +343,7 @@ public class EntryFeeds extends TableImpl<EntryFeedsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EntryFeeds whereNotExists(Select<?> select) {
+    public EntryFeeds whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

@@ -346,6 +346,6 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
         setImportedSecondaryTransponderNumber(importedSecondaryTransponderNumber);
         setThirdTransponderNumber(thirdTransponderNumber);
         setFourthTransponderNumber(fourthTransponderNumber);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

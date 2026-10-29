@@ -2,6 +2,9 @@ import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
+import { RowMarkers } from '@/components/RowBadges';
+import { useNoSignal } from '@/hooks/race-control/useNoSignal';
+import { PaceIcon } from '@/components/PaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
@@ -9,7 +12,7 @@ import { isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
-import { TimingLegend } from '@/components/TimingLegend';
+import { TimingLegend, type LegendKind } from '@/components/TimingLegend';
 import { gapText } from './boardFormat';
 
 interface BoardLiveTableProps {
@@ -41,6 +44,10 @@ export interface PredictedClock {
  * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
 export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
+  const legendKinds: LegendKind[] = showLegend
+    ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : []), ...(barClock ? ['status' as const] : [])]
+    : [];
+  const noSignal = useNoSignal(rows, barClock);
   return (
     <>
       <table className="w-full text-2xl lg:text-4xl" aria-label="Live timing">
@@ -64,7 +71,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             return (
             <tr
               key={row.entryId}
-              className={cn('border-b border-slate-800', close && 'bg-amber-500/20')}
+              className={cn('border-b border-slate-800', close && 'bg-amber-500/20', noSignal.has(row.entryId) && 'opacity-50')}
               data-close={close || undefined}
             >
               <td className="py-3 pr-4 font-bold tabular-nums">{row.position}{showArrows && <PositionArrow row={row} rows={rows} />}</td>
@@ -74,6 +81,8 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
                 {row.driverName}
                 {/* This board has no lap flash, so only close gets an icon */}
                 <RowStateIcon close={close} className="ml-3" />
+                {barClock && !row.finished && <PaceIcon row={row} clock={barClock} className="ml-2" />}
+                <RowMarkers row={row} noSignal={noSignal.has(row.entryId)} className="ml-2" />
                 {row.finished && <FinishedFlag />}
                 {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
               </td>
@@ -93,7 +102,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
           })}
         </tbody>
       </table>
-      {showLegend && closeMs > 0 && <TimingLegend kinds={['close']} size="board" className="mt-3 text-slate-400" />}
+      {legendKinds.length > 0 && <TimingLegend kinds={legendKinds} size="board" className="mt-3 text-slate-400" />}
     </>
   );
 }

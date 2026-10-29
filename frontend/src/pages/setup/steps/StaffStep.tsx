@@ -2,7 +2,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -12,6 +11,7 @@ import { TextField } from '@/components/TextField';
 import { OfficialFields } from '@/components/OfficialFields';
 import { officialSchema, PASSWORDS_DIFFER } from '@/lib/officials';
 import { useRecheckConfirmation } from '@/hooks/useRecheckConfirmation';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const schema = officialSchema
   .extend({ confirmPassword: z.string().min(1, 'Please confirm your password') })
@@ -58,16 +58,12 @@ export default function StaffStep({ onNext, onBack }: Props) {
       toast.success('Staff account created');
       onNext();
     } catch (err) {
-      if (isAxiosError(err)) {
-        if (err.response?.status === 409) {
-          form.setError('email', {
-            message: 'An account with this email already exists.',
-          });
-        } else {
-          toast.error('Something went wrong. Check your connection and try again.');
-        }
+      if (getApiErrorStatus(err) === 409) {
+        form.setError('email', {
+          message: 'An account with this email already exists.',
+        });
       } else {
-        toast.error('Could not create staff account. Try again.');
+        toast.error(getApiErrorMessage(err, 'Could not create staff account. Try again.'));
       }
     }
   }

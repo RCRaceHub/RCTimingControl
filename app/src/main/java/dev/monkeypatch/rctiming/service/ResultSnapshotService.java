@@ -32,6 +32,7 @@ import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -179,6 +180,7 @@ public class ResultSnapshotService {
      * built from the corrected result.
      */
     @EventListener
+    @Order(1)
     public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
         applyCorrections(event.raceId());
     }
@@ -309,12 +311,19 @@ public class ResultSnapshotService {
     /**
      * Builds a lap history: for each lap, where each car stood when it completed that lap, with its lap time.
      * The places come from {@link LapOrder}, so a position chart shows who passed whom. The state parameter is
-     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. A correction
+     * nullable: legacy snapshots or races without live state get the final position and a null lapTimeMs. Each car
+     * with a grid position also gets a lap 0 entry (its grid place, no lap time) so the chart starts from the grid;
+     * code reading lap times must skip lap 0.
+     *
+     * <p>A correction
      * after the race rebuilds this from the live state if it is still held, otherwise the stored history is kept.
      */
     private List<ResultSnapshotDto.PositionAtLap> buildLapHistory(List<LiveTimingRowDto> rows, LiveRaceState state) {
         List<ResultSnapshotDto.PositionAtLap> history = new ArrayList<>();
         LapOrder order = LapOrder.of(rows, state);
+        for (LapOrder.Place start : order.startPlaces()) {
+            history.add(new ResultSnapshotDto.PositionAtLap(0, start.entryId(), start.position(), null));
+        }
         for (int lap = 1; lap <= order.leaderLaps(); lap++) {
             Map<Long, Integer> placeAtLap = order.placesAfterLap(lap);
             for (LiveTimingRowDto row : rows) {

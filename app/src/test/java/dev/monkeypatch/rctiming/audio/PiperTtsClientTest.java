@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.audio;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsProperties;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.infrastructure.tts.VoiceInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PiperTtsClientTest {
@@ -25,7 +27,7 @@ class PiperTtsClientTest {
     private ServerSocket serverSocket;
     private ExecutorService executor;
     private int port;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = TestJson.mapper();
 
     @BeforeEach
     void setUp() throws IOException {
@@ -171,8 +173,7 @@ class PiperTtsClientTest {
         PiperTtsClient client = clientFor(true);
         client.synthesize("Test racer", "en_GB-cori-medium");
 
-        // Give thread time to capture
-        Thread.sleep(100);
+        await().atMost(Duration.ofSeconds(5)).until(() -> captured[0] != null);
         assertNotNull(captured[0], "Should have captured the synthesize request");
         assertTrue(captured[0].contains("en_GB-cori-medium"), "Voice name should appear in request");
         assertTrue(captured[0].contains("synthesize"), "Event type should be 'synthesize'");

@@ -121,6 +121,6 @@ public class RaceFormatTemplatesRecord extends UpdatableRecordImpl<RaceFormatTem
         setConfig(config);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

@@ -3,9 +3,6 @@
 // Cars running close together show as a battles strip under the table (#505).
 // Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getRaceClock } from '@/lib/boardsApi';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { PositionChart } from '@/components/print/PositionChart';
 import { ClassSwatch } from '@/components/ClassSwatch';
@@ -16,9 +13,11 @@ import { BattleStrip } from '@/components/BattleStrip';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { BoardLiveTable } from './BoardLiveTable';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
+import { useHighContrast } from '@/hooks/useHighContrast';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
 import { useLivePositionSeries } from './useLivePositionSeries';
+import { useRaceClockQuery } from '@/hooks/useBoardQueries';
 
 export default function LiveRaceBoard() {
   const [searchParams] = useSearchParams();
@@ -27,16 +26,12 @@ export default function LiveRaceBoard() {
   const series = useLivePositionSeries(raceId, rows);
 
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  useHighContrast(highContrast);
   const battleGroups = useBattles(showBattles ? raceId : null);
   const media = useRaceMedia(raceId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
-  const { data: clock, dataUpdatedAt: clockReadAt } = useQuery({
-    queryKey: publicQueryKeys.boards.clock(raceId),
-    queryFn: () => getRaceClock(raceId!),
-    enabled: raceId !== null && showPredicted,
-    refetchInterval: BOARD_POLL_MS,
-  });
+  const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS, enabled: showPredicted });
   const remainingAt = useRemainingAt(clock, clockReadAt);
 
   if (isPending) {

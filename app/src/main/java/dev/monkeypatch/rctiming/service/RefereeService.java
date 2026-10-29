@@ -23,13 +23,14 @@ import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
+import java.time.Clock;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -58,18 +59,26 @@ public class RefereeService {
     private final RaceAuditLabels labels;
     private final FinalsMarshalPenalties finalsMarshalPenalties;
     private final EntryRepository entryRepository;
+    private final Clock clock;
 
-    public RefereeService(IncidentReportRepository incidentReportRepository,
-                          PenaltyRepository penaltyRepository,
+    @Autowired
+    public RefereeService(IncidentReportRepository incidentReportRepository, PenaltyRepository penaltyRepository,
                           MarshalAbsenceRepository marshalAbsenceRepository,
-                          MarshalPenaltyRepository marshalPenaltyRepository,
-                          RaceRepository raceRepository,
-                          LapTimingService lapTimingService,
-                          ApplicationEventPublisher eventPublisher,
-                          AuditService audit,
-                          RaceAuditLabels labels,
-                          FinalsMarshalPenalties finalsMarshalPenalties,
+                          MarshalPenaltyRepository marshalPenaltyRepository, RaceRepository raceRepository,
+                          LapTimingService lapTimingService, ApplicationEventPublisher eventPublisher,
+                          AuditService audit, RaceAuditLabels labels, FinalsMarshalPenalties finalsMarshalPenalties,
                           EntryRepository entryRepository) {
+        this(incidentReportRepository, penaltyRepository, marshalAbsenceRepository, marshalPenaltyRepository,
+             raceRepository, lapTimingService, eventPublisher, audit, labels, finalsMarshalPenalties, entryRepository,
+             Clock.systemUTC());
+    }
+
+    RefereeService(IncidentReportRepository incidentReportRepository, PenaltyRepository penaltyRepository,
+                   MarshalAbsenceRepository marshalAbsenceRepository,
+                   MarshalPenaltyRepository marshalPenaltyRepository, RaceRepository raceRepository,
+                   LapTimingService lapTimingService, ApplicationEventPublisher eventPublisher, AuditService audit,
+                   RaceAuditLabels labels, FinalsMarshalPenalties finalsMarshalPenalties,
+                   EntryRepository entryRepository, Clock clock) {
         this.incidentReportRepository = incidentReportRepository;
         this.penaltyRepository = penaltyRepository;
         this.marshalAbsenceRepository = marshalAbsenceRepository;
@@ -81,6 +90,7 @@ public class RefereeService {
         this.labels = labels;
         this.finalsMarshalPenalties = finalsMarshalPenalties;
         this.entryRepository = entryRepository;
+        this.clock = clock;
     }
 
     /** Records an incident report against an entry in a race. It changes nothing in the result; penalties are separate. */
@@ -92,7 +102,7 @@ public class RefereeService {
         report.setIncidentType(incidentType);
         report.setDescription(description);
         report.setRaisedBy(userId);
-        report.setRaisedAt(Instant.now());
+        report.setRaisedAt(clock.instant());
         IncidentReport saved = incidentReportRepository.save(report);
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("entryId", saved.getEntryId());
@@ -154,7 +164,7 @@ public class RefereeService {
         penalty.setValue(value);
         penalty.setReason(reason);
         penalty.setAppliedBy(userId);
-        penalty.setAppliedAt(Instant.now());
+        penalty.setAppliedAt(clock.instant());
         Penalty saved = penaltyRepository.save(penalty);
         Map<String, Object> after = new LinkedHashMap<>();
         after.put("entryId", saved.getEntryId());
@@ -209,7 +219,7 @@ public class RefereeService {
         absence.setEntryId(entryId);
         absence.setEventId(eventId);
         absence.setRecordedBy(userId);
-        absence.setRecordedAt(Instant.now());
+        absence.setRecordedAt(clock.instant());
         MarshalAbsence saved = marshalAbsenceRepository.save(absence);
         audit.entry(Actor.official(userId), "MARSHAL_ABSENCE_RECORDED").entity("marshal_absence", saved.getId())
                 .race(raceId).event(eventId)
@@ -247,7 +257,7 @@ public class RefereeService {
         penalty.setEntryId(entryId);
         penalty.setEventId(eventId);
         penalty.setAppliedBy(userId);
-        penalty.setAppliedAt(Instant.now());
+        penalty.setAppliedAt(clock.instant());
         penalty.setNotes(notes);
         penalty.setKind(kind);
         MarshalPenalty saved = marshalPenaltyRepository.save(penalty);

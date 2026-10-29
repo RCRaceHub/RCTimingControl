@@ -89,6 +89,6 @@ public class ChampionshipPointsScaleRecord extends UpdatableRecordImpl<Champions
         setChampionshipId(championshipId);
         setPosition(position);
         setPoints(points);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

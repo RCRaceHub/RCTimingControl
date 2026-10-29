@@ -35,7 +35,12 @@ const LARGE: Density = { text: 'text-2xl lg:text-4xl', head: 'text-lg lg:text-2x
 const COMPACT: Density = { text: 'text-lg lg:text-2xl', head: 'text-sm lg:text-lg', cell: 'py-1.5 pr-3' };
 
 /** The overall table of the first {@code top} places, tinted and with movement arrows as the phase of the heat asks. */
-function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: number; density: Density }) {
+function OverallTable({ data, top, density, showCar }: {
+  data: LiveQualifyingDto;
+  top: number;
+  density: Density;
+  showCar: boolean;
+}) {
   const live = data.phase === 'LIVE';
   const rows = data.rows.slice(0, top);
   const hasBaseline = data.rows.some((r) => r.previousPosition !== null);
@@ -49,7 +54,7 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
         <tr className={`border-b border-slate-700 text-left text-slate-400 ${density.head}`}>
           <th className={density.cell}>Pos</th>
           <th className={density.cell}>Driver</th>
-          <th className={density.cell}>Car</th>
+          {showCar && <th className={density.cell}>Car</th>}
           {showLaps ? (
             <th className={`${density.cell} text-right`}>Laps</th>
           ) : (
@@ -68,7 +73,7 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
               {live && row.live && <span className="ml-3 text-amber-300">on track</span>}
               {live && row.waiting && <span className="ml-3 text-slate-500">heat to come</span>}
             </td>
-            <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>
+            {showCar && <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>}
             {showLaps ? (
               <td className={`${density.cell} text-right tabular-nums`}>{row.lapsCompleted}</td>
             ) : (
@@ -91,11 +96,12 @@ function OverallTable({ data, top, density }: { data: LiveQualifyingDto; top: nu
  * The order inside the round on track: laps, then total time, over the round's heats counted so far. In practice the
  * round is the session, ranked by the event's practice time instead.
  */
-function RoundTable({ data, rows, top, density }: {
+function RoundTable({ data, rows, top, density, showCar }: {
   data: LiveQualifyingDto;
   rows: LiveRoundRow[];
   top: number;
   density: Density;
+  showCar: boolean;
 }) {
   const live = data.phase === 'LIVE';
   // A driver whose heat is later in the round has no earlier place in it, so nobody is marked "New" here
@@ -107,7 +113,7 @@ function RoundTable({ data, rows, top, density }: {
         <tr className={`border-b border-slate-700 text-left text-slate-400 ${density.head}`}>
           <th className={density.cell}>Pos</th>
           <th className={density.cell}>Driver</th>
-          <th className={density.cell}>Car</th>
+          {showCar && <th className={density.cell}>Car</th>}
           <th className={`${density.cell} text-right`}>Laps</th>
           {!practice && <th className={`${density.cell} text-right`}>Time</th>}
           <th className={`${density.cell} text-right`}>{practice ? (data.rankingLabel ?? 'Best') : 'Best lap'}</th>
@@ -122,7 +128,7 @@ function RoundTable({ data, rows, top, density }: {
               {row.driverName}
               {live && row.live && <span className="ml-3 text-amber-300">on track</span>}
             </td>
-            <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>
+            {showCar && <td className={`${density.cell} tabular-nums`}>{row.carNumber ?? '—'}</td>}
             <td className={`${density.cell} text-right font-semibold tabular-nums`}>{row.lapsCompleted}</td>
             {!practice && <td className={`${density.cell} text-right tabular-nums`}>{fmtMs(row.totalTimeMs)}</td>}
             <td className={`${density.cell} text-right tabular-nums ${practice ? 'font-semibold' : ''}`}>
@@ -141,15 +147,21 @@ function RoundTable({ data, rows, top, density }: {
 /**
  * The live tables of the first {@code top} places. When the class has a round to show, the round's order and the
  * overall order sit side by side, each under its own heading; otherwise the overall order fills the board. With
- * {@code showLegend} a key to the movement colours sits under the tables.
+ * {@code showLegend} a key to the movement colours sits under the tables, and {@code showCar} (on by default) adds the
+ * car number column, which the live top board itself leaves out.
  */
-export function LiveTopTable({ data, top, showLegend = false }: { data: LiveQualifyingDto; top: number; showLegend?: boolean }) {
+export function LiveTopTable({ data, top, showLegend = false, showCar = true }: {
+  data: LiveQualifyingDto;
+  top: number;
+  showLegend?: boolean;
+  showCar?: boolean;
+}) {
   const roundRows = data.roundRows ?? [];
   const legend = showLegend && <TimingLegend kinds={['movement']} size="board" className="mt-3 text-slate-400" />;
   if (roundRows.length === 0) {
     return (
       <>
-        <OverallTable data={data} top={top} density={top > 10 ? COMPACT : LARGE} />
+        <OverallTable data={data} top={top} density={top > 10 ? COMPACT : LARGE} showCar={showCar} />
         {legend}
       </>
     );
@@ -167,11 +179,11 @@ export function LiveTopTable({ data, top, showLegend = false }: { data: LiveQual
                   ? `Round ${data.roundNumber}`
                   : 'This round'}
           </h2>
-          <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} />
+          <RoundTable data={data} rows={roundRows} top={top} density={COMPACT} showCar={showCar} />
         </section>
         <section aria-label="Overall">
           <h2 className="mb-2 text-2xl font-bold text-slate-200 lg:text-3xl">{data.overallTitle ?? 'Overall'}</h2>
-          <OverallTable data={data} top={top} density={COMPACT} />
+          <OverallTable data={data} top={top} density={COMPACT} showCar={showCar} />
         </section>
       </div>
       {legend}

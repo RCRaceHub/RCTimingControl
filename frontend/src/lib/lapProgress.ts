@@ -40,6 +40,60 @@ export function lapProgress(
 }
 
 /**
+ * Whether a car is running to the pace its predicted laps assume, or has fallen off it. {@code on} while its last
+ * lap was no slower than its average and the lap it is on is not yet running late (the bar has not turned red);
+ * {@code off} once either stops being true. Null, and so no icon, for a car with no average yet or one that has
+ * finished.
+ *
+ * @param row the car's live timing row
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock, as for {@link lapProgress}
+ * @param lateMarginMs how far past its average a lap runs before it counts as late, the club's setting
+ */
+export function paceState(
+  row: LiveTimingRowDto,
+  nowMs: number,
+  notBeforeMs?: number | null,
+  lateMarginMs: number = LATE_AFTER_AVERAGE_MS,
+): 'on' | 'off' | null {
+  const progress = lapProgress(row, nowMs, notBeforeMs, lateMarginMs);
+  const average = row.avgLapMs;
+  if (!progress || !average) return null;
+  return progress.state !== 'late' && (row.lastLapMs == null || row.lastLapMs <= average) ? 'on' : 'off';
+}
+
+/** Whether a car is on pace for its predicted laps; see {@link paceState}. False when there is no pace to judge. */
+export function onPace(
+  row: LiveTimingRowDto,
+  nowMs: number,
+  notBeforeMs?: number | null,
+  lateMarginMs: number = LATE_AFTER_AVERAGE_MS,
+): boolean {
+  return paceState(row, nowMs, notBeforeMs, lateMarginMs) === 'on';
+}
+
+/** A car with no crossing for this many of its average laps counts as not seen by the decoder. */
+export const NO_SIGNAL_LAPS = 3;
+/** The shortest silence, in milliseconds, that counts as no signal, so a quick average lap does not trip it. */
+export const NO_SIGNAL_MIN_MS = 15_000;
+
+/**
+ * Whether the decoder has not seen a car for a while (#591): it has an average lap, has not finished, and has not
+ * crossed the line for {@link NO_SIGNAL_LAPS} of its average laps (and at least {@link NO_SIGNAL_MIN_MS}). The wait
+ * is counted from the last resume of a stopped race, as for {@link lapProgress}.
+ *
+ * @param row the car's live timing row
+ * @param nowMs the current time as the timing laptop's clock reads it, in UTC milliseconds
+ * @param notBeforeMs when the race was last resumed, in the same clock
+ */
+export function signalLost(row: LiveTimingRowDto, nowMs: number, notBeforeMs?: number | null): boolean {
+  const average = row.avgLapMs;
+  if (row.finished || !average || !Number.isFinite(average) || !row.lastPassingTimeMs) return false;
+  const silent = nowMs - Math.max(row.lastPassingTimeMs, notBeforeMs ?? 0);
+  return silent > Math.max(NO_SIGNAL_LAPS * average, NO_SIGNAL_MIN_MS);
+}
+
+/**
  * Whether every car in the race has had at least one lap counted. Until then the order is only who crossed the
  * line first off the grid, so nobody is lapped yet.
  */

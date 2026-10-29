@@ -1,24 +1,17 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.FeaturedDriverRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MarshalAdjustmentRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveEntryRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveFinalRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.SkipToRaceRequest;
-import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
-import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.race.Race;
-import dev.monkeypatch.rctiming.domain.race.RaceRepository;
-import dev.monkeypatch.rctiming.domain.race.RaceStateMachineService;
-import dev.monkeypatch.rctiming.domain.race.RaceStatus;
-import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
-import dev.monkeypatch.rctiming.domain.race.Round;
-import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.EventResultsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.EventResultsQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.QualifyingTableDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderItemDto;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
+import dev.monkeypatch.rctiming.security.AnyOfficial;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateAllFinalsRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.CalculateFinalsRequest;
@@ -27,18 +20,18 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalsSwapRequest;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
+import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
+import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.service.AutoFinalsSeedingService;
 import dev.monkeypatch.rctiming.service.FinalLegsService;
 import dev.monkeypatch.rctiming.service.FinalsLineupService;
 import dev.monkeypatch.rctiming.service.FinalsRunOrderService;
 import dev.monkeypatch.rctiming.service.HeatMoveService;
 import dev.monkeypatch.rctiming.service.MarshalService;
+import dev.monkeypatch.rctiming.service.RaceControlService;
 import dev.monkeypatch.rctiming.service.QualifyingTableService;
-import dev.monkeypatch.rctiming.timing.LapTimingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,7 +39,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,8 +47,9 @@ import java.util.Map;
  * {@code /api/v1/race-control}. Endpoints require the RACE_DIRECTOR or ADMIN role; the run order also allows
  * REFEREE.
  *
- * <p>The lifecycle commands each call one method of {@link RaceStateMachineService}, which checks the move against
- * its table of allowed transitions: a command the race's current state does not allow is a 409 (via
+ * <p>The controller checks authority, binds the request and calls one service method; {@link RaceControlService}
+ * owns each lifecycle command's transaction. It calls one method of the race state machine, which checks the move
+ * against its table of allowed transitions: a command the race's current state does not allow is a 409 (via
  * {@code IllegalStateTransitionException}), and an unknown race id is a 404. The state machine broadcasts the new
  * state to {@code /topic/race/{raceId}/state} and publishes a {@code RaceStatusChangedEvent}.
  *
@@ -65,18 +58,13 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/v1/race-control")
-@PreAuthorize("hasAnyRole('RACE_DIRECTOR','ADMIN')")
+@DirectorOrAdmin
 public class RaceControlController {
 
     private final RunOrderQuery runOrderQuery;
     private final EventResultsQuery eventResultsQuery;
-    private final RaceRepository raceRepository;
-    private final RaceStateMachineService stateMachine;
+    private final RaceControlService raceControlService;
     private final MarshalService marshalService;
-    private final LapTimingService lapTimingService;
-    private final RoundRepository roundRepository;
-    private final AuditService audit;
-    private final ResultSnapshotRepository resultSnapshotRepository;
     private final QualifyingTableService qualifyingTableService;
     private final FinalLegsService finalLegsService;
     private final AutoFinalsSeedingService finalsSeedingService;
@@ -86,13 +74,8 @@ public class RaceControlController {
 
     public RaceControlController(RunOrderQuery runOrderQuery,
                                   EventResultsQuery eventResultsQuery,
-                                  RaceRepository raceRepository,
-                                  RaceStateMachineService stateMachine,
+                                  RaceControlService raceControlService,
                                   MarshalService marshalService,
-                                  LapTimingService lapTimingService,
-                                  RoundRepository roundRepository,
-                                  AuditService audit,
-                                  ResultSnapshotRepository resultSnapshotRepository,
                                   QualifyingTableService qualifyingTableService,
                                   FinalLegsService finalLegsService,
                                   AutoFinalsSeedingService finalsSeedingService,
@@ -101,13 +84,8 @@ public class RaceControlController {
                                   FinalsLineupService finalsLineupService) {
         this.runOrderQuery = runOrderQuery;
         this.eventResultsQuery = eventResultsQuery;
-        this.raceRepository = raceRepository;
-        this.stateMachine = stateMachine;
+        this.raceControlService = raceControlService;
         this.marshalService = marshalService;
-        this.lapTimingService = lapTimingService;
-        this.roundRepository = roundRepository;
-        this.audit = audit;
-        this.resultSnapshotRepository = resultSnapshotRepository;
         this.qualifyingTableService = qualifyingTableService;
         this.finalLegsService = finalLegsService;
         this.finalsSeedingService = finalsSeedingService;
@@ -122,7 +100,7 @@ public class RaceControlController {
      * picks a race (#107). Read only.
      */
     @GetMapping("/event/{eventId}/run-order")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<RunOrderItemDto> getRunOrder(@PathVariable long eventId) {
         return runOrderQuery.findForEvent(eventId);
     }
@@ -133,7 +111,7 @@ public class RaceControlController {
      * official. Read only. 404 if there is no such event.
      */
     @GetMapping("/event/{eventId}/results")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public EventResultsDto getEventResults(@PathVariable long eventId) {
         return eventResultsQuery.forEvent(eventId);
     }
@@ -144,7 +122,7 @@ public class RaceControlController {
      * or it has no stored result.
      */
     @GetMapping("/race/{raceId}/result")
-    @PreAuthorize("isAuthenticated()")
+    @AnyOfficial
     public EventResultsDto getRaceResult(@PathVariable long raceId) {
         return eventResultsQuery.forRace(raceId);
     }
@@ -154,7 +132,7 @@ public class RaceControlController {
      * {@code GET /event/{eventId}/final-legs}, race director, referee or admin. Read only; empty when no class has legs.
      */
     @GetMapping("/event/{eventId}/final-legs")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<FinalLegsDto> getFinalLegs(@PathVariable long eventId) {
         return finalLegsService.forEvent(eventId);
     }
@@ -165,7 +143,7 @@ public class RaceControlController {
      * Read only.
      */
     @GetMapping("/event/{eventId}/qualifying")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<QualifyingTableDto> getQualifying(@PathVariable long eventId) {
         return qualifyingTableService.forEvent(eventId);
     }
@@ -180,7 +158,6 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/event/{eventId}/qualifying/{eventClassId}/seed-finals")
-    @Transactional
     public ResponseEntity<Void> seedFinals(@PathVariable long eventId, @PathVariable long eventClassId,
                                            @Valid @RequestBody(required = false) CalculateFinalsRequest request) {
         finalsSeedingService.reseed(CurrentOfficial.actor(), eventId, eventClassId,
@@ -199,7 +176,6 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/event/{eventId}/seed-all-finals")
-    @Transactional
     public AutoFinalsSeedingService.CalculateAllResult seedAllFinals(
             @PathVariable long eventId, @Valid @RequestBody(required = false) CalculateAllFinalsRequest request) {
         return finalsSeedingService.reseedAll(CurrentOfficial.actor(), eventId,
@@ -211,7 +187,7 @@ public class RaceControlController {
      * {@code GET /event/{eventId}/finals-lineup}. Read only.
      */
     @GetMapping("/event/{eventId}/finals-lineup")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public List<FinalsLineupDto> getFinalsLineup(@PathVariable long eventId) {
         return finalsLineupService.forEvent(eventId);
     }
@@ -222,7 +198,7 @@ public class RaceControlController {
      * unknown event.
      */
     @GetMapping("/event/{eventId}/finals-review")
-    @PreAuthorize("hasAnyRole('RACE_DIRECTOR','REFEREE','ADMIN')")
+    @RaceControlStaff
     public FinalsReviewDto getFinalsReview(@PathVariable long eventId) {
         return finalsLineupService.review(eventId);
     }
@@ -300,12 +276,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/call-grid")
-    @Transactional
     public ResponseEntity<Void> callGrid(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        RaceStatus before = race.getStatus();
-        stateMachine.callGrid(race);
-        recordLifecycle(race, "RACE_GRID_CALLED", "Called the grid for", before);
+        raceControlService.callGrid(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -315,14 +287,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/start")
-    @Transactional
     public ResponseEntity<Void> startRace(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        RaceStatus before = race.getStatus();
-        stateMachine.start(race);
-        // A start from STOPPED is a resume: say so, since the clock carries on
-        recordLifecycle(race, before == RaceStatus.STOPPED ? "RACE_RESUMED" : "RACE_STARTED",
-                before == RaceStatus.STOPPED ? "Resumed" : "Started", before);
+        raceControlService.start(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -332,12 +298,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/stop")
-    @Transactional
     public ResponseEntity<Void> stopRace(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        RaceStatus before = race.getStatus();
-        stateMachine.stop(race);
-        recordLifecycle(race, "RACE_STOPPED", "Stopped", before);
+        raceControlService.stop(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -351,17 +313,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/restart")
-    @Transactional
     public ResponseEntity<Void> restartRace(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        // Restart throws away the result snapshot and the live timing, so what is lost is written down first
-        Map<String, Object> lost = whatARestartDiscards(race);
-        stateMachine.restart(race);
-        audit.entry(CurrentOfficial.actor(), "RACE_RESTARTED")
-                .entity("race", race.getId()).race(race.getId()).event(resolveEventId(race))
-                .summary("Restarted " + describe(race) + ", discarding its timing and any result")
-                .before(lost).after(Map.of("status", RaceStatus.PENDING))
-                .record();
+        raceControlService.restart(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -371,12 +324,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/finish")
-    @Transactional
     public ResponseEntity<Void> finishRace(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        RaceStatus before = race.getStatus();
-        stateMachine.finish(race);
-        recordLifecycle(race, "RACE_FINISHED", "Finished", before);
+        raceControlService.finish(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -387,12 +336,8 @@ public class RaceControlController {
      */
     @Audited("audit_log")
     @PostMapping("/race/{raceId}/abandon")
-    @Transactional
     public ResponseEntity<Void> abandonRace(@PathVariable long raceId) {
-        Race race = loadRace(raceId);
-        RaceStatus before = race.getStatus();
-        stateMachine.abandon(race);
-        recordLifecycle(race, "RACE_ABANDONED", "Abandoned", before);
+        raceControlService.abandon(CurrentOfficial.actor(), raceId);
         return ResponseEntity.ok().build();
     }
 
@@ -417,66 +362,20 @@ public class RaceControlController {
      * {@code activeRaceId}.
      */
     @PostMapping("/race/{raceId}/skip-to")
-    @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Long>> skipTo(@PathVariable long raceId,
                                                      @Valid @RequestBody SkipToRaceRequest req) {
-        Race sourceRace = loadRace(raceId);
-        // Named apart from the race in the path, so a bad target in the body is clear
-        Race targetRace = raceRepository.findById(req.targetRaceId())
-                .orElseThrow(() -> new EntityNotFoundException("Target race not found: " + req.targetRaceId()));
-
-        // Validate both races belong to the same event (via their rounds)
-        long sourceEventId = resolveEventId(sourceRace);
-        long targetEventId = resolveEventId(targetRace);
-        if (sourceEventId != targetEventId) {
-            throw new IllegalArgumentException(
-                "Target race " + req.targetRaceId() + " belongs to a different event");
-        }
-
-        return ResponseEntity.ok(Map.of("eventId", sourceEventId, "activeRaceId", req.targetRaceId()));
+        long eventId = raceControlService.skipTo(raceId, req.targetRaceId());
+        return ResponseEntity.ok(Map.of("eventId", eventId, "activeRaceId", req.targetRaceId()));
     }
 
-    /** Writes the audit row for a state change, in the transaction of the change. */
-    private void recordLifecycle(Race race, String action, String verb, RaceStatus before) {
-        audit.entry(CurrentOfficial.actor(), action)
-                .entity("race", race.getId()).race(race.getId()).event(resolveEventId(race))
-                .summary(verb + " " + describe(race))
-                .before(before).after(race.getStatus())
-                .record();
-    }
-
-    /** What a restart takes away: the race's times, its stored result, and the timing held in memory. */
-    private Map<String, Object> whatARestartDiscards(Race race) {
-        Map<String, Object> lost = new LinkedHashMap<>();
-        lost.put("status", race.getStatus());
-        lost.put("startedAt", race.getStartedAt());
-        lost.put("finishedAt", race.getFinishedAt());
-        lost.put("abandonedAt", race.getAbandonedAt());
-        resultSnapshotRepository.findByRaceId(race.getId()).ifPresent(snapshot -> {
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("id", snapshot.getId());
-            result.put("finishedAt", snapshot.getFinishedAt());
-            result.put("positions", snapshot.getPositionsJson());
-            lost.put("resultSnapshot", result);
-        });
-        lapTimingService.peek(race.getId()).ifPresent(state -> lost.put("livePositions", state.calculatePositions()));
-        return lost;
-    }
-
-    /** The race as an official knows it, such as {@code A final (race 42)} or {@code heat 2 (race 42)}. */
-    private static String describe(Race race) {
-        String what = race.getFinalLetter() != null
-                ? ("Z".equals(race.getFinalLetter()) ? "zombie round" : race.getFinalLetter() + " final")
-                : "heat " + race.getHeatNumber();
-        return what + " (race " + race.getId() + ")";
-    }
-
-    private Race loadRace(long raceId) {
-        return raceRepository.getOrThrow(raceId);
-    }
-
-    private long resolveEventId(Race race) {
-        Round round = roundRepository.getOrThrow(race.getRoundId());
-        return round.getEventId();
+    /**
+     * Shows a lower third for one car on the streaming overlay (#533). {@code POST /race/{raceId}/featured-driver}.
+     * Changes nothing on the server except a message to the overlay, so it is not audited. 404 if the race does not
+     * exist or the entry is not in it.
+     */
+    @PostMapping("/race/{raceId}/featured-driver")
+    public ResponseEntity<Void> featureDriver(@PathVariable long raceId, @Valid @RequestBody FeaturedDriverRequest req) {
+        raceControlService.featureDriver(raceId, req.entryId());
+        return ResponseEntity.noContent().build();
     }
 }

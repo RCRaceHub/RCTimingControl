@@ -211,6 +211,6 @@ public class CompetitorsRecord extends UpdatableRecordImpl<CompetitorsRecord> {
         setSpokenName(spokenName);
         setNameVisibility(nameVisibility);
         setCategories(categories);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }
