@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -30,6 +31,10 @@ final class DumpSummary {
 
     private static final int SOH = 0x01;
 
+    /** A race window as the caller names it: the section name and the instants it starts and ends. */
+    record Window(String name, Instant start, Instant end) {
+    }
+
     /** A named stretch of the recording with its own per-transponder counts. */
     static final class Section {
         final String name;
@@ -44,6 +49,10 @@ final class DumpSummary {
             this.name = name;
             this.start = start;
             this.end = end;
+        }
+
+        void forgetLastPassings() {
+            transponders.values().forEach(t -> t.last = Double.NaN);
         }
 
         void add(String id, double time, long wallMs) {
@@ -86,14 +95,11 @@ final class DumpSummary {
     private long previousSeq = -1;
     private long previousPassingMs = -1;
     private boolean hasWallClock;
+    private Path source;
 
     private DumpSummary(long splitGapMs, List<Section> windows) {
         this.splitGapMs = splitGapMs;
         this.windows = windows;
-    }
-
-    /** A race window as the caller names it: the section name and the instants it starts and ends. */
-    record Window(String name, Instant start, Instant end) {
     }
 
     /**
@@ -115,6 +121,7 @@ final class DumpSummary {
             }
         }
         summary.hasWallClock = useSidecar;
+        summary.source = useSidecar ? sidecar : file;
         return summary;
     }
 
@@ -136,18 +143,28 @@ final class DumpSummary {
         try {
             if (timed) {
                 wallMs = Long.parseLong(f[0]);
-                f = java.util.Arrays.copyOfRange(f, 1, f.length);
+                f = Arrays.copyOfRange(f, 1, f.length);
             }
             boolean passing = f[0].equals("@");
             if (!passing && !f[0].equals("#")) {
                 unreadable++;
                 return;
             }
+            // A record with a good sequence number but a bad time still moves the sequence on, so a
+            // gap isn't reported for it; it is counted as unreadable, not as a passing
             long seq = Long.parseLong(f[2]);
             if (previousSeq >= 0 && seq != previousSeq + 1) {
-                gaps.add(seq > previousSeq
-                        ? (seq - previousSeq - 1) + " missing after " + previousSeq
-                        : "sequence went back from " + previousSeq + " to " + seq + " (decoder restarted or files joined)");
+                if (seq > previousSeq) {
+                    gaps.add((seq - previousSeq - 1) + " missing after " + previousSeq);
+                } else if (seq == previousSeq) {
+                    gaps.add("record " + seq + " repeated");
+                } else {
+                    gaps.add("sequence went back from " + previousSeq + " to " + seq
+                            + " (decoder restarted or files joined)");
+                    // The decoder's clock restarted too, so times before this point can't be compared
+                    sections.forEach(Section::forgetLastPassings);
+                    windows.forEach(Section::forgetLastPassings);
+                }
             }
             previousSeq = seq;
             if (!passing) {
@@ -155,6 +172,10 @@ final class DumpSummary {
                 return;
             }
             double time = Double.parseDouble(f[4]);
+            if (!Double.isFinite(time)) {
+                unreadable++;
+                return;
+            }
             Section section = sectionFor(wallMs);
             passings++;
             section.add(f[3], time, wallMs);
@@ -215,7 +236,11 @@ final class DumpSummary {
 
     /** Prints the report to the stream. */
     void print(PrintStream out) {
+        out.println("Read from " + source);
         out.printf("Records: %d passings, %d status, %d unreadable%n", passings, statusRecords, unreadable);
+        if (passings == 0) {
+            out.println("No passings found.");
+        }
         out.println(gaps.isEmpty() ? "Sequence: no gaps" : "Sequence: " + gaps.size() + " gap(s)");
         gaps.forEach(g -> out.println("  " + g));
         if (!hasWallClock && (splitGapMs > 0 || !windows.isEmpty())) {

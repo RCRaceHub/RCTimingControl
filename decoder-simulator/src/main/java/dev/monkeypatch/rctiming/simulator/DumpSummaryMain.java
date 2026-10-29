@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.simulator;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -21,7 +22,9 @@ import java.util.List;
  * {@code 2026-11-07T10:15:00Z} (UTC), taken from the races' start and finish times in RCTimingControl; passings
  * are counted against the window they fall in. Both need the {@code .times} file the recorder writes beside
  * the dump. Exits with 0 when the report is printed, 2 for bad flags or a missing file, and 1 when a file
- * cannot be read. See {@link DumpSummary}.
+ * cannot be read. Give one of {@code --split-gap} and {@code --windows}, not both. A window includes both its
+ * start and its end instants, so cars that cross the line after a race has finished fall outside it unless the
+ * window runs on past the finish. See {@link DumpSummary}.
  */
 public class DumpSummaryMain {
 
@@ -59,6 +62,9 @@ public class DumpSummaryMain {
         if (!Files.isRegularFile(file)) {
             usage("No such file: " + file);
         }
+        if (windowsFile != null && splitGap > 0) {
+            usage("Use --split-gap or --windows, not both");
+        }
         if (windowsFile != null && !Files.isRegularFile(windowsFile)) {
             usage("No such file: " + windowsFile);
         }
@@ -66,21 +72,28 @@ public class DumpSummaryMain {
             List<DumpSummary.Window> windows = windowsFile == null ? List.of() : readWindows(windowsFile);
             DumpSummary.read(file, splitGap, windows).print(System.out);
         } catch (IOException e) {
-            System.err.println("Error: could not read " + e.getMessage());
+            System.err.println("Error: could not read " + file + " or its .times file or the windows file: " + e);
             System.exit(1);
         }
     }
 
     private static List<DumpSummary.Window> readWindows(Path file) throws IOException {
         List<DumpSummary.Window> windows = new ArrayList<>();
-        for (String line : Files.readAllLines(file)) {
+        for (String line : Files.readAllLines(file, StandardCharsets.ISO_8859_1)) {
             if (line.isBlank() || line.startsWith("#")) {
                 continue;
             }
-            String[] f = line.split(",");
+            // The name may hold commas: the last two fields are the instants
+            int end = line.lastIndexOf(',');
+            int start = end < 0 ? -1 : line.lastIndexOf(',', end - 1);
             try {
-                windows.add(new DumpSummary.Window(f[0].trim(), Instant.parse(f[1].trim()), Instant.parse(f[2].trim())));
-            } catch (DateTimeParseException | ArrayIndexOutOfBoundsException e) {
+                Instant from = Instant.parse(line.substring(start + 1, end).trim());
+                Instant to = Instant.parse(line.substring(end + 1).trim());
+                if (start < 1 || to.isBefore(from)) {
+                    throw new IllegalArgumentException(line);
+                }
+                windows.add(new DumpSummary.Window(line.substring(0, start).trim(), from, to));
+            } catch (DateTimeParseException | IllegalArgumentException | IndexOutOfBoundsException e) {
                 usage("Not a race window (name,start,end in UTC): " + line);
             }
         }

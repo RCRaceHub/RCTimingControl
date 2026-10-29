@@ -9,6 +9,8 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,13 +79,41 @@ class DumpSummaryTest {
                 + "2000\t@\t20\t2\t100\t2.0\t400\t163\t2\txBEEF\n"
                 + "600000\t@\t20\t3\t200\t9.0\t400\t163\t2\txBEEF\n");
 
-        DumpSummary byGap = DumpSummary.read(file, 120, java.util.List.of());
-        DumpSummary byWindow = DumpSummary.read(file, 0, java.util.List.of(
-                new DumpSummary.Window("Heat 1", java.time.Instant.ofEpochMilli(0), java.time.Instant.ofEpochMilli(5000)),
-                new DumpSummary.Window("Heat 2", java.time.Instant.ofEpochMilli(500000), java.time.Instant.ofEpochMilli(700000))));
+        DumpSummary byGap = DumpSummary.read(file, 120, List.of());
+        DumpSummary byWindow = DumpSummary.read(file, 0, List.of(
+                new DumpSummary.Window("Heat 1", Instant.ofEpochMilli(0), Instant.ofEpochMilli(5000)),
+                new DumpSummary.Window("Heat 2", Instant.ofEpochMilli(500000), Instant.ofEpochMilli(700000))));
 
         assertThat(byGap.allSections()).extracting(s -> s.passings).containsExactly(2L, 1L);
         assertThat(byWindow.allSections()).extracting(s -> s.name).containsExactly("Heat 1", "Heat 2");
         assertThat(byWindow.allSections()).extracting(s -> s.passings).containsExactly(2L, 1L);
+    }
+
+    @Test
+    void ignoresTimesAcrossADecoderRestartAndNamesARepeatedRecord(@TempDir Path dir) throws IOException {
+        DumpSummary summary = summarise(dir, passing(5, "100", "500.0") + passing(5, "100", "501.0")
+                + passing(1, "100", "2.0") + passing(2, "100", "12.0"));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        summary.print(new PrintStream(out, true, StandardCharsets.UTF_8));
+
+        assertThat(summary.gaps().get(0)).isEqualTo("record 5 repeated");
+        assertThat(out.toString(StandardCharsets.UTF_8)).containsPattern("100\\s+4\\s+1\\.000\\s+10\\.000");
+    }
+
+    @Test
+    void countsPassingsOutsideEveryWindowAndTreatsNonFiniteTimesAsUnreadable(@TempDir Path dir) throws IOException {
+        Path file = dir.resolve("x.dump");
+        Files.writeString(file, "");
+        Files.writeString(dir.resolve("x.dump.times"),
+                "1000\t@\t20\t1\t100\t1.0\t4\t1\t2\txB\n"
+                + "9000\t@\t20\t2\t100\tNaN\t4\t1\t2\txB\n"
+                + "9500\t@\t20\t3\t100\t3.0\t4\t1\t2\txB\n");
+
+        DumpSummary summary = DumpSummary.read(file, 0,
+                List.of(new DumpSummary.Window("Heat 1", Instant.ofEpochMilli(0), Instant.ofEpochMilli(2000))));
+
+        assertThat(summary.allSections()).extracting(s -> s.name)
+                .containsExactly("Heat 1", "Outside every race window");
+        assertThat(summary.allSections()).extracting(s -> s.passings).containsExactly(1L, 1L);
     }
 }
