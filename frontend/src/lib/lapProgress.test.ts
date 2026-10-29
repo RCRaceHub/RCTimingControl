@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { everyoneOffLapZero, holdBackLapped, isClose, lapProgress, onPace, placesGained, predictedLaps } from './lapProgress';
+import { everyoneOffLapZero, holdBackLapped, isClose, lapProgress, onPace, paceState, placesGained, predictedLaps } from './lapProgress';
 import type { LiveTimingRowDto } from './raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -116,6 +116,16 @@ describe('holdBackLapped', () => {
     const rows = [row({ entryId: 1, position: 1, lapsCompleted: 2 }), lapped];
     expect(holdBackLapped(rows)).toBe(rows);
     expect(rows[1].lapsDown).toBe(1);
+  });
+});
+
+describe('paceState', () => {
+  it('is on while on pace, off once the lap is late or the last lap was slower, and null with nothing to judge', () => {
+    expect(paceState(row({}), 104_000)).toBe('on');
+    expect(paceState(row({}), 111_000)).toBe('off');
+    expect(paceState(row({ lastLapMs: 10_001 }), 104_000)).toBe('off');
+    expect(paceState(row({ avgLapMs: null }), 104_000)).toBeNull();
+    expect(paceState(row({ finished: true }), 104_000)).toBeNull();
   });
 });
 

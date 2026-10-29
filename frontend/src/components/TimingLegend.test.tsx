@@ -23,9 +23,10 @@ describe('TimingLegend', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('explains the thumbs up for a car on pace', () => {
+  it('explains the thumbs up and down for a car on or off pace', () => {
     render(<TimingLegend kinds={['pace']} />);
     expect(screen.getByText('On pace for its predicted laps')).toBeInTheDocument();
+    expect(screen.getByText('Off pace for its predicted laps')).toBeInTheDocument();
   });
 
   it('explains the movement colours for the qualifying tables', () => {

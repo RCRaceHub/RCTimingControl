@@ -15,11 +15,26 @@ import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys'
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 /**
+ * Edits on the page around the bar that are not saved yet, for a page that holds them (Admin → Audio). A template
+ * is a copy of the settings the server has saved, so the bar has to settle them before it acts.
+ */
+export interface UnsavedEdits {
+  /** Saves the edits, resolving once they are stored; rejecting leaves the template action undone. */
+  save: () => Promise<unknown>;
+  /** Drops the edits so the page shows the saved settings again. */
+  discard: () => void;
+}
+
+/**
  * Audio templates: pick a saved set of audio settings (BRCA meeting, Club night, Practice and so on) and apply it,
  * save the settings now as a new template, update the picked one with them, or delete it. A template holds the
  * switches, wording and timings but not the club's own sound files.
+ *
+ * <p>Pass {@code unsaved} on a page that keeps edits until a Save button is pressed. Applying a template then asks
+ * before it throws those edits away, and saving a new template or updating one asks to save the edits first, since
+ * a template copies the saved settings and would otherwise leave them out.
  */
-export function AudioTemplatesBar() {
+export function AudioTemplatesBar({ unsaved }: { unsaved?: UnsavedEdits | null }) {
   const queryClient = useQueryClient();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [selectedId, setSelectedId] = useState<number | ''>('');
@@ -47,6 +62,7 @@ export function AudioTemplatesBar() {
   const apply = useMutation({
     mutationFn: (id: number) => applyAudioTemplate(id),
     onSuccess: () => {
+      unsaved?.discard();
       queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
       toast.success(`Applied "${selected?.name}".`);
@@ -80,6 +96,37 @@ export function AudioTemplatesBar() {
     onError: failed('delete the template'),
   });
 
+  // Settle the page's unsaved edits before a template is saved from the settings: save them, or stop
+  const saveEditsFirst = async (what: string): Promise<boolean> => {
+    if (!unsaved) return true;
+    const confirmed = await confirm({
+      title: 'Save your changes first?',
+      description: `A template holds the saved settings, so your changes on this page are saved before ${what}.`,
+      confirmLabel: 'Save and continue',
+    });
+    if (!confirmed) return false;
+    try {
+      await unsaved.save();
+      return true;
+    } catch {
+      // The page's own save has already said why it failed
+      return false;
+    }
+  };
+  const applyTemplate = async () => {
+    if (!selected) return;
+    if (unsaved) {
+      const confirmed = await confirm({
+        title: `Replace your unsaved changes with "${selected.name}"?`,
+        description: 'Your changes on this page have not been saved and will be lost.',
+        confirmLabel: 'Apply',
+        destructive: true,
+      });
+      if (!confirmed) return;
+    }
+    apply.mutate(selected.id);
+  };
+
   const busy = apply.isPending || create.isPending || update.isPending || remove.isPending;
 
   return (
@@ -99,7 +146,7 @@ export function AudioTemplatesBar() {
             </option>
           ))}
         </select>
-        <Button size="sm" disabled={!selected || busy} onClick={() => selected && apply.mutate(selected.id)}>
+        <Button size="sm" disabled={!selected || busy} onClick={applyTemplate}>
           Apply
         </Button>
         <Button
@@ -107,7 +154,9 @@ export function AudioTemplatesBar() {
           variant="outline"
           disabled={!selected || busy}
           title="Replace this template with the settings now"
-          onClick={() => selected && update.mutate(selected.id)}
+          onClick={async () => {
+            if (selected && (await saveEditsFirst(`"${selected.name}" is updated`))) update.mutate(selected.id);
+          }}
         >
           Update
         </Button>
@@ -130,9 +179,10 @@ export function AudioTemplatesBar() {
       </div>
       <form
         className="flex items-center gap-2"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (newName.trim()) create.mutate(newName.trim());
+          const name = newName.trim();
+          if (name && (await saveEditsFirst('the template is created'))) create.mutate(name);
         }}
       >
         <Input
