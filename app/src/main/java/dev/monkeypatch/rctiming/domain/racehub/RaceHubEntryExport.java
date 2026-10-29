@@ -55,6 +55,9 @@ public record RaceHubEntryExport(
             String primaryTransponder,
             String secondaryTransponder,
             Boolean clubCarRequested,
-            String clubCarName) {
+            String clubCarName,
+            String headshotUrl,
+            String carPhotoUrl,
+            List<String> carColours) {
     }
 }

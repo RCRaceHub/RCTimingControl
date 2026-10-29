@@ -15,6 +15,8 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository.EventClassRef;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.media.EntryMediaImport;
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport.ExportEntry;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.Action;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult.Row;
@@ -70,6 +72,7 @@ public class RaceHubImportService {
     private final CompetitorRepository competitorRepository;
     private final TransponderSwapService transponderSwapService;
     private final EntryImports entryImports;
+    private final EntryMediaImport mediaImport;
     private final AuditService audit;
 
     public RaceHubImportService(EventRepository eventRepository,
@@ -79,6 +82,7 @@ public class RaceHubImportService {
                                 CompetitorRepository competitorRepository,
                                 TransponderSwapService transponderSwapService,
                                 EntryImports entryImports,
+                                EntryMediaImport mediaImport,
                                 AuditService audit) {
         this.eventRepository = eventRepository;
         this.eventClassRepository = eventClassRepository;
@@ -87,6 +91,7 @@ public class RaceHubImportService {
         this.competitorRepository = competitorRepository;
         this.transponderSwapService = transponderSwapService;
         this.entryImports = entryImports;
+        this.mediaImport = mediaImport;
         this.audit = audit;
     }
 
@@ -145,13 +150,19 @@ public class RaceHubImportService {
         boolean apply = !dryRun && !blocked;
 
         Map<Planned, Long> savedIds = new IdentityHashMap<>();
+        List<PhotoLink> photoLinks = new ArrayList<>();
         if (apply) {
             // Withdrawals first, so a driver's replacement entry in the same class does not meet
             // the old one in the one-active-entry index.
             plan.stream().filter(p -> p.action == Action.WITHDRAW)
                     .forEach(p -> savedIds.put(p, applyRow(eventId, p, competitors, source)));
-            plan.stream().filter(p -> p.action != Action.WITHDRAW)
-                    .forEach(p -> savedIds.put(p, applyRow(eventId, p, competitors, source)));
+            plan.stream().filter(p -> p.action != Action.WITHDRAW).forEach(p -> {
+                savedIds.put(p, applyRow(eventId, p, competitors, source));
+                if (p.action == Action.CREATE || p.action == Action.UPDATE) {
+                    photoLinks.addAll(mediaImport.apply(actor, competitors.get(p.row.driverProfileId()).getId(),
+                            savedIds.get(p), p.row.headshotUrl(), p.row.carPhotoUrl(), p.row.carColours()));
+                }
+            });
             if (fromRaceHub) {
                 event.setRacehubLastImportAt(Instant.now());
                 event.setRacehubLastRevision(export.revision());
@@ -179,7 +190,7 @@ public class RaceHubImportService {
         }
         return new RaceHubImportResult(dryRun, blocked, apply,
                 export.event() == null ? null : export.event().name(), export.revision(),
-                summary, unmappedClasses, errors, warnings, rows);
+                summary, unmappedClasses, errors, warnings, rows, photoLinks);
     }
 
     /** A RaceHub file must name its event, and one event takes one RaceHub event's entries. */
@@ -356,6 +367,7 @@ public class RaceHubImportService {
                         existing == null ? Set.of() : swapped.getOrDefault(existing.getId(), Set.of()));
                 String name = row.driverDisplayName() != null ? row.driverDisplayName() : label;
                 warnings.addAll(transponders.differences(name));
+                warnings.addAll(mediaImport.check(label, row.headshotUrl(), row.carPhotoUrl(), row.carColours()));
                 checkBrcaShared(row, name, source, brcaHolders, brcaChecked, errors, warnings);
             }
             plan.add(new Planned(row, action, existing, eventClassId, transponders));

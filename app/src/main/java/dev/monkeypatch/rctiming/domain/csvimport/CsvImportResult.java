@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.domain.csvimport;
 
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
+
 import java.util.List;
 import java.util.Map;
 
@@ -10,7 +12,9 @@ import java.util.Map;
  *
  * <p>{@code blocked} is also set on a dry run that a real import would have refused, so the page can show what to fix
  * before anyone tries. Only new rows are created without being picked: a changed row is updated and a missing entry
- * withdrawn only when the official picked it.
+ * withdrawn only when the official picked it. {@code photoLinks} are the headshot and car photo addresses of the rows that
+ * were created, updated or unchanged (#699), empty for a dry run and a blocked import; {@code PhotoImportService} fetches
+ * them afterwards.
  */
 public record CsvImportResult(
         boolean dryRun,
@@ -20,7 +24,8 @@ public record CsvImportResult(
         List<UnmappedClass> unmappedClasses,
         List<String> errors,
         List<String> warnings,
-        List<Row> rows) {
+        List<Row> rows,
+        List<PhotoLink> photoLinks) {
 
     /**
      * How many rows fall in each group, and what was applied: every new row, the changed rows

@@ -19,6 +19,8 @@ import dev.monkeypatch.rctiming.domain.entryimport.EventClasses;
 import dev.monkeypatch.rctiming.domain.entryimport.FinalState;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.media.EntryMediaImport;
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,17 +65,20 @@ public class CsvImportService {
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
     private final EntryImports entryImports;
+    private final EntryMediaImport mediaImport;
     private final AuditService audit;
 
     public CsvImportService(EventRepository eventRepository,
                             EntryRepository entryRepository,
                             CompetitorRepository competitorRepository,
                             EntryImports entryImports,
+                            EntryMediaImport mediaImport,
                             AuditService audit) {
         this.eventRepository = eventRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
         this.entryImports = entryImports;
+        this.mediaImport = mediaImport;
         this.audit = audit;
     }
 
@@ -109,7 +114,7 @@ public class CsvImportService {
         Map<String, UnmappedAccumulator> unmapped = new TreeMap<>();
         Map<String, Competitor> competitors = new HashMap<>();
         List<CsvImportResult.Row> skipped = new ArrayList<>();
-        List<Planned> plan = plan(eventId, parsed, classes, unmapped, competitors, skipped, errors);
+        List<Planned> plan = plan(eventId, parsed, classes, unmapped, competitors, skipped, errors, warnings);
 
         Set<String> keys = plan.stream().map(Planned::key).collect(Collectors.toSet());
         List<Entry> missing = entryRepository.findByEventId(eventId).stream()
@@ -145,11 +150,17 @@ public class CsvImportService {
                     e.getTransponderNumberSnapshot(), e.getSecondaryTransponderNumber(), List.of(), Map.of(),
                     withdraw, null));
         }
+        List<PhotoLink> photoLinks = new ArrayList<>();
         for (Planned p : plan) {
             Group group = p.group();
             boolean write = apply && (group == Group.NEW || group == Group.CHANGED && picked.update().contains(p.key));
-            Long entryId = write ? save(eventId, p, competitors, now).getId()
-                    : p.existing == null ? null : p.existing.getId();
+            Entry saved = write ? save(eventId, p, competitors, now) : p.existing;
+            Long entryId = saved == null ? null : saved.getId();
+            // An unchanged row still carries its pictures, which no entry detail would show as a change
+            if (apply && saved != null && (write || group == Group.UNCHANGED)) {
+                photoLinks.addAll(mediaImport.apply(actor, saved.getCompetitorId(), saved.getId(),
+                        p.row.headshotUrl(), p.row.carPhotoUrl(), p.row.carColours()));
+            }
             rows.add(new CsvImportResult.Row(group, p.key, p.row.line(), p.row.name(), p.row.brcaNumber(),
                     p.row.className(), p.row.classNumber(), p.eventClassId, entryId, primaryOf(p.row),
                     secondaryOf(p.row), p.changes, p.row.info(), write, null));
@@ -166,7 +177,7 @@ public class CsvImportService {
         if (apply && created + updated + withdrawn > 0) {
             recordImport(actor, event, summary, rows);
         }
-        return new CsvImportResult(dryRun, blocked, apply, summary, unmappedClasses, errors, warnings, rows);
+        return new CsvImportResult(dryRun, blocked, apply, summary, unmappedClasses, errors, warnings, rows, photoLinks);
     }
 
     /** One audit row per import that changed entries: the counts, and each entry created, updated, withdrawn. */
@@ -198,7 +209,7 @@ public class CsvImportService {
      */
     private List<Planned> plan(Long eventId, ParsedCsv parsed, Classes classes,
                                Map<String, UnmappedAccumulator> unmapped, Map<String, Competitor> competitors,
-                               List<CsvImportResult.Row> skipped, List<String> errors) {
+                               List<CsvImportResult.Row> skipped, List<String> errors, List<String> warnings) {
         Map<String, List<Competitor>> withoutBrcaNumber = competitorRepository.findWithoutBrcaNumberByMatchKey();
         Map<String, Integer> lineByKey = new HashMap<>();
         List<Planned> plan = new ArrayList<>();
@@ -221,6 +232,7 @@ public class CsvImportService {
                         + " again (line " + firstLine + ")");
                 continue;
             }
+            warnings.addAll(mediaImport.check("Line " + row.line(), row.headshotUrl(), row.carPhotoUrl(), row.carColours()));
             String competitorKey = competitorKey(row);
             competitors.computeIfAbsent(competitorKey, k -> findCompetitor(k, row, withoutBrcaNumber));
             Entry existing = eventClassId.isEmpty() ? null

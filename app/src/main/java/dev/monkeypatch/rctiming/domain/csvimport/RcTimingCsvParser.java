@@ -36,6 +36,14 @@ public final class RcTimingCsvParser {
     static final String CAR_MAKE = "Car Make";
     static final String ENTRY_DESC = "Entry Desc";
 
+    /** RCTC's own optional columns for pictures (#699); RC-Timing has none. */
+    static final String HEADSHOT_URL = "Headshot URL";
+    static final String CAR_PHOTO_URL = "Car Photo URL";
+    static final String CAR_COLOURS = "Car Colours";
+
+    /** The extra columns RCTC reads beyond RC-Timing's own. */
+    static final List<String> EXTRA_COLUMNS = List.of(HEADSHOT_URL, CAR_PHOTO_URL, CAR_COLOURS);
+
     /** Every column RC-Timing 2025 defines, in its order. */
     static final List<String> COLUMNS = List.of(NAME, BRCA_NUMBER, CLUB_NUMBER, CLASS_NUMBER, CLASS, FORMULA_NUMBER,
             MEMBER_TYPE_NUMBER, GRADE, PT_NO, PT_NO_2, JUNIOR, PAID_STATUS, CAR_MAKE, ENTRY_DESC);
@@ -50,6 +58,7 @@ public final class RcTimingCsvParser {
 
     static {
         COLUMNS.forEach(c -> BY_LOWER_CASE.put(c.toLowerCase(Locale.ROOT), c));
+        EXTRA_COLUMNS.forEach(c -> BY_LOWER_CASE.put(c.toLowerCase(Locale.ROOT), c));
     }
 
     private RcTimingCsvParser() {
@@ -65,10 +74,12 @@ public final class RcTimingCsvParser {
 
     /**
      * One data row. Numbers RC-Timing writes as {@code 0} for "none" are null here; text columns
-     * the file doesn't have are null.
+     * the file doesn't have are null. {@code carColours} is null when the file has no {@code Car Colours} column or the
+     * cell is blank, so a row that names none leaves the entry's colours alone.
      */
     public record Row(int line, String name, Long brcaNumber, Integer classNumber, String className,
-                      Long primaryTransponder, Long secondaryTransponder, Kind kind, Map<String, String> info) {
+                      Long primaryTransponder, Long secondaryTransponder, Kind kind, Map<String, String> info,
+                      String headshotUrl, String carPhotoUrl, List<String> carColours) {
     }
 
     /** The rows that could be read, and every problem found. Any error blocks the import. */
@@ -214,7 +225,15 @@ public final class RcTimingCsvParser {
         }
         return new Row(line, name.replaceAll("\\s+", " "), nonZero(numbers.get(BRCA_NUMBER)),
                 classNumber == null ? null : classNumber.intValue(), className,
-                nonZero(numbers.get(PT_NO)), nonZero(numbers.get(PT_NO_2)), kind, info);
+                nonZero(numbers.get(PT_NO)), nonZero(numbers.get(PT_NO_2)), kind, info,
+                blankToNull(cell(cells, columnIndex, HEADSHOT_URL)), blankToNull(cell(cells, columnIndex, CAR_PHOTO_URL)),
+                colours(cell(cells, columnIndex, CAR_COLOURS)));
+    }
+
+    /** Colours in a cell: {@code #rrggbb} values separated by spaces, semicolons or bars (a comma would split the cell). */
+    private static List<String> colours(String cell) {
+        String value = blankToNull(cell);
+        return value == null ? null : List.of(value.split("[\\s;|]+"));
     }
 
     private static String cell(String[] cells, Map<String, Integer> columnIndex, String column) {

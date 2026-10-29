@@ -136,10 +136,9 @@ public class DriverMediaService {
      */
     public List<String> setCarColours(Actor actor, long entryId, List<String> colours) {
         Entry entry = entries.getOrThrow(entryId);
-        List<String> clean = colours == null ? List.of() : colours.stream().filter(Objects::nonNull)
-                .map(c -> c.trim().toLowerCase()).filter(c -> !c.isEmpty()).distinct().toList();
-        if (clean.size() > CAR_COLOURS_MAX || !clean.stream().allMatch(c -> COLOUR.matcher(c).matches())) {
-            throw new IllegalArgumentException("A car can have up to " + CAR_COLOURS_MAX + " colours, each as #rrggbb");
+        List<String> clean = cleanColours(colours);
+        if (colourProblem(clean) != null) {
+            throw new IllegalArgumentException(colourProblem(clean));
         }
         if (clean.isEmpty()) {
             carColours.findByEntryId(entryId).ifPresent(c -> carColours.deleteById(c.getId()));
@@ -155,6 +154,22 @@ public class DriverMediaService {
         audit.entry(actor, "ENTRY_CAR_COLOURS_CHANGED").entity("entry", entryId).event(entry.getEventId())
                 .summary("Changed the car colours of entry #" + entryId).record();
         return clean;
+    }
+
+    /** Colours as stored: trimmed, lower case, without blanks or repeats. */
+    static List<String> cleanColours(List<String> colours) {
+        return colours == null ? List.of() : colours.stream().filter(Objects::nonNull)
+                .map(c -> c.trim().toLowerCase()).filter(c -> !c.isEmpty()).distinct().toList();
+    }
+
+    /**
+     * Why these colours cannot be kept, or null when they can: the wording {@link #setCarColours} answers 400 with,
+     * and the entry imports report as a row error.
+     */
+    public static String colourProblem(List<String> colours) {
+        List<String> clean = cleanColours(colours);
+        return clean.size() > CAR_COLOURS_MAX || !clean.stream().allMatch(c -> COLOUR.matcher(c).matches())
+                ? "A car can have up to " + CAR_COLOURS_MAX + " colours, each as #rrggbb" : null;
     }
 
     /**
@@ -187,12 +202,27 @@ public class DriverMediaService {
      */
     public CompetitorMediaView uploadHeadshot(Actor actor, long competitorId, MultipartFile file) {
         competitors.requireExists(competitorId);
-        String url = store(file);
+        return replaceHeadshot(actor, competitorId, store(file), "DRIVER_HEADSHOT_CHANGED");
+    }
+
+    /**
+     * Stores an image fetched from an entry import as the competitor's headshot, deleting the previous one. It checks
+     * the bytes as an upload is checked, so a link to anything but a PNG or JPEG up to 2 MB is refused.
+     *
+     * @throws IllegalArgumentException (400) if the bytes are not a PNG or JPEG image, or are over 2 MB
+     * @throws EntityNotFoundException (404) if there is no such competitor
+     */
+    public CompetitorMediaView importHeadshot(Actor actor, long competitorId, byte[] bytes) {
+        competitors.requireExists(competitorId);
+        return replaceHeadshot(actor, competitorId, store(bytes), "DRIVER_HEADSHOT_IMPORTED");
+    }
+
+    private CompetitorMediaView replaceHeadshot(Actor actor, long competitorId, String url, String action) {
         DriverMedia row = mediaRow(competitorId);
         deleteAfterCommit(row.getHeadshotUrl());
         row.setHeadshotUrl(url);
         media.save(row);
-        audit.entry(actor, "DRIVER_HEADSHOT_CHANGED").entity("competitor", competitorId)
+        audit.entry(actor, action).entity("competitor", competitorId)
                 .summary("Replaced the headshot of competitor #" + competitorId).record();
         return new CompetitorMediaView(url, splitSponsors(row.getSponsors()));
     }
@@ -222,17 +252,33 @@ public class DriverMediaService {
      */
     public String uploadCarPhoto(Actor actor, long entryId, MultipartFile file) {
         Entry entry = entries.getOrThrow(entryId);
-        String url = store(file);
-        EntryPhoto photo = photos.findByEntryId(entryId).orElseGet(() -> {
+        return replaceCarPhoto(actor, entry, store(file), "ENTRY_CAR_PHOTO_CHANGED");
+    }
+
+    /**
+     * Stores an image fetched from an entry import as the entry's car photo, deleting the previous one. The bytes are
+     * checked as an upload is.
+     *
+     * @return the photo's address
+     * @throws IllegalArgumentException (400) if the bytes are not a PNG or JPEG image, or are over 2 MB
+     * @throws EntityNotFoundException (404) if there is no such entry
+     */
+    public String importCarPhoto(Actor actor, long entryId, byte[] bytes) {
+        Entry entry = entries.getOrThrow(entryId);
+        return replaceCarPhoto(actor, entry, store(bytes), "ENTRY_CAR_PHOTO_IMPORTED");
+    }
+
+    private String replaceCarPhoto(Actor actor, Entry entry, String url, String action) {
+        EntryPhoto photo = photos.findByEntryId(entry.getId()).orElseGet(() -> {
             EntryPhoto created = new EntryPhoto();
-            created.setEntryId(entryId);
+            created.setEntryId(entry.getId());
             return created;
         });
         deleteAfterCommit(photo.getCarPhotoUrl());
         photo.setCarPhotoUrl(url);
         photos.save(photo);
-        audit.entry(actor, "ENTRY_CAR_PHOTO_CHANGED").entity("entry", entryId).event(entry.getEventId())
-                .summary("Replaced the car photo of entry #" + entryId).record();
+        audit.entry(actor, action).entity("entry", entry.getId()).event(entry.getEventId())
+                .summary("Replaced the car photo of entry #" + entry.getId()).record();
         return url;
     }
 
@@ -349,7 +395,37 @@ public class DriverMediaService {
         if (file.getSize() > IMAGE_MAX_BYTES) {
             throw new IllegalArgumentException("File too large: max " + IMAGE_MAX_BYTES + " bytes");
         }
-        byte[] bytes = reencode(file, contentType);
+        try {
+            return store(file.getBytes(), contentType);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
+        }
+    }
+
+    /** Stores fetched bytes whose type is taken from their first bytes, as a server's own content type can be wrong. */
+    private String store(byte[] fetched) {
+        if (fetched == null || fetched.length == 0) {
+            throw new IllegalArgumentException("The picture is empty");
+        }
+        if (fetched.length > IMAGE_MAX_BYTES) {
+            throw new IllegalArgumentException("File too large: max " + IMAGE_MAX_BYTES + " bytes");
+        }
+        return store(fetched, sniffType(fetched));
+    }
+
+    /** PNG or JPEG by signature; anything else (SVG, WebP, HTML) is refused. */
+    static String sniffType(byte[] b) {
+        if (b.length > 8 && (b[0] & 0xFF) == 0x89 && b[1] == 'P' && b[2] == 'N' && b[3] == 'G') {
+            return "image/png";
+        }
+        if (b.length > 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8 && (b[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        throw new IllegalArgumentException("The picture is not a PNG or JPEG image");
+    }
+
+    private String store(byte[] original, String contentType) {
+        byte[] bytes = reencode(original, contentType);
         String extension = contentType.equals("image/png") ? "png" : "jpg";
         String url = storage.upload(PHOTO_FOLDER + "/" + UUID.randomUUID() + "." + extension, bytes);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -367,9 +443,9 @@ public class DriverMediaService {
     }
 
     /** Decodes the upload and writes it out again, so only pixels are kept; fails for anything that is not an image. */
-    private static byte[] reencode(MultipartFile file, String contentType) {
+    private static byte[] reencode(byte[] original, String contentType) {
         try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(file.getBytes()));
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(original));
             if (image == null) {
                 throw new IllegalArgumentException("The file is not a readable " + contentType + " image");
             }
