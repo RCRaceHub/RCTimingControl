@@ -19,7 +19,7 @@ const state = (swatch: string, icon: StateKind): LegendItem => ({ swatch, icon, 
 /**
  * What each colour means, in one place so every view says the same thing. The lap colours are the ones
  * {@code useLapFlash} gives a row for a moment after a lap; close is the tint for a car running near the one
- * ahead; pace is the thumbs up for a car on pace for its predicted laps and the flame for a flying lap; status is the lapped, penalty and no-signal markers; movement is the places gained or lost in the qualifying tables.
+ * ahead; pace is the thumbs up for a car on pace for its predicted laps; status is the lapped, penalty and no-signal markers; movement is the places gained or lost in the qualifying tables.
  */
 const ITEMS: Record<LegendKind, LegendItem[]> = {
   lap: [
@@ -28,9 +28,10 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
     state('bg-info', 'personal-best'),
     state('bg-success', 'improving'),
     state('bg-destructive', 'slow'),
+    state('', 'flying'),
   ],
   close: [state('bg-warning', 'close')],
-  pace: [state('', 'on-pace'), state('', 'flying')],
+  pace: [state('', 'on-pace')],
   status: [state('', 'lapped'), state('', 'penalty'), state('', 'no-signal')],
   movement: [
     { swatch: 'bg-success', label: 'Moved up' },

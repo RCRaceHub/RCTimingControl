@@ -31,7 +31,7 @@ export const STATE_INFO: Record<StateKind, StateInfo> = {
   slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive', tag: 'SL' },
   close: { icon: ChevronsRight, label: 'Close to the car ahead', tone: 'text-warning', tag: 'CL' },
   'on-pace': { icon: ThumbsUp, label: 'On pace for its predicted laps', tone: 'text-success', tag: 'ON' },
-  flying: { icon: Flame, label: 'Flying lap: beat its average by a clear margin', tone: 'text-warning', tag: 'FLY' },
+  flying: { icon: Flame, label: 'Flying lap: faster than its average so far', tone: 'text-warning', tag: 'FLY' },
   lapped: { icon: Layers, label: 'Laps down on the leader', tone: 'text-info', tag: 'LAP' },
   penalty: { icon: Gavel, label: 'Has a time penalty', tone: 'text-warning', tag: 'PEN' },
   'no-signal': { icon: CircleHelp, label: 'Not seen by the decoder for a while', tone: 'text-muted-foreground', tag: 'NS' },

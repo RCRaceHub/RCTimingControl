@@ -3,9 +3,9 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
+import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 
-import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;

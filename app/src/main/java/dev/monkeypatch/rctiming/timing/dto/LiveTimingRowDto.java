@@ -12,7 +12,7 @@ package dev.monkeypatch.rctiming.timing.dto;
  * the order, the gaps and {@code totalTimeMs} already include it. {@code startPosition} is the car's 1-based place on
  * the race's grid, null when it had none; the boards compare it with {@code position} for a places-gained arrow (#479).
  * {@code flyingLap} is true while the car's latest lap is a flying lap (it beat the average of the laps before it, with
- * at least three to beat, the first lap left out), so the boards show a fire icon until the car's next lap.
+ * at least three to beat, the first lap left out), so the boards show a flame until the car's next lap.
  */
 public record LiveTimingRowDto(
         long entryId,
