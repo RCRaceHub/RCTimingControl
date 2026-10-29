@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { DatabaseBackup, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,12 +33,14 @@ export default function BackupsPage() {
   const { data, isLoading, isError } = useAdminBackups();
   const backupNow = useBackupNow();
 
+  // Read once when the page opens: the prompt does not need to expire while the page is up
+  const [now] = useState(() => Date.now());
   const newest = data?.backups.reduce<BackupFileDto | undefined>(
     (latest, b) => (!latest || b.createdAt > latest.createdAt ? b : latest),
     undefined,
   );
   const recentDayClose = data?.backups
-    .filter(b => b.reason === 'day-close' && Date.now() - new Date(b.createdAt).getTime() < COPY_OFF_PROMPT_DAYS * 86_400_000)
+    .filter(b => b.reason === 'day-close' && now - new Date(b.createdAt).getTime() < COPY_OFF_PROMPT_DAYS * 86_400_000)
     .reduce<BackupFileDto | undefined>((latest, b) => (!latest || b.createdAt > latest.createdAt ? b : latest), undefined);
 
   function onBackupNow() {
