@@ -18,7 +18,8 @@ import java.util.List;
  * Deletes personal data that has outlived its use (#262): sign-in tokens that can no longer work, refused sign-ins,
  * and, if the club sets a limit, old audit rows.
  *
- * <p>Runs in one write transaction, so a failure leaves everything as it was. When anything went, it writes one audit
+ * <p>It never touches race history: no race, lap, result or practice row is deleted here ({@code RaceHistoryKeptIT}
+ * fails if one is). Runs in one write transaction, so a failure leaves everything as it was. When anything went, it writes one audit
  * row of its own with the counts and no names, so the log shows that the clean-up happened.
  */
 @Service

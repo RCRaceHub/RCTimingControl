@@ -45,6 +45,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.ENTRY_AUDIT_LOG;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EVENT_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots.RESULT_SNAPSHOTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox.RESULTS_OUTBOX;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -108,8 +109,16 @@ class CompetitorAnonymiseIT extends AbstractIntegrationTest {
     void removesTheNameEverywhereButKeepsTheResultAndWritesAnAuditRowWithoutIt() {
         Fixture f = fixture(RaceStatus.FINISHED);
 
+        int racesBefore = dsl.fetchCount(RACES);
+        int raceEntriesBefore = dsl.fetchCount(RACE_ENTRIES);
+        int snapshotsBefore = dsl.fetchCount(RESULT_SNAPSHOTS);
+
         CompetitorAnonymiseService.Result result = anonymiseService.anonymise(f.competitor.getId(), adminId);
 
+        // No race, entry in a race or result is removed, only the name in them
+        assertThat(dsl.fetchCount(RACES)).isEqualTo(racesBefore);
+        assertThat(dsl.fetchCount(RACE_ENTRIES)).isEqualTo(raceEntriesBefore);
+        assertThat(dsl.fetchCount(RESULT_SNAPSHOTS)).isEqualTo(snapshotsBefore);
         Competitor after = competitorRepository.findById(f.competitor.getId()).orElseThrow();
         assertThat(after.getDisplayName()).isEqualTo("Anonymised competitor #" + f.competitor.getId());
         assertThat(after.getBrcaNumber()).isNull();

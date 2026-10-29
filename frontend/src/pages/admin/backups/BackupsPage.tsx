@@ -7,12 +7,16 @@ import { useHelpContent } from '@/context/HelpContext';
 import { BackupsHelp } from '@/help/BackupsHelp';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/dates';
+import type { BackupFileDto } from '@/lib/adminApi';
 
 const REASONS: Record<string, string> = {
   manual: 'Taken by hand',
   nightly: 'Nightly',
   'day-close': 'Race day closed',
 };
+
+/** A race day closed within this long ago still gets the "copy a backup off the laptop" prompt. */
+const COPY_OFF_PROMPT_DAYS = 3;
 
 function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -27,6 +31,14 @@ export default function BackupsPage() {
   useHelpContent(BackupsHelp);
   const { data, isLoading, isError } = useAdminBackups();
   const backupNow = useBackupNow();
+
+  const newest = data?.backups.reduce<BackupFileDto | undefined>(
+    (latest, b) => (!latest || b.createdAt > latest.createdAt ? b : latest),
+    undefined,
+  );
+  const recentDayClose = data?.backups
+    .filter(b => b.reason === 'day-close' && Date.now() - new Date(b.createdAt).getTime() < COPY_OFF_PROMPT_DAYS * 86_400_000)
+    .reduce<BackupFileDto | undefined>((latest, b) => (!latest || b.createdAt > latest.createdAt ? b : latest), undefined);
 
   function onBackupNow() {
     backupNow.mutate(undefined, {
@@ -51,6 +63,23 @@ export default function BackupsPage() {
           Back up now
         </Button>
       </div>
+
+      {recentDayClose && (
+        <div role="status" className="rounded-lg border border-warning/40 bg-warning/15 p-4 text-sm">
+          <p className="font-semibold">Copy a backup off the laptop</p>
+          <p className="text-muted-foreground mt-1">
+            The race day was closed on {formatDateTime(recentDayClose.createdAt)}. The race history lives only on
+            this laptop, so copy <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{recentDayClose.name}</code> from
+            the backup folder to a USB stick or a synced folder before you pack up.
+          </p>
+        </div>
+      )}
+
+      {data && (
+        <p className="text-sm">
+          Last backup: <strong>{newest ? formatDateTime(newest.createdAt) : 'none yet'}</strong>
+        </p>
+      )}
 
       {data && (
         <p className="text-sm">
