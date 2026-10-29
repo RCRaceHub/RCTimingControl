@@ -123,6 +123,7 @@ Options go on the end of the address:
 | `arrows=hide` | Leave out the places-gained arrows shown in a final |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; 0 turns it off) |
 | `battles=hide` | Leave out the battles strip under the running order (shown by default while the race is running, and only once the first lap has been counted) |
+| `battlestyle=rows`, `battlestyle=both` | Where the overlay shows battles (#681): `rows` highlights the chasing car's row in the tower or table instead of the strip, with pulsing chevrons, BATTLE, the gap to the car ahead and whether it is closing or growing; `both` shows the strip as well. Without it only the strip shows. A car counts as in a battle by the club's battle gap. Also a drop-down in the Overlay Designer |
 | `lower=director`, `lower=battle`, `lower=off` | What brings up the **featured-driver lower third** (see below): `director` only when the race director sends a driver, `battle` only when a battle reaches the top places, `off` never. Without it both bring it up |
 | `contrast=high` | High contrast: thick outlined icons with a short text tag beside each, as on the boards; also a tick box in the Overlay Designer (#591) |
 | `legend=show` | Add a small colour key (lap colours and close tint, each with its icon) at the foot of the panel; off by default so it stays off the video |

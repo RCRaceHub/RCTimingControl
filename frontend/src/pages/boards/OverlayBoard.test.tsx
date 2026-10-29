@@ -467,6 +467,36 @@ describe('OverlayBoard battles', () => {
     expect(await screen.findByText(/Battle for P1/)).toBeInTheDocument();
   });
 
+  it('keeps battles to the panel by default', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay();
+
+    expect(await screen.findByText(/Battle for P1/)).toBeInTheDocument();
+    expect(screen.queryByTestId('battle-row-tag')).not.toBeInTheDocument();
+  });
+
+  it.each(['tower', 'table'])('marks only the chasing car in the %s with battlestyle=rows', async (layout) => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay(`/boards/overlay?layout=${layout}&battlestyle=rows`);
+
+    const tag = await screen.findByTestId('battle-row-tag');
+    expect(tag).toHaveTextContent('0.8s');
+    expect(tag).toHaveAttribute('data-trend', 'CLOSING');
+    expect(screen.getAllByTestId('battle-row-tag')).toHaveLength(1);
+    expect(screen.queryByText(/Battle for P1/)).not.toBeInTheDocument();
+  });
+
+  it('shows the panel and the row with battlestyle=both', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    stompFrames['/topic/race/12/battles'] = battle;
+    renderOverlay('/boards/overlay?battlestyle=both');
+
+    expect(await screen.findByTestId('battle-row-tag')).toBeInTheDocument();
+    expect(screen.getByText(/Battle for P1/)).toBeInTheDocument();
+  });
+
   it('shows no battle call-outs before any lap has been counted', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     vi.mocked(getBoardLiveTiming).mockResolvedValue([
@@ -504,6 +534,7 @@ describe('overlay options', () => {
       showPredicted: true,
       closeMs: 1000,
       showBattles: true,
+      battleStyle: 'panel',
       lowerThird: 'both',
       showLegend: false,
       highContrast: false,

@@ -38,7 +38,7 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
+ * {@code battles=hide} the battles strip (#505), {@code battlestyle=rows|both} (overlay only) the chasing car's row instead of or as well as the strip (#681), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  */
 export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -73,6 +73,15 @@ export type LowerThirdMode = 'both' | 'director' | 'battle' | 'off';
 export function parseLowerThird(value: string | null): LowerThirdMode {
   const mode = value?.toLowerCase();
   return mode === 'director' || mode === 'battle' || mode === 'off' ? mode : 'both';
+}
+
+/** How the overlay shows battles: the bottom-left panel, a highlight on the chasing car's row, or both (#681). */
+export type BattleStyle = 'panel' | 'rows' | 'both';
+
+/** Reads `?battlestyle=`; anything it does not know keeps the panel. */
+export function parseBattleStyle(value: string | null): BattleStyle {
+  const style = value?.toLowerCase();
+  return style === 'rows' || style === 'both' ? style : 'panel';
 }
 
 /** The tower's gap from `?gap=`: the interval to the car ahead unless asked for the leader gap or the two in turn. */
@@ -125,6 +134,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showTqPace: params.get('tqpace')?.toLowerCase() !== 'hide',
     showClassTags: params.get('tags')?.toLowerCase() !== 'hide',
     lowerThird: parseLowerThird(params.get('lower')),
+    battleStyle: parseBattleStyle(params.get('battlestyle')),
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
@@ -272,6 +282,8 @@ export type OverlayDesign = {
   showBars: boolean;
   showArrows: boolean;
   showBattles: boolean;
+  /** Where battles show: the panel, the chasing car's row, or both (#681); needs {@link showBattles}. */
+  battleStyle: BattleStyle;
   /** What brings up the featured-driver lower third (#533): the race director, a battle for the top places, both or neither. */
   lowerThird: LowerThirdMode;
   /** Show the colour key; off unless asked, as it sits over the video. */
@@ -303,6 +315,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showBars: true,
   showArrows: true,
   showBattles: true,
+  battleStyle: 'panel',
   lowerThird: 'both',
   showLegend: false,
   highContrast: false,
@@ -324,6 +337,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
   if (r.layout === 'tower' || r.layout === 'table') design.layout = r.layout;
+  if (typeof r.battleStyle === 'string') design.battleStyle = parseBattleStyle(r.battleStyle);
   if (typeof r.lowerThird === 'string') design.lowerThird = parseLowerThird(r.lowerThird);
   if (r.gap === 'int' || r.gap === 'leader' || r.gap === 'auto') design.gap = r.gap;
   if (typeof r.top === 'number' && Number.isInteger(r.top) && r.top > 0) design.top = Math.min(r.top, OVERLAY_MAX_TOP);
@@ -381,6 +395,7 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showBars) q.set('bars', 'hide');
   if (!design.showArrows) q.set('arrows', 'hide');
   if (!design.showBattles) q.set('battles', 'hide');
+  if (design.battleStyle !== 'panel') q.set('battlestyle', design.battleStyle);
   if (design.lowerThird !== 'both') q.set('lower', design.lowerThird);
   if (design.showLegend) q.set('legend', 'show');
   if (design.highContrast) q.set('contrast', 'high');
