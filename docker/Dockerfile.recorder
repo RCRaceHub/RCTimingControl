@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+# A small image that only records a real RC-4 decoder to a .dump file (`RCTimingControl record`).
+# It has no database, no UI and no web server. See docs/decoder.md.
+FROM eclipse-temurin:21-jdk AS builder
+WORKDIR /build
+COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties VERSION ./
+COPY gradle/ gradle/
+COPY buildSrc/ buildSrc/
+COPY app/ app/
+COPY decoder-protocol/ decoder-protocol/
+COPY decoder-simulator/ decoder-simulator/
+COPY mapstruct-jooq/ mapstruct-jooq/
+# A Windows checkout can leave CRLF in gradlew, which makes its shebang read "sh\r" ("not found")
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew :decoder-simulator:installDist -x test --no-daemon
+
+FROM eclipse-temurin:21-jre
+RUN useradd --system --uid 10001 --home-dir /captures rctiming \
+ && install -d -o rctiming -g rctiming /captures
+COPY --from=builder /build/decoder-simulator/build/install/decoder-simulator/lib /app/lib
+# Recordings land in /captures; mount a folder on it to keep them
+WORKDIR /captures
+VOLUME /captures
+USER rctiming
+ENTRYPOINT ["java", "-cp", "/app/lib/*", "dev.monkeypatch.rctiming.simulator.RecorderMain"]
+# Default: the decoder address must be given, e.g. --host=192.168.1.50 --out=/captures/capture.dump
+CMD ["--help"]

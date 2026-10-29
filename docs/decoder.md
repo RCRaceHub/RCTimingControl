@@ -89,6 +89,15 @@ To capture real race data as test data, run the recorder instead of (or, if your
 
 Flags: `--host` (required), `--port` (default 5100) and `--out` (default `decoder-<date>-<time>.dump` in the current folder). Stop it with `Ctrl+C`. It reconnects if the decoder drops, and appends if the file already exists.
 
+To run it in Docker instead, build the small recorder image (it holds only the recorder, no app or database) and mount a folder for the files:
+
+```
+docker build -f docker/Dockerfile.recorder -t rctc-recorder .
+docker run --rm -v "$PWD/captures:/captures" rctc-recorder --host=192.168.1.50 --out=/captures/capture.dump
+```
+
+Use `docker run -it` so `Ctrl+C` stops it cleanly, or `docker stop` from another terminal. The container only needs to reach the decoder's address; no ports are published.
+
 It writes two files. `capture.dump` holds every record exactly as the decoder sent it, and the simulator replays it: `RCTimingControl simulate --mode=playback --file=capture.dump`. `capture.dump.times` holds the same records, each after the time in milliseconds since 1970 (UTC) at which the recorder received it, which is useful for checking real timing against the decoder's own clock.
 
 ---
