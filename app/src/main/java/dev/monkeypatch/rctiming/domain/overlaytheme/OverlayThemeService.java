@@ -96,14 +96,14 @@ public class OverlayThemeService {
      */
     public OverlayTheme setDefault(Actor actor, Long id) {
         OverlayTheme theme = get(id);
-        if (theme.getIsDefault()) {
+        if (theme.isDefault()) {
             return theme;
         }
         repository.findDefault().ifPresent(previous -> {
-            previous.setIsDefault(false);
+            previous.setDefault(false);
             repository.save(previous);
         });
-        theme.setIsDefault(true);
+        theme.setDefault(true);
         OverlayTheme saved = repository.save(theme);
         audit.entry(actor, "OVERLAY_THEME_DEFAULT_SET").entity("overlay_theme", id)
                 .summary("Made the overlay theme " + saved.getName() + " the default").record();
@@ -113,7 +113,7 @@ public class OverlayThemeService {
     /** Stops any theme being the default and records {@code OVERLAY_THEME_DEFAULT_CLEARED}; does nothing if none is. */
     public void clearDefault(Actor actor) {
         repository.findDefault().ifPresent(previous -> {
-            previous.setIsDefault(false);
+            previous.setDefault(false);
             repository.save(previous);
             audit.entry(actor, "OVERLAY_THEME_DEFAULT_CLEARED").entity("overlay_theme", previous.getId())
                     .summary("Cleared the default overlay theme " + previous.getName()).record();
@@ -171,7 +171,7 @@ public class OverlayThemeService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name", t.getName());
         m.put("design", t.getDesign());
-        m.put("default", t.getIsDefault());
+        m.put("default", t.isDefault());
         return m;
     }
 }
