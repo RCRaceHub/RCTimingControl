@@ -3,8 +3,8 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
-import dev.monkeypatch.rctiming.timing.dto.FeaturedDriverDto;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
+import dev.monkeypatch.rctiming.timing.dto.FeaturedDriverDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
@@ -22,7 +22,6 @@ import java.util.Map;
  * - /topic/race/{raceId}/battles — cars running close together and whether each gap is closing or growing
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/featured — the race director's featured-driver lower third for the overlay (#533)
- * - /topic/race/{raceId}/featured — the race director's featured-driver prompt for the overlay (#533)
  * - /topic/race/{raceId}/marshal — marshal adjustments
  * - /topic/race/{raceId}/unknown-transponder — first sighting of unknown transponder
  * - /topic/race/{raceId}/jump-start — cars that crossed the line before their turn in a stagger start

@@ -31,19 +31,20 @@ export function useFeaturedDriver(
   // State is adjusted while rendering, not in an effect, when a new frame or a new battle candidate arrives
   const { data: frame } = useStomp<FeaturedFrame>(raceId && directorOn ? `/topic/race/${raceId}/featured` : null);
   const [seenFrame, setSeenFrame] = useState<FeaturedFrame | null>(null);
-  if (frame !== seenFrame) {
+  const newFrame = frame !== seenFrame;
+  if (newFrame) {
     setSeenFrame(frame);
     if (frame) setShown({ raceId: frame.raceId, entryId: frame.entryId });
   }
 
+  // A car left over from another race is dropped at once
+  if (shown && shown.raceId !== raceId) setShown(null);
+
+  // Judged on every render, so a battle that carries on shows as soon as the director's pick has hidden or the
+  // car's cooldown has ended
   const candidate = battleOn && battlesLive ? battleCandidate(battles) : null;
-  const [seenCandidate, setSeenCandidate] = useState<number | null>(null);
-  if (candidate !== seenCandidate) {
-    setSeenCandidate(candidate);
-    // A director's pick that is still up is not pushed off by a battle
-    if (candidate !== null && raceId !== null && !cooling.has(candidate) && shown === null) {
-      setShown({ raceId, entryId: candidate });
-    }
+  if (!newFrame && candidate !== null && raceId !== null && shown === null && !cooling.has(candidate)) {
+    setShown({ raceId, entryId: candidate });
   }
 
   useEffect(() => {

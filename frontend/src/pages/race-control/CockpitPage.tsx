@@ -563,7 +563,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
-            {sections.isShown('liveTiming') && <FeaturedDriverPanel raceId={selectedRace.raceId} />}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Unknown Transponders</p>
@@ -616,7 +616,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
-            {sections.isShown('liveTiming') && <FeaturedDriverPanel raceId={selectedRace.raceId} />}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
           </div>
         );
 

@@ -34,6 +34,15 @@ describe('useFeaturedDriver', () => {
     expect(result.current).toBe(8);
   });
 
+  it('shows a battle that carries on once the director\'s pick has hidden', () => {
+    frame = { raceId: 3, entryId: 5 };
+    const { result } = renderHook(() => useFeaturedDriver(3, 'both', battle, true));
+    expect(result.current).toBe(5);
+
+    act(() => void vi.advanceTimersByTime(LOWER_THIRD_HOLD_MS + 1));
+    expect(result.current).toBe(8);
+  });
+
   it('ignores battles in director-only mode and the director in battle-only mode', () => {
     expect(renderHook(() => useFeaturedDriver(3, 'director', battle, true)).result.current).toBeNull();
     frame = { raceId: 3, entryId: 5 };
