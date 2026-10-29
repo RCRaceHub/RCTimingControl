@@ -18,7 +18,7 @@ In a terminal, in the repository folder, run:
 docker compose -f docker-compose.demo.yml up --build
 ```
 
-This starts the app with the demo club (Wyvern RC Club) and a simulated decoder that sends laps for the demo club's sixteen transponders (101 to 116). When the log shows `Connected to RC-4 decoder at localhost:5100`, open **[http://localhost:8080](http://localhost:8080)** and sign in as `admin@example.com` with the password **`trial123`**. That account is an admin, race director and referee.
+This starts the app with the demo club (Wyvern RC Club) and a simulated decoder that sends laps for the demo club's sixteen transponders (101 to 116). When the log shows `Connected to RC-4 decoder at localhost:5100`, open **[http://localhost:8080](http://localhost:8080)** and sign in as `admin@example.com` with the password **`trial123`**. That account is an admin, race director and referee. The demo drivers come with placeholder headshots, car photos and car colours (generated drawings, not real people), so you can try the overlay's **Driver headshots** and **Car colours** options and the colour swatch on the referee screen. The first four drivers have a car photo and colours, the next three colours only, and the last none, so her cars show their class colour.
 
 Then follow [Things to try](trial-quickstart.md#things-to-try) in the trial guide to run a race with live timing.
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <title>Demo headshot (placeholder)</title>
+  <rect width="200" height="200" fill="#2563eb"/>
+  <circle cx="100" cy="82" r="38" fill="#3b6ea5"/>
+  <path d="M30 200c0-46 31-76 70-76s70 30 70 76z" fill="#1f2937"/>
+  <text x="100" y="188" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="700" fill="#ffffff">DQ</text>
+</svg>
