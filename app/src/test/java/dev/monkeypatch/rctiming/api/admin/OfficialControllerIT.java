@@ -94,6 +94,15 @@ class OfficialControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aUserWithNoRoleIsNotListedAsAnOfficial() {
+        String email = createUser(Set.of(), "password123");
+
+        ResponseEntity<List<Map<String, Object>>> list = rest.exchange(BASE, HttpMethod.GET, auth(), LIST);
+
+        assertThat(list.getBody()).noneSatisfy(o -> assertThat(o).containsEntry("email", email));
+    }
+
+    @Test
     void changesComePageByPageNewestFirstWithNoneSkippedOrRepeated() {
         String email = createUser(Set.of(Role.REFEREE), "password123");
         long id = idOf(email);

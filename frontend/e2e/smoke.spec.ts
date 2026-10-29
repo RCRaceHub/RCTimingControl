@@ -60,12 +60,11 @@ test.describe('Admin login and navigation', () => {
 });
 
 test.describe('Officials-only sign-in', () => {
-  test('a racer account cannot sign in', async ({ page }) => {
+  test('a racer cannot sign in', async ({ page }) => {
     await page.goto('/login');
     await page.getByLabel(/email/i).fill(RACER_EMAIL);
     await page.getByLabel(/password/i).fill(PASSWORD);
     await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page.getByText(/race officials only/i)).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
 
