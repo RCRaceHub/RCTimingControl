@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.domain.entry;
 
+import dev.monkeypatch.rctiming.persistence.CreatedAt;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.persistence.CreatedAt;
 
 import java.time.Instant;
 import java.util.Map;

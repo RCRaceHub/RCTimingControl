@@ -1,16 +1,16 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

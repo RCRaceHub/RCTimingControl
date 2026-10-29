@@ -1,14 +1,14 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
-import dev.monkeypatch.rctiming.TestJson;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import com.networknt.schema.Error;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
+import dev.monkeypatch.rctiming.TestJson;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 
 import java.io.IOException;

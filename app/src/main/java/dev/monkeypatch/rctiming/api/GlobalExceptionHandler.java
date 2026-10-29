@@ -1,14 +1,13 @@
 package dev.monkeypatch.rctiming.api;
 
-import tools.jackson.databind.exc.InvalidFormatException;
-import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
-import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
-import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
-import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.backup.BackupFailedException;
-import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
+import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
+import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
+import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
+import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
+import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +22,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 import java.time.DateTimeException;
 import java.util.Arrays;

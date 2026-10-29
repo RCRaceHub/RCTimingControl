@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.domain.entryfeed;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.config.LoopbackHosts;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -17,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;

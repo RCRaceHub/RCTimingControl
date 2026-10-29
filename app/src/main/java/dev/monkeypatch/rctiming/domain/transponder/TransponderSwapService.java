@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.transponder;
 
-import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
@@ -10,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.EnumSet;

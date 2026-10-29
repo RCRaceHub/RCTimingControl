@@ -1,12 +1,12 @@
 package dev.monkeypatch.rctiming.domain.format;
 
 import dev.monkeypatch.rctiming.config.JacksonConfig;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.InvalidTypeIdException;
 import tools.jackson.dataformat.yaml.YAMLMapper;
-import org.springframework.stereotype.Component;
 
 /** Reads and writes a format's config as a JSON or YAML file, for export and import (FORMAT-14). */
 @Component

@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.domain.club;
 
 import dev.monkeypatch.rctiming.TestJson;
-import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

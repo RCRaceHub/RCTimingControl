@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.domain.format;
 
 import dev.monkeypatch.rctiming.TestJson;
-import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.scoring.ChampionshipScoringConfig;
 import dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig;
@@ -11,6 +10,7 @@ import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 import java.util.Optional;

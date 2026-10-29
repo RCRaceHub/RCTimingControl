@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.query.audit;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Service;
-import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;

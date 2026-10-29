@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import tools.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -26,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.HashMap;

@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.api.boards.dto;
 
-import tools.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayTheme;
+import tools.jackson.databind.JsonNode;
 
 /**
  * A saved overlay theme: its id, name and the designer's choices as a JSON object. Answer of {@code GET

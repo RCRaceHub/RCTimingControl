@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.entry;
 
-import tools.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorService;
@@ -9,10 +10,9 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
-import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
-import dev.monkeypatch.rctiming.domain.StateConflictException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;

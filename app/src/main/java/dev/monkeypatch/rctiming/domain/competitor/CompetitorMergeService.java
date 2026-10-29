@@ -1,11 +1,9 @@
 package dev.monkeypatch.rctiming.domain.competitor;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.ExternalSources;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.championship.ChampionshipExclusionRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
@@ -13,12 +11,14 @@ import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;

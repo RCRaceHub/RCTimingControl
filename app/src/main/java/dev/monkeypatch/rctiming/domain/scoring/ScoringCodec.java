@@ -1,13 +1,13 @@
 package dev.monkeypatch.rctiming.domain.scoring;
 
 import dev.monkeypatch.rctiming.config.JacksonConfig;
+import dev.monkeypatch.rctiming.domain.format.RaceFormatCodec.FileType;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.InvalidTypeIdException;
 import tools.jackson.dataformat.yaml.YAMLMapper;
-import dev.monkeypatch.rctiming.domain.format.RaceFormatCodec.FileType;
-import org.springframework.stereotype.Component;
 
 /** Reads and writes a scoring system's config as a JSON or YAML file, for export and import (the same file types as race formats). */
 @Component
