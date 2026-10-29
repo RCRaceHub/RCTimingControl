@@ -774,6 +774,10 @@ export const adminApi = {
   },
   deleteCarPhoto: (entryId: number) =>
     api.delete(`/api/v1/admin/entries/${entryId}/car-photo`).then(() => undefined),
+  getCarColours: (entryId: number) =>
+    api.get<{ colours: string[] }>(`/api/v1/admin/entries/${entryId}/car-colours`).then(r => r.data.colours),
+  setCarColours: (entryId: number, colours: string[]) =>
+    api.put<{ colours: string[] }>(`/api/v1/admin/entries/${entryId}/car-colours`, { colours }).then(r => r.data.colours),
 
   // Event sponsors (#518): name, optional logo, display order.
   listSponsors: (eventId: number) =>

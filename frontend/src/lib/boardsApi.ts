@@ -379,6 +379,8 @@ export type RaceMediaDto = {
   headshotUrl: string | null;
   carPhotoUrl: string | null;
   sponsors: string[];
+  /** The colours an official set on the car as #rrggbb, in order; empty when none (#685). */
+  carColours: string[];
 };
 
 /** The pictures and driver sponsors for the cars of a race; cars with nothing to show, or a hidden name, are left out. */

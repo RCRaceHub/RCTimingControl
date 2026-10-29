@@ -75,6 +75,7 @@ An official can add three optional extras for the boards and the commentator vie
 - Only PNG and JPEG up to 2 MB are accepted, never SVG or WebP, and each upload is decoded and saved again, which drops metadata such as a phone's GPS position. Each file is stored with a random name in the app's storage folder, so its address cannot be guessed, but anyone who has the address can open it (storage is served to the venue network without sign-in, like the club logo).
 - A public screen never gets a competitor's headshot, car photo or sponsors while their name is set to initials only or hidden (#265).
 - Replacing or removing a picture deletes the file. **Anonymise** deletes the headshot file, the sponsors and the car photos of all the competitor's entries; merging two competitors deletes the duplicate's headshot and sponsors (they are not carried over to the competitor kept; add them again if wanted). Older database backups and the storage folder in a file-level backup can still hold earlier copies, as with names.
+- Car colours (set in the same Car photo dialog) are not personal data: they are kept when a competitor is anonymised and still show for a driver whose name is hidden. Changes are audited as `ENTRY_CAR_COLOURS_CHANGED`.
 - Every change is audited (`DRIVER_HEADSHOT_CHANGED`, `DRIVER_HEADSHOT_REMOVED`, `DRIVER_SPONSORS_CHANGED`, `ENTRY_CAR_PHOTO_CHANGED`, `ENTRY_CAR_PHOTO_REMOVED`) by competitor or entry id, with no name.
 - Not sent to the live feed relay or RaceHub.
 

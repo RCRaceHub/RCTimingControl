@@ -10,7 +10,7 @@ const props = { panelClass: '', mutedClass: '', bottom: '0px' };
 describe('FeaturedLowerThird', () => {
   it('shows the name, number, place, sponsors and headshot', () => {
     const media = new Map<number, RaceMediaDto>([
-      [4, { entryId: 4, headshotUrl: '/pat.jpg', carPhotoUrl: null, sponsors: ['Acme', 'Tyres R Us'] }],
+      [4, { entryId: 4, headshotUrl: '/pat.jpg', carPhotoUrl: null, sponsors: ['Acme', 'Tyres R Us'], carColours: [] }],
     ]);
     const { container } = render(<FeaturedLowerThird entryId={4} rows={[row]} media={media} {...props} />);
 
