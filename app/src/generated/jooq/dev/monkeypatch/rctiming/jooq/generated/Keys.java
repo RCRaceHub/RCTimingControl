@@ -20,6 +20,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
@@ -69,6 +70,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.DecoderLoopsRecord
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryAuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryFeedsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryCarColoursRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryPhotosRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventClassesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventSponsorsRecord;
@@ -140,6 +142,7 @@ public class Keys {
     public static final UniqueKey<EntriesRecord> ENTRIES__PK_ENTRIES = Internal.createUniqueKey(Entries.ENTRIES, DSL.name("pk_entries"), new TableField[] { Entries.ENTRIES.ID }, true);
     public static final UniqueKey<EntryAuditLogRecord> ENTRY_AUDIT_LOG__PK_ENTRY_AUDIT_LOG = Internal.createUniqueKey(EntryAuditLog.ENTRY_AUDIT_LOG, DSL.name("pk_entry_audit_log"), new TableField[] { EntryAuditLog.ENTRY_AUDIT_LOG.ID }, true);
     public static final UniqueKey<EntryFeedsRecord> ENTRY_FEEDS__PK_ENTRY_FEEDS = Internal.createUniqueKey(EntryFeeds.ENTRY_FEEDS, DSL.name("pk_entry_feeds"), new TableField[] { EntryFeeds.ENTRY_FEEDS.ID }, true);
+    public static final UniqueKey<EntryCarColoursRecord> ENTRY_CAR_COLOURS__PK_ENTRY_CAR_COLOURS = Internal.createUniqueKey(EntryCarColours.ENTRY_CAR_COLOURS, DSL.name("pk_entry_car_colours"), new TableField[] { EntryCarColours.ENTRY_CAR_COLOURS.ID }, true);
     public static final UniqueKey<EntryPhotosRecord> ENTRY_PHOTOS__PK_ENTRY_PHOTOS = Internal.createUniqueKey(EntryPhotos.ENTRY_PHOTOS, DSL.name("pk_entry_photos"), new TableField[] { EntryPhotos.ENTRY_PHOTOS.ID }, true);
     public static final UniqueKey<EventClassesRecord> EVENT_CLASSES__PK_EVENT_CLASSES = Internal.createUniqueKey(EventClasses.EVENT_CLASSES, DSL.name("pk_event_classes"), new TableField[] { EventClasses.EVENT_CLASSES.ID }, true);
     public static final UniqueKey<EventSponsorsRecord> EVENT_SPONSORS__PK_EVENT_SPONSORS = Internal.createUniqueKey(EventSponsors.EVENT_SPONSORS, DSL.name("pk_event_sponsors"), new TableField[] { EventSponsors.EVENT_SPONSORS.ID }, true);
@@ -202,6 +205,7 @@ public class Keys {
     public static final ForeignKey<EntryAuditLogRecord, UsersRecord> ENTRY_AUDIT_LOG__ENTRY_AUDIT_LOG_ADMIN_USER_ID_FKEY = Internal.createForeignKey(EntryAuditLog.ENTRY_AUDIT_LOG, DSL.name("entry_audit_log_admin_user_id_fkey"), new TableField[] { EntryAuditLog.ENTRY_AUDIT_LOG.ADMIN_USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true, ForeignKeyRule.NO_ACTION, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<EntryAuditLogRecord, EntriesRecord> ENTRY_AUDIT_LOG__ENTRY_AUDIT_LOG_ENTRY_ID_FKEY = Internal.createForeignKey(EntryAuditLog.ENTRY_AUDIT_LOG, DSL.name("entry_audit_log_entry_id_fkey"), new TableField[] { EntryAuditLog.ENTRY_AUDIT_LOG.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<EntryFeedsRecord, EventsRecord> ENTRY_FEEDS__ENTRY_FEEDS_EVENT_ID_FKEY = Internal.createForeignKey(EntryFeeds.ENTRY_FEEDS, DSL.name("entry_feeds_event_id_fkey"), new TableField[] { EntryFeeds.ENTRY_FEEDS.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<EntryCarColoursRecord, EntriesRecord> ENTRY_CAR_COLOURS__ENTRY_CAR_COLOURS_ENTRY_ID_FKEY = Internal.createForeignKey(EntryCarColours.ENTRY_CAR_COLOURS, DSL.name("entry_car_colours_entry_id_fkey"), new TableField[] { EntryCarColours.ENTRY_CAR_COLOURS.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<EntryPhotosRecord, EntriesRecord> ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_FKEY = Internal.createForeignKey(EntryPhotos.ENTRY_PHOTOS, DSL.name("entry_photos_entry_id_fkey"), new TableField[] { EntryPhotos.ENTRY_PHOTOS.ENTRY_ID }, Keys.ENTRIES__PK_ENTRIES, new TableField[] { Entries.ENTRIES.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<EventClassesRecord, EventsRecord> EVENT_CLASSES__EVENT_CLASSES_EVENT_ID_FKEY = Internal.createForeignKey(EventClasses.EVENT_CLASSES, DSL.name("event_classes_event_id_fkey"), new TableField[] { EventClasses.EVENT_CLASSES.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<EventClassesRecord, RacingClassesRecord> EVENT_CLASSES__EVENT_CLASSES_RACING_CLASS_ID_FKEY = Internal.createForeignKey(EventClasses.EVENT_CLASSES, DSL.name("event_classes_racing_class_id_fkey"), new TableField[] { EventClasses.EVENT_CLASSES.RACING_CLASS_ID }, Keys.RACING_CLASSES__PK_RACING_CLASSES, new TableField[] { RacingClasses.RACING_CLASSES.ID }, true, ForeignKeyRule.SET_NULL, ForeignKeyRule.NO_ACTION);

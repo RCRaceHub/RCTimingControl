@@ -20,6 +20,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
@@ -155,6 +156,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>entry_feeds</code>.
      */
     public final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
+
+    /**
+     * The table <code>entry_car_colours</code>.
+     */
+    public final EntryCarColours ENTRY_CAR_COLOURS = EntryCarColours.ENTRY_CAR_COLOURS;
 
     /**
      * The table <code>entry_photos</code>.
@@ -353,6 +359,7 @@ public class DefaultSchema extends SchemaImpl {
             Entries.ENTRIES,
             EntryAuditLog.ENTRY_AUDIT_LOG,
             EntryFeeds.ENTRY_FEEDS,
+            EntryCarColours.ENTRY_CAR_COLOURS,
             EntryPhotos.ENTRY_PHOTOS,
             EventClasses.EVENT_CLASSES,
             EventSponsors.EVENT_SPONSORS,

@@ -8,7 +8,7 @@ const MEDIA_POLL_MS = 60_000;
 
 /**
  * The headshots, car photos and driver sponsors of the cars in a race, by entry id (#521). Empty while loading, for
- * no race, and for cars with nothing to show; a failed read leaves the screens as they were without pictures.
+ * no race, and for cars with nothing to show (a hidden name keeps only the car colours); a failed read leaves the screens as they were without pictures.
  */
 export function useRaceMedia(raceId: number | null | undefined): Map<number, RaceMediaDto> {
   const { data } = useQuery({

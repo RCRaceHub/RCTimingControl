@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.CompetitorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.EntryAuditLogPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours.EntryCarColoursPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos.EntryPhotosPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events.EventsPath;
@@ -309,6 +310,18 @@ public class Entries extends TableImpl<EntriesRecord> {
             _entryAuditLog = new EntryAuditLogPath(this, null, Keys.ENTRY_AUDIT_LOG__ENTRY_AUDIT_LOG_ENTRY_ID_FKEY.getInverseKey());
 
         return _entryAuditLog;
+    }
+
+    private transient EntryCarColoursPath _entryCarColours;
+
+    /**
+     * Get the implicit to-many join path to the <code>entry_car_colours</code> table
+     */
+    public EntryCarColoursPath entryCarColours() {
+        if (_entryCarColours == null)
+            _entryCarColours = new EntryCarColoursPath(this, null, Keys.ENTRY_CAR_COLOURS__ENTRY_CAR_COLOURS_ENTRY_ID_FKEY.getInverseKey());
+
+        return _entryCarColours;
     }
 
     private transient EntryPhotosPath _entryPhotos;

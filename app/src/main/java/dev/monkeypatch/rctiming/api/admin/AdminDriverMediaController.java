@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.CarColoursRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.SponsorsRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService.CompetitorMediaView;
@@ -25,7 +26,8 @@ import java.util.List;
 
 /**
  * The optional pictures and sponsors of drivers (#520), under {@code /api/v1/admin}: a competitor's headshot and
- * sponsors at {@code /competitors/{id}/media}, and an entry's car photo at {@code /entries/{id}/car-photo}. Reads
+ * sponsors at {@code /competitors/{id}/media}, and an entry's car photo at {@code /entries/{id}/car-photo} and its car
+ * colours at {@code /entries/{id}/car-colours} (#685). Reads
  * are open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad file or
  * list answers 400 and a missing competitor or entry 404.
  */
@@ -42,6 +44,9 @@ public class AdminDriverMediaController {
 
     /** The answer for a car photo: its address, null when the entry has none. */
     public record CarPhotoResponse(String url) {}
+
+    /** The answer for car colours: {@code #rrggbb} values in order, empty when none are set. */
+    public record CarColoursResponse(List<String> colours) {}
 
     /** A competitor's headshot and sponsors. {@code GET /competitors/{id}/media}; read only. */
     @GetMapping("/competitors/{id}/media")
@@ -102,5 +107,19 @@ public class AdminDriverMediaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCarPhoto(@PathVariable long id) {
         service.deleteCarPhoto(CurrentOfficial.actor(), id);
+    }
+
+    /** An entry's car colours. {@code GET /entries/{id}/car-colours}; read only. */
+    @GetMapping("/entries/{id}/car-colours")
+    public CarColoursResponse getCarColours(@PathVariable long id) {
+        return new CarColoursResponse(service.carColours(id));
+    }
+
+    /** Replaces the car colours; an empty list clears them. {@code PUT /entries/{id}/car-colours}; ADMIN or RACE_DIRECTOR; 400. Audited. */
+    @Audited("audit_log")
+    @PutMapping("/entries/{id}/car-colours")
+    @DirectorOrAdmin
+    public CarColoursResponse setCarColours(@PathVariable long id, @RequestBody @Valid CarColoursRequest request) {
+        return new CarColoursResponse(service.setCarColours(CurrentOfficial.actor(), id, request.colours()));
     }
 }

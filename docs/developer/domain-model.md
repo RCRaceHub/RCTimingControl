@@ -203,6 +203,7 @@ erDiagram
     events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
     competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
     entries ||--o| entry_photos : "optional car photo"
+    entries ||--o| entry_car_colours : "optional car colours (#685); not personal data, so kept on anonymise"
     event_sponsors {
         text logo_url "object storage /storage/..., random name"
         int sort_order "display order"
@@ -217,6 +218,9 @@ erDiagram
     }
     entry_photos {
         text car_photo_url "object storage"
+    }
+    entry_car_colours {
+        text colours "1 to 4 #rrggbb, comma separated"
     }
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""

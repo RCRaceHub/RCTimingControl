@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
 
 const competitorKey = (competitorId: number) => ['admin', 'competitors', competitorId, 'media'] as const;
+const carColoursKey = (entryId: number) => ['admin', 'entries', entryId, 'car-colours'] as const;
 const carPhotoKey = (entryId: number) => ['admin', 'entries', entryId, 'car-photo'] as const;
 
 /** A competitor's headshot and sponsors (#520); only fetched while a dialog asks for them. */
@@ -46,4 +47,22 @@ export function useCarPhotoMutations(entryId: number) {
       onSuccess: () => qc.setQueryData(carPhotoKey(entryId), null),
     }),
   };
+}
+
+/** An entry's car colours as #rrggbb values (#685). */
+export function useCarColours(entryId: number | null) {
+  return useQuery({
+    queryKey: carColoursKey(entryId ?? 0),
+    queryFn: () => adminApi.getCarColours(entryId!),
+    enabled: entryId !== null,
+  });
+}
+
+/** Replaces an entry's car colours; the answer is what was stored, which replaces the cached list. */
+export function useCarColoursMutation(entryId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (colours: string[]) => adminApi.setCarColours(entryId, colours),
+    onSuccess: colours => qc.setQueryData(carColoursKey(entryId), colours),
+  });
 }

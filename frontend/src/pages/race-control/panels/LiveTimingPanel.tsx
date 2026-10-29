@@ -26,6 +26,7 @@ import { RowStateIcon } from '@/components/StateIcon';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { holdBackLapped, isClose } from '@/lib/lapProgress';
 import { CarThumb } from '@/components/CarThumb';
+import { carColoursFor } from '@/lib/carColours';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 
@@ -111,7 +112,11 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="font-mono">{row.carNumber ?? '—'}</TableCell>
                 <TableCell>
                   <div className="flex min-w-0 items-center overflow-hidden whitespace-nowrap">
-                    <CarThumb url={media.get(row.entryId)?.carPhotoUrl} className="mr-2 shrink-0" />
+                    <CarThumb
+                      url={media.get(row.entryId)?.carPhotoUrl}
+                      colours={carColoursFor(media.get(row.entryId)?.carColours, row.classColour)}
+                      className="mr-2 shrink-0"
+                    />
                     <span className="min-w-0 truncate">{row.driverName}</span>
                     {status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
                     <FlyingLapIcon row={row} className="ml-1" />
