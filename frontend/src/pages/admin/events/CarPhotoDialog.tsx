@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { PhotoUploadField } from '@/components/PhotoUploadField';
 import {
   Dialog,
   DialogContent,
@@ -26,21 +26,13 @@ function CarPhotoForm({ entryId, driverName }: { entryId: number; driverName: st
           <span className="text-sm text-muted-foreground">No photo</span>
         )}
       </div>
-      <div className="flex items-center gap-3">
-        <Label className="cursor-pointer text-sm underline">
-          {url ? 'Replace photo' : 'Add photo'}
-          <input
-            type="file"
-            accept="image/png,image/jpeg"
-            className="sr-only"
-            aria-label="Car photo file"
-            onChange={e => {
-              const file = e.target.files?.[0];
-              if (file) upload.mutate(file, { onError: fail });
-              e.target.value = '';
-            }}
-          />
-        </Label>
+      <div className="flex items-start gap-3">
+        <PhotoUploadField
+          pickLabel={url ? 'Replace photo' : 'Add photo'}
+          inputLabel="Car photo file"
+          saving={upload.isPending}
+          onSave={file => upload.mutate(file, { onError: fail })}
+        />
         {url && (
           <Button type="button" variant="ghost" size="sm" onClick={() => remove.mutate(undefined, { onError: fail })}>
             Remove

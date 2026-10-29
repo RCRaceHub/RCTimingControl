@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhotoUploadField } from '@/components/PhotoUploadField';
 import {
   Dialog,
   DialogContent,
@@ -44,20 +45,12 @@ function MediaForm({ competitor }: { competitor: CompetitorSummaryDto }) {
               <span className="text-xs text-muted-foreground">None</span>
             )}
           </div>
-          <Label className="cursor-pointer text-sm underline">
-            {media?.headshotUrl ? 'Replace headshot' : 'Add headshot'}
-            <input
-              type="file"
-              accept="image/png,image/jpeg"
-              className="sr-only"
-              aria-label="Headshot file"
-              onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) upload.mutate(file, { onError: fail });
-                e.target.value = '';
-              }}
-            />
-          </Label>
+          <PhotoUploadField
+            pickLabel={media?.headshotUrl ? 'Replace headshot' : 'Add headshot'}
+            inputLabel="Headshot file"
+            saving={upload.isPending}
+            onSave={file => upload.mutate(file, { onError: fail })}
+          />
           {media?.headshotUrl && (
             <Button type="button" variant="ghost" size="sm" onClick={() => remove.mutate(undefined, { onError: fail })}>
               Remove
