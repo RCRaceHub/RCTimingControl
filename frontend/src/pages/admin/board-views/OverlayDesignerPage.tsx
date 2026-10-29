@@ -14,6 +14,8 @@ import {
 } from '@/pages/boards/boardFormat';
 import type { OverlayThemeDto } from '@/lib/boardsApi';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
+import { SponsorListEditor } from '@/components/SponsorListEditor';
+import { useThemeSponsorMutations, useThemeSponsors } from '@/hooks/admin/useThemeSponsors';
 import { getApiErrorMessage } from '@/lib/errors';
 
 const TICKER_LABELS: Record<TickerItem, string> = {
@@ -40,6 +42,24 @@ function Check({ label, checked, onChange }: { label: string; checked: boolean; 
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       {label}
     </label>
+  );
+}
+
+/**
+ * The sponsors a saved theme owns. An overlay opened with the theme (`?look=ID`) shows these in its sponsor bar
+ * instead of the event's; with none, it shows the event's. They belong to the saved theme, so they change as soon as
+ * they are edited here, not when the theme is saved.
+ */
+function ThemeSponsors({ themeId }: { themeId: number }) {
+  const { data: sponsors = [], isLoading } = useThemeSponsors(themeId);
+  return (
+    <SponsorListEditor
+      sponsors={sponsors}
+      isLoading={isLoading}
+      mutations={useThemeSponsorMutations(themeId)}
+      canEdit
+      intro="An overlay using this theme shows these in its sponsor bar instead of the event's sponsors; with none here it shows the event's."
+    />
   );
 }
 
@@ -248,6 +268,17 @@ export default function OverlayDesignerPage() {
                 Delete
               </Button>
             </div>
+          </fieldset>
+
+          <fieldset className="space-y-2" data-testid="theme-sponsors">
+            <legend className="text-sm font-medium">Theme sponsors</legend>
+            {theme ? (
+              <ThemeSponsors key={theme.id} themeId={theme.id} />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.
+              </p>
+            )}
           </fieldset>
 
           <fieldset className="space-y-2">

@@ -427,6 +427,20 @@ describe('OverlayBoard sponsor bar', () => {
     expect(within(bar).getByText('Bolt Batteries')).toBeInTheDocument();
   });
 
+  it('asks for the sponsors of the theme it was opened with', async () => {
+    renderOverlay('/boards/overlay?look=5&event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, 5);
+  });
+
+  it('asks for the event sponsors only when no theme is given', async () => {
+    renderOverlay('/boards/overlay?event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, null);
+  });
+
   it('leaves the bar out when the event has no sponsors', async () => {
     renderOverlay();
 

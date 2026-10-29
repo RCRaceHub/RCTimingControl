@@ -84,11 +84,14 @@ export function useRaceHighlightsQuery(raceId: number | null, { intervalMs, enab
   });
 }
 
-/** The sponsors of an event for the overlay's sponsor bar; empty until read. */
-export function useBoardSponsorsQuery(eventId: number | null, { intervalMs, enabled = true }: PollOptions) {
+/**
+ * The sponsors for the overlay's sponsor bar; empty until read. With a `themeId` (the overlay opened with
+ * `?look=ID`) the theme's own sponsors come back when it has any, else the event's.
+ */
+export function useBoardSponsorsQuery(eventId: number | null, themeId: number | null, { intervalMs, enabled = true }: PollOptions) {
   return useQuery({
-    queryKey: publicQueryKeys.boards.sponsors(eventId),
-    queryFn: () => getSponsors(eventId),
+    queryKey: publicQueryKeys.boards.sponsors(eventId, themeId),
+    queryFn: () => getSponsors(eventId, themeId),
     enabled,
     refetchInterval: intervalMs,
   });

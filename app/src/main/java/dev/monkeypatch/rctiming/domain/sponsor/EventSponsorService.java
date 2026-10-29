@@ -10,25 +10,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 /**
  * The sponsors of an event (#518): the list officials keep and the overlay's sponsor bar reads. Called by {@code
  * AdminEventSponsorController} (each change is one write transaction with an audit row) and by the anonymous boards
- * endpoint (reads). Logos are PNG or JPEG up to 2 MB (no SVG: the files are served from the app's own origin, where
- * a script in one would run; no WebP, which the JDK cannot decode). Each is decoded and normalised by
+ * endpoint (reads). Logos follow the rules in {@link SponsorLogos} (PNG or JPEG up to 2 MB). Each is normalised by
  * {@code SponsorLogoProcessor} (trimmed, fitted to the sponsor bar's size, stored as PNG) and kept in object storage
  * like the club logo; a replaced or deleted sponsor's old file stays in storage. A sponsor is a business, so nothing here is personal data.
  */
 @Service
 @Transactional
 public class EventSponsorService {
-
-    private static final Set<String> LOGO_TYPES = Set.of("image/png", "image/jpeg");
-    private static final long LOGO_MAX_BYTES = 2 * 1024 * 1024L;
-    private static final int NAME_MAX = 255;
 
     private final EventSponsorRepository repository;
     private final EventRepository eventRepository;
@@ -64,7 +57,7 @@ public class EventSponsorService {
         eventRepository.requireExists(eventId);
         EventSponsor sponsor = new EventSponsor();
         sponsor.setEventId(eventId);
-        sponsor.setName(cleanName(name));
+        sponsor.setName(SponsorLogos.cleanName(name));
         sponsor.setSortOrder(repository.findByEventId(eventId).stream()
                 .mapToInt(EventSponsor::getSortOrder).max().orElse(-1) + 1);
         EventSponsor saved = repository.save(sponsor);
@@ -77,7 +70,7 @@ public class EventSponsorService {
     public EventSponsor rename(Actor actor, long eventId, long sponsorId, String name) {
         EventSponsor sponsor = ofEvent(eventId, sponsorId);
         String before = sponsor.getName();
-        sponsor.setName(cleanName(name));
+        sponsor.setName(SponsorLogos.cleanName(name));
         repository.save(sponsor);
         audit.entry(actor, "EVENT_SPONSOR_RENAMED").entity("event_sponsor", sponsorId).event(eventId)
                 .summary("Renamed the sponsor " + before + " to " + sponsor.getName()).record();
@@ -135,26 +128,8 @@ public class EventSponsorService {
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) if the sponsor is not on this event
      */
     public EventSponsor uploadLogo(Actor actor, long eventId, long sponsorId, MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("file part is required");
-        }
-        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
-        if (!LOGO_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("Unsupported content type: " + file.getContentType()
-                    + ". Allowed: " + LOGO_TYPES);
-        }
-        if (file.getSize() > LOGO_MAX_BYTES) {
-            throw new IllegalArgumentException("File too large: max " + LOGO_MAX_BYTES + " bytes");
-        }
-        byte[] bytes;
-        try {
-            bytes = file.getBytes();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
-        }
-        // Decoding and scaling can take seconds: do it before the sponsor is loaded, as short a time as possible on
-        // the write connection the timing thread shares
-        byte[] normalised = SponsorLogoProcessor.normalise(bytes);
+        // Decoding and scaling can take seconds: do it before the sponsor is loaded
+        byte[] normalised = SponsorLogos.normalise(file);
         EventSponsor sponsor = ofEvent(eventId, sponsorId);
         sponsor.setLogoUrl(storage.upload(
                 "sponsors/" + sponsorId + "-" + System.currentTimeMillis() + ".png", normalised));
@@ -171,13 +146,5 @@ public class EventSponsorService {
             throw new EntityNotFoundException("Event sponsor not found: " + sponsorId);
         }
         return sponsor;
-    }
-
-    private static String cleanName(String name) {
-        String trimmed = name == null ? "" : name.trim();
-        if (trimmed.isEmpty() || trimmed.length() > NAME_MAX) {
-            throw new IllegalArgumentException("A sponsor needs a name of up to " + NAME_MAX + " characters");
-        }
-        return trimmed;
     }
 }

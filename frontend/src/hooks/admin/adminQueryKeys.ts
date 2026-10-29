@@ -41,6 +41,7 @@ export const adminQueryKeys = {
   },
   overlayThemes: {
     all: () => ['admin', 'overlay-themes'] as const,
+    sponsors: (themeId: number) => ['admin', 'overlay-themes', themeId, 'sponsors'] as const,
   },
   racingClasses: {
     all: () => ['admin', 'racing-classes'] as const,

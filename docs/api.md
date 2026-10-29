@@ -918,11 +918,13 @@ GET /boards/races/{raceId}/media
 Officials manage them under `/api/v1/admin`: `GET /competitors/{id}/media` (any official; `{ headshotUrl, sponsors }`), `PUT /competitors/{id}/media/sponsors {names}` (up to 5, 100 characters each), `PUT` and `DELETE /competitors/{id}/media/headshot` (multipart `file`, PNG or JPEG up to 2 MB), and `GET`, `PUT` and `DELETE /entries/{id}/car-photo`. Changes are ADMIN or RACE_DIRECTOR and audited; 400 for a bad file or list, 404 for an unknown competitor or entry.
 
 ```http
-GET /boards/sponsors?eventId={id}
+GET /boards/sponsors?eventId={id}&themeId={id}
 ```
-**200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now.
+**200 OK** — `[ { "id": 3, "name": "Acme Hobbies", "logoUrl": "/storage/sponsors/3-1761400000000.png" } ]`, the event's sponsors in display order, for the overlay's sponsor bar (#518). `logoUrl` is null for a sponsor without a logo. `[]` when the event has none. `eventId` defaults to the event racing now. With `themeId` (the overlay opened with `?look=ID`) the overlay theme's own sponsors come back instead when it has any; a theme that is gone or has none falls back to the event's.
 
 Officials manage them under `/api/v1/admin/events/{eventId}/sponsors`: `GET` (any official), `POST {name}` (201), `PUT /{id} {name}`, `PUT /order {ids}`, `DELETE /{id}` (204) and `PUT /{id}/logo` (multipart `file`, PNG or JPEG up to 2 MB), all ADMIN or RACE_DIRECTOR and audited. 400 for a blank name or a bad logo, 404 for an unknown event or sponsor.
+
+An overlay theme's sponsors are managed the same way under `/api/v1/admin/overlay-themes/{themeId}/sponsors` (`GET` for any official; changes ADMIN or RACE_DIRECTOR, audited as `OVERLAY_THEME_SPONSOR_*`); 404 for an unknown theme or a sponsor of another theme.
 
 ```http
 GET /boards/ticker?eventId={id}

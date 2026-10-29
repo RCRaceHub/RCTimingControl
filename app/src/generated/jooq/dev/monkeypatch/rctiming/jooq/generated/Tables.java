@@ -31,6 +31,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemes;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
@@ -194,6 +195,11 @@ public class Tables {
      * The table <code>penalties</code>.
      */
     public static final Penalties PENALTIES = Penalties.PENALTIES;
+
+    /**
+     * The table <code>overlay_theme_sponsors</code>.
+     */
+    public static final OverlayThemeSponsors OVERLAY_THEME_SPONSORS = OverlayThemeSponsors.OVERLAY_THEME_SPONSORS;
 
     /**
      * The table <code>overlay_themes</code>.

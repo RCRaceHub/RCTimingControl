@@ -266,6 +266,9 @@ function useOverlayParams(): URLSearchParams {
 
 export default function OverlayBoard() {
   const searchParams = useOverlayParams();
+  // The theme the overlay was opened with, whose own sponsors replace the event's when it has any
+  const [addressParams] = useSearchParams();
+  const lookId = parseEventParam(addressParams.get('look'));
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
@@ -309,7 +312,7 @@ export default function OverlayBoard() {
     );
   }, [liveQualifying, raceIdNow, showQualifying]);
   const tqRow = liveQualifying?.raceId === raceIdNow ? liveQualifying?.rows[0] : undefined;
-  const { data: sponsors = [] } = useBoardSponsorsQuery(tickerEventId, { intervalMs: BOARD_POLL_MS * 12, enabled: showSponsors });
+  const { data: sponsors = [] } = useBoardSponsorsQuery(tickerEventId, lookId, { intervalMs: BOARD_POLL_MS * 12, enabled: showSponsors });
   const sponsorsShowing = showSponsors && sponsors.length > 0;
   const tickerBottom = sponsorsShowing ? `${SPONSOR_BAR_REM}rem` : '0px';
   const chartBottom = `${(sponsorsShowing ? SPONSOR_BAR_REM : 0) + (tickerItems.size > 0 ? TICKER_REM : 0) + 1}rem`;

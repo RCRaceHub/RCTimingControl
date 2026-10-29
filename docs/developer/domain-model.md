@@ -196,13 +196,18 @@ erDiagram
     }
     overlay_themes {
         text name "unique, e.g. BRCA, Club"
-        json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; no foreign keys, a look only"
+        json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; a look only; its sponsors are overlay_theme_sponsors"
     }
+    overlay_themes ||--o{ overlay_theme_sponsors : "sponsors the theme owns; shown instead of the event's when any; cascade on delete"
     competitors ||--o{ entries : ""
     events ||--o{ event_sponsors : "name and logo for the overlay's sponsor bar"
     competitors ||--o| competitor_media : "optional headshot and driver sponsors; erased on anonymise and merge"
     entries ||--o| entry_photos : "optional car photo"
     event_sponsors {
+        text logo_url "object storage /storage/..., random name"
+        int sort_order "display order"
+    }
+    overlay_theme_sponsors {
         text logo_url "object storage /storage/..., random name"
         int sort_order "display order"
     }

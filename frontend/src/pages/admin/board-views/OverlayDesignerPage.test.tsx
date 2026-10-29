@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import OverlayDesignerPage from './OverlayDesignerPage';
 
 vi.mock('@/lib/overlayThemesApi', () => ({
-  overlayThemesAdminApi: { list: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
+  overlayThemesAdminApi: {
+    list: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(),
+    listSponsors: vi.fn(), addSponsor: vi.fn(), renameSponsor: vi.fn(), deleteSponsor: vi.fn(), orderSponsors: vi.fn(),
+    uploadSponsorLogo: vi.fn(),
+  },
 }));
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
 
@@ -27,6 +31,7 @@ describe('OverlayDesignerPage', () => {
     vi.mocked(overlayThemesAdminApi.list).mockResolvedValue(themes);
     vi.mocked(overlayThemesAdminApi.create).mockReset();
     vi.mocked(overlayThemesAdminApi.update).mockReset();
+    vi.mocked(overlayThemesAdminApi.listSponsors).mockReset().mockResolvedValue([]);
   });
 
   it('updates the address and the preview as options change', () => {
@@ -104,5 +109,22 @@ describe('OverlayDesignerPage', () => {
     const [id, body] = vi.mocked(overlayThemesAdminApi.update).mock.calls[0];
     expect(id).toBe(2);
     expect(body.design).toHaveProperty('top', 9);
+  });
+
+  it('offers a saved theme its own sponsors, and none until one is picked', async () => {
+    vi.mocked(overlayThemesAdminApi.listSponsors).mockResolvedValue([{ id: 5, name: 'Acme Tyres', logoUrl: null }]);
+    vi.mocked(overlayThemesAdminApi.addSponsor).mockResolvedValue({ id: 6, name: 'Bolt', logoUrl: null });
+    renderPage();
+    expect(screen.getByText(/pick a saved theme to give it sponsors/i)).toBeInTheDocument();
+    expect(overlayThemesAdminApi.listSponsors).not.toHaveBeenCalled();
+
+    await screen.findByRole('option', { name: 'BRCA' });
+    fireEvent.change(screen.getByLabelText('Saved theme'), { target: { value: '1' } });
+
+    expect(await screen.findByDisplayValue('Acme Tyres')).toBeInTheDocument();
+    expect(overlayThemesAdminApi.listSponsors).toHaveBeenCalledWith(1);
+    fireEvent.change(screen.getByLabelText('New sponsor'), { target: { value: 'Bolt' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add sponsor' }));
+    await waitFor(() => expect(overlayThemesAdminApi.addSponsor).toHaveBeenCalledWith(1, 'Bolt'));
   });
 });
