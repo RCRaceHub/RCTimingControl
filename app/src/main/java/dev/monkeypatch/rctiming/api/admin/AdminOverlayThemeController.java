@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Saved overlay themes under {@code /api/v1/admin/overlay-themes}: list, read, create, change, delete, and set or clear the club's default. Reads are
- * open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad name or design
+ * Saved overlay themes under {@code /api/v1/admin/overlay-themes}: list, read, create, change, delete, and set or
+ * clear the club's default. Reads are open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad name or design
  * answers 400, a name already taken 409 and a missing theme 404.
  */
 @RestController

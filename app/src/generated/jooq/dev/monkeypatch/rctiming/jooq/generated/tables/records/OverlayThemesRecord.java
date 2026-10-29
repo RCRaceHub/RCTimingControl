@@ -90,6 +90,20 @@ public class OverlayThemesRecord extends UpdatableRecordImpl<OverlayThemesRecord
         return (Instant) get(4);
     }
 
+    /**
+     * Setter for <code>overlay_themes.is_default</code>.
+     */
+    public void setIsDefault(Boolean value) {
+        set(5, value);
+    }
+
+    /**
+     * Getter for <code>overlay_themes.is_default</code>.
+     */
+    public Boolean getIsDefault() {
+        return (Boolean) get(5);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -113,7 +127,7 @@ public class OverlayThemesRecord extends UpdatableRecordImpl<OverlayThemesRecord
     /**
      * Create a detached, initialised OverlayThemesRecord
      */
-    public OverlayThemesRecord(Long id, String name, String design, Instant createdAt, Instant updatedAt) {
+    public OverlayThemesRecord(Long id, String name, String design, Instant createdAt, Instant updatedAt, Boolean isDefault) {
         super(OverlayThemes.OVERLAY_THEMES);
 
         setId(id);
@@ -121,6 +135,7 @@ public class OverlayThemesRecord extends UpdatableRecordImpl<OverlayThemesRecord
         setDesign(design);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
+        setIsDefault(isDefault);
         resetTouchedOnNotNull();
     }
 }

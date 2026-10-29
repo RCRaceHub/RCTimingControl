@@ -90,7 +90,9 @@ public class OverlayThemeService {
     /**
      * Makes a theme the club's default and records {@code OVERLAY_THEME_DEFAULT_SET}; any earlier default stops being
      * one in the same transaction, so there is never more than one. A club has one database, so the default is
-     * club-wide. @throws EntityNotFoundException (404) if the theme is missing
+     * club-wide. Making the current default the default again changes nothing and records nothing.
+     *
+     * @throws EntityNotFoundException (404) if the theme is missing
      */
     public OverlayTheme setDefault(Actor actor, Long id) {
         OverlayTheme theme = get(id);
@@ -118,7 +120,11 @@ public class OverlayThemeService {
         });
     }
 
-    /** Removes a theme and records {@code OVERLAY_THEME_DELETED}. @throws EntityNotFoundException (404) if it is missing */
+    /**
+     * Removes a theme and records {@code OVERLAY_THEME_DELETED}, whose before values say if it was the default.
+     *
+     * @throws EntityNotFoundException (404) if it is missing
+     */
     public void delete(Actor actor, Long id) {
         OverlayTheme theme = get(id);
         Map<String, Object> before = values(theme);
