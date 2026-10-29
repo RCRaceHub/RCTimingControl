@@ -32,6 +32,7 @@ import { useLapFlash } from '@/hooks/race-control/useLapFlash';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar } from '@/components/LapProgressBar';
 import { OnPaceIcon } from '@/components/OnPaceIcon';
+import { FlyingLapIcon } from '@/components/RowBadges';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
@@ -434,6 +435,7 @@ export default function OverlayBoard() {
                     <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
                       <RowStateIcon flash={flash} close={close} className="ml-1" />
                       {showBars && race.status === 'RUNNING' && <OnPaceIcon row={row} clock={barClock} className="ml-1" />}
+                      <FlyingLapIcon row={row} className="ml-1" />
                       {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
                       {row.finished && <FinishedFlag className="ml-1" />}
                       {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}

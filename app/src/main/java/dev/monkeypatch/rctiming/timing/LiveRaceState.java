@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 
+import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -426,7 +427,8 @@ public class LiveRaceState {
                     totalTimeMs(pos, withPenalties),
                     flagged.contains(pos.getEntryId()),
                     withPenalties ? timePenaltyMs.getOrDefault(pos.getEntryId(), 0L) : 0L,
-                    entryStartPositions.get(pos.getEntryId())
+                    entryStartPositions.get(pos.getEntryId()),
+                    RaceHighlights.lastLapFlying(pos.getLapTimes())
             ));
             prevLastPassing = rankedPassingMs(pos, withPenalties);
             prevLaps = pos.getLapsCompleted();

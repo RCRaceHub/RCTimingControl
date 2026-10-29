@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import { LappedPill, RowMarkers } from './RowBadges';
+import { FlyingLapIcon, LappedPill, RowMarkers } from './RowBadges';
 import { signalLost } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -45,5 +45,24 @@ describe('signalLost', () => {
     expect(signalLost(row({ finished: true }), 500_000)).toBe(false);
     expect(signalLost(row({ avgLapMs: null }), 500_000)).toBe(false);
     expect(signalLost(row(), 500_000, 499_000)).toBe(false);
+  });
+});
+
+describe('FlyingLapIcon', () => {
+  it('shows a flame while the latest lap is a flying lap', () => {
+    render(<FlyingLapIcon row={row({ flyingLap: true })} />);
+    expect(screen.getByRole('img')).toHaveAttribute('data-state', 'flying');
+  });
+
+  it('shows nothing otherwise, or once the car has finished', () => {
+    const { container, rerender } = render(<FlyingLapIcon row={row()} />);
+    expect(container).toBeEmptyDOMElement();
+    rerender(<FlyingLapIcon row={row({ flyingLap: true, finished: true })} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('comes with the other markers beside a name', () => {
+    render(<RowMarkers row={row({ flyingLap: true })} noSignal={false} />);
+    expect(screen.getByRole('img')).toHaveAttribute('data-state', 'flying');
   });
 });
