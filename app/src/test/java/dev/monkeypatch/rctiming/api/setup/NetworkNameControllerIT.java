@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.setup;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -16,6 +15,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.Set;
@@ -40,7 +40,7 @@ class NetworkNameControllerIT extends AbstractIntegrationTest {
         var resp = restTemplate.exchange(URL, HttpMethod.GET, new HttpEntity<>(headers(Role.ADMIN)), JsonNode.class);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(resp.getBody().get("suggestedName").asText()).isEqualTo("rctiming");
+        assertThat(resp.getBody().get("suggestedName").asString()).isEqualTo("rctiming");
         assertThat(resp.getBody().get("restartNeeded").asBoolean()).isFalse();
     }
 

@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.timing;
 
-import org.springframework.context.ApplicationEventPublisher;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
@@ -23,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,13 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -215,7 +215,7 @@ class LapTimingServiceTransponderTest {
         lap(1L, "1001", 1_000);
 
         TransponderSwapService swapService =
-                new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, new ObjectMapper());
+                new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, TestJson.mapper());
         SwapResult result = swapService.swap(99L, 10L, TransponderSlot.PRIMARY, "3003", 7L);
         assertThat(result).isInstanceOf(SwapResult.Success.class);
 

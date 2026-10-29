@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -20,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -105,7 +105,7 @@ class ChampionshipAuditIT extends AbstractIntegrationTest {
         // What was removed is kept in the row
         assertThat(json(rows.get(5), "before_json").get("roundNumber").asInt()).isEqualTo(1);
         assertThat(rows.get(5).get("summary").toString()).contains("Round one " + run);
-        assertThat(json(rows.get(6), "before_json").get("className").asText()).isEqualTo("Mod Buggy " + run);
+        assertThat(json(rows.get(6), "before_json").get("className").asString()).isEqualTo("Mod Buggy " + run);
     }
 
     @Test
@@ -129,10 +129,10 @@ class ChampionshipAuditIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from championship_exclusions where championship_id = ?",
                 Integer.class, id)).isZero();
         JsonNode lost = json(rows.get(1), "before_json");
-        assertThat(lost.get("reason").asText()).isEqualTo("Used an illegal motor");
-        assertThat(lost.get("driverName").asText()).isEqualTo("Dan Driver " + run);
+        assertThat(lost.get("reason").asString()).isEqualTo("Used an illegal motor");
+        assertThat(lost.get("driverName").asString()).isEqualTo("Dan Driver " + run);
         assertThat(lost.get("recordedBy").asLong()).isEqualTo(refereeId);
-        assertThat(lost.get("recordedByName").asText()).isEqualTo("Ray Referee");
+        assertThat(lost.get("recordedByName").asString()).isEqualTo("Ray Referee");
         assertThat(rows.get(1).get("summary").toString()).contains("Dan Driver " + run);
     }
 

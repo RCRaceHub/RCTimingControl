@@ -1,19 +1,19 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.scoring.RaceScoringConfig;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,7 +86,7 @@ public class RaceFormatService {
 
             // Deserialize merged map back to RaceFormatConfig
             return objectMapper.convertValue(snapshotMap, RaceFormatConfig.class);
-        } catch (IllegalArgumentException e) {
+        } catch (JacksonException | IllegalArgumentException e) {
             throw new IllegalStateException("Failed to merge format config override", e);
         }
     }

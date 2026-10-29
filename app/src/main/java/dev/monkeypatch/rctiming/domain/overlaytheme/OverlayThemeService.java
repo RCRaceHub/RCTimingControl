@@ -1,8 +1,5 @@
 package dev.monkeypatch.rctiming.domain.overlaytheme;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -11,6 +8,9 @@ import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -91,7 +91,7 @@ public class OverlayThemeService {
     public JsonNode designOf(OverlayTheme theme) {
         try {
             return json.readTree(theme.getDesign());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The design of overlay theme " + theme.getName() + " cannot be read", e);
         }
     }
@@ -107,7 +107,7 @@ public class OverlayThemeService {
         String text;
         try {
             text = json.writeValueAsString(design);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("The design cannot be written", e);
         }
         if (text.length() > MAX_DESIGN_LENGTH) {

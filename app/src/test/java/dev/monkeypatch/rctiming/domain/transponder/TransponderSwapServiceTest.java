@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.domain.transponder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
@@ -38,7 +38,7 @@ class TransponderSwapServiceTest {
         eventRepository = Mockito.mock(EventRepository.class);
         entryRepository = Mockito.mock(EntryRepository.class);
         auditLogRepository = Mockito.mock(EntryAuditLogRepository.class);
-        service = new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, new ObjectMapper());
+        service = new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, TestJson.mapper());
         Mockito.when(eventRepository.findByIdForUpdate(EVENT_ID)).thenReturn(Optional.of(new Event()));
         Mockito.when(entryRepository.save(any(Entry.class))).thenAnswer(inv -> inv.getArgument(0));
         Mockito.when(entryRepository.findByEventId(EVENT_ID)).thenReturn(eventEntries);

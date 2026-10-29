@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.audio;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsProperties;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.infrastructure.tts.VoiceInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -26,7 +27,7 @@ class PiperTtsClientTest {
     private ServerSocket serverSocket;
     private ExecutorService executor;
     private int port;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = TestJson.mapper();
 
     @BeforeEach
     void setUp() throws IOException {

@@ -1,20 +1,20 @@
 package dev.monkeypatch.rctiming.livefeed;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import dev.monkeypatch.rctiming.TestJson;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LiveFeedV1GoldenTest {
 
     private static final String GOLDEN = "livefeed/live-feed-v1-example.json";
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = TestJson.mapper();
 
     @Test
     void serialisesExactlyAsTheGoldenExample() throws IOException {
@@ -44,9 +44,9 @@ class LiveFeedV1GoldenTest {
         assertThat(validate(broken)).isNotEmpty();
     }
 
-    static Set<ValidationMessage> validate(JsonNode document) throws IOException {
+    static List<Error> validate(JsonNode document) throws IOException {
         try (InputStream schema = new ClassPathResource("livefeed/live-feed-v1.schema.json").getInputStream()) {
-            JsonSchema jsonSchema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schema);
+            Schema jsonSchema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(schema);
             return jsonSchema.validate(document);
         }
     }

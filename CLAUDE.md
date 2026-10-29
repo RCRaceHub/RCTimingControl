@@ -12,7 +12,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 
 ## Stack
 
-**Backend:** Spring Boot 4.1.x (Spring Framework 7, Spring Security 7), Java 21 (LTS), Gradle (Kotlin DSL). Jackson 2 stays as a bridge until the move to Jackson 3 (#660): `spring-boot-jackson2` supplies the `ObjectMapper` bean and `spring.http.converters.preferred-json-mapper=jackson2` keeps REST on it, see `docs/development.md`.
+**Backend:** Spring Boot 4.1.x (Spring Framework 7, Spring Security 7), Java 21 (LTS), Gradle (Kotlin DSL). JSON is Jackson 3 (`tools.jackson`; only the annotations stay in `com.fasterxml.jackson.annotation`), see `docs/development.md` → "Jackson 3".
 
 **Frontend:** React 19 + React Router 7 + Vite, TypeScript, Tailwind CSS 4 + shadcn/ui, TanStack Query v5, TanStack Table v8, React Hook Form v7, Zod, `@stomp/stompjs` (native WebSocket — no SockJS)
 
@@ -25,7 +25,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 
 **Race format config:** Stored as JSON text (`CHECK (json_valid(...))`) with a `type` discriminator, converted by a `JsonTextConverter` subclass in its repository. Validated against a sealed Java class hierarchy on write. Override patches (FORMAT-07) stored as a second JSON column and merged at read time. Supports JSON import/export (FORMAT-14).
 
-**Auth:** Spring Security + JWT (stateless). JJWT 0.13.x (its Jackson module still uses Jackson 2). JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
+**Auth:** Spring Security + JWT (stateless). JJWT 0.13.x with its Gson module (`jjwt-gson`; JJWT has no Jackson 3 module yet, so no Jackson 2 is on the classpath). JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
 
 **Real-time:** Spring WebSocket with STOMP in-memory broker. STOMP topics:
 - `/topic/race/{raceId}/timing` — live lap passings, positions, gaps

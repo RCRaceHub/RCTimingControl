@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.livefeed;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -20,10 +18,10 @@ import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.RaceClockService;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.awaitility.Awaitility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpEntity;
@@ -34,6 +32,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -145,21 +145,21 @@ class LiveFeedIT extends AbstractIntegrationTest {
         await(() -> !seen.isEmpty());
         JsonNode message = objectMapper.readTree(seen.get(0));
         assertThat(LiveFeedV1GoldenTest.validate(message)).isEmpty();
-        assertThat(message.at("/event/name").asText()).isEqualTo("Live feed " + run);
+        assertThat(message.at("/event/name").asString()).isEqualTo("Live feed " + run);
         assertThat(message.at("/race/rctc_race_id").asLong()).isEqualTo(raceId);
-        assertThat(message.at("/race/class_name").asText()).isEqualTo("Feed Buggy " + run);
-        assertThat(message.at("/race/status").asText()).isEqualTo("RUNNING");
+        assertThat(message.at("/race/class_name").asString()).isEqualTo("Feed Buggy " + run);
+        assertThat(message.at("/race/status").asString()).isEqualTo("RUNNING");
         assertThat(message.at("/race/clock/elapsed_ms").asLong()).isEqualTo(65_000);
         assertThat(message.at("/race/clock/duration_ms").asLong()).isEqualTo(300_000);
         assertThat(message.at("/race/clock/remaining_ms").asLong()).isEqualTo(235_000);
         assertThat(message.at("/race/clock/running").asBoolean()).isTrue();
         JsonNode first = message.at("/standings/0");
-        assertThat(first.at("/display_name").asText()).isEqualTo("Ada Lovelace");
+        assertThat(first.at("/display_name").asString()).isEqualTo("Ada Lovelace");
         assertThat(first.at("/car_number").asInt()).isEqualTo(7);
         assertThat(first.at("/laps").asInt()).isEqualTo(2);
         assertThat(first.at("/last_lap_ms").asLong()).isEqualTo(20_000);
         JsonNode second = message.at("/standings/1");
-        assertThat(second.at("/display_name").asText()).isEqualTo("Grace Hopper");
+        assertThat(second.at("/display_name").asString()).isEqualTo("Grace Hopper");
         assertThat(second.at("/car_number").isNull()).isTrue();
         assertThat(second.at("/laps_down").asInt()).isEqualTo(1);
         // No transponder numbers or ids about people
@@ -203,7 +203,7 @@ class LiveFeedIT extends AbstractIntegrationTest {
         assertThat(LiveFeedV1GoldenTest.validate(message)).isEmpty();
         JsonNode third = message.at("/standings/2");
         assertThat(third.at("/position").asInt()).isEqualTo(3);
-        assertThat(third.at("/display_name").asText()).isEqualTo("Walk-in Wendy");
+        assertThat(third.at("/display_name").asString()).isEqualTo("Walk-in Wendy");
         assertThat(third.at("/car_number").asInt()).isEqualTo(9);
         assertThat(third.at("/laps").asInt()).isZero();
         assertThat(third.at("/laps_down").asInt()).isEqualTo(2);
@@ -279,7 +279,7 @@ class LiveFeedIT extends AbstractIntegrationTest {
         assertThat(message.at("/race/rctc_race_id").asLong()).isEqualTo(raceId);
         JsonNode graceRow = null;
         for (JsonNode row : message.at("/standings")) {
-            if (row.at("/display_name").asText().equals("Grace Hopper")) {
+            if (row.at("/display_name").asString().equals("Grace Hopper")) {
                 graceRow = row;
             }
         }
@@ -303,13 +303,13 @@ class LiveFeedIT extends AbstractIntegrationTest {
 
         await(() -> seen.size() == 2);
         JsonNode last = objectMapper.readTree(seen.get(1));
-        assertThat(last.at("/race/status").asText()).isEqualTo("FINISHED");
+        assertThat(last.at("/race/status").asString()).isEqualTo("FINISHED");
         assertThat(last.at("/race/clock/elapsed_ms").asLong()).isEqualTo(300_000);
         assertThat(last.at("/race/clock/running").asBoolean()).isFalse();
         // The final running order survives the live state being let go
-        assertThat(last.at("/standings/0/display_name").asText()).isEqualTo("Ada Lovelace");
+        assertThat(last.at("/standings/0/display_name").asString()).isEqualTo("Ada Lovelace");
         assertThat(last.at("/standings/0/laps").asInt()).isEqualTo(2);
-        assertThat(last.at("/standings/1/display_name").asText()).isEqualTo("Grace Hopper");
+        assertThat(last.at("/standings/1/display_name").asString()).isEqualTo("Grace Hopper");
         assertThat(last.at("/sequence").asLong()).isGreaterThan(objectMapper.readTree(seen.get(0)).at("/sequence").asLong());
 
         clock.advance(LiveFeedPublisher.RESEND_EVERY);
@@ -371,7 +371,7 @@ class LiveFeedIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> status = restTemplate.exchange("/api/v1/race-control/live-feed/status",
                 HttpMethod.GET, new HttpEntity<>(referee), JsonNode.class);
         assertThat(status.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(status.getBody().get("state").asText()).isEqualTo("NOT_SET_UP");
+        assertThat(status.getBody().get("state").asString()).isEqualTo("NOT_SET_UP");
 
         ResponseEntity<String> anonymous = restTemplate.exchange("/api/v1/race-control/live-feed/status",
                 HttpMethod.GET, HttpEntity.EMPTY, String.class);

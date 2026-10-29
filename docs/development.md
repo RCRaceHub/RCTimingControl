@@ -146,17 +146,20 @@ The app runs on the venue laptop from the installer, which serves the UI, keeps 
 - Leave `JWT_SECRET` unset and keep the generated `jwt-secret` file private, or set it to a random 256-bit base64 value.
 - Do **not** use `ddl-auto=update` or `create-drop`: Flyway manages the schema.
 
-### Jackson 2 bridge (Spring Boot 4)
+### Jackson 3
 
-Spring Boot 4 uses Jackson 3 (`tools.jackson`) by default. The app, its `JsonTextConverter` subclasses, its DTOs (`JsonNode` in the overlay theme) and JJWT (`jjwt-jackson` 0.13.0 has no Jackson 3 adapter yet) still use Jackson 2 (`com.fasterxml.jackson`). Until the move to Jackson 3 (#660) the build keeps both on the classpath:
+JSON is Jackson 3 (`tools.jackson`) throughout: Spring's REST and STOMP converters, the `JsonMapper` bean Boot builds, the `JsonTextConverter` mapper for the JSON columns, the YAML codecs and the tests. Only the annotations (`@JsonProperty`, `@JsonTypeInfo` and the like) keep the `com.fasterxml.jackson.annotation` package. Parse and write errors are the unchecked `tools.jackson.core.JacksonException`, so a `catch (IOException)` no longer sees them.
 
-- `spring-boot-jackson2` creates the Jackson 2 `ObjectMapper` bean, configured with `spring.jackson2.*` (not `spring.jackson.*`).
-- `spring.http.converters.preferred-json-mapper: jackson2` keeps REST requests and responses on Jackson 2, and `spring.websocket.messaging.preferred-json-mapper: jackson2` does the same for STOMP payloads. Both are in `application.yml`; the test `application.yml` repeats them, because it replaces the main one on the test classpath.
-- Build-time pieces that follow from Boot 4's split into modules: `spring-boot-starter-webmvc` (was `-web`), `spring-boot-starter-flyway` (was `flyway-core`), `spring-boot-starter-restclient` (for `RestClient.Builder`) and, for tests, `spring-boot-resttestclient` with `@AutoConfigureTestRestTemplate` on `AbstractIntegrationTest`.
-- Spring Framework 7 renamed `HttpStatus.UNPROCESSABLE_ENTITY` to `UNPROCESSABLE_CONTENT` and `PAYLOAD_TOO_LARGE` to `CONTENT_TOO_LARGE`.
-- `com.networknt:json-schema-validator` (tests) stays on 1.5.9, the last release with the Jackson 2 API; the 2.x and 3.x lines change the package API.
+Jackson 3 changed some defaults. `config/JacksonConfig` sets them back, for the Boot mapper (as a `JsonMapperBuilderCustomizer`) and for `JsonTextConverter`, so the API output, the STOMP messages, the exported files and the JSON columns stay as Jackson 2 wrote them:
 
-#660 moves the code to `tools.jackson`, replaces or waits for the JJWT module, and removes this bridge.
+- properties keep their declared order (Jackson 3 sorts them alphabetically);
+- `null` for a primitive reads as zero or `false` (Jackson 3 refuses it);
+- text after the end of the JSON document is ignored;
+- enums read and write by name, not `toString()`.
+
+`JsonTextConverter` also stays strict about unknown properties and writes dates and durations as numbers, as before. One byte-level difference is left: `writeValueAsBytes` writes a character outside the Basic Multilingual Plane (an emoji, say) as its own four UTF-8 bytes, where Jackson 2 wrote a pair of `\u` escapes; any JSON parser reads both alike, and `writeValueAsString` is the same in both. A test that builds its own mapper uses `TestJson.mapper()` (or `yamlMapper()`) so it behaves the same as the app.
+
+JJWT 0.13.0 has no Jackson 3 module (jwtk/jjwt issue 1029), so it reads and writes tokens with `jjwt-gson`. Gson takes the last of two duplicate names in a token header or claims, where `jjwt-jackson` refused them; a token still has to carry a valid signature, so this is no way in. When a JJWT release supports Jackson 3, swap that one dependency.
 
 ### Trying it out with the demo club
 

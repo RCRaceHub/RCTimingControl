@@ -82,7 +82,7 @@ Stateless — no server-side session. Access tokens (15-min TTL) are returned in
 
 Format configurations are stored as JSON text (checked with `json_valid`) and converted by `RaceFormatConfigConverter`, a `JsonTextConverter` the format repositories use. The Java type is a sealed interface (`RaceFormatConfig`) with three record subtypes (`TimedRaceConfig`, `BumpUpConfig`, `PointsFinalsConfig`). Jackson's `@JsonTypeInfo` on the interface provides polymorphic serde. A `type` discriminator column on the table enables SQL-side filtering without deserializing the blob.
 
-Jackson here is Jackson 2 (`com.fasterxml.jackson`). Spring Boot 4 configures Jackson 3 by default, so the app keeps a Jackson 2 `ObjectMapper` bean through Boot's `spring-boot-jackson2` module until the move to Jackson 3 (#660). See [development.md](development.md#jackson-2-bridge-spring-boot-4).
+Jackson here is Jackson 3 (`tools.jackson`). `JacksonConfig` keeps the Jackson 2 defaults that Jackson 3 changed (declared property order, `null` for a primitive reads as zero, enum names), so the stored text and the API output are the same as before. See [development.md](development.md#jackson-3).
 
 Override patches (FORMAT-07) are stored in a second `configOverride` JSON column and merged at read time — base config from the template snapshot, patches applied on top. Template edits do not affect existing event classes (snapshot-at-assignment, FORMAT-06).
 

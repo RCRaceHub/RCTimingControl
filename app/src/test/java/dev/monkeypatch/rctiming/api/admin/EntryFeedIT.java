@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -25,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.JsonNode;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -131,14 +131,14 @@ class EntryFeedIT extends AbstractIntegrationTest {
         // The token is never sent back, only its last four characters
         assertThat(saved.toString()).doesNotContain(TOKEN);
         assertThat(saved.get("tokenSaved").asBoolean()).isTrue();
-        assertThat(saved.get("tokenHint").asText()).isEqualTo("abcd");
+        assertThat(saved.get("tokenHint").asString()).isEqualTo("abcd");
         assertThat(jdbc.queryForObject("select token_encrypted from entry_feeds where event_id = ?", String.class, eventId))
                 .doesNotContain(TOKEN);
 
         JsonNode fetched = post("/fetch").getBody();
 
         assertThat(authorizations).containsExactly("Bearer " + TOKEN);
-        assertThat(fetched.get("lastStatus").asText()).isEqualTo("WAITING");
+        assertThat(fetched.get("lastStatus").asString()).isEqualTo("WAITING");
         assertThat(fetched.get("waiting").asBoolean()).isTrue();
         assertThat(fetched.get("waitingRevision").asLong()).isEqualTo(4);
         assertThat(fetched.get("lastFetchAt").isNull()).isFalse();
@@ -158,7 +158,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
         assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
 
         JsonNode feed = getFeed().getBody();
-        assertThat(feed.get("lastStatus").asText()).isEqualTo("APPLIED");
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("APPLIED");
         assertThat(feed.get("appliedRevision").asLong()).isEqualTo(4);
         assertThat(feed.get("waiting").asBoolean()).isFalse();
     }
@@ -177,14 +177,14 @@ class EntryFeedIT extends AbstractIntegrationTest {
         feedBody = fixture("entries-v1-initial.json");
         saveFeed(feedUrl(), TOKEN, true);
         scheduler.fetchAll();
-        assertThat(getFeed().getBody().get("lastStatus").asText()).isEqualTo("APPLIED");
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
         String entriesBefore = entriesSnapshot();
 
         scheduler.fetchAll();
         JsonNode fetched = post("/fetch").getBody();
 
         assertThat(authorizations).hasSize(3);
-        assertThat(fetched.get("lastStatus").asText()).isEqualTo("UNCHANGED");
+        assertThat(fetched.get("lastStatus").asString()).isEqualTo("UNCHANGED");
         assertThat(fetched.get("waiting").asBoolean()).isFalse();
         assertThat(entriesSnapshot()).isEqualTo(entriesBefore);
     }
@@ -200,7 +200,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
         scheduler.fetchAll();
 
         JsonNode feed = getFeed().getBody();
-        assertThat(feed.get("lastStatus").asText()).isEqualTo("APPLIED");
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("APPLIED");
         assertThat(feed.get("appliedRevision").asLong()).isEqualTo(7);
         assertThat(jdbc.queryForObject(
                 "select status from entries where external_source = 'RACEHUB' and external_entry_id = ?",
@@ -215,9 +215,9 @@ class EntryFeedIT extends AbstractIntegrationTest {
         scheduler.fetchAll();
 
         JsonNode feed = getFeed().getBody();
-        assertThat(feed.get("lastStatus").asText()).isEqualTo("WAITING");
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("WAITING");
         assertThat(feed.get("waiting").asBoolean()).isTrue();
-        assertThat(feed.get("lastMessage").asText()).contains("1 class needs mapping");
+        assertThat(feed.get("lastMessage").asString()).contains("1 class needs mapping");
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
         assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
 
@@ -229,7 +229,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
         assertThat(post("/preview").getBody().get("blocked").asBoolean()).isFalse();
         assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entryRepository.findByEventId(eventId)).hasSize(1);
-        assertThat(getFeed().getBody().get("lastStatus").asText()).isEqualTo("APPLIED");
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
     }
 
     @Test
@@ -240,8 +240,8 @@ class EntryFeedIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> fetched = post("/fetch");
 
         assertThat(fetched.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(fetched.getBody().get("lastStatus").asText()).isEqualTo("AUTH_FAILED");
-        assertThat(fetched.getBody().get("lastMessage").asText()).contains("token");
+        assertThat(fetched.getBody().get("lastStatus").asString()).isEqualTo("AUTH_FAILED");
+        assertThat(fetched.getBody().get("lastMessage").asString()).contains("token");
         assertThat(fetched.getBody().get("waiting").asBoolean()).isFalse();
     }
 
@@ -270,9 +270,9 @@ class EntryFeedIT extends AbstractIntegrationTest {
         scheduler.fetchAll();
 
         assertThat(fetched.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(fetched.getBody().get("lastStatus").asText()).isEqualTo("FAILED");
-        assertThat(getFeed().getBody().get("lastStatus").asText()).isEqualTo("FAILED");
-        assertThat(getFeed().getBody().get("lastMessage").asText()).contains("Couldn't reach the feed");
+        assertThat(fetched.getBody().get("lastStatus").asString()).isEqualTo("FAILED");
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("FAILED");
+        assertThat(getFeed().getBody().get("lastMessage").asString()).contains("Couldn't reach the feed");
     }
 
     @Test
@@ -282,8 +282,8 @@ class EntryFeedIT extends AbstractIntegrationTest {
 
         JsonNode fetched = post("/fetch").getBody();
 
-        assertThat(fetched.get("lastStatus").asText()).isEqualTo("FAILED");
-        assertThat(fetched.get("lastMessage").asText()).contains("entry file");
+        assertThat(fetched.get("lastStatus").asString()).isEqualTo("FAILED");
+        assertThat(fetched.get("lastMessage").asString()).contains("entry file");
     }
 
     @Test

@@ -1,7 +1,5 @@
 package dev.monkeypatch.rctiming.query.entry;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.audit.AuditActors;
@@ -9,6 +7,8 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -98,7 +98,7 @@ public class EntryHistoryQuery {
         }
         try {
             JsonNode value = objectMapper.readTree(json).get(field);
-            return value == null || value.isNull() || value.asText().isBlank() ? fallback : value.asText();
+            return value == null || value.isNull() || value.asString().isBlank() ? fallback : value.asString();
         } catch (Exception e) {
             return fallback;
         }
