@@ -3,6 +3,7 @@ import type { HighlightMark, RaceHighlightsDto, TickerDto } from '@/lib/boardsAp
 import type { GapMode } from '@/hooks/useGapView';
 import { DEFAULT_CLOSE_MS } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
+import { defaultPlacement, parsePlacementParam, placementFromTheme, placementParam, type OverlayPlacement } from './overlayLayout';
 
 /** How often the boards re-poll their public endpoints. */
 export const BOARD_POLL_MS = 5000;
@@ -128,6 +129,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
+    placement: parsePlacementParam(params.get('place')),
     ...parseLiveRaceOptions(params, defaultCloseMs),
     // After the spread on purpose: the overlay's key is off unless asked, the boards' is on
     showLegend: parseLegendParam(params.get('legend'), false),
@@ -280,6 +282,8 @@ export type OverlayDesign = {
   highContrast: boolean;
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;
+  /** The zone of the screen each part of the overlay sits in (#667). */
+  placement: OverlayPlacement;
 };
 
 /** The overlay as it opens with no options on its address. */
@@ -307,6 +311,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showLegend: false,
   highContrast: false,
   closeSeconds: null,
+  placement: defaultPlacement(),
 };
 
 /**
@@ -315,7 +320,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
  * build still opens. The event is not part of a theme and comes back null.
  */
 export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
-  const design: OverlayDesign = { ...DEFAULT_OVERLAY_DESIGN, tickerItems: [...DEFAULT_OVERLAY_DESIGN.tickerItems] };
+  const design: OverlayDesign = { ...DEFAULT_OVERLAY_DESIGN, tickerItems: [...DEFAULT_OVERLAY_DESIGN.tickerItems], placement: defaultPlacement() };
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
   for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
@@ -334,6 +339,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
     design.closeSeconds = r.closeSeconds;
   }
   if (typeof r.separatorImage === 'string') design.separatorImage = parseSeparatorImage(r.separatorImage);
+  design.placement = placementFromTheme(r.placement);
   if (Array.isArray(r.tickerItems)) {
     design.tickerItems = TICKER_ITEMS.filter((item) => (r.tickerItems as unknown[]).includes(item));
   }
@@ -385,7 +391,9 @@ export function overlayQuery(design: OverlayDesign): string {
   if (design.showLegend) q.set('legend', 'show');
   if (design.highContrast) q.set('contrast', 'high');
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
-  const text = q.toString().replace(/%2C/g, ',');
+  const place = placementParam(design.placement);
+  if (place) q.set('place', place);
+  const text = q.toString().replace(/%2C/g, ',').replace(/%3A/g, ':');
   return text ? `?${text}` : '';
 }
 

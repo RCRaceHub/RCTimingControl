@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import OverlayBoard from './OverlayBoard';
 import { fmtClock, parseOverlayOptions } from './boardFormat';
+import { DEFAULT_PLACEMENT } from './overlayLayout';
 import type { BoardRaceDto, NowNextDto, RaceClockDto } from '@/lib/boardsApi';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
@@ -485,6 +486,7 @@ describe('overlay options', () => {
   it('falls back to the defaults for anything it does not recognise', () => {
     expect(parseOverlayOptions(new URLSearchParams('top=abc&theme=neon&class=yes'))).toEqual({
       eventId: null,
+      placement: DEFAULT_PLACEMENT,
       top: 10,
       showClass: true,
       theme: 'dark',
