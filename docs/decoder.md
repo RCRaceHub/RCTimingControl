@@ -78,6 +78,19 @@ The simulator prints each PASSING record to stdout.
 
 Set the decoder's IP address as the host in **Admin → Decoder**. Port 5100 is the RC-4 text protocol (firmware ≤ 4.4). See `docs/AMB_DECODER_PROTOCOL.md` in the source repository for protocol details.
 
+### Recording a real decoder to a file
+
+To capture real race data as test data, run the recorder instead of (or, if your decoder tolerates it, beside) the app. It only listens; it sends nothing to the decoder. The same warning applies: the recorder is another client of the decoder's port, so stop other timing programs while it runs unless you have confirmed the decoder serves several.
+
+| System | Command |
+|--------|---------|
+| Windows | `"C:\Program Files\RCTimingControl\RCTimingControl.exe" record --host=192.168.1.50` |
+| Linux | `/opt/rctimingcontrol/bin/RCTimingControl record --host=192.168.1.50` |
+
+Flags: `--host` (required), `--port` (default 5100) and `--out` (default `decoder-<date>-<time>.dump` in the current folder). Stop it with `Ctrl+C`. It reconnects if the decoder drops, and appends if the file already exists.
+
+It writes two files. `capture.dump` holds every record exactly as the decoder sent it, and the simulator replays it: `RCTimingControl simulate --mode=playback --file=capture.dump`. `capture.dump.times` holds the same records, each after the time in milliseconds since 1970 (UTC) at which the recorder received it, which is useful for checking real timing against the decoder's own clock.
+
 ---
 
 ## Status
