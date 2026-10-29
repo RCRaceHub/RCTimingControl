@@ -360,6 +360,8 @@ export default function OverlayDesignerPage() {
             <Check label="Predicted laps" checked={design.showPredicted} onChange={(v) => set('showPredicted', v)} />
             <Check label="Qualifying position chip" checked={design.showQualifying} onChange={(v) => set('showQualifying', v)} />
             <Check label="Class colour tags (mixed classes)" checked={design.showClassTags} onChange={(v) => set('showClassTags', v)} />
+            <Check label="Driver headshots (where added)" checked={design.showHeadshots} onChange={(v) => set('showHeadshots', v)} />
+            <Check label="Car colours (entry colours, else class colour)" checked={design.showCarColours} onChange={(v) => set('showCarColours', v)} />
             <Check label="Pace against the top qualifier" checked={design.showTqPace} onChange={(v) => set('showTqPace', v)} />
             <Check label="Bump-up line in finals" checked={design.showBumpLine} onChange={(v) => set('showBumpLine', v)} />
             <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />

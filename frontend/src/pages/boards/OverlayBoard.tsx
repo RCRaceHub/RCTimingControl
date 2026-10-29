@@ -38,6 +38,7 @@ import { RowStateIcon } from '@/components/StateIcon';
 import { isClose } from '@/lib/lapProgress';
 import { BATTLE_ROW_CLASS, BattleRowTag } from '@/components/BattleRowTag';
 import { BattleStrip } from '@/components/BattleStrip';
+import { DriverMark } from '@/components/DriverMark';
 import { battleChasers } from '@/lib/battles';
 import { useBattles } from '@/hooks/race-control/useBattles';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
@@ -269,7 +270,7 @@ export default function OverlayBoard() {
   const lookId = parseEventParam(addressParams.get('look'));
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, gap,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, gap,
     gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, placement,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
@@ -290,7 +291,7 @@ export default function OverlayBoard() {
   // The chasing car's row, when battles are to show on the rows (#681)
   const battleRows = battleShowing && battleStyle !== 'panel' ? battleChasers(battleGroups) : undefined;
   const featuredEntryId = useFeaturedDriver(raceId, lowerThird, battleGroups, lapCounted && race?.status === 'RUNNING');
-  const media = useRaceMedia(lowerThird === 'off' ? null : raceId);
+  const media = useRaceMedia(lowerThird === 'off' && !showHeadshots && !showCarColours ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
   const now = useNow(!!clock?.running);
@@ -386,6 +387,9 @@ export default function OverlayBoard() {
           closeMs={closeMs}
           showArrows={showArrows && race.finalLetter !== null}
           classTags={showClassTags}
+          media={media}
+          showHeadshots={showHeadshots}
+          showCarColours={showCarColours}
           bumpUpPlaces={showBumpLine ? race.bumpUpPlaces ?? 0 : 0}
           barClock={showBars && race.status === 'RUNNING' ? barClock : undefined}
           predicted={showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined}
@@ -450,7 +454,15 @@ export default function OverlayBoard() {
                     </span>
                   </td>
                   <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
-                  <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
+                  <td className="max-w-0 truncate py-1 pr-2 font-medium">
+                    <DriverMark
+                      media={media.get(row.entryId)}
+                      classColour={row.classColour}
+                      headshot={showHeadshots}
+                      colours={showCarColours}
+                      imageClassName="h-5 w-5"
+                    />
+                    {row.driverName}
                     <RowStateIcon flash={flash} close={close} className="ml-1" />
                     {showBars && race.status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
                     <FlyingLapIcon row={row} className="ml-1" />
@@ -490,7 +502,12 @@ export default function OverlayBoard() {
       aria-label="Battles and fastest laps"
     >
       {battleShowing && battleStyle !== 'rows' && (
-        <BattleStrip groups={battleGroups} className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
+        <BattleStrip
+          groups={battleGroups}
+          mark={showHeadshots || showCarColours ? (car) => (
+            <DriverMark media={media.get(car.entryId)} headshot={showHeadshots} colours={showCarColours} imageClassName="h-6 w-6" />
+          ) : undefined}
+          className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
       )}
       <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
     </section>

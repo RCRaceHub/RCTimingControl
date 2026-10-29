@@ -528,6 +528,8 @@ describe('overlay options', () => {
       showBumpLine: true,
       showTqPace: true,
       showClassTags: true,
+      showHeadshots: false,
+      showCarColours: false,
       gap: 'int',
       gapEverySeconds: 6,
       separatorImage: null,

@@ -141,3 +141,14 @@ describe('battle style', () => {
     expect(overlayDesignFromTheme({ battleStyle: 'flashy' }).battleStyle).toBe('panel');
   });
 });
+
+describe('driver pictures', () => {
+  it('are left off the address until asked for and read back (#686, #688)', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showHeadshots: true, showCarColours: true });
+    expect(query).toBe('?headshots=show&carcolours=show');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ showHeadshots: true, showCarColours: true });
+    expect(parseOverlayOptions(new URLSearchParams(''))).toMatchObject({ showHeadshots: false, showCarColours: false });
+    expect(overlayDesignFromTheme({ showHeadshots: true }).showHeadshots).toBe(true);
+  });
+});
