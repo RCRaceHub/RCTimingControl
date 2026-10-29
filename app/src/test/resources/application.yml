@@ -4,6 +4,9 @@ spring:
   http:
     converters:
       preferred-json-mapper: jackson2
+  websocket:
+    messaging:
+      preferred-json-mapper: jackson2
 
 rctiming:
   retention:

@@ -19,9 +19,9 @@ springBoot {
 
 // Pin all jOOQ artifacts in jooqGenerator to the same version as version.set() below (3.21.9).
 // The jooqGenerator config does not inherit Spring Boot BOM, so without this constraint
-// jooq-meta and jooq resolve to 3.21.9 while jooq-codegen stays at 3.19.11, causing
-// AbstractMethodError at codegen time. We use 3.21.9 for codegen; runtime stays at
-// whatever Spring Boot BOM provides (also 3.19.x — compatible generated code).
+// jooq-meta and jooq resolve to 3.21.9 while jooq-codegen can stay on an older version, causing
+// AbstractMethodError at codegen time. We use 3.21.9 for codegen, the same as the
+// version the Spring Boot BOM provides at runtime.
 configurations.named("jooqGenerator") {
     resolutionStrategy.eachDependency {
         if (requested.group == "org.jooq") {

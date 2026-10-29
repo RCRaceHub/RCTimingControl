@@ -7,7 +7,10 @@ spring:
     enabled: true
   http:
     converters:
-      # Boot 4 prefers Jackson 3 for REST. The DTOs still use Jackson 2 types (JsonNode), so keep Jackson 2 until #660
+      # Boot 4 prefers Jackson 3 for REST and for STOMP payloads. The DTOs still use Jackson 2 types (JsonNode), so keep Jackson 2 until #660
+      preferred-json-mapper: jackson2
+  websocket:
+    messaging:
       preferred-json-mapper: jackson2
   servlet:
     multipart:
