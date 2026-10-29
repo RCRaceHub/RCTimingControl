@@ -43,7 +43,7 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
   ],
 };
 
-/** The switch (#695) that hides each state's icon. */
+/** The switch (#696) that hides each state's icon. */
 const ICON_SWITCH: Record<StateKind, RowIcon> = {
   'race-best': 'lap', 'personal-best': 'lap', improving: 'lap', slow: 'lap', close: 'close', 'on-pace': 'pace', 'off-pace': 'pace',
   flying: 'flying', lapped: 'lapped', penalty: 'penalty', 'no-signal': 'signal',

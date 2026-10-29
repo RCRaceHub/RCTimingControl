@@ -87,7 +87,7 @@ export function StateIcon({ kind, className, decorative = false }: { kind: State
 
 /**
  * The icon for a row: its lap flash while one is showing, otherwise the close icon when it is close, otherwise
- * nothing; either can be switched off (#695). A lap flash wins over close for the same reason it wins over the close tint.
+ * nothing; either can be switched off (#696). A lap flash wins over close for the same reason it wins over the close tint.
  */
 export function RowStateIcon({ flash, close, className }: { flash?: FlashColor; close: boolean; className?: string }) {
   const lapShown = useRowIcon('lap');

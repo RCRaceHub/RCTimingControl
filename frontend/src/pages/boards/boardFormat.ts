@@ -43,7 +43,7 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
  * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
- * {@code icons=pace,flying,...} (or {@code icons=hide}) names the row icons to show (#695); without it the screen shows {@code defaultRowIcons}, which for the boards is every icon the club has not hidden.
+ * {@code icons=pace,flying,...} (or {@code icons=hide}) names the row icons to show (#696); without it the screen shows {@code defaultRowIcons}, which for the boards is every icon the club has not hidden.
  */
 export function parseLiveRaceOptions(
   params: URLSearchParams,
@@ -310,7 +310,7 @@ export type OverlayDesign = {
   showLegend: boolean;
   /** Thick outlined icons with a short text tag beside each, for poor viewing conditions and compressed video (#591). */
   highContrast: boolean;
-  /** The icons shown beside a driver's name (#695); the overlay starts without the pace thumbs. */
+  /** The icons shown beside a driver's name (#696); the overlay starts without the pace thumbs. */
   rowIcons: RowIcon[];
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;

@@ -7,7 +7,7 @@ const ALL_ICONS: ReadonlySet<RowIcon> = new Set(ROW_ICONS);
 const RowIconsContext = createContext<ReadonlySet<RowIcon>>(ALL_ICONS);
 
 /**
- * Says which row icons the screen below it shows (#695): the club's setting for race control and the boards, the
+ * Says which row icons the screen below it shows (#696): the club's setting for race control and the boards, the
  * theme's or the address's for the streaming overlay. Without one every icon shows.
  */
 export function RowIconsProvider({ shown, children }: { shown: readonly RowIcon[]; children: ReactNode }) {

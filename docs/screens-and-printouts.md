@@ -74,7 +74,7 @@ Options go on the end of the address. They also work on a [board view](#board-vi
 | `battles=hide` | Leave out the battles strip |
 | `legend=hide` | Leave out the small colour key under the table (shown by default) |
 | `contrast=high` | High contrast for poor light or compressed video (#591): the state icons get a thick stroke and a dark outline, and a short text tag sits beside each (FL fastest lap, PB personal best, UP quicker, SL slower, CL close, ON on pace, LAP lapped, PEN penalty, NS no signal) |
-| `icons=pace,flying,...` | Which icons show beside the names (#695): `pace` (thumbs up and down), `flying` (flame), `lap` (the lap flash icons), `close`, `lapped`, `penalty` and `signal` (no signal from the decoder). `icons=hide` shows none. Without it the screen shows every icon the club has not switched off |
+| `icons=pace,flying,...` | Which icons show beside the names (#696): `pace` (thumbs up and down), `flying` (flame), `lap` (the lap flash icons), `close`, `lapped`, `penalty` and `signal` (no signal from the decoder). `icons=hide` shows none. Without it the screen shows every icon the club has not switched off |
 
 ## The Live top screen
 
@@ -131,7 +131,7 @@ Options go on the end of the address:
 | `battlestyle=rows`, `battlestyle=both` | Where the overlay shows battles (#681): `rows` highlights the chasing car's row in the tower or table instead of the strip, with pulsing chevrons, BATTLE, the gap to the car ahead and whether it is closing or growing; `both` shows the strip as well. Without it only the strip shows. A car counts as in a battle by the club's battle gap. Also a drop-down in the Overlay Designer |
 | `lower=director`, `lower=battle`, `lower=off` | What brings up the **featured-driver lower third** (see below): `director` only when the race director sends a driver, `battle` only when a battle reaches the top places, `off` never. Without it both bring it up |
 | `contrast=high` | High contrast: thick outlined icons with a short text tag beside each, as on the boards; also a tick box in the Overlay Designer (#591) |
-| `icons=pace,flying,...` | Which icons show beside the names (#695), as on the boards; without it the overlay shows every icon except the pace thumbs, which start switched off. A tick box per icon in the Overlay Designer saves the choice with the theme |
+| `icons=pace,flying,...` | Which icons show beside the names (#696), as on the boards; without it the overlay shows every icon except the pace thumbs, which start switched off. A tick box per icon in the Overlay Designer saves the choice with the theme |
 | `place=PART:ZONE,…` | Where parts of the overlay sit (#667), such as `place=chart:top-right,ticker:top-strip`. Parts are `tower`, `battles`, `chart`, `lowerThird`, `ticker` and `sponsors`; zones are `top-strip`, `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` and `bottom-strip`. Only parts you move are listed; the Overlay Designer writes it for you |
 | `legend=show` | Add a small colour key (lap colours and close tint, each with its icon) at the foot of the panel; off by default so it stays off the video |
 | `chart=hide` | Leave out the position chart |

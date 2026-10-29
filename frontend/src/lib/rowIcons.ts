@@ -1,4 +1,4 @@
-/** The icons that can sit beside a driver's name on the timing screens, each of which can be switched off (#695). */
+/** The icons that can sit beside a driver's name on the timing screens, each of which can be switched off (#696). */
 export const ROW_ICONS = ['pace', 'flying', 'lap', 'close', 'lapped', 'penalty', 'signal'] as const;
 export type RowIcon = (typeof ROW_ICONS)[number];
 

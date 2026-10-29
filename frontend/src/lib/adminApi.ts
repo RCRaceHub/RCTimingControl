@@ -693,7 +693,7 @@ export interface LiveTimingSettingsDto {
   battleHoldLaps: number;
   closeGapMs: number;
   lateMarginMs: number;
-  /** Row icons switched off on race control and the boards (#695): pace, flying, lap, close, lapped, penalty, signal. */
+  /** Row icons switched off on race control and the boards (#696): pace, flying, lap, close, lapped, penalty, signal. */
   hiddenRowIcons: string[];
 }
 
