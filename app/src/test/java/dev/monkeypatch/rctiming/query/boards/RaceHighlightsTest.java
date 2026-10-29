@@ -76,6 +76,17 @@ class RaceHighlightsTest {
     }
 
     @Test
+    void lastLapFlyingIsTrueOnlyWhenTheLatestLapBeatsTheAverageBeforeIt() {
+        assertThat(RaceHighlights.lastLapFlying(List.of(30_000L, 11_000L, 11_000L, 11_000L, 9_000L))).isTrue();
+        // The next lap is slower, so the flame goes
+        assertThat(RaceHighlights.lastLapFlying(List.of(30_000L, 11_000L, 11_000L, 11_000L, 9_000L, 10_500L))).isFalse();
+        // Only two laps before it to beat, and the first is left out
+        assertThat(RaceHighlights.lastLapFlying(List.of(30_000L, 11_000L, 11_000L, 9_000L))).isFalse();
+        assertThat(RaceHighlights.lastLapFlying(List.of(30_000L, 10_000L, 10_000L, 10_000L, 10_000L))).isFalse();
+        assertThat(RaceHighlights.lastLapFlying(List.of())).isFalse();
+    }
+
+    @Test
     void theBiggestFlyingMarginAcrossCarsWins() {
         RaceHighlightsDto.Scope scope = RaceHighlights.of(List.of(
                 run("Ada", 1, 1, 30_000L, 11_000L, 11_000L, 11_000L, 10_500L),

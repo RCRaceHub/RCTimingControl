@@ -99,6 +99,21 @@ public final class RaceHighlights {
         return best;
     }
 
+    /**
+     * Whether the car's latest timed lap is a flying lap: it beat the average of the timed laps before it (the first
+     * lap left out) and had {@code FLYING_MIN_PRIOR_LAPS} of them to beat. Same rule as {@link #flyingMargin}, asked
+     * of the last lap only, for the flying lap icon beside a driver on the live boards.
+     */
+    public static boolean lastLapFlying(List<Long> lapTimes) {
+        List<Long> timed = timedAfterFirst(lapTimes);
+        if (timed.size() <= FLYING_MIN_PRIOR_LAPS) {
+            return false;
+        }
+        List<Long> prior = timed.subList(0, timed.size() - 1);
+        long average = Math.round(prior.stream().mapToLong(Long::longValue).sum() / (double) prior.size());
+        return average - timed.get(timed.size() - 1) > 0;
+    }
+
     private static List<Long> timedAfterFirst(List<Long> lapTimes) {
         return lapTimes.stream().filter(lap -> lap != null && lap > 0).skip(1).toList();
     }

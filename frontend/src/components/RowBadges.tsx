@@ -22,15 +22,27 @@ export function LappedPill({ row, className }: { row: LiveTimingRowDto; classNam
   );
 }
 
+/**
+ * A flame beside a driver's name while the car's latest lap is a flying lap: quicker than the average of the laps
+ * before it, with at least three to beat and the first lap left out (the rule the overlay ticker uses). The server
+ * works it out per lap, so the flame shows from the lap it was set until the car's next crossing, and goes if that
+ * lap is not flying too. Nothing once the car has finished.
+ */
+export function FlyingLapIcon({ row, className }: { row: LiveTimingRowDto; className?: string }) {
+  if (!row.flyingLap || row.finished) return null;
+  return <StateIcon kind="flying" className={className} />;
+}
+
 /** Whether the referee has added time to a car, for the penalty marker. */
 function hasTimePenalty(row: LiveTimingRowDto): boolean {
   return (row.timePenaltyMs ?? 0) > 0;
 }
 
-/** The penalty marker and the no-signal marker (#591) that go beside a driver's name; either, both or neither. */
+/** The flying lap, lapped, penalty and no-signal markers (#591) that go beside a driver's name; any, all or none. */
 export function RowMarkers({ row, noSignal, className }: { row: LiveTimingRowDto; noSignal: boolean; className?: string }) {
   return (
     <>
+      <FlyingLapIcon row={row} className={className} />
       <LappedPill row={row} className={className} />
       {hasTimePenalty(row) && <StateIcon kind="penalty" className={className} />}
       {noSignal && <StateIcon kind="no-signal" className={className} />}
