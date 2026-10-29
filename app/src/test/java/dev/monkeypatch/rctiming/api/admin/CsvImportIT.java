@@ -107,7 +107,8 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertThat(ada.get("info").get("Grade").asString()).isEqualTo("80");
         assertThat(ada.get("info").get("Car Make").asString()).isEqualTo("Associated");
         assertThat(ada.get("info").has("Paid Status")).isFalse();
-        assertThat(row(preview, "NEW", "Katherine Johnson " + run).get("info").get("Junior").asString()).isEqualTo("13");
+        assertThat(row(preview, "NEW", "Katherine Johnson " + run).get("info").get("Junior").asString())
+                .isEqualTo("13");
 
         ResponseEntity<JsonNode> resp = importFile("initial.csv", false);
 
@@ -192,7 +193,8 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertThat(entryFor("Ada Lovelace", buggyClassId).getTransponderNumberSnapshot()).isEqualTo("71" + run);
 
         // Only Ada picked: only Ada changes
-        JsonNode picked = importFile("changed.csv", false, Map.of("update", List.of(ada.get("key").asString()))).getBody();
+        JsonNode picked = importFile("changed.csv", false, Map.of("update", List.of(ada.get("key").asString())))
+                .getBody();
         assertThat(picked.get("summary").get("updated").asInt()).isEqualTo(1);
         assertThat(entryFor("Ada Lovelace", buggyClassId).getTransponderNumberSnapshot()).isEqualTo("77" + run);
         assertThat(entryFor("Grace Hopper " + run, truckClassId).getSecondaryTransponderNumber()).isNull();

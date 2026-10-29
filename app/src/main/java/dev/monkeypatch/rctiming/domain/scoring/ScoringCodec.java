@@ -4,24 +4,20 @@ import dev.monkeypatch.rctiming.config.JacksonConfig;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatCodec.FileType;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.InvalidTypeIdException;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /** Reads and writes a scoring system's config as a JSON or YAML file, for export and import (the same file types as race formats). */
 @Component
 public class ScoringCodec {
 
     private final ObjectMapper jsonMapper;
-    /** A YAML mapper set up like Spring's JSON one (unknown properties ignored), so both file types read a config the same way. */
+    /** A YAML mapper set up like the JSON one, so both file types read and write a config the same way. */
     private final ObjectMapper yamlMapper;
 
     public ScoringCodec(ObjectMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
-        YAMLMapper.Builder yaml = YAMLMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        JacksonConfig.keepJackson2Defaults(yaml);
-        this.yamlMapper = yaml.build();
+        this.yamlMapper = JacksonConfig.yamlMapper();
     }
 
     /** The config as pretty-printed text in the given file type. */

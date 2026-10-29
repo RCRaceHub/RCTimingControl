@@ -131,7 +131,7 @@ public class TransponderSwapService {
             return Optional.empty();
         }
         try {
-            String slot = objectMapper.readTree(snapshot).path("slot").asText(null);
+            String slot = objectMapper.readTree(snapshot).path("slot").asString(null);
             return slot == null ? Optional.empty() : Optional.of(TransponderSlot.valueOf(slot));
         } catch (Exception e) {
             return Optional.empty();

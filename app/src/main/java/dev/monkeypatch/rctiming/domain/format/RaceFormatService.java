@@ -8,13 +8,12 @@ import dev.monkeypatch.rctiming.domain.scoring.ScoringKind;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystem;
 import dev.monkeypatch.rctiming.domain.scoring.ScoringSystemRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-import tools.jackson.core.JacksonException;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
 import java.util.List;

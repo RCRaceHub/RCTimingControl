@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.domain.transponder;
 
 import dev.monkeypatch.rctiming.TestJson;
-
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;

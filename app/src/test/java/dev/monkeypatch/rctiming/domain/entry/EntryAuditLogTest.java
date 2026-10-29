@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.domain.entry;
 
 import dev.monkeypatch.rctiming.TestJson;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;

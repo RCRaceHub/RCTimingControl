@@ -157,9 +157,9 @@ Jackson 3 changed some defaults. `config/JacksonConfig` sets them back, for the 
 - text after the end of the JSON document is ignored;
 - enums read and write by name, not `toString()`.
 
-`JsonTextConverter` also stays strict about unknown properties and writes dates and durations as numbers, as before. A test that builds its own mapper uses `TestJson.mapper()` (or `yamlMapper()`) so it behaves the same as the app.
+`JsonTextConverter` also stays strict about unknown properties and writes dates and durations as numbers, as before. One byte-level difference is left: `writeValueAsBytes` writes a character outside the Basic Multilingual Plane (an emoji, say) as its own four UTF-8 bytes, where Jackson 2 wrote a pair of `\u` escapes; any JSON parser reads both alike, and `writeValueAsString` is the same in both. A test that builds its own mapper uses `TestJson.mapper()` (or `yamlMapper()`) so it behaves the same as the app.
 
-JJWT 0.13.0 has no Jackson 3 module (jwtk/jjwt issue 1029), so it reads and writes tokens with `jjwt-gson`. When a JJWT release supports Jackson 3, swap that one dependency.
+JJWT 0.13.0 has no Jackson 3 module (jwtk/jjwt issue 1029), so it reads and writes tokens with `jjwt-gson`. Gson takes the last of two duplicate names in a token header or claims, where `jjwt-jackson` refused them; a token still has to carry a valid signature, so this is no way in. When a JJWT release supports Jackson 3, swap that one dependency.
 
 ### Trying it out with the demo club
 

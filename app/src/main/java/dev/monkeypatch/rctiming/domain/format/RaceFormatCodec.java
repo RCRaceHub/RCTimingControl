@@ -3,10 +3,8 @@ package dev.monkeypatch.rctiming.domain.format;
 import dev.monkeypatch.rctiming.config.JacksonConfig;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
-import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.exc.InvalidTypeIdException;
-import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /** Reads and writes a format's config as a JSON or YAML file, for export and import (FORMAT-14). */
 @Component
@@ -33,14 +31,12 @@ public class RaceFormatCodec {
     }
 
     private final ObjectMapper jsonMapper;
-    /** A YAML mapper set up like Spring's JSON one (unknown properties ignored), so both file types read a config the same way. */
+    /** A YAML mapper set up like the JSON one, so both file types read and write a config the same way. */
     private final ObjectMapper yamlMapper;
 
     public RaceFormatCodec(ObjectMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
-        YAMLMapper.Builder yaml = YAMLMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        JacksonConfig.keepJackson2Defaults(yaml);
-        this.yamlMapper = yaml.build();
+        this.yamlMapper = JacksonConfig.yamlMapper();
     }
 
     /** The config as pretty-printed text in the given file type. */

@@ -1,7 +1,6 @@
 package dev.monkeypatch.rctiming.query.entry;
 
 import dev.monkeypatch.rctiming.TestJson;
-
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
