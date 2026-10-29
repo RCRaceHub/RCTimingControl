@@ -12,13 +12,14 @@ describe('TimingLegend', () => {
       'Driver’s best lap',
       'As quick as, or quicker than, their last lap',
       'Slower than their last lap or their average',
+      'Flying lap: faster than its average so far',
       'Close to the car ahead',
     ]);
   });
 
   it('shows an icon beside each lap and close colour, hidden from the screen reader as the words follow it', () => {
     const { container } = render(<TimingLegend kinds={['lap', 'close']} />);
-    expect(container.querySelectorAll('[data-state]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-state]')).toHaveLength(6);
     expect(screen.queryByRole('img')).toBeNull();
   });
 

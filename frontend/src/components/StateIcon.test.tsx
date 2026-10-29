@@ -20,6 +20,14 @@ describe('StateIcon', () => {
   });
 });
 
+describe('flying lap icon', () => {
+  it('is a flame labelled for the flying lap', () => {
+    render(<StateIcon kind="flying" />);
+    expect(screen.getByRole('img', { name: /Flying lap/ })).toHaveAttribute('data-state', 'flying');
+    expect(screen.getByText('FLY')).toHaveClass('hidden');
+  });
+});
+
 describe('StateIcon tags', () => {
   it('has a short text tag for each state, hidden until high contrast is on, and not read out twice', () => {
     render(<StateIcon kind="race-best" />);
