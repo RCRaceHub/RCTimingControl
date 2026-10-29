@@ -12,6 +12,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     importRaceHubEntries: vi.fn(),
+    importPhotos: vi.fn(),
     previewEntryFeed: vi.fn(),
     applyEntryFeed: vi.fn(),
     listRaceHubClassMappings: vi.fn(),
@@ -56,6 +57,7 @@ function result(overrides: Partial<RaceHubImportResult> = {}): RaceHubImportResu
     errors: [],
     warnings: [],
     rows: [],
+    photoLinks: [],
     ...overrides,
   };
 }
@@ -227,6 +229,34 @@ describe('RaceHubImportDialog', () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(api.importRaceHubEntries).toHaveBeenLastCalledWith(5, { schema_version: 1, entries: [] }, false);
+  });
+
+  it('offers to fetch the pictures the file named instead of closing', async () => {
+    const links = [
+      { kind: 'HEADSHOT' as const, competitorId: 7, entryId: null, url: 'https://cdn.example/ada.png' },
+      { kind: 'CAR_PHOTO' as const, competitorId: null, entryId: 9, url: 'https://cdn.example/car.jpg' },
+    ];
+    api.importRaceHubEntries
+      .mockResolvedValueOnce(result())
+      .mockResolvedValueOnce(result({ dryRun: false, applied: true, photoLinks: links }));
+    api.importPhotos.mockResolvedValue({ stored: 2, skipped: 0, failed: 0, items: [] });
+    const onOpenChange = renderDialog();
+
+    chooseFile(exportFile());
+    await screen.findByTestId('racehub-preview');
+    const importButton = screen.getByRole('button', { name: 'Import entries' });
+    await waitFor(() => expect(importButton).toBeEnabled());
+    fireEvent.click(importButton);
+
+    expect(await screen.findByTestId('imported-photos')).toHaveTextContent('1 headshot');
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fetch the pictures' }));
+
+    expect(await screen.findByTestId('imported-photos-outcome')).toHaveTextContent('2 saved, 0 skipped, 0 failed');
+    expect(api.importPhotos).toHaveBeenCalledWith(5, links, false);
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   it('lists problems that block the import', async () => {

@@ -188,6 +188,8 @@ export default function AdminGuidePage() {
             <span className="font-semibold">Import from RaceHub:</span> Click
             <span className="font-semibold"> Import entries from RaceHub</span> and choose the
             Entry Export file. You see the changes before anything is saved.
+            If the file names headshots or car photos, the window then offers to fetch them (and to
+            remove their backgrounds); car colours are saved by the import itself.
           </li>
           <li>
             <span className="font-semibold">Import from a CSV file:</span> For clubs moving from

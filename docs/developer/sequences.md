@@ -305,6 +305,36 @@ sequenceDiagram
 
 Entries are never created for a racer login: competitors have no account.
 
+### Pictures named by the file (#699)
+
+The import saves car colours but never downloads a picture: a download would hold the write transaction. It answers with the links, and the page asks for them afterwards.
+
+```mermaid
+sequenceDiagram
+    participant O as Official (browser)
+    participant C as PhotoImportController
+    participant P as PhotoImportService
+    participant F as PhotoFetcher
+    participant M as DriverMediaService
+    participant H as Picture host
+
+    O->>C: import applied, answer has photoLinks
+    O->>C: POST photo-import (links, replaceExisting)
+    C->>P: fetchAll(actor, eventId, links, replaceExisting)
+    loop each link, no transaction open
+        P->>P: in the event? name shown in full? picture already held?
+        P->>F: fetch(url, 2 MB)
+        F->>H: GET https (public hosts only, no redirects)
+        H-->>F: picture bytes
+        P->>M: importHeadshot / importCarPhoto (own write transaction)
+        M->>M: sniff PNG or JPEG, decode, re-encode, store, audit row
+    end
+    P-->>O: outcome per link (STORED, SKIPPED, FAILED) and stored addresses
+    opt Remove the background ticked
+        O->>O: cut-out in the browser (#698), PUT the PNG through the ordinary upload endpoint
+    end
+```
+
 ## Signing in and staying signed in
 
 ```mermaid

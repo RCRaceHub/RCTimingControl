@@ -57,6 +57,39 @@ class EntryExportV1SchemaTest {
     }
 
     @Test
+    void acceptsPictureLinksAndCarColours() throws IOException {
+        ObjectNode entry = (ObjectNode) fixture("entries-v1-initial.json").at("/entries/0");
+        entry.put("headshot_url", "https://cdn.example.org/ada.png");
+        entry.putNull("car_photo_url");
+        entry.putArray("car_colours").add("#FF0000").add("#00ff00");
+        ObjectNode document = fixture("entries-v1-initial.json");
+        document.putArray("entries").add(entry);
+
+        assertThat(validate(document)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"headshot_url", "car_photo_url"})
+    void rejectsAPictureLinkThatIsNotHttps(String field) throws IOException {
+        ObjectNode document = fixture("entries-v1-initial.json");
+        ((ObjectNode) document.at("/entries/0")).put(field, "http://cdn.example.org/ada.png");
+
+        assertThat(validate(document)).isNotEmpty();
+    }
+
+    @Test
+    void rejectsMoreThanFourCarColoursOrOneThatIsNotRrggbb() throws IOException {
+        ObjectNode five = fixture("entries-v1-initial.json");
+        ((ObjectNode) five.at("/entries/0")).putArray("car_colours")
+                .add("#000001").add("#000002").add("#000003").add("#000004").add("#000005");
+        ObjectNode named = fixture("entries-v1-initial.json");
+        ((ObjectNode) named.at("/entries/0")).putArray("car_colours").add("red");
+
+        assertThat(validate(five)).isNotEmpty();
+        assertThat(validate(named)).isNotEmpty();
+    }
+
+    @Test
     void rejectsAnEntryWithoutItsId() throws IOException {
         ObjectNode document = fixture("entries-v1-initial.json");
         ((ObjectNode) document.at("/entries/0")).remove("entry_id");

@@ -63,7 +63,20 @@
         "primary_transponder": { "$ref": "#/$defs/text" },
         "secondary_transponder": { "$ref": "#/$defs/text" },
         "club_car_requested": { "type": ["boolean", "null"] },
-        "club_car_name": { "$ref": "#/$defs/text" }
+        "club_car_name": { "$ref": "#/$defs/text" },
+        "headshot_url": {
+          "description": "An https address of the driver's headshot (PNG or JPEG, up to 2 MB). RCTC fetches it only when an official asks, and only for a driver whose name it shows in full.",
+          "type": ["string", "null"], "pattern": "^https://", "maxLength": 500
+        },
+        "car_photo_url": {
+          "description": "An https address of a photo of the entry's car (PNG or JPEG, up to 2 MB).",
+          "type": ["string", "null"], "pattern": "^https://", "maxLength": 500
+        },
+        "car_colours": {
+          "description": "Up to four #rrggbb colours of the entry's car, main colour first. Absent leaves RCTC's colours alone; present replaces them.",
+          "type": ["array", "null"], "maxItems": 4,
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }
+        }
       }
     }
   }

@@ -17,7 +17,7 @@ import {
 
 import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import { useCsvImport, useImportClassMappings } from '@/hooks/admin/useRaceHubImport';
-import type { CsvImportResult, CsvImportRow, EventClassDto } from '@/lib/adminApi';
+import type { CsvImportResult, CsvImportRow, EventClassDto, ImportedPhotoLink } from '@/lib/adminApi';
 import {
   confirmPayload,
   defaultSelection,
@@ -28,6 +28,7 @@ import {
   type CsvImportSelection,
 } from './csvImportSelection';
 import { ClassMappingPanel, ImportProblems, ImportWarnings } from './ImportPanels';
+import { ImportedPhotosPanel } from './ImportedPhotosPanel';
 
 interface CsvImportDialogProps {
   eventId: number;
@@ -46,6 +47,8 @@ export default function CsvImportDialog({ eventId, classes, open, onOpenChange }
   const [preview, setPreview] = useState<CsvImportResult | null>(null);
   const [selection, setSelection] = useState<CsvImportSelection | null>(null);
   const [classChoices, setClassChoices] = useState<Record<string, string>>({});
+  // Set once an import went through and its file named pictures; the dialog then offers to fetch them
+  const [photoLinks, setPhotoLinks] = useState<ImportedPhotoLink[]>([]);
 
   const importMutation = useCsvImport(eventId);
   const classMappings = useImportClassMappings(eventId, open);
@@ -59,6 +62,7 @@ export default function CsvImportDialog({ eventId, classes, open, onOpenChange }
     setPreview(null);
     setSelection(null);
     setClassChoices({});
+    setPhotoLinks([]);
   }
 
   function handleOpenChange(next: boolean) {
@@ -129,7 +133,11 @@ export default function CsvImportDialog({ eventId, classes, open, onOpenChange }
       }
       const { created, updated, withdrawn } = result.summary;
       toast.success(`Imported from the CSV file: ${created} new, ${updated} updated, ${withdrawn} withdrawn.`);
-      handleOpenChange(false);
+      if (result.photoLinks.length > 0) {
+        setPhotoLinks(result.photoLinks);
+      } else {
+        handleOpenChange(false);
+      }
     } catch {
       toast.error('The import failed. Check your connection and try again.');
     }
@@ -174,158 +182,164 @@ export default function CsvImportDialog({ eventId, classes, open, onOpenChange }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="csv-file">CSV file</Label>
-          <input
-            id="csv-file"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={e => void handleFile(e.target.files?.[0])}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm"
-          />
-          {fileError && <p className="text-xs text-destructive">{fileError}</p>}
-        </div>
+        {photoLinks.length > 0 ? (
+          <ImportedPhotosPanel eventId={eventId} links={photoLinks} onDone={() => handleOpenChange(false)} />
+        ) : (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="csv-file">CSV file</Label>
+              <input
+                id="csv-file"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={e => void handleFile(e.target.files?.[0])}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm"
+              />
+              {fileError && <p className="text-xs text-destructive">{fileError}</p>}
+            </div>
 
-        {importMutation.isPending && !preview && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking the file…
-          </div>
-        )}
-
-        {preview && selection && (
-          <div className="space-y-4" data-testid="csv-preview">
-            <ImportProblems errors={preview.errors} />
-
-            <ClassMappingPanel
-              unmapped={unmapped}
-              intro="These classes in the file do not match a class in this event. Choose one for each."
-              classes={classes}
-              classLabel={cls => classLabel(cls.id)}
-              choices={classChoices}
-              onChoose={(key, value) => setClassChoices(c => ({ ...c, [key]: value }))}
-              mappingsLoadFailed={classMappings.loadFailed}
-              canSave={classMappings.ready && !busy}
-              onSave={() => void saveMappingsAndRecheck()}
-            />
-
-            <ImportWarnings warnings={preview.warnings} />
-
-            <section data-testid="group-NEW">
-              <h3 className="text-sm font-semibold">New ({groups.NEW.length})</h3>
-              <p className="text-xs text-muted-foreground">Added when you confirm.</p>
-              <ul className="mt-1 text-sm space-y-0.5">
-                {groups.NEW.map(row => <li key={row.key ?? row.line}>{rowLabel(row)}</li>)}
-              </ul>
-            </section>
-
-            {groups.CHANGED.length > 0 && (
-              <section data-testid="group-CHANGED" className="space-y-2">
-                <GroupHeading
-                  title={`Changed (${groups.CHANGED.length})`}
-                  hint="Ticked rows are updated when you confirm."
-                  onAll={on => setSelection(selectAll(selection, groups.CHANGED, 'CHANGED', on))}
-                />
-                {groups.CHANGED.map(row => (
-                  <div key={row.key} className="rounded-md border p-2 text-sm">
-                    <label className="flex items-start gap-2">
-                      <Checkbox
-                        className="mt-0.5"
-                        aria-label={`Apply update for ${row.name}`}
-                        checked={row.key != null && selection.update.has(row.key)}
-                        onCheckedChange={c =>
-                          row.key && setSelection({ ...selection, update: toggled(selection.update, row.key, c === true) })
-                        }
-                      />
-                      <span>{rowLabel(row)}</span>
-                    </label>
-                    <table className="mt-1 ml-6 text-xs">
-                      <tbody>
-                        {row.changes.map(change => (
-                          <tr key={change.field}>
-                            <td className="pr-3 text-muted-foreground">{change.field}</td>
-                            <td className="pr-3 line-through text-muted-foreground">{change.before ?? '—'}</td>
-                            <td>{change.after ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </section>
+            {importMutation.isPending && !preview && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Checking the file…
+              </div>
             )}
 
-            {groups.MISSING.length > 0 && (
-              <section data-testid="group-MISSING" className="space-y-2">
-                <GroupHeading
-                  title={`Missing from this file (${groups.MISSING.length})`}
-                  hint="Added by an earlier CSV import. Ticked rows are withdrawn when you confirm, never deleted."
-                  onAll={on => setSelection(selectAll(selection, groups.MISSING, 'MISSING', on))}
-                  disabled={selection.keepMissing}
+            {preview && selection && (
+              <div className="space-y-4" data-testid="csv-preview">
+                <ImportProblems errors={preview.errors} />
+
+                <ClassMappingPanel
+                  unmapped={unmapped}
+                  intro="These classes in the file do not match a class in this event. Choose one for each."
+                  classes={classes}
+                  classLabel={cls => classLabel(cls.id)}
+                  choices={classChoices}
+                  onChoose={(key, value) => setClassChoices(c => ({ ...c, [key]: value }))}
+                  mappingsLoadFailed={classMappings.loadFailed}
+                  canSave={classMappings.ready && !busy}
+                  onSave={() => void saveMappingsAndRecheck()}
                 />
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    aria-label="Don't withdraw racers missing from this file"
-                    checked={selection.keepMissing}
-                    onCheckedChange={on => setSelection({ ...selection, keepMissing: on })}
-                  />
-                  Don&apos;t withdraw racers missing from this file
-                </label>
-                {groups.MISSING.map(row => (
-                  <label key={row.entryId} className="flex items-start gap-2 text-sm">
-                    <Checkbox
-                      className="mt-0.5"
-                      aria-label={`Withdraw ${row.name}`}
-                      disabled={selection.keepMissing}
-                      checked={!selection.keepMissing && row.entryId != null && selection.withdraw.has(row.entryId)}
-                      onCheckedChange={c =>
-                        row.entryId != null &&
-                        setSelection({ ...selection, withdraw: toggled(selection.withdraw, row.entryId, c === true) })
-                      }
+
+                <ImportWarnings warnings={preview.warnings} />
+
+                <section data-testid="group-NEW">
+                  <h3 className="text-sm font-semibold">New ({groups.NEW.length})</h3>
+                  <p className="text-xs text-muted-foreground">Added when you confirm.</p>
+                  <ul className="mt-1 text-sm space-y-0.5">
+                    {groups.NEW.map(row => <li key={row.key ?? row.line}>{rowLabel(row)}</li>)}
+                  </ul>
+                </section>
+
+                {groups.CHANGED.length > 0 && (
+                  <section data-testid="group-CHANGED" className="space-y-2">
+                    <GroupHeading
+                      title={`Changed (${groups.CHANGED.length})`}
+                      hint="Ticked rows are updated when you confirm."
+                      onAll={on => setSelection(selectAll(selection, groups.CHANGED, 'CHANGED', on))}
                     />
-                    <span>{rowLabel(row)}</span>
-                  </label>
-                ))}
-              </section>
+                    {groups.CHANGED.map(row => (
+                      <div key={row.key} className="rounded-md border p-2 text-sm">
+                        <label className="flex items-start gap-2">
+                          <Checkbox
+                            className="mt-0.5"
+                            aria-label={`Apply update for ${row.name}`}
+                            checked={row.key != null && selection.update.has(row.key)}
+                            onCheckedChange={c =>
+                              row.key && setSelection({ ...selection, update: toggled(selection.update, row.key, c === true) })
+                            }
+                          />
+                          <span>{rowLabel(row)}</span>
+                        </label>
+                        <table className="mt-1 ml-6 text-xs">
+                          <tbody>
+                            {row.changes.map(change => (
+                              <tr key={change.field}>
+                                <td className="pr-3 text-muted-foreground">{change.field}</td>
+                                <td className="pr-3 line-through text-muted-foreground">{change.before ?? '—'}</td>
+                                <td>{change.after ?? '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </section>
+                )}
+
+                {groups.MISSING.length > 0 && (
+                  <section data-testid="group-MISSING" className="space-y-2">
+                    <GroupHeading
+                      title={`Missing from this file (${groups.MISSING.length})`}
+                      hint="Added by an earlier CSV import. Ticked rows are withdrawn when you confirm, never deleted."
+                      onAll={on => setSelection(selectAll(selection, groups.MISSING, 'MISSING', on))}
+                      disabled={selection.keepMissing}
+                    />
+                    <label className="flex items-center gap-2 text-sm">
+                      <Switch
+                        aria-label="Don't withdraw racers missing from this file"
+                        checked={selection.keepMissing}
+                        onCheckedChange={on => setSelection({ ...selection, keepMissing: on })}
+                      />
+                      Don&apos;t withdraw racers missing from this file
+                    </label>
+                    {groups.MISSING.map(row => (
+                      <label key={row.entryId} className="flex items-start gap-2 text-sm">
+                        <Checkbox
+                          className="mt-0.5"
+                          aria-label={`Withdraw ${row.name}`}
+                          disabled={selection.keepMissing}
+                          checked={!selection.keepMissing && row.entryId != null && selection.withdraw.has(row.entryId)}
+                          onCheckedChange={c =>
+                            row.entryId != null &&
+                            setSelection({ ...selection, withdraw: toggled(selection.withdraw, row.entryId, c === true) })
+                          }
+                        />
+                        <span>{rowLabel(row)}</span>
+                      </label>
+                    ))}
+                  </section>
+                )}
+
+                {groups.UNCHANGED.length > 0 && (
+                  <details data-testid="group-UNCHANGED">
+                    <summary className="text-sm font-semibold cursor-pointer">Unchanged ({groups.UNCHANGED.length})</summary>
+                    <ul className="mt-1 text-sm space-y-0.5">
+                      {groups.UNCHANGED.map(row => <li key={row.key ?? row.line}>{rowLabel(row)}</li>)}
+                    </ul>
+                  </details>
+                )}
+
+                {groups.SKIPPED.length > 0 && (
+                  <details data-testid="group-SKIPPED">
+                    <summary className="text-sm font-semibold cursor-pointer">Skipped ({groups.SKIPPED.length})</summary>
+                    <ul className="mt-1 text-sm space-y-0.5">
+                      {groups.SKIPPED.map(row => (
+                        <li key={row.key ?? row.line}>
+                          {rowLabel(row)}
+                          {row.reason && <span className="text-muted-foreground"> · {row.reason}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+
+                <p className="text-sm font-medium" data-testid="csv-summary-line">
+                  {summaryLine(preview, selection)}
+                </p>
+              </div>
             )}
 
-            {groups.UNCHANGED.length > 0 && (
-              <details data-testid="group-UNCHANGED">
-                <summary className="text-sm font-semibold cursor-pointer">Unchanged ({groups.UNCHANGED.length})</summary>
-                <ul className="mt-1 text-sm space-y-0.5">
-                  {groups.UNCHANGED.map(row => <li key={row.key ?? row.line}>{rowLabel(row)}</li>)}
-                </ul>
-              </details>
-            )}
-
-            {groups.SKIPPED.length > 0 && (
-              <details data-testid="group-SKIPPED">
-                <summary className="text-sm font-semibold cursor-pointer">Skipped ({groups.SKIPPED.length})</summary>
-                <ul className="mt-1 text-sm space-y-0.5">
-                  {groups.SKIPPED.map(row => (
-                    <li key={row.key ?? row.line}>
-                      {rowLabel(row)}
-                      {row.reason && <span className="text-muted-foreground"> · {row.reason}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-
-            <p className="text-sm font-medium" data-testid="csv-summary-line">
-              {summaryLine(preview, selection)}
-            </p>
-          </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => void confirmImport()} disabled={!preview || preview.blocked || busy}>
+                {importMutation.isPending && preview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Import entries
+              </Button>
+            </DialogFooter>
+          </>
         )}
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => void confirmImport()} disabled={!preview || preview.blocked || busy}>
-            {importMutation.isPending && preview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Import entries
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -108,4 +108,24 @@ class RcTimingCsvParserTest {
         assertThat(parsed.errors().get(1)).startsWith("Line 3 has 3 values but the header has 2");
         assertThat(parsed.rows()).extracting(Row::name).containsExactly("Ted D'silver");
     }
+
+    @Test
+    void readsPictureLinksAndCarColours_andNoneWhenTheCellsAreBlank() {
+        ParsedCsv parsed = RcTimingCsvParser.parse("""
+                Name,Class,Headshot URL,Car Photo URL,Car Colours
+                Fred Blogs,Mod,https://cdn.example.org/fred.png,https://cdn.example.org/car.jpg,#FF0000 #00ff00;#0000ff|#ffffff
+                Ada Lovelace,Mod,,,
+                """);
+
+        assertThat(parsed.errors()).isEmpty();
+        assertThat(parsed.warnings()).isEmpty();
+        Row fred = parsed.rows().get(0);
+        assertThat(fred.headshotUrl()).isEqualTo("https://cdn.example.org/fred.png");
+        assertThat(fred.carPhotoUrl()).isEqualTo("https://cdn.example.org/car.jpg");
+        assertThat(fred.carColours()).containsExactly("#FF0000", "#00ff00", "#0000ff", "#ffffff");
+        Row ada = parsed.rows().get(1);
+        assertThat(ada.headshotUrl()).isNull();
+        assertThat(ada.carPhotoUrl()).isNull();
+        assertThat(ada.carColours()).isNull();
+    }
 }

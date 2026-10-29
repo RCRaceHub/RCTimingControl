@@ -16,8 +16,9 @@ import {
 import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import { useImportClassMappings, useRaceHubImport } from '@/hooks/admin/useRaceHubImport';
 import { useEntryFeedImport } from '@/hooks/admin/useEntryFeed';
-import type { EventClassDto, RaceHubImportResult } from '@/lib/adminApi';
+import type { EventClassDto, ImportedPhotoLink, RaceHubImportResult } from '@/lib/adminApi';
 import { ClassMappingPanel, ImportProblems, ImportWarnings } from './ImportPanels';
+import { ImportedPhotosPanel } from './ImportedPhotosPanel';
 
 interface RaceHubImportDialogProps {
   eventId: number;
@@ -52,6 +53,8 @@ export default function RaceHubImportDialog({
   const [fileError, setFileError] = useState<string | null>(null);
   const [preview, setPreview] = useState<RaceHubImportResult | null>(null);
   const [classChoices, setClassChoices] = useState<Record<string, string>>({});
+  // Set once an import went through and its file named pictures; the dialog then offers to fetch them
+  const [photoLinks, setPhotoLinks] = useState<ImportedPhotoLink[]>([]);
 
   const fileImport = useRaceHubImport(eventId);
   const feedImport = useEntryFeedImport(eventId);
@@ -70,6 +73,7 @@ export default function RaceHubImportDialog({
       setFileError(null);
       setPreview(null);
       setClassChoices({});
+      setPhotoLinks([]);
     }
     onOpenChange(next);
   }
@@ -163,7 +167,11 @@ export default function RaceHubImportDialog({
       toast.success(
         `Imported from ${feed ? 'the entry feed' : 'RaceHub'}: ${created} new, ${updated} updated, ${withdrawn} withdrawn.`,
       );
-      handleOpenChange(false);
+      if (result.photoLinks.length > 0) {
+        setPhotoLinks(result.photoLinks);
+      } else {
+        handleOpenChange(false);
+      }
     } catch {
       toast.error('The import failed. Check your connection and try again.');
     }
@@ -188,7 +196,9 @@ export default function RaceHubImportDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {feed ? (
+        {photoLinks.length > 0 ? (
+          <ImportedPhotosPanel eventId={eventId} links={photoLinks} onDone={() => handleOpenChange(false)} />
+        ) : feed ? (
           fileError && <p className="text-xs text-destructive">{fileError}</p>
         ) : (
           <div className="space-y-1.5">
@@ -204,13 +214,13 @@ export default function RaceHubImportDialog({
           </div>
         )}
 
-        {importMutation.isPending && !preview && (
+        {photoLinks.length === 0 && importMutation.isPending && !preview && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Checking the file…
           </div>
         )}
 
-        {preview && (
+        {photoLinks.length === 0 && preview && (
           <div className="space-y-4" data-testid="racehub-preview">
             <p className="text-sm text-muted-foreground">
               {preview.racehubEventName ?? 'RaceHub event'}
@@ -246,15 +256,17 @@ export default function RaceHubImportDialog({
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => void confirmImport()} disabled={!preview || preview.blocked || busy}>
-            {importMutation.isPending && preview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Import entries
-          </Button>
-        </DialogFooter>
+        {photoLinks.length === 0 && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void confirmImport()} disabled={!preview || preview.blocked || busy}>
+              {importMutation.isPending && preview && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Import entries
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

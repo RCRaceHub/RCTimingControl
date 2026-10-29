@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
@@ -52,6 +53,7 @@ class CsvImportIT extends AbstractIntegrationTest {
     @Autowired EntryRepository entryRepository;
     @Autowired CompetitorRepository competitorRepository;
     @Autowired JdbcTemplate jdbc;
+    @Autowired DriverMediaService driverMedia;
 
     private String adminToken;
     private long adminUserId;
@@ -390,6 +392,25 @@ class CsvImportIT extends AbstractIntegrationTest {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────────
+
+    @Test
+    void pictureColumnsGiveLinksAndColours_butNothingIsFetched() {
+        JsonNode preview = importFile("pictures.csv", true).getBody();
+        assertThat(preview.get("photoLinks")).isEmpty();
+        assertThat(preview.get("blocked").asBoolean()).isFalse();
+        assertThat(preview.get("warnings").toString()).contains("Line 3").contains("headshot address");
+
+        JsonNode body = importFile("pictures.csv", false).getBody();
+
+        assertThat(body.get("applied").asBoolean()).isTrue();
+        JsonNode links = body.get("photoLinks");
+        assertThat(links.size()).isEqualTo(2);
+        assertThat(links.get(0).get("kind").asString()).isEqualTo("HEADSHOT");
+        assertThat(links.get(0).get("url").asString()).isEqualTo("https://cdn.example.org/ada.png");
+        assertThat(links.get(1).get("kind").asString()).isEqualTo("CAR_PHOTO");
+        long adaEntry = links.get(1).get("entryId").asLong();
+        assertThat(driverMedia.carColours(adaEntry)).containsExactly("#ff0000", "#ffffff");
+    }
 
     private List<Map<String, Object>> auditRows() {
         return jdbc.queryForList("select * from audit_log where event_id = ? order by id", eventId);

@@ -143,7 +143,7 @@ describe('EntryFeedSection', () => {
     api.previewEntryFeed.mockResolvedValue({
       dryRun: true, blocked: false, applied: false, racehubEventName: 'Club Round 3', revision: 7,
       summary: { created: 1, updated: 0, withdrawn: 0, unchanged: 0, stale: 0, skipped: 0 },
-      unmappedClasses: [], errors: [], warnings: [], rows: [],
+      unmappedClasses: [], errors: [], warnings: [], rows: [], photoLinks: [],
     });
     renderSection();
 

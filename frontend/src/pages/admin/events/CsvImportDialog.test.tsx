@@ -61,6 +61,7 @@ function result(overrides: Partial<CsvImportResult> = {}): CsvImportResult {
       row('MISSING', 'Katherine Johnson', { entryId: 31 }),
       row('SKIPPED', 'Tim Berners-Lee', { reason: 'Entry Desc is update' }),
     ],
+    photoLinks: [],
     ...overrides,
   };
 }

@@ -399,9 +399,22 @@ Entry Export v1 is the format any booking system can produce to send its entries
 | `generated_at` | Optional ISO-8601 time the file was made |
 | `entries` | One object per entry, below |
 
-Each entry needs `entry_id`, `entry_version` (goes up each time the entry changes), `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` (the system's id for the driver) and `event_class_id` (its id for the class). The rest are optional: `race_day_status` (`NOT_ARRIVED` or `ARRIVED`), `rc_class_name` (matched to a racing class name), `rc_class_number`, `class_name`, `driver_display_name`, `brca_number`, `brca_source`, `home_club`, `age_category`, `grade`, `primary_transponder`, `secondary_transponder`, `club_car_requested` and `club_car_name`. Any other field is ignored, so contact, date of birth or payment data sent by mistake is never stored.
+Each entry needs `entry_id`, `entry_version` (goes up each time the entry changes), `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` (the system's id for the driver) and `event_class_id` (its id for the class). The rest are optional: `race_day_status` (`NOT_ARRIVED` or `ARRIVED`), `rc_class_name` (matched to a racing class name), `rc_class_number`, `class_name`, `driver_display_name`, `brca_number`, `brca_source`, `home_club`, `age_category`, `grade`, `primary_transponder`, `secondary_transponder`, `club_car_requested` and `club_car_name`, and, from #699, `headshot_url`, `car_photo_url` (both `https` addresses) and `car_colours` (up to four `#rrggbb`); see [what RCTC expects from RaceHub](racehub-expectations.md). Any other field is ignored, so contact, date of birth or payment data sent by mistake is never stored.
 
 Entries, drivers and class mappings are kept per `source`, so another system's ids never meet RaceHub's: a file with `"source": "OTHER"` and the same ids as a RaceHub file makes its own entries and competitors. Only a RaceHub file links the event to a RaceHub event, so results go back to RaceHub only for RaceHub entries. In Results Export v1, an entry from any other source is sent like a walk-in, by its RCTC ids.
+
+### Pictures named by an import (#699)
+
+A real RaceHub, feed or CSV import answers with `photoLinks`: `[ { "kind": "HEADSHOT", "competitorId": 7, "entryId": null, "url": "https://…" }, { "kind": "CAR_PHOTO", "competitorId": null, "entryId": 9, "url": "https://…" } ]` for the rows it created, updated or found unchanged. It is empty for a dry run and a blocked import. The import saves car colours itself but never fetches a picture inside its transaction. An unusable address or colour list is a warning in the preview, never an error.
+
+```http
+POST /admin/events/{eventId}/photo-import
+Content-Type: application/json
+
+{ "links": [ { "kind": "HEADSHOT", "competitorId": 7, "url": "https://…" } ], "replaceExisting": false }
+```
+
+Requires `ADMIN`; at most 1000 links (400 above that), 404 for an unknown event. It answers **200** with `{ "stored": 1, "skipped": 0, "failed": 0, "items": [ { "kind", "competitorId", "entryId", "status": "STORED", "message": null, "storedUrl": "/storage/photos/….png" } ] }`, one item per link in order, so one bad address never stops the rest. Each link is fetched by the server (`https` only, public hosts only, no redirects, 20 seconds, PNG or JPEG by content up to 2 MB and 25 million pixels) and stored as an upload is. A link is `SKIPPED` when the driver's name is not shown in full or a picture is already held and `replaceExisting` is false, and `FAILED` when the target is not in the event, the address is unusable or the fetch or image check fails (`message` is fixed text saying why; the address is not echoed). Each stored picture writes an audit row (`DRIVER_HEADSHOT_IMPORTED` or `ENTRY_CAR_PHOTO_IMPORTED`) naming the competitor or entry by id.
 
 ### Class mappings
 
