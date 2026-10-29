@@ -4,7 +4,7 @@ import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
 import { RowMarkers } from '@/components/RowBadges';
 import { useNoSignal } from '@/hooks/race-control/useNoSignal';
-import { OnPaceIcon } from '@/components/OnPaceIcon';
+import { PaceIcon } from '@/components/PaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
 import { RowStateIcon } from '@/components/StateIcon';
@@ -81,7 +81,7 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
                 {row.driverName}
                 {/* This board has no lap flash, so only close gets an icon */}
                 <RowStateIcon close={close} className="ml-3" />
-                {barClock && !row.finished && <OnPaceIcon row={row} clock={barClock} className="ml-2" />}
+                {barClock && !row.finished && <PaceIcon row={row} clock={barClock} className="ml-2" />}
                 <RowMarkers row={row} noSignal={noSignal.has(row.entryId)} className="ml-2" />
                 {row.finished && <FinishedFlag />}
                 {barClock && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
