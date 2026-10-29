@@ -17,6 +17,8 @@ import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
 import { gapText, leaderGapText } from './boardFormat';
+import { DriverMark } from '@/components/DriverMark';
+import type { RaceMediaDto } from '@/lib/boardsApi';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2.75;
@@ -37,6 +39,10 @@ export interface TowerColours {
 }
 
 interface OverlayTowerProps {
+  /** Headshots and car colours by entry id, drawn beside the name when {@link showHeadshots} or {@link showCarColours} (#686, #688). */
+  media?: Map<number, RaceMediaDto>;
+  showHeadshots?: boolean;
+  showCarColours?: boolean;
   /** The cars to show, in order. */
   rows: LiveTimingRowDto[];
   /** The whole field, which the places-gained arrows are judged against. */
@@ -129,6 +135,9 @@ function QualifyingChip({ projected, final }: { projected: ProjectedQualifying; 
  * rather than redrawing them. The rows are role "row" elements in a labelled "Running order" list.
  */
 export function OverlayTower({
+  media,
+  showHeadshots = false,
+  showCarColours = false,
   rows,
   allRows,
   colours,
@@ -216,6 +225,12 @@ export function OverlayTower({
               </span>
               <span className={cn('w-7 shrink-0 text-right text-lg tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
               <span className="relative flex min-w-0 flex-1 items-center text-lg font-semibold">
+                <DriverMark
+                  media={media?.get(row.entryId)}
+                  classColour={row.classColour}
+                  headshot={showHeadshots}
+                  colours={showCarColours}
+                />
                 <ScrollingName name={row.driverName} />
                 {/* The slot is always there, so the name box keeps its width and the scroll does not restart on each flash */}
                 <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-base [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">

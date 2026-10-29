@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import type { BattleCar, BattleGroup, BattleLink } from '@/lib/battles';
 import { cn } from '@/lib/utils';
 
@@ -45,7 +45,16 @@ function GapLink({ ahead, chaser, link }: { ahead: BattleCar; chaser: BattleCar;
  * One battle, or a train of close cars, on a line, labelled "Battle for P4" or "Train P4–P7": the cars front to back with the gap and its trend between each
  * pair (#505). A train reads as one line instead of overlapping pairs.
  */
-export function BattleGroupLine({ group, className }: { group: BattleGroup; className?: string }) {
+export function BattleGroupLine({
+  group,
+  className,
+  mark,
+}: {
+  group: BattleGroup;
+  className?: string;
+  /** Something to draw before each car's name, such as their headshot (#686). */
+  mark?: (car: BattleCar) => ReactNode;
+}) {
   return (
     <div
       className={cn('flex flex-wrap items-baseline gap-x-2', className)}
@@ -59,7 +68,8 @@ export function BattleGroupLine({ group, className }: { group: BattleGroup; clas
       </span>
       {group.cars.map((car, i) => (
         <Fragment key={car.entryId}>
-          <span className="font-medium">
+          <span className="inline-flex items-center font-medium">
+            {mark?.(car)}
             <span className="mr-1 text-[0.75em] opacity-70">P{car.position}</span>
             {car.driverName}
           </span>

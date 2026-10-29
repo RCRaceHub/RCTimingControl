@@ -120,6 +120,7 @@ const OVERLAY_MAX_TOP = 40;
 
 /**
  * The streaming overlay's options from its query string; anything unrecognised falls back to the default.
+ * {@code headshots=show} puts each driver's headshot beside their name and {@code carcolours=show} a swatch of their car colours (#686, #688), both off unless asked.
  * {@code battlestyle=rows|both} puts the chasing car's row in the tower or table in place of, or as well as, the battles strip (#681).
  */
 export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -137,6 +138,8 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showBumpLine: params.get('bump')?.toLowerCase() !== 'hide',
     showTqPace: params.get('tqpace')?.toLowerCase() !== 'hide',
     showClassTags: params.get('tags')?.toLowerCase() !== 'hide',
+    showHeadshots: params.get('headshots')?.toLowerCase() === 'show',
+    showCarColours: params.get('carcolours')?.toLowerCase() === 'show',
     lowerThird: parseLowerThird(params.get('lower')),
     battleStyle: parseBattleStyle(params.get('battlestyle')),
     gap: parseGapMode(params.get('gap')),
@@ -279,6 +282,10 @@ export type OverlayDesign = {
   showTqPace: boolean;
   /** Tag each tower row with its class colour when more than one class shows (#532). */
   showClassTags: boolean;
+  /** Show each driver's headshot beside their name in the tower, table and battles (#686); off unless asked. */
+  showHeadshots: boolean;
+  /** Show a swatch of each car's colours (the entry's, else its class colour) beside the name (#688); off unless asked. */
+  showCarColours: boolean;
   gap: GapMode;
   gapEverySeconds: number;
   /** The address of an image to put between ticker items instead of the diamond; null keeps the diamond. */
@@ -315,6 +322,8 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showBumpLine: true,
   showTqPace: true,
   showClassTags: true,
+  showHeadshots: false,
+  showCarColours: false,
   gap: 'int',
   gapEverySeconds: DEFAULT_GAP_EVERY_S,
   separatorImage: null,
@@ -340,7 +349,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
   for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
-    'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
+    'showHeadshots', 'showCarColours', 'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
@@ -396,6 +405,8 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showBumpLine) q.set('bump', 'hide');
   if (!design.showTqPace) q.set('tqpace', 'hide');
   if (!design.showClassTags) q.set('tags', 'hide');
+  if (design.showHeadshots) q.set('headshots', 'show');
+  if (design.showCarColours) q.set('carcolours', 'show');
   if (design.gap !== 'int') q.set('gap', design.gap);
   if (design.gap === 'auto' && design.gapEverySeconds !== DEFAULT_GAP_EVERY_S) {
     q.set('gapevery', String(design.gapEverySeconds));
