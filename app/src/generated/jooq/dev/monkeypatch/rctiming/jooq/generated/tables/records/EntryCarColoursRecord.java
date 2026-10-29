@@ -88,7 +88,7 @@ public class EntryCarColoursRecord extends UpdatableRecordImpl<EntryCarColoursRe
 
         setId(id);
         setEntryId(entryId);
-        setColours(carPhotoUrl);
+        setColours(colours);
         resetTouchedOnNotNull();
     }
 }
