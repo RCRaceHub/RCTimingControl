@@ -1,5 +1,5 @@
-// The overlay's running order drawn as a timing tower, like a Formula 1 broadcast: one slim row per car with its
-// place, car number, driver and gap, and rows that slide to their new place when the order changes.
+// The overlay's running order drawn as a timing tower, like a Formula 1 broadcast: one row per car with its
+// place, car number, driver and gap in type big enough to read a name on a stream, and rows that slide to their new place when the order changes.
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -17,9 +17,9 @@ import type { PredictedClock } from './BoardLiveTable';
 import { gapText, leaderGapText } from './boardFormat';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
-export const TOWER_ROW_REM = 2;
-/** The panel width of the tower: a long name scrolls to fit beside the laps, predicted laps, qualifying place and gap. */
-export const TOWER_WIDTH_CLASS = 'w-[17rem]';
+export const TOWER_ROW_REM = 2.75;
+/** The panel width of the tower: a name wider than its room scrolls to fit beside the laps, predicted laps, qualifying place and gap. */
+export const TOWER_WIDTH_CLASS = 'w-[24rem]';
 
 /** A driver's projected place in the event's qualifying table, if the heat ended now. */
 export interface ProjectedQualifying {
@@ -108,7 +108,7 @@ function ScrollingName({ name }: { name: string }) {
 function QualifyingChip({ projected, final }: { projected: ProjectedQualifying; final: boolean }) {
   const gained = projected.previousPosition === null ? null : projected.previousPosition - projected.position;
   return (
-    <span className="whitespace-nowrap text-xs tabular-nums" title={final ? 'Qualifying place after this heat' : 'Projected qualifying place if the heat ended now'}>
+    <span className="whitespace-nowrap text-sm tabular-nums" title={final ? 'Qualifying place after this heat' : 'Projected qualifying place if the heat ended now'}>
       Q{projected.position}
       {gained !== null && gained !== 0 && (
         <span className={gained > 0 ? 'text-emerald-500' : 'text-rose-500'}>
@@ -152,16 +152,16 @@ export function OverlayTower({
     <>
       <div
         aria-hidden
-        className={cn('flex items-center gap-1.5 px-2 pt-1 text-[10px] font-semibold tracking-widest', colours.muted)}
+        className={cn('flex items-center gap-1.5 px-2 pt-1 text-xs font-semibold tracking-widest', colours.muted)}
       >
-        <span className="w-6 shrink-0" />
-        <span className="w-6 shrink-0 text-right">#</span>
+        <span className="w-8 shrink-0" />
+        <span className="w-7 shrink-0 text-right">#</span>
         <span className="min-w-0 flex-1">DRIVER</span>
-        <span className={cn('w-8 shrink-0 text-right', lapsClass)} title={showPredicted ? 'Laps on course to finish with' : 'Laps completed'}>
+        <span className={cn('w-9 shrink-0 text-right', lapsClass)} title={showPredicted ? 'Laps on course to finish with' : 'Laps completed'}>
           {showPredicted ? 'PRED' : 'LAP'}
         </span>
-        {showQualifying && <span className="w-10 shrink-0 text-right" title="Qualifying place">QUAL</span>}
-        <span className={cn('w-16 shrink-0 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
+        {showQualifying && <span className="w-12 shrink-0 text-right" title="Qualifying place">QUAL</span>}
+        <span className={cn('w-[4.5rem] shrink-0 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
       </div>
       <div
         role="table"
@@ -200,22 +200,22 @@ export function OverlayTower({
               )}
               <span
                 className={cn(
-                  'inline-flex h-6 w-6 shrink-0 text-sm items-center justify-center rounded font-bold tabular-nums',
+                  'inline-flex h-8 w-8 shrink-0 text-lg items-center justify-center rounded font-bold tabular-nums',
                   colours.position,
                 )}
               >
                 {row.position}
               </span>
-              <span className={cn('w-6 shrink-0 text-right text-sm tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
-              <span className="relative flex min-w-0 flex-1 items-center font-semibold">
+              <span className={cn('w-7 shrink-0 text-right text-lg tabular-nums', colours.muted)}>{row.carNumber ?? ''}</span>
+              <span className="relative flex min-w-0 flex-1 items-center text-lg font-semibold">
                 <ScrollingName name={row.driverName} />
                 {/* The slot is always there, so the name box keeps its width and the scroll does not restart on each flash */}
-                <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
+                <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-base [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
                   <RowStateIcon flash={flash} close={close} />
                 </span>
                 {/* Its own slot, like the flash icon, so the name keeps its width when the thumbs up comes and goes */}
                 {barClock && (
-                  <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-sm [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
+                  <span className="ml-1 inline-block h-[1em] w-[1em] shrink-0 text-base [[data-contrast=high]_&]:w-auto [[data-contrast=high]_&]:min-w-[1em]">
                     {!row.finished && <OnPaceIcon row={row} clock={barClock} />}
                   </span>
                 )}
@@ -226,7 +226,7 @@ export function OverlayTower({
                   <LapProgressBar row={row} clock={barClock} className="absolute inset-x-0 -bottom-1 h-0.5" />
                 )}
               </span>
-              <span className={cn('w-8 shrink-0 text-right text-sm tabular-nums', colours.muted, lapsClass)}>
+              <span className={cn('w-9 shrink-0 text-right text-lg tabular-nums', colours.muted, lapsClass)}>
                 {showPredicted ? (
                   <PredictedLaps row={row} clock={predicted.clock} remainingAt={predicted.remainingAt} />
                 ) : (
@@ -234,11 +234,11 @@ export function OverlayTower({
                 )}
               </span>
               {showQualifying && (
-                <span className="w-10 shrink-0 text-right">
+                <span className="w-12 shrink-0 text-right">
                   {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
                 </span>
               )}
-              <span className={cn('w-16 shrink-0 text-right text-sm font-semibold tabular-nums', gapClass)}>
+              <span className={cn('w-[4.5rem] shrink-0 text-right text-lg font-semibold tabular-nums', gapClass)}>
                 {gap === 'int' ? gapText(row) : leaderGapText(row)}
               </span>
             </div>
