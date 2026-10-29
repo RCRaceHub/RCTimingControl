@@ -128,3 +128,55 @@ describe('OverlayDesignerPage', () => {
     await waitFor(() => expect(overlayThemesAdminApi.addSponsor).toHaveBeenCalledWith(1, 'Bolt'));
   });
 });
+
+describe('OverlayDesignerPage layout', () => {
+  beforeEach(() => {
+    vi.mocked(overlayThemesAdminApi.list).mockResolvedValue(themes);
+    vi.mocked(overlayThemesAdminApi.create).mockReset();
+    vi.mocked(overlayThemesAdminApi.listSponsors).mockReset().mockResolvedValue([]);
+  });
+
+  const address = () => (screen.getByLabelText('Address for OBS') as HTMLInputElement).value;
+
+  it('moves a part by dropping its chip on a zone, and puts it in the address', () => {
+    renderPage();
+    const data: Record<string, string> = {};
+    const dataTransfer = { setData: (k: string, v: string) => { data[k] = v; }, getData: (k: string) => data[k] ?? '', effectAllowed: '' };
+
+    fireEvent.dragStart(screen.getByTestId('chip-chart'), { dataTransfer });
+    fireEvent.drop(screen.getByTestId('zone-top-right'), { dataTransfer });
+
+    expect(address()).toMatch(/\?place=chart:top-right$/);
+    expect(screen.getByTestId('zone-top-right')).toContainElement(screen.getByTestId('chip-chart'));
+    expect(screen.getByTitle('Overlay preview').getAttribute('src')).toContain('place=chart:top-right');
+  });
+
+  it('moves a part from its drop-down, resets, and keeps the layout in a saved theme', async () => {
+    vi.mocked(overlayThemesAdminApi.create).mockResolvedValue({ id: 3, name: 'Night', design: {} });
+    renderPage();
+    await screen.findByRole('option', { name: 'Club' });
+
+    fireEvent.change(screen.getByLabelText('Ticker zone'), { target: { value: 'top-strip' } });
+    expect(address()).toMatch(/place=ticker:top-strip$/);
+
+    fireEvent.change(screen.getByLabelText('Theme name'), { target: { value: 'Night' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save as new' }));
+    await waitFor(() => expect(overlayThemesAdminApi.create).toHaveBeenCalled());
+    expect(vi.mocked(overlayThemesAdminApi.create).mock.calls[0][0].design).toHaveProperty('placement.ticker', 'top-strip');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset layout' }));
+    expect(address()).not.toContain('place=');
+  });
+
+  it('loads the layout of a saved theme and dims a part that is switched off', async () => {
+    vi.mocked(overlayThemesAdminApi.list).mockResolvedValue([
+      { id: 4, name: 'Top', design: { showChart: false, placement: { chart: 'top-left' } } },
+    ]);
+    renderPage();
+    await screen.findByRole('option', { name: 'Top' });
+    fireEvent.change(screen.getByLabelText('Saved theme'), { target: { value: '4' } });
+
+    expect(screen.getByTestId('zone-top-left')).toContainElement(screen.getByTestId('chip-chart'));
+    expect(screen.getByTestId('chip-chart')).toHaveTextContent('(off)');
+  });
+});
