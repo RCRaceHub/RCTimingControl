@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The mapper Spring Boot builds, which REST, STOMP, the live feed and the results export use, keeps Jackson 2 behaviour. */
+/** The mapper Spring Boot builds (REST, STOMP, live feed, results export) keeps Jackson 2 behaviour. */
 class JacksonConfigIT extends AbstractIntegrationTest {
 
     @Autowired
