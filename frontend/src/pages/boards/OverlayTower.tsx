@@ -13,12 +13,12 @@ import { useNoSignal } from '@/hooks/race-control/useNoSignal';
 import { RowStateIcon } from '@/components/StateIcon';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
 import type { BattleLink } from '@/lib/battles';
+import { DriverMark } from '@/components/DriverMark';
+import type { RaceMediaDto } from '@/lib/boardsApi';
 import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
 import { gapText, leaderGapText } from './boardFormat';
-import { DriverMark } from '@/components/DriverMark';
-import type { RaceMediaDto } from '@/lib/boardsApi';
 
 /** The height of one row in rem; the rows are placed by it, so it is the one number the layout hangs on. */
 export const TOWER_ROW_REM = 2.75;

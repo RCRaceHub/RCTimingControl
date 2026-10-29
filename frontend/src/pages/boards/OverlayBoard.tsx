@@ -455,7 +455,13 @@ export default function OverlayBoard() {
                   </td>
                   <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
                   <td className="max-w-0 truncate py-1 pr-2 font-medium">
-                    <DriverMark media={media.get(row.entryId)} classColour={row.classColour} headshot={showHeadshots} colours={showCarColours} />
+                    <DriverMark
+                      media={media.get(row.entryId)}
+                      classColour={row.classColour}
+                      headshot={showHeadshots}
+                      colours={showCarColours}
+                      imageClassName="h-5 w-5"
+                    />
                     {row.driverName}
                     <RowStateIcon flash={flash} close={close} className="ml-1" />
                     {showBars && race.status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
@@ -499,7 +505,7 @@ export default function OverlayBoard() {
         <BattleStrip
           groups={battleGroups}
           mark={showHeadshots || showCarColours ? (car) => (
-            <DriverMark media={media.get(car.entryId)} headshot={showHeadshots} colours={showCarColours} />
+            <DriverMark media={media.get(car.entryId)} headshot={showHeadshots} colours={showCarColours} imageClassName="h-6 w-6" />
           ) : undefined}
           className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
       )}

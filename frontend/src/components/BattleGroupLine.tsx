@@ -68,7 +68,7 @@ export function BattleGroupLine({
       </span>
       {group.cars.map((car, i) => (
         <Fragment key={car.entryId}>
-          <span className="inline-flex items-center font-medium">
+          <span className={cn('font-medium', mark && 'inline-flex items-center')}>
             {mark?.(car)}
             <span className="mr-1 text-[0.75em] opacity-70">P{car.position}</span>
             {car.driverName}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { carColoursBackground, carColoursFor } from '@/lib/carColours';
 import { cn } from '@/lib/utils';
@@ -16,18 +17,22 @@ export function DriverMark({
   headshot,
   colours,
   className,
+  imageClassName = 'h-7 w-7',
 }: {
   media: RaceMediaDto | undefined;
   classColour?: string | null;
   headshot: boolean;
   colours: boolean;
   className?: string;
+  /** Size classes of the headshot; smaller where the row is short, as in the table and the battles panel. */
+  imageClassName?: string;
 }) {
-  const url = headshot ? media?.headshotUrl : null;
+  const [broken, setBroken] = useState(false);
+  const url = headshot && !broken ? media?.headshotUrl : null;
   const swatch = colours ? carColoursFor(media?.carColours, classColour) : [];
   if (!url && swatch.length === 0) return null;
   return (
-    <span className={cn('mr-1.5 inline-flex shrink-0 items-center gap-1', className)} data-testid="driver-mark">
+    <span className={cn('mr-1.5 inline-flex shrink-0 items-center gap-1 align-middle', className)} data-testid="driver-mark">
       {swatch.length > 0 && (
         <span
           aria-hidden="true"
@@ -37,7 +42,13 @@ export function DriverMark({
         />
       )}
       {url && (
-        <img src={url} alt="" className="h-7 w-7 rounded-full object-cover" data-testid="driver-mark-headshot" />
+        <img
+          src={url}
+          alt=""
+          onError={() => setBroken(true)}
+          className={cn('rounded-full object-cover', imageClassName)}
+          data-testid="driver-mark-headshot"
+        />
       )}
     </span>
   );

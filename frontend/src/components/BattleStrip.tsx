@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { BattleGroupLine } from '@/components/BattleGroupLine';
 import type { BattleCar, BattleGroup } from '@/lib/battles';
 
