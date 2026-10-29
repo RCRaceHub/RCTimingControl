@@ -120,11 +120,11 @@ function StatsTicker({
   const [label, value] = stats[tick % stats.length];
   return (
     <div
-      className={cn('flex items-baseline gap-2 border-t px-4 py-1.5 text-sm [contain:inline-size]', rowClass)}
+      className={cn('flex items-baseline gap-2 border-t px-5 py-2 text-lg [contain:inline-size]', rowClass)}
       aria-label="Race stats"
       aria-live="off"
     >
-      <span className={cn('text-xs uppercase tracking-wide', mutedClass)}>{label}</span>
+      <span className={cn('text-sm uppercase tracking-wide', mutedClass)}>{label}</span>
       <span className="min-w-0 flex-1 truncate font-semibold tabular-nums">{value}</span>
     </div>
   );
@@ -348,14 +348,14 @@ export default function OverlayBoard() {
         className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
         aria-label="Live timing overlay"
       >
-        <header className="flex items-center gap-3 px-4 py-2">
-          {showClass && <h1 className="min-w-0 flex-1 truncate text-base font-semibold">{race.label}</h1>}
+        <header className="flex items-center gap-3 px-4 py-2.5">
+          {showClass && <h1 className="min-w-0 flex-1 truncate text-xl font-semibold">{race.label}</h1>}
           <div className={cn('flex items-center gap-2', !showClass && 'flex-1 justify-between')}>
             {race.status === 'STOPPED' && (
-              <span className="rounded bg-red-600 px-2 py-0.5 text-xs font-bold uppercase text-white">Stopped</span>
+              <span className="rounded bg-red-600 px-2 py-0.5 text-sm font-bold uppercase text-white">Stopped</span>
             )}
             {clockText && (
-              <span className="text-xl font-bold tabular-nums" aria-label="Race clock">
+              <span className="text-3xl font-bold tabular-nums" aria-label="Race clock">
                 {clockText}
               </span>
             )}
@@ -460,14 +460,14 @@ export default function OverlayBoard() {
           the position chart; the stats row ignores its own text width so rolling stats don't resize the panel */}
       <section
         className={cn(
-          'fixed left-4 w-max min-w-[26rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
+          'fixed left-4 w-max min-w-[32rem] overflow-hidden rounded-lg font-sans shadow-lg empty:hidden [&>*:first-child]:border-t-0',
           colours.panel,
         )}
         style={{ bottom: chartBottom, maxWidth: showChart && chartSeries.length > 0 ? 'calc(100vw - 34rem)' : 'calc(100vw - 2rem)' }}
         aria-label="Battles and fastest laps"
       >
         {showBattles && lapCounted && race.status === 'RUNNING' && (
-          <BattleStrip groups={battleGroups} className={cn('border-t px-4 py-1.5 text-sm [&>*]:flex-nowrap [&>*]:whitespace-nowrap', colours.row)} />
+          <BattleStrip groups={battleGroups} className={cn('border-l-8 border-l-amber-400 px-5 py-3 text-2xl [&>*]:flex-nowrap [&>*]:whitespace-nowrap [&>*+*]:mt-1.5', colours.row)} />
         )}
         <StatsTicker rows={allRows} raceId={race.raceId} mutedClass={colours.muted} rowClass={colours.row} />
       </section>
