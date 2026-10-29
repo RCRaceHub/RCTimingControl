@@ -121,6 +121,6 @@ public class ChampionshipEventLinksRecord extends UpdatableRecordImpl<Championsh
         setEventId(eventId);
         setRoundNumber(roundNumber);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

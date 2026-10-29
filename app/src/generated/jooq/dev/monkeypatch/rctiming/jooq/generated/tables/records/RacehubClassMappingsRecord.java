@@ -136,6 +136,6 @@ public class RacehubClassMappingsRecord extends UpdatableRecordImpl<RacehubClass
         setEventClassId(eventClassId);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

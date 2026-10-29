@@ -211,6 +211,6 @@ public class ResultsOutboxRecord extends UpdatableRecordImpl<ResultsOutboxRecord
         setLastError(lastError);
         setCreatedAt(createdAt);
         setSentAt(sentAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

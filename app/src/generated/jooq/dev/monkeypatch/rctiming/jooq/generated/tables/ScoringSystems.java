@@ -23,10 +23,10 @@ import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -59,7 +59,7 @@ public class ScoringSystems extends TableImpl<ScoringSystemsRecord> {
     /**
      * The column <code>scoring_systems.id</code>.
      */
-    public final TableField<ScoringSystemsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<ScoringSystemsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>scoring_systems.kind</code>.
@@ -191,7 +191,7 @@ public class ScoringSystems extends TableImpl<ScoringSystemsRecord> {
      */
     @Override
     public ScoringSystems where(Condition condition) {
-        return new ScoringSystems(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new ScoringSystems(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -258,7 +258,7 @@ public class ScoringSystems extends TableImpl<ScoringSystemsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public ScoringSystems whereExists(Select<?> select) {
+    public ScoringSystems whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -266,7 +266,7 @@ public class ScoringSystems extends TableImpl<ScoringSystemsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public ScoringSystems whereNotExists(Select<?> select) {
+    public ScoringSystems whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

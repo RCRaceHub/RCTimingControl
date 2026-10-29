@@ -166,6 +166,6 @@ public class EntryAuditLogRecord extends UpdatableRecordImpl<EntryAuditLogRecord
         setBeforeSnapshot(beforeSnapshot);
         setAfterSnapshot(afterSnapshot);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

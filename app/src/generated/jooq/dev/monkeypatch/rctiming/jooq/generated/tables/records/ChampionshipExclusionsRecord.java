@@ -151,6 +151,6 @@ public class ChampionshipExclusionsRecord extends UpdatableRecordImpl<Championsh
         setReason(reason);
         setCreatedBy(createdBy);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

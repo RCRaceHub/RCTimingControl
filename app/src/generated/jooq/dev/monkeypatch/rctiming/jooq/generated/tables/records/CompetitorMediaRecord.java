@@ -6,7 +6,6 @@ package dev.monkeypatch.rctiming.jooq.generated.tables.records;
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
@@ -105,6 +104,6 @@ public class CompetitorMediaRecord extends UpdatableRecordImpl<CompetitorMediaRe
         setCompetitorId(competitorId);
         setHeadshotUrl(headshotUrl);
         setSponsors(sponsors);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

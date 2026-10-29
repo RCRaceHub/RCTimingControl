@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.CompetitorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog.EntryAuditLogPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos.EntryPhotosPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events.EventsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports.IncidentReportsPath;
@@ -41,13 +42,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -76,7 +78,7 @@ public class Entries extends TableImpl<EntriesRecord> {
     /**
      * The column <code>entries.id</code>.
      */
-    public final TableField<EntriesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<EntriesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>entries.event_id</code>.
@@ -309,6 +311,18 @@ public class Entries extends TableImpl<EntriesRecord> {
         return _entryAuditLog;
     }
 
+    private transient EntryPhotosPath _entryPhotos;
+
+    /**
+     * Get the implicit to-many join path to the <code>entry_photos</code> table
+     */
+    public EntryPhotosPath entryPhotos() {
+        if (_entryPhotos == null)
+            _entryPhotos = new EntryPhotosPath(this, null, Keys.ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_FKEY.getInverseKey());
+
+        return _entryPhotos;
+    }
+
     private transient IncidentReportsPath _incidentReports;
 
     /**
@@ -468,7 +482,7 @@ public class Entries extends TableImpl<EntriesRecord> {
      */
     @Override
     public Entries where(Condition condition) {
-        return new Entries(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new Entries(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -535,7 +549,7 @@ public class Entries extends TableImpl<EntriesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Entries whereExists(Select<?> select) {
+    public Entries whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -543,7 +557,7 @@ public class Entries extends TableImpl<EntriesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Entries whereNotExists(Select<?> select) {
+    public Entries whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

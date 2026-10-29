@@ -16,7 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
@@ -264,7 +264,7 @@ class CsvImportIT extends AbstractIntegrationTest {
     void anUnmappedClassBlocks_untilItIsMapped() {
         ResponseEntity<JsonNode> resp = importFile("unmapped-class.csv", false);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
         JsonNode unmapped = resp.getBody().get("unmappedClasses").get(0);
         String key = "CSV:nitro truggy " + run;
@@ -338,7 +338,7 @@ class CsvImportIT extends AbstractIntegrationTest {
 
         ResponseEntity<JsonNode> resp = importFile("initial.csv", false);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(texts(resp.getBody().get("errors"))).anyMatch(e -> e.contains("would have 2 entries in CSV Buggy " + run));
         assertThat(entries()).hasSize(1);
     }
@@ -359,7 +359,7 @@ class CsvImportIT extends AbstractIntegrationTest {
     void namesWithQuotesOrCommasAreRejectedClearly() {
         ResponseEntity<JsonNode> resp = importFile("bad-names.csv", false);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         List<String> errors = texts(resp.getBody().get("errors"));
         assertThat(errors).anyMatch(e -> e.startsWith("Line 2") && e.contains("double quote"));
         assertThat(errors).anyMatch(e -> e.startsWith("Line 3") && e.contains("has 5 values but the header has 4")
@@ -373,7 +373,7 @@ class CsvImportIT extends AbstractIntegrationTest {
 
         ResponseEntity<JsonNode> resp = importFile("initial.csv", false, Map.of("update", List.of("not-a-row")));
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(texts(resp.getBody().get("errors"))).anyMatch(e -> e.contains("Preview the file again"));
     }
 

@@ -332,6 +332,6 @@ public class EventsRecord extends UpdatableRecordImpl<EventsRecord> {
         setFinalsLineupConfirmedAt(finalsLineupConfirmedAt);
         setPracticeRanking(practiceRanking);
         setFinalLegsScope(finalLegsScope);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

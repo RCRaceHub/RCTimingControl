@@ -136,6 +136,6 @@ public class MarshalAbsencesRecord extends UpdatableRecordImpl<MarshalAbsencesRe
         setEventId(eventId);
         setRecordedAt(recordedAt);
         setRecordedBy(recordedBy);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

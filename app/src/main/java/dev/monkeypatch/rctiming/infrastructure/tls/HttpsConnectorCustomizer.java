@@ -7,9 +7,9 @@ import org.apache.tomcat.util.net.SSLHostConfigCertificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -62,7 +62,7 @@ public class HttpsConnectorCustomizer implements WebServerFactoryCustomizer<Tomc
         if (server != null && server.getAddress() != null) {
             protocol.setAddress(server.getAddress());
         }
-        factory.addAdditionalTomcatConnectors(connector);
+        factory.addAdditionalConnectors(connector);
         tls.markActive();
 
         tls.onChange(() -> {

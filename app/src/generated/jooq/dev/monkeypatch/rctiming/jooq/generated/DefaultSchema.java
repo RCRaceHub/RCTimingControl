@@ -4,12 +4,9 @@
 package dev.monkeypatch.rctiming.jooq.generated;
 
 
-import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
+import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
-import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -17,12 +14,15 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipPointsScale;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Championships;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ClubProfiles;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog;
+import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events;
 import dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffiliations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports;
@@ -30,9 +30,9 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OfficialAuditLog;
-import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemes;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeLaps;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions;
@@ -59,6 +59,7 @@ import java.util.List;
 
 import org.jooq.Catalog;
 import org.jooq.Table;
+import org.jooq.impl.DSL;
 import org.jooq.impl.SchemaImpl;
 
 
@@ -76,34 +77,19 @@ public class DefaultSchema extends SchemaImpl {
     public static final DefaultSchema DEFAULT_SCHEMA = new DefaultSchema();
 
     /**
-     * The table <code>audit_log</code>.
-     */
-    public final AuditLog AUDIT_LOG = AuditLog.AUDIT_LOG;
-
-    /**
      * The table <code>audio_templates</code>.
      */
     public final AudioTemplates AUDIO_TEMPLATES = AudioTemplates.AUDIO_TEMPLATES;
 
     /**
+     * The table <code>audit_log</code>.
+     */
+    public final AuditLog AUDIT_LOG = AuditLog.AUDIT_LOG;
+
+    /**
      * The table <code>board_views</code>.
      */
     public final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
-
-    /**
-     * The table <code>event_sponsors</code>.
-     */
-    public final EventSponsors EVENT_SPONSORS = EventSponsors.EVENT_SPONSORS;
-
-    /**
-     * The table <code>entry_photos</code>.
-     */
-    public final EntryPhotos ENTRY_PHOTOS = EntryPhotos.ENTRY_PHOTOS;
-
-    /**
-     * The table <code>competitor_media</code>.
-     */
-    public final CompetitorMedia COMPETITOR_MEDIA = CompetitorMedia.COMPETITOR_MEDIA;
 
     /**
      * The table <code>championship_classes</code>.
@@ -141,6 +127,11 @@ public class DefaultSchema extends SchemaImpl {
     public final CompetitorAuditLog COMPETITOR_AUDIT_LOG = CompetitorAuditLog.COMPETITOR_AUDIT_LOG;
 
     /**
+     * The table <code>competitor_media</code>.
+     */
+    public final CompetitorMedia COMPETITOR_MEDIA = CompetitorMedia.COMPETITOR_MEDIA;
+
+    /**
      * The table <code>competitors</code>.
      */
     public final Competitors COMPETITORS = Competitors.COMPETITORS;
@@ -166,9 +157,19 @@ public class DefaultSchema extends SchemaImpl {
     public final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
 
     /**
+     * The table <code>entry_photos</code>.
+     */
+    public final EntryPhotos ENTRY_PHOTOS = EntryPhotos.ENTRY_PHOTOS;
+
+    /**
      * The table <code>event_classes</code>.
      */
     public final EventClasses EVENT_CLASSES = EventClasses.EVENT_CLASSES;
+
+    /**
+     * The table <code>event_sponsors</code>.
+     */
+    public final EventSponsors EVENT_SPONSORS = EventSponsors.EVENT_SPONSORS;
 
     /**
      * The table <code>events</code>.
@@ -206,11 +207,6 @@ public class DefaultSchema extends SchemaImpl {
     public final OfficialAuditLog OFFICIAL_AUDIT_LOG = OfficialAuditLog.OFFICIAL_AUDIT_LOG;
 
     /**
-     * The table <code>penalties</code>.
-     */
-    public final Penalties PENALTIES = Penalties.PENALTIES;
-
-    /**
      * The table <code>overlay_theme_sponsors</code>.
      */
     public final OverlayThemeSponsors OVERLAY_THEME_SPONSORS = OverlayThemeSponsors.OVERLAY_THEME_SPONSORS;
@@ -219,6 +215,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>overlay_themes</code>.
      */
     public final OverlayThemes OVERLAY_THEMES = OverlayThemes.OVERLAY_THEMES;
+
+    /**
+     * The table <code>penalties</code>.
+     */
+    public final Penalties PENALTIES = Penalties.PENALTIES;
 
     /**
      * The table <code>practice_drivers</code>.
@@ -324,7 +325,7 @@ public class DefaultSchema extends SchemaImpl {
      * No further instances allowed
      */
     private DefaultSchema() {
-        super("", null);
+        super(DSL.name(""), null, DSL.comment(""));
     }
 
 
@@ -336,12 +337,9 @@ public class DefaultSchema extends SchemaImpl {
     @Override
     public final List<Table<?>> getTables() {
         return Arrays.asList(
-            AuditLog.AUDIT_LOG,
             AudioTemplates.AUDIO_TEMPLATES,
+            AuditLog.AUDIT_LOG,
             BoardViews.BOARD_VIEWS,
-            EventSponsors.EVENT_SPONSORS,
-            EntryPhotos.ENTRY_PHOTOS,
-            CompetitorMedia.COMPETITOR_MEDIA,
             ChampionshipClasses.CHAMPIONSHIP_CLASSES,
             ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS,
             ChampionshipExclusions.CHAMPIONSHIP_EXCLUSIONS,
@@ -349,12 +347,15 @@ public class DefaultSchema extends SchemaImpl {
             Championships.CHAMPIONSHIPS,
             ClubProfiles.CLUB_PROFILES,
             CompetitorAuditLog.COMPETITOR_AUDIT_LOG,
+            CompetitorMedia.COMPETITOR_MEDIA,
             Competitors.COMPETITORS,
             DecoderLoops.DECODER_LOOPS,
             Entries.ENTRIES,
             EntryAuditLog.ENTRY_AUDIT_LOG,
             EntryFeeds.ENTRY_FEEDS,
+            EntryPhotos.ENTRY_PHOTOS,
             EventClasses.EVENT_CLASSES,
+            EventSponsors.EVENT_SPONSORS,
             Events.EVENTS,
             GoverningBodyAffiliations.GOVERNING_BODY_AFFILIATIONS,
             IncidentReports.INCIDENT_REPORTS,
@@ -362,9 +363,9 @@ public class DefaultSchema extends SchemaImpl {
             MarshalAdjustments.MARSHAL_ADJUSTMENTS,
             MarshalPenalties.MARSHAL_PENALTIES,
             OfficialAuditLog.OFFICIAL_AUDIT_LOG,
-            Penalties.PENALTIES,
             OverlayThemeSponsors.OVERLAY_THEME_SPONSORS,
             OverlayThemes.OVERLAY_THEMES,
+            Penalties.PENALTIES,
             PracticeDrivers.PRACTICE_DRIVERS,
             PracticeLaps.PRACTICE_LAPS,
             PracticeSessions.PRACTICE_SESSIONS,

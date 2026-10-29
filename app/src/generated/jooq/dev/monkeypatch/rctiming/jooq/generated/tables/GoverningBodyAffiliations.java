@@ -23,10 +23,10 @@ import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -59,7 +59,7 @@ public class GoverningBodyAffiliations extends TableImpl<GoverningBodyAffiliatio
     /**
      * The column <code>governing_body_affiliations.id</code>.
      */
-    public final TableField<GoverningBodyAffiliationsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<GoverningBodyAffiliationsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>governing_body_affiliations.code</code>.
@@ -183,7 +183,7 @@ public class GoverningBodyAffiliations extends TableImpl<GoverningBodyAffiliatio
      */
     @Override
     public GoverningBodyAffiliations where(Condition condition) {
-        return new GoverningBodyAffiliations(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new GoverningBodyAffiliations(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -250,7 +250,7 @@ public class GoverningBodyAffiliations extends TableImpl<GoverningBodyAffiliatio
      * Create an inline derived table from this table
      */
     @Override
-    public GoverningBodyAffiliations whereExists(Select<?> select) {
+    public GoverningBodyAffiliations whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -258,7 +258,7 @@ public class GoverningBodyAffiliations extends TableImpl<GoverningBodyAffiliatio
      * Create an inline derived table from this table
      */
     @Override
-    public GoverningBodyAffiliations whereNotExists(Select<?> select) {
+    public GoverningBodyAffiliations whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

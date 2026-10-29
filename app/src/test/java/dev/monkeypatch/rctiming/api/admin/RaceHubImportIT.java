@@ -18,7 +18,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -308,7 +308,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(unmapped.get(0).get("entryCount").asInt()).isEqualTo(1);
 
         ResponseEntity<JsonNode> blocked = importFixture("entries-v1-unmapped-class.json", false);
-        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(blocked.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(blocked.getBody().get("applied").asBoolean()).isFalse();
         assertThat(findEntry("u1")).isNull();
     }
@@ -437,7 +437,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
                 HttpMethod.POST, new HttpEntity<>(json, adminHeaders()), JsonNode.class);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
         assertThat(resp.getBody().get("errors").get(0).asText())
                 .isEqualTo("Ada Lovelace would have 2 entries in RH Buggy " + run);

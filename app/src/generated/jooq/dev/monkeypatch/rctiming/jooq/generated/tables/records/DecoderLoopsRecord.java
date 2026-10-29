@@ -151,6 +151,6 @@ public class DecoderLoopsRecord extends UpdatableRecordImpl<DecoderLoopsRecord> 
         setLoopType(loopType);
         setIsScoringLoop(isScoringLoop);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

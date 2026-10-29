@@ -151,6 +151,6 @@ public class ResultSnapshotsRecord extends UpdatableRecordImpl<ResultSnapshotsRe
         setLapHistoryJson(lapHistoryJson);
         setCreatedAt(createdAt);
         setTimedPositionsJson(timedPositionsJson);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

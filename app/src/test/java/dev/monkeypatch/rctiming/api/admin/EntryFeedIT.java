@@ -15,7 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -219,7 +219,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
         assertThat(feed.get("waiting").asBoolean()).isTrue();
         assertThat(feed.get("lastMessage").asText()).contains("1 class needs mapping");
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
-        assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
 
         // The official maps the class and confirms
         restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",

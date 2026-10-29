@@ -86,8 +86,10 @@ public class LiveTimingHub {
      * Sent once per number per race, from the timing thread.
      */
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
+        // (Object) picks convertAndSend(destination, payload): Spring Framework 7 also has
+        // convertAndSend(payload, headers), which a Map argument would match too.
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
-                Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+                (Object) Map.of("raceId", raceId, "transponderNumber", transponderNumber));
     }
 
     /**
@@ -97,7 +99,7 @@ public class LiveTimingHub {
      */
     public void broadcastWarmUp(long raceId, List<Long> seenEntryIds) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/warmup",
-                Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
+                (Object) Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
     }
 
     /**

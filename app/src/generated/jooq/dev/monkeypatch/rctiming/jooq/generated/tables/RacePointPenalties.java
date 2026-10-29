@@ -30,13 +30,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -65,7 +66,7 @@ public class RacePointPenalties extends TableImpl<RacePointPenaltiesRecord> {
     /**
      * The column <code>race_point_penalties.id</code>.
      */
-    public final TableField<RacePointPenaltiesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<RacePointPenaltiesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>race_point_penalties.race_id</code>.
@@ -252,7 +253,7 @@ public class RacePointPenalties extends TableImpl<RacePointPenaltiesRecord> {
      */
     @Override
     public RacePointPenalties where(Condition condition) {
-        return new RacePointPenalties(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new RacePointPenalties(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -319,7 +320,7 @@ public class RacePointPenalties extends TableImpl<RacePointPenaltiesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RacePointPenalties whereExists(Select<?> select) {
+    public RacePointPenalties whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -327,7 +328,7 @@ public class RacePointPenalties extends TableImpl<RacePointPenaltiesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RacePointPenalties whereNotExists(Select<?> select) {
+    public RacePointPenalties whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

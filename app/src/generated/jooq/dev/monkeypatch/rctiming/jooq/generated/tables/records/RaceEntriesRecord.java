@@ -134,6 +134,6 @@ public class RaceEntriesRecord extends UpdatableRecordImpl<RaceEntriesRecord> {
         setGridPosition(gridPosition);
         setBumped(bumped);
         setCarNumber(carNumber);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

@@ -131,8 +131,8 @@ class AnonymousLiveTimingIT extends AbstractIntegrationTest {
         }
         assertThat(frame).isNotNull();
 
-        messagingTemplate.convertAndSend("/topic/race/" + race.getId() + "/marshal", Map.of("lapDelta", 1));
-        messagingTemplate.convertAndSend("/topic/system/decoder-status", Map.of("decoderState", "CONNECTED"));
+        messagingTemplate.convertAndSend("/topic/race/" + race.getId() + "/marshal", (Object) Map.of("lapDelta", 1));
+        messagingTemplate.convertAndSend("/topic/system/decoder-status", (Object) Map.of("decoderState", "CONNECTED"));
         assertThat(marshal.poll(1, TimeUnit.SECONDS)).isNull();
         assertThat(decoder.poll(200, TimeUnit.MILLISECONDS)).isNull();
     }

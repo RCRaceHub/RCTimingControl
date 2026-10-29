@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -18,6 +19,7 @@ import java.nio.file.Path;
  * The property source is identical for all subclasses, so Spring Boot's test context cache reuses
  * one ApplicationContext across them, as it did with the shared PostgreSQL container before #26.
  */
+@AutoConfigureTestRestTemplate
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public abstract class AbstractIntegrationTest {
 

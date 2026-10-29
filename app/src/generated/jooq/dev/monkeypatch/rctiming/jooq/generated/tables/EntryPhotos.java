@@ -6,6 +6,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryPhotosRecord;
 
 import java.util.Arrays;
@@ -14,19 +15,24 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -55,7 +61,7 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
     /**
      * The column <code>entry_photos.id</code>.
      */
-    public final TableField<EntryPhotosRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<EntryPhotosRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>entry_photos.entry_id</code>.
@@ -96,6 +102,39 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
         this(DSL.name("entry_photos"), null);
     }
 
+    public <O extends Record> EntryPhotos(Table<O> path, ForeignKey<O, EntryPhotosRecord> childPath, InverseForeignKey<O, EntryPhotosRecord> parentPath) {
+        super(path, childPath, parentPath, ENTRY_PHOTOS);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class EntryPhotosPath extends EntryPhotos implements Path<EntryPhotosRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> EntryPhotosPath(Table<O> path, ForeignKey<O, EntryPhotosRecord> childPath, InverseForeignKey<O, EntryPhotosRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private EntryPhotosPath(Name alias, Table<EntryPhotosRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public EntryPhotosPath as(String alias) {
+            return new EntryPhotosPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public EntryPhotosPath as(Name alias) {
+            return new EntryPhotosPath(alias, this);
+        }
+
+        @Override
+        public EntryPhotosPath as(Table<?> alias) {
+            return new EntryPhotosPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
@@ -112,8 +151,20 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
     }
 
     @Override
-    public List<UniqueKey<EntryPhotosRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_KEY);
+    public List<ForeignKey<EntryPhotosRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_FKEY);
+    }
+
+    private transient EntriesPath _entries;
+
+    /**
+     * Get the implicit join path to the <code>entries</code> table.
+     */
+    public EntriesPath entries() {
+        if (_entries == null)
+            _entries = new EntriesPath(this, Keys.ENTRY_PHOTOS__ENTRY_PHOTOS_ENTRY_ID_FKEY, null);
+
+        return _entries;
     }
 
     @Override
@@ -160,7 +211,7 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
      */
     @Override
     public EntryPhotos where(Condition condition) {
-        return new EntryPhotos(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new EntryPhotos(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -227,7 +278,7 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EntryPhotos whereExists(Select<?> select) {
+    public EntryPhotos whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -235,7 +286,7 @@ public class EntryPhotos extends TableImpl<EntryPhotosRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EntryPhotos whereNotExists(Select<?> select) {
+    public EntryPhotos whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

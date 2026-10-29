@@ -151,6 +151,6 @@ public class RacePointPenaltiesRecord extends UpdatableRecordImpl<RacePointPenal
         setReason(reason);
         setAppliedBy(appliedBy);
         setAppliedAt(appliedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

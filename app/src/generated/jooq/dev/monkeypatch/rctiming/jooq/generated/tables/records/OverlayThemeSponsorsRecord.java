@@ -6,7 +6,6 @@ package dev.monkeypatch.rctiming.jooq.generated.tables.records;
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors;
 
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
@@ -120,6 +119,6 @@ public class OverlayThemeSponsorsRecord extends UpdatableRecordImpl<OverlayTheme
         setName(name);
         setLogoUrl(logoUrl);
         setSortOrder(sortOrder);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

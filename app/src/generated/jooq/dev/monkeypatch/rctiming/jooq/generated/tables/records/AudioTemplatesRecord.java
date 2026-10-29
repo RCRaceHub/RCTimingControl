@@ -121,6 +121,6 @@ public class AudioTemplatesRecord extends UpdatableRecordImpl<AudioTemplatesReco
         setSettings(settings);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

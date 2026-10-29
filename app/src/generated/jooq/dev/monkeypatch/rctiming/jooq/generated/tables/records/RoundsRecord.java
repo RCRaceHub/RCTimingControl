@@ -166,6 +166,6 @@ public class RoundsRecord extends UpdatableRecordImpl<RoundsRecord> {
         setStatus(status);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

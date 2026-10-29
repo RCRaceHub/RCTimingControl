@@ -6,7 +6,7 @@ import dev.monkeypatch.rctiming.domain.championship.ChampionshipRepository;
 import dev.monkeypatch.rctiming.domain.championship.ScoringSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 

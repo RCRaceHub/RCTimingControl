@@ -151,6 +151,6 @@ public class ScoringSystemsRecord extends UpdatableRecordImpl<ScoringSystemsReco
         setConfig(config);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

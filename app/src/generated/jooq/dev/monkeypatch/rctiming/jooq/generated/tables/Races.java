@@ -39,13 +39,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -74,7 +75,7 @@ public class Races extends TableImpl<RacesRecord> {
     /**
      * The column <code>races.id</code>.
      */
-    public final TableField<RacesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<RacesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>races.round_id</code>.
@@ -416,7 +417,7 @@ public class Races extends TableImpl<RacesRecord> {
      */
     @Override
     public Races where(Condition condition) {
-        return new Races(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new Races(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -483,7 +484,7 @@ public class Races extends TableImpl<RacesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Races whereExists(Select<?> select) {
+    public Races whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -491,7 +492,7 @@ public class Races extends TableImpl<RacesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Races whereNotExists(Select<?> select) {
+    public Races whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

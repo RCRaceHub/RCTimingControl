@@ -28,10 +28,10 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -64,7 +64,7 @@ public class RaceFormatTemplates extends TableImpl<RaceFormatTemplatesRecord> {
     /**
      * The column <code>race_format_templates.id</code>.
      */
-    public final TableField<RaceFormatTemplatesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<RaceFormatTemplatesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>race_format_templates.name</code>.
@@ -227,7 +227,7 @@ public class RaceFormatTemplates extends TableImpl<RaceFormatTemplatesRecord> {
      */
     @Override
     public RaceFormatTemplates where(Condition condition) {
-        return new RaceFormatTemplates(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new RaceFormatTemplates(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -294,7 +294,7 @@ public class RaceFormatTemplates extends TableImpl<RaceFormatTemplatesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RaceFormatTemplates whereExists(Select<?> select) {
+    public RaceFormatTemplates whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -302,7 +302,7 @@ public class RaceFormatTemplates extends TableImpl<RaceFormatTemplatesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public RaceFormatTemplates whereNotExists(Select<?> select) {
+    public RaceFormatTemplates whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

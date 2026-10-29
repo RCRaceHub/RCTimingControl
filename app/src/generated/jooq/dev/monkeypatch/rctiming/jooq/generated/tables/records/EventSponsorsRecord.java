@@ -6,7 +6,6 @@ package dev.monkeypatch.rctiming.jooq.generated.tables.records;
 
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 
-
 import org.jooq.Record1;
 import org.jooq.impl.UpdatableRecordImpl;
 
@@ -120,6 +119,6 @@ public class EventSponsorsRecord extends UpdatableRecordImpl<EventSponsorsRecord
         setName(name);
         setLogoUrl(logoUrl);
         setSortOrder(sortOrder);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }
