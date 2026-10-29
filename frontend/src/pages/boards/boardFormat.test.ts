@@ -13,6 +13,7 @@ describe('parseLiveRaceOptions', () => {
       showBattles: true,
       showLegend: true,
       highContrast: false,
+      rowIcons: ['pace', 'flying', 'lap', 'close', 'lapped', 'penalty', 'signal'],
       closeMs: 1000,
     });
     expect(parse('battles=HIDE').showBattles).toBe(false);

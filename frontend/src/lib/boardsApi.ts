@@ -255,7 +255,7 @@ export async function getBoardLiveTiming(raceId: number): Promise<LiveTimingRowD
 }
 
 /** The club's thresholds a board draws with, in milliseconds (#505). */
-export type BoardSettingsDto = { closeGapMs: number; lateMarginMs: number };
+export type BoardSettingsDto = { closeGapMs: number; lateMarginMs: number; hiddenRowIcons: string[] };
 
 export async function getBoardSettings(): Promise<BoardSettingsDto> {
   const { data } = await api.get<BoardSettingsDto>('/api/v1/boards/settings');

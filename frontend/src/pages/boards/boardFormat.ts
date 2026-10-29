@@ -1,3 +1,5 @@
+import { OVERLAY_DEFAULT_ROW_ICONS, ROW_ICONS, parseRowIconsParam, rowIconsParam } from '@/lib/rowIcons';
+import type { RowIcon } from '@/lib/rowIcons';
 import { fmtMs, gapLabel } from '@/lib/format';
 import type { HighlightMark, RaceHighlightsDto, TickerDto } from '@/lib/boardsApi';
 import type { GapMode } from '@/hooks/useGapView';
@@ -41,8 +43,13 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
  * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
+ * {@code icons=pace,flying,...} (or {@code icons=hide}) names the row icons to show (#696); without it the screen shows {@code defaultRowIcons}, which for the boards is every icon the club has not hidden.
  */
-export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
+export function parseLiveRaceOptions(
+  params: URLSearchParams,
+  defaultCloseMs: number = DEFAULT_CLOSE_MS,
+  defaultRowIcons: readonly RowIcon[] = ROW_ICONS,
+) {
   const raw = params.get('close');
   const seconds = raw === null || raw.trim() === '' ? NaN : Number(raw);
   return {
@@ -52,6 +59,7 @@ export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: nu
     showBattles: params.get('battles')?.toLowerCase() !== 'hide',
     showLegend: parseLegendParam(params.get('legend'), true),
     highContrast: params.get('contrast')?.toLowerCase() === 'high',
+    rowIcons: parseRowIconsParam(params.get('icons'), defaultRowIcons),
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : defaultCloseMs,
@@ -146,7 +154,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
     placement: parsePlacementParam(params.get('place')),
-    ...parseLiveRaceOptions(params, defaultCloseMs),
+    ...parseLiveRaceOptions(params, defaultCloseMs, OVERLAY_DEFAULT_ROW_ICONS),
     // After the spread on purpose: the overlay's key is off unless asked, the boards' is on
     showLegend: parseLegendParam(params.get('legend'), false),
   };
@@ -302,6 +310,8 @@ export type OverlayDesign = {
   showLegend: boolean;
   /** Thick outlined icons with a short text tag beside each, for poor viewing conditions and compressed video (#591). */
   highContrast: boolean;
+  /** The icons shown beside a driver's name (#696); the overlay starts without the pace thumbs. */
+  rowIcons: RowIcon[];
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;
   /** The zone of the screen each part of the overlay sits in (#667). */
@@ -335,6 +345,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   lowerThird: 'both',
   showLegend: false,
   highContrast: false,
+  rowIcons: [...OVERLAY_DEFAULT_ROW_ICONS],
   closeSeconds: null,
   placement: defaultPlacement(),
 };
@@ -352,6 +363,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
     'showHeadshots', 'showCarColours', 'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
+  if (Array.isArray(r.rowIcons)) design.rowIcons = ROW_ICONS.filter((icon) => (r.rowIcons as unknown[]).includes(icon));
   if (r.theme === 'light' || r.theme === 'dark') design.theme = r.theme;
   if (r.layout === 'tower' || r.layout === 'table') design.layout = r.layout;
   if (typeof r.battleStyle === 'string') design.battleStyle = parseBattleStyle(r.battleStyle);
@@ -419,6 +431,8 @@ export function overlayQuery(design: OverlayDesign): string {
   if (design.lowerThird !== 'both') q.set('lower', design.lowerThird);
   if (design.showLegend) q.set('legend', 'show');
   if (design.highContrast) q.set('contrast', 'high');
+  const icons = rowIconsParam(design.rowIcons, OVERLAY_DEFAULT_ROW_ICONS);
+  if (icons !== null) q.set('icons', icons);
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
   const place = placementParam(design.placement);
   if (place) q.set('place', place);

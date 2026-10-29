@@ -1,6 +1,7 @@
 import { ChevronsRight, CircleHelp, Flame, Gavel, Layers, Star, ThumbsDown, ThumbsUp, Timer, TrendingDown, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
+import { useRowIcon } from '@/components/RowIconsContext';
 import { cn } from '@/lib/utils';
 
 /**
@@ -86,9 +87,11 @@ export function StateIcon({ kind, className, decorative = false }: { kind: State
 
 /**
  * The icon for a row: its lap flash while one is showing, otherwise the close icon when it is close, otherwise
- * nothing. A lap flash wins over close for the same reason it wins over the close tint.
+ * nothing; either can be switched off (#696). A lap flash wins over close for the same reason it wins over the close tint.
  */
 export function RowStateIcon({ flash, close, className }: { flash?: FlashColor; close: boolean; className?: string }) {
-  const kind: StateKind | null = flash ?? (close ? 'close' : null);
+  const lapShown = useRowIcon('lap');
+  const closeShown = useRowIcon('close');
+  const kind: StateKind | null = flash ? (lapShown ? flash : null) : close && closeShown ? 'close' : null;
   return kind ? <StateIcon kind={kind} className={className} /> : null;
 }

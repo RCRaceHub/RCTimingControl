@@ -7,10 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLiveTimingSettings, useSetLiveTimingSettings } from '@/hooks/admin/useAdminClub';
 import type { LiveTimingSettingsDto } from '@/lib/adminApi';
+import { ROW_ICONS, ROW_ICON_LABELS, rowIconsWithout } from '@/lib/rowIcons';
+
+/** The settings that are a number; the row icons are chosen separately. */
+type NumberKey = Exclude<keyof LiveTimingSettingsDto, 'hiddenRowIcons'>;
 
 /** One threshold: how it is labelled, stored (milliseconds, or laps) and shown (seconds, or laps), and its range. */
 interface Field {
-  key: keyof LiveTimingSettingsDto;
+  key: NumberKey;
   label: string;
   help: string;
   /** Milliseconds per shown unit; 1 for laps. */
@@ -72,7 +76,9 @@ export default function LiveTimingSettingsCard() {
   const { data, isLoading, isError } = useLiveTimingSettings();
   const save = useSetLiveTimingSettings();
   // What the admin has typed, by field; empty while they have not changed the saved values
-  const [draft, setDraft] = useState<Partial<Record<keyof LiveTimingSettingsDto, string>>>({});
+  const [draft, setDraft] = useState<Partial<Record<NumberKey, string>>>({});
+  // The row icons ticked to show, once the admin has changed them; null while they have not
+  const [iconsDraft, setIconsDraft] = useState<string[] | null>(null);
 
   if (isLoading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
   if (isError || !data) {
@@ -89,14 +95,17 @@ export default function LiveTimingSettingsCard() {
   const fast = values.find((v) => v.field.key === 'battleFastMsPerLap')!;
   const fastBelowTrend = trend.valid && fast.valid && fast.number < trend.number;
   const allValid = values.every((v) => v.valid) && !fastBelowTrend;
-  const changed = Object.keys(draft).length > 0;
+  const shownIcons: string[] = iconsDraft ?? rowIconsWithout(data.hiddenRowIcons);
+  const changed = Object.keys(draft).length > 0 || iconsDraft !== null;
 
   async function onSave() {
     const settings = { ...data } as LiveTimingSettingsDto;
     for (const { field, number } of values) settings[field.key] = Math.round(number * field.unit);
+    settings.hiddenRowIcons = ROW_ICONS.filter((icon) => !shownIcons.includes(icon));
     try {
       await save.mutateAsync(settings);
       setDraft({});
+      setIconsDraft(null);
       toast.success('Live timing settings saved');
     } catch {
       toast.error('Could not save the live timing settings. Try again.');
@@ -131,6 +140,23 @@ export default function LiveTimingSettingsCard() {
           {!valid && <p className="text-xs text-destructive">Enter a number from 0 to {field.max}.</p>}
         </div>
       ))}
+      <fieldset className="space-y-1.5">
+        <legend className="text-sm font-medium">Icons beside driver names</legend>
+        <p className="text-xs text-muted-foreground">
+          Untick an icon to take it off the referee screen, the live race board and the board views. The streaming
+          overlay has its own choice in each overlay theme, and an address option such as icons=hide on a board still wins.
+        </p>
+        {ROW_ICONS.map((icon) => (
+          <label key={icon} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={shownIcons.includes(icon)}
+              onChange={(e) => setIconsDraft(ROW_ICONS.filter((i) => (i === icon ? e.target.checked : shownIcons.includes(i))))}
+            />
+            {ROW_ICON_LABELS[icon]}
+          </label>
+        ))}
+      </fieldset>
       {fastBelowTrend && (
         <p className="text-xs text-destructive">The gaining-fast figure cannot be below the closing or growing figure.</p>
       )}

@@ -12,6 +12,6 @@ import tools.jackson.databind.JsonNode;
 public record OverlayThemeDto(Long id, String name, JsonNode design, boolean isDefault) {
 
     public static OverlayThemeDto from(OverlayTheme theme, JsonNode design) {
-        return new OverlayThemeDto(theme.getId(), theme.getName(), design, theme.getIsDefault());
+        return new OverlayThemeDto(theme.getId(), theme.getName(), design, theme.isDefault());
     }
 }

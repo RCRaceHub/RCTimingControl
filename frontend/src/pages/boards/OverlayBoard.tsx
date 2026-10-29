@@ -2,6 +2,7 @@
 // running order, laps, last lap and race clock. Anonymous, like the other boards. It follows the race's STOMP
 // timing and state topics (useBoardRace), and shows a small idle panel while no race is on track, so a blank page
 // never looks like a broken overlay.
+import { RowIconsProvider } from '@/components/RowIconsContext';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -273,7 +274,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, gap,
-    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, placement,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, rowIcons, placement,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
   const colours = THEMES[theme];
@@ -522,6 +523,7 @@ export default function OverlayBoard() {
     ) : null;
 
   return (
+    <RowIconsProvider shown={rowIcons}>
     <OverlayZones
       placement={placement}
       blocks={{
@@ -541,5 +543,6 @@ export default function OverlayBoard() {
         sponsors: sponsorBar,
       }}
     />
+    </RowIconsProvider>
   );
 }

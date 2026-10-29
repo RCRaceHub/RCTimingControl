@@ -563,6 +563,7 @@ describe('overlay options', () => {
       lowerThird: 'both',
       showLegend: false,
       highContrast: false,
+      rowIcons: ['flying', 'lap', 'close', 'lapped', 'penalty', 'signal'],
     });
     expect(parseOverlayOptions(new URLSearchParams('layout=table&qual=hide'))).toMatchObject({ layout: 'table', showQualifying: false });
     expect(parseOverlayOptions(new URLSearchParams('event=7&top=500')).top).toBe(40);

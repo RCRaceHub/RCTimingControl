@@ -693,6 +693,8 @@ export interface LiveTimingSettingsDto {
   battleHoldLaps: number;
   closeGapMs: number;
   lateMarginMs: number;
+  /** Row icons switched off on race control and the boards (#696): pace, flying, lap, close, lapped, penalty, signal. */
+  hiddenRowIcons: string[];
 }
 
 /** The HTTPS state (#503): the addresses, the hosts the certificate covers, and when the certificates run out (UTC ISO) */

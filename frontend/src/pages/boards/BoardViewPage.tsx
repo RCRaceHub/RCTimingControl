@@ -1,6 +1,8 @@
 // A saved board view (#481): the panels an official picked, laid out in columns, at /boards/view/{slug}. Anonymous like
 // the other boards. The race on track is followed once here and shared by the panels; options on the address are the
 // live race board's (bars=hide, arrows=hide, predict=hide, close=SECONDS) and event=ID.
+import { RowIconsProvider } from '@/components/RowIconsContext';
+import { rowIconsWithout } from '@/lib/rowIcons';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
@@ -18,7 +20,7 @@ export default function BoardViewPage() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showLegend, highContrast } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showLegend, highContrast, rowIcons } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
   useHighContrast(highContrast);
 
   const { data: view, isPending, isError, error } = useBoardViewQuery(slug);
@@ -55,6 +57,7 @@ export default function BoardViewPage() {
     predicted: showPredicted && clock?.remainingMs != null ? { clock: barClock, remainingAt } : undefined,
   };
   return (
+    <RowIconsProvider shown={rowIcons}>
     <BoardShell eventName={nowNext?.eventName}>
       <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${view.columns}, minmax(0, 1fr))` }}>
         {view.panels.map((panel, i) => (
@@ -64,5 +67,6 @@ export default function BoardViewPage() {
         ))}
       </div>
     </BoardShell>
+    </RowIconsProvider>
   );
 }

@@ -1,6 +1,8 @@
 import { STATE_INFO, StateIcon } from '@/components/StateIcon';
 import type { StateKind } from '@/components/StateIcon';
+import { useRowIcon } from '@/components/RowIconsContext';
 import { cn } from '@/lib/utils';
+import type { RowIcon } from '@/lib/rowIcons';
 
 /** The groups of colours the timing views use; a view lists the ones it shows. */
 export type LegendKind = 'lap' | 'close' | 'pace' | 'status' | 'movement';
@@ -41,6 +43,12 @@ const ITEMS: Record<LegendKind, LegendItem[]> = {
   ],
 };
 
+/** The switch (#696) that hides each state's icon. */
+const ICON_SWITCH: Record<StateKind, RowIcon> = {
+  'race-best': 'lap', 'personal-best': 'lap', improving: 'lap', slow: 'lap', close: 'close', 'on-pace': 'pace', 'off-pace': 'pace',
+  flying: 'flying', lapped: 'lapped', penalty: 'penalty', 'no-signal': 'signal',
+};
+
 interface TimingLegendProps {
   /** Which groups of colours to explain, in order. */
   kinds: LegendKind[];
@@ -56,6 +64,12 @@ interface TimingLegendProps {
  */
 export function TimingLegend({ kinds, size = 'small', className }: TimingLegendProps) {
   const board = size === 'board';
+  const shown: Record<RowIcon, boolean> = {
+    pace: useRowIcon('pace'), flying: useRowIcon('flying'), lap: useRowIcon('lap'), close: useRowIcon('close'),
+    lapped: useRowIcon('lapped'), penalty: useRowIcon('penalty'), signal: useRowIcon('signal'),
+  };
+  // An entry with a colour keeps it when its icon is switched off; one that is only an icon goes
+  const items = kinds.flatMap((kind) => ITEMS[kind]).filter((item) => item.swatch !== '' || !item.icon || shown[ICON_SWITCH[item.icon]]);
   return (
     <ul
       aria-label="Colour key"
@@ -66,12 +80,12 @@ export function TimingLegend({ kinds, size = 'small', className }: TimingLegendP
         className,
       )}
     >
-      {kinds.flatMap((kind) => ITEMS[kind]).map((item) => (
+      {items.map((item) => (
         <li key={item.label} className="flex items-center gap-1.5">
           {item.swatch && (
             <span aria-hidden="true" className={cn('inline-block rounded-sm', board ? 'h-4 w-4' : 'h-2.5 w-2.5', item.swatch)} />
           )}
-          {item.icon && <StateIcon kind={item.icon} decorative className={board ? 'h-5 w-5' : 'h-3.5 w-3.5'} />}
+          {item.icon && shown[ICON_SWITCH[item.icon]] && <StateIcon kind={item.icon} decorative className={board ? 'h-5 w-5' : 'h-3.5 w-3.5'} />}
           {item.label}
         </li>
       ))}

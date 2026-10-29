@@ -54,7 +54,7 @@ class ClubProfileServiceTest {
     @Test
     void savedLiveTimingSettings_areTheClubs() {
         ClubProfile profile = new ClubProfile();
-        LiveTimingSettings own = new LiveTimingSettings(1500, 100, 250, 3, 800, 500);
+        LiveTimingSettings own = new LiveTimingSettings(1500, 100, 250, 3, 800, 500, java.util.List.of("pace"));
         profile.setLiveTimingSettings(own);
         when(repository.findCurrent()).thenReturn(Optional.of(profile));
 
@@ -65,13 +65,23 @@ class ClubProfileServiceTest {
     void liveTimingSettingsOutOfRange_areRefusedAndSaveNothing() {
         LiveTimingSettings defaults = LiveTimingSettings.defaults();
         assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
-                new LiveTimingSettings(-1, 150, 300, 2, 1000, 1000))).isInstanceOf(IllegalArgumentException.class);
+                new LiveTimingSettings(-1, 150, 300, 2, 1000, 1000, java.util.List.of()))).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
-                new LiveTimingSettings(defaults.battleGapMs(), 400, 300, 2, 1000, 1000)))
+                new LiveTimingSettings(defaults.battleGapMs(), 400, 300, 2, 1000, 1000, java.util.List.of())))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("gaining-fast");
         assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
-                new LiveTimingSettings(2000, 150, 300, 11, 1000, 1000))).isInstanceOf(IllegalArgumentException.class);
+                new LiveTimingSettings(2000, 150, 300, 11, 1000, 1000, java.util.List.of()))).isInstanceOf(IllegalArgumentException.class);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void unknownRowIcon_isRefused_andNullsAndRepeatsAreDropped() {
+        assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
+                new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, java.util.List.of("sparkles"))))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sparkles");
+        assertThat(new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, java.util.Arrays.asList("pace", null, "pace"))
+                .hiddenRowIcons()).containsExactly("pace");
         verify(repository, never()).save(any());
     }
 

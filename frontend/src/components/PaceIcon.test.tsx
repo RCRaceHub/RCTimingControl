@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { PaceIcon } from './PaceIcon';
+import { RowIconsProvider } from './RowIconsContext';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 
 const row = (over: Partial<LiveTimingRowDto>): LiveTimingRowDto => ({
@@ -19,6 +20,15 @@ describe('PaceIcon', () => {
     render(<PaceIcon row={row({ lastLapMs: 12_000 })} clock={{ offsetMs: 0, resumedAtMs: null }} />);
     expect(screen.getByRole('img', { name: 'Off pace for its predicted laps' })).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'On pace for its predicted laps' })).toBeNull();
+  });
+
+  it('shows nothing when the pace thumbs are switched off', () => {
+    render(
+      <RowIconsProvider shown={['flying']}>
+        <PaceIcon row={row({})} clock={{ offsetMs: 0, resumedAtMs: null }} />
+      </RowIconsProvider>,
+    );
+    expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('shows nothing for a car with no average lap or one that has finished', () => {

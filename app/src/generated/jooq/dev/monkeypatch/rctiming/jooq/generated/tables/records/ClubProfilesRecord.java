@@ -370,6 +370,20 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (Integer) get(24);
     }
 
+    /**
+     * Setter for <code>club_profiles.hidden_row_icons</code>.
+     */
+    public void setHiddenRowIcons(String value) {
+        set(25, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.hidden_row_icons</code>.
+     */
+    public String getHiddenRowIcons() {
+        return (String) get(25);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -393,7 +407,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs, String hiddenRowIcons) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -421,6 +435,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setBattleHoldLaps(battleHoldLaps);
         setCloseGapMs(closeGapMs);
         setLateMarginMs(lateMarginMs);
+        setHiddenRowIcons(hiddenRowIcons);
         resetTouchedOnNotNull();
     }
 }

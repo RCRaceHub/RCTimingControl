@@ -1,3 +1,5 @@
+import { RowIconsProvider } from '@/components/RowIconsContext';
+import { rowIconsWithout } from '@/lib/rowIcons';
 import { useMemo } from 'react';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
@@ -53,6 +55,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
+    <RowIconsProvider shown={rowIconsWithout(settings.hiddenRowIcons)}>
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-semibold">
@@ -176,5 +179,6 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
         <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close', 'pace'] : ['lap', 'pace']} className="mt-2 text-muted-foreground" />
       )}
     </div>
+    </RowIconsProvider>
   );
 }

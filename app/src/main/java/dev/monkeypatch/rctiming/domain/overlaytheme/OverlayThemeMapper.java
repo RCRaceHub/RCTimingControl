@@ -10,9 +10,11 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
 interface OverlayThemeMapper {
 
+    @Mapping(target = "default", source = "isDefault")
     OverlayTheme toEntity(OverlayThemesRecord record);
 
     /** Copies every column except the id, which the repository handles, into the record. */
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "isDefault", source = "default")
     void toRecord(OverlayTheme theme, @MappingTarget OverlayThemesRecord record);
 }

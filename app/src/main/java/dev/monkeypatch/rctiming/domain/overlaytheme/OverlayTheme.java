@@ -28,8 +28,8 @@ public class OverlayTheme implements CreatedAt, UpdatedAt {
     public void setDesign(String design) { this.design = design; }
 
     /** Whether this is the club's default theme, the look the plain overlay address opens. */
-    public boolean getIsDefault() { return isDefault; }
-    public void setIsDefault(boolean isDefault) { this.isDefault = isDefault; }
+    public boolean isDefault() { return isDefault; }
+    public void setDefault(boolean isDefault) { this.isDefault = isDefault; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

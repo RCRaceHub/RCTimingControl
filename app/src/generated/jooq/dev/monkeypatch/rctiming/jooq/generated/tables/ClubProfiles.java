@@ -181,6 +181,11 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, Integer> LATE_MARGIN_MS = createField(DSL.name("late_margin_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("1000"), SQLDataType.INTEGER)), this, "");
 
+    /**
+     * The column <code>club_profiles.hidden_row_icons</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> HIDDEN_ROW_ICONS = createField(DSL.name("hidden_row_icons"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("''"), SQLDataType.CLOB)), this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
+import { rowIconsWithout } from '@/lib/rowIcons';
 import { DEFAULT_OVERLAY_DESIGN, leaderGapText, overlayDesignFromTheme, overlayQuery, themeDesignToSave, parseLiveRaceOptions, parseOverlayOptions, parseSeparatorImage } from './boardFormat';
 
 describe('overlayQuery', () => {
@@ -35,6 +36,21 @@ describe('overlayQuery', () => {
     expect(parseOverlayOptions(new URLSearchParams('?lower=off')).lowerThird).toBe('off');
     expect(parseOverlayOptions(new URLSearchParams('?lower=nonsense')).lowerThird).toBe('both');
     expect(parseOverlayOptions(new URLSearchParams('')).lowerThird).toBe('both');
+  });
+
+  it('starts the overlay without the pace thumbs and round-trips the icon choice', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    expect(parseOverlayOptions(new URLSearchParams('')).rowIcons).not.toContain('pace');
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, rowIcons: ['pace', 'flying'] })).toBe('?icons=pace,flying');
+    expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, rowIcons: [] })).toBe('?icons=hide');
+    expect(parseOverlayOptions(new URLSearchParams('?icons=pace,flying')).rowIcons).toEqual(['pace', 'flying']);
+    expect(parseOverlayOptions(new URLSearchParams('?icons=hide')).rowIcons).toEqual([]);
+  });
+
+  it('shows every icon on the live race board unless the club hides some', () => {
+    expect(parseLiveRaceOptions(new URLSearchParams('')).rowIcons).toContain('pace');
+    expect(parseLiveRaceOptions(new URLSearchParams(''), 1000, rowIconsWithout(['pace'])).rowIcons).not.toContain('pace');
+    expect(parseLiveRaceOptions(new URLSearchParams('?icons=pace'), 1000, rowIconsWithout(['pace'])).rowIcons).toEqual(['pace']);
   });
 
   it('writes contrast=high only when asked, and reads it back', () => {
