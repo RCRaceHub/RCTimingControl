@@ -14,6 +14,8 @@ import {
 } from '@/pages/boards/boardFormat';
 import type { OverlayThemeDto } from '@/lib/boardsApi';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
+import { OverlayLayoutEditor } from './OverlayLayoutEditor';
+import type { OverlayComponent } from '@/pages/boards/overlayLayout';
 import { SponsorListEditor } from '@/components/SponsorListEditor';
 import { useThemeSponsorMutations, useThemeSponsors } from '@/hooks/admin/useThemeSponsors';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -182,6 +184,14 @@ export default function OverlayDesignerPage() {
       toast.error('Could not copy. Select the address and copy it by hand.');
     }
   }
+
+  // Parts the design switches off, shown dimmed in the layout editor
+  const offParts = new Set<OverlayComponent>();
+  if (!design.showBattles) offParts.add('battles');
+  if (!design.showChart) offParts.add('chart');
+  if (design.lowerThird === 'off') offParts.add('lowerThird');
+  if (design.tickerItems.length === 0) offParts.add('ticker');
+  if (!design.showSponsors) offParts.add('sponsors');
 
   function toggleTicker(item: TickerItem, on: boolean) {
     set('tickerItems', on ? [...design.tickerItems, item] : design.tickerItems.filter((i) => i !== item));
@@ -371,6 +381,14 @@ export default function OverlayDesignerPage() {
             <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
             <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
             <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />
+          </fieldset>
+
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium">Layout on screen</legend>
+            <p className="text-xs text-muted-foreground">
+              Drag each part to the area of the screen where it should sit. Parts in the same area stack.
+            </p>
+            <OverlayLayoutEditor placement={design.placement} off={offParts} onChange={(p) => set('placement', p)} />
           </fieldset>
 
           <fieldset className="space-y-2">
