@@ -1,8 +1,8 @@
 import type { BattleLink } from '@/lib/battles';
 import { cn } from '@/lib/utils';
 
-/** The row classes that mark the chasing car's row: a hot gradient and a white edge, as on a broadcast tower (#681). */
-export const BATTLE_ROW_CLASS = 'border-l-4 border-l-white bg-gradient-to-r from-destructive/70 to-transparent';
+/** The row classes that mark the chasing car's row: a red gradient and edge, which read on the light and dark themes, as on a broadcast tower (#681). */
+export const BATTLE_ROW_CLASS = 'border-l-4 border-l-destructive bg-gradient-to-r from-destructive/40 to-transparent';
 
 const TREND_ARROW = { CLOSING: '▲', GROWING: '▼', HOLDING: '▬', UNKNOWN: '' } as const;
 
@@ -19,7 +19,7 @@ function fmtGap(ms: number): string {
 export function BattleRowTag({ link, className }: { link: BattleLink; className?: string }) {
   return (
     <span
-      className={cn('flex flex-col items-end leading-tight', className)}
+      className={cn('flex flex-col items-end whitespace-nowrap leading-tight', className)}
       data-testid="battle-row-tag"
       data-trend={link.trend}
     >

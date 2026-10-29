@@ -38,7 +38,7 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), {@code battlestyle=rows|both} (overlay only) the chasing car's row instead of or as well as the strip (#681), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
+ * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=hide} the colour key, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  */
 export function parseLiveRaceOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -117,7 +117,10 @@ export function parseSeparatorImage(value: string | null): string | null {
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
-/** The streaming overlay's options from its query string; anything unrecognised falls back to the default. */
+/**
+ * The streaming overlay's options from its query string; anything unrecognised falls back to the default.
+ * {@code battlestyle=rows|both} puts the chasing car's row in the tower or table in place of, or as well as, the battles strip (#681).
+ */
 export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
   const top = Number(params.get('top'));
   return {

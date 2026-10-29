@@ -421,6 +421,7 @@ export default function OverlayBoard() {
               {rows.map(row => {
                 const flash = lapFlash.get(row.entryId);
                 const close = isClose(row, closeMs);
+                const battle = battleRows?.get(row.entryId);
                 return (
                   <tr
                     key={row.entryId}
@@ -429,7 +430,7 @@ export default function OverlayBoard() {
                       'border-t transition-colors',
                       colours.row,
                       close && !flash && 'bg-amber-500/25',
-                      battleRows?.has(row.entryId) && BATTLE_ROW_CLASS,
+                      battle && BATTLE_ROW_CLASS,
                       flash === 'race-best' && 'bg-purple-500/40',
                       flash === 'personal-best' && 'bg-blue-500/40',
                       flash === 'improving' && 'bg-green-500/40',
@@ -451,7 +452,7 @@ export default function OverlayBoard() {
                       <RowStateIcon flash={flash} close={close} className="ml-1" />
                       {showBars && race.status === 'RUNNING' && <PaceIcon row={row} clock={barClock} className="ml-1" />}
                       <FlyingLapIcon row={row} className="ml-1" />
-                      {battleRows?.get(row.entryId) && <BattleRowTag link={battleRows.get(row.entryId)!} className="ml-2 inline-flex align-middle text-xs" />}
+                      {battle && <BattleRowTag link={battle} className="ml-2 inline-flex align-middle text-xs" />}
                       {showArrows && race.finalLetter !== null && <PositionArrow row={row} rows={allRows} />}
                       {row.finished && <FinishedFlag className="ml-1" />}
                       {showBars && race.status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-0.5 h-1" />}
