@@ -1,19 +1,17 @@
 # AMB Decoder Protocol Reference
 
-> **Implementation status:** both protocols described below are implemented once, in the shared `decoder-protocol/` module (`Rc4TextParser`, `EpochAnchor`, `SeqGapDetector`, and the P3 binary decoder) — used by `app/`'s decoder listener and `decoder-simulator/`.
+> **Implementation status:** the RC-4 text protocol is implemented in the shared `decoder-protocol/` module (`Rc4TextParser`, `EpochAnchor`, `SeqGapDetector`), used by `app/`'s decoder listener and `decoder-simulator/`. Only the RC-4 text protocol is documented or supported here.
 
 ## Overview
 
-AMB/MyLaps RC timing decoders have used two distinct TCP protocols over their hardware lifecycle:
+AMB/MyLaps RC timing decoders used by clubs speak the RC-4 text protocol, described below. The decoder's other (binary) protocol is not documented or supported by this project.
 
 | Protocol | Common name | Firmware | Port | Format |
 |----------|------------|----------|------|--------|
 | RC-4 text | AmbRc / P9.8 / Enhanced | < 4.5 | **5100** | SOH-prefixed, tab-separated ASCII |
-| P3 binary | P3 | ≥ 4.5 (or older high-end decoders) | **5403** | `0x8E`/`0x8F` framed, TLV body |
 
 The **RC-4 text protocol** is the dominant protocol for RC club use. The majority of club decoders run firmware below 4.5 and use the text protocol. The Go prototype in `oggthemiffed/RCTimingForwarder` was written specifically for this protocol and connects to port 5100.
 
-The **P3 binary protocol** is used by firmware 4.5+, by older high-end AMBmx3/TranX3/ChipX/ProChip decoders, and by software such as Racewave. P3 is also used on the RS232 serial interface when the decoder menu "Protocol RS232" is set to "P3" rather than "Enhanced".
 
 ---
 
@@ -25,7 +23,7 @@ MyLaps firmware 4.5 was a deliberately disruptive update:
 
 - **Added:** simultaneous support for drone racing and RC car transponders on the same decoder.
 - **Removed:** support for **all MRT transponders** (both red and blue light rechargeable MRT units), the original AMBrc DP transponder, and house handout transponders.
-- **Protocol:** firmware 4.5 uses exclusively the modern RC4 protocol and is believed to use P3 binary over TCP. (⚠ Unconfirmed whether the TCP port changes in 4.5.)
+- **Protocol:** firmware 4.5 uses exclusively the modern RC4 protocol, which this project does not support.
 
 **Impact:** clubs that support the MRT rechargeable transponder (the most common affordable transponder in UK/AU club racing) remain on **firmware ≤ 4.4** and therefore use the **RC-4 text protocol on port 5100**. This is the user's case.
 
@@ -38,9 +36,9 @@ Firmware 4.4 supports:
 
 ### Protocol is not auto-detected
 
-The decoder menu option "Protocol RS232" (General menu) selects the RS232 output protocol between "Enhanced" (= RC-4 text, default), "P3" (binary), and "Remote" (Orbits software mode). The TCP/IP output protocol is **not separately configurable** in the menu — the decoder serves both protocols simultaneously on different ports (5100 for text, 5403 for P3), or only the text protocol on 5100 depending on firmware version.
+The decoder menu option "Protocol RS232" (General menu) selects the RS232 output protocol; "Enhanced" is the RC-4 text protocol (the default). The TCP/IP output is not separately configurable in the menu.
 
-**For practical implementation: connect to port 5100 for firmware < 4.5 (text protocol); connect to port 5403 for firmware ≥ 4.5 or confirmed P3 decoders (binary protocol).**
+**For practical implementation: connect to port 5100 (text protocol) on firmware < 4.5.**
 
 ---
 
@@ -204,9 +202,8 @@ Instant toWallClock(double timeSinceStart) {
 
 For race timing purposes the absolute wall-clock time of a lap is less important than the elapsed race time and lap durations. Record the `time_since_start` of the race start signal as `raceStartTime` and compute `elapsedRaceTime = timeSinceStart - raceStartTime` for each passing. This is entirely relative and avoids the wall-clock problem.
 
-**Option C — GPS-sync (not available in RC-4 text protocol)**
 
-The P3 binary protocol's `RTC_TIME` field is a GPS/NTP-synchronised UTC microsecond timestamp. The RC-4 text protocol has no equivalent. If GPS-precision timestamps are required, upgrade to P3 (firmware ≥ 4.5 or P3-capable decoder).
+**Option C — absolute decoder timestamps (not available in the RC-4 text protocol):** the text protocol has no absolute timestamp, so use Option A or B.
 
 #### Precision
 
@@ -230,181 +227,6 @@ The CRC algorithm is **not documented in any available open-source reference**. 
 
 ---
 
-## AMB P3 Binary Protocol (firmware ≥ 4.5 or P3-capable decoders, port 5403)
-
-### Overview
-
-- **Port:** TCP 5403. The decoder **listens**; the client connects. Maximum 4 simultaneous connections.
-- **Encoding:** Binary, little-endian integers
-- **Frame delimiters:** `0x8E` (start) / `0x8F` (end)
-- **Byte stuffing:** `0x8D` escape byte used inside frame bodies
-- **No client handshake required:** decoder begins streaming immediately on connect
-
-### Frame Structure
-
-#### Delimiters
-
-| Role | Byte value |
-|------|-----------|
-| Frame start | `0x8E` |
-| Frame end | `0x8F` |
-
-#### Byte Stuffing (Escaping)
-
-Any occurrence of `0x8D`, `0x8E`, or `0x8F` inside the frame body is replaced:
-
-| Raw byte | Transmitted as |
-|----------|---------------|
-| `0x8D` | `0x8D 0xAD` |
-| `0x8E` | `0x8D 0xAE` |
-| `0x8F` | `0x8D 0xAF` |
-
-Rule: prefix with `0x8D`, add `0x20` to original byte value. On receipt: remove `0x8D`, subtract `0x20` from following byte. Unescape the entire body **after** extracting the complete frame, before parsing.
-
-#### Header Layout (10 bytes)
-
-```
-Offset  Size  Field
-------  ----  -----
-0x00    1     Frame start: 0x8E
-0x01    1     Version (observed: 0x02)
-0x02    2     Total frame length, little-endian (includes 0x8E and 0x8F bytes)
-0x04    2     CRC-16, little-endian (algorithm unconfirmed)
-0x06    2     Flags header, little-endian (always 0x0000 in observed records)
-0x08    2     Record type, little-endian
-0x0A    var   TLV body fields
-last    1     Frame end: 0x8F
-```
-
-#### TLV Body Fields
-
-```
-+--------+--------+--------...--------+
-|field_id| length |     data bytes    |
-| 1 byte | 1 byte |   length bytes    |
-+--------+--------+--------...--------+
-```
-
-Iterate from offset `0x0A`. Stop when `pos >= frameLength - 1`. Advance by `2 + length` per field.
-
-#### Annotated Frame Example (PASSING record)
-
-```
-8E 02 33 00 9E C7 00 00 01 00        ← 10-byte header (type=0x0001 = PASSING)
-01 04 48 BC 01 00                    field 0x01 (PASSING_NUMBER), len=4, value=113736
-03 04 1D 58 2C 00                    field 0x03 (TRANSPONDER),    len=4, value=2906141
-04 08 E8 05 BF C4 A4 1B 05 00        field 0x04 (RTC_TIME),       len=8, value=1437769372993000 µs
-05 02 6A 00                          field 0x05 (STRENGTH),       len=2, value=106
-06 02 32 00                          field 0x06 (HITS),           len=2, value=50
-08 02 00 00                          field 0x08 (FLAGS),          len=2, value=0
-81 04 93 0F 02 00                    field 0x81 (DECODER_ID),     len=4, value=135059
-8F                                   ← frame end
-```
-
-### Record Types
-
-| Record name | Type (LE uint16) | Direction | Description |
-|-------------|-----------------|-----------|-------------|
-| `RESET` | `0x0000` | Decoder → Client | Decoder reset notification |
-| `PASSING` | `0x0001` | Decoder → Client | Transponder detection (primary timing record) |
-| `STATUS` | `0x0002` | Decoder → Client | Periodic hardware status (noise, temperature, voltage) |
-| `VERSION` | `0x0003` | Client → Decoder | Request firmware/type information |
-| `RESEND` | `0x0004` | Client → Decoder | Request retransmission of missing passings |
-| `CLEAR_PASSING` | `0x0005` | Client → Decoder | Clear passing history |
-| `SERVER_SETTINGS` | `0x0013` | Bidirectional | Server/decoder settings exchange |
-| `SESSION` | `0x0015` | Bidirectional | Session management |
-| `WATCHDOG` | `0x0018` | Decoder → Client | Periodic keepalive |
-| `PING` | `0x0020` | Bidirectional | Connection health check |
-| `FIRST_CONTACT` | `0x0045` | Decoder → Client | Initial connection identification |
-| `ERROR` | `0xFFFF` | Decoder → Client | Protocol error |
-
-### PASSING Record Fields
-
-| Field name | Field ID | Type | Units | Notes |
-|------------|----------|------|-------|-------|
-| `PASSING_NUMBER` | `0x01` | uint32 LE | — | Monotonic counter per decoder. Use to detect gaps. |
-| `TRANSPONDER` | `0x03` | uint32 LE | — | Transponder hardware ID |
-| `RTC_TIME` | `0x04` | uint64 LE | **microseconds since Unix epoch (UTC)** | Hardware clock. GPS/NTP synchronised. |
-| `STRENGTH` | `0x05` | uint16 LE | raw | Signal strength. May be absent. |
-| `HITS` | `0x06` | uint16 LE | count | Loop crossings during passing window |
-| `FLAGS` | `0x08` | uint16 LE | bitmask | Always 0 in observed records |
-
-### STATUS Record Fields
-
-| Field name | Field ID | Type | Units | Notes |
-|------------|----------|------|-------|-------|
-| `NOISE` | `0x01` | uint16 LE | raw | Background loop noise |
-| `GPS` | `0x06` | uint8 | boolean | 0=no fix, 1=fix |
-| `TEMPERATURE` | `0x07` | uint16 LE | °C | Ambient temperature |
-| `INPUT_VOLTAGE` | `0x0C` | uint8 | 0.1 V | Divide by 10 for volts (119 → 11.9V) |
-
-### General Fields (appear in multiple record types)
-
-| Field name | Field ID | Type | Notes |
-|------------|----------|------|-------|
-| `DECODER_ID` | `0x81` | uint32 LE | Hardware serial. Consistent across all records from a decoder. |
-
-### Timestamp Format
-
-`RTC_TIME` is a **uint64 little-endian** count of **microseconds since the Unix epoch (UTC)**.
-
-```java
-long rtcTimeMicros = /* uint64 little-endian from wire */;
-Instant timestamp = Instant.ofEpochSecond(
-    rtcTimeMicros / 1_000_000L,
-    (rtcTimeMicros % 1_000_000L) * 1_000L  // convert remainder to nanoseconds
-);
-```
-
-Confirmed by PHP parser test suite: `RTC_TIME = 1437769372993000` → `2015-07-24T20:22:52.993000Z`.
-
-Do **not** use server receipt time. Always record `RTC_TIME` from the passing frame.
-
-### FIRST_CONTACT Handshake
-
-`FIRST_CONTACT` is record type `0x0045`. The decoder does **not** require a client-initiated FIRST_CONTACT. The decoder begins pushing STATUS and PASSING records immediately on TCP connect.
-
-**Recommended approach:**
-```
-Client → TCP connect to port 5403
-Decoder → streams STATUS and PASSING records immediately
-Client → (optional) send VERSION request (type 0x0003) to identify decoder firmware
-```
-
-If a `FIRST_CONTACT` record is received from the decoder, parse the header for type/decoder ID, discard the body.
-
-### Gap Detection & RESEND
-
-Monitor `PASSING_NUMBER` (field `0x01` in PASSING records) for sequence gaps:
-
-```java
-int lastPassingNumber = -1;
-void onPassingReceived(int passingNumber) {
-    if (lastPassingNumber >= 0 && passingNumber != lastPassingNumber + 1) {
-        int missing = passingNumber - lastPassingNumber - 1;
-        log.warn("Gap: missing {} passings from {} to {}",
-                 missing, lastPassingNumber + 1, passingNumber - 1);
-        // sendResendRequest(...) — structure unconfirmed, obtain from MyLaps SDK
-    }
-    lastPassingNumber = passingNumber;
-}
-```
-
-⚠ The exact TLV structure of a RESEND frame is unconfirmed in open sources. Register at `mylaps.com/developers` for the official SDK before implementing RESEND.
-
-### WATCHDOG
-
-`WATCHDOG` is record type `0x0018`. Sent by the decoder at regular intervals as a keepalive.
-
-**Absence threshold:** if no frame of any type is received within **30 seconds**, declare connection lost.
-
-```java
-// Netty IdleStateHandler
-pipeline.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
-```
-
----
-
 ## Implementation Architecture
 
 ### `TimingSource` Interface
@@ -421,23 +243,13 @@ public interface TimingSource {
 
 public record LapPassingEvent(
     long    transponderId,   // chip ID from hardware
-    Instant timestamp,       // wall-clock UTC (from RTC_TIME or server-anchored offset)
+    Instant timestamp,       // wall-clock UTC (server-anchored offset)
     int     signalStrength,  // raw units
     int     hitCount,        // number of loop crossings
     int     decoderId,       // hardware decoder ID
     long    sequenceNumber   // per-decoder monotonic counter
 ) {}
 ```
-
-### Dual-Protocol Selector
-
-```
-TimingSourceFactory.create(config)
-  ├── config.port == 5100 → Rc4TextTimingSource  (Netty, reads lines until \n)
-  └── config.port == 5403 → P3BinaryTimingSource (Netty, ByteToMessageDecoder)
-```
-
-Or auto-detect by attempting port 5100 first (RC-4 text); fall back to 5403 (P3 binary) on failure. The recommended approach for club use is to make the port configurable.
 
 ### RC-4 Text Protocol — Java Implementation Notes
 
@@ -485,39 +297,13 @@ public class Rc4TextParser {
 }
 ```
 
-### P3 Binary Protocol — Java Implementation Notes
-
-See detailed framing notes in previous §§. Use `ByteToMessageDecoder` in Netty:
-
-1. Buffer bytes until `0x8F` is seen.
-2. Extract the complete frame (`0x8E` ... `0x8F`).
-3. Unescape only the body (bytes [1 .. len-2]).
-4. Parse the 10-byte header: version, length, CRC, flags, record type.
-5. Iterate TLV fields from offset `0x0A`.
-
 ### TCP Simulator for Development
 
 Implement a `FakeDecoder` that listens on a configurable port and emits:
-- STATUS records every 5 seconds (text) or WATCHDOG every 10 seconds (P3)
+- STATUS records every 5 seconds
 - Scripted PASSING records from a CSV file of `(transponder, timeSecs)` tuples
 
 The simulator enables full end-to-end testing of the app without physical hardware.
-
----
-
-## Field Comparison: RC-4 Text vs P3 Binary
-
-| Concept | RC-4 text field | P3 binary field |
-|---------|----------------|----------------|
-| Transponder ID | `transponder_code` (decimal ASCII) | `TRANSPONDER` (uint32 LE) |
-| Timestamp | `time_since_start` (float seconds since power-on) | `RTC_TIME` (uint64 µs since Unix epoch) |
-| Signal strength | `signal_strength` (uint, raw) | `STRENGTH` (uint16 LE) |
-| Hit count | `hit_counts` (uint) | `HITS` (uint16 LE) |
-| Sequence number | `seq_num` (shared STATUS+PASSING counter) | `PASSING_NUMBER` (PASSING-only counter) |
-| Decoder ID | `decoder_id` (uint decimal, field 2) | `DECODER_ID` (TLV field 0x81, uint32 LE) |
-| Heartbeat | STATUS (`#`) every 5s | WATCHDOG (type 0x0018) |
-| Gap recovery | None — no RESEND | RESEND (type 0x0004) |
-| Absolute time | No — offset only | Yes — UTC microseconds |
 
 ---
 
@@ -531,13 +317,7 @@ The simulator enables full end-to-end testing of the app without physical hardwa
 | `oggthemiffed/RCTimingForwarder` `amb_rc4_processor.go` | Field annotations (decoder_id, seq_num, transponder_code, time_since_start, hit_counts, signal_strength, passing_status, CRC) |
 | `oggthemiffed/RCTimingForwarder` `main.go` | Port 5100; the decoder's address came from its configuration (a club address, not recorded here) |
 | `skoky/ammc-android` `P98Parser.kt` | P98/RC-4 text parser — field count per record type (STATUS 5 fields, PASSING 9 fields), tab separator, CRC format, time_since_start × 1000 = milliseconds |
-| `skoky/ammc-android` `Tools.kt` | `P3_DEF_PORT = 5403` confirmed |
-| `datagutten/amb-p3-parser` `src/parser.php` | Authoritative P3 frame structure, record types, TLV field IDs, byte stuffing |
-| `datagutten/amb-p3-parser` test suite | RTC_TIME Unix µs epoch confirmed; PASSING_NUMBER values; DECODER_ID |
-| AMB decoder manual (2006, `transponderservices.com`) | Protocol RS232 menu: Enhanced / P3 / Remote options; P3 = preferred for developers; Enhanced = backward compat; "First contact" option only in P3 protocol |
-| MYLAPS decoder manual (`mxtransponder.com`, Jan 2010) | Same Protocol RS232 menu documented; dataserver menu (host+port for cloud upload) |
 | AMBrc manual Rev.1.1b (FCC filing) | Power-up in AMB20 mode; AMBrc software triggers AMBrc mode switch; STATUS every 5 seconds; RS232 connection |
 | MYLAPS RC manual (Jan 2010, `transponderservices.com`) | RC-4 system overview; RS232/TCP connection cable listed |
 | LiveRC news article | Firmware 4.5: disables MRT transponders, adds drone support, uses RC4 protocol exclusively |
 | AMBrc manual Rev.3.3 (`transponderservices.com`) | Decoder startup behaviour; noise/signal/hit descriptions |
-| `datagutten/amb-p3-parser` Packagist page | Port 5403; max 4 connections; P3 only |

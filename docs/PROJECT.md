@@ -38,7 +38,6 @@ Officials run a full race meeting from a laptop at the track, on Windows, macOS 
 ### Active
 
 - [ ] Entry import from other systems: RC-Timing CSV and pull from a URL (#38)
-- [ ] AMB P3 binary protocol for decoders on firmware 4.5 or later (deferred)
 
 ### Out of Scope
 
@@ -70,7 +69,7 @@ Officials run a full race meeting from a laptop at the track, on Windows, macOS 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Browser-based race control | Works on any laptop, and on officials' phones and tablets, with no client install | Shipped |
-| AMB/MyLaps TCP integration | Club hardware; the RC-4 text protocol is read directly by the app | Shipped (RC-4); P3 deferred |
+| AMB/MyLaps TCP integration | Club hardware; the RC-4 text protocol is read directly by the app | Shipped (RC-4) |
 | "Best X from Y" championship scoring | Club's primary format; configurable so other clubs can adapt | Shipped |
 | Split into a cloud app and a separate offline race-day app | Kept race day running through venue outages | Shipped, then retired in #21. Plan archived at `docs/plans/archive/2026-08-06-001-feat-offline-race-day-resilience-split-plan.md` |
 | RCTC is local-only timing; RaceHub owns booking (2026-10-03) | Race day never depends on the cloud, removing the duplicated offline app, the forwarder and the racer portal | Done for #9 to #26; see #8 |

@@ -40,7 +40,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 - `/topic/system/decoder-status` — whether the decoder is connected
 - `/topic/system/live-feed-status` — whether the live feed is connected to its relay
 
-**TCP decoder client:** Netty 4.1.x, in `app/`'s `DecoderListener` (a `SmartLifecycle`), which reads the decoder's host and port from the club profile. **RC-4 text** (`LineBasedFrameDecoder`, port 5100) for firmware < 4.5 decoders, the dominant club hardware, is implemented. **AMB P3 binary** (`ByteToMessageDecoder`, 0x8E/0x8F delimiters, TLV body, 0x8D byte-stuffing, port 5403) for firmware ≥ 4.5 is deferred. See `docs/AMB_DECODER_PROTOCOL.md`. Protocol parsing lives in the shared `decoder-protocol/` module (pure and Spring-free), used by the decoder listener and the simulator.
+**TCP decoder client:** Netty 4.1.x, in `app/`'s `DecoderListener` (a `SmartLifecycle`), which reads the decoder's host and port from the club profile. **RC-4 text** (`LineBasedFrameDecoder`, port 5100) for firmware < 4.5 decoders, the dominant club hardware, is implemented. See `docs/AMB_DECODER_PROTOCOL.md`. Protocol parsing lives in the shared `decoder-protocol/` module (pure and Spring-free), used by the decoder listener and the simulator.
 
 **Decoder simulator:** `decoder-simulator/` is a fake RC-4 decoder for development and trying the app out. The app runs it with `RCTimingControl simulate` (or `java -jar app.jar simulate`). It also holds a test relay and viewer page for the live feed, run with `RCTimingControl relay`.
 
@@ -126,7 +126,7 @@ Staff roles are **stackable** — a single user account can hold any combination
 
 ### Key Data Design Notes
 
-- Lap timestamps: for P3 binary decoders use the `RTC_TIME` field (GPS/NTP-synchronised UTC microseconds). For RC-4 text decoders use server-anchored offset (no absolute timestamp in protocol). Every timestamp column is `BIGINT` UTC microseconds, mapped to `Instant` by converters in `persistence/convert/`.
+- Lap timestamps: for RC-4 text decoders use server-anchored offset (no absolute timestamp in protocol). Every timestamp column is `BIGINT` UTC microseconds, mapped to `Instant` by converters in `persistence/convert/`.
 - **Do not store live race positions in the database during a race** — calculate in memory, broadcast over WebSocket, persist only the final result snapshot on `FINISHED`.
 - Protocol parsing (`Rc4TextParser` in `decoder-protocol/`) must stay pure, with no Spring dependencies. Protocol I/O is separate from domain logic.
 - Championship points: calculate on demand from result snapshots; do not increment incrementally.
@@ -134,11 +134,11 @@ Staff roles are **stackable** — a single user account can hold any combination
 - Competitors have no login. Results, live timing and championship standings group by competitor. RCTC stores no contact, date of birth, guardian or payment data.
 - Race format config is snapshot-at-assignment — template edits do not affect existing events (FORMAT-06).
 
-## AMB Decoder Protocol (Two Protocols — Choose by Firmware)
+## AMB Decoder Protocol (RC-4 text)
 
 See `docs/AMB_DECODER_PROTOCOL.md` for the full reference. Summary:
 
-**RC-4 text protocol (firmware < 4.5, port 5100) — implement this first:**
+**RC-4 text protocol (firmware < 4.5, port 5100):**
 - SOH-prefixed, tab-separated ASCII lines, CRLF terminated
 - Two record types: `#` (STATUS/heartbeat every 5s) and `@` (PASSING)
 - PASSING fields: `decoderId TAB seqNum TAB transponderId TAB timeSinceStart_s TAB hits TAB strength TAB status TAB crc`
@@ -146,13 +146,6 @@ See `docs/AMB_DECODER_PROTOCOL.md` for the full reference. Summary:
 - Convert to wall clock: anchor server time at first record, add offset for each subsequent record
 - No client handshake, no RESEND, no WATCHDOG — just read lines
 - Port 5100 confirmed from club hardware captures
-
-**AMB P3 binary protocol (firmware ≥ 4.5, port 5403) — implement second:**
-- Frame delimiters: `0x8E` (start) / `0x8F` (end), TLV body, `0x8D` byte-stuffing
-- `RTC_TIME` field = uint64 microseconds since Unix epoch (UTC) — absolute timestamp
-- Monitor `PASSING_NUMBER` for gaps; RESEND requests on gaps
-- WATCHDOG record absence = lost decoder connection
-- No client handshake required
 
 **Firmware 4.5 boundary:** firmware 4.5 disables MRT transponders (common cheap club transponders). Most clubs stay on firmware ≤ 4.4 and use port 5100 text protocol.
 

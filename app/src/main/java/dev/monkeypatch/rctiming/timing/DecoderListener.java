@@ -37,8 +37,8 @@ import java.util.function.Consumer;
  * ({@code timingExecutor}); the race lookup, the publish and every listener run there, in decoder order.
  * Disable with {@code app.decoder.listener.enabled=false}.
  *
- * <p>Only the RC-4 text protocol is supported. A P3 binary configuration leaves the listener
- * idle and reports the decoder as disconnected (see O5 in the local-timing plan).
+ * <p>Only the RC-4 text protocol is supported. Any other protocol setting leaves the listener
+ * idle and reports the decoder as disconnected.
  *
  * <p><strong>Retired sources:</strong> {@link AmbRc4TimingSource#stop()} is asynchronous, so a
  * connection attempt in flight can still call back after the source has been replaced. Each

@@ -37,7 +37,7 @@ Then open **http://localhost:8080** and sign in as `admin@example.com` / `trial1
 | `app/` | Spring Boot 4.1 backend — REST API, officials' JWT auth, WebSocket timing hub, direct AMB decoder listener, RaceHub import, events, championships, backups; serves the built frontend |
 | `frontend/` | React 18 + Vite + Tailwind + shadcn/ui — admin panel, race control, spectator boards and public results |
 | `decoder-simulator/` | Fake AMB decoder over TCP for development and trying the app out (generative and playback modes); the app runs it with `simulate` |
-| `decoder-protocol/` | Shared AMB/MyLaps decoder protocol parsing (RC-4 text; P3 binary is deferred) — used by `app/` and `decoder-simulator/` |
+| `decoder-protocol/` | Shared AMB/MyLaps decoder protocol parsing (RC-4 text) — used by `app/` and `decoder-simulator/` |
 | `mapstruct-jooq/` | Compile-time plugin that lets MapStruct map jOOQ records to entities ([docs/development.md](docs/development.md)) |
 | `docker-compose.yml` | Piper (TTS), optional, for announcer voices in development. The database is a SQLite file and club logos and TTS clips are stored on local disk, so nothing else needs Docker. |
 | `docker/`, `docker-compose.demo.yml`, `docker-compose.club.yml` | The app's Docker image, the demo with a simulated decoder, and the club's own server with announcer voices ([docs/docker.md](docs/docker.md)) |
@@ -130,6 +130,6 @@ See [docs/testing.md](docs/testing.md) for the full test matrix, including `deco
 - [Development guide](docs/development.md) — environment setup, config, env vars
 - [Architecture](docs/architecture.md) — module structure, design decisions
 - [Testing guide](docs/testing.md) — running tests, manual UAT checklists
-- [AMB decoder protocol](docs/AMB_DECODER_PROTOCOL.md) — RC-4 text and P3 binary wire formats
+- [AMB decoder protocol](docs/AMB_DECODER_PROTOCOL.md) — RC-4 text wire format
 - [Results Export v1](docs/results-export-v1.md) — the results file sent back to RaceHub
 - [Live Feed v1](docs/live-feed-v1.md) — the live feed for remote viewers, and the test relay

@@ -43,7 +43,7 @@ make dev    # Spring Boot on :8080
 In the app, go to **Admin → Decoder** (`/admin/decoder`), or use the setup wizard on first run.
 
 - **Decoder Host:** the decoder's IP address on your venue LAN, or `localhost` for the simulator.
-- **Protocol:** `RC4` for firmware below 4.5 (port 5100). Most club decoders use this. `P3` is not supported yet.
+- **Protocol:** `RC4` for firmware below 4.5 (port 5100). Most club decoders use this.
 - **Port:** fills in from the protocol. Change it only if your decoder uses another port.
 
 Click **Test Connection**. It shows **Connected** once the decoder is streaming.

@@ -2,7 +2,7 @@
 
 This guide shows how to capture what a real decoder sends into a file. The file is test data: the simulator can replay it later, so the whole club software can be tried on real laps without a decoder or a track. It also shows how to share one decoder between several programs.
 
-It works with RC-4 text decoders (firmware below 4.5, port 5100), such as the AMB RC3 and RC4. It does not read the AMB P3 binary protocol yet.
+It works with RC-4 text decoders (firmware below 4.5, port 5100), such as the AMB RC3 and RC4.
 
 ## What you need
 
@@ -98,5 +98,5 @@ Add `-p 5101:5101` and `--listen-port=5101` to share the decoder. `Ctrl+C` (with
 ## Troubleshooting
 
 - **"Connection failed" repeats:** check the address, that the computer can reach the decoder (try `ping`), and that nothing else is holding the decoder's connection.
-- **The file stays empty:** the decoder sends a status record every 5 seconds, so an empty file means no connection. Check the port; firmware 4.5 and later uses the P3 protocol on port 5403, which is not supported yet.
+- **The file stays empty:** the decoder sends a status record every 5 seconds, so an empty file means no connection. Check the port; firmware 4.5 and later is not supported.
 - **It stops with a file error:** the disk is full or the folder is not writable. Free space or choose another `--out`.
