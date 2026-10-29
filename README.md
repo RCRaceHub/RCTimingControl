@@ -34,7 +34,7 @@ Then open **http://localhost:8080** and sign in as `admin@example.com` / `trial1
 
 | Component | Description |
 |-----------|-------------|
-| `app/` | Spring Boot 3.4 backend — REST API, officials' JWT auth, WebSocket timing hub, direct AMB decoder listener, RaceHub import, events, championships, backups; serves the built frontend |
+| `app/` | Spring Boot 4.1 backend — REST API, officials' JWT auth, WebSocket timing hub, direct AMB decoder listener, RaceHub import, events, championships, backups; serves the built frontend |
 | `frontend/` | React 18 + Vite + Tailwind + shadcn/ui — admin panel, race control, spectator boards and public results |
 | `decoder-simulator/` | Fake AMB decoder over TCP for development and trying the app out (generative and playback modes); the app runs it with `simulate` |
 | `decoder-protocol/` | Shared AMB/MyLaps decoder protocol parsing (RC-4 text; P3 binary is deferred) — used by `app/` and `decoder-simulator/` |

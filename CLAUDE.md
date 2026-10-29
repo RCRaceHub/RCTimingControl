@@ -12,20 +12,20 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 
 ## Stack
 
-**Backend:** Spring Boot 3.4.x, Java 21 (LTS), Gradle (Kotlin DSL)
+**Backend:** Spring Boot 4.1.x (Spring Framework 7, Spring Security 7), Java 21 (LTS), Gradle (Kotlin DSL). Jackson 2 stays as a bridge until the move to Jackson 3 (#660): `spring-boot-jackson2` supplies the `ObjectMapper` bean and `spring.http.converters.preferred-json-mapper=jackson2` keeps REST on it, see `docs/development.md`.
 
 **Frontend:** React 19 + React Router 7 + Vite, TypeScript, Tailwind CSS 4 + shadcn/ui, TanStack Query v5, TanStack Table v8, React Hook Form v7, Zod, `@stomp/stompjs` (native WebSocket — no SockJS)
 
 **Persistence:** SQLite (one file, sqlite-jdbc; WAL, one write connection plus a read pool), Flyway for migrations. The vendor is chosen in one place (`rctiming.database.vendor`, `persistence/DatabaseConfig`); vendor-specific code lives only in `persistence/vendor/`, and `PersistencePortabilityTest` enforces it. See `docs/development.md` → "Keeping the database swappable".
 
-**Data access:** jOOQ 3.19.x for every read and write, with no ORM (#69). jOOQ's DSL is generated from the Flyway schema into `app/src/generated/jooq`.
+**Data access:** jOOQ 3.21.x for every read and write, with no ORM (#69). jOOQ's DSL is generated from the Flyway schema into `app/src/generated/jooq`.
 - **Write side (domain module):** entities are plain classes holding ids, not associations. Each has a `@Repository` class extending `persistence/JooqRepository`, which maps it to its table's record (by a MapStruct mapper next to the repository; entities built by constructor are mapped by hand in `toEntity`/`toRecord`) and keeps the method names Spring Data had (`findById`, `save`, `findByEventId` and so on). There is no dirty checking: a changed entity reaches the database only through `save`, and must be saved before anything reloads it by id. Columns written once, such as creation times, go in the repository's `insertOnly()`.
 - **Read side (query module):** type-safe SQL for all projections and aggregations: scoring calculations, championship standings, lap aggregates, results views.
 - Writes run in Spring transactions on the write connection. Reads outside a transaction use the read pool and see only committed data. Read-side query classes use `@ReadTransaction` (`persistence/`): one snapshot on the read pool, so they never queue behind the writer. A read that must wait for a write in progress needs `@Transactional(readOnly = true)`, which runs on the write connection.
 
 **Race format config:** Stored as JSON text (`CHECK (json_valid(...))`) with a `type` discriminator, converted by a `JsonTextConverter` subclass in its repository. Validated against a sealed Java class hierarchy on write. Override patches (FORMAT-07) stored as a second JSON column and merged at read time. Supports JSON import/export (FORMAT-14).
 
-**Auth:** Spring Security + JWT (stateless). JJWT 0.12.x. JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
+**Auth:** Spring Security + JWT (stateless). JJWT 0.13.x (its Jackson module still uses Jackson 2). JWT in `Authorization: Bearer` header for REST; passed in STOMP `CONNECT` frame for WebSocket.
 
 **Real-time:** Spring WebSocket with STOMP in-memory broker. STOMP topics:
 - `/topic/race/{raceId}/timing` — live lap passings, positions, gaps

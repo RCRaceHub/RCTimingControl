@@ -146,6 +146,18 @@ The app runs on the venue laptop from the installer, which serves the UI, keeps 
 - Leave `JWT_SECRET` unset and keep the generated `jwt-secret` file private, or set it to a random 256-bit base64 value.
 - Do **not** use `ddl-auto=update` or `create-drop`: Flyway manages the schema.
 
+### Jackson 2 bridge (Spring Boot 4)
+
+Spring Boot 4 uses Jackson 3 (`tools.jackson`) by default. The app, its `JsonTextConverter` subclasses, its DTOs (`JsonNode` in the overlay theme) and JJWT (`jjwt-jackson` 0.13.0 has no Jackson 3 adapter yet) still use Jackson 2 (`com.fasterxml.jackson`). Until the move to Jackson 3 (#660) the build keeps both on the classpath:
+
+- `spring-boot-jackson2` creates the Jackson 2 `ObjectMapper` bean, configured with `spring.jackson2.*` (not `spring.jackson.*`).
+- `spring.http.converters.preferred-json-mapper: jackson2` in `application.yml` keeps REST requests and responses on Jackson 2. The test `application.yml` sets the same, because it replaces the main one on the test classpath.
+- Build-time pieces that follow from Boot 4's split into modules: `spring-boot-starter-webmvc` (was `-web`), `spring-boot-starter-flyway` (was `flyway-core`), `spring-boot-starter-restclient` (for `RestClient.Builder`) and, for tests, `spring-boot-resttestclient` with `@AutoConfigureTestRestTemplate` on `AbstractIntegrationTest`.
+- Spring Framework 7 renamed `HttpStatus.UNPROCESSABLE_ENTITY` to `UNPROCESSABLE_CONTENT` and `PAYLOAD_TOO_LARGE` to `CONTENT_TOO_LARGE`.
+- `com.networknt:json-schema-validator` (tests) stays on 1.5.9, the last release with the Jackson 2 API; the 2.x and 3.x lines change the package API.
+
+#660 moves the code to `tools.jackson`, replaces or waits for the JJWT module, and removes this bridge.
+
 ### Trying it out with the demo club
 
 The `demo` profile loads the Wyvern RC Club (`db/demo/{vendor}`), and `simulate` runs the fake decoder its decoder settings point at:
