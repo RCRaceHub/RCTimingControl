@@ -1,14 +1,17 @@
 -- Placeholder headshots, car photos and car colours for the demo club (#684), so the overlay's headshot and colour
 -- options and the referee screen's swatch show something out of the box. The pictures are generated SVG avatars and
--- cars shipped with the app under /demo (frontend/public/demo), not real people. Dave Quick to Jo Turner have a car photo
--- and colours, Pat Drift to Max Lap colours only (so the swatch shows), and Nina Pole nothing, so her cars show the
--- class colour. A separate migration rather than an edit to V2000, so a demo database made before it gets them too.
+-- cars shipped with the app under /demo (frontend/public/demo), not real people. All eight V2000 drivers have a headshot.
+-- Dave Quick, Sam Speed, Jo Turner and Pat Drift also have a car photo and colours, Kim Apex, Lee Grid and Max Lap
+-- colours only (so the swatch shows), and Nina Pole nothing more, so her cars show the class colour. A separate
+-- migration rather than an edit to V2000, so a demo database made before it gets them too. The inserts ignore a row
+-- an official already added by hand (each table is unique per competitor or entry), and the class colours are set
+-- only where none is chosen, so this never fails to start a kept demo database or overwrites a choice.
 
-UPDATE racing_classes SET colour = '#2563eb' WHERE name = '13.5 Touring';
-UPDATE racing_classes SET colour = '#16a34a' WHERE name = 'Stock Buggy';
-UPDATE racing_classes SET colour = '#f59e0b' WHERE name = 'F1 Open';
+UPDATE racing_classes SET colour = '#2563eb' WHERE name = '13.5 Touring' AND colour IS NULL;
+UPDATE racing_classes SET colour = '#16a34a' WHERE name = 'Stock Buggy' AND colour IS NULL;
+UPDATE racing_classes SET colour = '#f59e0b' WHERE name = 'F1 Open' AND colour IS NULL;
 
-INSERT INTO competitor_media (competitor_id, headshot_url, sponsors)
+INSERT OR IGNORE INTO competitor_media (competitor_id, headshot_url, sponsors)
 SELECT c.id, m.url, ''
 FROM (
     SELECT 'Dave Quick' AS name, '/demo/headshots/dave-quick.svg' AS url
@@ -22,7 +25,7 @@ FROM (
 ) m
 JOIN competitors c ON c.display_name = m.name;
 
-INSERT INTO entry_car_colours (entry_id, colours)
+INSERT OR IGNORE INTO entry_car_colours (entry_id, colours)
 SELECT e.id, m.colours
 FROM (
     SELECT 'Dave Quick' AS name, '#d62828,#f4d03f,#ffffff' AS colours
@@ -36,7 +39,7 @@ FROM (
 JOIN competitors c ON c.display_name = m.name
 JOIN entries e ON e.competitor_id = c.id;
 
-INSERT INTO entry_photos (entry_id, car_photo_url)
+INSERT OR IGNORE INTO entry_photos (entry_id, car_photo_url)
 SELECT e.id, m.url
 FROM (
     SELECT 'Dave Quick' AS name, '/demo/cars/dave-quick.svg' AS url
