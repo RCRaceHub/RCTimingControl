@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.query.competitor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
@@ -133,7 +133,7 @@ public class CompetitorDataExportService {
                         rows.add(m);
                     }
                 }
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new IllegalStateException(
                         "A stored result could not be read, so the export would be incomplete", e);
             }

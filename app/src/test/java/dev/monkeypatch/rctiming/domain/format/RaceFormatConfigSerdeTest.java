@@ -1,9 +1,10 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import dev.monkeypatch.rctiming.TestJson;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidTypeIdException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,12 +18,12 @@ class RaceFormatConfigSerdeTest {
 
     @BeforeEach
     void setUp() {
-        jsonMapper = new ObjectMapper();
-        yamlMapper = new ObjectMapper(new YAMLFactory());
+        jsonMapper = TestJson.mapper();
+        yamlMapper = TestJson.yamlMapper();
     }
 
     @Test
-    void timedRaceConfig_roundTrips_throughJson() throws JsonProcessingException {
+    void timedRaceConfig_roundTrips_throughJson() throws JacksonException {
         TimedRaceConfig original = new TimedRaceConfig(5, StartType.STAGGER, QualifyingType.FTQ, 2, 3);
 
         String json = jsonMapper.writeValueAsString(original);
@@ -37,7 +38,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void shikabaneConfig_roundTrips_throughJson() throws JsonProcessingException {
+    void shikabaneConfig_roundTrips_throughJson() throws JacksonException {
         ShikabaneConfig original = new ShikabaneConfig(5, StartType.GRID, 3, 3, 1, 0, 0, 0, 0, false);
 
         String json = jsonMapper.writeValueAsString(original);
@@ -48,7 +49,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void bumpUpConfig_roundTrips_throughJson() throws JsonProcessingException {
+    void bumpUpConfig_roundTrips_throughJson() throws JacksonException {
         BumpUpConfig original = new BumpUpConfig(
                 3, 5, 2, 8, 2,
                 StartType.GRID, StartType.GRID,
@@ -66,7 +67,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void pointsFinalsConfig_roundTrips_throughJson() throws JsonProcessingException {
+    void pointsFinalsConfig_roundTrips_throughJson() throws JacksonException {
         PointsFinalsConfig original = new PointsFinalsConfig(
                 4, 3, 10, 5,
                 StartType.ROLLING, StartType.GRID,
@@ -83,7 +84,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void pointsFinalsConfigSavedBeforeTheBrcaSettings_loadsWithTheOldBehaviour() throws JsonProcessingException {
+    void pointsFinalsConfigSavedBeforeTheBrcaSettings_loadsWithTheOldBehaviour() throws JacksonException {
         String old = "{\"type\":\"POINTS_FINALS\",\"qualifyingHeats\":3,\"finalsCount\":2,"
                 + "\"finalDurationMinutes\":5,\"heatDurationMinutes\":5,\"qualifyingStartType\":\"STAGGER\","
                 + "\"finalsStartType\":\"GRID\",\"qualifyingType\":\"ROUND_BY_ROUND\","
@@ -102,7 +103,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void timedRaceConfig_roundTrips_throughYaml() throws JsonProcessingException {
+    void timedRaceConfig_roundTrips_throughYaml() throws JacksonException {
         TimedRaceConfig original = new TimedRaceConfig(8, StartType.GRID, QualifyingType.CONSECUTIVE_LAPS, 3, 0);
 
         String yaml = yamlMapper.writeValueAsString(original);
@@ -124,7 +125,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void extraFields_areIgnored_duringDeserialization() throws JsonProcessingException {
+    void extraFields_areIgnored_duringDeserialization() throws JacksonException {
         String json = "{\"type\":\"TIMED\",\"durationMinutes\":5,\"startType\":\"STAGGER\"," +
                 "\"qualifyingType\":\"FTQ\",\"racePaddingMinutes\":2,\"staggerIntervalSeconds\":3," +
                 "\"unknownFutureField\":\"someValue\"}";
@@ -136,7 +137,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void startTypeEnum_serializesAndDeserializes_correctly() throws JsonProcessingException {
+    void startTypeEnum_serializesAndDeserializes_correctly() throws JacksonException {
         for (StartType type : StartType.values()) {
             String json = jsonMapper.writeValueAsString(type);
             StartType deserialized = jsonMapper.readValue(json, StartType.class);
@@ -145,7 +146,7 @@ class RaceFormatConfigSerdeTest {
     }
 
     @Test
-    void qualifyingTypeEnum_serializesAndDeserializes_correctly() throws JsonProcessingException {
+    void qualifyingTypeEnum_serializesAndDeserializes_correctly() throws JacksonException {
         for (QualifyingType type : QualifyingType.values()) {
             String json = jsonMapper.writeValueAsString(type);
             QualifyingType deserialized = jsonMapper.readValue(json, QualifyingType.class);

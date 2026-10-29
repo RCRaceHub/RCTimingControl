@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -81,7 +81,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode body = resp.getBody();
         assertThat(body.get("applied").asBoolean()).isTrue();
-        assertThat(body.get("racehubEventName").asText()).isEqualTo("Club Round 3");
+        assertThat(body.get("racehubEventName").asString()).isEqualTo("Club Round 3");
         assertThat(body.get("revision").asLong()).isEqualTo(4);
         assertSummary(body, 2, 0, 0, 0, 0, 1);
 
@@ -207,7 +207,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
             if (row.get("id").asLong() == ada.getId()) adaRow = row;
         }
         assertThat(adaRow).isNotNull();
-        assertThat(adaRow.get("importedTransponderNumber").asText()).isEqualTo("75" + run);
+        assertThat(adaRow.get("importedTransponderNumber").asString()).isEqualTo("75" + run);
 
         // Swapping to the file's number settles the difference
         swapService.swap(eventId, ada.getId(), TransponderSlot.PRIMARY, "75" + run, adminUserId);
@@ -303,8 +303,8 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(preview.getBody().get("blocked").asBoolean()).isTrue();
         JsonNode unmapped = preview.getBody().get("unmappedClasses");
         assertThat(unmapped).hasSize(1);
-        assertThat(unmapped.get(0).get("racehubEventClassId").asText()).isEqualTo("rh-class-electric-" + run);
-        assertThat(unmapped.get(0).get("rcClassName").asText()).isEqualTo("RH Electric Touring " + run);
+        assertThat(unmapped.get(0).get("racehubEventClassId").asString()).isEqualTo("rh-class-electric-" + run);
+        assertThat(unmapped.get(0).get("rcClassName").asString()).isEqualTo("RH Electric Touring " + run);
         assertThat(unmapped.get(0).get("entryCount").asInt()).isEqualTo(1);
 
         ResponseEntity<JsonNode> blocked = importFixture("entries-v1-unmapped-class.json", false);
@@ -382,7 +382,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(resp.getBody().get("errors")).isEmpty();
         JsonNode warnings = resp.getBody().get("warnings");
         assertThat(warnings).hasSize(1);
-        assertThat(warnings.get(0).asText())
+        assertThat(warnings.get(0).asString())
                 .contains("71" + run).contains("Ada Lovelace").contains("Grace Hopper");
         assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
     }
@@ -439,7 +439,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
-        assertThat(resp.getBody().get("errors").get(0).asText())
+        assertThat(resp.getBody().get("errors").get(0).asString())
                 .isEqualTo("Ada Lovelace would have 2 entries in RH Buggy " + run);
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
     }
@@ -452,7 +452,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
-        assertThat(resp.getBody().get("errors").get(0).asText()).contains("null");
+        assertThat(resp.getBody().get("errors").get(0).asString()).contains("null");
     }
 
     @Test
@@ -527,7 +527,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     @Test
     void anotherSource_hasItsOwnClassMappings() {
         ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", "OTHER", true);
-        assertThat(preview.getBody().get("unmappedClasses").get(0).get("racehubEventClassId").asText())
+        assertThat(preview.getBody().get("unmappedClasses").get(0).get("racehubEventClassId").asString())
                 .isEqualTo("OTHER:rh-class-electric-" + run);
 
         // A RaceHub mapping for the same class id does not apply to the other system's file

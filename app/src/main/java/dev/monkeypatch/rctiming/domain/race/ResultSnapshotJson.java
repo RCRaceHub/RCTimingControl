@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.domain.race;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class ResultSnapshotJson {
     public String write(long raceId, Object value) {
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The result of race " + raceId + " could not be stored", e);
         }
     }
@@ -55,7 +55,7 @@ public class ResultSnapshotJson {
         try {
             List<T> rows = objectMapper.readValue(json, type);
             return rows == null ? List.of() : rows;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // Logged here as well: the race finish only logs the message of what it catches, and the cause
             // is what says which part of the stored result is wrong
             log.error("The stored result of race {} could not be read", raceId, e);

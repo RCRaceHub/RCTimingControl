@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.domain.entryfeed;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.config.LoopbackHosts;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -243,7 +243,7 @@ public class EntryFeedService {
         RaceHubEntryExport export;
         try {
             export = objectMapper.readValue(body, RaceHubEntryExport.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return new Download(null, new Problem(EntryFeedStatus.FAILED, "The feed didn't answer with an entry file"));
         }
         if (export == null || export.revision() == null) {
@@ -257,7 +257,7 @@ public class EntryFeedService {
         try {
             // Only the fields the import reads are kept, so nothing personal the file carried is stored
             document = objectMapper.writeValueAsString(export);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Could not store the fetched file", e);
         }
         return update(feed, f -> {
@@ -331,7 +331,7 @@ public class EntryFeedService {
         }
         try {
             return objectMapper.readValue(feed.getHeldDocument(), RaceHubEntryExport.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The held file can't be read", e);
         }
     }

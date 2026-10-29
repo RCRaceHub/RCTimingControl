@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -69,13 +69,13 @@ class AudioTemplateIT extends AbstractIntegrationTest {
     private Long idOf(String name) {
         JsonNode list = call(HttpMethod.GET, URL, null, token).getBody();
         return StreamSupport.stream(list.spliterator(), false)
-                .filter(t -> t.get("name").asText().equals(name)).findFirst().orElseThrow().get("id").asLong();
+                .filter(t -> t.get("name").asString().equals(name)).findFirst().orElseThrow().get("id").asLong();
     }
 
     @Test
     void theStarterTemplatesAreThere() {
         JsonNode list = call(HttpMethod.GET, URL, null, token).getBody();
-        assertThat(StreamSupport.stream(list.spliterator(), false).map(t -> t.get("name").asText()))
+        assertThat(StreamSupport.stream(list.spliterator(), false).map(t -> t.get("name").asString()))
                 .contains("Club night", "BRCA meeting", "Practice");
     }
 
@@ -92,7 +92,7 @@ class AudioTemplateIT extends AbstractIntegrationTest {
         assertThat(applied.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(applied.getBody().get("startHorn").asBoolean()).isFalse();
         assertThat(applied.getBody().get("startCountdownSeconds").asInt()).isZero();
-        assertThat(applied.getBody().get("hornSounds").get("startUrl").asText()).isEqualTo("/own-start.wav");
+        assertThat(applied.getBody().get("hornSounds").get("startUrl").asString()).isEqualTo("/own-start.wav");
     }
 
     @Test

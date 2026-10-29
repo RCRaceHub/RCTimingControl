@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards.dto;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayTheme;
 
 /**

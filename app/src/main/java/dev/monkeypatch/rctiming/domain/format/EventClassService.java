@@ -1,7 +1,8 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -210,7 +211,7 @@ public class EventClassService {
         snapshotMap.putAll(ec.getConfigOverride());
         try {
             return objectMapper.convertValue(snapshotMap, RaceFormatConfig.class);
-        } catch (IllegalArgumentException e) {
+        } catch (JacksonException | IllegalArgumentException e) {
             throw new IllegalArgumentException("The format overrides do not fit the class's format: "
                     + e.getMessage(), e);
         }

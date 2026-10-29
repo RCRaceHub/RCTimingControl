@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.livefeed;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
@@ -336,7 +336,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
                 content.standings());
         try {
             return objectMapper.writeValueAsString(message);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Could not write a live feed message", e);
         }
     }

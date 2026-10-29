@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.query.entry;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
+
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -9,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EntryHistoryQueryTest {
 
-    private final EntryHistoryQuery query = new EntryHistoryQuery(Mockito.mock(DSLContext.class), new ObjectMapper());
+    private final EntryHistoryQuery query = new EntryHistoryQuery(Mockito.mock(DSLContext.class), TestJson.mapper());
 
     @Test
     void summaryOf_describesATransponderSwap() {

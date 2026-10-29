@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.domain.audit;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -142,9 +142,9 @@ class AuditLogIT extends AbstractIntegrationTest {
                 .recordStandalone();
 
         AuditEntryDto row = find(type).entries().get(0);
-        assertThat(row.before().get("status").asText()).isEqualTo("ACTIVE");
+        assertThat(row.before().get("status").asString()).isEqualTo("ACTIVE");
         JsonNode after = row.after();
-        assertThat(after.get("status").asText()).isEqualTo("WITHDRAWN");
+        assertThat(after.get("status").asString()).isEqualTo("WITHDRAWN");
         assertThat(after.get("laps").asInt()).isEqualTo(3);
     }
 
@@ -193,7 +193,7 @@ class AuditLogIT extends AbstractIntegrationTest {
                 new HttpEntity<>(bearer(loginAs(Set.of(Role.ADMIN)))), JsonNode.class);
         assertThat(asAdmin.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(asAdmin.getBody().get("total").asLong()).isEqualTo(1);
-        assertThat(asAdmin.getBody().get("entries").get(0).get("summary").asText()).isEqualTo("Changed");
+        assertThat(asAdmin.getBody().get("entries").get(0).get("summary").asString()).isEqualTo("Changed");
 
         ResponseEntity<JsonNode> asReferee = restTemplate.exchange(url, HttpMethod.GET,
                 new HttpEntity<>(bearer(loginAs(Set.of(Role.REFEREE)))), JsonNode.class);

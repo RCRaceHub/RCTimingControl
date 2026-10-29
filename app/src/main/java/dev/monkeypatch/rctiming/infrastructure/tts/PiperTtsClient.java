@@ -1,7 +1,8 @@
 package dev.monkeypatch.rctiming.infrastructure.tts;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,7 +131,7 @@ public class PiperTtsClient {
                 }
 
                 JsonNode header = objectMapper.readTree(line);
-                String type = header.get("type").asText();
+                String type = header.get("type").asString();
 
                 // Wyoming protocol: data_length bytes of JSON payload follow the header line
                 int dataLength = header.path("data_length").asInt(0);
@@ -164,7 +165,7 @@ public class PiperTtsClient {
 
             return assembleWav(pcmBuffer.toByteArray(), sampleRate, sampleWidth, channels);
 
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             throw new TtsUnavailableException("Piper TTS at " + properties.endpoint()
                     + " could not be reached or stopped answering: " + e.getMessage(), e);
         }
@@ -194,7 +195,7 @@ public class PiperTtsClient {
             String line = readJsonLine(rawIn);
             if (line != null && !line.isBlank()) {
                 JsonNode header = objectMapper.readTree(line);
-                if ("info".equals(header.path("type").asText())) {
+                if ("info".equals(header.path("type").asString())) {
                     int dataLength = header.path("data_length").asInt(0);
                     JsonNode data = dataLength > 0
                             ? objectMapper.readTree(rawIn.readNBytes(dataLength))
@@ -209,7 +210,7 @@ public class PiperTtsClient {
                             JsonNode voicesNode = ttsProgram.path("voices");
                             if (voicesNode.isArray()) {
                                 for (JsonNode v : voicesNode) {
-                                    String name = v.path("name").asText();
+                                    String name = v.path("name").asString();
                                     if (name.isBlank()) {
                                         continue;
                                     }
@@ -234,7 +235,7 @@ public class PiperTtsClient {
                 }
             }
 
-        } catch (IOException e) {
+        } catch (IOException | JacksonException e) {
             log.warn("Failed to list Piper voices from {}: {}", properties.endpoint(), e.getMessage());
         }
 

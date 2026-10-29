@@ -1,9 +1,9 @@
 package dev.monkeypatch.rctiming.domain.competitor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
@@ -179,7 +179,7 @@ public class CompetitorAnonymiseService {
         try {
             JsonNode tree = objectMapper.readTree(json);
             return replaceNames(tree, ids, competitorId, entryIds, name) ? objectMapper.writeValueAsString(tree) : null;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // A stored result that can't be read must not be skipped: it could still hold the name
             throw new IllegalStateException("A stored result could not be read, so nothing was anonymised", e);
         }
@@ -191,7 +191,7 @@ public class CompetitorAnonymiseService {
             ObjectNode object = (ObjectNode) node;
             if (isTheirs(object, ids, competitorId, entryIds)) {
                 for (String field : NAME_FIELDS) {
-                    if (object.hasNonNull(field) && !name.equals(object.get(field).asText())) {
+                    if (object.hasNonNull(field) && !name.equals(object.get(field).asString())) {
                         object.put(field, name);
                         changed = true;
                     }

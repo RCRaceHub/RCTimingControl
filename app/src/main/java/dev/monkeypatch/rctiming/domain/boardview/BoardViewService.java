@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.domain.boardview;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -61,7 +61,7 @@ public class BoardViewService {
     public List<BoardPanel> panelsOf(BoardView view) {
         try {
             return json.readValue(view.getPanels(), PANELS);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The panels of board view " + view.getSlug() + " cannot be read", e);
         }
     }
@@ -112,7 +112,7 @@ public class BoardViewService {
         view.setColumns(columns);
         try {
             view.setPanels(json.writeValueAsString(checked));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("The panels cannot be written", e);
         }
     }

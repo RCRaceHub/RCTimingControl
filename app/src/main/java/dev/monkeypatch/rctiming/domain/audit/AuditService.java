@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.domain.audit;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -180,7 +180,7 @@ public class AuditService {
         }
         try {
             return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Could not write the audit values as JSON", ex);
         }
     }

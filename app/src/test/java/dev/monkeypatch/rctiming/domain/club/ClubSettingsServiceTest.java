@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.club;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +25,7 @@ class ClubSettingsServiceTest {
 
     private final ClubProfileService clubs = mock(ClubProfileService.class);
     private final AuditService audit = mock(AuditService.class, Answers.RETURNS_DEEP_STUBS);
-    private final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper mapper = TestJson.mapper();
     private ClubSettingsService service;
     private ClubProfile profile;
 

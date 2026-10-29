@@ -1,9 +1,11 @@
 package dev.monkeypatch.rctiming.domain.scoring;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import dev.monkeypatch.rctiming.config.JacksonConfig;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidTypeIdException;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatCodec.FileType;
 import org.springframework.stereotype.Component;
 
@@ -12,19 +14,21 @@ import org.springframework.stereotype.Component;
 public class ScoringCodec {
 
     private final ObjectMapper jsonMapper;
-    /** Spring's mapper with a YAML parser, so both file types read and write a config the same way. */
+    /** A YAML mapper set up like Spring's JSON one (unknown properties ignored), so both file types read a config the same way. */
     private final ObjectMapper yamlMapper;
 
     public ScoringCodec(ObjectMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
-        this.yamlMapper = jsonMapper.copyWith(new YAMLFactory());
+        YAMLMapper.Builder yaml = YAMLMapper.builder().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        JacksonConfig.keepJackson2Defaults(yaml);
+        this.yamlMapper = yaml.build();
     }
 
     /** The config as pretty-printed text in the given file type. */
     public String write(ScoringConfig config, FileType fileType) {
         try {
             return mapper(fileType).writerWithDefaultPrettyPrinter().writeValueAsString(config);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Could not write the scoring config", e);
         }
     }
@@ -46,7 +50,7 @@ public class ScoringCodec {
             // Jackson's own message names the Java class
             throw new IllegalArgumentException(
                     "Failed to parse scoring config: type must be one of CLASSIC, BRCA, PLACE_POINTS", e);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             String where = e.getLocation() == null ? ""
                     : " (line " + e.getLocation().getLineNr() + ", column " + e.getLocation().getColumnNr() + ")";
             throw new IllegalArgumentException("Failed to parse scoring config: " + e.getOriginalMessage() + where, e);

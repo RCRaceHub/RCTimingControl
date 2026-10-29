@@ -1,7 +1,8 @@
 package dev.monkeypatch.rctiming.domain.race;
 
+import dev.monkeypatch.rctiming.TestJson;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ResultSnapshotJsonTest {
 
-    private final ResultSnapshotJson json = new ResultSnapshotJson(Jackson2ObjectMapperBuilder.json().build());
+    private final ResultSnapshotJson json = new ResultSnapshotJson(TestJson.mapper());
 
     @Test
     void readsBackWhatItWrote() {

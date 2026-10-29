@@ -43,7 +43,7 @@ dependencies {
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-gson:0.13.0")
 
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 
@@ -58,15 +58,12 @@ dependencies {
     // `RCTimingControl simulate` runs the fake decoder, so the installed app can be tried without one (#24)
     implementation(project(":decoder-simulator"))
 
-    // Boot 4 auto-configures Jackson 3 only. The app and JJWT still use Jackson 2, so this module keeps the
-    // Jackson 2 ObjectMapper bean until the move to Jackson 3 (#660).
-    implementation("org.springframework.boot:spring-boot-jackson2")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+    implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
     // Checks Results Export v1 documents against their published JSON schema (#27)
-    testImplementation("com.networknt:json-schema-validator:1.5.9")
+    testImplementation("com.networknt:json-schema-validator:3.0.8")
 
     // Generates the record <-> entity mappers at compile time (see docs/development.md, "Mapping")
     implementation("org.mapstruct:mapstruct:1.6.3")

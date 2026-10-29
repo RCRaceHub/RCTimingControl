@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -184,7 +184,7 @@ public class ResultsExportService {
     private String toJson(ResultsExportV1 export) {
         try {
             return objectMapper.writeValueAsString(export);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalStateException("Could not write the results export", e);
         }
     }

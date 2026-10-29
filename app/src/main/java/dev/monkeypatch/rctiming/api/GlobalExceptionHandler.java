@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import tools.jackson.databind.exc.InvalidFormatException;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorMergeRefusedException;
 import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorException;
 import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleUnreadableBody(HttpMessageNotReadableException ex) {
         if (ex.getCause() instanceof InvalidFormatException invalid && invalid.getTargetType().isEnum()
                 && !invalid.getPath().isEmpty()) {
-            String field = invalid.getPath().get(invalid.getPath().size() - 1).getFieldName();
+            String field = invalid.getPath().get(invalid.getPath().size() - 1).getPropertyName();
             return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, field + " must be one of "
                     + Arrays.toString(invalid.getTargetType().getEnumConstants()) + ", got: " + invalid.getValue());
         }
