@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -29,6 +28,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import tools.jackson.databind.JsonNode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -104,10 +104,11 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
         JsonNode ada = row(preview, "NEW", "Ada Lovelace");
         assertThat(ada.get("eventClassId").asLong()).isEqualTo(buggyClassId);
-        assertThat(ada.get("info").get("Grade").asText()).isEqualTo("80");
-        assertThat(ada.get("info").get("Car Make").asText()).isEqualTo("Associated");
+        assertThat(ada.get("info").get("Grade").asString()).isEqualTo("80");
+        assertThat(ada.get("info").get("Car Make").asString()).isEqualTo("Associated");
         assertThat(ada.get("info").has("Paid Status")).isFalse();
-        assertThat(row(preview, "NEW", "Katherine Johnson " + run).get("info").get("Junior").asText()).isEqualTo("13");
+        assertThat(row(preview, "NEW", "Katherine Johnson " + run).get("info").get("Junior").asString())
+                .isEqualTo("13");
 
         ResponseEntity<JsonNode> resp = importFile("initial.csv", false);
 
@@ -137,7 +138,7 @@ class CsvImportIT extends AbstractIntegrationTest {
         JsonNode body = importFile("initial.csv", false).getBody();
 
         JsonNode tim = row(body, "SKIPPED", "Tim Berners-Lee");
-        assertThat(tim.get("reason").asText()).contains("update");
+        assertThat(tim.get("reason").asString()).contains("update");
         assertThat(entries().stream().map(this::competitorName)).doesNotContain("Tim Berners-Lee");
         assertThat(texts(body.get("warnings"))).noneMatch(w -> w.contains("71" + run));
     }
@@ -179,11 +180,11 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertSummary(preview, 0, 4, 1, 0, 0);
         JsonNode ada = row(preview, "CHANGED", "Ada Lovelace");
         assertThat(ada.get("changes")).hasSize(1);
-        assertThat(ada.get("changes").get(0).get("field").asText()).isEqualTo("Transponder");
-        assertThat(ada.get("changes").get(0).get("before").asText()).isEqualTo("71" + run);
-        assertThat(ada.get("changes").get(0).get("after").asText()).isEqualTo("77" + run);
+        assertThat(ada.get("changes").get(0).get("field").asString()).isEqualTo("Transponder");
+        assertThat(ada.get("changes").get(0).get("before").asString()).isEqualTo("71" + run);
+        assertThat(ada.get("changes").get(0).get("after").asString()).isEqualTo("77" + run);
         JsonNode alan = row(preview, "CHANGED", "Alan M Turing");
-        assertThat(alan.get("changes").get(0).get("before").asText()).isEqualTo("Alan Turing");
+        assertThat(alan.get("changes").get(0).get("before").asString()).isEqualTo("Alan Turing");
 
         // Nothing picked: nothing changes
         JsonNode nothingPicked = importFile("changed.csv", false).getBody();
@@ -192,7 +193,8 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertThat(entryFor("Ada Lovelace", buggyClassId).getTransponderNumberSnapshot()).isEqualTo("71" + run);
 
         // Only Ada picked: only Ada changes
-        JsonNode picked = importFile("changed.csv", false, Map.of("update", List.of(ada.get("key").asText()))).getBody();
+        JsonNode picked = importFile("changed.csv", false, Map.of("update", List.of(ada.get("key").asString())))
+                .getBody();
         assertThat(picked.get("summary").get("updated").asInt()).isEqualTo(1);
         assertThat(entryFor("Ada Lovelace", buggyClassId).getTransponderNumberSnapshot()).isEqualTo("77" + run);
         assertThat(entryFor("Grace Hopper " + run, truckClassId).getSecondaryTransponderNumber()).isNull();
@@ -220,7 +222,7 @@ class CsvImportIT extends AbstractIntegrationTest {
         // Back in a later file: shown as a change, re-entered when picked
         JsonNode back = importFile("initial.csv", true).getBody();
         JsonNode returning = row(back, "CHANGED", "Katherine Johnson " + run);
-        assertThat(returning.get("changes").get(0).get("field").asText()).isEqualTo("Status");
+        assertThat(returning.get("changes").get(0).get("field").asString()).isEqualTo("Status");
     }
 
     @Test
@@ -243,7 +245,7 @@ class CsvImportIT extends AbstractIntegrationTest {
 
         JsonNode body = importFile("missing.csv", false, Map.of("withdraw", List.of())).getBody();
 
-        assertThat(rows(body, "MISSING")).extracting(r -> r.get("name").asText())
+        assertThat(rows(body, "MISSING")).extracting(r -> r.get("name").asString())
                 .containsExactly("Katherine Johnson " + run);
         assertThat(entries()).filteredOn(e -> e.getStatus() == EntryStatus.CONFIRMED)
                 .extracting(this::competitorName).contains("Walk In " + run, "From RaceHub " + run);
@@ -268,8 +270,8 @@ class CsvImportIT extends AbstractIntegrationTest {
         assertThat(resp.getBody().get("blocked").asBoolean()).isTrue();
         JsonNode unmapped = resp.getBody().get("unmappedClasses").get(0);
         String key = "CSV:nitro truggy " + run;
-        assertThat(unmapped.get("key").asText()).isEqualTo(key);
-        assertThat(unmapped.get("className").asText()).isEqualTo("Nitro Truggy " + run);
+        assertThat(unmapped.get("key").asString()).isEqualTo(key);
+        assertThat(unmapped.get("className").asString()).isEqualTo("Nitro Truggy " + run);
         assertThat(entries()).isEmpty();
 
         HttpHeaders headers = adminHeaders();
@@ -435,17 +437,17 @@ class CsvImportIT extends AbstractIntegrationTest {
 
     private static List<JsonNode> rows(JsonNode body, String group) {
         return StreamSupport.stream(body.get("rows").spliterator(), false)
-                .filter(r -> group.equals(r.get("group").asText())).toList();
+                .filter(r -> group.equals(r.get("group").asString())).toList();
     }
 
     private static JsonNode row(JsonNode body, String group, String name) {
-        return rows(body, group).stream().filter(r -> name.equals(r.get("name").asText())).findFirst()
+        return rows(body, group).stream().filter(r -> name.equals(r.get("name").asString())).findFirst()
                 .orElseThrow(() -> new AssertionError("No " + group + " row for " + name + " in " + body));
     }
 
     private static List<String> texts(JsonNode array) {
         List<String> out = new ArrayList<>();
-        array.forEach(n -> out.add(n.asText()));
+        array.forEach(n -> out.add(n.asString()));
         return out;
     }
 
@@ -460,7 +462,7 @@ class CsvImportIT extends AbstractIntegrationTest {
         competitorRepository.save(alan);
 
         JsonNode preview = importFile("changed.csv", true).getBody();
-        String key = row(preview, "CHANGED", "Alan M Turing").get("key").asText();
+        String key = row(preview, "CHANGED", "Alan M Turing").get("key").asString();
         importFile("changed.csv", false, Map.of("update", List.of(key)));
 
         Competitor after = competitorRepository.findById(alan.getId()).orElseThrow();

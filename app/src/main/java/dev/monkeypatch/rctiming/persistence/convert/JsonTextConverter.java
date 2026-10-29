@@ -1,9 +1,12 @@
 package dev.monkeypatch.rctiming.persistence.convert;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import dev.monkeypatch.rctiming.config.JacksonConfig;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Turns a value into JSON text for a column and back. Subclass it per value type; the jOOQ
@@ -16,7 +19,19 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
  */
 public abstract class JsonTextConverter<T> {
 
-    private static final ObjectMapper MAPPER = JsonMapper.builder().findAndAddModules().build();
+    /**
+     * Strict about unknown properties and writing dates and durations as numbers, as the plain Jackson 2 mapper this
+     * replaced was, so the text already stored in the columns reads back and new text matches it.
+     */
+    private static final ObjectMapper MAPPER = mapper();
+
+    private static ObjectMapper mapper() {
+        JsonMapper.Builder builder = JsonMapper.builder().findAndAddModules();
+        JacksonConfig.keepJackson2Defaults(builder);
+        return builder.enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS, DateTimeFeature.WRITE_DURATIONS_AS_TIMESTAMPS)
+                .build();
+    }
 
     private final TypeReference<T> type;
 
@@ -30,7 +45,7 @@ public abstract class JsonTextConverter<T> {
         }
         try {
             return MAPPER.writeValueAsString(attribute);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Can't write " + attribute.getClass().getSimpleName() + " as JSON", e);
         }
     }
@@ -41,7 +56,7 @@ public abstract class JsonTextConverter<T> {
         }
         try {
             return MAPPER.readValue(dbData, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new IllegalArgumentException("Can't read stored JSON as " + type.getType(), e);
         }
     }

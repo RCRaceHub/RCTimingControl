@@ -13,23 +13,19 @@ export function FeaturedLowerThird({
   media,
   panelClass,
   mutedClass,
-  bottom,
 }: {
   entryId: number | null;
   rows: LiveTimingRowDto[];
   media: Map<number, RaceMediaDto>;
   panelClass: string;
   mutedClass: string;
-  /** How far the card sits above the foot of the page, clear of the ticker and the sponsor bar. */
-  bottom: string;
 }) {
   const row = entryId === null ? undefined : rows.find((r) => r.entryId === entryId);
   if (!row) return null;
   const mine = media.get(row.entryId);
   return (
     <section
-      className={cn('fixed left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-lg px-5 py-3 font-sans shadow-lg', panelClass)}
-      style={{ bottom }}
+      className={cn('flex items-center gap-4 rounded-lg px-5 py-3 font-sans shadow-lg', panelClass)}
       aria-label="Featured driver"
     >
       {mine?.headshotUrl && <img src={mine.headshotUrl} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover" />}

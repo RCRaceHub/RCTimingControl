@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.api.admin;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
@@ -26,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -129,11 +129,11 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 Map.of("timeUpText", "Time up, one more lap.", "announceCarFinish", false));
 
         assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(saved.getBody().get("timeUpText").asText()).isEqualTo("Time up, one more lap.");
+        assertThat(saved.getBody().get("timeUpText").asString()).isEqualTo("Time up, one more lap.");
         assertThat(saved.getBody().get("announceCarFinish").asBoolean()).isFalse();
 
         ResponseEntity<JsonNode> reset = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("timeUpText", ""));
-        assertThat(reset.getBody().get("timeUpText").asText()).isEqualTo(ClubAudioSettings.DEFAULT_TIME_UP_TEXT);
+        assertThat(reset.getBody().get("timeUpText").asString()).isEqualTo(ClubAudioSettings.DEFAULT_TIME_UP_TEXT);
         assertThat(reset.getBody().get("announceCarFinish").asBoolean()).isFalse();
     }
 
@@ -159,10 +159,10 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
         JsonNode body = saved.getBody();
-        assertThat(body.get("wording").get("go").asText()).isEqualTo("Go go go!");
-        assertThat(body.get("wording").get("carFinish").asText()).isEqualTo("{name} is home in car {car}.");
+        assertThat(body.get("wording").get("go").asString()).isEqualTo("Go go go!");
+        assertThat(body.get("wording").get("carFinish").asString()).isEqualTo("{name} is home in car {car}.");
         // a line left empty has the standard wording
-        assertThat(body.get("wording").get("stop").asText()).isEqualTo("Race stopped.");
+        assertThat(body.get("wording").get("stop").asString()).isEqualTo("Race stopped.");
         assertThat(body.get("tuning").get("runningOrderLaterEveryMinutes").asInt()).isEqualTo(3);
         assertThat(body.get("tuning").get("finalSeconds").asInt()).isEqualTo(3);
         assertThat(body.get("tuning").get("lapBeepHz").asInt()).isEqualTo(600);
@@ -172,7 +172,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         // a patch that leaves them out keeps them
         JsonNode kept = call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", false)).getBody();
-        assertThat(kept.get("wording").get("go").asText()).isEqualTo("Go go go!");
+        assertThat(kept.get("wording").get("go").asString()).isEqualTo("Go go go!");
         assertThat(kept.get("tuning").get("finalSeconds").asInt()).isEqualTo(3);
     }
 
@@ -242,7 +242,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         profile.setDefaultVoiceId("");
         clubProfileRepository.save(profile);
         JsonNode shown = call(HttpMethod.GET, ADMIN_SETTINGS, null).getBody();
-        assertThat(shown.get("defaultVoiceId").asText()).isEmpty();
+        assertThat(shown.get("defaultVoiceId").asString()).isEmpty();
 
         Map<String, Object> form = new HashMap<>(Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
@@ -301,7 +301,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         assertThat(uploaded.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(uploaded.getBody().get("startMs").asInt()).isEqualTo(1500);
-        assertThat(uploaded.getBody().get("startUrl").asText()).contains("horns/start-").endsWith(".wav");
+        assertThat(uploaded.getBody().get("startUrl").asString()).contains("horns/start-").endsWith(".wav");
         assertThat(uploaded.getBody().get("finishUrl").isNull()).isTrue();
         // race control sees it with the rest of the settings, and changing a toggle keeps it
         call(HttpMethod.PATCH, RACE_CONTROL_SETTINGS, Map.of("startHorn", true));
@@ -323,16 +323,16 @@ class AudioSettingsIT extends AbstractIntegrationTest {
 
         assertThat(tick.get("tickMs").asInt()).isEqualTo(300);
         assertThat(lap.get("lapBeepMs").asInt()).isEqualTo(250);
-        assertThat(lap.get("lapBeepUrl").asText()).contains("horns/lap-beep-").endsWith(".mp3");
-        assertThat(lap.get("tickUrl").asText()).contains("horns/tick-");
+        assertThat(lap.get("lapBeepUrl").asString()).contains("horns/lap-beep-").endsWith(".mp3");
+        assertThat(lap.get("tickUrl").asString()).contains("horns/tick-");
         assertThat(lap.get("startMs").asInt()).isEqualTo(1500);
 
         JsonNode faster = uploadHorn("faster-beep", "audio/ogg", new byte[]{4}, 200).getBody();
         JsonNode slower = uploadHorn("slower-beep", "audio/wav", new byte[]{5}, 220).getBody();
-        assertThat(faster.get("fasterBeepUrl").asText()).contains("horns/faster-beep-").endsWith(".ogg");
-        assertThat(slower.get("slowerBeepUrl").asText()).contains("horns/slower-beep-").endsWith(".wav");
+        assertThat(faster.get("fasterBeepUrl").asString()).contains("horns/faster-beep-").endsWith(".ogg");
+        assertThat(slower.get("slowerBeepUrl").asString()).contains("horns/slower-beep-").endsWith(".wav");
         assertThat(slower.get("fasterBeepMs").asInt()).isEqualTo(200);
-        assertThat(slower.get("lapBeepUrl").asText()).contains("horns/lap-beep-");
+        assertThat(slower.get("lapBeepUrl").asString()).contains("horns/lap-beep-");
         JsonNode removed = call(HttpMethod.DELETE, "/api/v1/admin/audio/horns/lap-beep", null).getBody();
         assertThat(removed.get("lapBeepUrl").isNull()).isTrue();
         assertThat(removed.get("tickUrl").isNull()).isFalse();

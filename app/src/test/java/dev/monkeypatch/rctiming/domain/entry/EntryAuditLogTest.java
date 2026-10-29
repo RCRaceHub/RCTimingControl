@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.domain.entry;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -16,7 +16,7 @@ class EntryAuditLogTest {
         values.put("transponderNumberSnapshot", "1234");
         values.put("secondaryTransponderNumber", null);
 
-        assertThat(EntryAuditLog.snapshot(new ObjectMapper(), values))
+        assertThat(EntryAuditLog.snapshot(TestJson.mapper(), values))
                 .isEqualTo("{\"transponderNumberSnapshot\":\"1234\",\"secondaryTransponderNumber\":null}");
     }
 }

@@ -465,6 +465,8 @@ export default function MeetingGuidePage() {
             <span className="font-mono text-xs"> bars=hide</span>, <span className="font-mono text-xs">arrows=hide</span> and
             <span className="font-mono text-xs"> battles=hide</span> leave out those parts,
             <span className="font-mono text-xs"> close=SECONDS</span> sets how near counts as close,
+            <span className="font-mono text-xs"> place=chart:top-right</span> moves a part to another area of the screen (the
+            designer&apos;s drag-and-drop layout writes this),
             <span className="font-mono text-xs"> battlestyle=rows</span> or <span className="font-mono text-xs">both</span> highlights the chasing car&apos;s row in a battle,
             and <span className="font-mono text-xs">event=ID</span> follows one event. For
             example <span className="font-mono text-xs">/boards/overlay?top=6&amp;theme=light</span>.

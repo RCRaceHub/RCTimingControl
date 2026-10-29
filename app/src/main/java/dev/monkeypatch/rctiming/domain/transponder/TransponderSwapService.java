@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.transponder;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLog;
 import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
@@ -10,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.EnumSet;
@@ -131,7 +131,7 @@ public class TransponderSwapService {
             return Optional.empty();
         }
         try {
-            String slot = objectMapper.readTree(snapshot).path("slot").asText(null);
+            String slot = objectMapper.readTree(snapshot).path("slot").asString(null);
             return slot == null ? Optional.empty() : Optional.of(TransponderSlot.valueOf(slot));
         } catch (Exception e) {
             return Optional.empty();

@@ -1,7 +1,8 @@
 package dev.monkeypatch.rctiming.domain.club;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.monkeypatch.rctiming.TestJson;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,7 +13,7 @@ class ClubAudioSettingsTest {
         String saved = "{\"announceFinish\": true, \"announceLapBeep\": true, \"announceStagger\": true,"
                 + " \"announceCountdown\": true, \"runningOrderDepth\": 3, \"announceRunningOrder\": true}";
 
-        ClubAudioSettings settings = new ObjectMapper().readValue(saved, ClubAudioSettings.class);
+        ClubAudioSettings settings = TestJson.mapper().readValue(saved, ClubAudioSettings.class);
 
         assertThat(settings.startHorn()).isTrue();
         assertThat(settings.finishHorn()).isTrue();
@@ -48,7 +49,7 @@ class ClubAudioSettingsTest {
     void settingsSavedBeforeTheRunningOrderShareTakeFiftyPercentAndFive() throws Exception {
         String saved = "{\"announceRunningOrder\": true, \"runningOrderDepth\": 3}";
 
-        ClubAudioSettings settings = new ObjectMapper().readValue(saved, ClubAudioSettings.class);
+        ClubAudioSettings settings = TestJson.mapper().readValue(saved, ClubAudioSettings.class);
 
         assertThat(settings.runningOrderPercent()).isEqualTo(50);
         assertThat(settings.runningOrderAllUpTo()).isEqualTo(5);
@@ -56,7 +57,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void savedChoicesAreKept() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = TestJson.mapper();
         ClubAudioSettings changed = new ClubAudioSettings(true, true, true, true, true, 3, null,
                 false, false, false, false, 10);
 
@@ -71,7 +72,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void settingsSavedBeforeTheFinishCallsCallEachCarAndUseTheStandardTimeWording() throws Exception {
-        ClubAudioSettings settings = new ObjectMapper()
+        ClubAudioSettings settings = TestJson.mapper()
                 .readValue("{\"announceFinish\": true}", ClubAudioSettings.class);
 
         assertThat(settings.announceCarFinish()).isTrue();
@@ -92,7 +93,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void settingsSavedBeforeTheWordingAndTuningTakeTheStandardOnes() throws Exception {
-        ClubAudioSettings settings = new ObjectMapper()
+        ClubAudioSettings settings = TestJson.mapper()
                 .readValue("{\"announceFinish\": true}", ClubAudioSettings.class);
 
         assertThat(settings.wording()).isEqualTo(ClubAudioSettings.Wording.STANDARD);
@@ -127,7 +128,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void theSoundsFromBeforeTheTickAndLapBeepHaveNoneOfThem() throws Exception {
-        ClubAudioSettings settings = new ObjectMapper().readValue(
+        ClubAudioSettings settings = TestJson.mapper().readValue(
                 "{\"hornSounds\": {\"startUrl\": \"a.wav\", \"startMs\": 900}}", ClubAudioSettings.class);
 
         assertThat(settings.hornSounds().startMs()).isEqualTo(900);
@@ -139,7 +140,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void theClubsWordingAndTuningSurviveBeingSavedAndRead() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = TestJson.mapper();
         ClubAudioSettings own = ClubAudioSettings.defaults()
                 .withHornSounds(ClubAudioSettings.HornSounds.NONE.withTick("t.wav", 250));
         ClubAudioSettings changed = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null,
@@ -160,7 +161,7 @@ class ClubAudioSettingsTest {
 
     @Test
     void firstNamesOnlyIsOffUntilSwitchedOnAndChangesTheClips() throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = TestJson.mapper();
         ClubAudioSettings standard = ClubAudioSettings.defaults();
         ClubAudioSettings firstNames = new ClubAudioSettings(true, true, true, true, true, 3, null, null, null, null,
                 null, null, standard.hornSounds(), null, null, false, false, null,
