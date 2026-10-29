@@ -8,4 +8,5 @@ POST /api/v1/admin/competitors/spoken-name/preview | READ-ONLY: plays the text, 
 POST /api/v1/admin/events/{eventId}/entry-feed/fetch | EXEMPT: downloads the file and holds it for an official to confirm, changing no entries; the import it leads to is audited
 POST /api/v1/admin/events/{eventId}/entry-feed/preview | READ-ONLY: previews the held file, applies nothing
 POST /api/v1/race-control/race/{raceId}/skip-to | READ-ONLY: checks the run order, stores nothing
+POST /api/v1/race-control/race/{raceId}/featured-driver | READ-ONLY: sends a one-off message to the stream overlay, stores nothing
 POST /api/v1/setup/decoder-config/test | READ-ONLY: tries a decoder address, saves nothing
