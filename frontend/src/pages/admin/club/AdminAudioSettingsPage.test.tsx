@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminAudioSettingsPage from './AdminAudioSettingsPage';
 
@@ -9,6 +9,8 @@ vi.mock('@/lib/audioApi', async (importOriginal) => ({
   getAdminAudioSettings: vi.fn(),
   saveAdminAudioSettings: vi.fn(),
   listVoices: vi.fn(),
+  listAudioTemplates: vi.fn(),
+  applyAudioTemplate: vi.fn(),
 }));
 
 import * as audioApi from '@/lib/audioApi';
@@ -40,6 +42,7 @@ describe('AdminAudioSettingsPage', () => {
     vi.mocked(audioApi.getAdminAudioSettings).mockResolvedValue(defaultSettings as never);
     vi.mocked(audioApi.saveAdminAudioSettings).mockResolvedValue(defaultSettings as never);
     vi.mocked(audioApi.listVoices).mockResolvedValue(voices as never);
+    vi.mocked(audioApi.listAudioTemplates).mockResolvedValue([{ id: 7, name: 'Practice', settings: {} as never }]);
   });
 
   it('renders default announcement toggles', async () => {
@@ -89,5 +92,29 @@ describe('AdminAudioSettingsPage', () => {
 
     await waitFor(() => expect(audioApi.saveAdminAudioSettings).toHaveBeenCalled());
     expect(vi.mocked(audioApi.saveAdminAudioSettings).mock.calls[0][0]).toMatchObject({ startCountdownSeconds: 20 });
+  });
+
+  it('offers the audio templates, and asks before one replaces unsaved edits', async () => {
+    vi.mocked(audioApi.applyAudioTemplate).mockResolvedValue(defaultSettings as never);
+    render(<AdminAudioSettingsPage />, { wrapper });
+    await screen.findByRole('option', { name: 'Practice' });
+    const toggle = await screen.findByLabelText('Lap beeps');
+    fireEvent.click(toggle);
+    fireEvent.change(screen.getByLabelText('Audio template'), { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(audioApi.applyAudioTemplate).toHaveBeenCalledWith(7));
+    // The edit is gone: the page shows the saved setting again
+    await waitFor(() => expect(screen.getByLabelText('Lap beeps')).not.toBeChecked());
+  });
+
+  it('applies a template without asking when nothing is unsaved', async () => {
+    vi.mocked(audioApi.applyAudioTemplate).mockResolvedValue(defaultSettings as never);
+    render(<AdminAudioSettingsPage />, { wrapper });
+    await screen.findByRole('option', { name: 'Practice' });
+    fireEvent.change(screen.getByLabelText('Audio template'), { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    await waitFor(() => expect(audioApi.applyAudioTemplate).toHaveBeenCalledWith(7));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
