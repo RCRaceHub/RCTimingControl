@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,8 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
   const [cutout, setCutout] = useState<Blob | null>(null);
   const [cutoutUrl, setCutoutUrl] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  // Bumped by every new pick or cancel, so a cut-out that finishes late is thrown away instead of attached to another file
+  const request = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +52,8 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
   }, [cutout]);
 
   const reset = () => {
+    request.current += 1;
+    setWorking(false);
     setOriginal(null);
     setOriginalUrl(null);
     setCutout(null);
@@ -67,14 +71,17 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
     setRemove(checked);
     setError(null);
     if (!checked || cutout || !original) return;
+    const mine = ++request.current;
     setWorking(true);
     try {
-      setCutout(await removeBackground(original));
+      const result = await removeBackground(original);
+      if (mine === request.current) setCutout(result);
     } catch (e) {
+      if (mine !== request.current) return;
       setRemove(false);
       setError(e instanceof Error ? e.message : 'The background could not be removed. The original is kept.');
     } finally {
-      setWorking(false);
+      if (mine === request.current) setWorking(false);
     }
   };
 
@@ -96,6 +103,7 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
           accept="image/png,image/jpeg"
           className="sr-only"
           aria-label={inputLabel}
+          disabled={working}
           onChange={e => {
             const file = e.target.files?.[0];
             if (file) choose(file);

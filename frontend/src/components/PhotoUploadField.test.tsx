@@ -56,6 +56,23 @@ describe('PhotoUploadField', () => {
     expect(screen.getByRole('button', { name: 'Save original' })).toBeEnabled();
   });
 
+  it('throws away a cut-out that finishes after Cancel', async () => {
+    let finish: (blob: Blob) => void = () => {};
+    cutOut.mockReturnValue(new Promise<Blob>(resolve => { finish = resolve; }));
+    const { onSave } = renderField();
+
+    fireEvent.click(screen.getByLabelText('Remove the background'));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    finish(new Blob(['png'], { type: 'image/png' }));
+    // Picking again must start from the new file, not the late result
+    const second = new File(['jpeg'], 'other.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByLabelText('Photo file'), { target: { files: [second] } });
+
+    expect(screen.queryByAltText('Without background')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save original' }));
+    expect(onSave).toHaveBeenCalledWith(second);
+  });
+
   it('discards the pick on Cancel', () => {
     const { onSave } = renderField();
 

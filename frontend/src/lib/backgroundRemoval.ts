@@ -120,6 +120,8 @@ function toPng(image: ImageData): Promise<Blob> {
  */
 export async function removeBackground(file: Blob): Promise<Blob> {
   const { ort, session: model } = await loadSession();
+  // The model runs on the page's own thread, so let the page paint ("Saving…") before it starts
+  await new Promise(resolve => setTimeout(resolve, 0));
   const bitmap = await createImageBitmap(file);
   try {
     const small = draw(bitmap, MODEL_SIZE, MODEL_SIZE);
@@ -127,8 +129,12 @@ export async function removeBackground(file: Blob): Promise<Blob> {
     const result = await model.run({ [model.inputNames[0]]: input });
     const mask = normaliseMask(result[model.outputNames[0]].data as Float32Array);
     let blob: Blob | null = null;
+    let lastWidth = 0;
     for (const side of SIDES) {
       const { width, height } = fitWithin(bitmap.width, bitmap.height, side);
+      // A small picture is the same size at every side: do not encode it again
+      if (width === lastWidth) break;
+      lastWidth = width;
       const full = draw(bitmap, width, height);
       applyMask(full.data, width, height, mask, MODEL_SIZE);
       blob = await toPng(full);

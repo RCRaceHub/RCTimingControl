@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -44,18 +44,36 @@ export function BulkPhotoImportDialog({ open, onOpenChange, title, description, 
   const [remove, setRemove] = useState(true);
   const [running, setRunning] = useState(false);
 
+  // The pictures' preview addresses, freed when they are replaced, the dialog closes or the page goes
+  const previews = useRef<string[]>([]);
+  const release = () => {
+    previews.current.forEach(url => URL.revokeObjectURL(url));
+    previews.current = [];
+  };
+  useEffect(() => release, []);
+  // A running import cannot be closed over: it would keep saving pictures with no way to see or stop them
   const changeOpen = (next: boolean) => {
-    if (!next) setRows([]);
+    if (running && !next) return;
+    if (!next) {
+      release();
+      setRows([]);
+    }
     onOpenChange(next);
   };
-  useEffect(() => () => rows.forEach(r => URL.revokeObjectURL(r.previewUrl)), [rows]);
+
+  const createPreview = (file: File) => {
+    const url = URL.createObjectURL(file);
+    previews.current.push(url);
+    return url;
+  };
 
   const choose = (files: FileList | null) => {
     if (!files) return;
+    release();
     setRows(
       Array.from(files).map(file => ({
         file,
-        previewUrl: URL.createObjectURL(file),
+        previewUrl: createPreview(file),
         targetId: matchTarget(file.name, targets)?.id ?? null,
         state: 'ready',
         note: null,
@@ -154,7 +172,7 @@ export function BulkPhotoImportDialog({ open, onOpenChange, title, description, 
           )}
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => changeOpen(false)}>
+          <Button type="button" variant="outline" disabled={running} onClick={() => changeOpen(false)}>
             {done > 0 && !running ? 'Close' : 'Cancel'}
           </Button>
           <Button type="button" disabled={running || ready === 0} onClick={() => void run()}>

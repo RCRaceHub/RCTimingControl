@@ -7,12 +7,16 @@ export interface PhotoTarget {
 /** Lower case, accents dropped, punctuation turned to spaces: "Zoë_O'Neil-1.JPG" becomes "zoe o neil 1". */
 function words(text: string): string[] {
   return text
-    .replace(/\.[a-z0-9]{2,5}$/i, '')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter(Boolean);
+}
+
+/** A file name without its picture extension; a driver label is never stripped, so "A.Jones" keeps its A. */
+function withoutExtension(fileName: string): string {
+  return fileName.replace(/\.(jpe?g|png)$/i, '');
 }
 
 /** The words of a name in a fixed order, so "Rowe Alex" and "Alex Rowe" give the same key. */
@@ -26,9 +30,11 @@ function key(text: string): string {
  * more than one (two drivers with the same name), gives null so the official picks.
  */
 export function matchTarget(fileName: string, targets: PhotoTarget[]): PhotoTarget | null {
-  const withoutCounter = words(fileName).filter((w, i, all) => !(i === all.length - 1 && all.length > 1 && /^\d+$/.test(w)));
+  const name = withoutExtension(fileName);
+  const withoutCounter = words(name).filter((w, i, all) => !(i === all.length - 1 && all.length > 1 && /^\d+$/.test(w)));
   const wanted = [...withoutCounter].sort().join(' ');
-  const full = key(fileName);
+  const full = key(name);
+  if (!wanted && !full) return null;
   const found = targets.filter(t => {
     const k = key(t.label);
     return k === wanted || k === full;
