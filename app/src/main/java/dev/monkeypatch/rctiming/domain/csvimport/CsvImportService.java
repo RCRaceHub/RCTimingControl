@@ -177,7 +177,7 @@ public class CsvImportService {
         if (apply && created + updated + withdrawn > 0) {
             recordImport(actor, event, summary, rows);
         }
-        return new CsvImportResult(dryRun, blocked, apply, summary, unmappedClasses, errors, warnings, rows, photoLinks);
+        return new CsvImportResult(dryRun, blocked, apply, summary, unmappedClasses, errors, warnings, rows, photoLinks.stream().distinct().toList());
     }
 
     /** One audit row per import that changed entries: the counts, and each entry created, updated, withdrawn. */

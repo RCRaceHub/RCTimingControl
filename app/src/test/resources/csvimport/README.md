@@ -15,3 +15,4 @@ match by name against racing classes named `CSV Buggy {{run}}`, `CSV Truck {{run
 | `class-numbers.csv` | Classes given only by Class Number (the event's first and second class). |
 | `class-names.csv` | The same drivers as `class-numbers.csv`, with their classes given by name instead. |
 | `bad-names.csv` | A quoted name with a comma, and an unquoted name with a comma. |
+| `pictures.csv` | The `Headshot URL`, `Car Photo URL` and `Car Colours` columns (#699). Row 2 has an http address and a colour that is not `#rrggbb`, which are warned about and ignored. |

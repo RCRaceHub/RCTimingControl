@@ -190,7 +190,7 @@ public class RaceHubImportService {
         }
         return new RaceHubImportResult(dryRun, blocked, apply,
                 export.event() == null ? null : export.event().name(), export.revision(),
-                summary, unmappedClasses, errors, warnings, rows, photoLinks);
+                summary, unmappedClasses, errors, warnings, rows, photoLinks.stream().distinct().toList());
     }
 
     /** A RaceHub file must name its event, and one event takes one RaceHub event's entries. */

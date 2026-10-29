@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "event": {
+    "id": "evt-{{run}}",
+    "external_reference": "RH-2026-ROUND-3",
+    "name": "Club Round 3",
+    "event_local_date": "2026-10-18",
+    "timezone": "Europe/London"
+  },
+  "revision": 5,
+  "generated_at": "2026-10-11T09:00:00Z",
+  "entries": [
+    {
+      "entry_id": "a1-{{run}}",
+      "entry_version": 1,
+      "entry_status": "CONFIRMED",
+      "race_day_status": "NOT_ARRIVED",
+      "event_class_id": "rh-class-buggy-{{run}}",
+      "rc_class_name": "RH Buggy {{run}}",
+      "rc_class_number": "1",
+      "class_name": "2WD Buggy",
+      "driver_profile_id": "drv-ada-{{run}}",
+      "driver_display_name": "Ada Lovelace",
+      "brca_number": "BR{{run}}",
+      "brca_source": "BRCA",
+      "home_club": "Analytical RC",
+      "age_category": "SENIOR",
+      "grade": "A",
+      "primary_transponder": "71{{run}}",
+      "secondary_transponder": "72{{run}}",
+      "club_car_requested": false,
+      "club_car_name": null,
+      "email": "ada@example.com",
+      "date_of_birth": "1815-12-10",
+      "payment_status": "PAID",
+      "some_future_field": {
+        "nested": true
+      },
+      "headshot_url": "https://cdn.example.org/drivers/ada.png",
+      "car_photo_url": "https://cdn.example.org/cars/ada.jpg",
+      "car_colours": [
+        "#FF0000",
+        "#ffffff"
+      ]
+    },
+    {
+      "entry_id": "b2-{{run}}",
+      "entry_version": 3,
+      "entry_status": "CONFIRMED",
+      "race_day_status": "ARRIVED",
+      "event_class_id": "rh-class-truck-{{run}}",
+      "rc_class_name": "rh truck {{run}}",
+      "rc_class_number": "2",
+      "class_name": "Stadium Truck",
+      "driver_profile_id": "drv-grace-{{run}}",
+      "driver_display_name": "Grace Hopper",
+      "brca_number": null,
+      "brca_source": null,
+      "home_club": "Cobol Racers",
+      "age_category": "SENIOR",
+      "grade": "B",
+      "primary_transponder": "73{{run}}",
+      "secondary_transponder": null,
+      "club_car_requested": true,
+      "club_car_name": "Club truck 1",
+      "headshot_url": "http://insecure.example.org/grace.png",
+      "car_colours": [
+        "red"
+      ]
+    }
+  ]
+}

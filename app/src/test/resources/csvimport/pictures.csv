@@ -1,0 +1,3 @@
+Name,BRCA Number,Class,PT No,Headshot URL,Car Photo URL,Car Colours
+Ada Lovelace,1{{run}},CSV Buggy {{run}},71{{run}},https://cdn.example.org/ada.png,https://cdn.example.org/ada-car.jpg,#ff0000 #ffffff
+Grace Hopper {{run}},0,CSV Truck {{run}},73{{run}},http://insecure.example.org/grace.png,,red

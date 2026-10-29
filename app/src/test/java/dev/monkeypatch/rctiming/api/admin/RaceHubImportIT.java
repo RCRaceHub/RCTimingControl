@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
+import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.domain.user.Role;
@@ -53,6 +54,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper objectMapper;
     @Autowired TransponderSwapService swapService;
+    @Autowired DriverMediaService driverMedia;
 
     private String adminToken;
     private long adminUserId;
@@ -113,6 +115,29 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         var event = jdbc.queryForMap("select racehub_last_import_at, racehub_last_revision from events where id = ?", eventId);
         assertThat(((Number) event.get("racehub_last_revision")).longValue()).isEqualTo(4);
         assertThat(event.get("racehub_last_import_at")).isNotNull();
+    }
+
+    @Test
+    void pictureLinksAreReportedAndCarColoursSaved_butNothingIsFetched() {
+        JsonNode preview = importFixture("entries-v1-media.json", true).getBody();
+        assertThat(preview.get("photoLinks")).isEmpty();
+        // Entry 2 has an http address and a colour that is not #rrggbb: warned about, never blocking
+        assertThat(preview.get("blocked").asBoolean()).isFalse();
+        assertThat(preview.get("warnings").toString()).contains("entry b2-" + run).contains("headshot address");
+
+        JsonNode body = importFixture("entries-v1-media.json", false).getBody();
+
+        assertThat(body.get("applied").asBoolean()).isTrue();
+        JsonNode links = body.get("photoLinks");
+        assertThat(links.size()).isEqualTo(2);
+        Entry ada = entry("a1");
+        assertThat(links.get(0).get("kind").asString()).isEqualTo("HEADSHOT");
+        assertThat(links.get(0).get("competitorId").asLong()).isEqualTo(ada.getCompetitorId());
+        assertThat(links.get(0).get("url").asString()).isEqualTo("https://cdn.example.org/drivers/ada.png");
+        assertThat(links.get(1).get("kind").asString()).isEqualTo("CAR_PHOTO");
+        assertThat(links.get(1).get("entryId").asLong()).isEqualTo(ada.getId());
+        assertThat(driverMedia.carColours(ada.getId())).containsExactly("#ff0000", "#ffffff");
+        assertThat(driverMedia.carColours(entry("b2").getId())).isEmpty();
     }
 
     @Test
