@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Saved overlay themes under {@code /api/v1/admin/overlay-themes}: list, read, create, change and delete. Reads are
+ * Saved overlay themes under {@code /api/v1/admin/overlay-themes}: list, read, create, change, delete, and set or clear the club's default. Reads are
  * open to ADMIN, RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad name or design
  * answers 400, a name already taken 409 and a missing theme 404.
  */
@@ -60,6 +60,23 @@ public class AdminOverlayThemeController {
     public OverlayThemeDto update(@PathVariable Long id,
                                   @RequestBody @Valid OverlayThemeRequest request) {
         return dto(service.update(CurrentOfficial.actor(), id, request.name(), request.design()));
+    }
+
+    /** Makes a theme the club's default. {@code PUT /{id}/default}; ADMIN or RACE_DIRECTOR; 404. Audited. */
+    @Audited("audit_log")
+    @PutMapping("/{id}/default")
+    @DirectorOrAdmin
+    public OverlayThemeDto setDefault(@PathVariable Long id) {
+        return dto(service.setDefault(CurrentOfficial.actor(), id));
+    }
+
+    /** Clears the club's default theme. {@code DELETE /default}; ADMIN or RACE_DIRECTOR; 204. Audited. */
+    @Audited("audit_log")
+    @DeleteMapping("/default")
+    @DirectorOrAdmin
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void clearDefault() {
+        service.clearDefault(CurrentOfficial.actor());
     }
 
     /** Deletes a theme. {@code DELETE /{id}}; ADMIN or RACE_DIRECTOR; 204; 404. Audited. */

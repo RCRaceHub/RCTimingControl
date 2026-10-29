@@ -111,6 +111,8 @@ To use it in OBS:
 2. Set the address to `http://<laptop>:8080/boards/overlay`.
 3. Set the size to about 450 × 520 pixels, then place and scale it over the video.
 
+**Saved themes and the default.** In the Overlay Designer, **Save theme** keeps the look (parts shown, on-screen layout, colours, ticker, sponsors) as a named theme. Themes belong to the club, not to an event, so any event can use any theme: add `?look=ID` to the address, or pick it in the designer. Keep a set of standard overlays by saving one theme for each (use **Duplicate** or **Save as new** to start the next from the last). **Save and make default** saves the theme and makes it the club's default: the plain address `/boards/overlay` (with or without `?event=ID`), including the Streaming overlay link in the Boards menu, then opens that theme. An address that carries its own options, or a `look=`, is not changed. **Clear default** puts the plain link back to the standard look.
+
 Options go on the end of the address:
 
 | Option | Effect |

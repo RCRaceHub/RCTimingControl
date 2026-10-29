@@ -15,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Saved overlay themes: the named looks of the streaming overlay. Called by {@code AdminOverlayThemeController}
@@ -52,6 +53,15 @@ public class OverlayThemeService {
     }
 
     /**
+     * The club's default theme, the look the plain overlay address opens. Empty when none is set, so the overlay then
+     * uses the options in its own address.
+     */
+    @ReadTransaction
+    public Optional<OverlayTheme> getDefault() {
+        return repository.findDefault();
+    }
+
+    /**
      * Adds a theme and records {@code OVERLAY_THEME_CREATED}.
      *
      * @throws IllegalArgumentException (400) for a blank or over-long name, or a design that is not a JSON object
@@ -75,6 +85,37 @@ public class OverlayThemeService {
         audit.entry(actor, "OVERLAY_THEME_UPDATED").entity("overlay_theme", id)
                 .summary("Changed the overlay theme " + saved.getName()).before(before).after(values(saved)).record();
         return saved;
+    }
+
+    /**
+     * Makes a theme the club's default and records {@code OVERLAY_THEME_DEFAULT_SET}; any earlier default stops being
+     * one in the same transaction, so there is never more than one. A club has one database, so the default is
+     * club-wide. @throws EntityNotFoundException (404) if the theme is missing
+     */
+    public OverlayTheme setDefault(Actor actor, Long id) {
+        OverlayTheme theme = get(id);
+        if (theme.getIsDefault()) {
+            return theme;
+        }
+        repository.findDefault().ifPresent(previous -> {
+            previous.setIsDefault(false);
+            repository.save(previous);
+        });
+        theme.setIsDefault(true);
+        OverlayTheme saved = repository.save(theme);
+        audit.entry(actor, "OVERLAY_THEME_DEFAULT_SET").entity("overlay_theme", id)
+                .summary("Made the overlay theme " + saved.getName() + " the default").record();
+        return saved;
+    }
+
+    /** Stops any theme being the default and records {@code OVERLAY_THEME_DEFAULT_CLEARED}; does nothing if none is. */
+    public void clearDefault(Actor actor) {
+        repository.findDefault().ifPresent(previous -> {
+            previous.setIsDefault(false);
+            repository.save(previous);
+            audit.entry(actor, "OVERLAY_THEME_DEFAULT_CLEARED").entity("overlay_theme", previous.getId())
+                    .summary("Cleared the default overlay theme " + previous.getName()).record();
+        });
     }
 
     /** Removes a theme and records {@code OVERLAY_THEME_DELETED}. @throws EntityNotFoundException (404) if it is missing */
@@ -124,6 +165,7 @@ public class OverlayThemeService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name", t.getName());
         m.put("design", t.getDesign());
+        m.put("default", t.getIsDefault());
         return m;
     }
 }

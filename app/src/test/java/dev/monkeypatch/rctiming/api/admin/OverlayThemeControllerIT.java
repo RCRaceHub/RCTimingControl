@@ -53,6 +53,7 @@ class OverlayThemeControllerIT extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        jdbc.update("update overlay_themes set is_default = 0");
         jdbc.update("delete from overlay_themes where name like 'it-%'");
     }
 
@@ -98,6 +99,37 @@ class OverlayThemeControllerIT extends AbstractIntegrationTest {
                 .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(send(HttpMethod.POST, ADMIN_URL, Map.of("name", " ", "design", Map.of()), directorToken)
                 .getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void oneThemeIsTheClubDefaultAndTheAnonymousDefaultEndpointReturnsIt() {
+        assertThat(restTemplate.getForEntity(PUBLIC_URL + "default", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        Long first = ((Number) send(HttpMethod.POST, ADMIN_URL, body(name), directorToken).getBody().get("id")).longValue();
+        Long second = ((Number) send(HttpMethod.POST, ADMIN_URL, body(name + "-b"), directorToken).getBody().get("id")).longValue();
+
+        assertThat(send(HttpMethod.PUT, ADMIN_URL + "/" + first + "/default", null, directorToken).getBody().get("isDefault"))
+                .isEqualTo(true);
+        assertThat(restTemplate.getForEntity(PUBLIC_URL + "default", Map.class).getBody().get("id"))
+                .isEqualTo(first.intValue());
+
+        send(HttpMethod.PUT, ADMIN_URL + "/" + second + "/default", null, directorToken);
+        assertThat(restTemplate.getForEntity(PUBLIC_URL + "default", Map.class).getBody().get("id"))
+                .isEqualTo(second.intValue());
+        assertThat(restTemplate.getForEntity(PUBLIC_URL + first, Map.class).getBody().get("isDefault")).isEqualTo(false);
+
+        assertThat(send(HttpMethod.DELETE, ADMIN_URL + "/default", null, directorToken).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(restTemplate.getForEntity(PUBLIC_URL + "default", Map.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void aRefereeCannotSetTheDefaultTheme() {
+        Long id = ((Number) send(HttpMethod.POST, ADMIN_URL, body(name), directorToken).getBody().get("id")).longValue();
+
+        assertThat(send(HttpMethod.PUT, ADMIN_URL + "/" + id + "/default", null, refereeToken).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     @Test

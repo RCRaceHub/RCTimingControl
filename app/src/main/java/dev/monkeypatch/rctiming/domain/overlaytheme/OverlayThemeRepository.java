@@ -27,6 +27,11 @@ public class OverlayThemeRepository extends JooqRepository<OverlayTheme, Overlay
         return findOne(OVERLAY_THEMES.NAME.eq(name));
     }
 
+    /** The club's default theme, if one is set. */
+    public Optional<OverlayTheme> findDefault() {
+        return findOne(OVERLAY_THEMES.IS_DEFAULT.eq(true));
+    }
+
     /** Every theme, by name. */
     public List<OverlayTheme> findAllByName() {
         return findWhere(OVERLAY_THEMES.ID.isNotNull(), OVERLAY_THEMES.NAME.asc());

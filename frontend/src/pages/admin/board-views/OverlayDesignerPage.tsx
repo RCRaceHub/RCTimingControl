@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
+import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,7 +71,8 @@ function ThemeSponsors({ themeId }: { themeId: number }) {
  * preview, and copies the address to paste into OBS as a browser source. The address carries the design, so a look can
  * be used with no setup. A design can also be saved as a named **theme** (the club's themes start with BRCA and Club):
  * the address of an unchanged saved theme is `?look=ID`, so editing the theme later changes every overlay that uses
- * it. A theme holds everything but the event. Open to ADMIN and RACE_DIRECTOR.
+ * it. A theme holds everything but the event. One theme can be the club's default, which the plain overlay link opens.
+ * Open to ADMIN and RACE_DIRECTOR.
  */
 export default function OverlayDesignerPage() {
   const { confirm, dialog } = useConfirm();
@@ -110,17 +112,28 @@ export default function OverlayDesignerPage() {
   }
 
   const saveTheme = useMutation({
-    mutationFn: ({ id, name }: { id: number | null; name: string }) => {
+    mutationFn: async ({ id, name, makeDefault = false }: { id: number | null; name: string; makeDefault?: boolean }) => {
       const body = { name, design: themeDesignToSave(design) };
-      return id === null ? overlayThemesAdminApi.create(body) : overlayThemesAdminApi.update(id, body);
+      const saved = id === null ? await overlayThemesAdminApi.create(body) : await overlayThemesAdminApi.update(id, body);
+      return makeDefault ? overlayThemesAdminApi.setDefault(saved.id) : saved;
     },
-    onSuccess: (saved) => {
+    onSuccess: (saved, { makeDefault }) => {
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.all() });
+      queryClient.invalidateQueries({ queryKey: publicQueryKeys.boards.defaultOverlayTheme() });
       setThemeId(saved.id);
       setThemeName(saved.name);
-      toast.success(`Saved the theme ${saved.name}`);
+      toast.success(makeDefault ? `Saved ${saved.name} as the default theme` : `Saved the theme ${saved.name}`);
     },
     onError: (e) => toast.error(getApiErrorMessage(e, 'Could not save the theme')),
+  });
+  const clearDefault = useMutation({
+    mutationFn: () => overlayThemesAdminApi.clearDefault(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.overlayThemes.all() });
+      queryClient.invalidateQueries({ queryKey: publicQueryKeys.boards.defaultOverlayTheme() });
+      toast.success('The plain overlay link no longer uses a theme');
+    },
+    onError: (e) => toast.error(getApiErrorMessage(e, 'Could not clear the default theme')),
   });
   const duplicateTheme = useMutation({
     mutationFn: (source: OverlayThemeDto) => {
@@ -222,7 +235,7 @@ export default function OverlayDesignerPage() {
               >
                 <option value="">None (design below)</option>
                 {themes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id}>{t.isDefault ? `${t.name} (default)` : t.name}</option>
                 ))}
               </select>
             </div>
@@ -236,6 +249,11 @@ export default function OverlayDesignerPage() {
                 OBS a short address that follows later edits.
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              {themes.some((t) => t.isDefault)
+                ? `The plain overlay link (/boards/overlay, from the Boards menu) opens ${themes.find((t) => t.isDefault)?.name}.`
+                : 'No default theme: the plain overlay link shows the standard look. Save a theme as the default to change that.'}
+            </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
@@ -244,6 +262,19 @@ export default function OverlayDesignerPage() {
               >
                 Save theme
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={themeName.trim() === '' || saveTheme.isPending}
+                onClick={() => saveTheme.mutate({ id: themeId, name: themeName.trim(), makeDefault: true })}
+              >
+                Save and make default
+              </Button>
+              {theme?.isDefault && (
+                <Button size="sm" variant="outline" disabled={clearDefault.isPending} onClick={() => clearDefault.mutate()}>
+                  Clear default
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"

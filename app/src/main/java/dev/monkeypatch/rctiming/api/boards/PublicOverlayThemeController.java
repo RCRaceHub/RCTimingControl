@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.api.boards;
 import dev.monkeypatch.rctiming.api.boards.dto.OverlayThemeDto;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayTheme;
 import dev.monkeypatch.rctiming.domain.overlaytheme.OverlayThemeService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,17 @@ public class PublicOverlayThemeController {
 
     public PublicOverlayThemeController(OverlayThemeService service) {
         this.service = service;
+    }
+
+    /**
+     * The club's default theme, which the plain overlay address opens. {@code GET /default}; 204 with no body when no
+     * theme is the default.
+     */
+    @GetMapping("/default")
+    public ResponseEntity<OverlayThemeDto> getDefault() {
+        return service.getDefault()
+                .map(theme -> ResponseEntity.ok(OverlayThemeDto.from(theme, service.designOf(theme))))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     /** One theme by id. {@code GET /{id}}; 404 if there is none. */

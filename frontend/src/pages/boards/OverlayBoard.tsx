@@ -48,7 +48,7 @@ import { FeaturedLowerThird } from './FeaturedLowerThird';
 import { OverlayZones } from './OverlayZones';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { useBoardSponsorsQuery, useLiveQualifyingQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
+import { useBoardSponsorsQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 const THEMES = {
   dark: {
@@ -251,23 +251,25 @@ const THEME_POLL_MS = 15000;
 /**
  * The options the overlay draws with. With `?look=ID` they come from that saved theme (only `event` still comes from the
  * address, as a theme does not pick an event); while the theme loads, or if it is gone, the address's own options apply.
+ * An address with nothing but (at most) `event` is the plain link, and opens the club's default theme when one is set.
  */
-function useOverlayParams(): URLSearchParams {
+function useOverlayParams(): { searchParams: URLSearchParams; lookId: number | null } {
   const [searchParams] = useSearchParams();
   const lookId = parseEventParam(searchParams.get('look'));
-  const { data: look } = useOverlayThemeQuery(lookId, { intervalMs: THEME_POLL_MS });
+  const plain = lookId === null && [...searchParams.keys()].every((key) => key === 'event');
+  const { data: chosen } = useOverlayThemeQuery(lookId, { intervalMs: THEME_POLL_MS });
+  const { data: defaultLook } = useDefaultOverlayThemeQuery(plain, { intervalMs: THEME_POLL_MS });
+  const look = chosen ?? (plain ? defaultLook : null);
   return useMemo(() => {
-    if (!look) return searchParams;
+    if (!look) return { searchParams, lookId };
     const design = { ...overlayDesignFromTheme(look.design), eventId: parseEventParam(searchParams.get('event')) };
-    return new URLSearchParams(overlayQuery(design));
-  }, [look, searchParams]);
+    return { searchParams: new URLSearchParams(overlayQuery(design)), lookId: look.id };
+  }, [look, searchParams, lookId]);
 }
 
 export default function OverlayBoard() {
-  const searchParams = useOverlayParams();
-  // The theme the overlay was opened with, whose own sponsors replace the event's when it has any
-  const [addressParams] = useSearchParams();
-  const lookId = parseEventParam(addressParams.get('look'));
+  // The theme the overlay draws with (opened with, or the club's default), whose own sponsors replace the event's when it has any
+  const { searchParams, lookId } = useOverlayParams();
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, gap,

@@ -25,6 +25,7 @@ export const publicQueryKeys = {
     forcedClose: (raceId: number) => ['boards', 'forced-close', raceId] as const,
     positionHistory: (raceId: number | null, laps: number) => ['boards', 'position-history', raceId, laps] as const,
     ticker: (eventId: number | null) => ['boards', 'ticker', eventId] as const,
+    defaultOverlayTheme: () => ['boards', 'overlay-theme', 'default'] as const,
     overlayTheme: (id: number | null) => ['boards', 'overlay-theme', id] as const,
     sponsors: (eventId: number | null, themeId: number | null = null) => ['boards', 'sponsors', eventId, themeId] as const,
     media: (raceId: number | null) => ['boards', 'media', raceId] as const,
