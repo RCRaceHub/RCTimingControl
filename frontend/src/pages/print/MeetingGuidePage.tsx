@@ -467,6 +467,7 @@ export default function MeetingGuidePage() {
             <span className="font-mono text-xs"> close=SECONDS</span> sets how near counts as close,
             <span className="font-mono text-xs"> place=chart:top-right</span> moves a part to another area of the screen (the
             designer&apos;s drag-and-drop layout writes this),
+            <span className="font-mono text-xs"> battlestyle=rows</span> or <span className="font-mono text-xs">both</span> highlights the chasing car&apos;s row in a battle,
             and <span className="font-mono text-xs">event=ID</span> follows one event. For
             example <span className="font-mono text-xs">/boards/overlay?top=6&amp;theme=light</span>.
             You don&apos;t have to write these by hand: <span className="font-semibold">Admin, Overlay

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { LapProgressBar, type LapBarClock } from '@/components/LapProgressBar';
+import { BATTLE_ROW_CLASS, BattleRowTag } from '@/components/BattleRowTag';
 import { PaceIcon } from '@/components/PaceIcon';
 import { PredictedLaps } from '@/components/PredictedLaps';
 import { PositionArrow } from '@/components/PositionArrow';
@@ -11,6 +12,7 @@ import { RowMarkers } from '@/components/RowBadges';
 import { useNoSignal } from '@/hooks/race-control/useNoSignal';
 import { RowStateIcon } from '@/components/StateIcon';
 import type { FlashColor } from '@/hooks/race-control/useLapFlash';
+import type { BattleLink } from '@/lib/battles';
 import { isClose } from '@/lib/lapProgress';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
@@ -64,6 +66,8 @@ interface OverlayTowerProps {
   lapsView?: 'laps' | 'predicted';
   /** The laps column is fading out ahead of a change. */
   lapsFading?: boolean;
+  /** The chasing cars in a battle by entry id (#681); their rows are highlighted and say BATTLE. Omitted to leave rows plain. */
+  battles?: Map<number, BattleLink>;
 }
 
 const FLASH_CLASS: Record<string, string> = {
@@ -141,6 +145,7 @@ export function OverlayTower({
   gapFading = false,
   lapsView = 'laps',
   lapsFading = false,
+  battles,
 }: OverlayTowerProps) {
   const noSignal = useNoSignal(allRows, barClock);
   const tagging = classTags && new Set(allRows.map((r) => r.classColour ?? null)).size > 1;
@@ -173,6 +178,7 @@ export function OverlayTower({
           const flash = lapFlash.get(row.entryId);
           const close = isClose(row, closeMs);
           const projected = qualifying?.get(row.entryId);
+          const battle = battles?.get(row.entryId);
           const bumpLine = bumpUpPlaces > 0 && index === bumpUpPlaces;
           return (
             <div
@@ -180,6 +186,7 @@ export function OverlayTower({
               role="row"
               data-close={close || undefined}
               data-bump-line={bumpLine || undefined}
+              data-battle={battle ? 'true' : undefined}
               className={cn(
                 'absolute inset-x-0 flex items-center gap-1.5 border-t px-2 transition-[transform,background-color] duration-700 ease-in-out',
                 colours.row,
@@ -187,6 +194,7 @@ export function OverlayTower({
                 noSignal.has(row.entryId) && 'opacity-50',
                 close && !flash && 'bg-amber-500/25',
                 flash && FLASH_CLASS[flash],
+                battle && BATTLE_ROW_CLASS,
               )}
               style={{ height: `${TOWER_ROW_REM}rem`, transform: `translateY(${index * TOWER_ROW_REM}rem)` }}
             >
@@ -239,7 +247,7 @@ export function OverlayTower({
                 </span>
               )}
               <span className={cn('w-[4.5rem] shrink-0 text-right text-lg font-semibold tabular-nums', gapClass)}>
-                {gap === 'int' ? gapText(row) : leaderGapText(row)}
+                {battle ? <BattleRowTag link={battle} /> : gap === 'int' ? gapText(row) : leaderGapText(row)}
               </span>
             </div>
           );

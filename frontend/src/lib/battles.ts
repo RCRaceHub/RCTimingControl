@@ -41,3 +41,12 @@ export function gainingFastEntryIds(groups: BattleGroup[]): Set<number> {
   }
   return ids;
 }
+
+/** The car behind in each battle link, by entry id, with the link to the car ahead; a train has one per chaser (#681). */
+export function battleChasers(groups: BattleGroup[]): Map<number, BattleLink> {
+  const chasers = new Map<number, BattleLink>();
+  for (const group of groups) {
+    group.links.forEach((link, i) => chasers.set(group.cars[i + 1].entryId, link));
+  }
+  return chasers;
+}

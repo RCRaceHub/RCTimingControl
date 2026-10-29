@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayDesignFromTheme, overlayQuery,
-  parseLowerThird, parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
+  parseBattleStyle, parseLowerThird, parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
 } from '@/pages/boards/boardFormat';
 import type { OverlayThemeDto } from '@/lib/boardsApi';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
@@ -365,6 +365,19 @@ export default function OverlayDesignerPage() {
             <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />
             <Check label="Places gained arrows" checked={design.showArrows} onChange={(v) => set('showArrows', v)} />
             <Check label="Battles" checked={design.showBattles} onChange={(v) => set('showBattles', v)} />
+            <label className="flex items-center justify-between gap-2 text-sm">
+              Battles shown as
+              <select
+                className="h-8 rounded border bg-background px-2"
+                value={design.battleStyle}
+                disabled={!design.showBattles}
+                onChange={(e) => set('battleStyle', parseBattleStyle(e.target.value))}
+              >
+                <option value="panel">Bottom-left panel</option>
+                <option value="rows">Highlighted row of the chasing car</option>
+                <option value="both">Panel and highlighted row</option>
+              </select>
+            </label>
             <label className="flex items-center justify-between gap-2 text-sm">
               Featured-driver lower third
               <select

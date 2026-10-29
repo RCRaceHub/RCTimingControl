@@ -255,3 +255,13 @@
   100% { transform: translateX(0); }
 }
 .name-scroll[data-overflow] { animation: name-scroll 8s ease-in-out infinite; }
+
+/* The overlay's battle row (#681): the chasing car's chevrons and label pulse, held still for people who ask for less motion */
+@keyframes battle-pulse {
+  0%, 100% { opacity: 0.25; transform: translateX(-2px); }
+  50% { opacity: 1; transform: translateX(2px); }
+}
+.battle-pulse { display: inline-block; animation: battle-pulse 0.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .battle-pulse { animation: none; }
+}
