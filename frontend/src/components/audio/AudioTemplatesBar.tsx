@@ -109,7 +109,7 @@ export function AudioTemplatesBar({ unsaved }: { unsaved?: UnsavedEdits | null }
       await unsaved.save();
       return true;
     } catch {
-      toast.error('Could not save your changes, so the template was not changed.');
+      // The page's own save has already said why it failed
       return false;
     }
   };

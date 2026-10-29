@@ -38,8 +38,10 @@ export default function AdminAudioSettingsPage() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: (s: AudioSettingsDto) => saveAdminAudioSettings(s),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+    onSuccess: async () => {
+      // Show the server's copy once it is read back, so a setting the server normalised is not left looking unsaved
+      await queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+      setLocalSettings(null);
       toast.success('Audio settings saved.');
     },
     onError: () => toast.error('Failed to save settings.'),
