@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -100,6 +101,28 @@ class DecoderRecorderTest {
                 running.get(5, TimeUnit.SECONDS);
                 assertThat(running).isCompleted();
             }
+        }
+    }
+
+    @Test
+    void everyConnectedClientReceivesEachRecord(@TempDir Path dir) throws Exception {
+        try (RecordFanOut fanOut = new RecordFanOut(0);
+             Socket one = new Socket("127.0.0.1", fanOut.port());
+             Socket two = new Socket("127.0.0.1", fanOut.port())) {
+            one.setSoTimeout(5_000);
+            two.setSoTimeout(5_000);
+            String stream = "\u0001#\t20\t1\t72\t0\txDEAD\r\n";
+            DecoderRecorder recorder = new DecoderRecorder("h", 5100, dir.resolve("x.dump"), clock, fanOut);
+            // the acceptor registers clients on its own thread
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (fanOut.clientCount() < 2 && System.nanoTime() < deadline) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5));
+            }
+            byte[] expected = stream.getBytes(StandardCharsets.US_ASCII);
+            recorder.record(new ByteArrayInputStream(expected), new ByteArrayOutputStream(), new ByteArrayOutputStream());
+
+            assertThat(one.getInputStream().readNBytes(expected.length)).isEqualTo(expected);
+            assertThat(two.getInputStream().readNBytes(expected.length)).isEqualTo(expected);
         }
     }
 }

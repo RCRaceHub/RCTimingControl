@@ -13,10 +13,10 @@ import java.util.Set;
  * Entry point for {@code RCTimingControl record}: records a real RC-4 decoder to a {@code .dump} file.
  *
  * <pre>
- * RCTimingControl record --host=192.168.1.50 [--port=5100] [--out=capture.dump]
+ * RCTimingControl record --host=192.168.1.50 [--port=5100] [--out=capture.dump] [--listen-port=5101]
  * </pre>
  *
- * <p>{@code --out} defaults to {@code decoder-yyyyMMdd-HHmmss.dump} in the working folder. Stop it with Ctrl+C. Bad
+ * <p>{@code --out} defaults to {@code decoder-yyyyMMdd-HHmmss.dump} in the working folder. {@code --listen-port} also re-serves the records to other programs (proxy mode). Stop it with Ctrl+C. Bad
  * flags print usage and exit with status 2; a file that cannot be written ends it with a stack trace and
  * status 1. Replay the result with {@code simulate --mode=playback --file=...}.
  */
@@ -39,7 +39,7 @@ public class RecorderMain {
         if (host == null || host.isBlank()) {
             usage("--host is required");
         }
-        flags.keySet().stream().filter(k -> !Set.of("--host", "--port", "--out").contains(k))
+        flags.keySet().stream().filter(k -> !Set.of("--host", "--port", "--out", "--listen-port").contains(k))
                 .findFirst().ifPresent(k -> usage("Unknown flag: " + k));
         int port = 0;
         try {
@@ -50,6 +50,15 @@ public class RecorderMain {
         if (port < 1 || port > 65535) {
             usage("--port must be between 1 and 65535");
         }
+        int listenPort = 0;
+        try {
+            listenPort = Integer.parseInt(flags.getOrDefault("--listen-port", "0"));
+        } catch (NumberFormatException e) {
+            usage("--listen-port must be an integer");
+        }
+        if (listenPort < 0 || listenPort > 65535) {
+            usage("--listen-port must be between 1 and 65535");
+        }
         Path out = null;
         try {
             out = Path.of(flags.getOrDefault("--out",
@@ -58,7 +67,9 @@ public class RecorderMain {
             usage("--out is not a valid file name");
         }
 
-        DecoderRecorder recorder = new DecoderRecorder(host, port, out);
+        DecoderRecorder recorder = listenPort == 0
+                ? new DecoderRecorder(host, port, out)
+                : new DecoderRecorder(host, port, out, listenPort);
         Thread worker = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             recorder.stop();
@@ -77,7 +88,7 @@ public class RecorderMain {
         System.err.println("Error: " + error);
         System.err.println("""
             Usage:
-              record --host=192.168.1.50 [--port=5100] [--out=capture.dump]
+              record --host=192.168.1.50 [--port=5100] [--out=capture.dump] [--listen-port=5101]
             """);
         System.exit(2);
     }

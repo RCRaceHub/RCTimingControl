@@ -27,7 +27,8 @@ import java.time.Clock;
  * and the record without its SOH or CRLF. Both are flushed after every record, so a crash or a pulled plug loses at
  * most the record in flight (a power cut can lose more, as flushing hands bytes to the operating system only). Existing files are appended to, never overwritten.
  *
- * <p>The recorder only reads: it sends nothing to the decoder. It runs on the thread that calls {@link #run}; if the
+ * <p>The recorder only reads: it sends nothing to the decoder. With a listen port it also acts as a proxy, passing each
+ * record on to any number of other programs. It runs on the thread that calls {@link #run}; if the
  * connection drops or cannot be made it waits and tries again until {@link #stop()} is called or the thread is interrupted.
  */
 public class DecoderRecorder {
@@ -48,13 +49,27 @@ public class DecoderRecorder {
     private final Clock clock;
     private volatile boolean stopped;
     private volatile Socket current;
+    private final RecordFanOut fanOut;
 
     /** A recorder for the decoder at {@code host:port}, writing {@code dumpFile} and {@code dumpFile + ".times"}. */
     public DecoderRecorder(String host, int port, Path dumpFile) {
-        this(host, port, dumpFile, Clock.systemUTC());
+        this(host, port, dumpFile, Clock.systemUTC(), null);
+    }
+
+    /**
+     * As above, and also re-serving every record to other programs on {@code listenPort} (see {@link RecordFanOut}),
+     * so they can use this recorder as their decoder and the decoder keeps a single connection.
+     */
+    public DecoderRecorder(String host, int port, Path dumpFile, int listenPort) throws IOException {
+        this(host, port, dumpFile, Clock.systemUTC(), new RecordFanOut(listenPort));
     }
 
     DecoderRecorder(String host, int port, Path dumpFile, Clock clock) {
+        this(host, port, dumpFile, clock, null);
+    }
+
+    DecoderRecorder(String host, int port, Path dumpFile, Clock clock, RecordFanOut fanOut) {
+        this.fanOut = fanOut;
         this.host = host;
         this.port = port;
         this.dumpFile = dumpFile;
@@ -99,6 +114,9 @@ public class DecoderRecorder {
     /** Ends {@link #run()} promptly from another thread (the shutdown hook) by closing the blocked socket. */
     public void stop() {
         stopped = true;
+        if (fanOut != null) {
+            fanOut.close();
+        }
         Socket socket = current;
         if (socket != null) {
             try {
@@ -154,6 +172,12 @@ public class DecoderRecorder {
             dump.write(body);
             dump.write(newline);
             dump.flush();
+            if (fanOut != null) {
+                byte[] record = new byte[body.length + 1];
+                System.arraycopy(body, 0, record, 0, body.length);
+                record[body.length] = (byte) newline;
+                fanOut.send(record);
+            }
             String text = new String(body, StandardCharsets.US_ASCII);
             if (text.startsWith("\u0001")) {
                 text = text.substring(1);

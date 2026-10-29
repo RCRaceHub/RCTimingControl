@@ -87,7 +87,7 @@ To capture real race data as test data, run the recorder instead of (or, if your
 | Windows | `"C:\Program Files\RCTimingControl\RCTimingControl.exe" record --host=192.168.1.50` |
 | Linux | `/opt/rctimingcontrol/bin/RCTimingControl record --host=192.168.1.50` |
 
-Flags: `--host` (required), `--port` (default 5100) and `--out` (default `decoder-<date>-<time>.dump` in the current folder). Stop it with `Ctrl+C`. It reconnects if the decoder drops, and appends if the file already exists.
+Flags: `--host` (required), `--port` (default 5100), `--listen-port` (proxy mode, below) and `--out` (default `decoder-<date>-<time>.dump` in the current folder). Stop it with `Ctrl+C`. It reconnects if the decoder drops, and appends if the file already exists.
 
 To run it in Docker instead, build the small recorder image (it holds only the recorder, no app or database) and mount a folder for the files:
 
@@ -99,6 +99,16 @@ docker run --rm -v "$PWD/captures:/captures" rctc-recorder --host=192.168.1.50 -
 Use `docker run -it` so `Ctrl+C` stops it cleanly, or `docker stop` from another terminal. The container only needs to reach the decoder's address; no ports are published.
 
 It writes two files. `capture.dump` holds every record exactly as the decoder sent it, and the simulator replays it: `RCTimingControl simulate --mode=playback --file=capture.dump`. `capture.dump.times` holds the same records, each after the time in milliseconds since 1970 (UTC) at which the recorder received it, which is useful for checking real timing against the decoder's own clock.
+
+#### Proxy mode: one connection to the decoder, many programs
+
+Add `--listen-port=5101` and the recorder also re-serves everything it reads on that port. Point RCTC (**Admin → Decoder**, host = the recorder machine, port 5101), RCResults or another recorder at it instead of at the decoder. The decoder then sees a single connection, whatever its limit, and the recording is made at the same time.
+
+- Each client gets every record from the moment it connects (RC-4 has no handshake or history to replay, so a program that connects mid-race sees laps from then on).
+- A slow or stuck client is dropped without affecting the recording or the other clients.
+- Clients only receive. The proxy never sends anything to the decoder.
+- The port has no password, like the decoder's own. Keep it on the venue network.
+- In Docker, add `-p 5101:5101` to publish it.
 
 ---
 
