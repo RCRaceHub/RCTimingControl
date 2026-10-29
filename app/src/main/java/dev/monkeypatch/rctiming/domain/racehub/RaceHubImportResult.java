@@ -11,7 +11,7 @@ import java.util.List;
  * <p>{@code blocked} is also set on a dry run that a real import would have refused, so the page can show what to fix
  * before anyone tries. {@code revision} is the export's own revision number. {@code rows} says what happens to each
  * export entry; {@code summary} counts them by action. {@code photoLinks} are the headshot and car photo addresses of
- * the entries that were created or updated (#699), empty for a dry run and a blocked import; they are not fetched by
+ * the entries that were created, updated or found unchanged (#699), empty for a dry run and a blocked import; they are not fetched by
  * the import but by {@code PhotoImportService} afterwards.
  */
 public record RaceHubImportResult(

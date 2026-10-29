@@ -11,7 +11,7 @@ import dev.monkeypatch.rctiming.domain.media.PhotoImportService.Status;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +42,7 @@ class PhotoImportServiceTest {
     private PhotoImportService service;
 
     @BeforeEach
-    void setUp() throws IOException {
+    void setUp() throws Exception {
         Entry entry = new Entry();
         entry.setId(9L);
         entry.setCompetitorId(7L);
@@ -76,7 +76,7 @@ class PhotoImportServiceTest {
     }
 
     @Test
-    void skipsADriverWhoseNameIsNotShownInFull() throws IOException {
+    void skipsADriverWhoseNameIsNotShownInFull() throws Exception {
         when(competitors.findNameVisibilityNotShow()).thenReturn(Map.of(7L, NameVisibility.INITIALS));
 
         List<Outcome> out = service.fetchAll(ACTOR, 5L,
@@ -87,7 +87,7 @@ class PhotoImportServiceTest {
     }
 
     @Test
-    void keepsAPictureAlreadyHeldUnlessAskedToReplaceIt() throws IOException {
+    void keepsAPictureAlreadyHeldUnlessAskedToReplaceIt() throws Exception {
         DriverMedia held = new DriverMedia();
         held.setHeadshotUrl("/files/photos/old.png");
         when(media.findByCompetitorId(7L)).thenReturn(Optional.of(held));
@@ -99,7 +99,7 @@ class PhotoImportServiceTest {
     }
 
     @Test
-    void refusesALinkForSomeoneNotInTheEventAndAnAddressThatIsNotHttps() throws IOException {
+    void refusesALinkForSomeoneNotInTheEventAndAnAddressThatIsNotHttps() throws Exception {
         List<Outcome> out = service.fetchAll(ACTOR, 5L,
                 List.of(headshot(99L, "https://cdn.example.org/a.png"), car(99L, "https://cdn.example.org/c.png"),
                         headshot(7L, "http://cdn.example.org/a.png")), false);
@@ -109,8 +109,8 @@ class PhotoImportServiceTest {
     }
 
     @Test
-    void oneFailedFetchDoesNotStopTheNext() throws IOException {
-        when(fetcher.fetch(eq("https://cdn.example.org/bad.png"), anyInt())).thenThrow(new IOException("The server answered 404"));
+    void oneFailedFetchDoesNotStopTheNext() throws Exception {
+        when(fetcher.fetch(eq("https://cdn.example.org/bad.png"), anyInt())).thenThrow(new PhotoFetcher.FetchException("The server answered 404"));
 
         List<Outcome> out = service.fetchAll(ACTOR, 5L,
                 List.of(headshot(7L, "https://cdn.example.org/bad.png"), car(9L, "https://cdn.example.org/c.jpg")), false);
@@ -128,13 +128,13 @@ class PhotoImportServiceTest {
 
         assertThat(out).singleElement().satisfies(o -> {
             assertThat(o.status()).isEqualTo(Status.FAILED);
-            assertThat(o.message()).contains("not a PNG or JPEG");
+            assertThat(o.message()).contains("PNG or JPEG");
         });
     }
 
     @Test
     void refusesMoreLinksThanOneCallTakes() {
-        List<PhotoLink> many = java.util.Collections.nCopies(PhotoImportService.MAX_LINKS + 1,
+        List<PhotoLink> many = Collections.nCopies(PhotoImportService.MAX_LINKS + 1,
                 headshot(7L, "https://cdn.example.org/a.png"));
 
         assertThatThrownBy(() -> service.fetchAll(ACTOR, 5L, many, false)).isInstanceOf(IllegalArgumentException.class);

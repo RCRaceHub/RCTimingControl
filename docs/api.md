@@ -405,7 +405,7 @@ Entries, drivers and class mappings are kept per `source`, so another system's i
 
 ### Pictures named by an import (#699)
 
-A real RaceHub, feed or CSV import answers with `photoLinks`: `[ { "kind": "HEADSHOT", "competitorId": 7, "entryId": null, "url": "https://…" }, { "kind": "CAR_PHOTO", "competitorId": null, "entryId": 9, "url": "https://…" } ]` for the rows it created or updated (CSV: also unchanged rows). It is empty for a dry run and a blocked import. The import saves car colours itself but never fetches a picture inside its transaction. An unusable address or colour list is a warning in the preview, never an error.
+A real RaceHub, feed or CSV import answers with `photoLinks`: `[ { "kind": "HEADSHOT", "competitorId": 7, "entryId": null, "url": "https://…" }, { "kind": "CAR_PHOTO", "competitorId": null, "entryId": 9, "url": "https://…" } ]` for the rows it created, updated or found unchanged. It is empty for a dry run and a blocked import. The import saves car colours itself but never fetches a picture inside its transaction. An unusable address or colour list is a warning in the preview, never an error.
 
 ```http
 POST /admin/events/{eventId}/photo-import
@@ -414,7 +414,7 @@ Content-Type: application/json
 { "links": [ { "kind": "HEADSHOT", "competitorId": 7, "url": "https://…" } ], "replaceExisting": false }
 ```
 
-Requires `ADMIN`; at most 1000 links (400 above that), 404 for an unknown event. It answers **200** with `{ "stored": 1, "skipped": 0, "failed": 0, "items": [ { "kind", "competitorId", "entryId", "status": "STORED", "message": null, "storedUrl": "/storage/photos/….png" } ] }`, one item per link in order, so one bad address never stops the rest. Each link is fetched by the server (`https` only, public hosts only, no redirects, 10 seconds, PNG or JPEG by content up to 2 MB) and stored as an upload is. A link is `SKIPPED` when the driver's name is not shown in full or a picture is already held and `replaceExisting` is false, and `FAILED` when the target is not in the event, the address is unusable or the fetch or image check fails (`message` says why; the address is not echoed). Each stored picture writes an audit row (`DRIVER_HEADSHOT_IMPORTED` or `ENTRY_CAR_PHOTO_IMPORTED`) naming the competitor or entry by id.
+Requires `ADMIN`; at most 1000 links (400 above that), 404 for an unknown event. It answers **200** with `{ "stored": 1, "skipped": 0, "failed": 0, "items": [ { "kind", "competitorId", "entryId", "status": "STORED", "message": null, "storedUrl": "/storage/photos/….png" } ] }`, one item per link in order, so one bad address never stops the rest. Each link is fetched by the server (`https` only, public hosts only, no redirects, 20 seconds, PNG or JPEG by content up to 2 MB and 25 million pixels) and stored as an upload is. A link is `SKIPPED` when the driver's name is not shown in full or a picture is already held and `replaceExisting` is false, and `FAILED` when the target is not in the event, the address is unusable or the fetch or image check fails (`message` is fixed text saying why; the address is not echoed). Each stored picture writes an audit row (`DRIVER_HEADSHOT_IMPORTED` or `ENTRY_CAR_PHOTO_IMPORTED`) naming the competitor or entry by id.
 
 ### Class mappings
 

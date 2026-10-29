@@ -157,10 +157,15 @@ public class RaceHubImportService {
             plan.stream().filter(p -> p.action == Action.WITHDRAW)
                     .forEach(p -> savedIds.put(p, applyRow(eventId, p, competitors, source)));
             plan.stream().filter(p -> p.action != Action.WITHDRAW).forEach(p -> {
-                savedIds.put(p, applyRow(eventId, p, competitors, source));
-                if (p.action == Action.CREATE || p.action == Action.UPDATE) {
-                    photoLinks.addAll(mediaImport.apply(actor, competitors.get(p.row.driverProfileId()).getId(),
-                            savedIds.get(p), p.row.headshotUrl(), p.row.carPhotoUrl(), p.row.carColours()));
+                Long entryId = applyRow(eventId, p, competitors, source);
+                savedIds.put(p, entryId);
+                // An unchanged row names its pictures again, so ones skipped or failed earlier can be fetched on a
+                // re-import; a stale or skipped row is not current
+                if (p.action == Action.CREATE || p.action == Action.UPDATE
+                        || p.action == Action.UNCHANGED && "CONFIRMED".equals(p.row.entryStatus())) {
+                    Entry saved = entryRepository.getOrThrow(entryId);
+                    photoLinks.addAll(mediaImport.apply(actor, saved.getCompetitorId(), entryId,
+                            p.row.headshotUrl(), p.row.carPhotoUrl(), p.row.carColours()));
                 }
             });
             if (fromRaceHub) {

@@ -53,7 +53,10 @@ import java.util.stream.Collectors;
 public class DriverMediaService {
 
     private static final Set<String> IMAGE_TYPES = Set.of("image/png", "image/jpeg");
-    private static final long IMAGE_MAX_BYTES = 2 * 1024 * 1024L;
+    /** The largest picture accepted, in bytes. */
+    public static final long IMAGE_MAX_BYTES = 2 * 1024 * 1024L;
+    /** The most pixels a picture may decode to, so a small file cannot expand into an enormous raster. */
+    private static final long IMAGE_MAX_PIXELS = 25_000_000L;
     /** Where pictures are kept in object storage; only files under it are ever deleted by this class. */
     private static final String PHOTO_FOLDER = "photos";
     private static final int SPONSORS_MAX = 5;
@@ -137,8 +140,9 @@ public class DriverMediaService {
     public List<String> setCarColours(Actor actor, long entryId, List<String> colours) {
         Entry entry = entries.getOrThrow(entryId);
         List<String> clean = cleanColours(colours);
-        if (colourProblem(clean) != null) {
-            throw new IllegalArgumentException(colourProblem(clean));
+        String problem = colourProblem(clean);
+        if (problem != null) {
+            throw new IllegalArgumentException(problem);
         }
         if (clean.isEmpty()) {
             carColours.findByEntryId(entryId).ifPresent(c -> carColours.deleteById(c.getId()));
@@ -445,6 +449,7 @@ public class DriverMediaService {
     /** Decodes the upload and writes it out again, so only pixels are kept; fails for anything that is not an image. */
     private static byte[] reencode(byte[] original, String contentType) {
         try {
+            checkPixels(original, contentType);
             BufferedImage image = ImageIO.read(new ByteArrayInputStream(original));
             if (image == null) {
                 throw new IllegalArgumentException("The file is not a readable " + contentType + " image");
@@ -463,6 +468,25 @@ public class DriverMediaService {
             return bytes.toByteArray();
         } catch (IOException e) {
             throw new IllegalArgumentException("Could not read uploaded file: " + e.getMessage(), e);
+        }
+    }
+
+    /** Reads only the picture's declared size, and refuses one that would decode to more than 25 million pixels. */
+    private static void checkPixels(byte[] original, String contentType) throws IOException {
+        try (var in = ImageIO.createImageInputStream(new ByteArrayInputStream(original))) {
+            var readers = ImageIO.getImageReaders(in);
+            if (!readers.hasNext()) {
+                throw new IllegalArgumentException("The file is not a readable " + contentType + " image");
+            }
+            var reader = readers.next();
+            try {
+                reader.setInput(in, true, true);
+                if ((long) reader.getWidth(0) * reader.getHeight(0) > IMAGE_MAX_PIXELS) {
+                    throw new IllegalArgumentException("The picture is too large: at most 25 million pixels");
+                }
+            } finally {
+                reader.dispose();
+            }
         }
     }
 

@@ -57,10 +57,10 @@ RCTC downloads each picture itself, from the laptop, and keeps its own copy. Wha
 | Rule | Why |
 |------|-----|
 | `https` only, with a host, no user name or password in it, at most 500 characters | Anything else is ignored with a warning in the import preview. |
-| The host must resolve to **public** addresses | RCTC sits on the venue network and refuses loopback, private (10.x, 172.16-31.x, 192.168.x), link-local and IPv6 unique-local addresses, so a file cannot point it at something inside the venue. |
+| The host must resolve to **public** addresses | RCTC sits on the venue network and refuses loopback, private (10.x, 172.16-31.x, 192.168.x), link-local, carrier-grade NAT (100.64.x), reserved and IPv6 unique-local, 6to4 and NAT64 addresses, so a file cannot point it at something inside the venue. |
 | Answer `200` with the picture itself; **redirects are not followed** | A redirect could lead somewhere private. Give the final address. |
 | No login, cookie or header is sent | The address must work for anyone who has it. A signed or expiring address is fine, but it must still work when an official asks for the pictures, usually minutes after the import and possibly the evening before the meeting: allow at least 24 hours. |
-| **PNG or JPEG**, up to **2 MB**, no longer than 10 seconds to answer | RCTC decides the type from the first bytes of the file, not from the extension or `Content-Type`. SVG, WebP, GIF and HTML are refused. |
+| **PNG or JPEG**, up to **2 MB** and 25 million pixels, answered within 20 seconds in total | RCTC decides the type from the first bytes of the file, not from the extension or `Content-Type`. SVG, WebP, GIF and HTML are refused. |
 | Any pixel size | RCTC decodes and re-encodes every picture, which drops metadata such as a phone's GPS position. About 800 to 1600 pixels on the long side is plenty for the boards; a bigger picture only risks the 2 MB limit. A PNG keeps its transparency. |
 
 A picture that cannot be fetched or is not a usable image is reported to the official as failed and the rest carry on. It never blocks the entries.
@@ -71,10 +71,10 @@ Pictures are never fetched while the import runs. After the entries are saved th
 
 Consequences for RaceHub:
 
-- Links are read only from rows the import creates or updates, so a changed picture must come with a **higher `entry_version`**. A replayed or older row names nothing.
+- Links are read from rows the import creates, updates or finds unchanged (a confirmed entry sent again at the same version), so a skipped or failed fetch can be retried by importing the file again; pictures already held are kept. A changed picture should still come with a **higher `entry_version`**, and an older row names nothing.
 - A driver's headshot is attached to the driver, not the entry. Send the **same `headshot_url` on every entry of that driver**; if two entries disagree the last one fetched wins.
 - A picture already held is kept unless the official ticks **Replace**, so an official's own upload is never overwritten by accident.
-- An entry that the entry feed applies automatically (an official is not there to ask for the pictures) has its car colours saved but its pictures are not fetched, and a later replay of the same version does not name them again. Until that is built, send changed pictures with a higher `entry_version` and review the file by hand, or ask an official to import it. This is recorded as a follow-up on #699.
+- An entry that the entry feed applies automatically (no official is there to ask for the pictures) has its car colours saved but its pictures are not fetched; an official can import the file by hand to fetch them. Fetching them from the feed is recorded as a follow-up on #699.
 
 ### Whose picture RCTC will show
 

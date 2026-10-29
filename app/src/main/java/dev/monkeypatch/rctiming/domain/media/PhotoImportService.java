@@ -7,7 +7,6 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class PhotoImportService {
     /** The most links one call takes. */
     public static final int MAX_LINKS = 1000;
 
-    private static final int IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+    private static final int IMAGE_MAX_BYTES = (int) DriverMediaService.IMAGE_MAX_BYTES;
 
     private final EventRepository events;
     private final EntryRepository entries;
@@ -126,8 +125,13 @@ public class PhotoImportService {
                     ? mediaService.importHeadshot(actor, link.competitorId(), bytes).headshotUrl()
                     : mediaService.importCarPhoto(actor, link.entryId(), bytes);
             return new Outcome(link, Status.STORED, null, stored);
-        } catch (IOException | IllegalArgumentException e) {
+        } catch (PhotoFetcher.FetchException e) {
             return new Outcome(link, Status.FAILED, e.getMessage(), null);
+        } catch (IllegalArgumentException e) {
+            return new Outcome(link, Status.FAILED, "The file is not a usable PNG or JPEG picture", null);
+        } catch (RuntimeException e) {
+            // A malformed image or a storage fault on one link must not abort the links after it
+            return new Outcome(link, Status.FAILED, "The picture could not be saved", null);
         }
     }
 }

@@ -12,8 +12,9 @@ import java.util.Map;
  *
  * <p>{@code blocked} is also set on a dry run that a real import would have refused, so the page can show what to fix
  * before anyone tries. Only new rows are created without being picked: a changed row is updated and a missing entry
- * withdrawn only when the official picked it. {@code photoLinks} are the headshot and car photo addresses of the rows that
- * were created, updated or unchanged (#699), empty for a dry run and a blocked import; {@code PhotoImportService} fetches
+ * withdrawn only when the official picked it. {@code photoLinks} are the headshot and car photo addresses of the
+ * rows that were created, updated or unchanged (#699), empty for a dry run and a blocked import;
+ * {@code PhotoImportService} fetches
  * them afterwards.
  */
 public record CsvImportResult(
