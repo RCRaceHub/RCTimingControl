@@ -57,6 +57,9 @@ dependencies {
     // `RCTimingControl simulate` runs the fake decoder, so the installed app can be tried without one (#24)
     implementation(project(":decoder-simulator"))
 
+    // Boot 4 auto-configures Jackson 3 only. The app and JJWT still use Jackson 2, so this module keeps the
+    // Jackson 2 ObjectMapper bean until the move to Jackson 3 (#660).
+    implementation("org.springframework.boot:spring-boot-jackson2")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
