@@ -1,5 +1,6 @@
 # Shell scripts must stay LF even on Windows checkouts: a CRLF gradlew fails in Docker with "./gradlew: not found"
-* text=auto
+# Text files are LF in every checkout, including Windows: golden-file tests compare text byte for byte
+* text=auto eol=lf
 gradlew text eol=lf
 *.sh text eol=lf
 *.bat text eol=crlf
