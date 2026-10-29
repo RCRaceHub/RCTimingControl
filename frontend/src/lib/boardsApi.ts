@@ -383,7 +383,7 @@ export type RaceMediaDto = {
   carColours: string[];
 };
 
-/** The pictures and driver sponsors for the cars of a race; cars with nothing to show, or a hidden name, are left out. */
+/** The pictures and driver sponsors for the cars of a race; cars with nothing to show are left out, and a hidden name leaves only the car colours. */
 export async function getRaceMedia(raceId: number): Promise<RaceMediaDto[]> {
   const { data } = await api.get<RaceMediaDto[]>(`/api/v1/boards/races/${raceId}/media`);
   return data;

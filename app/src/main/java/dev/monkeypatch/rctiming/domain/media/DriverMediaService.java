@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -135,7 +136,7 @@ public class DriverMediaService {
      */
     public List<String> setCarColours(Actor actor, long entryId, List<String> colours) {
         Entry entry = entries.getOrThrow(entryId);
-        List<String> clean = colours == null ? List.of() : colours.stream().filter(c -> c != null)
+        List<String> clean = colours == null ? List.of() : colours.stream().filter(Objects::nonNull)
                 .map(c -> c.trim().toLowerCase()).filter(c -> !c.isEmpty()).distinct().toList();
         if (clean.size() > CAR_COLOURS_MAX || !clean.stream().allMatch(c -> COLOUR.matcher(c).matches())) {
             throw new IllegalArgumentException("A car can have up to " + CAR_COLOURS_MAX + " colours, each as #rrggbb");
@@ -269,9 +270,9 @@ public class DriverMediaService {
     }
 
     /**
-     * What a public screen may show for each car in a race. A competitor whose name is not shown in full gets nothing
-     * at all (#265), so a hidden or initials-only driver cannot be recognised from their picture or sponsors. Cars with
-     * nothing to show are left out.
+     * What a public screen may show for each car in a race. A competitor whose name is not shown in full gets no
+     * headshot, car photo or sponsors (#265), so a hidden or initials-only driver cannot be recognised from them; only
+     * the car's colours, which are not personal data, are kept. Cars with nothing to show are left out.
      *
      * @return by entry id, in the race's grid order
      */
@@ -390,7 +391,7 @@ public class DriverMediaService {
     }
 
     private static List<String> splitColours(String stored) {
-        return stored == null || stored.isBlank() ? List.of() : Arrays.asList(stored.split(","));
+        return stored == null || stored.isBlank() ? List.of() : Arrays.stream(stored.split(",")).toList();
     }
 
     private static List<String> splitSponsors(String stored) {
