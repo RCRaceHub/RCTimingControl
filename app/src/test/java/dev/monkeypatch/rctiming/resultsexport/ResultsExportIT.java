@@ -538,7 +538,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
                 "/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
                 HttpMethod.POST, new HttpEntity<>(file, headers()), JsonNode.class);
 
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("applied").asBoolean()).isFalse();
         assertThat(resp.getBody().toString()).contains("no RaceHub event id");
         assertThat(jdbc.queryForObject("select count(*) from entries where event_id = ?", Integer.class, eventId))

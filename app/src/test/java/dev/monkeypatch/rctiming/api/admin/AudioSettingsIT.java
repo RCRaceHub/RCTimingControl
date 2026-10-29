@@ -345,7 +345,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
         assertThat(uploadHorn("finish", "audio/mpeg", new byte[]{1}, 60_000).getStatusCode())
                 .isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(uploadHorn("finish", "audio/mpeg", new byte[2 * 1024 * 1024], 1000).getStatusCode())
-                .isIn(HttpStatus.BAD_REQUEST, HttpStatus.PAYLOAD_TOO_LARGE);
+                .isIn(HttpStatus.BAD_REQUEST, HttpStatus.CONTENT_TOO_LARGE);
     }
 
     @Test
