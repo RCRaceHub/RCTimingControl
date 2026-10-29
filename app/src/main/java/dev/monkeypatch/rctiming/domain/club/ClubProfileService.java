@@ -109,6 +109,7 @@ public class ClubProfileService {
         values.put("battleHoldLaps", s.battleHoldLaps());
         values.put("closeGapMs", s.closeGapMs());
         values.put("lateMarginMs", s.lateMarginMs());
+        values.put("hiddenRowIcons", String.join(",", s.hiddenRowIcons()));
         return values;
     }
 

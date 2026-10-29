@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.domain.club;
 
+import java.util.List;
+
 /**
  * The club's live timing thresholds (#505): when two cars are in an on-track battle and which way it is going, how
  * near the car ahead counts as close, and when a lap bar turns red. Held on the {@link ClubProfile}; RCTC runs for one
@@ -11,13 +13,22 @@ package dev.monkeypatch.rctiming.domain.club;
  * @param battleHoldLaps      laps a pair stays a battle after it drops outside the gap
  * @param closeGapMs          how near the car ahead is shown as close (the amber row); 0 switches the tint off
  * @param lateMarginMs        how far past its average lap a car is before its lap bar turns red
+ * @param hiddenRowIcons      the row icons the referee screen, the live race board and the board views leave out; each is
+ *                            one of {@link #ROW_ICONS}. The streaming overlay chooses its own in its theme.
  */
 public record LiveTimingSettings(int battleGapMs, int battleTrendMsPerLap, int battleFastMsPerLap, int battleHoldLaps,
-                                 int closeGapMs, int lateMarginMs) {
+                                 int closeGapMs, int lateMarginMs, List<String> hiddenRowIcons) {
+
+    /** The icons that can be switched off beside a driver's name: pace thumbs, flying-lap flame, lap flash, close, lapped, penalty and no-signal. */
+    public static final List<String> ROW_ICONS = List.of("pace", "flying", "lap", "close", "lapped", "penalty", "signal");
+
+    public LiveTimingSettings {
+        hiddenRowIcons = hiddenRowIcons == null ? List.of() : List.copyOf(hiddenRowIcons);
+    }
 
     /** The settings until the club changes them. */
     public static LiveTimingSettings defaults() {
-        return new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000);
+        return new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, List.of());
     }
 
     /**
@@ -35,6 +46,11 @@ public record LiveTimingSettings(int battleGapMs, int battleTrendMsPerLap, int b
         require("The battle hold", battleHoldLaps, 0, 10);
         require("The close gap", closeGapMs, 0, 60_000);
         require("The late margin", lateMarginMs, 0, 10_000);
+        for (String icon : hiddenRowIcons) {
+            if (!ROW_ICONS.contains(icon)) {
+                throw new IllegalArgumentException("Unknown row icon " + icon);
+            }
+        }
         return this;
     }
 

@@ -56,6 +56,8 @@ Options on the end of the address: `bars=hide` leaves the bars out, `arrows=hide
 
 ### Live timing thresholds
 
+The same tab has a list of tick boxes, **Icons beside driver names**: untick the pace thumbs, the flying-lap flame, the lap flash icons, the close, laps down, time penalty or no-signal marker to take it off the referee screen, the live race board and the board views. The colour key follows. The streaming overlay does not use this list: it has its own tick boxes in the Overlay Designer, saved with each theme, and starts without the pace thumbs.
+
 An admin sets the thresholds under **Club**, on the **Live timing** tab; they apply to every timing screen and take effect in a race in progress at its next update. There are six, and each shows what it does on the page: the **battle gap** (default 2 s; 0 switches battles off), the **closing or growing** limit (0.15 s a lap), the **gaining fast** limit (0.3 s a lap, never below the previous one), the **battle hold** (2 laps), the **close car tint** (1 s; 0 switches the amber row off; it and the CLOSE badge wait until a car has had a lap counted). Nobody is shown as lapped (the LAPPED badge and "+1 lap" gaps) until every car has had at least one lap counted and the **late lap bar** margin (1 s past the car's average lap before the bar turns red). The Club page has three tabs: Profile (details and logo), Live timing and Privacy notice.
 
 ### Options on the Live race screen and board views
@@ -72,6 +74,7 @@ Options go on the end of the address. They also work on a [board view](#board-vi
 | `battles=hide` | Leave out the battles strip |
 | `legend=hide` | Leave out the small colour key under the table (shown by default) |
 | `contrast=high` | High contrast for poor light or compressed video (#591): the state icons get a thick stroke and a dark outline, and a short text tag sits beside each (FL fastest lap, PB personal best, UP quicker, SL slower, CL close, ON on pace, LAP lapped, PEN penalty, NS no signal) |
+| `icons=pace,flying,...` | Which icons show beside the names (#695): `pace` (thumbs up and down), `flying` (flame), `lap` (the lap flash icons), `close`, `lapped`, `penalty` and `signal` (no signal from the decoder). `icons=hide` shows none. Without it the screen shows every icon the club has not switched off |
 
 ## The Live top screen
 
@@ -128,6 +131,7 @@ Options go on the end of the address:
 | `battlestyle=rows`, `battlestyle=both` | Where the overlay shows battles (#681): `rows` highlights the chasing car's row in the tower or table instead of the strip, with pulsing chevrons, BATTLE, the gap to the car ahead and whether it is closing or growing; `both` shows the strip as well. Without it only the strip shows. A car counts as in a battle by the club's battle gap. Also a drop-down in the Overlay Designer |
 | `lower=director`, `lower=battle`, `lower=off` | What brings up the **featured-driver lower third** (see below): `director` only when the race director sends a driver, `battle` only when a battle reaches the top places, `off` never. Without it both bring it up |
 | `contrast=high` | High contrast: thick outlined icons with a short text tag beside each, as on the boards; also a tick box in the Overlay Designer (#591) |
+| `icons=pace,flying,...` | Which icons show beside the names (#695), as on the boards; without it the overlay shows every icon except the pace thumbs, which start switched off. A tick box per icon in the Overlay Designer saves the choice with the theme |
 | `place=PART:ZONE,…` | Where parts of the overlay sit (#667), such as `place=chart:top-right,ticker:top-strip`. Parts are `tower`, `battles`, `chart`, `lowerThird`, `ticker` and `sponsors`; zones are `top-strip`, `top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-center`, `bottom-right` and `bottom-strip`. Only parts you move are listed; the Overlay Designer writes it for you |
 | `legend=show` | Add a small colour key (lap colours and close tint, each with its icon) at the foot of the panel; off by default so it stays off the video |
 | `chart=hide` | Leave out the position chart |

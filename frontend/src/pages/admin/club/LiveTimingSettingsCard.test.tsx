@@ -24,6 +24,7 @@ const saved = {
   battleHoldLaps: 2,
   closeGapMs: 1000,
   lateMarginMs: 1000,
+  hiddenRowIcons: [],
 };
 
 function wrapper({ children }: { children: React.ReactNode }) {

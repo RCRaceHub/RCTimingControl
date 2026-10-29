@@ -6,6 +6,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
+import java.util.List;
+
 /**
  * Generated at compile time by MapStruct; {@link ClubProfileRepository} calls it to move a club
  * profile between its entity and its row. A column added to the table without a matching entity
@@ -25,11 +27,16 @@ interface ClubProfileMapper {
     @Mapping(target = "battleHoldLaps", source = "liveTimingSettings.battleHoldLaps")
     @Mapping(target = "closeGapMs", source = "liveTimingSettings.closeGapMs")
     @Mapping(target = "lateMarginMs", source = "liveTimingSettings.lateMarginMs")
+    @Mapping(target = "hiddenRowIcons", expression = "java(String.join(\",\", profile.getLiveTimingSettings().hiddenRowIcons()))")
     void toRecord(ClubProfile profile, @MappingTarget ClubProfilesRecord record);
 
     default LiveTimingSettings liveTimingSettings(ClubProfilesRecord r) {
         return new LiveTimingSettings(r.getBattleGapMs(), r.getBattleTrendMs(), r.getBattleFastMs(),
-                r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs());
+                r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs(), rowIcons(r.getHiddenRowIcons()));
+    }
+
+    private static List<String> rowIcons(String csv) {
+        return csv == null || csv.isBlank() ? List.of() : List.of(csv.split(","));
     }
 
     default ClubAudioSettings audioSettings(String json) {

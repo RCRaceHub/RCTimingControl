@@ -1,3 +1,4 @@
+import { useRowIcon } from '@/components/RowIconsContext';
 import { StateIcon } from '@/components/StateIcon';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { cn } from '@/lib/utils';
@@ -7,7 +8,8 @@ import { cn } from '@/lib/utils';
  * gap column's text. Nothing for a car on the lead lap.
  */
 export function LappedPill({ row, className }: { row: LiveTimingRowDto; className?: string }) {
-  if (row.lapsDown <= 0) return null;
+  const shown = useRowIcon('lapped');
+  if (!shown || row.lapsDown <= 0) return null;
   const label = `${row.lapsDown} ${row.lapsDown === 1 ? 'lap' : 'laps'} down`;
   return (
     <span
@@ -29,7 +31,8 @@ export function LappedPill({ row, className }: { row: LiveTimingRowDto; classNam
  * lap is not flying too. Nothing once the car has finished.
  */
 export function FlyingLapIcon({ row, className }: { row: LiveTimingRowDto; className?: string }) {
-  if (!row.flyingLap || row.finished) return null;
+  const shown = useRowIcon('flying');
+  if (!shown || !row.flyingLap || row.finished) return null;
   return <StateIcon kind="flying" className={className} />;
 }
 
@@ -40,12 +43,14 @@ function hasTimePenalty(row: LiveTimingRowDto): boolean {
 
 /** The flying lap, lapped, penalty and no-signal markers (#591) that go beside a driver's name; any, all or none. */
 export function RowMarkers({ row, noSignal, className }: { row: LiveTimingRowDto; noSignal: boolean; className?: string }) {
+  const penaltyShown = useRowIcon('penalty');
+  const signalShown = useRowIcon('signal');
   return (
     <>
       <FlyingLapIcon row={row} className={className} />
       <LappedPill row={row} className={className} />
-      {hasTimePenalty(row) && <StateIcon kind="penalty" className={className} />}
-      {noSignal && <StateIcon kind="no-signal" className={className} />}
+      {penaltyShown && hasTimePenalty(row) && <StateIcon kind="penalty" className={className} />}
+      {signalShown && noSignal && <StateIcon kind="no-signal" className={className} />}
     </>
   );
 }

@@ -322,7 +322,7 @@ public class BoardController {
     @GetMapping("/settings")
     public BoardSettingsDto settings() {
         LiveTimingSettings s = clubProfileService.liveTimingSettings();
-        return new BoardSettingsDto(s.closeGapMs(), s.lateMarginMs());
+        return new BoardSettingsDto(s.closeGapMs(), s.lateMarginMs(), s.hiddenRowIcons());
     }
 
     /** Seeds a board's live table before the first STOMP frame arrives. */

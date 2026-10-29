@@ -20,6 +20,7 @@ import type { OverlayComponent } from '@/pages/boards/overlayLayout';
 import { SponsorListEditor } from '@/components/SponsorListEditor';
 import { useThemeSponsorMutations, useThemeSponsors } from '@/hooks/admin/useThemeSponsors';
 import { getApiErrorMessage } from '@/lib/errors';
+import { ROW_ICONS, ROW_ICON_LABELS } from '@/lib/rowIcons';
 
 const TICKER_LABELS: Record<TickerItem, string> = {
   next: 'Next race',
@@ -425,6 +426,18 @@ export default function OverlayDesignerPage() {
               </select>
             </label>
             <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
+            <div className="space-y-1.5 rounded border p-2">
+              <p className="text-sm font-medium">Icons beside driver names</p>
+              <p className="text-xs text-muted-foreground">Untick the ones that make the screen too busy. The pace thumbs start switched off.</p>
+              {ROW_ICONS.map((icon) => (
+                <Check
+                  key={icon}
+                  label={ROW_ICON_LABELS[icon]}
+                  checked={design.rowIcons.includes(icon)}
+                  onChange={(v) => set('rowIcons', ROW_ICONS.filter((i) => (i === icon ? v : design.rowIcons.includes(i))))}
+                />
+              ))}
+            </div>
             <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
             <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />
           </fieldset>

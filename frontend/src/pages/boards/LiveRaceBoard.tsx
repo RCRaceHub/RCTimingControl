@@ -2,6 +2,8 @@
 // who holds which place lap by lap. Anonymous like the other boards, and follows the race live through useBoardRace.
 // Cars running close together show as a battles strip under the table (#505).
 // Now and next keeps to the line-up and what is coming, so the timing and the chart live here.
+import { RowIconsProvider } from '@/components/RowIconsContext';
+import { rowIconsWithout } from '@/lib/rowIcons';
 import { useSearchParams } from 'react-router-dom';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { PositionChart } from '@/components/print/PositionChart';
@@ -26,7 +28,7 @@ export default function LiveRaceBoard() {
   const series = useLivePositionSeries(raceId, rows);
 
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast } = parseLiveRaceOptions(searchParams, settings.closeGapMs);
+  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast, rowIcons } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
   useHighContrast(highContrast);
   const battleGroups = useBattles(showBattles ? raceId : null);
   const media = useRaceMedia(raceId);
@@ -54,6 +56,7 @@ export default function LiveRaceBoard() {
     );
   }
   return (
+    <RowIconsProvider shown={rowIcons}>
     <BoardShell eventName={nowNext?.eventName}>
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <h1 className="text-4xl font-bold lg:text-6xl">
@@ -92,5 +95,6 @@ export default function LiveRaceBoard() {
         </div>
       )}
     </BoardShell>
+    </RowIconsProvider>
   );
 }
