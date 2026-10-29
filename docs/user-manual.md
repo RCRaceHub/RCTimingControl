@@ -106,7 +106,7 @@ When all races are done, complete the event. Results are on the public pages, pr
 
 ### 11. Backups
 
-RCTC backs up its database when you complete the event (that closes the race day) and every night, and **Admin → Backups** lists the copies and takes one on demand. Keep a copy off the laptop: [installing.md](installing.md#copying-backups-off-the-laptop) shows how to use a Dropbox or Drive folder. Restoring is done on the laptop with the service stopped: [installing.md](installing.md#restoring-a-backup).
+RCTC backs up its database when you complete the event (that closes the race day) and every night, and **Admin → Backups** lists the copies and takes one on demand. The Backups page shows when the last one was taken, and after you close a race day it reminds you for a few days to copy a backup off the laptop. Keep a copy off the laptop: [installing.md](installing.md#copying-backups-off-the-laptop) shows how to use a Dropbox or Drive folder. Restoring is done on the laptop with the service stopped: [installing.md](installing.md#restoring-a-backup).
 
 ### 12. Send results back to RaceHub
 

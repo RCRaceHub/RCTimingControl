@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStateMachineService;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -18,6 +19,7 @@ import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessQuery;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.WarmUpCheckService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import org.springframework.stereotype.Service;
@@ -49,6 +51,8 @@ public class RaceControlService {
     private final RaceFormatService raceFormatService;
     private final WarmUpCheckService warmUpCheckService;
     private final PreRaceReadinessQuery preRaceReadinessQuery;
+    private final RaceEntryRepository raceEntryRepository;
+    private final LiveTimingHub hub;
 
     public RaceControlService(RaceRepository raceRepository,
                               RoundRepository roundRepository,
@@ -59,7 +63,9 @@ public class RaceControlService {
                               LapTimingService lapTimingService,
                               RaceFormatService raceFormatService,
                               WarmUpCheckService warmUpCheckService,
-                              PreRaceReadinessQuery preRaceReadinessQuery) {
+                              PreRaceReadinessQuery preRaceReadinessQuery,
+                              RaceEntryRepository raceEntryRepository,
+                              LiveTimingHub hub) {
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.eventClassRepository = eventClassRepository;
@@ -70,6 +76,8 @@ public class RaceControlService {
         this.raceFormatService = raceFormatService;
         this.warmUpCheckService = warmUpCheckService;
         this.preRaceReadinessQuery = preRaceReadinessQuery;
+        this.raceEntryRepository = raceEntryRepository;
+        this.hub = hub;
     }
 
     /**
@@ -178,6 +186,20 @@ public class RaceControlService {
             throw new IllegalArgumentException("Target race " + targetRaceId + " belongs to a different event");
         }
         return sourceEventId;
+    }
+
+    /**
+     * Asks the streaming overlay to show a lower third for one car of the race (#533). Changes no data, so nothing is
+     * audited; the overlay hides it again on its own. Runs on the request thread and broadcasts at once.
+     *
+     * @throws EntityNotFoundException if there is no such race, or the entry is not in it (HTTP 404)
+     */
+    @ReadTransaction
+    public void featureDriver(long raceId, long entryId) {
+        raceRepository.requireExists(raceId);
+        raceEntryRepository.findByRaceIdAndEntryId(raceId, entryId)
+                .orElseThrow(() -> new EntityNotFoundException("Entry " + entryId + " is not in race " + raceId));
+        hub.broadcastFeaturedDriver(raceId, entryId);
     }
 
     /**

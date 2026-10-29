@@ -22,6 +22,7 @@ import { getAudioSettings } from '@/lib/audioApi';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { GridEditorPanel } from './panels/GridEditorPanel';
 import { LiveTimingPanel } from './panels/LiveTimingPanel';
+import { FeaturedDriverPanel } from './panels/FeaturedDriverPanel';
 import { FinishedPanel } from './panels/FinishedPanel';
 import { QualifyingTablePanel } from './panels/QualifyingTablePanel';
 import { FinalsLineupPanel } from './panels/FinalsLineupPanel';
@@ -562,6 +563,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Unknown Transponders</p>
@@ -614,6 +616,7 @@ function CockpitView() {
             {sections.isShown('liveTiming') && (
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
+            {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
           </div>
         );
 

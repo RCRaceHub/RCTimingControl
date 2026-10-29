@@ -44,6 +44,14 @@ Audit rows are found by the competitor and entry they are about, and by their ol
 
 **Re-imports can undo it.** The entries keep their RaceHub entry ids, so importing a newer version of the same booking attaches the entry to a new competitor with the real name. Remove or amend the booking in RaceHub first. Finished races held in memory, boards or announcer clips refresh on their own; anonymising is refused while the competitor is in a race that is on the grid, running or stopped.
 
+## Race history is kept (#472)
+
+RCTC is the permanent record of everything it timed, whether or not it is linked to RaceHub. Nothing automatic deletes it: the nightly clean-up removes only expired sign-in tokens, refused sign-ins and, if the club sets a limit, old audit rows. It never touches races, laps, results, penalties, practice sessions or championships, and a test (`RaceHistoryKeptIT`) fails if it ever does. Syncing, importing, withdrawing an entry and disconnecting from RaceHub also leave race data alone.
+
+Erasing a person changes names, not history: **Anonymise** replaces the name and removes the identifying details, and every race, position, lap and time stays. Practice sessions are kept like races.
+
+The history lives on the timing laptop, so the Backups page shows the time of the last backup and, after a race day is closed, reminds officials to copy a backup off the laptop.
+
 ## Privacy notice (#267)
 
 The club's privacy notice is at `/privacy`, open to anyone. It is linked from the events, results and championship pages, the About page, and the sign-in page. The boards and the OBS overlay carry no link, since they are screens and not pages people read.
@@ -62,6 +70,7 @@ A change made during a race reaches the live timing at once. Race control's live
 
 An official can add three optional extras for the boards and the commentator view: a **headshot** and the driver's own **sponsors** (Admin, Competitors, Photo…), and a **car photo** for one entry (the event's Entries tab, Car photo). A headshot is a picture of a person and so personal data; a car photo can show the driver, so the screen asks for the driver to be kept out of it, and the driver sponsors are just names.
 
+- The streaming overlay's featured-driver lower third (#533) shows a headshot the same way the other screens do, so it obeys the same rule above: nothing for a driver set to initials or hidden. The race director's prompt travels as an entry number only; no name or picture is sent in it.
 - Nothing is requested from drivers or RaceHub: RCTC only holds what an official adds, and the screen says to add a headshot only with the driver's agreement.
 - Only PNG and JPEG up to 2 MB are accepted, never SVG or WebP, and each upload is decoded and saved again, which drops metadata such as a phone's GPS position. Each file is stored with a random name in the app's storage folder, so its address cannot be guessed, but anyone who has the address can open it (storage is served to the venue network without sign-in, like the club logo).
 - A public screen never gets a competitor's headshot, car photo or sponsors while their name is set to initials only or hidden (#265).

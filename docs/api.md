@@ -705,6 +705,7 @@ POST /race-control/race/{raceId}/finals/swap
 POST /race-control/race/{raceId}/move-entry
 POST /race-control/race/{raceId}/marshal-adjustment
 POST /race-control/race/{raceId}/skip-to
+POST /race-control/race/{raceId}/featured-driver
 ```
 
 - `finals-review` answers `{ "required": true, "confirmedAt": null }`. `required` is true when the event has finals, every qualifying heat of every class with finals is finished, no final has left PENDING and the line-ups are unconfirmed; race control then shows the finals line-up screen instead of the cockpit. `POST finals-lineup/confirm` (no body) confirms the line-ups and answers the same shape with `confirmedAt` set (confirming again keeps the first time). **404** for an unknown event; **409** if the event has no finals, a qualifying heat is unfinished, a class that finished qualifying has not been calculated, or a final has started. Audited as `FINALS_LINEUP_CONFIRMED`; calculating the finals again clears the confirmation.
@@ -714,6 +715,7 @@ POST /race-control/race/{raceId}/skip-to
 - `move-entry` takes `{ "entryId", "targetRaceId", "allRounds": false }` and moves a driver out of the pending heat in the path into another pending heat of the same class, in the same round or, with `allRounds`, in every practice and qualifying round where both heats are still pending. The driver keeps their car number. **400** if the heats are the same, in different classes or events, are finals, or (without `allRounds`) are in different rounds; **409** if either heat has been called or started.
 - `marshal-adjustment` takes `{ "entryId", "transponderNumber", "lapDelta": 1 }` (`1` or `-1`) and adds or takes off a lap by hand; positions are recalculated, or a finished race's result is rebuilt. **400** for any other delta. It answers **200** with no body, and is recorded as a marshal adjustment (who, and the race's state at the time) rather than in the audit log.
 - `skip-to` takes `{ "targetRaceId" }`, checks the target is in the same event and answers `{ "eventId", "activeRaceId" }`. It changes nothing on the server and writes no audit row; the client keeps the active-race pointer. **404** if either race is missing, **400** if the target is in another event.
+- `featured-driver` takes `{ "entryId" }` and sends it on `/topic/race/{raceId}/featured` as `{ "raceId", "entryId" }`, so the streaming overlay shows that driver's lower third (#533). Race director or admin. **204**; it changes no data and writes no audit row. **404** if the race is missing or the entry is not in it. Anonymous clients may subscribe to the topic; it carries the entry id only.
 
 ## Race control — Entry search & transponder swap
 

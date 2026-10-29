@@ -314,6 +314,36 @@ public class RaceControlControllerIT extends AbstractIntegrationTest {
         assertThat(runOrder.getBody()).hasSizeGreaterThanOrEqualTo(2);
     }
 
+    // --- #533: featured driver lower third ---
+
+    @Test
+    void featureDriver_acceptsACarInTheRace() {
+        Race race = seedRace(RaceStatus.RUNNING);
+        Entry entry = seedEntry(race);
+        seedRaceEntry(race, entry);
+
+        ResponseEntity<Void> resp = restTemplate.exchange(
+                "/api/v1/race-control/race/" + race.getId() + "/featured-driver",
+                HttpMethod.POST,
+                new HttpEntity<>(Map.of("entryId", entry.getId()), directorHeaders()),
+                Void.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void featureDriver_refusesACarThatIsNotInTheRace() {
+        Race race = seedRace(RaceStatus.RUNNING);
+
+        ResponseEntity<Map> resp = restTemplate.exchange(
+                "/api/v1/race-control/race/" + race.getId() + "/featured-driver",
+                HttpMethod.POST,
+                new HttpEntity<>(Map.of("entryId", 987654321L), directorHeaders()),
+                Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
     // --- Helpers ---
 
     private HttpHeaders directorHeaders() {
