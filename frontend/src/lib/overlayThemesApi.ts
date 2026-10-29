@@ -11,6 +11,9 @@ export const overlayThemesAdminApi = {
   update: (id: number, body: OverlayThemeInput) =>
     api.put<OverlayThemeDto>(`/api/v1/admin/overlay-themes/${id}`, body).then(r => r.data),
   delete: (id: number) => api.delete(`/api/v1/admin/overlay-themes/${id}`),
+  setDefault: (id: number) =>
+    api.put<OverlayThemeDto>(`/api/v1/admin/overlay-themes/${id}/default`).then(r => r.data),
+  clearDefault: () => api.delete('/api/v1/admin/overlay-themes/default'),
 
   // The sponsors a theme owns (name, optional logo, display order); the overlay shows them instead of the event's.
   listSponsors: (themeId: number) =>

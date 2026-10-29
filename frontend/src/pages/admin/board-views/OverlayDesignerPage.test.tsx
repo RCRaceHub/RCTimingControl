@@ -6,6 +6,7 @@ import OverlayDesignerPage from './OverlayDesignerPage';
 vi.mock('@/lib/overlayThemesApi', () => ({
   overlayThemesAdminApi: {
     list: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(),
+    setDefault: vi.fn(), clearDefault: vi.fn(),
     listSponsors: vi.fn(), addSponsor: vi.fn(), renameSponsor: vi.fn(), deleteSponsor: vi.fn(), orderSponsors: vi.fn(),
     uploadSponsorLogo: vi.fn(),
   },
@@ -13,8 +14,8 @@ vi.mock('@/lib/overlayThemesApi', () => ({
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
 
 const themes = [
-  { id: 1, name: 'BRCA', design: { theme: 'dark', layout: 'tower', top: 10, showSponsors: true } },
-  { id: 2, name: 'Club', design: { theme: 'light', layout: 'table', top: 6, showSponsors: false } },
+  { id: 1, name: 'BRCA', design: { theme: 'dark', layout: 'tower', top: 10, showSponsors: true }, isDefault: false },
+  { id: 2, name: 'Club', design: { theme: 'light', layout: 'table', top: 6, showSponsors: false }, isDefault: false },
 ];
 
 function renderPage() {
@@ -81,8 +82,8 @@ describe('OverlayDesignerPage', () => {
   });
 
   it('saves the design as a new theme and over the chosen one', async () => {
-    vi.mocked(overlayThemesAdminApi.create).mockResolvedValue({ id: 3, name: 'Night', design: {} });
-    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 3, name: 'Night', design: {} });
+    vi.mocked(overlayThemesAdminApi.create).mockResolvedValue({ id: 3, name: 'Night', design: {}, isDefault: false });
+    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 3, name: 'Night', design: {}, isDefault: false });
     renderPage();
     await screen.findByRole('option', { name: 'Club' });
 
@@ -96,8 +97,21 @@ describe('OverlayDesignerPage', () => {
     expect(sent.design).toHaveProperty('layout', 'tower');
   });
 
+  it('saves the chosen theme and makes it the default', async () => {
+    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 2, name: 'Club', design: {}, isDefault: false });
+    vi.mocked(overlayThemesAdminApi.setDefault).mockResolvedValue({ id: 2, name: 'Club', design: {}, isDefault: true });
+    renderPage();
+    await screen.findByRole('option', { name: 'Club' });
+
+    fireEvent.change(screen.getByLabelText('Saved theme'), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save and make default' }));
+
+    await waitFor(() => expect(overlayThemesAdminApi.setDefault).toHaveBeenCalledWith(2));
+    expect(overlayThemesAdminApi.update).toHaveBeenCalled();
+  });
+
   it('saves over the chosen theme', async () => {
-    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 2, name: 'Club', design: {} });
+    vi.mocked(overlayThemesAdminApi.update).mockResolvedValue({ id: 2, name: 'Club', design: {}, isDefault: false });
     renderPage();
     await screen.findByRole('option', { name: 'Club' });
 
@@ -152,7 +166,7 @@ describe('OverlayDesignerPage layout', () => {
   });
 
   it('moves a part from its drop-down, resets, and keeps the layout in a saved theme', async () => {
-    vi.mocked(overlayThemesAdminApi.create).mockResolvedValue({ id: 3, name: 'Night', design: {} });
+    vi.mocked(overlayThemesAdminApi.create).mockResolvedValue({ id: 3, name: 'Night', design: {}, isDefault: false });
     renderPage();
     await screen.findByRole('option', { name: 'Club' });
 
@@ -170,7 +184,7 @@ describe('OverlayDesignerPage layout', () => {
 
   it('loads the layout of a saved theme and dims a part that is switched off', async () => {
     vi.mocked(overlayThemesAdminApi.list).mockResolvedValue([
-      { id: 4, name: 'Top', design: { showChart: false, placement: { chart: 'top-left' } } },
+      { id: 4, name: 'Top', design: { showChart: false, placement: { chart: 'top-left' } }, isDefault: false },
     ]);
     renderPage();
     await screen.findByRole('option', { name: 'Top' });

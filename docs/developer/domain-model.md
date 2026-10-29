@@ -196,6 +196,7 @@ erDiagram
     }
     overlay_themes {
         text name "unique, e.g. BRCA, Club"
+        boolean is_default "at most one true (partial unique index): the theme the plain /boards/overlay opens; club-wide"
         json design "the Overlay Designer's choices; opened as /boards/overlay?look=id; a look only; its sponsors are overlay_theme_sponsors"
     }
     overlay_themes ||--o{ overlay_theme_sponsors : "sponsors the theme owns; shown instead of the event's when any; cascade on delete"

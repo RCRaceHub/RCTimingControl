@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  getLiveQualifying, getOverlayTheme, getRaceClock, getRaceHighlights, getResultsBoard, getRoundFastestLap,
+  getDefaultOverlayTheme, getLiveQualifying, getOverlayTheme, getRaceClock, getRaceHighlights, getResultsBoard, getRoundFastestLap,
   getSponsors, getTicker,
 } from '@/lib/boardsApi';
 import { getBoardView } from '@/lib/boardViewsApi';
@@ -94,6 +94,17 @@ export function useBoardSponsorsQuery(eventId: number | null, themeId: number | 
     queryFn: () => getSponsors(eventId, themeId),
     enabled,
     refetchInterval: intervalMs,
+  });
+}
+
+/** The club's default overlay look, for a plain overlay address; null while none is set. Polled like a chosen look. */
+export function useDefaultOverlayThemeQuery(enabled: boolean, { intervalMs }: Pick<PollOptions, 'intervalMs'>) {
+  return useQuery({
+    queryKey: publicQueryKeys.boards.defaultOverlayTheme(),
+    queryFn: getDefaultOverlayTheme,
+    enabled,
+    refetchInterval: intervalMs,
+    retry: false,
   });
 }
 

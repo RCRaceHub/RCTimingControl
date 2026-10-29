@@ -29,6 +29,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getSponsors: vi.fn(),
   getLiveQualifying: vi.fn(),
   getOverlayTheme: vi.fn(),
+  getDefaultOverlayTheme: vi.fn(),
 }));
 
 import {
@@ -42,6 +43,7 @@ import {
   getSponsors,
   getLiveQualifying,
   getOverlayTheme,
+  getDefaultOverlayTheme,
 } from '@/lib/boardsApi';
 
 const race: BoardRaceDto = {
@@ -104,6 +106,7 @@ function renderOverlay(path = '/boards/overlay') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(getDefaultOverlayTheme).mockResolvedValue(null);
   for (const key of Object.keys(stompFrames)) delete stompFrames[key];
   vi.mocked(getBoardLiveTiming).mockResolvedValue([
     row(1, 'Ada Lovelace', 13_870),
@@ -197,7 +200,7 @@ describe('OverlayBoard', () => {
       nextRace: 'Final A', nextDrivers: ['Ada Lovelace'], marshals: [], currentMarshals: [], marshalsPending: false, topQualifiers: [],
     });
     vi.mocked(getOverlayTheme).mockResolvedValue({
-      id: 5, name: 'Club', design: { separatorImage: '/storage/club.png', tickerItems: ['next', 'drivers'] },
+      id: 5, name: 'Club', design: { separatorImage: '/storage/club.png', tickerItems: ['next', 'drivers'] }, isDefault: false,
     });
     const { container } = renderOverlay('/boards/overlay?look=5&event=7&separator=/storage/other.png');
 
@@ -439,6 +442,24 @@ describe('OverlayBoard sponsor bar', () => {
     renderOverlay('/boards/overlay?event=7');
 
     await screen.findByLabelText('Running order');
+    expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, null);
+  });
+
+  it('opens the default theme on the plain address, with its sponsors', async () => {
+    vi.mocked(getDefaultOverlayTheme).mockResolvedValue({
+      id: 9, name: 'Night', design: { theme: 'light' }, isDefault: true,
+    });
+    renderOverlay('/boards/overlay?event=7');
+
+    await waitFor(() => expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, 9));
+  });
+
+  it('ignores the default theme when the address carries its own options', async () => {
+    vi.mocked(getDefaultOverlayTheme).mockResolvedValue({ id: 9, name: 'Night', design: {}, isDefault: true });
+    renderOverlay('/boards/overlay?top=3&event=7');
+
+    await screen.findByLabelText('Running order');
+    expect(getDefaultOverlayTheme).not.toHaveBeenCalled();
     expect(vi.mocked(getSponsors)).toHaveBeenCalledWith(7, null);
   });
 

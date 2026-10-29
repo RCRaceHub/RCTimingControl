@@ -390,7 +390,13 @@ export async function getRaceMedia(raceId: number): Promise<RaceMediaDto[]> {
 }
 
 /** A saved overlay theme: a name and the designer's choices as a JSON object (see `overlayDesignFromTheme`). */
-export type OverlayThemeDto = { id: number; name: string; design: Record<string, unknown> };
+export type OverlayThemeDto = { id: number; name: string; design: Record<string, unknown>; isDefault: boolean };
+
+/** The club's default overlay theme, which the plain overlay address opens; null when none is set (204). */
+export async function getDefaultOverlayTheme(): Promise<OverlayThemeDto | null> {
+  const { data } = await api.get<OverlayThemeDto | ''>('/api/v1/boards/overlay-themes/default');
+  return data === '' ? null : data;
+}
 
 /** One saved overlay theme, for the overlay opened with `?look=ID`; a 404 means there is no such theme. */
 export async function getOverlayTheme(id: number): Promise<OverlayThemeDto> {

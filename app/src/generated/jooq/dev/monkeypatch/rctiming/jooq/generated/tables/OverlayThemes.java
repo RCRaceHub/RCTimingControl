@@ -5,6 +5,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
+import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors.OverlayThemeSponsorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.OverlayThemesRecord;
@@ -19,6 +20,7 @@ import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Identity;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
@@ -85,6 +87,11 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
      * The column <code>overlay_themes.updated_at</code>.
      */
     public final TableField<OverlayThemesRecord, Instant> UPDATED_AT = createField(DSL.name("updated_at"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("CAST(unixepoch('subsec') * 1000000 AS INTEGER)"), SQLDataType.BIGINT)), this, "", new InstantMicrosConverter());
+
+    /**
+     * The column <code>overlay_themes.is_default</code>.
+     */
+    public final TableField<OverlayThemesRecord, Boolean> IS_DEFAULT = createField(DSL.name("is_default"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
 
     private OverlayThemes(Name alias, Table<OverlayThemesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -154,6 +161,11 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
     }
 
     @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_OVERLAY_THEMES_DEFAULT);
+    }
+
+    @Override
     public Identity<OverlayThemesRecord, Long> getIdentity() {
         return (Identity<OverlayThemesRecord, Long>) super.getIdentity();
     }
@@ -184,7 +196,8 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
     @Override
     public List<Check<OverlayThemesRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name(""), "case (design is json) when (1 = 1) then 1 when (1 = 0) then 0 end <> 0", true)
+            Internal.createCheck(this, DSL.name(""), "case (design is json) when (1 = 1) then 1 when (1 = 0) then 0 end <> 0", true),
+            Internal.createCheck(this, DSL.name(""), "is_default in (0, 1)", true)
         );
     }
 
