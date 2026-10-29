@@ -155,6 +155,17 @@ Open http://localhost:8080 and sign in as `admin@example.com` / `trial123`. The 
 
 ---
 
+### Photo background removal
+
+Removing the background of a headshot or car photo (#695) runs entirely in the browser, so it needs no internet at the track and nothing in the Java code or the installers beyond the files below. `frontend/src/lib/backgroundRemoval.ts` loads the model and the runtime lazily, the first time an official ticks "Remove the background" in `PhotoUploadField` (used by the headshot and car photo dialogs), and returns a PNG that goes through the existing upload endpoints, which already accept a PNG with transparency and re-encode it.
+
+| Part | Where | Licence | Size |
+|------|-------|---------|------|
+| U²-Net-P model (`u2netp.onnx`, the small U²-Net, from the rembg release) | `frontend/public/models/`, served as `/models/u2netp.onnx` | Apache-2.0 | 4.6 MB |
+| `onnxruntime-web` WebAssembly runtime | npm dependency, the `.wasm` is bundled by Vite | MIT | 14.8 MB (about 4 MB compressed) |
+
+Together that adds about 20 MB to the jar and each installer (less once compressed), and no native library per operating system. The runtime uses one thread, because several need a cross-origin isolated page and the venue server is plain HTTP. To use a different model, replace the file and check the input size (`MODEL_SIZE`, 320) and normalisation in `backgroundRemoval.ts`; any U²-Net family model from rembg (for example `silueta.onnx`, 43 MB) drops in. A model whose licence forbids commercial use (RMBG-1.4, for example) must not be bundled. Imports do not carry images today; if one starts to, run the same step in the browser before the upload.
+
 ## Module structure
 
 ```
