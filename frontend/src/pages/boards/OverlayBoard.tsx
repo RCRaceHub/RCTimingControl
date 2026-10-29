@@ -440,7 +440,7 @@ export default function OverlayBoard() {
                     >
                       {row.position}
                     </span>
-                                        </td>
+                  </td>
                   <td className="w-8 py-1 pr-1 text-right tabular-nums">{row.carNumber ?? ''}</td>
                   <td className="max-w-0 truncate py-1 pr-2 font-medium">{row.driverName}
                     <RowStateIcon flash={flash} close={close} className="ml-1" />

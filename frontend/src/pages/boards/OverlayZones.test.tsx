@@ -23,5 +23,7 @@ describe('OverlayZones', () => {
     expect(parts('top-right')).toEqual(['chart']);
     expect(parts('bottom-strip')).toEqual(['sponsors', 'ticker']);
     expect(parts('bottom-left')).toEqual([]);
+    // A part with nothing to draw gets no wrapper, so it leaves no gap
+    expect(container.querySelector('[data-part="battles"]')).toBeNull();
   });
 });

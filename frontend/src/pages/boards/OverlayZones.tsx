@@ -21,10 +21,20 @@ function Zone({
   return (
     <div
       data-zone={zone}
-      className={cn('flex min-w-0 gap-4', zone.startsWith('bottom') ? 'flex-col-reverse' : 'flex-col', className)}
+      className={cn(
+        'flex min-w-0',
+        !zone.endsWith('strip') && 'gap-4',
+        zone.startsWith('bottom') ? 'flex-col-reverse' : 'flex-col',
+        className,
+      )}
     >
       {parts.map((part) => (
-        <div key={part} data-part={part} className={cn('empty:hidden has-[>:empty]:hidden', FULL_WIDTH.has(part) && 'w-full')}>
+        <div key={part} data-part={part} className={cn(
+            'empty:hidden has-[>:empty]:hidden',
+            FULL_WIDTH.has(part) && 'w-full',
+            // The featured driver card has always sat above the chart and battles, not level with them
+            part === 'lowerThird' && zone.startsWith('bottom') && !zone.endsWith('strip') && 'mb-28',
+          )}>
           {blocks[part]}
         </div>
       ))}
@@ -55,12 +65,12 @@ export function OverlayZones({
     <div className="fixed inset-0 flex flex-col font-sans">
       {zone('top-strip')}
       <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 p-4">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-4">
+        <div className="grid grid-cols-[minmax(min-content,1fr)_auto_minmax(min-content,1fr)] items-start gap-4">
           {zone('top-left', 'items-start')}
           {zone('top-center', 'items-center')}
           {zone('top-right', 'items-end')}
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4">
+        <div className="grid grid-cols-[minmax(min-content,1fr)_auto_minmax(min-content,1fr)] items-end gap-4">
           {zone('bottom-left', 'items-start')}
           {zone('bottom-center', 'items-center')}
           {zone('bottom-right', 'items-end')}
