@@ -45,6 +45,23 @@ RCTimingControl simulate --mode=playback --file=capture.dump --speed=4
 
 Then set the decoder host to `localhost` under **Admin → Decoder**, as in [decoder.md](decoder.md#using-the-simulator-development).
 
+## Check what a recording holds
+
+`dump-summary` reads a capture and reports what is in it, so you can compare it with the laps RCTimingControl credited:
+
+```
+RCTimingControl dump-summary --file=capture.dump
+```
+
+It prints the number of passings and status records, any gaps in the decoder's sequence numbers (a gap means a record was lost between the decoder and the file), and for each transponder the passings and the shortest and longest time between them. The times are the decoder's own clock.
+
+The dump does not say which race was running. The `capture.dump.times` file beside it holds the computer's clock for each record, and `dump-summary` uses it to split the recording in two ways:
+
+- `--split-gap=120` starts a new section after 120 seconds with no passings, which separates races that have a break between them.
+- `--windows=races.csv` counts passings against each race's own times. The file has one race per line, `name,start,end`, in UTC, for example `Heat 1,2026-11-07T10:15:00Z,2026-11-07T10:23:30Z`. Copy the start and finish times from the race history in RCTimingControl (allow for your time zone: UTC is one hour behind British Summer Time). Passings outside every window are listed under "Outside every race window".
+
+Both need the `.times` file, so keep it with the dump.
+
 ## Share one decoder between programs
 
 A decoder may accept only one connection at a time, and the limit on port 5100 is not documented. Add `--listen-port` and the recorder keeps the single connection and passes every record on to the others:
