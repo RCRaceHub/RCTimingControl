@@ -25,7 +25,7 @@ interface StateInfo {
  * up, it does not replace it. The colour key ({@code TimingLegend}) lists the same icons.
  */
 export const STATE_INFO: Record<StateKind, StateInfo> = {
-  'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-purple-500', tag: 'FL' },
+  'race-best': { icon: Star, label: 'Fastest lap of the race', tone: 'text-race-best', tag: 'FL' },
   'personal-best': { icon: Timer, label: 'Driver’s best lap', tone: 'text-info', tag: 'PB' },
   improving: { icon: TrendingUp, label: 'As quick as, or quicker than, their last lap', tone: 'text-success', tag: 'UP' },
   slow: { icon: TrendingDown, label: 'Slower than their last lap or their average', tone: 'text-destructive', tag: 'SL' },

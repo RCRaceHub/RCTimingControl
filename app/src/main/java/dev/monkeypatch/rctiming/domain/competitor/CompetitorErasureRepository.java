@@ -37,10 +37,12 @@ public class CompetitorErasureRepository {
 
     private final DSLContext dsl;
 
+    /** @param dsl the write connection's context, so every statement joins the service's transaction */
     public CompetitorErasureRepository(DSLContext dsl) {
         this.dsl = dsl;
     }
 
+    /** The ids of every entry the competitor has, in any event. */
     public List<Long> entryIdsOf(Long competitorId) {
         return dsl.select(ENTRIES.ID).from(ENTRIES).where(ENTRIES.COMPETITOR_ID.eq(competitorId)).fetch(ENTRIES.ID);
     }
@@ -63,6 +65,7 @@ public class CompetitorErasureRepository {
                         r.get(RESULT_SNAPSHOTS.TIMED_POSITIONS_JSON)));
     }
 
+    /** Rewrites a result snapshot's two JSON columns, with the competitor's name already removed by the caller. */
     @Transactional
     public void updateSnapshot(Long id, String positionsJson, String timedPositionsJson) {
         dsl.update(RESULT_SNAPSHOTS)
@@ -77,6 +80,7 @@ public class CompetitorErasureRepository {
                 .fetch(r -> new OutboxPayload(r.get(RESULTS_OUTBOX.ID), r.get(RESULTS_OUTBOX.PAYLOAD)));
     }
 
+    /** Rewrites one export payload, with the competitor's name already removed by the caller. */
     @Transactional
     public void updateOutboxPayload(Long id, String payload) {
         dsl.update(RESULTS_OUTBOX).set(RESULTS_OUTBOX.PAYLOAD, payload).where(RESULTS_OUTBOX.ID.eq(id)).execute();
