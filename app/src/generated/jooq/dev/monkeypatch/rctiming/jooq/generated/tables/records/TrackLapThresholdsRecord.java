@@ -136,6 +136,6 @@ public class TrackLapThresholdsRecord extends UpdatableRecordImpl<TrackLapThresh
         setMinLapMs(minLapMs);
         setMaxLastLapMs(maxLastLapMs);
         setCreatedAt(createdAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

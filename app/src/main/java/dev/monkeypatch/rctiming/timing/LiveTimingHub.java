@@ -87,7 +87,7 @@ public class LiveTimingHub {
      */
     public void broadcastUnknownTransponder(long raceId, String transponderNumber) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
-                Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+                (Object) Map.of("raceId", raceId, "transponderNumber", transponderNumber));
     }
 
     /**
@@ -97,7 +97,7 @@ public class LiveTimingHub {
      */
     public void broadcastWarmUp(long raceId, List<Long> seenEntryIds) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/warmup",
-                Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
+                (Object) Map.of("raceId", raceId, "seenEntryIds", seenEntryIds));
     }
 
     /**

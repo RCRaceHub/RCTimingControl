@@ -241,6 +241,6 @@ public class AuditLogRecord extends UpdatableRecordImpl<AuditLogRecord> {
         setSummary(summary);
         setBeforeJson(beforeJson);
         setAfterJson(afterJson);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

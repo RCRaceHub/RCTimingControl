@@ -151,6 +151,6 @@ public class RaceEliminationsRecord extends UpdatableRecordImpl<RaceEliminations
         setEliminatedBy(eliminatedBy);
         setRevivedAt(revivedAt);
         setRevivedBy(revivedBy);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

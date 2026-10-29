@@ -6,6 +6,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors.CompetitorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorMediaRecord;
 
 import java.util.Arrays;
@@ -14,19 +15,24 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -55,7 +61,7 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
     /**
      * The column <code>competitor_media.id</code>.
      */
-    public final TableField<CompetitorMediaRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<CompetitorMediaRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>competitor_media.competitor_id</code>.
@@ -101,6 +107,39 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
         this(DSL.name("competitor_media"), null);
     }
 
+    public <O extends Record> CompetitorMedia(Table<O> path, ForeignKey<O, CompetitorMediaRecord> childPath, InverseForeignKey<O, CompetitorMediaRecord> parentPath) {
+        super(path, childPath, parentPath, COMPETITOR_MEDIA);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class CompetitorMediaPath extends CompetitorMedia implements Path<CompetitorMediaRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> CompetitorMediaPath(Table<O> path, ForeignKey<O, CompetitorMediaRecord> childPath, InverseForeignKey<O, CompetitorMediaRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private CompetitorMediaPath(Name alias, Table<CompetitorMediaRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public CompetitorMediaPath as(String alias) {
+            return new CompetitorMediaPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public CompetitorMediaPath as(Name alias) {
+            return new CompetitorMediaPath(alias, this);
+        }
+
+        @Override
+        public CompetitorMediaPath as(Table<?> alias) {
+            return new CompetitorMediaPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
@@ -117,8 +156,20 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
     }
 
     @Override
-    public List<UniqueKey<CompetitorMediaRecord>> getUniqueKeys() {
-        return Arrays.asList(Keys.COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_KEY);
+    public List<ForeignKey<CompetitorMediaRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_FKEY);
+    }
+
+    private transient CompetitorsPath _competitors;
+
+    /**
+     * Get the implicit join path to the <code>competitors</code> table.
+     */
+    public CompetitorsPath competitors() {
+        if (_competitors == null)
+            _competitors = new CompetitorsPath(this, Keys.COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_FKEY, null);
+
+        return _competitors;
     }
 
     @Override
@@ -165,7 +216,7 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
      */
     @Override
     public CompetitorMedia where(Condition condition) {
-        return new CompetitorMedia(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new CompetitorMedia(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -232,7 +283,7 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public CompetitorMedia whereExists(Select<?> select) {
+    public CompetitorMedia whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -240,7 +291,7 @@ public class CompetitorMedia extends TableImpl<CompetitorMediaRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public CompetitorMedia whereNotExists(Select<?> select) {
+    public CompetitorMedia whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

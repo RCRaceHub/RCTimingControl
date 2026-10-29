@@ -47,7 +47,7 @@ class LiveTimingHubTest {
         hub.broadcastAudioCue(7, cue);
         hub.broadcastAutoRunState(3, "state");
 
-        verify(messaging).convertAndSend("/topic/race/7/audio", cue);
+        verify(messaging).convertAndSend("/topic/race/7/audio", (Object) cue);
         verify(messaging).convertAndSend("/topic/event/3/auto-run", "state");
     }
 
@@ -63,7 +63,7 @@ class LiveTimingHubTest {
         TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
         verify(messaging).convertAndSend("/topic/race/7/state", new RaceStateChangeDto(7, "FINISHED"));
         verify(messaging).convertAndSend("/topic/race/7/bump-up-alert",
-                Map.of("finishedRaceId", 7L, "promotedEntryIds", List.of(3L)));
+                (Object) Map.of("finishedRaceId", 7L, "promotedEntryIds", List.of(3L)));
     }
 
     @Test

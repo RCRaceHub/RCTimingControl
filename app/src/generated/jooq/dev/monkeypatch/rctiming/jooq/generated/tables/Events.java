@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.Cha
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds.EntryFeedsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors.EventSponsorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences.MarshalAbsencesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties.MarshalPenaltiesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeSessions.PracticeSessionsPath;
@@ -41,13 +42,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -76,7 +78,7 @@ public class Events extends TableImpl<EventsRecord> {
     /**
      * The column <code>events.id</code>.
      */
-    public final TableField<EventsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<EventsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>events.name</code>.
@@ -330,6 +332,19 @@ public class Events extends TableImpl<EventsRecord> {
         return _eventClasses;
     }
 
+    private transient EventSponsorsPath _eventSponsors;
+
+    /**
+     * Get the implicit to-many join path to the <code>event_sponsors</code>
+     * table
+     */
+    public EventSponsorsPath eventSponsors() {
+        if (_eventSponsors == null)
+            _eventSponsors = new EventSponsorsPath(this, null, Keys.EVENT_SPONSORS__EVENT_SPONSORS_EVENT_ID_FKEY.getInverseKey());
+
+        return _eventSponsors;
+    }
+
     private transient MarshalAbsencesPath _marshalAbsences;
 
     /**
@@ -451,7 +466,7 @@ public class Events extends TableImpl<EventsRecord> {
      */
     @Override
     public Events where(Condition condition) {
-        return new Events(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new Events(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -518,7 +533,7 @@ public class Events extends TableImpl<EventsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Events whereExists(Select<?> select) {
+    public Events whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -526,7 +541,7 @@ public class Events extends TableImpl<EventsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Events whereNotExists(Select<?> select) {
+    public Events whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

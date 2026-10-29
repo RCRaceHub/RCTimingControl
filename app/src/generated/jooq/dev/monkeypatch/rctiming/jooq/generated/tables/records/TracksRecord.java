@@ -136,6 +136,6 @@ public class TracksRecord extends UpdatableRecordImpl<TracksRecord> {
         setTrackLength(trackLength);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

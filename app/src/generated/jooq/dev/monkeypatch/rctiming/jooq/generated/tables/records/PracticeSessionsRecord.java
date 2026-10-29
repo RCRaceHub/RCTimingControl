@@ -211,6 +211,6 @@ public class PracticeSessionsRecord extends UpdatableRecordImpl<PracticeSessions
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setPauseSeconds(pauseSeconds);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

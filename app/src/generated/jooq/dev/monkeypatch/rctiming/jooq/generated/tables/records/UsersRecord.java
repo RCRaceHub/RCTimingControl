@@ -166,6 +166,6 @@ public class UsersRecord extends UpdatableRecordImpl<UsersRecord> {
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
         setDisabledAt(disabledAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

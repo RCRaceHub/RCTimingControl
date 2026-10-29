@@ -421,6 +421,6 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setBattleHoldLaps(battleHoldLaps);
         setCloseGapMs(closeGapMs);
         setLateMarginMs(lateMarginMs);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

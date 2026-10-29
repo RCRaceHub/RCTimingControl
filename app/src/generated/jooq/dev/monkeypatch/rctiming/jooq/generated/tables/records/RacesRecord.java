@@ -271,6 +271,6 @@ public class RacesRecord extends UpdatableRecordImpl<RacesRecord> {
         setAbandonedAt(abandonedAt);
         setBumpSlots(bumpSlots);
         setRunRank(runRank);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

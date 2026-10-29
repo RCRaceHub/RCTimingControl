@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.infrastructure.network;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.web.context.WebServerApplicationContext;
-import org.springframework.boot.web.context.WebServerInitializedEvent;
+import org.springframework.boot.web.server.context.WebServerApplicationContext;
+import org.springframework.boot.web.server.context.WebServerInitializedEvent;
 import org.springframework.boot.web.server.WebServer;
 
 import java.util.List;

@@ -32,13 +32,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -67,7 +68,7 @@ public class ChampionshipExclusions extends TableImpl<ChampionshipExclusionsReco
     /**
      * The column <code>championship_exclusions.id</code>.
      */
-    public final TableField<ChampionshipExclusionsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<ChampionshipExclusionsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>championship_exclusions.championship_id</code>.
@@ -278,7 +279,7 @@ public class ChampionshipExclusions extends TableImpl<ChampionshipExclusionsReco
      */
     @Override
     public ChampionshipExclusions where(Condition condition) {
-        return new ChampionshipExclusions(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new ChampionshipExclusions(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -345,7 +346,7 @@ public class ChampionshipExclusions extends TableImpl<ChampionshipExclusionsReco
      * Create an inline derived table from this table
      */
     @Override
-    public ChampionshipExclusions whereExists(Select<?> select) {
+    public ChampionshipExclusions whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -353,7 +354,7 @@ public class ChampionshipExclusions extends TableImpl<ChampionshipExclusionsReco
      * Create an inline derived table from this table
      */
     @Override
-    public ChampionshipExclusions whereNotExists(Select<?> select) {
+    public ChampionshipExclusions whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

@@ -17,21 +17,21 @@ springBoot {
     buildInfo()
 }
 
-// Pin all jOOQ artifacts in jooqGenerator to the same version as version.set() below (3.19.24).
+// Pin all jOOQ artifacts in jooqGenerator to the same version as version.set() below (3.21.9).
 // The jooqGenerator config does not inherit Spring Boot BOM, so without this constraint
-// jooq-meta and jooq resolve to 3.19.24 while jooq-codegen stays at 3.19.11, causing
-// AbstractMethodError at codegen time. We use 3.19.24 for codegen; runtime stays at
+// jooq-meta and jooq resolve to 3.21.9 while jooq-codegen stays at 3.19.11, causing
+// AbstractMethodError at codegen time. We use 3.21.9 for codegen; runtime stays at
 // whatever Spring Boot BOM provides (also 3.19.x — compatible generated code).
 configurations.named("jooqGenerator") {
     resolutionStrategy.eachDependency {
         if (requested.group == "org.jooq") {
-            useVersion("3.19.24")
+            useVersion("3.21.9")
         }
     }
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
@@ -44,7 +44,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
 
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // #26: the app keeps its data in one SQLite file; only persistence/ may use these directly
     implementation("org.xerial:sqlite-jdbc:3.53.4.0")
@@ -60,6 +60,7 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-resttestclient")
     // Checks Results Export v1 documents against their published JSON schema (#27)
     testImplementation("com.networknt:json-schema-validator:1.5.9")
 
@@ -97,7 +98,7 @@ val flywayMigrateForCodegen by tasks.registering {
 }
 
 jooq {
-    version.set("3.19.24")
+    version.set("3.21.9")
     configurations {
         create("main") {
             generateSchemaSourceOnCompilation.set(true)

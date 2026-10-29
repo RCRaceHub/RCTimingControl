@@ -74,6 +74,6 @@ public class UserRolesRecord extends UpdatableRecordImpl<UserRolesRecord> {
 
         setUserId(userId);
         setRole(role);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

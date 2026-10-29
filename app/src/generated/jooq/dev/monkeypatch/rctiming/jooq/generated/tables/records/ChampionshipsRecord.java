@@ -211,6 +211,6 @@ public class ChampionshipsRecord extends UpdatableRecordImpl<ChampionshipsRecord
         setUpdatedAt(updatedAt);
         setShowOverallTable(showOverallTable);
         setSplitCategories(splitCategories);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

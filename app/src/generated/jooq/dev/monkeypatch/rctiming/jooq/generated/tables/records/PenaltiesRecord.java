@@ -167,6 +167,6 @@ public class PenaltiesRecord extends UpdatableRecordImpl<PenaltiesRecord> {
         setReason(reason);
         setAppliedBy(appliedBy);
         setAppliedAt(appliedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

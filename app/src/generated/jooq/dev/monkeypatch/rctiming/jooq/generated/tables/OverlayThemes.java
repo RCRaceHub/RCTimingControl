@@ -6,6 +6,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
+import dev.monkeypatch.rctiming.jooq.generated.tables.OverlayThemeSponsors.OverlayThemeSponsorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.OverlayThemesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
 
@@ -17,16 +18,20 @@ import java.util.List;
 import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -59,7 +64,7 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
     /**
      * The column <code>overlay_themes.id</code>.
      */
-    public final TableField<OverlayThemesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<OverlayThemesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>overlay_themes.name</code>.
@@ -110,6 +115,39 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
         this(DSL.name("overlay_themes"), null);
     }
 
+    public <O extends Record> OverlayThemes(Table<O> path, ForeignKey<O, OverlayThemesRecord> childPath, InverseForeignKey<O, OverlayThemesRecord> parentPath) {
+        super(path, childPath, parentPath, OVERLAY_THEMES);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class OverlayThemesPath extends OverlayThemes implements Path<OverlayThemesRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> OverlayThemesPath(Table<O> path, ForeignKey<O, OverlayThemesRecord> childPath, InverseForeignKey<O, OverlayThemesRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private OverlayThemesPath(Name alias, Table<OverlayThemesRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public OverlayThemesPath as(String alias) {
+            return new OverlayThemesPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public OverlayThemesPath as(Name alias) {
+            return new OverlayThemesPath(alias, this);
+        }
+
+        @Override
+        public OverlayThemesPath as(Table<?> alias) {
+            return new OverlayThemesPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
@@ -128,6 +166,19 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
     @Override
     public List<UniqueKey<OverlayThemesRecord>> getUniqueKeys() {
         return Arrays.asList(Keys.OVERLAY_THEMES__OVERLAY_THEMES_NAME_KEY);
+    }
+
+    private transient OverlayThemeSponsorsPath _overlayThemeSponsors;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>overlay_theme_sponsors</code> table
+     */
+    public OverlayThemeSponsorsPath overlayThemeSponsors() {
+        if (_overlayThemeSponsors == null)
+            _overlayThemeSponsors = new OverlayThemeSponsorsPath(this, null, Keys.OVERLAY_THEME_SPONSORS__OVERLAY_THEME_SPONSORS_THEME_ID_FKEY.getInverseKey());
+
+        return _overlayThemeSponsors;
     }
 
     @Override
@@ -181,7 +232,7 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
      */
     @Override
     public OverlayThemes where(Condition condition) {
-        return new OverlayThemes(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new OverlayThemes(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -248,7 +299,7 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public OverlayThemes whereExists(Select<?> select) {
+    public OverlayThemes whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -256,7 +307,7 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public OverlayThemes whereNotExists(Select<?> select) {
+    public OverlayThemes whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

@@ -5,6 +5,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
+import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.AudioTemplatesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
@@ -18,15 +19,16 @@ import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -59,7 +61,7 @@ public class AudioTemplates extends TableImpl<AudioTemplatesRecord> {
     /**
      * The column <code>audio_templates.id</code>.
      */
-    public final TableField<AudioTemplatesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<AudioTemplatesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>audio_templates.name</code>.
@@ -113,6 +115,11 @@ public class AudioTemplates extends TableImpl<AudioTemplatesRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.AUDIO_TEMPLATES_NAME_KEY);
     }
 
     @Override
@@ -176,7 +183,7 @@ public class AudioTemplates extends TableImpl<AudioTemplatesRecord> {
      */
     @Override
     public AudioTemplates where(Condition condition) {
-        return new AudioTemplates(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new AudioTemplates(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -243,7 +250,7 @@ public class AudioTemplates extends TableImpl<AudioTemplatesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public AudioTemplates whereExists(Select<?> select) {
+    public AudioTemplates whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -251,7 +258,7 @@ public class AudioTemplates extends TableImpl<AudioTemplatesRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public AudioTemplates whereNotExists(Select<?> select) {
+    public AudioTemplates whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

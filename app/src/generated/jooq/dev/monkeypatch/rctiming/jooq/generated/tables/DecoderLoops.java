@@ -27,13 +27,14 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -62,7 +63,7 @@ public class DecoderLoops extends TableImpl<DecoderLoopsRecord> {
     /**
      * The column <code>decoder_loops.id</code>.
      */
-    public final TableField<DecoderLoopsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<DecoderLoopsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>decoder_loops.track_id</code>.
@@ -232,7 +233,7 @@ public class DecoderLoops extends TableImpl<DecoderLoopsRecord> {
      */
     @Override
     public DecoderLoops where(Condition condition) {
-        return new DecoderLoops(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new DecoderLoops(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -299,7 +300,7 @@ public class DecoderLoops extends TableImpl<DecoderLoopsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public DecoderLoops whereExists(Select<?> select) {
+    public DecoderLoops whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -307,7 +308,7 @@ public class DecoderLoops extends TableImpl<DecoderLoopsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public DecoderLoops whereNotExists(Select<?> select) {
+    public DecoderLoops whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

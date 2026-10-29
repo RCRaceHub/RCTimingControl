@@ -166,6 +166,6 @@ public class MarshalPenaltiesRecord extends UpdatableRecordImpl<MarshalPenalties
         setAppliedAt(appliedAt);
         setNotes(notes);
         setKind(kind);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

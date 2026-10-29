@@ -121,6 +121,6 @@ public class OverlayThemesRecord extends UpdatableRecordImpl<OverlayThemesRecord
         setDesign(design);
         setCreatedAt(createdAt);
         setUpdatedAt(updatedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

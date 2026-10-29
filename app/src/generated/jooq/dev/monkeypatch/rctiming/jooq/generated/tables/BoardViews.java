@@ -23,10 +23,10 @@ import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -59,7 +59,7 @@ public class BoardViews extends TableImpl<BoardViewsRecord> {
     /**
      * The column <code>board_views.id</code>.
      */
-    public final TableField<BoardViewsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<BoardViewsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>board_views.slug</code>.
@@ -191,7 +191,7 @@ public class BoardViews extends TableImpl<BoardViewsRecord> {
      */
     @Override
     public BoardViews where(Condition condition) {
-        return new BoardViews(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new BoardViews(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -258,7 +258,7 @@ public class BoardViews extends TableImpl<BoardViewsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public BoardViews whereExists(Select<?> select) {
+    public BoardViews whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -266,7 +266,7 @@ public class BoardViews extends TableImpl<BoardViewsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public BoardViews whereNotExists(Select<?> select) {
+    public BoardViews whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

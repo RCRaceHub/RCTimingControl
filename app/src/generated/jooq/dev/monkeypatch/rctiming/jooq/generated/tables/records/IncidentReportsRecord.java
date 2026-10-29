@@ -151,6 +151,6 @@ public class IncidentReportsRecord extends UpdatableRecordImpl<IncidentReportsRe
         setDescription(description);
         setRaisedBy(raisedBy);
         setRaisedAt(raisedAt);
-        resetChangedOnNotNull();
+        resetTouchedOnNotNull();
     }
 }

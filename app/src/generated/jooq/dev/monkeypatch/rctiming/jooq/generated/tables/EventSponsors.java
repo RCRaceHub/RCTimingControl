@@ -5,26 +5,36 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
+import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Events.EventsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventSponsorsRecord;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
+import org.jooq.impl.Internal;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
@@ -53,7 +63,7 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
     /**
      * The column <code>event_sponsors.id</code>.
      */
-    public final TableField<EventSponsorsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<EventSponsorsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>event_sponsors.event_id</code>.
@@ -104,9 +114,47 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
         this(DSL.name("event_sponsors"), null);
     }
 
+    public <O extends Record> EventSponsors(Table<O> path, ForeignKey<O, EventSponsorsRecord> childPath, InverseForeignKey<O, EventSponsorsRecord> parentPath) {
+        super(path, childPath, parentPath, EVENT_SPONSORS);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class EventSponsorsPath extends EventSponsors implements Path<EventSponsorsRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> EventSponsorsPath(Table<O> path, ForeignKey<O, EventSponsorsRecord> childPath, InverseForeignKey<O, EventSponsorsRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private EventSponsorsPath(Name alias, Table<EventSponsorsRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public EventSponsorsPath as(String alias) {
+            return new EventSponsorsPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public EventSponsorsPath as(Name alias) {
+            return new EventSponsorsPath(alias, this);
+        }
+
+        @Override
+        public EventSponsorsPath as(Table<?> alias) {
+            return new EventSponsorsPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_EVENT_SPONSORS_EVENT_ID);
     }
 
     @Override
@@ -117,6 +165,23 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
     @Override
     public UniqueKey<EventSponsorsRecord> getPrimaryKey() {
         return Keys.EVENT_SPONSORS__PK_EVENT_SPONSORS;
+    }
+
+    @Override
+    public List<ForeignKey<EventSponsorsRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.EVENT_SPONSORS__EVENT_SPONSORS_EVENT_ID_FKEY);
+    }
+
+    private transient EventsPath _events;
+
+    /**
+     * Get the implicit join path to the <code>events</code> table.
+     */
+    public EventsPath events() {
+        if (_events == null)
+            _events = new EventsPath(this, Keys.EVENT_SPONSORS__EVENT_SPONSORS_EVENT_ID_FKEY, null);
+
+        return _events;
     }
 
     @Override
@@ -163,7 +228,7 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
      */
     @Override
     public EventSponsors where(Condition condition) {
-        return new EventSponsors(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new EventSponsors(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -230,7 +295,7 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EventSponsors whereExists(Select<?> select) {
+    public EventSponsors whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -238,7 +303,7 @@ public class EventSponsors extends TableImpl<EventSponsorsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public EventSponsors whereNotExists(Select<?> select) {
+    public EventSponsors whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }

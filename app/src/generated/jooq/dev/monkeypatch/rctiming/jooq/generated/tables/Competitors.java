@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions.ChampionshipExclusionsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog.CompetitorAuditLogPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia.CompetitorMediaPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries.EntriesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.PracticeDrivers.PracticeDriversPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorsRecord;
@@ -31,10 +32,10 @@ import org.jooq.QueryPart;
 import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
-import org.jooq.Select;
 import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
+import org.jooq.TableLike;
 import org.jooq.TableOptions;
 import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
@@ -67,7 +68,7 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
     /**
      * The column <code>competitors.id</code>.
      */
-    public final TableField<CompetitorsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.identity(true), this, "");
+    public final TableField<CompetitorsRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.generatedByDefaultAsIdentity(), this, "");
 
     /**
      * The column <code>competitors.display_name</code>.
@@ -227,6 +228,19 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
         return _competitorAuditLog;
     }
 
+    private transient CompetitorMediaPath _competitorMedia;
+
+    /**
+     * Get the implicit to-many join path to the <code>competitor_media</code>
+     * table
+     */
+    public CompetitorMediaPath competitorMedia() {
+        if (_competitorMedia == null)
+            _competitorMedia = new CompetitorMediaPath(this, null, Keys.COMPETITOR_MEDIA__COMPETITOR_MEDIA_COMPETITOR_ID_FKEY.getInverseKey());
+
+        return _competitorMedia;
+    }
+
     private transient EntriesPath _entries;
 
     /**
@@ -303,7 +317,7 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
      */
     @Override
     public Competitors where(Condition condition) {
-        return new Competitors(getQualifiedName(), aliased() ? this : null, null, condition);
+        return new Competitors(getQualifiedName(), aliased() ? this : null, null, Internal.condition(this, condition));
     }
 
     /**
@@ -370,7 +384,7 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Competitors whereExists(Select<?> select) {
+    public Competitors whereExists(TableLike<?> select) {
         return where(DSL.exists(select));
     }
 
@@ -378,7 +392,7 @@ public class Competitors extends TableImpl<CompetitorsRecord> {
      * Create an inline derived table from this table
      */
     @Override
-    public Competitors whereNotExists(Select<?> select) {
+    public Competitors whereNotExists(TableLike<?> select) {
         return where(DSL.notExists(select));
     }
 }
