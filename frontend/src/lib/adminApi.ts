@@ -159,6 +159,34 @@ export interface EventDetailDto {
   racehubLastRevision: number | null;
 }
 
+// Pictures an entry import named by address (#699)
+
+export interface ImportedPhotoLink {
+  kind: 'HEADSHOT' | 'CAR_PHOTO';
+  /** The competitor, for a headshot */
+  competitorId: number | null;
+  /** The entry, for a car photo */
+  entryId: number | null;
+  url: string;
+}
+
+export interface ImportedPhotoItem {
+  kind: ImportedPhotoLink['kind'];
+  competitorId: number | null;
+  entryId: number | null;
+  status: 'STORED' | 'SKIPPED' | 'FAILED';
+  message: string | null;
+  /** The picture's address here, set only when stored */
+  storedUrl: string | null;
+}
+
+export interface ImportedPhotosResult {
+  stored: number;
+  skipped: number;
+  failed: number;
+  items: ImportedPhotoItem[];
+}
+
 // RaceHub Entry Export v1 import (L7/L8)
 
 export type RaceHubImportAction = 'CREATE' | 'UPDATE' | 'WITHDRAW' | 'UNCHANGED' | 'STALE' | 'SKIP';
@@ -193,6 +221,8 @@ export interface RaceHubImportResult {
     eventClassId: number | null;
     rctcEntryId: number | null;
   }[];
+  /** Pictures the entries name; fetched afterwards (#699). Empty for a preview. */
+  photoLinks: ImportedPhotoLink[];
 }
 
 // RC-Timing CSV import (#39, #40)
@@ -239,6 +269,8 @@ export interface CsvImportResult {
   errors: string[];
   warnings: string[];
   rows: CsvImportRow[];
+  /** Pictures the rows name; fetched afterwards (#699). Empty for a preview. */
+  photoLinks: ImportedPhotoLink[];
 }
 
 // Entry feed: an event's entries pulled from a URL (#42)
@@ -746,6 +778,12 @@ export const adminApi = {
       })
       .then(r => r.data);
   },
+
+  // Fetches the pictures an import named (#699). Failures come back per picture, so this is 200 even if none work.
+  importPhotos: (eventId: number, links: ImportedPhotoLink[], replaceExisting: boolean) =>
+    api
+      .post<ImportedPhotosResult>(`/api/v1/admin/events/${eventId}/photo-import`, { links, replaceExisting })
+      .then(r => r.data),
 
   // Driver pictures and sponsors (#520): a competitor's headshot and sponsors, an entry's car photo.
   getCompetitorMedia: (competitorId: number) =>

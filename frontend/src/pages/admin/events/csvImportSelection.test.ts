@@ -25,7 +25,7 @@ const rows = [
 const preview = {
   dryRun: true, blocked: false, applied: false,
   summary: { newEntries: 2, changed: 2, unchanged: 1, missing: 2, skipped: 1, created: 0, updated: 0, withdrawn: 0 },
-  unmappedClasses: [], errors: [], warnings: [], rows,
+  unmappedClasses: [], errors: [], warnings: [], rows, photoLinks: [],
 } as CsvImportResult;
 
 describe('csvImportSelection', () => {
