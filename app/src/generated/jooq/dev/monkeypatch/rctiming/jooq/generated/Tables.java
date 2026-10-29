@@ -42,6 +42,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Passkeys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
@@ -249,6 +250,11 @@ public class Tables {
      * The table <code>racing_classes</code>.
      */
     public static final RacingClasses RACING_CLASSES = RacingClasses.RACING_CLASSES;
+
+    /**
+     * The table <code>passkeys</code>.
+     */
+    public static final Passkeys PASSKEYS = Passkeys.PASSKEYS;
 
     /**
      * The table <code>refresh_tokens</code>.

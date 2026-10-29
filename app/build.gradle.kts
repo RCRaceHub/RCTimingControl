@@ -40,6 +40,9 @@ dependencies {
     // #503: makes the club certificate authority and the HTTPS certificate it signs
     implementation("org.bouncycastle:bcpkix-jdk18on:1.86")
 
+    // #475: passkey (WebAuthn) registration and sign-in for officials
+    implementation("com.yubico:webauthn-server-core:2.6.0")
+
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")

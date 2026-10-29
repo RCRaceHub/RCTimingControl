@@ -25,6 +25,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Passkeys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
@@ -77,6 +78,8 @@ public class Indexes {
     public static final Index IDX_PRACTICE_SESSIONS_EVENT = Internal.createIndex(DSL.name("idx_practice_sessions_event"), PracticeSessions.PRACTICE_SESSIONS, new OrderField[] { PracticeSessions.PRACTICE_SESSIONS.EVENT_ID }, false);
     public static final Index IDX_RACE_ELIMINATIONS_ACTIVE = Internal.createIndex(DSL.name("idx_race_eliminations_active"), RaceEliminations.RACE_ELIMINATIONS, new OrderField[] { RaceEliminations.RACE_ELIMINATIONS.RACE_ID, RaceEliminations.RACE_ELIMINATIONS.ENTRY_ID }, true);
     public static final Index IDX_RACE_ELIMINATIONS_RACE_ID = Internal.createIndex(DSL.name("idx_race_eliminations_race_id"), RaceEliminations.RACE_ELIMINATIONS, new OrderField[] { RaceEliminations.RACE_ELIMINATIONS.RACE_ID }, false);
+    public static final Index IDX_PASSKEYS_USER_HANDLE = Internal.createIndex(DSL.name("idx_passkeys_user_handle"), Passkeys.PASSKEYS, new OrderField[] { Passkeys.PASSKEYS.USER_HANDLE }, false);
+    public static final Index IDX_PASSKEYS_USER_ID = Internal.createIndex(DSL.name("idx_passkeys_user_id"), Passkeys.PASSKEYS, new OrderField[] { Passkeys.PASSKEYS.USER_ID }, false);
     public static final Index IDX_RACE_ENTRIES_ENTRY_ID = Internal.createIndex(DSL.name("idx_race_entries_entry_id"), RaceEntries.RACE_ENTRIES, new OrderField[] { RaceEntries.RACE_ENTRIES.ENTRY_ID }, false);
     public static final Index IDX_RACE_ENTRIES_RACE_ID = Internal.createIndex(DSL.name("idx_race_entries_race_id"), RaceEntries.RACE_ENTRIES, new OrderField[] { RaceEntries.RACE_ENTRIES.RACE_ID }, false);
     public static final Index IDX_RACE_POINT_PENALTIES_RACE_ID = Internal.createIndex(DSL.name("idx_race_point_penalties_race_id"), RacePointPenalties.RACE_POINT_PENALTIES, new OrderField[] { RacePointPenalties.RACE_POINT_PENALTIES.RACE_ID }, false);

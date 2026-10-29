@@ -42,6 +42,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Passkeys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
@@ -90,6 +91,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacePointPenalties
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassMappingsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacingClassesRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.PasskeysRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RefreshTokensRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ResultSnapshotsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.ResultsOutboxRecord;
@@ -164,6 +166,7 @@ public class Keys {
     public static final UniqueKey<RacesRecord> RACES__PK_RACES = Internal.createUniqueKey(Races.RACES, DSL.name("pk_races"), new TableField[] { Races.RACES.ID }, true);
     public static final UniqueKey<RacingClassesRecord> RACING_CLASSES__PK_RACING_CLASSES = Internal.createUniqueKey(RacingClasses.RACING_CLASSES, DSL.name("pk_racing_classes"), new TableField[] { RacingClasses.RACING_CLASSES.ID }, true);
     public static final UniqueKey<RacingClassesRecord> RACING_CLASSES__RACING_CLASSES_NAME_KEY = Internal.createUniqueKey(RacingClasses.RACING_CLASSES, DSL.name("racing_classes_name_key"), new TableField[] { RacingClasses.RACING_CLASSES.NAME }, true);
+    public static final UniqueKey<PasskeysRecord> PASSKEYS__PK_PASSKEYS = Internal.createUniqueKey(Passkeys.PASSKEYS, DSL.name("pk_passkeys"), new TableField[] { Passkeys.PASSKEYS.ID }, true);
     public static final UniqueKey<RefreshTokensRecord> REFRESH_TOKENS__PK_REFRESH_TOKENS = Internal.createUniqueKey(RefreshTokens.REFRESH_TOKENS, DSL.name("pk_refresh_tokens"), new TableField[] { RefreshTokens.REFRESH_TOKENS.ID }, true);
     public static final UniqueKey<ResultSnapshotsRecord> RESULT_SNAPSHOTS__PK_RESULT_SNAPSHOTS = Internal.createUniqueKey(ResultSnapshots.RESULT_SNAPSHOTS, DSL.name("pk_result_snapshots"), new TableField[] { ResultSnapshots.RESULT_SNAPSHOTS.ID }, true);
     public static final UniqueKey<ResultsOutboxRecord> RESULTS_OUTBOX__PK_RESULTS_OUTBOX = Internal.createUniqueKey(ResultsOutbox.RESULTS_OUTBOX, DSL.name("pk_results_outbox"), new TableField[] { ResultsOutbox.RESULTS_OUTBOX.ID }, true);
@@ -234,6 +237,7 @@ public class Keys {
     public static final ForeignKey<RacehubClassMappingsRecord, EventsRecord> RACEHUB_CLASS_MAPPINGS__RACEHUB_CLASS_MAPPINGS_EVENT_ID_FKEY = Internal.createForeignKey(RacehubClassMappings.RACEHUB_CLASS_MAPPINGS, DSL.name("racehub_class_mappings_event_id_fkey"), new TableField[] { RacehubClassMappings.RACEHUB_CLASS_MAPPINGS.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true);
     public static final ForeignKey<RacesRecord, EventClassesRecord> RACES__RACES_EVENT_CLASS_ID_FKEY = Internal.createForeignKey(Races.RACES, DSL.name("races_event_class_id_fkey"), new TableField[] { Races.RACES.EVENT_CLASS_ID }, Keys.EVENT_CLASSES__PK_EVENT_CLASSES, new TableField[] { EventClasses.EVENT_CLASSES.ID }, true);
     public static final ForeignKey<RacesRecord, RoundsRecord> RACES__RACES_ROUND_ID_FKEY = Internal.createForeignKey(Races.RACES, DSL.name("races_round_id_fkey"), new TableField[] { Races.RACES.ROUND_ID }, Keys.ROUNDS__PK_ROUNDS, new TableField[] { Rounds.ROUNDS.ID }, true);
+    public static final ForeignKey<PasskeysRecord, UsersRecord> PASSKEYS__PASSKEYS_USER_ID_FKEY = Internal.createForeignKey(Passkeys.PASSKEYS, DSL.name("passkeys_user_id_fkey"), new TableField[] { Passkeys.PASSKEYS.USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<RefreshTokensRecord, UsersRecord> REFRESH_TOKENS__REFRESH_TOKENS_USER_ID_FKEY = Internal.createForeignKey(RefreshTokens.REFRESH_TOKENS, DSL.name("refresh_tokens_user_id_fkey"), new TableField[] { RefreshTokens.REFRESH_TOKENS.USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true);
     public static final ForeignKey<ResultSnapshotsRecord, RacesRecord> RESULT_SNAPSHOTS__RESULT_SNAPSHOTS_RACE_ID_FKEY = Internal.createForeignKey(ResultSnapshots.RESULT_SNAPSHOTS, DSL.name("result_snapshots_race_id_fkey"), new TableField[] { ResultSnapshots.RESULT_SNAPSHOTS.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true);
     public static final ForeignKey<ResultsOutboxRecord, EventsRecord> RESULTS_OUTBOX__RESULTS_OUTBOX_EVENT_ID_FKEY = Internal.createForeignKey(ResultsOutbox.RESULTS_OUTBOX, DSL.name("results_outbox_event_id_fkey"), new TableField[] { ResultsOutbox.RESULTS_OUTBOX.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true);

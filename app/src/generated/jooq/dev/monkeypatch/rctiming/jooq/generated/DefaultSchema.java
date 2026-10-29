@@ -42,6 +42,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Passkeys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
@@ -265,6 +266,11 @@ public class DefaultSchema extends SchemaImpl {
     public final RacingClasses RACING_CLASSES = RacingClasses.RACING_CLASSES;
 
     /**
+     * The table <code>passkeys</code>.
+     */
+    public final Passkeys PASSKEYS = Passkeys.PASSKEYS;
+
+    /**
      * The table <code>refresh_tokens</code>.
      */
     public final RefreshTokens REFRESH_TOKENS = RefreshTokens.REFRESH_TOKENS;
@@ -368,6 +374,7 @@ public class DefaultSchema extends SchemaImpl {
             RacehubClassMappings.RACEHUB_CLASS_MAPPINGS,
             Races.RACES,
             RacingClasses.RACING_CLASSES,
+            Passkeys.PASSKEYS,
             RefreshTokens.REFRESH_TOKENS,
             ResultSnapshots.RESULT_SNAPSHOTS,
             ResultsOutbox.RESULTS_OUTBOX,
