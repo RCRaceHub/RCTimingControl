@@ -23,7 +23,9 @@ public record LiveTimingSettings(int battleGapMs, int battleTrendMsPerLap, int b
     public static final List<String> ROW_ICONS = List.of("pace", "flying", "lap", "close", "lapped", "penalty", "signal");
 
     public LiveTimingSettings {
-        hiddenRowIcons = hiddenRowIcons == null ? List.of() : List.copyOf(hiddenRowIcons);
+        // Nulls and repeats are dropped, so a sloppy request body cannot fail the copy or be stored twice
+        hiddenRowIcons = hiddenRowIcons == null ? List.of()
+                : hiddenRowIcons.stream().filter(java.util.Objects::nonNull).distinct().toList();
     }
 
     /** The settings until the club changes them. */

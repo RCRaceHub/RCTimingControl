@@ -75,6 +75,16 @@ class ClubProfileServiceTest {
         verify(repository, never()).save(any());
     }
 
+    @Test
+    void unknownRowIcon_isRefused_andNullsAndRepeatsAreDropped() {
+        assertThatThrownBy(() -> service.changeLiveTimingSettings(null,
+                new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, java.util.List.of("sparkles"))))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("sparkles");
+        assertThat(new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, java.util.Arrays.asList("pace", null, "pace"))
+                .hiddenRowIcons()).containsExactly("pace");
+        verify(repository, never()).save(any());
+    }
+
     private static ClubProfile profileWithVoice(String voice) {
         ClubProfile profile = new ClubProfile();
         profile.setDefaultVoiceId(voice);

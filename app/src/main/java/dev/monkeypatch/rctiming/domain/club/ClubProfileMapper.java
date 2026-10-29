@@ -27,7 +27,7 @@ interface ClubProfileMapper {
     @Mapping(target = "battleHoldLaps", source = "liveTimingSettings.battleHoldLaps")
     @Mapping(target = "closeGapMs", source = "liveTimingSettings.closeGapMs")
     @Mapping(target = "lateMarginMs", source = "liveTimingSettings.lateMarginMs")
-    @Mapping(target = "hiddenRowIcons", expression = "java(String.join(\",\", profile.getLiveTimingSettings().hiddenRowIcons()))")
+    @Mapping(target = "hiddenRowIcons", expression = "java(rowIcons(profile.getLiveTimingSettings().hiddenRowIcons()))")
     void toRecord(ClubProfile profile, @MappingTarget ClubProfilesRecord record);
 
     default LiveTimingSettings liveTimingSettings(ClubProfilesRecord r) {
@@ -35,7 +35,11 @@ interface ClubProfileMapper {
                 r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs(), rowIcons(r.getHiddenRowIcons()));
     }
 
-    private static List<String> rowIcons(String csv) {
+    default String rowIcons(List<String> icons) {
+        return String.join(",", icons);
+    }
+
+    default List<String> rowIcons(String csv) {
         return csv == null || csv.isBlank() ? List.of() : List.of(csv.split(","));
     }
 
