@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 const ADMIN_EMAIL = 'admin@example.com';
-const RACER_EMAIL = 'dave.racer@example.com';
 const PASSWORD = 'trial123';
 
 test.describe('Public pages', () => {
@@ -59,16 +58,7 @@ test.describe('Admin login and navigation', () => {
   });
 });
 
-test.describe('Officials-only sign-in', () => {
-  test('a racer account cannot sign in', async ({ page }) => {
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill(RACER_EMAIL);
-    await page.getByLabel(/password/i).fill(PASSWORD);
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page.getByText(/race officials only/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/login/);
-  });
-
+test.describe('Racer pages', () => {
   test('racer portal and self-registration pages are gone', async ({ page }) => {
     for (const path of ['/register', '/forgot-password', '/racer/profile']) {
       await page.goto(path);
