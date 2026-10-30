@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.domain.entryfeed;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Downloads an entry feed's file (#42). Never throws: every failure comes back as a {@link Result}, so a feed
@@ -26,14 +28,24 @@ public class EntryFeedClient {
 
     private final RestClient restClient;
     private final int maxBytes;
+    private final EntryFeedHeaders extraHeaders;
 
     @Autowired
+    public EntryFeedClient(RestClient.Builder restClientBuilder, ObjectProvider<EntryFeedHeaders> extraHeaders) {
+        this(restClientBuilder, DEFAULT_MAX_BYTES, extraHeaders.getIfAvailable(() -> url -> Map.of()));
+    }
+
     public EntryFeedClient(RestClient.Builder restClientBuilder) {
         this(restClientBuilder, DEFAULT_MAX_BYTES);
     }
 
     EntryFeedClient(RestClient.Builder restClientBuilder, int maxBytes) {
+        this(restClientBuilder, maxBytes, url -> Map.of());
+    }
+
+    EntryFeedClient(RestClient.Builder restClientBuilder, int maxBytes, EntryFeedHeaders extraHeaders) {
         this.maxBytes = maxBytes;
+        this.extraHeaders = extraHeaders;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(5));
         requestFactory.setReadTimeout(Duration.ofSeconds(20));
@@ -54,7 +66,8 @@ public class EntryFeedClient {
     }
 
     /**
-     * Fetches {@code url}, sending {@code token} (if any) as a bearer token. Blocks for up to 5 seconds to connect
+     * Fetches {@code url}, sending {@code token} (if any) as a bearer token, plus any headers {@link EntryFeedHeaders}
+     * names for that address (a Cloudflare Access service token for RaceHub's host). Blocks for up to 5 seconds to connect
      * and 20 to read, so callers keep it outside any database transaction. The body is read up to a size limit
      * (5 MB by default), and a longer answer is a {@link Failed}.
      */
@@ -67,6 +80,7 @@ public class EntryFeedClient {
                         if (token != null) {
                             h.setBearerAuth(token);
                         }
+                        extraHeaders.headersFor(url).forEach(h::set);
                     })
                     .exchange((request, response) -> {
                         int status = response.getStatusCode().value();

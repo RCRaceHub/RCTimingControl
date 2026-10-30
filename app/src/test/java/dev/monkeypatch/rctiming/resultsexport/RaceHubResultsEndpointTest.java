@@ -73,4 +73,46 @@ class RaceHubResultsEndpointTest {
         assertThatThrownBy(() -> RaceHubResultsEndpoint.parse("racehub.example/results"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    private RaceHubResultsEndpoint withAccess(String configUrl, String id, String secret) {
+        return new RaceHubResultsEndpoint(new RaceHubResultsProperties(
+                configUrl == null ? null : URI.create(configUrl), "key", id, secret), profile);
+    }
+
+    @Test
+    void cloudflareAccessHeadersGoToRaceHubsResultsHostAndSavedEventsHostOnly() {
+        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
+        when(profile.getRaceHubEventsUrl()).thenReturn(Optional.of("https://events.example/api/rctc/v1/events"));
+        RaceHubResultsEndpoint endpoint = withAccess("https://racehub.example/api/results", "client-id", "client-secret");
+
+        assertThat(endpoint.accessHeaders(URI.create("https://racehub.example/api/results")))
+                .containsEntry("CF-Access-Client-Id", "client-id")
+                .containsEntry("CF-Access-Client-Secret", "client-secret");
+        assertThat(endpoint.accessHeaders(URI.create("https://events.example/api/rctc/v1/events/7/entries")))
+                .containsKey("CF-Access-Client-Id");
+        assertThat(endpoint.headersFor(URI.create("https://racehub.example/x"))).hasSize(2);
+        // A feed on any other host, another port or plain http never gets the secret
+        assertThat(endpoint.accessHeaders(URI.create("https://other-booking.example/entries"))).isEmpty();
+        assertThat(endpoint.accessHeaders(URI.create("https://racehub.example:8443/x"))).isEmpty();
+        assertThat(endpoint.accessHeaders(URI.create("http://racehub.example/x"))).isEmpty();
+        assertThat(endpoint.accessHeaders(null)).isEmpty();
+    }
+
+    @Test
+    void noCloudflareAccessSettingsMeansNoExtraHeaders() {
+        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
+        when(profile.getRaceHubEventsUrl()).thenReturn(Optional.empty());
+
+        assertThat(endpoint("https://racehub.example/api/results", "key")
+                .accessHeaders(URI.create("https://racehub.example/api/results"))).isEmpty();
+    }
+
+    @Test
+    void anUnreadableSavedEventsAddressMatchesNothing() {
+        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
+        when(profile.getRaceHubEventsUrl()).thenReturn(Optional.of("ht tp://bad address"));
+
+        assertThat(withAccess("https://racehub.example/api/results", "id", "secret")
+                .accessHeaders(URI.create("https://elsewhere.example/x"))).isEmpty();
+    }
 }
