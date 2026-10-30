@@ -84,20 +84,20 @@
 ### Local Forwarder (removed in #10)
 
 - ~~**FORWARDER-01**: A separate forwarder application runs on the club's local network, connects to the AMB decoder, and forwards timing data to the cloud service; the cloud service cannot reach the decoder directly~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
-- ~~**FORWARDER-02**: Forwarder connects to the decoder via TCP using the AMB P3 binary protocol (0x8E/0x8F frame delimiters, TLV body, 0x8D byte-stuffing); serial transport is not required for v1~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+- ~~**FORWARDER-02**: Forwarder connects to the decoder via TCP; serial transport is not required for v1~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
 - ~~**FORWARDER-03**: Forwarder streams decoded timing events to the cloud service via gRPC bidirectional streaming; the cloud can send RESEND requests back to the forwarder over the same stream~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
 - ~~**FORWARDER-04**: Forwarder is implemented as a Java Gradle submodule within the same repository, sharing domain model classes with the main application~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
 - ~~**FORWARDER-05**: Forwarder authenticates with the cloud service using a pre-configured API token before streaming begins~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
 
 ### Live Timing & AMB/MyLaps Integration
 
-- [x] **TIMING-01**: Cloud service receives timing data from the forwarder via gRPC; the forwarder owns the AMB P3 TCP connection and all protocol parsing **Changed**: the app reads the decoder over TCP itself, on a background thread; the forwarder and gRPC link are gone (#9, #10).
+- [x] **TIMING-01**: Cloud service receives timing data from the forwarder via gRPC; the forwarder owns the decoder TCP connection and all protocol parsing **Changed**: the app reads the decoder over TCP itself, on a background thread; the forwarder and gRPC link are gone (#9, #10).
 - [x] **TIMING-02**: Forwarder auto-reconnects to the decoder on TCP connection loss; WATCHDOG record absence is the primary lost-connection signal; both forwarder↔decoder and forwarder↔cloud connection status are visible in the race control UI **Changed**: the decoder listener reconnects on its own and publishes whether it is connected to `/topic/system/decoder-status`, shown in race control (#9).
 - [x] **TIMING-03**: Live lap times, positions, and gaps are displayed in the browser during a race via WebSocket
-- [x] **TIMING-04**: Lap times use the RTC_TIME field from PASSING records (decoder's embedded hardware timestamp), not server receipt time **Changed**: this applies to P3, which is deferred. RC-4 text decoders send seconds since power-on, so lap timestamps are anchored to server time at the first record.
+- [x] **TIMING-04**: Lap times use the decoder's own timestamp, not server receipt time **Changed**: RC-4 text decoders send seconds since power-on, so lap timestamps are anchored to server time at the first record.
 - [x] **TIMING-05**: The decoder integration uses a defined TimingSource interface; switching to a new protocol requires only a new implementation class with no changes to race control or timing logic **Changed**: protocol parsing lives in the Spring-free `decoder-protocol/` module, so a new protocol is a new parser there.
-- ~~**TIMING-06**: Forwarder performs the FIRST_CONTACT handshake with the decoder on initial connection before passing data flows~~ **Removed** (#10): this was the forwarder's P3 handshake. P3 is deferred, and RC-4 has no handshake.
-- ~~**TIMING-07**: Forwarder monitors PASSING_NUMBER for gaps; detected gaps trigger a RESEND request to the decoder~~ **Removed** (#10): this was the forwarder's P3 resend. P3 is deferred, and RC-4 has no resend.
+- ~~**TIMING-06**: Forwarder performs the FIRST_CONTACT handshake with the decoder on initial connection before passing data flows~~ **Removed** (#10): this was a forwarder handshake. RC-4 has no handshake.
+- ~~**TIMING-07**: Forwarder monitors PASSING_NUMBER for gaps; detected gaps trigger a RESEND request to the decoder~~ **Removed** (#10): this was a forwarder resend. RC-4 has no resend.
 - [x] **TIMING-08**: At race start the system builds an in-memory transponder→entry map for the race; passing events with unregistered transponders are logged and surfaced in the race control UI **Changed**: the map holds both transponders of each entry (#14). A passing that matches no entry, or more than one, goes to the referee's unknown-transponder flow and its laps are held back until linked.
 
 ### Race Control
@@ -270,7 +270,7 @@
 | Internet deployment (Docker, nginx, TLS) | **Removed** in #24: the app stays on the venue network |
 | Social / community features | Not a social platform — timing and management only |
 | Kafka / message broker | Single-club deployment; in-process STOMP broker is sufficient |
-| Timing protocols other than AMB/MyLaps | RC-4 text is implemented and P3 binary is deferred; a new protocol would be a new parser in `decoder-protocol/` |
+| Timing protocols other than AMB/MyLaps | RC-4 text is the supported protocol; a new protocol would be a new parser in `decoder-protocol/` |
 | Reedy race format | Specialist pairing-schedule and scoring rules require expert input from an active organizer; deferred to post-v1 |
 
 ## Traceability
