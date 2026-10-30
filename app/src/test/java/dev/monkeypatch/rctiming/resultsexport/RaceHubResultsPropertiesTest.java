@@ -39,4 +39,22 @@ class RaceHubResultsPropertiesTest {
     void allowsPlainHttpToThisMachineForTesting(String url) {
         assertThat(new RaceHubResultsProperties(URI.create(url), "key").sendingEnabled()).isTrue();
     }
+
+    @Test
+    void cloudflareAccessIsOptionalButAllOrNothing() {
+        assertThat(new RaceHubResultsProperties(URI.create("https://racehub.example/r"), "key").accessConfigured())
+                .isFalse();
+        assertThat(new RaceHubResultsProperties(URI.create("https://racehub.example/r"), "key", " ", "")
+                .accessConfigured()).isFalse();
+        assertThat(new RaceHubResultsProperties(URI.create("https://racehub.example/r"), "key", "id", "secret")
+                .accessConfigured()).isTrue();
+
+        assertThatThrownBy(() -> new RaceHubResultsProperties(null, "key", "id", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("access-client-id").hasMessageContaining("access-client-secret")
+                // The secret itself is never in a message
+                .hasMessageNotContaining("secret-value");
+        assertThatThrownBy(() -> new RaceHubResultsProperties(null, "key", null, "secret-value"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageNotContaining("secret-value");
+    }
 }
