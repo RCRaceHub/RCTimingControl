@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { Plus, ArrowUpDown, Flag } from 'lucide-react';
+import { Plus, ArrowUpDown, Flag, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,6 +42,7 @@ import { EntryManagementHelp } from '@/help/EntryManagementHelp';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatEventDate } from '@/lib/dates';
 import { QueryError } from '@/components/QueryError';
+import FindRaceHubEventsDialog from './FindRaceHubEventsDialog';
 
 const createEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -55,6 +56,7 @@ export default function EventListPage() {
   const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [createOpen, setCreateOpen] = useState(false);
+  const [raceHubOpen, setRaceHubOpen] = useState(false);
 
   useHelpContent(EntryManagementHelp);
 
@@ -162,10 +164,16 @@ export default function EventListPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Events</h1>
         {isAdmin && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Create Event
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setRaceHubOpen(true)}>
+              <Search className="h-4 w-4 mr-1" />
+              Find RaceHub events
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Create Event
+            </Button>
+          </div>
         )}
       </div>
 
@@ -222,6 +230,8 @@ export default function EventListPage() {
           </Table>
         </div>
       )}
+
+      <FindRaceHubEventsDialog open={raceHubOpen} onOpenChange={setRaceHubOpen} />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>

@@ -471,6 +471,30 @@ The token itself is never sent back. `tokenHint` is its last four characters, sh
 
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
 
+### Find RaceHub events
+
+RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address saved here. The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
+
+```http
+GET  /admin/racehub/events
+PUT  /admin/racehub/events/address        { "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready" }
+POST /admin/racehub/events/{raceHubEventId}/take
+```
+
+`GET` answers **200** whatever RaceHub says, so the page can show why a list is empty:
+
+```json
+{ "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready", "tokenSet": true, "error": null,
+  "events": [ { "raceHubEventId": "E-7", "name": "Club Champs", "eventDate": "2026-11-14", "venue": "Test Track",
+                "entryCount": 42, "linkedEventId": null } ] }
+```
+
+`error` is set (and `events` empty) when no address is saved, the key is not set, RaceHub can't be reached or refuses the key, or its answer isn't a list of events. The key is never sent back, only `tokenSet`. `linkedEventId` is the RCTC event whose RaceHub event id matches, so an event already taken is shown as taken.
+
+`PUT .../address` saves the address (blank clears it). It must be https, or http to this machine only, with no user name or password: **400** otherwise. Audited as `RACEHUB_EVENTS_URL_CHANGED`, naming the host only.
+
+`POST .../take` asks RaceHub again and takes that event: it creates an RCTC event in `DRAFT` (name and date from RaceHub, no track) if none has that RaceHub event id, remembers the id, then sets the event's [entry feed](#pull-from-a-url-entry-feed) to the `entries_url` RaceHub gave, with the club's key and `autoFetch` on. Answers the RCTC event. **404** if RaceHub no longer offers the event, **409** if RaceHub can't be asked (the reason is in the problem detail), **400** if the entries address is unusable or on a different host from the events address, since the club's key is only ever sent to that host. Taking an event already taken only refreshes its feed. Nothing is imported by taking: the feed's own preview, or its automatic fetch, brings the entries in.
+
 ---
 
 ## Admin — RC-Timing CSV import
