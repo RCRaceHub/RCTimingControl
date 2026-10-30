@@ -8,6 +8,7 @@ Each diagram follows one thing through the code. Class names are the real ones, 
 - [Officials' printouts](#officials-printouts)
 - [The overlay's chart and ticker](#the-overlays-chart-and-ticker)
 - [Live feed to the relay](#live-feed-to-the-relay)
+- [Taking a RaceHub event](#taking-a-racehub-event)
 - [Importing entries from RaceHub](#importing-entries-from-racehub)
 - [Signing in and staying signed in](#signing-in-and-staying-signed-in)
 
@@ -358,3 +359,30 @@ sequenceDiagram
     A->>A: rotate (compare-and-set), reuse of an old token is refused
     A-->>B: new access token + new refresh token
 ```
+
+## Taking a RaceHub event
+
+```mermaid
+sequenceDiagram
+    participant UI as Find RaceHub events dialog
+    participant C as RaceHubEventsController
+    participant S as RaceHubEventsService
+    participant RH as RaceHub (cloud)
+    participant ES as EventService
+    participant FS as EntryFeedService
+    UI->>C: GET /admin/racehub/events
+    C->>S: list()
+    S->>RH: GET events address (club key as bearer)
+    RH-->>S: events ready for timing
+    S-->>UI: events, each with the RCTC event already linked to it
+    UI->>C: POST /admin/racehub/events/{id}/take
+    C->>S: take()
+    S->>RH: GET events address again (outside any transaction)
+    Note over S: entries address must be on the events address's host
+    Note over S,FS: one transaction
+    S->>ES: create event (name, date) if none has this RaceHub id
+    S->>FS: save feed (entries address, club key, auto-fetch on)
+    Note over FS: entry feed scheduler then pulls the entries
+```
+
+RaceHub is only ever asked, never called. See [racehub-expectations.md](../racehub-expectations.md#finding-events-ready-for-timing).

@@ -186,6 +186,11 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, String> HIDDEN_ROW_ICONS = createField(DSL.name("hidden_row_icons"), SQLDataType.CLOB.nullable(false).defaultValue(DSL.field(DSL.raw("''"), SQLDataType.CLOB)), this, "");
 
+    /**
+     * The column <code>club_profiles.racehub_events_url</code>.
+     */
+    public final TableField<ClubProfilesRecord, String> RACEHUB_EVENTS_URL = createField(DSL.name("racehub_events_url"), SQLDataType.CLOB, this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
