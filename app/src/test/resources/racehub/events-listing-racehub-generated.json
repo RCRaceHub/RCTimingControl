@@ -1,0 +1,18 @@
+{
+    "schema_version": 1,
+    "source": "RACEHUB",
+    "generated_at": "2026-12-01T09:00:00+00:00",
+    "events": [
+        {
+            "id": "1",
+            "name": "Club Champs Round 3",
+            "event_local_date": "2026-12-06",
+            "timezone": "Europe/London",
+            "venue": "Fictional Venue contract",
+            "entry_count": 2,
+            "revision": 6,
+            "released_at": "2026-12-01T09:00:00+00:00",
+            "entries_url": "https://racehub.example/api/rctc/v1/events/1/entries"
+        }
+    ]
+}
