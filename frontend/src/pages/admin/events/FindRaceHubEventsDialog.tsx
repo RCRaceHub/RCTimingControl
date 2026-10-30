@@ -31,7 +31,7 @@ interface FindRaceHubEventsDialogProps {
 /**
  * Asks RaceHub which of the club's events are ready for timing and lets an official take one: RCTC creates the
  * event if it is new and points its entry feed at RaceHub with auto-fetch on. RaceHub never calls this laptop, so
- * the list is fetched here, each time the dialog opens. Nothing is imported until the entry feed's own preview.
+ * the list is fetched here, each time the dialog opens. Taking imports nothing itself; the entry feed's own rules apply.
  */
 export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRaceHubEventsDialogProps) {
   const navigate = useNavigate();
@@ -81,8 +81,8 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
           <DialogTitle>Find RaceHub events</DialogTitle>
           <DialogDescription>
             Events your club has released to timing on RaceHub. Taking one creates it here (if it is new) and
-            fetches its entries from RaceHub every few minutes. You still preview what changes before anything is
-            imported.
+            fetches its entries from RaceHub every few minutes. Clean updates are applied automatically; anything
+            needing a decision waits for you on the event's Entries tab.
           </DialogDescription>
         </DialogHeader>
 

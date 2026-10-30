@@ -29,9 +29,12 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         return findById(id);
     }
 
-    /** The event whose entries were imported from the RaceHub event {@code racehubEventId}, if there is one. */
+    /**
+     * The event whose entries were imported from the RaceHub event {@code racehubEventId}, if there is one. The
+     * column is not unique, so when several events carry the id the oldest is returned rather than failing.
+     */
     public Optional<Event> findByRacehubEventId(String racehubEventId) {
-        return findOne(EVENTS.RACEHUB_EVENT_ID.eq(racehubEventId));
+        return findWhere(EVENTS.RACEHUB_EVENT_ID.eq(racehubEventId)).stream().findFirst();
     }
 
     /** Events whose results are waiting to be queued for RaceHub (#27). */

@@ -30,8 +30,9 @@ import java.util.Optional;
  * <p>Asking uses the club's key from the settings file ({@code rctiming.racehub.token}, the one results are sent
  * with) and the events address saved in the admin panel. Taking an event creates it in RCTC when it is not there
  * yet (matched by RaceHub's event id) and points its entry feed at the address RaceHub gave, with auto-fetch on, so
- * the entries arrive like any other feed. Nothing is imported until the feed's own rules apply: RaceHub's entries
- * are previewed or applied by {@link EntryFeedService}, and no event is ever created without an official taking it.
+ * the entries arrive like any other feed. Taking imports nothing itself: the feed's own rules apply, so a clean
+ * revision is applied automatically by {@link EntryFeedService} and anything needing a decision waits for an
+ * official. No event is ever created without an official taking it.
  *
  * <p>The network call is made outside any database transaction and never throws to the caller: a failure comes back
  * as a {@link Failure} with a message an official can read.
@@ -207,11 +208,19 @@ public class RaceHubEventsService {
         SecureEndpoint.url(entries, "The entries address", "https", "http");
         boolean sameHost = entries.getScheme().equalsIgnoreCase(eventsUrl.getScheme())
                 && entries.getHost().equalsIgnoreCase(eventsUrl.getHost())
-                && entries.getPort() == eventsUrl.getPort();
+                && portOf(entries) == portOf(eventsUrl);
         if (!sameHost) {
             throw new IllegalArgumentException("The entries address is on a different host from the events "
                     + "address, so the club's key is not sent to it");
         }
         return entries;
+    }
+
+    /** The port of {@code uri}, or its scheme's default when none is written, so {@code https://h} equals {@code https://h:443}. */
+    private static int portOf(URI uri) {
+        if (uri.getPort() >= 0) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 }
