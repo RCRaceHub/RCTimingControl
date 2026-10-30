@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.resultsexport;
 
 import dev.monkeypatch.rctiming.config.SecureEndpoint;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
+import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Where results exports are sent (#27). The address set in the admin panel wins; when it is empty,
@@ -18,7 +20,7 @@ import java.util.List;
  */
 @Component
 @EnableConfigurationProperties(RaceHubResultsProperties.class)
-public class RaceHubResultsEndpoint {
+public class RaceHubResultsEndpoint implements EntryFeedHeaders {
 
     private static final Logger log = LoggerFactory.getLogger(RaceHubResultsEndpoint.class);
 
@@ -75,6 +77,46 @@ public class RaceHubResultsEndpoint {
     /** The club's key for RaceHub, from the settings file only; null when unset. Never log or return it. */
     public String token() {
         return properties.token();
+    }
+
+    /**
+     * The Cloudflare Access headers for a request to {@code target}, for a RaceHub behind Cloudflare Access. The
+     * service token goes only to RaceHub's own host: the host of the results address in use or of the saved events
+     * address. Feed addresses can point anywhere, so any other host gets nothing, and so does a club that has not
+     * set {@code rctiming.racehub.access-client-id} and {@code access-client-secret}. The bearer key is still sent
+     * as well: Access only lets the request through to RaceHub, which then checks the key.
+     */
+    public Map<String, String> accessHeaders(URI target) {
+        if (!properties.accessConfigured() || target == null || target.getHost() == null) {
+            return Map.of();
+        }
+        boolean raceHub = sameHost(target, snapshot().resultsUrl())
+                || sameHost(target, clubProfileService.getRaceHubEventsUrl().map(RaceHubResultsEndpoint::lenient).orElse(null));
+        return raceHub
+                ? Map.of("CF-Access-Client-Id", properties.accessClientId(),
+                        "CF-Access-Client-Secret", properties.accessClientSecret())
+                : Map.of();
+    }
+
+    @Override
+    public Map<String, String> headersFor(URI url) {
+        return accessHeaders(url);
+    }
+
+    private static boolean sameHost(URI target, URI raceHub) {
+        return raceHub != null && raceHub.getHost() != null
+                && target.getScheme() != null && target.getScheme().equalsIgnoreCase(raceHub.getScheme())
+                && target.getHost().equalsIgnoreCase(raceHub.getHost())
+                && target.getPort() == raceHub.getPort();
+    }
+
+    /** A saved address read for host matching only; one that cannot be read matches nothing. */
+    private static URI lenient(String url) {
+        try {
+            return URI.create(url.strip());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /** Whether {@link ResultsSender} will send: an address (either source) and the key are both set. */
