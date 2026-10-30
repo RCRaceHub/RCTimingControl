@@ -1,0 +1,65 @@
+{
+    "schema_version": 1,
+    "source": "RACEHUB",
+    "event": {
+        "id": "1",
+        "name": "Club Champs Round 3",
+        "event_local_date": "2026-12-06",
+        "timezone": "Europe/London"
+    },
+    "revision": 6,
+    "generated_at": "2026-12-01T09:00:00+00:00",
+    "entries": [
+        {
+            "entry_id": "1",
+            "entry_version": 3,
+            "entry_status": "CONFIRMED",
+            "race_day_status": "ARRIVED",
+            "event_class_id": "1",
+            "class_name": "Fictional Buggy contract",
+            "rc_class_name": "Fictional Buggy contract",
+            "driver_profile_id": "1",
+            "driver_display_name": "Ada Lovelace",
+            "brca_number": "12345",
+            "home_club": "Fictional contract",
+            "primary_transponder": "1234567",
+            "secondary_transponder": "7654321",
+            "club_car_requested": false,
+            "club_car_name": null
+        },
+        {
+            "entry_id": "2",
+            "entry_version": 1,
+            "entry_status": "CONFIRMED",
+            "race_day_status": "NOT_ARRIVED",
+            "event_class_id": "1",
+            "class_name": "Fictional Buggy contract",
+            "rc_class_name": "Fictional Buggy contract",
+            "driver_profile_id": "2",
+            "driver_display_name": "Grace Hopper",
+            "brca_number": null,
+            "home_club": null,
+            "primary_transponder": "2345678",
+            "secondary_transponder": null,
+            "club_car_requested": true,
+            "club_car_name": null
+        },
+        {
+            "entry_id": "3",
+            "entry_version": 1,
+            "entry_status": "WITHDRAWN",
+            "race_day_status": "NOT_ARRIVED",
+            "event_class_id": "1",
+            "class_name": "Fictional Buggy contract",
+            "rc_class_name": "Fictional Buggy contract",
+            "driver_profile_id": "3",
+            "driver_display_name": "Alan Turing",
+            "brca_number": null,
+            "home_club": null,
+            "primary_transponder": null,
+            "secondary_transponder": null,
+            "club_car_requested": false,
+            "club_car_name": null
+        }
+    ]
+}

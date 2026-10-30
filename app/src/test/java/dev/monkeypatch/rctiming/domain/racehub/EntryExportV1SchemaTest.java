@@ -34,7 +34,8 @@ class EntryExportV1SchemaTest {
             "entries-v1-update.json",
             "entries-v1-stale.json",
             "entries-v1-unmapped-class.json",
-            "entries-v1-duplicate-transponder.json"})
+            "entries-v1-duplicate-transponder.json",
+            "entries-v1-racehub-generated.json"})
     void everyImportFixtureSatisfiesTheSchema(String fixture) throws IOException {
         assertThat(validate(fixture(fixture))).isEmpty();
     }
