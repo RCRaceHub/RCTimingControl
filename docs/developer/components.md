@@ -53,6 +53,7 @@ flowchart LR
     lts -.->|resolves transponder to entry| dom
     rx -->|Results Export v1, HTTPS| rh
     rh -.->|Entry Export v1 file, imported by an official| api
+    api -->|asks which events are ready, HTTPS, club key| rh
     lf -->|Live Feed v1, WebSocket| relay
     bk --> db
     api --> scr --> db

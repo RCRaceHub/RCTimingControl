@@ -316,6 +316,29 @@ public class ClubProfileService {
                 .after(Collections.singletonMap("resultsHost", after)).record();
     }
 
+    /** The address RaceHub lists ready events at, set in the admin panel, or empty when the club has not set one. */
+    @ReadTransaction
+    public Optional<String> getRaceHubEventsUrl() {
+        return clubProfileRepository.findCurrent()
+                .map(ClubProfile::getRacehubEventsUrl)
+                .filter(url -> !url.isBlank());
+    }
+
+    /** Sets the address RaceHub lists ready events at; null or blank clears it. Audited by host only. */
+    public void updateRaceHubEventsUrl(Actor actor, String url) {
+        ClubProfile profile = clubProfileRepository.findById(getSingletonProfileId()).orElseThrow();
+        String before = profile.getRacehubEventsUrl() == null ? null : hostOf(profile.getRacehubEventsUrl());
+        String cleaned = url == null || url.isBlank() ? null : url.strip();
+        profile.setRacehubEventsUrl(cleaned);
+        ClubProfile saved = clubProfileRepository.save(profile);
+        String after = cleaned == null ? null : hostOf(cleaned);
+        audit.entry(actor, "RACEHUB_EVENTS_URL_CHANGED").entity("club_profile", saved.getId())
+                .summary(after == null ? "Cleared the RaceHub events address"
+                        : "Changed the RaceHub events address to " + after)
+                .before(Collections.singletonMap("eventsHost", before))
+                .after(Collections.singletonMap("eventsHost", after)).record();
+    }
+
     /** The publish target the club chose (a {@code ResultsPublishTarget} name), or empty when it has not chosen. */
     @ReadTransaction
     public Optional<String> getResultsPublishTarget() {

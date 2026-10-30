@@ -10,6 +10,9 @@ export const adminQueryKeys = {
     entryFeed: (eventId: number) => ['admin', 'events', eventId, 'entry-feed'] as const,
     sponsors: (eventId: number) => ['admin', 'events', eventId, 'sponsors'] as const,
   },
+  racehub: {
+    events: () => ['admin', 'racehub', 'events'] as const,
+  },
   entries: {
     history: (entryId: number) => ['admin', 'entries', entryId, 'history'] as const,
   },

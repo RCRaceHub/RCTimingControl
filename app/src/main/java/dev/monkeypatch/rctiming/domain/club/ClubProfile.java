@@ -36,6 +36,8 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
      * Where results are sent to RaceHub; may carry a secret in its query string, so keep it out of logs and audit rows.
      */
     private String racehubResultsUrl;
+    /** Where RaceHub lists the events that are ready for timing; same care as {@link #racehubResultsUrl}. */
+    private String racehubEventsUrl;
     private String resultsPublishTarget;
     /** The club's live timing thresholds (#505); stored as one column each, see {@link LiveTimingSettings}. */
     private LiveTimingSettings liveTimingSettings = LiveTimingSettings.defaults();
@@ -95,6 +97,9 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getRacehubResultsUrl() { return racehubResultsUrl; }
     public void setRacehubResultsUrl(String racehubResultsUrl) { this.racehubResultsUrl = racehubResultsUrl; }
+
+    public String getRacehubEventsUrl() { return racehubEventsUrl; }
+    public void setRacehubEventsUrl(String racehubEventsUrl) { this.racehubEventsUrl = racehubEventsUrl; }
 
     public String getResultsPublishTarget() { return resultsPublishTarget; }
     public void setResultsPublishTarget(String resultsPublishTarget) { this.resultsPublishTarget = resultsPublishTarget; }

@@ -384,6 +384,20 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (String) get(25);
     }
 
+    /**
+     * Setter for <code>club_profiles.racehub_events_url</code>.
+     */
+    public void setRacehubEventsUrl(String value) {
+        set(26, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.racehub_events_url</code>.
+     */
+    public String getRacehubEventsUrl() {
+        return (String) get(26);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -407,7 +421,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs, String hiddenRowIcons) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs, String hiddenRowIcons, String racehubEventsUrl) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -436,6 +450,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setCloseGapMs(closeGapMs);
         setLateMarginMs(lateMarginMs);
         setHiddenRowIcons(hiddenRowIcons);
+        setRacehubEventsUrl(racehubEventsUrl);
         resetTouchedOnNotNull();
     }
 }

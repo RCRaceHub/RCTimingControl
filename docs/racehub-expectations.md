@@ -10,7 +10,18 @@ This page records what RCTimingControl (RCTC) reads from a RaceHub **Entry Expor
 
 ## How the file reaches RCTC
 
-An official either chooses the file on the event's Entries tab (**Import entries from RaceHub**), or RCTC fetches it from the event's entry feed (a web address that serves the file, optionally with a token). Either way the official sees a preview of what will change before anything is saved. RaceHub never calls RCTC: RCTC runs on a laptop at the venue that other systems usually cannot reach.
+An official either chooses the file on the event's Entries tab (**Import entries from RaceHub**), or RCTC fetches it from the event's entry feed (a web address that serves the file, optionally with a token). Either way the official sees a preview of what will change before anything is saved. RaceHub never calls RCTC: RCTC runs on a laptop at the venue that other systems usually cannot reach. The list of events ready for timing is fetched the same way, see [Finding events ready for timing](#finding-events-ready-for-timing).
+
+## Finding events ready for timing
+
+An official can ask RaceHub which events are ready (Events page, **Find RaceHub events**) instead of pasting each event's feed address. RCTC sends `GET <events address>` with `Authorization: Bearer <the club's key>` and expects JSON:
+
+```json
+{ "events": [ { "id": "E-7", "name": "Club Champs", "event_local_date": "2026-11-14", "venue": "Test Track",
+                "entry_count": 42, "entries_url": "https://racehub.example/api/rctc/v1/events/E-7/entries" } ] }
+```
+
+`id` is the same id the entry export carries as `event.id`. RaceHub decides which events are listed; RCTC suggests only those the club has released to timing and that are not completed. `entries_url` is where that event's Entry Export v1 is fetched, and must be on the same host as the events address, because the club's key is sent to it. When an official takes an event, RCTC creates it (name and date from here) if it has no event with that `id` yet, and sets its entry feed to `entries_url` with auto-fetch on. A `401` or `403` is shown as a refused key. RCTC ignores fields it doesn't know, so RaceHub may add more.
 
 ## What the file carries
 

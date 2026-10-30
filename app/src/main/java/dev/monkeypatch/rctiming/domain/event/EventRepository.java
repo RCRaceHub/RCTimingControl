@@ -29,6 +29,11 @@ public class EventRepository extends JooqRepository<Event, EventsRecord> {
         return findById(id);
     }
 
+    /** The event whose entries were imported from the RaceHub event {@code racehubEventId}, if there is one. */
+    public Optional<Event> findByRacehubEventId(String racehubEventId) {
+        return findOne(EVENTS.RACEHUB_EVENT_ID.eq(racehubEventId));
+    }
+
     /** Events whose results are waiting to be queued for RaceHub (#27). */
     public List<Long> findIdsWithResultsExportPending() {
         return dsl.select(EVENTS.ID)
