@@ -371,7 +371,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     @Test
     void aRowWithNoClubClassId_blocksTheImportWithAnError() {
         String json = fixture("entries-v1-initial.json").replace("      \"club_class_id\": \"club-class-truck-" + run + "\",\n", "");
-        var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=true",
+        var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
                 HttpMethod.POST, new HttpEntity<>(json, adminHeaders()), JsonNode.class);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(resp.getBody().get("errors").toString()).contains("has no club_class_id");
