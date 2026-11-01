@@ -34,3 +34,12 @@ export function useTakeRaceHubEvent() {
     },
   });
 }
+
+/** Finds or creates the event for an Entry Export file, so it can be imported without making an event first. */
+export function useRaceHubMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (exportDocument: unknown) => adminApi.raceHubMeeting.findOrCreate(exportDocument),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() }),
+  });
+}

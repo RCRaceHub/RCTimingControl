@@ -210,6 +210,8 @@ export interface RaceHubImportResult {
     rcClassName: string | null;
     className: string | null;
     entryCount: number;
+    /** The racing class the club linked it to earlier, when that class is not in the event yet */
+    suggestedRacingClassId?: number | null;
   }[];
   errors: string[];
   warnings: string[];
@@ -1220,6 +1222,14 @@ export const adminApi = {
       api.post<OfficialDto>(`/api/v1/admin/officials/${id}/disable`).then(r => r.data),
     enable: (id: number) =>
       api.post<OfficialDto>(`/api/v1/admin/officials/${id}/enable`).then(r => r.data),
+  },
+
+  // The event an Entry Export file belongs to, created from the file when there is none yet
+  raceHubMeeting: {
+    findOrCreate: (exportDocument: unknown) =>
+      api
+        .post<{ eventId: number; name: string; created: boolean }>('/api/v1/admin/racehub/meeting', exportDocument)
+        .then(r => r.data),
   },
 
   // Events RaceHub has released for timing

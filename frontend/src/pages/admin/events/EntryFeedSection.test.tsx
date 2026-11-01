@@ -59,7 +59,7 @@ describe('EntryFeedSection', () => {
     vi.resetAllMocks();
     api.listRaceHubClassMappings.mockResolvedValue([]);
     api.listRacingClasses.mockResolvedValue([]);
-    api.formats.list.mockResolvedValue([]);
+    vi.mocked(adminApi.formats.list).mockResolvedValue([]);
   });
 
   it('saves a new feed with its token', async () => {

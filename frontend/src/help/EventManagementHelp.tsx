@@ -36,7 +36,9 @@ export function EventManagementHelp() {
           you can pick a class already in the event, add one of your classes to the event, or create
           a new class. A class you add or create gets the race format it last used (you choose one
           the first time), and RCTC remembers the link for every meeting, so the same RaceHub class
-          is placed without asking next time. Importing a
+          is placed without asking next time. On the Events page, Import entries from a file
+          makes the event from the file's name and date if there is not one yet, so you do not
+          create the event first. Importing a
           newer RaceHub file never overwrites a transponder swapped on the day; the entry
           list shows the number the booking has so you can compare.
         </p>

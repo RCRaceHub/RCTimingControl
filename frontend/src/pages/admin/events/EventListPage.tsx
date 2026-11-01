@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useReactTable,
@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { Plus, ArrowUpDown, Flag, Search } from 'lucide-react';
+import { Plus, ArrowUpDown, Flag, Search, Upload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,6 +43,8 @@ import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { formatEventDate } from '@/lib/dates';
 import { QueryError } from '@/components/QueryError';
 import FindRaceHubEventsDialog from './FindRaceHubEventsDialog';
+import { useRaceHubMeeting } from '@/hooks/admin/useRaceHubEvents';
+import { getApiErrorMessage } from '@/lib/errors';
 
 const createEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -57,6 +59,8 @@ export default function EventListPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [raceHubOpen, setRaceHubOpen] = useState(false);
+  const raceHubMeeting = useRaceHubMeeting();
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useHelpContent(EntryManagementHelp);
 
@@ -143,6 +147,27 @@ export default function EventListPage() {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  /** Reads an Entry Export, finds or creates its event, then opens that event with the file ready to preview. */
+  async function importFromFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch {
+      toast.error('This file is not valid JSON.');
+      return;
+    }
+    try {
+      const meeting = await raceHubMeeting.mutateAsync(parsed);
+      if (meeting.created) toast.success(`Created the event ${meeting.name} from the file.`);
+      navigate(`/admin/events/${meeting.eventId}`, { state: { importDocument: parsed } });
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Could not make an event from this file.'));
+    }
+  }
+
   async function onCreateSubmit(values: CreateEventFormValues) {
     try {
       await createEvent.mutateAsync({
@@ -169,6 +194,18 @@ export default function EventListPage() {
               <Search className="h-4 w-4 mr-1" />
               Find RaceHub events
             </Button>
+            <Button variant="outline" onClick={() => fileInput.current?.click()} disabled={raceHubMeeting.isPending}>
+              <Upload className="h-4 w-4 mr-1" />
+              Import entries from a file
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              aria-label="Entry Export file"
+              onChange={e => void importFromFile(e)}
+            />
             <Button onClick={() => setCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Create Event

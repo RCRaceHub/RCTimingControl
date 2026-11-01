@@ -29,6 +29,8 @@ interface RaceHubImportDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Preview and import the file the event's entry feed fetched (#42) instead of an uploaded one */
   feed?: boolean;
+  /** A file already read (by "Import entries from a file" on the Events page): previewed as soon as the dialog opens */
+  initialDocument?: unknown;
 }
 
 const SUMMARY_LABELS: { key: keyof RaceHubImportResult['summary']; label: string }[] = [
@@ -50,6 +52,7 @@ export default function RaceHubImportDialog({
   open,
   onOpenChange,
   feed = false,
+  initialDocument,
 }: RaceHubImportDialogProps) {
   const [exportDocument, setExportDocument] = useState<unknown>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -99,7 +102,17 @@ export default function RaceHubImportDialog({
     const requestGeneration = generation.current;
     try {
       const result = await runImport(document, true);
-      if (requestGeneration === generation.current) setPreview(result);
+      if (requestGeneration !== generation.current) return;
+      setPreview(result);
+      // A class the club linked earlier is offered again, so the official only confirms it
+      const inEventNow = new Set(classes.map(c => c.racingClassId));
+      const suggested: Record<string, string> = {};
+      result.unmappedClasses.forEach(u => {
+        if (u.suggestedRacingClassId != null && !inEventNow.has(u.suggestedRacingClassId)) {
+          suggested[u.racehubEventClassId] = `rc:${u.suggestedRacingClassId}`;
+        }
+      });
+      setClassChoices(c => ({ ...suggested, ...c }));
     } catch {
       if (requestGeneration !== generation.current) return;
       setPreview(null);
@@ -110,6 +123,15 @@ export default function RaceHubImportDialog({
       );
     }
   }
+
+  // A file chosen on the Events page was already read, so its preview starts as soon as the dialog opens
+  useEffect(() => {
+    if (!open || feed || initialDocument === undefined) return;
+    setExportDocument(initialDocument);
+    void runPreview(initialDocument);
+    // runPreview only reads state through refs and setters, and the preview must run once per opening
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, feed, initialDocument]);
 
   // The feed's file is already on the server, so its preview starts as soon as the dialog opens
   const { mutateAsync: previewFeed } = feedImport;

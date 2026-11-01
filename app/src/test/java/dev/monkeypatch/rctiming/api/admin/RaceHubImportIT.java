@@ -387,6 +387,25 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aLinkedClassThatIsNotInAnotherEventYetIsSuggestedForIt() {
+        long electric = racingClassInAnotherEvent("RH Electric Touring " + run, createTemplate());
+        assertThat(resolveClasses(List.of(Map.of(
+                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", electric))).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+        long emptyEvent = jdbc.queryForObject("""
+                insert into events (name, event_date, status)
+                values (?, date('now', '+28 days'), 'OPEN') returning id""", Long.class, "Empty " + run);
+
+        var preview = restTemplate.exchange("/api/v1/admin/events/" + emptyEvent + "/racehub-import?dryRun=true",
+                HttpMethod.POST, new HttpEntity<>(fixture("entries-v1-unmapped-class.json"), adminHeaders()),
+                JsonNode.class);
+
+        JsonNode unmapped = preview.getBody().get("unmappedClasses");
+        assertThat(unmapped).hasSize(1);
+        assertThat(unmapped.get(0).get("suggestedRacingClassId").asLong()).isEqualTo(electric);
+    }
+
+    @Test
     void settlingAnUnmappedClass_canCreateTheRacingClass_butNeedsAFormatWhenItHasNeverRun() {
         var refused = resolveClasses(List.of(Map.of(
                 "racehubEventClassId", "rh-class-electric-" + run, "createName", "RH Brand New " + run)));
@@ -405,6 +424,30 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     void settlingAClass_needsExactlyOneOfAnExistingClassOrANewName() {
         var neither = resolveClasses(List.of(Map.of("racehubEventClassId", "rh-class-electric-" + run)));
         assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void aFileMakesItsOwnMeeting_andTheSameFileFindsItAgain() {
+        var first = restTemplate.exchange("/api/v1/admin/racehub/meeting", HttpMethod.POST,
+                new HttpEntity<>(fixture("entries-v1-unmapped-class.json"), adminHeaders()), JsonNode.class);
+        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(first.getBody().get("created").asBoolean()).isTrue();
+        long newEventId = first.getBody().get("eventId").asLong();
+        assertThat(newEventId).isNotEqualTo(eventId);
+        assertThat(jdbc.queryForObject("select status from events where id = ?", String.class, newEventId))
+                .isEqualTo("DRAFT");
+
+        var again = restTemplate.exchange("/api/v1/admin/racehub/meeting", HttpMethod.POST,
+                new HttpEntity<>(fixture("entries-v1-unmapped-class.json"), adminHeaders()), JsonNode.class);
+        assertThat(again.getBody().get("created").asBoolean()).isFalse();
+        assertThat(again.getBody().get("eventId").asLong()).isEqualTo(newEventId);
+    }
+
+    @Test
+    void aMeetingNeedsASupportedFileWithADate() {
+        var resp = restTemplate.exchange("/api/v1/admin/racehub/meeting", HttpMethod.POST,
+                new HttpEntity<>("{\"schema_version\":2,\"revision\":1}", adminHeaders()), JsonNode.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test

@@ -49,6 +49,11 @@ public final class EventClasses {
         return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();
     }
 
+    /** The racing class the club linked {@code mappingKey} to, whether or not it is in this event yet. */
+    public Optional<Long> linkedRacingClass(String mappingKey) {
+        return Optional.ofNullable(clubLinks.get(mappingKey));
+    }
+
     /** The one event class whose racing class has this name ({@link Names#matchKey}); none when several do. */
     public Optional<Long> byName(String className) {
         List<Long> matches = byName.getOrDefault(Names.matchKey(className), List.of());

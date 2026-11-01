@@ -33,9 +33,11 @@ public record RaceHubImportResult(
 
     /**
      * A class in the file that matches no event class here, and how many entries are in it. Mapping it unblocks the
-     * import.
+     * import. {@code suggestedRacingClassId} is the racing class the club linked it to earlier, when that class is not
+     * in this event yet, so the screen can offer to add it; null when there is no link.
      */
-    public record UnmappedClass(String racehubEventClassId, String rcClassName, String className, int entryCount) {
+    public record UnmappedClass(String racehubEventClassId, String rcClassName, String className, int entryCount,
+                                Long suggestedRacingClassId) {
     }
 
     /** One export entry and what the import does with it. */

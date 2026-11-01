@@ -144,7 +144,8 @@ public class RaceHubImportService {
         checkFinalState(eventId, plan, competitors, eventClasses, errors, warnings);
 
         List<UnmappedClass> unmappedClasses = unmapped.entrySet().stream()
-                .map(e -> new UnmappedClass(e.getKey(), e.getValue().rcClassName, e.getValue().className, e.getValue().count))
+                .map(e -> new UnmappedClass(e.getKey(), e.getValue().rcClassName, e.getValue().className, e.getValue().count,
+                        eventClasses.linkedRacingClass(e.getKey()).orElse(null)))
                 .toList();
         boolean blocked = !errors.isEmpty() || !unmappedClasses.isEmpty();
         boolean apply = !dryRun && !blocked;
