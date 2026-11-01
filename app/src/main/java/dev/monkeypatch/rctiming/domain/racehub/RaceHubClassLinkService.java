@@ -14,22 +14,21 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Settles the classes an import could not place: for each class in a file it links the club's racing class (an
- * existing one, or a new one created from the file's name), puts that class in the event using the format it was last
- * entered with, and records the event's mapping. The link is club-wide ({@link RaceHubClassLink}), so every later
- * meeting, from the picker or a file, places that class without being asked again.
+ * Links the club's RaceHub classes to its racing classes, once for the whole club ({@link RaceHubClassLink}, keyed by
+ * the club class id). {@link #link} does only that, for the RaceHub classes screen. {@link #resolve} also puts the
+ * racing class in an event, using the format it was last entered with, for an import that was held on an unlinked
+ * class. After a link, every later meeting, from the picker, the feed or a file, places that class without being asked
+ * again.
  *
- * <p>Called from {@code RaceHubImportController} on a Tomcat thread by an ADMIN. Each call is one write transaction.
+ * <p>Called from the admin controllers on a Tomcat thread by an ADMIN. Each call is one write transaction.
  * Nothing here runs during an import itself, so a dry run still saves nothing.
  */
 @Service
 public class RaceHubClassLinkService {
 
     private final RaceHubClassLinkRepository linkRepository;
-    private final RaceHubClassMappingRepository mappingRepository;
     private final EventClassRepository eventClassRepository;
     private final EventClassService eventClassService;
     private final RacingClassService racingClassService;
@@ -37,14 +36,12 @@ public class RaceHubClassLinkService {
     private final AuditService audit;
 
     public RaceHubClassLinkService(RaceHubClassLinkRepository linkRepository,
-                                   RaceHubClassMappingRepository mappingRepository,
                                    EventClassRepository eventClassRepository,
                                    EventClassService eventClassService,
                                    RacingClassService racingClassService,
                                    EventRepository eventRepository,
                                    AuditService audit) {
         this.linkRepository = linkRepository;
-        this.mappingRepository = mappingRepository;
         this.eventClassRepository = eventClassRepository;
         this.eventClassService = eventClassService;
         this.racingClassService = racingClassService;
@@ -53,15 +50,15 @@ public class RaceHubClassLinkService {
     }
 
     /**
-     * One class to settle. Give {@code racingClassId} to use an existing class or {@code createName} to make a new
+     * One class to link. Give {@code racingClassId} to use an existing class or {@code createName} to make a new
      * one, never both. {@code templateId} is the format for a class not yet in the event; leave it null to use the
      * format the class was last entered with.
      */
-    public record Resolution(String racehubEventClassId, Long racingClassId, String createName, Long templateId) {
+    public record Resolution(String classKey, Long racingClassId, String createName, Long templateId) {
     }
 
     /** What happened to one class: the racing class and event class it now lands in, and whether the class is new. */
-    public record Resolved(String racehubEventClassId, Long racingClassId, Long eventClassId, boolean racingClassCreated) {
+    public record Resolved(String classKey, Long racingClassId, Long eventClassId, boolean racingClassCreated) {
     }
 
     /**
@@ -86,10 +83,36 @@ public class RaceHubClassLinkService {
         return results;
     }
 
-    private Resolved resolveOne(Actor actor, Long eventId, Resolution r) {
-        String key = r.racehubEventClassId();
+    /**
+     * Links each class in {@code resolutions} to a racing class for the whole club, without touching any event, and
+     * records {@code RACEHUB_CLASS_LINKED} for each. Used to seed a newly attached instance from RaceHub's class list.
+     * A class linked again moves to the racing class now given.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if a racing class does not exist (HTTP 404)
+     * @throws IllegalArgumentException if a key is blank, a resolution gives both or neither of a class and a name, or
+     *         a new name matches an existing class (HTTP 400)
+     */
+    @Transactional
+    public List<Resolved> link(Actor actor, List<Resolution> resolutions) {
+        if (resolutions == null || resolutions.isEmpty()) {
+            throw new IllegalArgumentException("Give at least one class to link");
+        }
+        List<Resolved> results = new ArrayList<>();
+        for (Resolution r : resolutions) {
+            LinkedClass linked = linkOne(actor, r);
+            results.add(new Resolved(r.classKey(), linked.racingClass().getId(), null, linked.created()));
+        }
+        return results;
+    }
+
+    private record LinkedClass(RacingClass racingClass, boolean created) {
+    }
+
+    /** Makes or finds the racing class and stores the club's link to it. */
+    private LinkedClass linkOne(Actor actor, Resolution r) {
+        String key = r.classKey();
         if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("RaceHub event_class_id is required");
+            throw new IllegalArgumentException("A club class id is required");
         }
         boolean hasName = r.createName() != null && !r.createName().isBlank();
         if ((r.racingClassId() == null) == !hasName) {
@@ -109,13 +132,30 @@ public class RaceHubClassLinkService {
         } else {
             racingClass = racingClassService.findById(r.racingClassId());
         }
+        RaceHubClassLink link = linkRepository.findByClassKey(key).orElseGet(() -> {
+            RaceHubClassLink l = new RaceHubClassLink();
+            l.setClassKey(key);
+            return l;
+        });
+        link.setRacingClassId(racingClass.getId());
+        linkRepository.save(link);
+        audit.entry(actor, "RACEHUB_CLASS_LINKED").entity("racing_class", racingClass.getId())
+                .summary("Linked the club class " + key + " to " + racingClass.getName()
+                        + (created ? " (new class)" : ""))
+                .record();
+        return new LinkedClass(racingClass, created);
+    }
 
+    private Resolved resolveOne(Actor actor, Long eventId, Resolution r) {
+        LinkedClass linked = linkOne(actor, r);
+        RacingClass racingClass = linked.racingClass();
+        String key = r.classKey();
         List<Long> inEvent = eventClassRepository.findRefsByEventId(eventId).stream()
                 .filter(ec -> racingClass.getId().equals(ec.getRacingClassId()))
                 .map(EventClassRef::getId).toList();
         if (inEvent.size() > 1) {
             throw new IllegalArgumentException(racingClass.getName() + " is in this event more than once: "
-                    + "map " + key + " to the right one from the class mappings instead");
+                    + "remove the extra one so " + key + " has a single class to land in");
         }
         Long eventClassId = inEvent.isEmpty() ? null : inEvent.get(0);
         if (eventClassId == null) {
@@ -128,29 +168,6 @@ public class RaceHubClassLinkService {
             eventClassId = eventClassService.addClassToEvent(actor, eventId, racingClass.getId(), templateId).getId();
         }
 
-        RaceHubClassMapping mapping = mappingRepository.findByEventIdOrderByRacehubEventClassId(eventId).stream()
-                .filter(m -> key.equals(m.getRacehubEventClassId())).findFirst().orElseGet(() -> {
-                    RaceHubClassMapping m = new RaceHubClassMapping();
-                    m.setEventId(eventId);
-                    m.setRacehubEventClassId(key);
-                    return m;
-                });
-        mapping.setEventClassId(eventClassId);
-        mappingRepository.save(mapping);
-
-        Optional<RaceHubClassLink> existing = linkRepository.findByClassKey(key);
-        RaceHubClassLink link = existing.orElseGet(() -> {
-            RaceHubClassLink l = new RaceHubClassLink();
-            l.setClassKey(key);
-            return l;
-        });
-        link.setRacingClassId(racingClass.getId());
-        linkRepository.save(link);
-
-        audit.entry(actor, "RACEHUB_CLASS_LINKED").entity("racing_class", racingClass.getId()).event(eventId)
-                .summary("Linked the import class " + key + " to " + racingClass.getName()
-                        + (created ? " (new class)" : ""))
-                .record();
-        return new Resolved(key, racingClass.getId(), eventClassId, created);
+        return new Resolved(key, racingClass.getId(), eventClassId, linked.created());
     }
 }

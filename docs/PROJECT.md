@@ -20,7 +20,7 @@ Officials run a full race meeting from a laptop at the track, on Windows, macOS 
 - [x] Live lap timing read from the AMB/MyLaps decoder over TCP (RC-4 text), shown live in the browser — Phases 5 and 6, then read directly by the app (#9)
 - [x] Race results published after each race, with individual lap times — Phase 7
 - [x] Championship standings and the event schedule visible without login — Phase 7
-- [x] Entries imported from RaceHub's Entry Export v1, with class mapping — #15, #16
+- [x] Entries imported from RaceHub's Entry Export v1, with club-wide class links — #15, #16
 - [x] Walk-in entries added by hand — #17
 - [x] Competitors with no login; results, live timing and standings group by competitor — #12, #13
 - [x] A primary and an optional secondary transponder per entry; a number already used in the event is warned about, not refused — #14

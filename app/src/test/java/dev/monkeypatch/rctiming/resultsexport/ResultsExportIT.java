@@ -82,7 +82,13 @@ class ResultsExportIT extends AbstractIntegrationTest {
                 values (?, '2026-10-18', 'IN_PROGRESS') returning id""",
                 Long.class, "Results export " + run);
         buggyClassId = createEventClass("RH Buggy " + run);
-        createEventClass("RH Truck " + run);
+        long truckClassId = createEventClass("RH Truck " + run);
+        for (var link : java.util.Map.of("club-class-buggy-" + run, buggyClassId,
+                "club-class-truck-" + run, truckClassId).entrySet()) {
+            jdbc.update("""
+                    insert into racehub_class_links (class_key, racing_class_id)
+                    select ?, racing_class_id from event_classes where id = ?""", link.getKey(), link.getValue());
+        }
         roundId = jdbc.queryForObject("""
                 insert into rounds (event_id, type, round_number, sequence_in_event)
                 values (?, 'FINAL', 1, 1) returning id""", Long.class, eventId);
@@ -103,13 +109,13 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void importRecordsTheRaceHubEventAndEachEntrysClass() {
+    void importRecordsTheRaceHubEventAndEachEntrysClubClass() {
         importEntries();
 
         assertThat(jdbc.queryForObject("select racehub_event_id from events where id = ?", String.class, eventId))
                 .isEqualTo("evt-" + run);
-        assertThat(jdbc.queryForObject("select racehub_event_class_id from entries where external_entry_id = ?",
-                String.class, "a1-" + run)).isEqualTo("rh-class-buggy-" + run);
+        assertThat(jdbc.queryForObject("select racehub_club_class_id from entries where external_entry_id = ?",
+                String.class, "a1-" + run)).isEqualTo("club-class-buggy-" + run);
     }
 
     @Test
@@ -147,7 +153,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
         JsonNode export = json(item.getPayload());
         assertThat(ResultsExportV1GoldenTest.validate(export)).isEmpty();
         JsonNode race = export.at("/races/0");
-        assertThat(race.at("/racehub_event_class_ids/0").asString()).isEqualTo("rh-class-buggy-" + run);
+        assertThat(race.at("/club_class_ids/0").asString()).isEqualTo("club-class-buggy-" + run);
         assertThat(race.at("/status").asString()).isEqualTo("FINISHED");
         JsonNode first = race.at("/results/0");
         assertThat(first.at("/external_source").asString()).isEqualTo("RACEHUB");
@@ -162,6 +168,8 @@ class ResultsExportIT extends AbstractIntegrationTest {
         JsonNode second = race.at("/results/1");
         assertThat(second.at("/external_source").isNull()).isTrue();
         assertThat(second.at("/entry_id").isNull()).isTrue();
+        // A walk-in has no club class, and the field is left out, not sent null
+        assertThat(second.has("club_class_id")).isFalse();
         assertThat(second.at("/display_name").asString()).isEqualTo("Walk-in Wendy");
         assertThat(second.at("/penalties/0/type").asString()).isEqualTo("TIME");
         assertThat(second.at("/penalties/0/value").decimalValue()).isEqualByComparingTo("5");
@@ -497,7 +505,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
 
         JsonNode race = json(awaitOutbox(1).get(0).getPayload()).at("/races/0");
         assertThat(race.at("/results")).isEmpty();
-        assertThat(race.at("/racehub_event_class_ids/0").asString()).isEqualTo("rh-class-buggy-" + run);
+        assertThat(race.at("/club_class_ids/0").asString()).isEqualTo("club-class-buggy-" + run);
     }
 
     @Test

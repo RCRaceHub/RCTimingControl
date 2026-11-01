@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Imports RaceHub Entry Export v1 into an event, and manages its class mappings (L7, #15), under
- * {@code /api/v1/admin/events/{eventId}}. ADMIN only. Entries are upserted by entry id with the higher entry version
+ * Imports RaceHub Entry Export v1 into an event (L7, #15), settles the classes it was held on, and keeps the event's
+ * RC-Timing CSV class mappings, under {@code /api/v1/admin/events/{eventId}}. ADMIN only. Entries are upserted by entry id with the higher entry version
  * winning, and a withdrawn entry is kept, never deleted.
  */
 @RestController
@@ -44,7 +44,7 @@ public class RaceHubImportController {
 
     /**
      * Imports the export. With {@code dryRun=true} it returns the preview and saves nothing.
-     * An import blocked by unmapped classes or invalid rows returns 422 with the preview.
+     * An import blocked by classes with no club link or invalid rows returns 422 with the preview.
      */
     @Audited("audit_log")
     @PostMapping("/racehub-import")
@@ -55,14 +55,14 @@ public class RaceHubImportController {
         return ImportResponses.of(result);
     }
 
-    /** How RaceHub's event classes map to this event's classes. {@code GET /racehub-class-mappings}; read only. */
+    /** The event's per-meeting class mappings, which only the RC-Timing CSV import uses. {@code GET /racehub-class-mappings}; read only. */
     @GetMapping("/racehub-class-mappings")
     public List<ClassMappingDto> listMappings(@PathVariable Long eventId) {
         return importService.listMappings(eventId).stream().map(ClassMappingDto::of).toList();
     }
 
     /**
-     * Replaces all of the event's class mappings. {@code PUT /racehub-class-mappings}; 400 if a RaceHub class is
+     * Replaces all of the event's class mappings. {@code PUT /racehub-class-mappings}; 400 if a CSV class key is
      * mapped twice. Audited.
      */
     @Audited("audit_log")
@@ -72,7 +72,7 @@ public class RaceHubImportController {
         Map<String, Long> byRaceHubId = new LinkedHashMap<>();
         for (ClassMappingDto m : mappings) {
             if (byRaceHubId.put(m.racehubEventClassId(), m.eventClassId()) != null) {
-                throw new IllegalArgumentException("RaceHub event class " + m.racehubEventClassId() + " is mapped twice");
+                throw new IllegalArgumentException("class " + m.racehubEventClassId() + " is mapped twice");
             }
         }
         return importService.replaceMappings(CurrentOfficial.actor(), eventId, byRaceHubId).stream()
@@ -80,9 +80,9 @@ public class RaceHubImportController {
     }
 
     /**
-     * Settles classes the import could not place. {@code POST /racehub-class-links}: each is linked club-wide to an
-     * existing racing class or to a new one made from {@code createName}, put in this event with the format it last
-     * used (or {@code templateId}), and mapped for this event. 400 for a bad request or a class with no format to
+     * Settles classes the import was held on. {@code POST /racehub-class-links}: each club class id is linked
+     * club-wide to an existing racing class or to a new one made from {@code createName}, and the class is put in
+     * this event with the format it last used (or {@code templateId}). 400 for a bad request or a class with no format to
      * use, 404 for an unknown event or class. Audited.
      */
     @Audited("audit_log")
@@ -90,7 +90,7 @@ public class RaceHubImportController {
     public List<ResolvedRaceHubClassDto> resolveClasses(@PathVariable Long eventId,
                                                         @RequestBody List<ResolveRaceHubClassRequest> requests) {
         return classLinkService.resolve(CurrentOfficial.actor(), eventId, requests.stream()
-                        .map(r -> new RaceHubClassLinkService.Resolution(r.racehubEventClassId(), r.racingClassId(),
+                        .map(r -> new RaceHubClassLinkService.Resolution(r.classKey(), r.racingClassId(),
                                 r.createName(), r.templateId())).toList())
                 .stream().map(ResolvedRaceHubClassDto::from).toList();
     }

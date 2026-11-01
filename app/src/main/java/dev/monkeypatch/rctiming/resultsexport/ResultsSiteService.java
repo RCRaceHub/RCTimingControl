@@ -136,11 +136,11 @@ public class ResultsSiteService {
     static ResultsExportV1 withPublicNames(ResultsExportV1 export, PublicNames.Snapshot names) {
         List<ResultsExportV1.Race> races = export.races().stream()
                 .map(race -> new ResultsExportV1.Race(race.rctcRaceId(), race.rctcEventClassId(),
-                        race.racehubEventClassIds(), race.className(), race.roundType(), race.roundNumber(),
+                        race.clubClassIds(), race.className(), race.roundType(), race.roundNumber(),
                         race.heatNumber(), race.finalLetter(), race.status(), race.finishedAt(),
                         race.results().stream()
                                 .map(r -> new ResultsExportV1.Row(r.position(), r.externalSource(), r.entryId(),
-                                        r.driverProfileId(), r.racehubEventClassId(), r.rctcEntryId(),
+                                        r.driverProfileId(), r.clubClassId(), r.rctcEntryId(),
                                         r.rctcCompetitorId(),
                                         names.of(r.rctcCompetitorId(), r.displayName(), r.carNumber()),
                                         r.carNumber(), r.laps(), r.totalTimeMs(), r.bestLapMs(), r.penalties()))

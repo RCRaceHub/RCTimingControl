@@ -76,7 +76,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 | Component | Responsibility |
 |-----------|---------------|
 | **Admin Panel API** | Club, tracks, classes, formats, events, championships, officials, backups |
-| **Entries** | RaceHub import (upsert by `entry_id`, higher `entry_version` wins, withdraw never delete, class mapping), RC-Timing CSV import (preview new/changed/missing, apply only what the official picks, never withdraw walk-ins), walk-ins, competitors |
+| **Entries** | RaceHub import (upsert by `entry_id`, higher `entry_version` wins, withdraw never delete, classes resolved through club-wide links from `club_class_id`, never by name), RC-Timing CSV import (preview new/changed/missing, apply only what the official picks, never withdraw walk-ins), walk-ins, competitors |
 | **Transponder swap** | On-the-day transponder swap from race control's Transponders page, audit-logged |
 | **Race Control API** | Race lifecycle commands, marshal laps, grid calls, referee tools |
 | **Boards** | Spectator "now and next" and results boards, and the streaming overlay for OBS (`/boards/overlay`), all anonymous (`/api/v1/boards`); the race clock comes from `timing/RaceClockService` |

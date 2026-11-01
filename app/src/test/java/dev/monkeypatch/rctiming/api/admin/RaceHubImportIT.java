@@ -74,6 +74,8 @@ class RaceHubImportIT extends AbstractIntegrationTest {
                 Long.class, "RaceHub import " + run);
         buggyClassId = createEventClass("RH Buggy " + run);
         truckClassId = createEventClass("RH Truck " + run);
+        linkClass("club-class-buggy-" + run, buggyClassId);
+        linkClass("club-class-truck-" + run, truckClassId);
     }
 
     @Test
@@ -322,13 +324,13 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void unmappedClass_blocksTheImportAndIsListed() {
+    void aClassWithNoClubLink_blocksTheImportAndIsListed() {
         ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", true);
         assertThat(preview.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(preview.getBody().get("blocked").asBoolean()).isTrue();
         JsonNode unmapped = preview.getBody().get("unmappedClasses");
         assertThat(unmapped).hasSize(1);
-        assertThat(unmapped.get(0).get("racehubEventClassId").asString()).isEqualTo("rh-class-electric-" + run);
+        assertThat(unmapped.get(0).get("classKey").asString()).isEqualTo("club-class-electric-" + run);
         assertThat(unmapped.get(0).get("rcClassName").asString()).isEqualTo("RH Electric Touring " + run);
         assertThat(unmapped.get(0).get("entryCount").asInt()).isEqualTo(1);
 
@@ -339,30 +341,49 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void classMapping_resolvesAnUnmappedClass() {
-        var put = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",
-                HttpMethod.PUT, new HttpEntity<>(List.of(Map.of(
-                        "racehubEventClassId", "rh-class-electric-" + run, "eventClassId", buggyClassId)), adminHeaders()),
-                JsonNode.class);
-        assertThat(put.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-        var get = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",
-                HttpMethod.GET, new HttpEntity<>(adminHeaders()), JsonNode.class);
-        assertThat(get.getBody()).hasSize(1);
-        assertThat(get.getBody().get(0).get("eventClassId").asLong()).isEqualTo(buggyClassId);
+    void linkingAClubClassFromTheClassesScreen_letsTheHeldImportThrough() {
+        var linked = restTemplate.exchange("/api/v1/admin/racehub/class-links", HttpMethod.POST,
+                new HttpEntity<>(List.of(Map.of("clubClassId", "club-class-electric-" + run,
+                        "racingClassId", racingClassOf(buggyClassId))), adminHeaders()), JsonNode.class);
+        assertThat(linked.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(linked.getBody().get(0).get("classKey").asString()).isEqualTo("club-class-electric-" + run);
 
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-unmapped-class.json", false);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entry("u1").getEventClassId()).isEqualTo(buggyClassId);
+        assertThat(entry("u1").getRacehubClubClassId()).isEqualTo("club-class-electric-" + run);
     }
 
     @Test
-    void settlingAnUnmappedClass_addsItToTheEventWithItsLastFormat_andLinksItClubWide() {
+    void aClassIsNeverPlacedByName_evenWhenItsRcClassNameMatchesAClassInTheEvent() {
+        // The file names the class "RH Electric Touring <run>", and the event has a class called exactly that
+        createEventClass("RH Electric Touring " + run);
+
+        ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", true);
+
+        assertThat(preview.getBody().get("blocked").asBoolean()).isTrue();
+        assertThat(preview.getBody().get("unmappedClasses")).hasSize(1);
+        assertThat(importFixture("entries-v1-unmapped-class.json", false).getStatusCode())
+                .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(findEntry("u1")).isNull();
+    }
+
+    @Test
+    void aRowWithNoClubClassId_blocksTheImportWithAnError() {
+        String json = fixture("entries-v1-initial.json").replace("      \"club_class_id\": \"club-class-truck-" + run + "\",\n", "");
+        var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=true",
+                HttpMethod.POST, new HttpEntity<>(json, adminHeaders()), JsonNode.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(resp.getBody().get("errors").toString()).contains("has no club_class_id");
+    }
+
+    @Test
+    void settlingAnUnlinkedClass_addsItToTheEventWithItsLastFormat_andLinksItClubWide() {
         long templateId = createTemplate();
         long electricRacingClass = racingClassInAnotherEvent("RH Electric Touring " + run, templateId);
 
         var resp = resolveClasses(List.of(Map.of(
-                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", electricRacingClass)));
+                "classKey", "club-class-electric-" + run, "racingClassId", electricRacingClass)));
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().get(0).get("racingClassCreated").asBoolean()).isFalse();
         long eventClassId = resp.getBody().get(0).get("eventClassId").asLong();
@@ -372,7 +393,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(importFixture("entries-v1-unmapped-class.json", false).getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entry("u1").getEventClassId()).isEqualTo(eventClassId);
 
-        // A second meeting needs no mapping: the club-wide link finds the class once it is in the event
+        // A second meeting needs no linking: the club-wide link finds the class once it is in the event
         long secondEvent = jdbc.queryForObject("""
                 insert into events (name, event_date, status)
                 values (?, date('now', '+21 days'), 'OPEN') returning id""", Long.class, "Second " + run);
@@ -390,7 +411,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     void aLinkedClassThatIsNotInAnotherEventYetIsSuggestedForIt() {
         long electric = racingClassInAnotherEvent("RH Electric Touring " + run, createTemplate());
         assertThat(resolveClasses(List.of(Map.of(
-                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", electric))).getStatusCode())
+                "classKey", "club-class-electric-" + run, "racingClassId", electric))).getStatusCode())
                 .isEqualTo(HttpStatus.OK);
         long emptyEvent = jdbc.queryForObject("""
                 insert into events (name, event_date, status)
@@ -406,18 +427,18 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void settlingAnUnmappedClass_canCreateTheRacingClass_butNeedsAFormatWhenItHasNeverRun() {
+    void settlingAnUnlinkedClass_canCreateTheRacingClass_butNeedsAFormatWhenItHasNeverRun() {
         var refused = resolveClasses(List.of(Map.of(
-                "racehubEventClassId", "rh-class-electric-" + run, "createName", "RH Brand New " + run)));
+                "classKey", "club-class-electric-" + run, "createName", "RH Brand New " + run)));
         assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
         var created = resolveClasses(List.of(Map.of(
-                "racehubEventClassId", "rh-class-electric-" + run, "createName", "RH Brand New " + run,
+                "classKey", "club-class-electric-" + run, "createName", "RH Brand New " + run,
                 "templateId", createTemplate())));
         assertThat(created.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(created.getBody().get(0).get("racingClassCreated").asBoolean()).isTrue();
         assertThat(jdbc.queryForObject("select count(*) from racehub_class_links where class_key = ?",
-                Integer.class, "rh-class-electric-" + run)).isEqualTo(1);
+                Integer.class, "club-class-electric-" + run)).isEqualTo(1);
     }
 
     @Test
@@ -429,7 +450,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
                 values (?, ?, '{"type":"TIMED"}')""", eventId, racingClassId);
 
         var resp = resolveClasses(List.of(Map.of(
-                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", racingClassId)));
+                "classKey", "club-class-electric-" + run, "racingClassId", racingClassId)));
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -441,7 +462,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
     @Test
     void settlingAClass_needsExactlyOneOfAnExistingClassOrANewName() {
-        var neither = resolveClasses(List.of(Map.of("racehubEventClassId", "rh-class-electric-" + run)));
+        var neither = resolveClasses(List.of(Map.of("classKey", "club-class-electric-" + run)));
         assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
@@ -569,7 +590,7 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     void oneDriverTwiceInAClass_blocksTheImportAndNamesTheClass() {
         // Grace's entry becomes a second entry for Ada in the buggy class
         String json = fixture("entries-v1-duplicate-transponder.json")
-                .replace("rh-class-truck-" + run, "rh-class-buggy-" + run)
+                .replace("club-class-truck-" + run, "club-class-buggy-" + run)
                 .replace("rh truck " + run, "RH Buggy " + run)
                 .replace("drv-grace-" + run, "drv-ada-" + run);
         var resp = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=false",
@@ -623,6 +644,8 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     @Test
     void anotherSource_keepsItsEntriesAndCompetitorsApartFromRaceHubs() {
         assertThat(importFixture("entries-v1-initial.json", false).getStatusCode()).isEqualTo(HttpStatus.OK);
+        linkClass("OTHER:club-class-buggy-" + run, buggyClassId);
+        linkClass("OTHER:club-class-truck-" + run, truckClassId);
 
         // The same ids from another booking system are different entries and drivers (#41)
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-initial.json", "OTHER", false);
@@ -634,9 +657,9 @@ class RaceHubImportIT extends AbstractIntegrationTest {
         assertThat(otherAda.getId()).isNotEqualTo(racehubAda.getId());
         assertThat(otherAda.getCompetitorId()).isNotEqualTo(racehubAda.getCompetitorId());
         assertThat(otherAda.getEventClassId()).isEqualTo(buggyClassId);
-        // Results go back to RaceHub by its class ids, which another system's are not
-        assertThat(otherAda.getRacehubEventClassId()).isNull();
-        assertThat(racehubAda.getRacehubEventClassId()).isEqualTo("rh-class-buggy-" + run);
+        // Results go back to RaceHub by the club class id, which another system's is not
+        assertThat(otherAda.getRacehubClubClassId()).isNull();
+        assertThat(racehubAda.getRacehubClubClassId()).isEqualTo("club-class-buggy-" + run);
 
         Competitor otherDriver = competitorRepository.findById(otherAda.getCompetitorId()).orElseThrow();
         assertThat(otherDriver.getExternalSource()).isEqualTo("OTHER");
@@ -650,6 +673,8 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
     @Test
     void anotherSource_doesNotLinkTheEventToRaceHub() {
+        linkClass("OTHER:club-class-buggy-" + run, buggyClassId);
+        linkClass("OTHER:club-class-truck-" + run, truckClassId);
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-initial.json", "OTHER", false);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -663,24 +688,17 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void anotherSource_hasItsOwnClassMappings() {
+    void anotherSource_hasItsOwnClassLinks() {
         ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", "OTHER", true);
-        assertThat(preview.getBody().get("unmappedClasses").get(0).get("racehubEventClassId").asString())
-                .isEqualTo("OTHER:rh-class-electric-" + run);
+        assertThat(preview.getBody().get("unmappedClasses").get(0).get("classKey").asString())
+                .isEqualTo("OTHER:club-class-electric-" + run);
 
-        // A RaceHub mapping for the same class id does not apply to the other system's file
-        restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",
-                HttpMethod.PUT, new HttpEntity<>(List.of(Map.of(
-                        "racehubEventClassId", "rh-class-electric-" + run, "eventClassId", buggyClassId)), adminHeaders()),
-                JsonNode.class);
+        // A RaceHub link for the same class id does not apply to the other system's file
+        linkClass("club-class-electric-" + run, buggyClassId);
         assertThat(importFixture("entries-v1-unmapped-class.json", "OTHER", true).getBody().get("blocked").asBoolean())
                 .isTrue();
 
-        restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",
-                HttpMethod.PUT, new HttpEntity<>(List.of(Map.of(
-                        "racehubEventClassId", "OTHER:rh-class-electric-" + run, "eventClassId", truckClassId)),
-                        adminHeaders()),
-                JsonNode.class);
+        linkClass("OTHER:club-class-electric-" + run, truckClassId);
         ResponseEntity<JsonNode> resp = importFixture("entries-v1-unmapped-class.json", "OTHER", false);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entryRepository.findByExternalSourceAndExternalEntryId("OTHER", "u1-" + run).orElseThrow()
@@ -746,6 +764,10 @@ class RaceHubImportIT extends AbstractIntegrationTest {
                 HttpMethod.POST, new HttpEntity<>(body, adminHeaders()), JsonNode.class);
     }
 
+    private long racingClassOf(long eventClassId) {
+        return jdbc.queryForObject("select racing_class_id from event_classes where id = ?", Long.class, eventClassId);
+    }
+
     private long createTemplate() {
         return jdbc.queryForObject("insert into race_format_templates (name, config) values (?, '{\"type\":\"TIMED\"}') returning id",
                 Long.class, "RH template " + UUID.randomUUID());
@@ -762,6 +784,13 @@ class RaceHubImportIT extends AbstractIntegrationTest {
                 insert into event_classes (event_id, racing_class_id, template_id, config_snapshot)
                 values (?, ?, ?, '{"type":"TIMED"}')""", earlier, racingClassId, templateId);
         return racingClassId;
+    }
+
+    /** The club's link from a class key to the racing class of an event class. */
+    private void linkClass(String classKey, long eventClassId) {
+        jdbc.update("""
+                insert into racehub_class_links (class_key, racing_class_id)
+                select ?, racing_class_id from event_classes where id = ?""", classKey, eventClassId);
     }
 
     private long createEventClass(String racingClassName) {

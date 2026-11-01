@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
@@ -55,8 +56,9 @@ public record ResultsExportV1(
     /**
      * One finished race.
      *
-     * @param racehubEventClassIds the RaceHub event_class_id values of the entries in the race (several when
-     *                             classes are combined, none when every entry is a walk-in)
+     * @param clubClassIds the club class ids (RaceHub club_class_id) of the entries in the race: several when
+     *                     classes are combined, and left out of the document, not sent empty, when every entry is a
+     *                     walk-in or has none
      * @param className            the RCTC racing class name, which RaceHub calls rc_class_name
      * @param roundType            PRACTICE, QUALIFIER or FINAL
      * @param finalLetter          A, B, ... for a final; null otherwise
@@ -64,12 +66,12 @@ public record ResultsExportV1(
      * @param finishedAt           ISO-8601 UTC
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    @JsonPropertyOrder({"rctcRaceId", "rctcEventClassId", "racehubEventClassIds", "className", "roundType",
+    @JsonPropertyOrder({"rctcRaceId", "rctcEventClassId", "clubClassIds", "className", "roundType",
             "roundNumber", "heatNumber", "finalLetter", "status", "finishedAt", "results"})
     public record Race(
             long rctcRaceId,
             long rctcEventClassId,
-            List<String> racehubEventClassIds,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> clubClassIds,
             String className,
             String roundType,
             int roundNumber,
@@ -85,12 +87,13 @@ public record ResultsExportV1(
      * {@code driver_profile_id}; walk-ins have {@code external_source} null and only RCTC ids.
      *
      * @param externalSource RACEHUB for an imported entry, null for a walk-in
+     * @param clubClassId    the entry's club class id; left out of the document, not sent null, when it has none
      * @param totalTimeMs    from the start to the driver's last crossing
      * @param bestLapMs      null when the driver completed no lap
      * @param penalties      penalties the referee gave the driver in this race
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    @JsonPropertyOrder({"position", "externalSource", "entryId", "driverProfileId", "racehubEventClassId",
+    @JsonPropertyOrder({"position", "externalSource", "entryId", "driverProfileId", "clubClassId",
             "rctcEntryId", "rctcCompetitorId", "displayName", "carNumber", "laps", "totalTimeMs", "bestLapMs",
             "penalties"})
     public record Row(
@@ -98,7 +101,7 @@ public record ResultsExportV1(
             String externalSource,
             String entryId,
             String driverProfileId,
-            String racehubEventClassId,
+            @JsonInclude(JsonInclude.Include.NON_EMPTY) String clubClassId,
             Long rctcEntryId,
             Long rctcCompetitorId,
             String displayName,

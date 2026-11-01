@@ -2,8 +2,10 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 
 import RaceHubImportDialog from './RaceHubImportDialog';
+import { toast } from 'sonner';
 import { adminApi } from '@/lib/adminApi';
 import type { EventClassDto, RaceHubImportResult } from '@/lib/adminApi';
 
@@ -15,8 +17,7 @@ vi.mock('@/lib/adminApi', () => ({
     importPhotos: vi.fn(),
     previewEntryFeed: vi.fn(),
     applyEntryFeed: vi.fn(),
-    listRaceHubClassMappings: vi.fn(),
-    replaceRaceHubClassMappings: vi.fn(),
+    raceHubClasses: { list: vi.fn() },
     listRacingClasses: vi.fn(),
     resolveRaceHubClasses: vi.fn(),
     formats: { list: vi.fn() },
@@ -70,9 +71,11 @@ const exportFile = () =>
 function renderDialog(onOpenChange = vi.fn(), feed = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <QueryClientProvider client={queryClient}>
-      <RaceHubImportDialog eventId={5} classes={classes} open onOpenChange={onOpenChange} feed={feed} />
-    </QueryClientProvider>,
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <RaceHubImportDialog eventId={5} classes={classes} open onOpenChange={onOpenChange} feed={feed} />
+      </QueryClientProvider>
+    </MemoryRouter>,
   );
   return onOpenChange;
 }
@@ -85,7 +88,6 @@ describe('RaceHubImportDialog', () => {
   beforeEach(() => {
     // Reset, not just clear: an unused mockResolvedValueOnce must not leak into the next test
     vi.resetAllMocks();
-    api.listRaceHubClassMappings.mockResolvedValue([]);
     vi.mocked(adminApi.formats.list).mockResolvedValue([]);
     api.listRacingClasses.mockResolvedValue([
       { id: 101, name: '2WD Buggy', description: null },
@@ -117,9 +119,11 @@ describe('RaceHubImportDialog', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const document = { schema_version: 1, entries: [] };
     render(
-      <QueryClientProvider client={queryClient}>
-        <RaceHubImportDialog eventId={5} classes={classes} open onOpenChange={vi.fn()} initialDocument={document} />
-      </QueryClientProvider>,
+      <MemoryRouter>
+        <QueryClientProvider client={queryClient}>
+          <RaceHubImportDialog eventId={5} classes={classes} open onOpenChange={vi.fn()} initialDocument={document} />
+        </QueryClientProvider>
+      </MemoryRouter>,
     );
 
     await waitFor(() => expect(api.importRaceHubEntries).toHaveBeenCalledWith(5, document, true));
@@ -135,15 +139,16 @@ describe('RaceHubImportDialog', () => {
     expect(api.importRaceHubEntries).not.toHaveBeenCalled();
   });
 
-  it('blocks the import until unmapped classes are mapped, then saves the mapping and checks again', async () => {
-    api.listRaceHubClassMappings.mockResolvedValue([{ racehubEventClassId: 'rh-old', eventClassId: 12 }]);
+  it('holds the import until the classes are linked, then links them club-wide and checks again', async () => {
     api.importRaceHubEntries
       .mockResolvedValueOnce(result({
         blocked: true,
-        unmappedClasses: [{ racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
+        unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
       }))
       .mockResolvedValueOnce(result());
-    api.replaceRaceHubClassMappings.mockImplementation(async (_eventId, mappings) => mappings);
+    api.resolveRaceHubClasses.mockResolvedValue([
+      { classKey: 'club-buggy', racingClassId: 101, eventClassId: 11, racingClassCreated: false },
+    ]);
     renderDialog();
 
     chooseFile(exportFile());
@@ -160,10 +165,10 @@ describe('RaceHubImportDialog', () => {
     fireEvent.change(dropdown, { target: { value: '11' } });
     fireEvent.click(save);
 
+    // The event's own class is linked through its racing class
     await waitFor(() =>
-      expect(api.replaceRaceHubClassMappings).toHaveBeenCalledWith(5, [
-        { racehubEventClassId: 'rh-old', eventClassId: 12 },
-        { racehubEventClassId: 'rh-buggy', eventClassId: 11 },
+      expect(api.resolveRaceHubClasses).toHaveBeenCalledWith(5, [
+        { classKey: 'club-buggy', racingClassId: 101, templateId: undefined },
       ]),
     );
     await waitFor(() => expect(api.importRaceHubEntries).toHaveBeenCalledTimes(2));
@@ -175,11 +180,11 @@ describe('RaceHubImportDialog', () => {
     api.importRaceHubEntries
       .mockResolvedValueOnce(result({
         blocked: true,
-        unmappedClasses: [{ racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
+        unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
       }))
       .mockResolvedValueOnce(result());
     api.resolveRaceHubClasses.mockResolvedValue([
-      { racehubEventClassId: 'rh-buggy', racingClassId: 300, eventClassId: 31, racingClassCreated: true },
+      { classKey: 'club-buggy', racingClassId: 300, eventClassId: 31, racingClassCreated: true },
     ]);
     renderDialog();
 
@@ -191,10 +196,9 @@ describe('RaceHubImportDialog', () => {
 
     await waitFor(() =>
       expect(api.resolveRaceHubClasses).toHaveBeenCalledWith(5, [
-        { racehubEventClassId: 'rh-buggy', createName: 'Buggy 2WD', templateId: undefined },
+        { classKey: 'club-buggy', createName: 'Buggy 2WD', templateId: undefined },
       ]),
     );
-    expect(api.replaceRaceHubClassMappings).not.toHaveBeenCalled();
     await waitFor(() => expect(api.importRaceHubEntries).toHaveBeenCalledTimes(2));
   });
 
@@ -202,7 +206,7 @@ describe('RaceHubImportDialog', () => {
     api.importRaceHubEntries.mockResolvedValueOnce(result({
       blocked: true,
       unmappedClasses: [{
-        racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2,
+        classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2,
         suggestedRacingClassId: 300,
       }],
     }));
@@ -216,13 +220,13 @@ describe('RaceHubImportDialog', () => {
     expect(screen.getByRole('button', { name: 'Save mappings and check again' })).toBeEnabled();
   });
 
-  it('does not preview again when the dialog is closed while the class mappings save', async () => {
+  it('does not preview again when the dialog is closed while the class links save', async () => {
     api.importRaceHubEntries.mockResolvedValue(result({
       blocked: true,
-      unmappedClasses: [{ racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
+      unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
     }));
     let finishSave: () => void = () => {};
-    api.replaceRaceHubClassMappings.mockReturnValue(new Promise<never[]>(resolve => { finishSave = () => resolve([]); }));
+    api.resolveRaceHubClasses.mockReturnValue(new Promise<never[]>(resolve => { finishSave = () => resolve([]); }));
     renderDialog();
     chooseFile(exportFile());
 
@@ -231,7 +235,7 @@ describe('RaceHubImportDialog', () => {
     const save = screen.getByRole('button', { name: 'Save mappings and check again' });
     await waitFor(() => expect(save).toBeEnabled());
     fireEvent.click(save);
-    await waitFor(() => expect(api.replaceRaceHubClassMappings).toHaveBeenCalled());
+    await waitFor(() => expect(api.resolveRaceHubClasses).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     finishSave();
 
@@ -259,22 +263,44 @@ describe('RaceHubImportDialog', () => {
     expect(screen.queryByText(/First file/)).not.toBeInTheDocument();
   });
 
-  it('will not save class mappings when the saved ones could not be loaded', async () => {
-    api.listRaceHubClassMappings.mockRejectedValue(new Error('network'));
+  it('fetches RaceHub\'s classes again and offers the racing class a held class matches', async () => {
     api.importRaceHubEntries.mockResolvedValue(result({
       blocked: true,
-      unmappedClasses: [{ racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: null, entryCount: 1 }],
+      unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: null, entryCount: 1 }],
     }));
+    vi.mocked(adminApi.raceHubClasses.list).mockResolvedValue({
+      error: null,
+      classes: [{
+        id: 'club-buggy', name: 'Buggy 2WD', rcClassName: 'Buggy 2WD', active: true,
+        linkedRacingClassId: null, suggestedRacingClassId: 102,
+      }],
+    });
     renderDialog();
-
     chooseFile(exportFile());
-    await screen.findByText('Buggy 2WD');
-    await waitFor(() => expect(screen.getByRole('option', { name: '2WD Buggy' })).toBeInTheDocument());
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '11' } });
+    await screen.findByText('Buggy 2WD', { selector: 'span' });
 
-    expect(await screen.findByText(/Could not load this event's saved class mappings/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save mappings and check again' })).toBeDisabled();
-    expect(api.replaceRaceHubClassMappings).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /Fetch RaceHub's classes again/ }));
+
+    // 102 is already one of the event's classes (id 12), so that class is chosen, ready to link
+    await waitFor(() => expect(screen.getAllByRole('combobox')[0]).toHaveValue('12'));
+    expect(adminApi.raceHubClasses.list).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('link', { name: 'RaceHub classes' })).toHaveAttribute('href', '/admin/racehub-classes');
+  });
+
+  it('shows why RaceHub could not be asked and offers nothing', async () => {
+    api.importRaceHubEntries.mockResolvedValue(result({
+      blocked: true,
+      unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: null, entryCount: 1 }],
+    }));
+    vi.mocked(adminApi.raceHubClasses.list).mockResolvedValue({ classes: [], error: 'Set the RaceHub events address first.' });
+    renderDialog();
+    chooseFile(exportFile());
+    await screen.findByText('Buggy 2WD', { selector: 'span' });
+
+    fireEvent.click(screen.getByRole('button', { name: /Fetch RaceHub's classes again/ }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Set the RaceHub events address first.'));
+    expect(screen.getAllByRole('combobox')[0]).toHaveValue('');
   });
 
   it('confirms the import and closes', async () => {

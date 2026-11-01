@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,7 +16,8 @@ import {
 
 import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import { useFormatsList } from '@/hooks/admin/useAdminFormats';
-import { useImportClassMappings, useRaceHubImport, useResolveRaceHubClasses } from '@/hooks/admin/useRaceHubImport';
+import { useRaceHubImport, useResolveRaceHubClasses } from '@/hooks/admin/useRaceHubImport';
+import { useRaceHubClasses } from '@/hooks/admin/useRaceHubClasses';
 import { useEntryFeedImport } from '@/hooks/admin/useEntryFeed';
 import { getApiErrorMessage } from '@/lib/errors';
 import type { EventClassDto, ImportedPhotoLink, RaceHubImportResult, ResolveRaceHubClassRequest } from '@/lib/adminApi';
@@ -43,7 +45,7 @@ const SUMMARY_LABELS: { key: keyof RaceHubImportResult['summary']; label: string
 ];
 
 /**
- * Upload a RaceHub Entry Export, preview the dry run, map any unmapped classes, then confirm (L8, #16). With
+ * Upload a RaceHub Entry Export, preview the dry run, link any classes the club has not linked, then confirm (L8, #16). With
  * {@code feed}, the file is the one the event's entry feed fetched and is holding (#42).
  */
 export default function RaceHubImportDialog({
@@ -65,7 +67,7 @@ export default function RaceHubImportDialog({
   const fileImport = useRaceHubImport(eventId);
   const feedImport = useEntryFeedImport(eventId);
   const importMutation = feed ? feedImport : fileImport;
-  const classMappings = useImportClassMappings(eventId, open);
+  const raceHubClasses = useRaceHubClasses(false);
   const resolveClasses = useResolveRaceHubClasses(eventId);
   const { data: formats = [] } = useFormatsList();
   // Each file choice (and closing the dialog) starts a new request generation. A preview
@@ -109,7 +111,7 @@ export default function RaceHubImportDialog({
       const suggested: Record<string, string> = {};
       result.unmappedClasses.forEach(u => {
         if (u.suggestedRacingClassId != null && !inEventNow.has(u.suggestedRacingClassId)) {
-          suggested[u.racehubEventClassId] = `rc:${u.suggestedRacingClassId}`;
+          suggested[u.classKey] = `rc:${u.suggestedRacingClassId}`;
         }
       });
       setClassChoices(c => ({ ...suggested, ...c }));
@@ -168,39 +170,61 @@ export default function RaceHubImportDialog({
     await runPreview(parsed);
   }
 
-  async function saveMappingsAndRecheck() {
+  async function saveLinksAndRecheck() {
     const requestGeneration = generation.current;
-    // A number is one of the event's own classes. "rc:<id>" adds a racing class that is not in the event yet and
-    // "new" makes a class from the file's name; both are linked club-wide so later meetings need no mapping.
+    // A number is one of the event's own classes, so its racing class is linked. "rc:<id>" adds a racing class that
+    // is not in the event yet and "new" makes a class from the file's name. Every choice is linked club-wide, so
+    // later meetings need no linking.
     const settle: ResolveRaceHubClassRequest[] = [];
-    const plain: Record<string, string> = {};
     for (const [key, value] of Object.entries(classChoices)) {
       if (!value) continue;
       const templateId = formatChoices[key] && formatChoices[key] !== 'last' ? Number(formatChoices[key]) : undefined;
       if (value.startsWith('rc:')) {
-        settle.push({ racehubEventClassId: key, racingClassId: Number(value.slice(3)), templateId });
+        settle.push({ classKey: key, racingClassId: Number(value.slice(3)), templateId });
       } else if (value === 'new') {
-        settle.push({
-          racehubEventClassId: key,
-          createName: unmapped.find(u => u.key === key)?.name,
-          templateId,
-        });
+        settle.push({ classKey: key, createName: unmapped.find(u => u.key === key)?.name, templateId });
       } else {
-        plain[key] = value;
+        const racingClassId = classes.find(c => c.id === Number(value))?.racingClassId;
+        if (racingClassId != null) settle.push({ classKey: key, racingClassId, templateId });
       }
     }
     try {
-      if (Object.keys(plain).length > 0 && !(await classMappings.save(plain))) return;
       if (settle.length > 0) await resolveClasses.mutateAsync(settle);
-      // The dialog was closed or another file chosen while the mappings saved
+      // The dialog was closed or another file chosen while the links saved
       if (requestGeneration !== generation.current) return;
       setClassChoices({});
       setFormatChoices({});
       await runPreview(exportDocument);
     } catch (err) {
       if (requestGeneration !== generation.current) return;
-      toast.error(getApiErrorMessage(err, 'Could not save the class mappings. Try again.'));
+      toast.error(getApiErrorMessage(err, 'Could not link the classes. Try again.'));
     }
+  }
+
+  /**
+   * The club may have added a class in RaceHub since its classes were linked. Asking RaceHub again offers each held
+   * class the racing class it matches by name, only as a choice for the official to confirm.
+   */
+  async function refetchClasses() {
+    const result = await raceHubClasses.refetch();
+    if (result.isError || result.data?.error) {
+      toast.error(result.data?.error ?? 'Could not ask RaceHub for its classes. Try again.');
+      return;
+    }
+    const inEventNow = new Set(classes.map(c => c.racingClassId));
+    const offered: Record<string, string> = {};
+    for (const c of result.data?.classes ?? []) {
+      const racingClassId = c.linkedRacingClassId ?? c.suggestedRacingClassId;
+      if (racingClassId == null || !unmapped.some(u => u.key === c.id)) continue;
+      const own = classes.find(ec => ec.racingClassId === racingClassId);
+      offered[c.id] = own && inEventNow.has(racingClassId) ? String(own.id) : `rc:${racingClassId}`;
+    }
+    setClassChoices(current => ({ ...offered, ...current }));
+    toast.success(
+      Object.keys(offered).length > 0
+        ? 'RaceHub answered. Check the classes offered below, then link them.'
+        : 'RaceHub answered, but none of the held classes match one of yours. Choose a class for each.',
+    );
   }
 
   async function confirmImport() {
@@ -228,11 +252,11 @@ export default function RaceHubImportDialog({
   }
 
   const unmapped = (preview?.unmappedClasses ?? []).map(u => ({
-    key: u.racehubEventClassId,
-    name: u.rcClassName ?? u.className ?? u.racehubEventClassId,
+    key: u.classKey,
+    name: u.rcClassName ?? u.className ?? u.classKey,
     entryCount: u.entryCount,
   }));
-  const busy = importMutation.isPending || classMappings.isSaving || resolveClasses.isPending;
+  const busy = importMutation.isPending || resolveClasses.isPending;
   const inEvent = new Set(classes.map(c => c.racingClassId));
 
   return (
@@ -293,7 +317,7 @@ export default function RaceHubImportDialog({
 
             <ClassMappingPanel
               unmapped={unmapped}
-              intro="These RaceHub classes do not match a class in this event. Choose one of the event's classes, add one of your classes to it, or create a new class. The choice is remembered for every meeting."
+              intro="The import is held because these RaceHub classes are not linked to a class of yours. Choose one of the event's classes, add one of your classes to it, or create a new class. The link is remembered for every meeting."
               classes={classes}
               classLabel={classLabel}
               choices={classChoices}
@@ -307,10 +331,35 @@ export default function RaceHubImportDialog({
               formats={formats}
               formatChoices={formatChoices}
               onChooseFormat={(key, value) => setFormatChoices(c => ({ ...c, [key]: value }))}
-              mappingsLoadFailed={classMappings.loadFailed}
-              canSave={classMappings.ready && !busy}
-              onSave={() => void saveMappingsAndRecheck()}
+              mappingsLoadFailed={false}
+              canSave={!busy}
+              onSave={() => void saveLinksAndRecheck()}
             />
+
+            {unmapped.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void refetchClasses()}
+                  disabled={raceHubClasses.isFetching}
+                >
+                  {raceHubClasses.isFetching ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Fetch RaceHub's classes again
+                </Button>
+                <span className="text-muted-foreground">
+                  or link them all at once on the{' '}
+                  <Link to="/admin/racehub-classes" className="underline">
+                    RaceHub classes
+                  </Link>{' '}
+                  page.
+                </span>
+              </div>
+            )}
 
             <ImportWarnings warnings={preview.warnings} />
           </div>

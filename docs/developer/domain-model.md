@@ -22,7 +22,7 @@ classDiagram
         templateId
     }
     class RaceHubClassLink {
-        classKey : RaceHub event class id
+        classKey : RaceHub club class id
         racingClassId : club-wide, one per key
     }
     class Competitor {
@@ -91,7 +91,7 @@ classDiagram
     class IncidentReport
 
     Event "1" --> "*" EventClass
-    RaceHubClassLink "*" --> "1" RacingClass : placed in the event on import
+    RaceHubClassLink "*" --> "1" RacingClass : an import finds the event class through it
     Event "1" --> "*" Round
     Event "1" --> "*" Entry
     Competitor "1" --> "*" Entry

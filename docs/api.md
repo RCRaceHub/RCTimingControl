@@ -371,7 +371,7 @@ Content-Type: application/json
 
 Requires `ADMIN`. With `dryRun=true` it returns the preview and saves nothing. Each entry is matched by its RaceHub `entry_id` and applied only if its `entry_version` is higher than the one already imported, so a replay is safe. A withdrawn entry is marked `WITHDRAWN`, never deleted, and keeps its race history. Each entry's driver becomes a competitor, matched by RaceHub driver ID.
 
-**200 OK** (or **422** for a real import blocked by unmapped classes or invalid rows, with nothing saved):
+**200 OK** (or **422** for a real import blocked by classes with no club link or invalid rows, with nothing saved):
 ```json
 {
   "dryRun": true, "blocked": false, "applied": false,
@@ -399,9 +399,9 @@ Entry Export v1 is the format any booking system can produce to send its entries
 | `generated_at` | Optional ISO-8601 time the file was made |
 | `entries` | One object per entry, below |
 
-Each entry needs `entry_id`, `entry_version` (goes up each time the entry changes), `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` (the system's id for the driver) and `event_class_id` (its id for the class). The rest are optional: `race_day_status` (`NOT_ARRIVED` or `ARRIVED`), `rc_class_name` (matched to a racing class name), `rc_class_number`, `class_name`, `driver_display_name`, `brca_number`, `brca_source`, `home_club`, `age_category`, `grade`, `primary_transponder`, `secondary_transponder`, `club_car_requested` and `club_car_name`, and, from #699, `headshot_url`, `car_photo_url` (both `https` addresses) and `car_colours` (up to four `#rrggbb`); see [what RCTC expects from RaceHub](racehub-expectations.md). Any other field is ignored, so contact, date of birth or payment data sent by mistake is never stored.
+Each entry needs `entry_id`, `entry_version` (goes up each time the entry changes), `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` (the system's id for the driver) and `club_class_id` (the club-level id of the class, stable across meetings: RCTC links it to one of its racing classes once, and never matches a class by name; `event_class_id` is no longer read). The rest are optional: `race_day_status` (`NOT_ARRIVED` or `ARRIVED`), `rc_class_name`, `class_name`, `driver_display_name`, `brca_number`, `brca_source`, `home_club`, `age_category`, `grade`, `primary_transponder`, `secondary_transponder`, `club_car_requested` and `club_car_name`, and, from #699, `headshot_url`, `car_photo_url` (both `https` addresses) and `car_colours` (up to four `#rrggbb`); see [what RCTC expects from RaceHub](racehub-expectations.md). Any other field is ignored, so contact, date of birth or payment data sent by mistake is never stored.
 
-Entries, drivers and class mappings are kept per `source`, so another system's ids never meet RaceHub's: a file with `"source": "OTHER"` and the same ids as a RaceHub file makes its own entries and competitors. Only a RaceHub file links the event to a RaceHub event, so results go back to RaceHub only for RaceHub entries. In Results Export v1, an entry from any other source is sent like a walk-in, by its RCTC ids.
+Entries, drivers and class links are kept per `source`, so another system's ids never meet RaceHub's: a file with `"source": "OTHER"` and the same ids as a RaceHub file makes its own entries and competitors. Only a RaceHub file links the event to a RaceHub event, so results go back to RaceHub only for RaceHub entries. In Results Export v1, an entry from any other source is sent like a walk-in, by its RCTC ids.
 
 ### Pictures named by an import (#699)
 
@@ -416,16 +416,16 @@ Content-Type: application/json
 
 Requires `ADMIN`; at most 1000 links (400 above that), 404 for an unknown event. It answers **200** with `{ "stored": 1, "skipped": 0, "failed": 0, "items": [ { "kind", "competitorId", "entryId", "status": "STORED", "message": null, "storedUrl": "/storage/photos/….png" } ] }`, one item per link in order, so one bad address never stops the rest. Each link is fetched by the server (`https` only, public hosts only, no redirects, 20 seconds, PNG or JPEG by content up to 2 MB and 25 million pixels) and stored as an upload is. A link is `SKIPPED` when the driver's name is not shown in full or a picture is already held and `replaceExisting` is false, and `FAILED` when the target is not in the event, the address is unusable or the fetch or image check fails (`message` is fixed text saying why; the address is not echoed). Each stored picture writes an audit row (`DRIVER_HEADSHOT_IMPORTED` or `ENTRY_CAR_PHOTO_IMPORTED`) naming the competitor or entry by id.
 
-### Class mappings
+### Per-meeting class mappings (RC-Timing CSV import only)
 
 ```http
 GET /admin/events/{eventId}/racehub-class-mappings
 PUT /admin/events/{eventId}/racehub-class-mappings
 
-[ { "racehubEventClassId": "c1a2…", "eventClassId": 11 } ]
+[ { "racehubEventClassId": "CSV:2wd buggy", "eventClassId": 11 } ]
 ```
 
-Requires `ADMIN`. Each RaceHub class is matched to the event class whose racing class name equals its `rc_class_name`, ignoring case. These mappings set the match for classes whose names differ. `PUT` replaces the event's mappings.
+Requires `ADMIN`. The RC-Timing CSV import places a class by this event's mapping, keyed `CSV:` and the file's class name in lower case (or `CSV:#` and a Class Number), then by racing class name ignoring case. `PUT` replaces the event's mappings. The RaceHub import and the entry feed do not use them: they resolve classes through the club-wide links below. (The field is still called `racehubEventClassId` for compatibility; it holds the CSV key.)
 
 ### Making the event for a file
 
@@ -435,19 +435,32 @@ POST /admin/racehub/meeting
 
 The body is an Entry Export. Requires `ADMIN`. Answers `{ "eventId": 12, "name": "Club Round 3", "created": true }`. A RaceHub file is matched to an event by the file's RaceHub event id and linked to it (the same match the Find RaceHub events picker uses); when none exists, a DRAFT event is created from the file's `event.name` and `event.event_local_date`. A file from another booking system makes an event that is not linked to RaceHub. Nothing is imported: the Events page then opens the event with the file ready to preview. 400 for a file that is not schema version 1, has no `event`, or gives no usable date. Audited.
 
-### Club-wide class links
+### The club's RaceHub classes
+
+```http
+GET  /admin/racehub/classes
+POST /admin/racehub/class-links
+
+[ { "clubClassId": "12", "racingClassId": 7 },
+  { "clubClassId": "13", "createName": "2WD Stock" } ]
+```
+
+Requires `ADMIN`. `GET` asks RaceHub for the club's classes (`GET /api/rctc/v1/classes`, with the club's key, at the saved events address with `events` swapped for `classes`) and answers `{ "classes": [ { "id", "name", "rcClassName", "active", "linkedRacingClassId", "suggestedRacingClassId" } ], "error": null }`. RaceHub's list is read as either a bare array or an object holding it under `classes`. Inactive classes are included, so they can still be linked: old meetings refer to them. A RaceHub that cannot be reached is still **200** with `error` set and no classes, so the "RaceHub classes" screen can say why; asking again re-fetches. For a class with no link, `suggestedRacingClassId` is the one racing class with the same name as its `rc_class_name` (or `name`), offered only as a choice for an official to confirm.
+
+`POST` links classes for the whole club, with no event involved. Each item gives either an existing `racingClassId` or a `createName` for a new racing class, never both (400); a class linked again moves to the racing class now given. Answers **200** with one `{ classKey, racingClassId, eventClassId: null, racingClassCreated }` per item; audited as `RACEHUB_CLASS_LINKED`. Deleting a racing class removes its links.
+
+### Classes an import was held on
 
 ```http
 POST /admin/events/{eventId}/racehub-class-links
 
-[ { "racehubEventClassId": "c1a2…", "racingClassId": 7 },
-  { "racehubEventClassId": "d3b4…", "createName": "2WD Stock", "templateId": 3 } ]
+[ { "classKey": "12", "racingClassId": 7 },
+  { "classKey": "13", "createName": "2WD Stock", "templateId": 3 } ]
 ```
 
-Requires `ADMIN`. Settles classes an import could not place. Each item gives either an existing `racingClassId` or a `createName` for a new racing class, never both (400). RCTC links the file's class to that racing class **for the whole club**, puts the racing class in the event if it is not there (with the format template it was last entered with, or `templateId`; 400 if it has never been entered and none is given), and maps it for this event. Later imports, in any event, find the class through the link: the lookup order is the event's own mapping, then the club link to a racing class that is in the event once, then the racing class name. Deleting a racing class removes its links. Answers **200** with one `{ racehubEventClassId, racingClassId, eventClassId, racingClassCreated }` per item; audited as `RACEHUB_CLASS_LINKED`. An import's `unmappedClasses` entries carry `suggestedRacingClassId`: the racing class the club linked the class to earlier, when it is not in this event yet, so the screen can offer to add it.
+Requires `ADMIN`. A RaceHub file, or a feed revision, whose `club_class_id` has no link is **held**: nothing is saved and the entry is never dropped or placed by name. Its `unmappedClasses` lists each such class as `{ classKey, rcClassName, className, entryCount, suggestedRacingClassId }`, where `classKey` is the club class id (for another source, `<SOURCE>:<club class id>`). The same is true of a linked class whose racing class is not in this event once. This call links each `classKey` as above and also puts the racing class in the event (with the format template it was last entered with, or `templateId`; 400 if it has never been entered and none is given). `suggestedRacingClassId` is the racing class the club already linked the class to, when it is not in this event yet. If the club added a class in RaceHub since the links were made, `GET /admin/racehub/classes` fetches the list again.
 
-The RC-Timing CSV import uses the same mappings, keyed `CSV:` and the file's class name in lower case (or `CSV:#` and a Class Number), as its `unmappedClasses` list shows. A file from another source is keyed by that source, a colon and its `event_class_id`, such as `OTHER:c1a2…`.
-
+A file from another source is keyed by that source, a colon and its `club_class_id`, such as `OTHER:c1a2…`.
 
 ### Pull from a URL (entry feed)
 

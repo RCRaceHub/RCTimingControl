@@ -152,9 +152,9 @@ public class Entries extends TableImpl<EntriesRecord> {
     public final TableField<EntriesRecord, String> RACEHUB_ARRIVAL = createField(DSL.name("racehub_arrival"), SQLDataType.VARCHAR(20), this, "");
 
     /**
-     * The column <code>entries.racehub_event_class_id</code>.
+     * The column <code>entries.racehub_club_class_id</code>.
      */
-    public final TableField<EntriesRecord, String> RACEHUB_EVENT_CLASS_ID = createField(DSL.name("racehub_event_class_id"), SQLDataType.VARCHAR(100), this, "");
+    public final TableField<EntriesRecord, String> RACEHUB_CLUB_CLASS_ID = createField(DSL.name("racehub_club_class_id"), SQLDataType.VARCHAR(100), this, "");
 
     /**
      * The column <code>entries.imported_transponder_number</code>.

@@ -98,6 +98,24 @@ class EntryExportV1SchemaTest {
     }
 
     @Test
+    void rejectsAnEntryWithoutItsClubClassId() throws IOException {
+        ObjectNode document = fixture("entries-v1-initial.json");
+        ((ObjectNode) document.at("/entries/0")).remove("club_class_id");
+
+        assertThat(validate(document)).isNotEmpty();
+    }
+
+    @Test
+    void rejectsAFileThatOnlyHasThePerMeetingEventClassId() throws IOException {
+        ObjectNode document = fixture("entries-v1-initial.json");
+        ObjectNode entry = (ObjectNode) document.at("/entries/0");
+        entry.put("event_class_id", entry.get("club_class_id").asString());
+        entry.remove("club_class_id");
+
+        assertThat(validate(document)).isNotEmpty();
+    }
+
+    @Test
     void rejectsAnotherSchemaVersion() throws IOException {
         ObjectNode document = fixture("entries-v1-initial.json");
         document.put("schema_version", 2);

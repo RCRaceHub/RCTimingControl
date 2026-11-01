@@ -291,17 +291,40 @@ sequenceDiagram
     O->>C: POST racehub-import?dryRun=true (Entry Export v1 file)
     C->>I: importEntries(actor, eventId, export, dryRun = true)
     I->>I: check schema_version = 1 and revision
-    I->>DB: read class mappings, existing entries and competitors
-    I-->>O: RaceHubImportResult (new, changed, withdrawn, unmapped classes, warnings, errors)
+    I->>DB: read club class links, existing entries and competitors
+    I-->>O: RaceHubImportResult (new, changed, withdrawn, classes with no club link, warnings, errors)
     O->>C: same POST with dryRun=false (apply)
     C->>I: importEntries(actor, eventId, export, false)
-    alt errors or unmapped classes
+    alt errors or classes with no club link
         I-->>O: nothing is applied
     else clean
         I->>DB: upsert competitors and entries by entry_id<br/>(higher entry_version wins, withdraw never delete)
         I->>DB: audit rows
         I-->>O: result
     end
+```
+
+### Linking the club's RaceHub classes
+
+```mermaid
+sequenceDiagram
+    participant O as Official (browser)
+    participant K as RaceHubClassesController
+    participant S as RaceHubClassesService
+    participant R as RaceHub (GET /api/rctc/v1/classes)
+    participant L as RaceHubClassLinkService
+    participant DB as SQLite
+
+    O->>K: GET /admin/racehub/classes
+    K->>S: list() (no transaction open)
+    S->>R: fetch with the club's key
+    R-->>S: the club's classes, inactive included
+    S->>DB: read club links and racing classes
+    S-->>O: classes with linked and suggested racing class (or error)
+    O->>K: POST /admin/racehub/class-links
+    K->>L: link(actor, resolutions)
+    L->>DB: racehub_class_links keyed by club_class_id, audit RACEHUB_CLASS_LINKED
+    Note over O,DB: An import with a club_class_id that has no link is held,<br/>and fetching the list again offers the new class to link
 ```
 
 Entries are never created for a racer login: competitors have no account.

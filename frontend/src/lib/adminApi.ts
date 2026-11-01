@@ -205,8 +205,10 @@ export interface RaceHubImportResult {
     stale: number;
     skipped: number;
   };
+  /** Classes whose club class id the club has not linked (or whose racing class is not in the event) */
   unmappedClasses: {
-    racehubEventClassId: string;
+    /** The club class id; for another system, `<SOURCE>:<club class id>` */
+    classKey: string;
     rcClassName: string | null;
     className: string | null;
     entryCount: number;
@@ -324,19 +326,47 @@ export interface SaveEntryFeedRequest {
 
 /** One class to settle: an existing racing class or the name of a new one, and the format if it has not run before. */
 export interface ResolveRaceHubClassRequest {
-  racehubEventClassId: string;
+  classKey: string;
   racingClassId?: number;
   createName?: string;
   templateId?: number;
 }
 
 export interface ResolvedRaceHubClassDto {
-  racehubEventClassId: string;
+  classKey: string;
   racingClassId: number;
-  eventClassId: number;
+  /** Null when the class was only linked, not put in an event */
+  eventClassId: number | null;
   racingClassCreated: boolean;
 }
 
+/** One class of the club's as RaceHub lists it, with the racing class it is linked to. */
+export interface RaceHubClassDto {
+  /** The club class id, the same value an Entry Export carries as club_class_id */
+  id: string;
+  name: string | null;
+  rcClassName: string | null;
+  /** False once the club stops offering it; old meetings still use it */
+  active: boolean;
+  linkedRacingClassId: number | null;
+  /** The one racing class with the same name, offered for an unlinked class */
+  suggestedRacingClassId: number | null;
+}
+
+export interface RaceHubClassesDto {
+  classes: RaceHubClassDto[];
+  /** Why RaceHub could not be asked, or null */
+  error: string | null;
+}
+
+/** One club class to link for the whole club: an existing racing class or the name of a new one. */
+export interface LinkRaceHubClassRequest {
+  clubClassId: string;
+  racingClassId?: number;
+  createName?: string;
+}
+
+/** A per-meeting mapping, used by the RC-Timing CSV import only. */
 export interface RaceHubClassMappingDto {
   racehubEventClassId: string;
   eventClassId: number;
@@ -910,7 +940,7 @@ export const adminApi = {
       .get<RaceHubClassMappingDto[]>(`/api/v1/admin/events/${eventId}/racehub-class-mappings`)
       .then(r => r.data),
 
-  /** Links classes club-wide, adds them to the event with their last format, and maps them for the event. */
+  /** Links classes club-wide and adds them to the event with their last format. */
   resolveRaceHubClasses: (eventId: number, requests: ResolveRaceHubClassRequest[]) =>
     api
       .post<ResolvedRaceHubClassDto[]>(`/api/v1/admin/events/${eventId}/racehub-class-links`, requests)
@@ -1243,6 +1273,14 @@ export const adminApi = {
       api
         .post<{ id: number }>(`/api/v1/admin/racehub/events/${encodeURIComponent(raceHubEventId)}/take`)
         .then(r => r.data),
+  },
+
+  // The club's classes as RaceHub lists them, and the club-wide links to racing classes
+  raceHubClasses: {
+    /** Asks RaceHub now, so calling it again re-fetches */
+    list: () => api.get<RaceHubClassesDto>('/api/v1/admin/racehub/classes').then(r => r.data),
+    link: (requests: LinkRaceHubClassRequest[]) =>
+      api.post<ResolvedRaceHubClassDto[]>('/api/v1/admin/racehub/class-links', requests).then(r => r.data),
   },
 
   // Results sent to RaceHub (#27)

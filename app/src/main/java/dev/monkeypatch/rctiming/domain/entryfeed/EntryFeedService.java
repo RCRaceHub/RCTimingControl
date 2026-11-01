@@ -33,7 +33,7 @@ import java.util.Optional;
  *
  * <p>"Fetch now" never imports by itself: it holds the file for an official, who previews and confirms it. The
  * automatic fetch imports a new revision when it applies cleanly, and holds it for an official when something
- * (an unmapped class, an invalid row) would block it. A revision already applied is a no-op.
+ * (a class with no club link, an invalid row) would block it. A revision already applied is a no-op.
  *
  * <p>The network call never runs inside a database transaction, and no failure is thrown to the caller: it is
  * recorded on the feed and shown on the event. Recording an outcome reads the feed again and saves it in one
@@ -339,7 +339,7 @@ public class EntryFeedService {
     private static String blockReason(RaceHubImportResult result) {
         if (!result.unmappedClasses().isEmpty()) {
             int count = result.unmappedClasses().size();
-            return count + (count == 1 ? " class needs" : " classes need") + " mapping";
+            return count + (count == 1 ? " class needs" : " classes need") + " linking";
         }
         return result.errors().isEmpty() ? "the import is blocked" : result.errors().get(0);
     }

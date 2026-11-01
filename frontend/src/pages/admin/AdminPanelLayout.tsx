@@ -22,6 +22,7 @@ import {
   Tv,
   MonitorPlay,
   Tag,
+  Link2,
   Timer,
   Cast,
 } from 'lucide-react';
@@ -69,6 +70,7 @@ const adminOnlyOperations: NavEntry[] = [
 const configGroup: NavEntry[] = [
   { to: '/admin/tracks', label: 'Tracks', Icon: MapPin, adminOnly: true },
   { to: '/admin/classes', label: 'Classes', Icon: Tag, adminOnly: true },
+  { to: '/admin/racehub-classes', label: 'RaceHub Classes', Icon: Link2, adminOnly: true },
   { to: '/admin/formats', label: 'Formats', Icon: Sliders, adminOnly: true },
   { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
