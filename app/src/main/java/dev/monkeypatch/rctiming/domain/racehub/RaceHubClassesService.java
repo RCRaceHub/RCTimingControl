@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.domain.racehub;
 
-import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.Names;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedClient;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
@@ -78,6 +78,9 @@ public class RaceHubClassesService {
             return new Listing(load(), null);
         } catch (StateConflictException e) {
             return new Listing(List.of(), e.getMessage());
+        } catch (IllegalArgumentException e) {
+            // The saved address failed the endpoint's rules; the message never echoes it, as it may hold credentials
+            return new Listing(List.of(), "The saved RaceHub events address cannot be used. Set it again.");
         }
     }
 

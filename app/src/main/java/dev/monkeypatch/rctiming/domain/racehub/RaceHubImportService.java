@@ -263,7 +263,7 @@ public class RaceHubImportService {
                 .map(EventClassRef::getId).collect(Collectors.toSet());
         mappings.forEach((racehubId, eventClassId) -> {
             if (racehubId == null || racehubId.isBlank()) {
-                throw new IllegalArgumentException("RaceHub event_class_id is required");
+                throw new IllegalArgumentException("A class key is required");
             }
             if (!eventClassIds.contains(eventClassId)) {
                 throw new IllegalArgumentException("Event class " + eventClassId + " is not in this event");

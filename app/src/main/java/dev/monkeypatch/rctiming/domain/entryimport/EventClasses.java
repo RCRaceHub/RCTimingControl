@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * An event's classes as the entry imports place rows in them: the class mappings an official set
- * up, the classes in order and by racing class name. Loaded once per import by
+ * An event's classes as the entry imports place rows in them: the CSV import's per-meeting mappings, the club's
+ * links from a RaceHub class id to a racing class, the classes in order and by racing class name. Loaded once per import by
  * {@link EntryImports}.
  */
 public final class EventClasses {

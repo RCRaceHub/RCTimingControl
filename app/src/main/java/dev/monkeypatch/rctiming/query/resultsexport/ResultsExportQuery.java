@@ -109,7 +109,7 @@ public class ResultsExportQuery {
                 .fetch();
 
         Map<Long, List<PenaltyRow>> penalties = penalties(eventId);
-        Map<Long, TreeSet<String>> racehubClassIds = clubClassIds(eventId);
+        Map<Long, TreeSet<String>> clubClassIds = clubClassIds(eventId);
         List<ResultsExportV1.Race> races = new ArrayList<>();
         for (Record r : rows) {
             long raceId = r.get(RACES.ID);
@@ -141,7 +141,7 @@ public class ResultsExportQuery {
             races.add(new ResultsExportV1.Race(
                     raceId,
                     r.get(RACES.EVENT_CLASS_ID),
-                    List.copyOf(racehubClassIds.getOrDefault(raceId, new TreeSet<>())),
+                    List.copyOf(clubClassIds.getOrDefault(raceId, new TreeSet<>())),
                     r.get(RACING_CLASSES.NAME),
                     r.get(ROUNDS.TYPE),
                     r.get(ROUNDS.ROUND_NUMBER),

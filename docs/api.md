@@ -458,6 +458,8 @@ POST /admin/events/{eventId}/racehub-class-links
   { "classKey": "13", "createName": "2WD Stock", "templateId": 3 } ]
 ```
 
+After upgrading from per-meeting class ids, entries already imported have no stored club class id until their event is imported again (a file, or the feed after a new revision); their results go back to RaceHub without `club_class_id` until then.
+
 Requires `ADMIN`. A RaceHub file, or a feed revision, whose `club_class_id` has no link is **held**: nothing is saved and the entry is never dropped or placed by name. Its `unmappedClasses` lists each such class as `{ classKey, rcClassName, className, entryCount, suggestedRacingClassId }`, where `classKey` is the club class id (for another source, `<SOURCE>:<club class id>`). The same is true of a linked class whose racing class is not in this event once. This call links each `classKey` as above and also puts the racing class in the event (with the format template it was last entered with, or `templateId`; 400 if it has never been entered and none is given). `suggestedRacingClassId` is the racing class the club already linked the class to, when it is not in this event yet. If the club added a class in RaceHub since the links were made, `GET /admin/racehub/classes` fetches the list again.
 
 A file from another source is keyed by that source, a colon and its `club_class_id`, such as `OTHER:c1a2…`.
