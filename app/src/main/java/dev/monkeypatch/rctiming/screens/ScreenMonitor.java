@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.screens;
 
 import dev.monkeypatch.rctiming.screens.viewer.ViewerClient;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerException;
+import dev.monkeypatch.rctiming.screens.viewer.ViewerInfo;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerStatus;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerTarget;
 import jakarta.annotation.PreDestroy;
@@ -39,6 +40,8 @@ public class ScreenMonitor {
     public static final int OFFLINE_AFTER_MISSES = 6;
     /** A screen clock further than this from ours is worth a warning, in seconds. */
     static final double SKEW_WARNING_SECONDS = 5;
+    /** How often a screen's {@code /info} is read again, to notice a token being switched on or off. */
+    static final java.time.Duration INFO_REFRESH = java.time.Duration.ofMinutes(10);
 
     private static final Logger log = LoggerFactory.getLogger(ScreenMonitor.class);
 
@@ -49,6 +52,9 @@ public class ScreenMonitor {
     private final Clock clock;
     private final ExecutorService pollers = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Reading> readings = new ConcurrentHashMap<>();
+    /** Whether each screen asks for a token, from its {@code /info}; read again every {@link #INFO_REFRESH}. */
+    private record AuthKnown(boolean required, Instant at) { }
+    private final Map<String, AuthKnown> auth = new ConcurrentHashMap<>();
 
     @Autowired
     public ScreenMonitor(ScreenRepository screens, ViewerClient client) {
@@ -67,6 +73,7 @@ public class ScreenMonitor {
         try {
             List<Screen> all = screens.findAllByName();
             readings.keySet().removeIf(id -> all.stream().noneMatch(s -> s.getScreenId().equals(id)));
+            auth.keySet().removeIf(id -> all.stream().noneMatch(s -> s.getScreenId().equals(id)));
             List<Callable<Void>> tasks = new ArrayList<>();
             for (Screen screen : all) {
                 tasks.add(() -> {
@@ -87,11 +94,28 @@ public class ScreenMonitor {
         try {
             ViewerStatus status = client.status(new ViewerTarget(screen.getHost(), screen.getPort(), null));
             record(screen, status);
+            refreshAuth(screen);
         } catch (ViewerException e) {
             miss(screen, e.getMessage());
         } catch (RuntimeException e) {
             log.debug("Unexpected failure polling screen {}", screen.getScreenId(), e);
             miss(screen, "Could not read the screen's status");
+        }
+    }
+
+    /** Reads {@code /info} when it is due, to learn whether the screen asks for a token; a failure keeps the old answer. */
+    private void refreshAuth(Screen screen) {
+        AuthKnown known = auth.get(screen.getScreenId());
+        if (known != null && known.at().plus(INFO_REFRESH).isAfter(clock.instant())) {
+            return;
+        }
+        try {
+            ViewerInfo info = client.info(new ViewerTarget(screen.getHost(), screen.getPort(), null));
+            if (info != null) {
+                auth.put(screen.getScreenId(), new AuthKnown(info.authRequired(), clock.instant()));
+            }
+        } catch (ViewerException e) {
+            log.debug("Could not read the info of screen {}: {}", screen.getScreenId(), e.getMessage());
         }
     }
 
@@ -127,8 +151,28 @@ public class ScreenMonitor {
                 : r.misses() < OFFLINE_AFTER_MISSES ? ScreenState.Connection.UNREACHABLE : ScreenState.Connection.OFFLINE;
         ViewerStatus status = r.status();
         boolean online = connection == ScreenState.Connection.ONLINE;
+        List<String> warnings = warnings(screen, status, online ? r.skew() : null, connection);
+        String authWarning = online ? authWarning(screen) : null;
+        if (authWarning != null) {
+            warnings.add(authWarning);
+        }
         return new ScreenState(connection, status, r.statusAt(), r.error(), online ? r.skew() : null,
-                online && drifted(screen, status), warnings(screen, status, online ? r.skew() : null, connection));
+                online && drifted(screen, status), warnings);
+    }
+
+    /**
+     * Anyone on the network can change a screen that asks for no token, and a screen that asks for one cannot be
+     * changed from here until RCTC holds it. Null when the screen's info has not been read yet or all is well.
+     */
+    private String authWarning(Screen screen) {
+        AuthKnown known = auth.get(screen.getScreenId());
+        if (known == null) {
+            return null;
+        }
+        if (!known.required()) {
+            return "This screen accepts changes from anyone on the network. Set an api_token on it and save the same token here";
+        }
+        return screen.getApiToken() == null ? "This screen needs a token. Set it here with Set token" : null;
     }
 
     /** True when the screen has been pushed to and what it holds now differs in revision or source. */

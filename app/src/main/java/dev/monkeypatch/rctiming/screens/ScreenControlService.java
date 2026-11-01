@@ -36,9 +36,12 @@ public class ScreenControlService {
     private final ScreenService screens;
     private final ViewerClient client;
     private final ScreenMonitor monitor;
+    private final ScreenPagePolicy pagePolicy;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
 
-    public ScreenControlService(ScreenService screens, ViewerClient client, ScreenMonitor monitor) {
+    public ScreenControlService(ScreenService screens, ViewerClient client, ScreenMonitor monitor,
+                                ScreenPagePolicy pagePolicy) {
+        this.pagePolicy = pagePolicy;
         this.screens = screens;
         this.client = client;
         this.monitor = monitor;
@@ -110,6 +113,7 @@ public class ScreenControlService {
         if (items.isEmpty()) {
             throw new IllegalArgumentException("The playlist has no pages");
         }
+        pagePolicy.checkItems(items);
         ViewerPlaylist.Body body = new ViewerPlaylist.Body(
                 items.stream().map(i -> new ViewerPlaylist.Item(i.url(), i.duration(), i.label(), i.id())).toList(),
                 playlist.getDefaultDuration(), 0, "rctc:playlist-" + playlist.getId());
@@ -163,6 +167,7 @@ public class ScreenControlService {
      */
     public List<ScreenActionResult> show(Actor actor, List<Long> screenIds, String url, Integer duration, String label) {
         String cleanUrl = ScreenRules.checkWebUrl(url, "The page");
+        pagePolicy.check(cleanUrl, "The page");
         Integer cleanDuration = ScreenRules.checkShowDuration(duration);
         List<ScreenActionResult> results = onEach(screens.screens(screenIds), screen ->
                 monitor.record(screen, client.show(target(screen), cleanUrl, cleanDuration, label)));

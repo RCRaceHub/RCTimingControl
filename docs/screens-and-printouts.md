@@ -116,7 +116,7 @@ If the club has EventScreenDisplay screens (Raspberry Pis behind TVs, each showi
 
 **Controls.** Tick screens, then use **Previous**, **Next**, **Go to page**, **Pause**, **Resume** and **Reload** on all of them together. **Show a page** puts an address up on them for a number of seconds, or until you press **Clear page**, and they then go back to their playlists: for example the results board for a minute after a final. If a screen cannot be reached, or refuses, you are told which one and why, and the others still get the command.
 
-**Tokens.** A screen can be set up to ask for a token before it accepts changes. If a push says a screen needs a token, tick it and press **Set token**. The token is kept encrypted on the laptop and is never shown again; one token can be set on several screens at once.
+**Tokens and keeping the screens safe.** A screen with no token accepts changes from anyone on the network, and the Screens page warns you when it sees one (and when a screen needs a token RCTC does not hold). To secure a screen, set an `api_token` in its own config, then tick it here and press **Set token** with the same value. **Generate** makes a random token and shows it once so you can copy it to the screens; RCTC cannot change a screen's own token. The token is kept encrypted on the laptop and never shown again, and one token can be set on several screens at once. Screens may only be given pages on this server's own addresses; to allow another host (a club website, say) add it to `rctiming.screens.allowed-hosts`. For more protection put the screens on their own network that reaches only the laptop.
 
 ## The streaming overlay for OBS
 

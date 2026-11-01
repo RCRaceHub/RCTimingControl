@@ -183,6 +183,17 @@ class ScreenManagerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aPageOnAnotherHostIsRefusedInAPlaylistAndAsATemporaryPage() {
+        Long a = ((Number) add(open, null).get("id")).longValue();
+        Map<String, Object> body = Map.of("name", "it-away-" + suffix, "defaultDuration", 30,
+                "items", List.of(Map.of("url", "http://evil.example/boards/results")));
+
+        assertThat(send(HttpMethod.POST, PLAYLISTS, body, directorToken).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(send(HttpMethod.POST, SCREENS + "/show", Map.of("screenIds", List.of(a), "url", "http://evil.example/x"),
+                directorToken).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void aTemporaryPageMustBeAFullAddress() {
         Long a = ((Number) add(open, null).get("id")).longValue();
 

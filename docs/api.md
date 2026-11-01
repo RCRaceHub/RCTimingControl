@@ -869,7 +869,7 @@ The screen manager (#708): EventScreenDisplay viewers on the venue network. Read
 
 `GET /admin/screens/board-pages` answers `{ "baseUrls": ["http://192.168.1.5:8080/"], "pages": [{ "label", "path" }] }`: the app's own boards and saved board views, and the addresses the screens can reach the server at (never `localhost`).
 
-`GET`, `POST /admin/screen-playlists` and `PUT`, `DELETE /admin/screen-playlists/{id}` keep saved playlists `{ "id", "name", "defaultDuration", "items": [{ "url", "duration", "label", "id" }] }`. Each item needs an absolute http(s) `url`; `duration` is whole seconds from 5 (blank for the playlist default); a playlist holds 1 to 100 pages. **400** for a bad field, **409** for a name already used. Changing a playlist does not touch the screens.
+`GET`, `POST /admin/screen-playlists` and `PUT`, `DELETE /admin/screen-playlists/{id}` keep saved playlists `{ "id", "name", "defaultDuration", "items": [{ "url", "duration", "label", "id" }] }`. Each item needs an absolute http(s) `url`; `duration` is whole seconds from 5 (blank for the playlist default); a playlist holds 1 to 100 pages. Unless `rctiming.screens.restrict-pages` is off, every page (in a playlist, a push or a temporary page) must be on one of this server's venue-network hosts or in `rctiming.screens.allowed-hosts`, else **400**. **400** for a bad field, **409** for a name already used. Changing a playlist does not touch the screens.
 
 The commands below take screen ids and answer **200** with one result per screen, `[{ "id", "screenId", "name", "ok", "error" }]`: a screen that refuses or cannot be reached does not stop the rest, and a 401 from a screen says it needs a token.
 

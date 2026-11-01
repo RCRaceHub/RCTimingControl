@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.screens;
 import dev.monkeypatch.rctiming.screens.ScreenState.Connection;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerClient;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerException;
+import dev.monkeypatch.rctiming.screens.viewer.ViewerInfo;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,5 +137,21 @@ class ScreenMonitorTest {
                 .anyMatch(w -> w.contains("browser is not running"))
                 .anyMatch(w -> w.contains("restarted 3 time"))
                 .anyMatch(w -> w.contains("ahead of"));
+    }
+
+    @Test
+    void aScreenThatAsksForNoTokenIsWarnedAboutAndOneThatNeedsATokenWeLackIsToo() {
+        when(client.status(any())).thenReturn(status(1, "", true, true, 0, now()));
+        when(client.info(any())).thenReturn(new ViewerInfo("screen-01", "Pit", "pit", "0.1", "1", "cog", false, null));
+        monitor.poll(screen);
+        assertThat(monitor.stateOf(screen).warnings()).singleElement().asString().contains("accepts changes from anyone");
+
+        screen.setScreenId("screen-02");
+        when(client.info(any())).thenReturn(new ViewerInfo("screen-02", "Bar", "bar", "0.1", "1", "cog", true, null));
+        monitor.poll(screen);
+        assertThat(monitor.stateOf(screen).warnings()).singleElement().asString().contains("needs a token");
+
+        screen.setApiToken("encrypted");
+        assertThat(monitor.stateOf(screen).warnings()).isEmpty();
     }
 }
