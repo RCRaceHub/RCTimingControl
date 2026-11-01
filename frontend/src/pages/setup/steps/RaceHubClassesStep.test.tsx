@@ -12,6 +12,7 @@ vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     listRacingClasses: vi.fn(),
     raceHubClasses: { list: vi.fn(), link: vi.fn() },
+    raceHubEvents: { setAddress: vi.fn() },
   },
 }));
 
@@ -45,7 +46,7 @@ beforeEach(() => {
       { id: '1', name: '2WD Buggy', rcClassName: '2WD Buggy', active: true, linkedRacingClassId: null, suggestedRacingClassId: null },
       { id: '2', name: '4WD Buggy', rcClassName: '4WD Buggy', active: true, linkedRacingClassId: null, suggestedRacingClassId: null },
     ],
-    error: null,
+    error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
   });
   api.raceHubClasses.link.mockResolvedValue([]);
 });

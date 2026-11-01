@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /** The "RaceHub classes" screen's source: RaceHub's class list, beside the links the club has made. */
@@ -64,10 +65,22 @@ class RaceHubClassesServiceTest {
     }
 
     @Test
+    void saysWhichSettingIsMissingWithoutAskingRaceHub() {
+        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.empty());
+
+        RaceHubClassesService.Listing listing = service(null).list();
+
+        assertThat(listing.eventsUrl()).isNull();
+        assertThat(listing.tokenSet()).isFalse();
+        assertThat(listing.error()).isNotBlank();
+        verifyNoInteractions(client);
+    }
+
+    @Test
     void asksForTheClassListBesideTheEventsAddressWithTheClubKey() {
         when(client.fetch(CLASSES_URL, "key")).thenReturn(new EntryFeedClient.Fetched("[]"));
 
-        assertThat(service("key").list()).isEqualTo(new RaceHubClassesService.Listing(List.of(), null));
+        assertThat(service("key").list()).isEqualTo(new RaceHubClassesService.Listing(List.of(), null, EVENTS_URL, true));
         verify(client).fetch(CLASSES_URL, "key");
     }
 

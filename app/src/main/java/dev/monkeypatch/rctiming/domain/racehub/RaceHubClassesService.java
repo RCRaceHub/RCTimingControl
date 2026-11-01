@@ -65,8 +65,12 @@ public class RaceHubClassesService {
                             Long linkedRacingClassId, Long suggestedRacingClassId) {
     }
 
-    /** What asking RaceHub produced: the classes, or {@code error} saying why not (then {@code classes} is empty). */
-    public record Listing(List<ClubClass> classes, String error) {
+    /**
+     * What asking RaceHub produced: the classes, or {@code error} saying why not (then {@code classes} is empty).
+     * {@code eventsUrl} (the saved events address, null when none) and {@code tokenSet} (whether the club's key is in
+     * the settings file; the key itself is never sent) let the screen and the setup wizard say what is missing.
+     */
+    public record Listing(List<ClubClass> classes, String error, String eventsUrl, boolean tokenSet) {
     }
 
     /**
@@ -74,13 +78,16 @@ public class RaceHubClassesService {
      * the key comes back as {@code error}, not an exception, so the screen can show why and offer a retry.
      */
     public Listing list() {
+        String url = clubProfileService.getRaceHubEventsUrl().orElse(null);
+        boolean tokenSet = endpoint.token() != null;
         try {
-            return new Listing(load(), null);
+            return new Listing(load(), null, url, tokenSet);
         } catch (StateConflictException e) {
-            return new Listing(List.of(), e.getMessage());
+            return new Listing(List.of(), e.getMessage(), url, tokenSet);
         } catch (IllegalArgumentException e) {
             // The saved address failed the endpoint's rules; the message never echoes it, as it may hold credentials
-            return new Listing(List.of(), "The saved RaceHub events address cannot be used. Set it again.");
+            return new Listing(List.of(), "The saved RaceHub events address cannot be used. Set it again.",
+                    url, tokenSet);
         }
     }
 

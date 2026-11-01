@@ -357,6 +357,10 @@ export interface RaceHubClassesDto {
   classes: RaceHubClassDto[];
   /** Why RaceHub could not be asked, or null */
   error: string | null;
+  /** The saved RaceHub events address, or null */
+  eventsUrl: string | null;
+  /** Whether the club's key is set in the settings file; the key itself is never sent */
+  tokenSet: boolean;
 }
 
 /** One club class to link for the whole club: an existing racing class or the name of a new one. */

@@ -19,7 +19,11 @@ export function useSetRaceHubEventsAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (eventsUrl: string) => adminApi.raceHubEvents.setAddress(eventsUrl),
-    onSuccess: data => qc.setQueryData(adminQueryKeys.racehub.events(), data),
+    onSuccess: data => {
+      qc.setQueryData(adminQueryKeys.racehub.events(), data);
+      // The class list is fetched from beside the same address
+      qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.classes() });
+    },
   });
 }
 
