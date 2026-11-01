@@ -28,6 +28,11 @@ export const adminQueryKeys = {
   boardViews: {
     all: () => ['admin', 'board-views'] as const,
   },
+  screens: {
+    all: () => ['admin', 'screens'] as const,
+    playlists: () => ['admin', 'screens', 'playlists'] as const,
+    boardPages: () => ['admin', 'screens', 'board-pages'] as const,
+  },
   tracks: {
     all: () => ['admin', 'tracks'] as const,
   },

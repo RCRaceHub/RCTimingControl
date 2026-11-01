@@ -29,9 +29,11 @@ flowchart LR
         tlsfiles[(tls folder<br/>ca.p12, server.p12)]
         cs[domain.club.ClubSettingsService<br/>settings file export and import]
         props[infrastructure.settings.SettingsFile<br/>application.properties]
+        scr[screens.*<br/>screen manager: ScreenMonitor,<br/>ScreenControlService, ScreenDiscovery]
         db[(SQLite file<br/>WAL, one writer + read pool)]
     end
 
+    pis[EventScreenDisplay screens<br/>Raspberry Pis, viewer API v1]
     rh[RaceHub<br/>cloud]
     relay[Live feed relay<br/>remote viewers]
 
@@ -53,6 +55,9 @@ flowchart LR
     rh -.->|Entry Export v1 file, imported by an official| api
     lf -->|Live Feed v1, WebSocket| relay
     bk --> db
+    api --> scr --> db
+    scr -->|HTTP polls and commands, mDNS discovery| pis
+    pis -.->|open board pages| br
     br -->|HTTPS, optional| tls
     tls --> tlsfiles
     api --> cs --> dom
@@ -65,4 +70,5 @@ flowchart LR
 - **Write side and read side.** Entities and their `@Repository` classes (`domain.*`) change data; `query.*` builds views in SQL. Both go through jOOQ. See [architecture](../architecture.md#cqrs-lite-split).
 - **The timing thread.** The decoder thread only hands passings to `timingExecutor`; they are handled one at a time, in decoder order, and passings are applied only on that thread. Marshal laps, penalties and transponder links come from request threads, and `LiveRaceState`'s locking serialises them with the passings. Live positions are never written to the database during a race.
 - **HTTPS.** When `rctiming.https.enabled` is on, `HttpsConnectorCustomizer` adds a second Tomcat connector beside HTTP. `TlsService` keeps a club certificate authority and a server certificate in the data folder's `tls` folder, re-issues the server certificate when the laptop gains a name or it nears expiry (checked every ten minutes), and tells the connector to reload. Only the authority's certificate is served, at `/api/v1/about/ca.crt`.
+- **Screen manager.** `ScreenMonitor` polls every known screen's `/status` on virtual threads every five seconds and keeps the readings in memory; `ScreenControlService` sends pushes and controls outside any database transaction and records the outcome through `ScreenService`; `ScreenDiscovery` browses `_eventscreen._tcp` on each venue interface. Screens are keyed by the id they report, and the pages they are told to open use the server's venue-network addresses, never `localhost`.
 - **Events.** `RaceStatusChangedEvent` is how the state machine tells audio, the race clock, the live feed, results export and practice that a race moved, without depending on them.

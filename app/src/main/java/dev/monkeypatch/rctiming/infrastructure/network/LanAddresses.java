@@ -178,7 +178,7 @@ public class LanAddresses {
      * The addresses the mDNS name should resolve to: the {@code server.address} when one is set (nothing listens on
      * the others), otherwise the IPv4 address of each real network interface.
      */
-    List<String> announceAddresses() {
+    public List<String> announceAddresses() {
         return !bindAddress.isEmpty() && !isWildcard(bindAddress) ? List.of(bindAddress) : interfaceAddresses();
     }
 

@@ -7,6 +7,8 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -91,6 +93,16 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>board_views</code>.
      */
     public final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
+
+    /**
+     * The table <code>display_playlists</code>.
+     */
+    public final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
+
+    /**
+     * The table <code>display_screens</code>.
+     */
+    public final DisplayScreens DISPLAY_SCREENS = DisplayScreens.DISPLAY_SCREENS;
 
     /**
      * The table <code>championship_classes</code>.
@@ -346,6 +358,8 @@ public class DefaultSchema extends SchemaImpl {
             AudioTemplates.AUDIO_TEMPLATES,
             AuditLog.AUDIT_LOG,
             BoardViews.BOARD_VIEWS,
+            DisplayPlaylists.DISPLAY_PLAYLISTS,
+            DisplayScreens.DISPLAY_SCREENS,
             ChampionshipClasses.CHAMPIONSHIP_CLASSES,
             ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS,
             ChampionshipExclusions.CHAMPIONSHIP_EXCLUSIONS,

@@ -23,6 +23,7 @@ import {
   MonitorPlay,
   Tag,
   Timer,
+  Cast,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,6 +74,7 @@ const configGroup: NavEntry[] = [
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
   { to: '/admin/board-views', label: 'Board Views', Icon: Tv, runEventOnly: true },
+  { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
   { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },
 ];
 
