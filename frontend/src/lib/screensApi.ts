@@ -49,7 +49,18 @@ export type Screen = {
   live: ScreenLive | null;
 };
 
-export type ScreenList = { discoveryEnabled: boolean; screens: Screen[] };
+/** A screen heard on the network that has not been added yet. */
+export type FoundScreen = {
+  screenId: string;
+  name: string;
+  host: string;
+  port: number;
+  agentVersion: string | null;
+  authRequired: boolean;
+  seenAt: string;
+};
+
+export type ScreenList = { discoveryEnabled: boolean; screens: Screen[]; found: FoundScreen[] };
 
 /** How one screen took a command sent to a group. */
 export type ScreenActionResult = { id: number; screenId: string; name: string; ok: boolean; error: string | null };

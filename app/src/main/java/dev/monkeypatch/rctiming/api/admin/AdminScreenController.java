@@ -59,10 +59,11 @@ public class AdminScreenController {
         this.boardPages = boardPages;
     }
 
-    /** Every known screen with its live state; polled by the page every few seconds. {@code GET}; read only. */
+    /** Every known screen with its live state, and the screens found but not added; polled by the page every few seconds. {@code GET}; read only. */
     @GetMapping
     public ScreensDto list() {
-        return new ScreensDto(discovery.enabled(), control.overview().stream().map(ScreenDto::from).toList());
+        return new ScreensDto(discovery.enabled(), control.overview().stream().map(ScreenDto::from).toList(),
+                control.pending().stream().map(ScreensDto.Found::from).toList());
     }
 
     /** The app's own pages to put on a screen, under the addresses the screens can reach. {@code GET /board-pages}. */

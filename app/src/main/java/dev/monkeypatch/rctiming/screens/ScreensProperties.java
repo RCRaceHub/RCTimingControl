@@ -14,9 +14,12 @@ import java.util.List;
  *                      and {@code allowedHosts}, so a mistyped or hostile address cannot be pushed to the TVs
  * @param allowedHosts  further host names or IP addresses pages may be on, such as a club website; comma-separated in
  *                      a property or environment variable
+ * @param autoAdd       whether a screen found by mDNS is added by itself. Off by default: a found screen waits under
+ *                      "Found, not added" until an official adds it, because anyone on the network can advertise one
  */
 @ConfigurationProperties(prefix = "rctiming.screens")
 public record ScreensProperties(@DefaultValue("true") boolean discovery,
                                 @DefaultValue("true") boolean restrictPages,
-                                @DefaultValue List<String> allowedHosts) {
+                                @DefaultValue List<String> allowedHosts,
+                                @DefaultValue("false") boolean autoAdd) {
 }

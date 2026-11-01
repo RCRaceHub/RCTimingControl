@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import ScreensPage from './ScreensPage';
 import type { Screen } from '@/lib/screensApi';
 
@@ -8,6 +8,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const control = vi.fn();
 const push = vi.fn();
 const repush = vi.fn();
+const add = vi.fn();
+const setToken = vi.fn();
 
 function makeScreen(over: Partial<Screen>): Screen {
   return {
@@ -31,15 +33,15 @@ const screens = [
 ];
 
 vi.mock('@/hooks/admin/useAdminScreens', () => ({
-  useScreens: () => ({ data: { discoveryEnabled: true, screens }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useScreens: () => ({ data: { discoveryEnabled: true, screens, found: [{ screenId: 'screen-09', name: 'New Pi', host: '10.0.0.9', port: 8080, agentVersion: '1.0', authRequired: true, seenAt: '2026-11-01T10:00:00Z' }] }, isLoading: false, isError: false, refetch: vi.fn() }),
   useBoardPages: () => ({ data: { baseUrls: ['http://10.0.0.2:8080/'], pages: [{ label: 'Results', path: '/boards/results' }] } }),
   useScreenPlaylists: () => ({
     data: [{ id: 3, name: 'Pit', defaultDuration: 30, items: [{ url: 'http://10.0.0.2:8080/boards/results', duration: 20, label: 'Results', id: null }] }],
     isLoading: false, isError: false, refetch: vi.fn(),
   }),
   useScreenMutations: () => ({
-    add: { mutateAsync: vi.fn() }, scan: { mutateAsync: vi.fn(), isPending: false }, remove: { mutateAsync: vi.fn() },
-    setToken: { mutateAsync: vi.fn() }, push: { mutateAsync: push }, repush: { mutateAsync: repush },
+    add: { mutateAsync: add, isPending: false }, scan: { mutateAsync: vi.fn(), isPending: false }, remove: { mutateAsync: vi.fn() },
+    setToken: { mutateAsync: setToken }, push: { mutateAsync: push }, repush: { mutateAsync: repush },
     control: { mutateAsync: control }, show: { mutateAsync: vi.fn() }, clearShow: { mutateAsync: vi.fn() },
     createPlaylist: { mutateAsync: vi.fn() }, updatePlaylist: { mutateAsync: vi.fn() }, deletePlaylist: { mutateAsync: vi.fn() },
   }),
@@ -98,5 +100,36 @@ describe('ScreensPage', () => {
     fireEvent.click(pushButton);
 
     await waitFor(() => expect(push).toHaveBeenCalledWith({ playlistId: 3, ids: [2] }));
+  });
+
+  it('offers a screen found on the network and adds it only when asked', async () => {
+    add.mockResolvedValue({ name: 'New Pi' });
+    render(<ScreensPage />);
+    const found = within(screen.getByRole('region', { name: 'Found, not added' }));
+
+    expect(found.getByText('New Pi')).toBeInTheDocument();
+    expect(add).not.toHaveBeenCalled();
+    fireEvent.click(found.getByRole('button', { name: 'Add' }));
+
+    await waitFor(() => expect(add).toHaveBeenCalledWith({ host: '10.0.0.9', port: 8080, token: '' }));
+  });
+
+  it('gives each ticked screen its own token when asked', async () => {
+    setToken.mockResolvedValue(undefined);
+    render(<ScreensPage />);
+    fireEvent.click(screen.getByLabelText('Tick Pit screen'));
+    fireEvent.click(screen.getByLabelText('Tick Paddock'));
+    fireEvent.click(screen.getByRole('button', { name: 'Set token…' }));
+
+    fireEvent.click(screen.getByLabelText('A different token for each screen (safer)'));
+    fireEvent.click(screen.getByRole('button', { name: 'Generate a token for each screen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(setToken).toHaveBeenCalledTimes(2));
+    const [first, second] = setToken.mock.calls.map(c => c[0]);
+    expect(first.ids).toEqual([1]);
+    expect(second.ids).toEqual([3]);
+    expect(first.token).toMatch(/^[0-9a-f]{32}$/);
+    expect(first.token).not.toBe(second.token);
   });
 });
