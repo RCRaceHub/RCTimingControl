@@ -7,9 +7,6 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -20,10 +17,13 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
@@ -44,6 +44,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -79,21 +80,6 @@ public class Tables {
      * The table <code>board_views</code>.
      */
     public static final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
-
-    /**
-     * The table <code>display_message_settings</code>.
-     */
-    public static final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
-
-    /**
-     * The table <code>display_playlists</code>.
-     */
-    public static final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
-
-    /**
-     * The table <code>display_screens</code>.
-     */
-    public static final DisplayScreens DISPLAY_SCREENS = DisplayScreens.DISPLAY_SCREENS;
 
     /**
      * The table <code>championship_classes</code>.
@@ -146,6 +132,21 @@ public class Tables {
     public static final DecoderLoops DECODER_LOOPS = DecoderLoops.DECODER_LOOPS;
 
     /**
+     * The table <code>display_message_settings</code>.
+     */
+    public static final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
+
+    /**
+     * The table <code>display_playlists</code>.
+     */
+    public static final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
+
+    /**
+     * The table <code>display_screens</code>.
+     */
+    public static final DisplayScreens DISPLAY_SCREENS = DisplayScreens.DISPLAY_SCREENS;
+
+    /**
      * The table <code>entries</code>.
      */
     public static final Entries ENTRIES = Entries.ENTRIES;
@@ -156,14 +157,14 @@ public class Tables {
     public static final EntryAuditLog ENTRY_AUDIT_LOG = EntryAuditLog.ENTRY_AUDIT_LOG;
 
     /**
-     * The table <code>entry_feeds</code>.
-     */
-    public static final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
-
-    /**
      * The table <code>entry_car_colours</code>.
      */
     public static final EntryCarColours ENTRY_CAR_COLOURS = EntryCarColours.ENTRY_CAR_COLOURS;
+
+    /**
+     * The table <code>entry_feeds</code>.
+     */
+    public static final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
 
     /**
      * The table <code>entry_photos</code>.
@@ -264,6 +265,11 @@ public class Tables {
      * The table <code>race_point_penalties</code>.
      */
     public static final RacePointPenalties RACE_POINT_PENALTIES = RacePointPenalties.RACE_POINT_PENALTIES;
+
+    /**
+     * The table <code>racehub_class_links</code>.
+     */
+    public static final RacehubClassLinks RACEHUB_CLASS_LINKS = RacehubClassLinks.RACEHUB_CLASS_LINKS;
 
     /**
      * The table <code>racehub_class_mappings</code>.

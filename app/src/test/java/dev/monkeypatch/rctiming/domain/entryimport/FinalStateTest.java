@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FinalStateTest {
 
     private final EventClasses classes = new EventClasses(Map.of(), List.of(10L, 20L),
-            Map.of("stockbuggy", List.of(10L)), Map.of(10L, "Stock Buggy", 20L, "Touring"));
+            Map.of("stockbuggy", List.of(10L)), Map.of(10L, "Stock Buggy", 20L, "Touring"), Map.of(), Map.of());
 
     @Test
     void aDriverTwiceInOneClassIsAnError() {

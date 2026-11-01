@@ -427,6 +427,17 @@ PUT /admin/events/{eventId}/racehub-class-mappings
 
 Requires `ADMIN`. Each RaceHub class is matched to the event class whose racing class name equals its `rc_class_name`, ignoring case. These mappings set the match for classes whose names differ. `PUT` replaces the event's mappings.
 
+### Club-wide class links
+
+```http
+POST /admin/events/{eventId}/racehub-class-links
+
+[ { "racehubEventClassId": "c1a2…", "racingClassId": 7 },
+  { "racehubEventClassId": "d3b4…", "createName": "2WD Stock", "templateId": 3 } ]
+```
+
+Requires `ADMIN`. Settles classes an import could not place. Each item gives either an existing `racingClassId` or a `createName` for a new racing class, never both (400). RCTC links the file's class to that racing class **for the whole club**, puts the racing class in the event if it is not there (with the format template it was last entered with, or `templateId`; 400 if it has never been entered and none is given), and maps it for this event. Later imports, in any event, find the class through the link: the lookup order is the event's own mapping, then the club link to a racing class that is in the event once, then the racing class name. Deleting a racing class removes its links. Answers **200** with one `{ racehubEventClassId, racingClassId, eventClassId, racingClassCreated }` per item; audited as `RACEHUB_CLASS_LINKED`.
+
 The RC-Timing CSV import uses the same mappings, keyed `CSV:` and the file's class name in lower case (or `CSV:#` and a Class Number), as its `unmappedClasses` list shows. A file from another source is keyed by that source, a colon and its `event_class_id`, such as `OTHER:c1a2…`.
 
 

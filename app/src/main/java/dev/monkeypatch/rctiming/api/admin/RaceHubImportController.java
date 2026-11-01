@@ -1,8 +1,11 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.ResolveRaceHubClassRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.ResolvedRaceHubClassDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassMapping;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassLinkService;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
@@ -32,9 +35,11 @@ import java.util.Map;
 public class RaceHubImportController {
 
     private final RaceHubImportService importService;
+    private final RaceHubClassLinkService classLinkService;
 
-    public RaceHubImportController(RaceHubImportService importService) {
+    public RaceHubImportController(RaceHubImportService importService, RaceHubClassLinkService classLinkService) {
         this.importService = importService;
+        this.classLinkService = classLinkService;
     }
 
     /**
@@ -72,6 +77,22 @@ public class RaceHubImportController {
         }
         return importService.replaceMappings(CurrentOfficial.actor(), eventId, byRaceHubId).stream()
                 .map(ClassMappingDto::of).toList();
+    }
+
+    /**
+     * Settles classes the import could not place. {@code POST /racehub-class-links}: each is linked club-wide to an
+     * existing racing class or to a new one made from {@code createName}, put in this event with the format it last
+     * used (or {@code templateId}), and mapped for this event. 400 for a bad request or a class with no format to
+     * use, 404 for an unknown event or class. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/racehub-class-links")
+    public List<ResolvedRaceHubClassDto> resolveClasses(@PathVariable Long eventId,
+                                                        @RequestBody List<ResolveRaceHubClassRequest> requests) {
+        return classLinkService.resolve(CurrentOfficial.actor(), eventId, requests.stream()
+                        .map(r -> new RaceHubClassLinkService.Resolution(r.racehubEventClassId(), r.racingClassId(),
+                                r.createName(), r.templateId())).toList())
+                .stream().map(ResolvedRaceHubClassDto::from).toList();
     }
 
     /** One mapping, as sent and returned: a RaceHub event class id and the event class it lands in. */

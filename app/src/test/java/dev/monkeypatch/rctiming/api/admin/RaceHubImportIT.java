@@ -357,6 +357,57 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void settlingAnUnmappedClass_addsItToTheEventWithItsLastFormat_andLinksItClubWide() {
+        long templateId = createTemplate();
+        long electricRacingClass = racingClassInAnotherEvent("RH Electric Touring " + run, templateId);
+
+        var resp = resolveClasses(List.of(Map.of(
+                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", electricRacingClass)));
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getBody().get(0).get("racingClassCreated").asBoolean()).isFalse();
+        long eventClassId = resp.getBody().get(0).get("eventClassId").asLong();
+        assertThat(jdbc.queryForObject("select template_id from event_classes where id = ?", Long.class, eventClassId))
+                .isEqualTo(templateId);
+
+        assertThat(importFixture("entries-v1-unmapped-class.json", false).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(entry("u1").getEventClassId()).isEqualTo(eventClassId);
+
+        // A second meeting needs no mapping: the club-wide link finds the class once it is in the event
+        long secondEvent = jdbc.queryForObject("""
+                insert into events (name, event_date, status)
+                values (?, date('now', '+21 days'), 'OPEN') returning id""", Long.class, "Second " + run);
+        jdbc.update("""
+                insert into event_classes (event_id, racing_class_id, config_snapshot)
+                values (?, ?, '{"type":"TIMED"}')""", secondEvent, electricRacingClass);
+        var preview = restTemplate.exchange("/api/v1/admin/events/" + secondEvent + "/racehub-import?dryRun=true",
+                HttpMethod.POST, new HttpEntity<>(fixture("entries-v1-unmapped-class.json"), adminHeaders()),
+                JsonNode.class);
+        // The entry itself was imported into the first event, so this preview is blocked on that, not on the class
+        assertThat(preview.getBody().get("unmappedClasses")).isEmpty();
+    }
+
+    @Test
+    void settlingAnUnmappedClass_canCreateTheRacingClass_butNeedsAFormatWhenItHasNeverRun() {
+        var refused = resolveClasses(List.of(Map.of(
+                "racehubEventClassId", "rh-class-electric-" + run, "createName", "RH Brand New " + run)));
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        var created = resolveClasses(List.of(Map.of(
+                "racehubEventClassId", "rh-class-electric-" + run, "createName", "RH Brand New " + run,
+                "templateId", createTemplate())));
+        assertThat(created.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(created.getBody().get(0).get("racingClassCreated").asBoolean()).isTrue();
+        assertThat(jdbc.queryForObject("select count(*) from racehub_class_links where class_key = ?",
+                Integer.class, "rh-class-electric-" + run)).isEqualTo(1);
+    }
+
+    @Test
+    void settlingAClass_needsExactlyOneOfAnExistingClassOrANewName() {
+        var neither = resolveClasses(List.of(Map.of("racehubEventClassId", "rh-class-electric-" + run)));
+        assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void anAppliedImportIsRecordedButAPreviewABlockedImportAndAReplayAreNot() {
         importFixture("entries-v1-initial.json", true);
         importFixture("entries-v1-unmapped-class.json", false);
@@ -626,6 +677,29 @@ class RaceHubImportIT extends AbstractIntegrationTest {
 
     private Entry findEntry(String prefix) {
         return entryRepository.findByExternalSourceAndExternalEntryId("RACEHUB", prefix + "-" + run).orElse(null);
+    }
+
+    private ResponseEntity<JsonNode> resolveClasses(List<Map<String, Object>> body) {
+        return restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-links",
+                HttpMethod.POST, new HttpEntity<>(body, adminHeaders()), JsonNode.class);
+    }
+
+    private long createTemplate() {
+        return jdbc.queryForObject("insert into race_format_templates (name, config) values (?, '{\"type\":\"TIMED\"}') returning id",
+                Long.class, "RH template " + UUID.randomUUID());
+    }
+
+    /** A racing class that was entered, from a template, in some earlier event, so it has a last-used format. */
+    private long racingClassInAnotherEvent(String name, long templateId) {
+        long racingClassId = jdbc.queryForObject("insert into racing_classes (name) values (?) returning id",
+                Long.class, name);
+        long earlier = jdbc.queryForObject("""
+                insert into events (name, event_date, status)
+                values (?, date('now', '-7 days'), 'COMPLETED') returning id""", Long.class, "Earlier " + run);
+        jdbc.update("""
+                insert into event_classes (event_id, racing_class_id, template_id, config_snapshot)
+                values (?, ?, ?, '{"type":"TIMED"}')""", earlier, racingClassId, templateId);
+        return racingClassId;
     }
 
     private long createEventClass(String racingClassName) {

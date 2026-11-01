@@ -12,7 +12,17 @@ class EventClassesTest {
     /** Class 30's racing class was deleted, so it has no name. */
     private final EventClasses classes = new EventClasses(Map.of("RACEHUB-1", 10L), List.of(10L, 20L, 30L),
             Map.of("stockbuggy", List.of(10L), "touring", List.of(20L, 21L)),
-            Map.of(10L, "Stock Buggy", 20L, "Touring"));
+            Map.of(10L, "Stock Buggy", 20L, "Touring"),
+            Map.of("RACEHUB-3", 5L, "RACEHUB-4", 6L, "RACEHUB-5", 7L),
+            Map.of(5L, List.of(10L), 6L, List.of(20L, 21L)));
+
+    @Test
+    void aClubLinkPlacesInTheOneEventClassOfThatRacingClass() {
+        assertThat(classes.linked("RACEHUB-3")).contains(10L);
+        assertThat(classes.linked("RACEHUB-4")).as("racing class is in the event twice").isEmpty();
+        assertThat(classes.linked("RACEHUB-5")).as("racing class not in the event").isEmpty();
+        assertThat(classes.linked("RACEHUB-9")).as("no link").isEmpty();
+    }
 
     @Test
     void placesByMappingNameOrPosition() {

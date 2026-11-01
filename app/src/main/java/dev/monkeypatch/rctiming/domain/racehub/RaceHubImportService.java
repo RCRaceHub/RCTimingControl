@@ -629,8 +629,8 @@ public class RaceHubImportService {
     }
 
     /**
-     * Finds the event class for a RaceHub class: a stored mapping first, then the one event class
-     * whose racing class has the same name as {@code rc_class_name}. Another source's mappings are
+     * Finds the event class for a RaceHub class: the event's own mapping first, then the club-wide link to a racing
+     * class that is in the event, then the one event class whose racing class has the same name as {@code rc_class_name}. Another source's mappings are
      * keyed by that source and its class id, so they never meet RaceHub's.
      */
     private record ClassResolver(String source, EventClasses classes) {
@@ -640,7 +640,11 @@ public class RaceHubImportService {
         }
 
         Optional<Long> resolve(ExportEntry row) {
-            Optional<Long> mapped = classes.mapped(mappingKey(row));
+            String key = mappingKey(row);
+            Optional<Long> mapped = classes.mapped(key);
+            if (mapped.isEmpty()) {
+                mapped = classes.linked(key);
+            }
             if (mapped.isPresent() || row.rcClassName() == null) {
                 return mapped;
             }
