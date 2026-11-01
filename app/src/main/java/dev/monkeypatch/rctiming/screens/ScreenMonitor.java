@@ -41,7 +41,7 @@ public class ScreenMonitor {
     /** A screen clock further than this from ours is worth a warning, in seconds. */
     static final double SKEW_WARNING_SECONDS = 5;
     /** How often a screen's {@code /info} is read again, to notice a token being switched on or off. */
-    static final java.time.Duration INFO_REFRESH = java.time.Duration.ofMinutes(10);
+    static final java.time.Duration INFO_REFRESH = java.time.Duration.ofMinutes(2);
 
     private static final Logger log = LoggerFactory.getLogger(ScreenMonitor.class);
 
@@ -94,13 +94,15 @@ public class ScreenMonitor {
         try {
             ViewerStatus status = client.status(new ViewerTarget(screen.getHost(), screen.getPort(), null));
             record(screen, status);
-            refreshAuth(screen);
         } catch (ViewerException e) {
             miss(screen, e.getMessage());
+            return;
         } catch (RuntimeException e) {
             log.debug("Unexpected failure polling screen {}", screen.getScreenId(), e);
             miss(screen, "Could not read the screen's status");
+            return;
         }
+        refreshAuth(screen);
     }
 
     /** Reads {@code /info} when it is due, to learn whether the screen asks for a token; a failure keeps the old answer. */
@@ -115,7 +117,14 @@ public class ScreenMonitor {
                 auth.put(screen.getScreenId(), new AuthKnown(info.authRequired(), clock.instant()));
             }
         } catch (ViewerException e) {
+            // A 401 on /info means it asks for a token; any other failure keeps the old answer. Either way the next
+            // try waits for the refresh period, not the next poll
+            boolean required = e.httpStatus() != null && e.httpStatus() == 401
+                    || known != null && known.required();
+            auth.put(screen.getScreenId(), new AuthKnown(required, clock.instant()));
             log.debug("Could not read the info of screen {}: {}", screen.getScreenId(), e.getMessage());
+        } catch (RuntimeException e) {
+            log.debug("Unexpected failure reading the info of screen {}", screen.getScreenId(), e);
         }
     }
 

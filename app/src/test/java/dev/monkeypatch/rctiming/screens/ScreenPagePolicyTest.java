@@ -41,8 +41,22 @@ class ScreenPagePolicyTest {
     }
 
     @Test
+    void allowedHostsMayBeWrittenWithAPortAsAUrlOrAsABareIpv6Address() {
+        ScreenPagePolicy policy = policy(true, "club.example:8080", "https://other.example/", "::1");
+
+        assertThatCode(() -> policy.check("http://club.example/x", "Page")).doesNotThrowAnyException();
+        assertThatCode(() -> policy.check("http://other.example/x", "Page")).doesNotThrowAnyException();
+        assertThatCode(() -> policy.check("http://[::1]:8080/x", "Page")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void aUserInfoTrickDoesNotGetPastTheHostCheck() {
+        assertThatThrownBy(() -> policy(true).check("http://192.168.1.5@evil.example/x", "Page"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void theRestrictionCanBeSwitchedOff() {
-        assertThat(policy(false)).isNotNull();
         assertThatCode(() -> policy(false).check("http://anything.example/", "Page")).doesNotThrowAnyException();
     }
 }

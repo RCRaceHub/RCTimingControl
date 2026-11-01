@@ -42,8 +42,11 @@ public class ScreenPagePolicy {
         if (!restrict) {
             return;
         }
+        check(url, what, allowedHosts());
+    }
+
+    private static void check(String url, String what, Set<String> allowed) {
         String host = hostOf(url);
-        Set<String> allowed = allowedHosts();
         if (host == null || !allowed.contains(host)) {
             throw new IllegalArgumentException(what + ": screens may only show pages on this server (" + String.join(", ", allowed)
                     + "). To allow another host, add it to rctiming.screens.allowed-hosts");
@@ -52,8 +55,12 @@ public class ScreenPagePolicy {
 
     /** Checks each item's address. */
     public void checkItems(List<PlaylistItem> items) {
+        if (!restrict) {
+            return;
+        }
+        Set<String> allowed = allowedHosts();
         for (int i = 0; i < items.size(); i++) {
-            check(items.get(i).url(), "Page " + (i + 1));
+            check(items.get(i).url(), "Page " + (i + 1), allowed);
         }
     }
 
@@ -68,7 +75,12 @@ public class ScreenPagePolicy {
         }
         for (String configured : allowedHosts) {
             if (configured != null && !configured.isBlank()) {
-                String host = configured.contains("://") ? hostOf(configured) : configured.strip().toLowerCase(Locale.ROOT);
+                // Written as a bare host, host:port, a bare IPv6 address or a URL: read them all as the URL they imply
+                String entry = configured.strip();
+                String asUrl = entry.contains("://") ? entry
+                        : "http://" + (entry.contains(":") && !entry.startsWith("[") && entry.indexOf(':') == entry.lastIndexOf(':')
+                        ? entry : entry.contains(":") && !entry.startsWith("[") ? "[" + entry + "]" : entry);
+                String host = hostOf(asUrl);
                 if (host != null) {
                     hosts.add(host);
                 }
