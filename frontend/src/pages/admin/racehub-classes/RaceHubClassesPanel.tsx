@@ -39,8 +39,15 @@ export function RaceHubClassesPanel() {
 
   const classes = classesQuery.data?.classes ?? [];
   const racingName = (id: number) => racingClasses.find(rc => rc.id === id)?.name ?? `Class ${id}`;
-  const unlinked = classes.filter(c => c.linkedRacingClassId == null);
+  // Classes RaceHub has retired can still be linked one by one, but are not counted or made in bulk
+  const unlinked = classes.filter(c => c.linkedRacingClassId == null && c.active);
   const suggestions = unlinked.filter(c => c.suggestedRacingClassId != null && !choices[c.id]);
+
+  /** The official's pick if there is one, else the matching class, else a new class. */
+  function bulkChoice(c: RaceHubClassDto): string {
+    if (choices[c.id]) return choices[c.id];
+    return c.suggestedRacingClassId != null ? String(c.suggestedRacingClassId) : NEW_CLASS;
+  }
 
   /** A link needs a request: an existing racing class, or a new one made from the RaceHub name. */
   function requestFor(c: RaceHubClassDto, value: string): LinkRaceHubClassRequest {
@@ -79,7 +86,9 @@ export function RaceHubClassesPanel() {
   }
 
   if (classesQuery.isError) {
-    return <QueryError variant="page" message="Could not load the RaceHub classes." onRetry={() => void classesQuery.refetch()} />;
+    return (
+      <QueryError variant="inline" message="Could not load the RaceHub classes." onRetry={() => void classesQuery.refetch()} />
+    );
   }
 
   return (
@@ -159,8 +168,7 @@ export function RaceHubClassesPanel() {
             size="sm"
             variant="outline"
             disabled={link.isPending}
-            onClick={() => void save(unlinked.map(c => requestFor(c, c.suggestedRacingClassId != null
-              ? String(c.suggestedRacingClassId) : NEW_CLASS)))}
+            onClick={() => void save(unlinked.map(c => requestFor(c, bulkChoice(c))))}
           >
             Create or link all
           </Button>
