@@ -43,16 +43,18 @@ public class ScreenService {
     private final ObjectMapper json;
     private final TokenCipher cipher;
     private final Clock clock;
+    private final ScreenPagePolicy pagePolicy;
 
     @Autowired
     public ScreenService(ScreenRepository screens, ScreenPlaylistRepository playlists, AuditService audit,
-                         ObjectMapper json, TokenCipher cipher) {
-        this(screens, playlists, audit, json, cipher, Clock.systemUTC());
+                         ObjectMapper json, TokenCipher cipher, ScreenPagePolicy pagePolicy) {
+        this(screens, playlists, audit, json, cipher, pagePolicy, Clock.systemUTC());
     }
 
     ScreenService(ScreenRepository screens, ScreenPlaylistRepository playlists, AuditService audit,
-                  ObjectMapper json, TokenCipher cipher, Clock clock) {
+                  ObjectMapper json, TokenCipher cipher, ScreenPagePolicy pagePolicy, Clock clock) {
         this.clock = clock;
+        this.pagePolicy = pagePolicy;
         this.screens = screens;
         this.playlists = playlists;
         this.audit = audit;
@@ -254,6 +256,7 @@ public class ScreenService {
             throw new StateConflictException("There is already a screen playlist called " + cleanName);
         });
         List<PlaylistItem> checked = ScreenRules.checkItems(items);
+        pagePolicy.checkItems(checked);
         playlist.setName(cleanName);
         playlist.setDefaultDuration(ScreenRules.checkDefaultDuration(defaultDuration));
         try {

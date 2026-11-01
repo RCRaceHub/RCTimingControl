@@ -117,6 +117,7 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
 | `rctiming.network.addresses` / `rctiming.network.mdns-name` | empty | Addresses the About page shows (needed in a container) and the `.local` name advertised on the network |
 | `rctiming.screens.discovery` | `true` | Browse the venue network for EventScreenDisplay screens by mDNS (`_eventscreen._tcp`) every 30 seconds; turn off where multicast is blocked and add screens by hand |
+| `rctiming.screens.restrict-pages` / `rctiming.screens.allowed-hosts` | `true` / empty | Screens may only be given pages on this server's own venue-network addresses; `allowed-hosts` adds others (comma-separated), `restrict-pages=false` lifts the check |
 | `rctiming.screens.poll-interval-ms` | `5000` | How often the screen manager reads each screen's status |
 | `rctiming.https.enabled` / `rctiming.https.port` | `false` / `8443` | Optional local HTTPS connector using the club's own certificate |
 | `app.jwt.secret`, `app.jwt.access-token-ttl-ms`, `app.jwt.refresh-token-ttl-ms` | generated / 15 min / 7 days | Signing secret (a random `jwt-secret` file in the data folder when blank) and token lifetimes |

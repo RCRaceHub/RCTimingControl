@@ -59,12 +59,24 @@ export function AddScreenDialog({ open, onOpenChange, onSubmit }: Shell & {
   );
 }
 
-/** Sets one token on the selected screens; leaving it blank clears it. The token is never shown again. */
+/** A random 128-bit token as 32 hex digits, from the browser's secure random source. */
+export function randomToken(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Sets one token on the selected screens; leaving it blank clears it. Generate makes a random one and shows it so it
+ * can be copied: a screen's token lives in its own config (api_token), which this app cannot change, so the same value
+ * has to be put on each screen. Once saved here the token is not shown again.
+ */
 export function TokenDialog({ open, onOpenChange, count, onSubmit }: Shell & {
   count: number;
   onSubmit: (token: string) => Promise<void>;
 }) {
   const [token, setToken] = useState('');
+  const [shown, setShown] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -88,7 +100,17 @@ export function TokenDialog({ open, onOpenChange, count, onSubmit }: Shell & {
         </DialogHeader>
         <div className="space-y-1">
           <Label htmlFor="tk-token" className="text-xs">Token</Label>
-          <Input id="tk-token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} />
+          <div className="flex gap-2">
+            <Input id="tk-token" type={shown ? 'text' : 'password'} autoComplete="off" value={token}
+              onChange={e => setToken(e.target.value)} />
+            <Button type="button" variant="outline" onClick={() => { setToken(randomToken()); setShown(true); }}>Generate</Button>
+          </div>
+          {shown && (
+            <p className="text-xs text-muted-foreground">
+              Copy this now and set it as <code>api_token</code> in each screen's config. This app cannot change it on the
+              screen, and will not show it again.
+            </p>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

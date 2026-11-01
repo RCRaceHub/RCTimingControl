@@ -5,6 +5,7 @@ spring:
 rctiming:
   screens:
     discovery: false
+    allowed-hosts: 10.0.0.2
   retention:
     run-on-startup: false
   database:
