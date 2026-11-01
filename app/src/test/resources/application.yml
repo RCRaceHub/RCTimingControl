@@ -3,6 +3,8 @@ spring:
     enabled: true
 
 rctiming:
+  screens:
+    discovery: false
   retention:
     run-on-startup: false
   database:

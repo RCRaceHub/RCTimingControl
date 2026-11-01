@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorExc
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
+import dev.monkeypatch.rctiming.screens.viewer.ViewerException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -189,6 +190,16 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
+     * A screen's agent could not be reached or refused a call (#708): 502, with its own message as {@code detail}. The
+     * fault is the screen's or the network's, not the caller's and not this app's.
+     */
+    @ExceptionHandler(ViewerException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public ProblemDetail handleViewerFailure(ViewerException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
     }
 
     /** A backup could not be written: 500, with the exception's message as {@code detail}. */
