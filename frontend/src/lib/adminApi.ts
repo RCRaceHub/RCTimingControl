@@ -292,6 +292,27 @@ export interface EntryFeedDto {
   waitingRevision: number | null;
 }
 
+// The "Find RaceHub events" picker: events RaceHub has released for timing
+export interface RaceHubEventOffer {
+  raceHubEventId: string;
+  name: string | null;
+  eventDate: string | null;
+  venue: string | null;
+  entryCount: number | null;
+  /** The RCTC event it is already linked to, or null */
+  linkedEventId: number | null;
+}
+
+export interface RaceHubEventsDto {
+  /** The saved address RaceHub lists ready events at, or null */
+  eventsUrl: string | null;
+  /** Whether the club's key is set in the settings file; the key itself is never sent */
+  tokenSet: boolean;
+  events: RaceHubEventOffer[];
+  /** Why RaceHub could not be asked, or null */
+  error: string | null;
+}
+
 export interface SaveEntryFeedRequest {
   url: string;
   /** Leave out to keep the saved token; an empty string removes it */
@@ -1178,6 +1199,19 @@ export const adminApi = {
       api.post<OfficialDto>(`/api/v1/admin/officials/${id}/disable`).then(r => r.data),
     enable: (id: number) =>
       api.post<OfficialDto>(`/api/v1/admin/officials/${id}/enable`).then(r => r.data),
+  },
+
+  // Events RaceHub has released for timing
+  raceHubEvents: {
+    list: () => api.get<RaceHubEventsDto>('/api/v1/admin/racehub/events').then(r => r.data),
+    /** Blank clears it */
+    setAddress: (eventsUrl: string) =>
+      api.put<RaceHubEventsDto>('/api/v1/admin/racehub/events/address', { eventsUrl }).then(r => r.data),
+    /** Creates the RCTC event if needed and points its entry feed at RaceHub; answers the RCTC event */
+    take: (raceHubEventId: string) =>
+      api
+        .post<{ id: number }>(`/api/v1/admin/racehub/events/${encodeURIComponent(raceHubEventId)}/take`)
+        .then(r => r.data),
   },
 
   // Results sent to RaceHub (#27)
