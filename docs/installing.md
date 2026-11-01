@@ -131,6 +131,17 @@ rctiming.racehub.token=the-key-from-racehub
 
 The address must start with `https://`, since the key goes with every request. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **Results to RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand.
 
+### If RaceHub is behind Cloudflare Access
+
+Some RaceHub servers sit behind Cloudflare Access, which turns away any request that doesn't carry a service token before RaceHub sees it. If yours does, RaceHub's administrator gives the club a **client id** and a **client secret** for it, and you add them next to the key:
+
+```properties
+rctiming.racehub.access-client-id=the-client-id.access
+rctiming.racehub.access-client-secret=the-client-secret
+```
+
+They are sent as the `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers, **only to RaceHub's own address** (the results address and the events address saved under **Find RaceHub events**), never to any other feed address. The club's key is still sent as well. Set both or neither: the app refuses to start with only one. A club whose RaceHub isn't behind Cloudflare Access leaves them out and nothing changes. The secret lives only in this file; the admin panel never shows it and the settings file download leaves it out. If RaceHub answers `403` with a Cloudflare page rather than its own message, the service token is missing, wrong or expired.
+
 ## Publishing a results site
 
 A club without RaceHub can still put its results on the web. Choose **A results site** (or both) under **Publish results to** in **Results to RaceHub**, then press **Download results site (zip)** and upload the files to the club's web space; they are plain pages with no scripts. To have the app keep a folder up to date by itself after each race, correction and day close, set the folder in `application.properties` and point a sync tool at it:

@@ -121,6 +121,7 @@ public class ResultsSender {
                     .headers(h -> {
                         h.setBearerAuth(endpoint.token());
                         h.set("Idempotency-Key", key);
+                        endpoint.accessHeaders(url).forEach(h::set);
                     })
                     .body(item.getPayload())
                     .retrieve()
