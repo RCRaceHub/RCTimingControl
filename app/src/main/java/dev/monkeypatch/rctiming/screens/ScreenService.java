@@ -97,6 +97,9 @@ public class ScreenService {
         if (info.id() == null || info.id().isBlank()) {
             throw new IllegalArgumentException("The screen did not report an id, so it cannot be told apart from others");
         }
+        if (info.id().length() > 100) {
+            throw new IllegalArgumentException("The screen's id is longer than 100 characters");
+        }
         String name = info.name() != null && !info.name().isBlank() ? info.name() : info.id();
         Screen screen = screens.findByScreenId(info.id()).orElse(null);
         boolean added = screen == null;
@@ -158,6 +161,12 @@ public class ScreenService {
         screen.setPushedSource(source == null || source.isBlank() ? null : source);
         screen.setPushedAt(clock.instant());
         screens.save(screen);
+    }
+
+    /** The screen that reports this id, if it is known. */
+    @ReadTransaction
+    public Optional<Screen> findByScreenId(String screenId) {
+        return screens.findByScreenId(screenId);
     }
 
     /** The screen's saved token in clear, or empty if there is none or it cannot be read on this computer. */

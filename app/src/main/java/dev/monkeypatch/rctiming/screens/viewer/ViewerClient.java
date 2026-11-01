@@ -82,8 +82,10 @@ public class ViewerClient {
 
     private <T> T get(ViewerTarget target, String path, Class<T> type) {
         try {
-            return restClient.get().uri(target.baseUrl() + path).accept(MediaType.APPLICATION_JSON)
-                    .retrieve().body(type);
+            return nonEmpty(restClient.get().uri(target.baseUrl() + path).accept(MediaType.APPLICATION_JSON)
+                    .retrieve().body(type));
+        } catch (ViewerException e) {
+            throw e;
         } catch (RestClientResponseException e) {
             throw failed(e);
         } catch (RuntimeException e) {
@@ -104,12 +106,22 @@ public class ViewerClient {
             if (body != null) {
                 request = request.contentType(MediaType.APPLICATION_JSON).body(body);
             }
-            return request.retrieve().body(type);
+            return nonEmpty(request.retrieve().body(type));
+        } catch (ViewerException e) {
+            throw e;
         } catch (RestClientResponseException e) {
             throw failed(e);
         } catch (RuntimeException e) {
             throw unreachable(target, e);
         }
+    }
+
+    /** A 2xx with no body is not a valid answer from an agent: every endpoint returns JSON. */
+    private static <T> T nonEmpty(T body) {
+        if (body == null) {
+            throw new ViewerException(null, "The screen sent an empty answer", null);
+        }
+        return body;
     }
 
     /** The agent answered with an error: its own {@code {"error": "..."}} message when it sent one. */

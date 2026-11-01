@@ -148,7 +148,7 @@ export function ShowDialog({ open, onOpenChange, count, boardPages, onSubmit }: 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button disabled={url.trim() === '' || saving} onClick={() => void submit()}>Show</Button>
+          <Button disabled={url.trim() === '' || saving || (seconds.trim() !== '' && !(parseInt(seconds, 10) >= 1))} onClick={() => void submit()}>Show</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

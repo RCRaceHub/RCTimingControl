@@ -6,6 +6,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,11 +40,13 @@ public class ScreenRepository extends JooqRepository<Screen, DisplayScreensRecor
     }
 
     /** Records when a screen was last reachable, without touching its other columns or its update time. */
+    @Transactional
     public void recordLastSeen(Long id, Instant seenAt) {
         dsl.update(DISPLAY_SCREENS).set(DISPLAY_SCREENS.LAST_SEEN_AT, seenAt).where(DISPLAY_SCREENS.ID.eq(id)).execute();
     }
 
     /** Takes a deleted playlist off every screen it was assigned to. */
+    @Transactional
     public void clearPlaylist(Long playlistId) {
         dsl.update(DISPLAY_SCREENS).setNull(DISPLAY_SCREENS.PLAYLIST_ID)
                 .where(DISPLAY_SCREENS.PLAYLIST_ID.eq(playlistId)).execute();

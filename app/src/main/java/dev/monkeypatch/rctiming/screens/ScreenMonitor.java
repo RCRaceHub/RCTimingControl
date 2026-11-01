@@ -126,8 +126,9 @@ public class ScreenMonitor {
         ScreenState.Connection connection = r.misses() == 0 ? ScreenState.Connection.ONLINE
                 : r.misses() < OFFLINE_AFTER_MISSES ? ScreenState.Connection.UNREACHABLE : ScreenState.Connection.OFFLINE;
         ViewerStatus status = r.status();
-        return new ScreenState(connection, status, r.statusAt(), r.error(), r.skew(), drifted(screen, status),
-                warnings(screen, status, r.skew(), connection));
+        boolean online = connection == ScreenState.Connection.ONLINE;
+        return new ScreenState(connection, status, r.statusAt(), r.error(), online ? r.skew() : null,
+                online && drifted(screen, status), warnings(screen, status, online ? r.skew() : null, connection));
     }
 
     /** True when the screen has been pushed to and what it holds now differs in revision or source. */

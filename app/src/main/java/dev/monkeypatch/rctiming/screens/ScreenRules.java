@@ -52,6 +52,9 @@ final class ScreenRules {
         for (int i = 0; i < items.size(); i++) {
             PlaylistItem item = items.get(i);
             String where = "Page " + (i + 1);
+            if (item == null) {
+                throw new IllegalArgumentException(where + " is empty");
+            }
             String url = checkWebUrl(item.url(), where);
             Integer duration = item.duration();
             if (duration != null && (duration < MIN_DURATION || duration > MAX_DURATION)) {

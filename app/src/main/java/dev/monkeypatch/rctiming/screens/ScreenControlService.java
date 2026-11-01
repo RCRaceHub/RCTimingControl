@@ -30,6 +30,9 @@ import java.util.function.Function;
 @Service
 public class ScreenControlService {
 
+    /** Most screens discovery will add by itself; more are added by hand. */
+    static final int MAX_DISCOVERED = 100;
+
     private final ScreenService screens;
     private final ViewerClient client;
     private final ScreenMonitor monitor;
@@ -76,7 +79,21 @@ public class ScreenControlService {
      * thread. A screen that does not answer {@code /info} is skipped by the caller.
      */
     public void discovered(String host, int port) {
+        // Already known at this address and answering: nothing to learn, and no call to make
+        if (screens.screens().stream().anyMatch(s -> s.getHost().equals(host) && s.getPort() == port
+                && monitor.stateOf(s).connection() == ScreenState.Connection.ONLINE)) {
+            return;
+        }
         ViewerInfo info = client.info(new ViewerTarget(host, port, null));
+        // Anyone on the network can advertise a screen. A known screen that still answers at its saved address is not
+        // moved (its saved token would go to the new host), and the number of screens found this way is capped
+        Screen known = screens.findByScreenId(info.id()).orElse(null);
+        if (known != null && monitor.stateOf(known).connection() == ScreenState.Connection.ONLINE) {
+            return;
+        }
+        if (known == null && screens.screens().size() >= MAX_DISCOVERED) {
+            return;
+        }
         screens.upsert(Actor.system("screen-discovery"), info, host, port, null);
     }
 

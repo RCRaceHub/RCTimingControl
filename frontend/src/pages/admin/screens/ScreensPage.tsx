@@ -230,8 +230,8 @@ function ScreenRow({ screen, ticked, onToggle, onRemove, onRepush }: {
         {screen.connection === 'OFFLINE' && screen.lastSeenAt && (
           <div className="text-xs text-muted-foreground mt-1">Last seen {new Date(screen.lastSeenAt).toLocaleString()}</div>
         )}
-        {problems.map(w => (
-          <div key={w} className="mt-1 flex items-start gap-1 text-xs text-warning max-w-64">
+        {problems.map((w, i) => (
+          <div key={`${i}-${w}`} className="mt-1 flex items-start gap-1 text-xs text-warning max-w-64">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />{w}
           </div>
         ))}
