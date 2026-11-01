@@ -45,7 +45,7 @@ class ScreenMonitorTest {
                                        int restarts, double clock) {
         return new ViewerStatus("screen-01", 10.0, clock, "playing", false, 0, null, null,
                 new ViewerStatus.Network(pageReachable, clock), new ViewerStatus.PlaylistSummary(revision, 2, 1.0, source),
-                new ViewerStatus.Browser("cog", browserRunning, 1, "", restarts, ""));
+                new ViewerStatus.Browser("cog", browserRunning, 1, "", restarts, ""), null, null);
     }
 
     private static double now() {
@@ -142,12 +142,12 @@ class ScreenMonitorTest {
     @Test
     void aScreenThatAsksForNoTokenIsWarnedAboutAndOneThatNeedsATokenWeLackIsToo() {
         when(client.status(any())).thenReturn(status(1, "", true, true, 0, now()));
-        when(client.info(any())).thenReturn(new ViewerInfo("screen-01", "Pit", "pit", "0.1", "1", "cog", false, null));
+        when(client.info(any())).thenReturn(new ViewerInfo("screen-01", "Pit", "pit", "0.1", "1", "cog", false, null, null));
         monitor.poll(screen);
         assertThat(monitor.stateOf(screen).warnings()).singleElement().asString().contains("accepts changes from anyone");
 
         screen.setScreenId("screen-02");
-        when(client.info(any())).thenReturn(new ViewerInfo("screen-02", "Bar", "bar", "0.1", "1", "cog", true, null));
+        when(client.info(any())).thenReturn(new ViewerInfo("screen-02", "Bar", "bar", "0.1", "1", "cog", true, null, null));
         monitor.poll(screen);
         assertThat(monitor.stateOf(screen).warnings()).singleElement().asString().contains("needs a token");
 

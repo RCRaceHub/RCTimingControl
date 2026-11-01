@@ -80,6 +80,36 @@ public class ViewerClient {
         return send(target, "DELETE", "/control/show", null, ViewerStatus.class);
     }
 
+    /** {@code GET /message}: the full-screen message now up, or null in the answer when none (agent 0.6.0+). */
+    public ViewerMessage.Answer message(ViewerTarget target) {
+        return get(target, "/message", ViewerMessage.Answer.class);
+    }
+
+    /** {@code PUT /message}: puts a message over the whole screen, replacing any already up. */
+    public ViewerMessage.Answer putMessage(ViewerTarget target, ViewerMessage.Body body) {
+        return send(target, "PUT", "/message", body, ViewerMessage.Answer.class);
+    }
+
+    /** {@code DELETE /message}: takes the message down. */
+    public ViewerMessage.Answer clearMessage(ViewerTarget target) {
+        return send(target, "DELETE", "/message", null, ViewerMessage.Answer.class);
+    }
+
+    /** {@code GET /banner}: the banner now up, or null in the answer when none (agent 0.6.0+). */
+    public ViewerBanner.Answer banner(ViewerTarget target) {
+        return get(target, "/banner", ViewerBanner.Answer.class);
+    }
+
+    /** {@code PUT /banner}: puts a strip along the bottom of the screen, replacing any already up. */
+    public ViewerBanner.Answer putBanner(ViewerTarget target, ViewerBanner.Body body) {
+        return send(target, "PUT", "/banner", body, ViewerBanner.Answer.class);
+    }
+
+    /** {@code DELETE /banner}: takes the banner down. */
+    public ViewerBanner.Answer clearBanner(ViewerTarget target) {
+        return send(target, "DELETE", "/banner", null, ViewerBanner.Answer.class);
+    }
+
     private <T> T get(ViewerTarget target, String path, Class<T> type) {
         try {
             return nonEmpty(restClient.get().uri(target.baseUrl() + path).accept(MediaType.APPLICATION_JSON)

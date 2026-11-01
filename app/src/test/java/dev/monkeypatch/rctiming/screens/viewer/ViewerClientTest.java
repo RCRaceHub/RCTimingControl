@@ -92,6 +92,91 @@ class ViewerClientTest {
     }
 
     @Test
+    void aMessageIsSetWithTheTokenAndReadBackWithItsFieldsAndAClearTakesItDown() {
+        ViewerMessage.Answer set = client.putMessage(target("secret"),
+                new ViewerMessage.Body("Finals being calculated", "Lists will be up shortly", "hold", "info", null));
+
+        assertThat(screen.calls()).contains("PUT /message (auth)");
+        assertThat(screen.lastBody()).contains("\"title\":\"Finals being calculated\"").contains("\"style\":\"hold\"")
+                .doesNotContain("duration");
+        assertThat(set.message().title()).isEqualTo("Finals being calculated");
+        assertThat(set.message().level()).isEqualTo("info");
+        assertThat(set.message().until()).isNull();
+        assertThat(client.status(target(null)).message().title()).isEqualTo("Finals being calculated");
+        assertThat(client.message(target(null)).message()).isNotNull();
+
+        assertThat(client.clearMessage(target("secret")).message()).isNull();
+        assertThat(screen.calls()).contains("DELETE /message (auth)");
+        assertThat(client.status(target(null)).message()).isNull();
+    }
+
+    @Test
+    void aMessageWithADurationSendsItAndComesBackWithAnEndTime() {
+        ViewerMessage.Answer set = client.putMessage(target("secret"),
+                new ViewerMessage.Body("Finals lists are up", null, "announce", "urgent", 30));
+
+        assertThat(screen.lastBody()).contains("\"duration\":30").doesNotContain("\"text\"");
+        assertThat(set.message().until()).isNotNull().isGreaterThan(set.message().since());
+    }
+
+    @Test
+    void aBannerIsSetAndClearedAndReportsWhetherTheScreenCanDrawIt() {
+        screen.bannerHidden();
+
+        ViewerBanner.Answer set = client.putBanner(target("secret"), new ViewerBanner.Body("Pits close at 5", "warning", 300));
+
+        assertThat(screen.calls()).contains("PUT /banner (auth)");
+        assertThat(set.banner().text()).isEqualTo("Pits close at 5");
+        assertThat(set.banner().visible()).isFalse();
+        assertThat(client.status(target(null)).banner().level()).isEqualTo("warning");
+        assertThat(client.clearBanner(target("secret")).banner()).isNull();
+    }
+
+    @Test
+    void theMessageEndpointsNeedTheTokenLikeOtherWrites() {
+        assertThatThrownBy(() -> client.putMessage(target(null), new ViewerMessage.Body("Hi", null, null, null, null)))
+                .isInstanceOfSatisfying(ViewerException.class, e -> assertThat(e.httpStatus()).isEqualTo(401));
+        assertThat(screen.calls()).contains("PUT /message");
+        assertThat(screen.message()).isNull();
+    }
+
+    @Test
+    void theAgentsOwnMessageIsKeptWhenItRefusesAField() {
+        assertThatThrownBy(() -> client.putMessage(target("secret"), new ViewerMessage.Body("x".repeat(121), null, null, null, null)))
+                .isInstanceOfSatisfying(ViewerException.class, e -> {
+                    assertThat(e.httpStatus()).isEqualTo(400);
+                    assertThat(e.getMessage()).isEqualTo("title is too long (max 120)");
+                });
+        assertThatThrownBy(() -> client.putBanner(target("secret"), new ViewerBanner.Body("Hi", "purple", null)))
+                .isInstanceOfSatisfying(ViewerException.class,
+                        e -> assertThat(e.getMessage()).isEqualTo("level must be info, warning or urgent"));
+    }
+
+    @Test
+    void anOlderAgentAnswers404AndListsNoMessageFeatures() {
+        try (FakeScreen oldScreen = FakeScreen.old("screen-old", null)) {
+            ViewerTarget old = new ViewerTarget("127.0.0.1", oldScreen.port(), null);
+
+            ViewerInfo info = client.info(old);
+            assertThat(info.has("playlist")).isTrue();
+            assertThat(info.has("message")).isFalse();
+            assertThat(info.has("banner")).isFalse();
+            assertThatThrownBy(() -> client.putMessage(old, new ViewerMessage.Body("Hi", null, null, null, null)))
+                    .isInstanceOfSatisfying(ViewerException.class, e -> assertThat(e.httpStatus()).isEqualTo(404));
+            assertThatThrownBy(() -> client.banner(old))
+                    .isInstanceOfSatisfying(ViewerException.class, e -> assertThat(e.httpStatus()).isEqualTo(404));
+        }
+    }
+
+    @Test
+    void aNewScreenListsTheMessageAndBannerFeatures() {
+        ViewerInfo info = client.info(target(null));
+
+        assertThat(info.has("message")).isTrue();
+        assertThat(info.has("banner")).isTrue();
+    }
+
+    @Test
     void aScreenThatIsOffIsUnreachable() {
         int port = screen.port();
         screen.close();

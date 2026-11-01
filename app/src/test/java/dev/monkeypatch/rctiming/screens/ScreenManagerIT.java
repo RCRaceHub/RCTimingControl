@@ -68,6 +68,7 @@ class ScreenManagerIT extends AbstractIntegrationTest {
         locked.close();
         jdbc.update("delete from display_screens where screen_id like 'it-%'");
         jdbc.update("delete from display_playlists where name like 'it-%'");
+        jdbc.update("delete from display_message_settings");
     }
 
     @Test
@@ -237,6 +238,131 @@ class ScreenManagerIT extends AbstractIntegrationTest {
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat((List<Map>) r.getBody().get("pages")).extracting(p -> p.get("path"))
                 .contains("/boards/results", "/boards/now-next", "/boards/live-race", "/boards/top");
+    }
+
+    // ---- messages and banners (#716)
+
+    @Test
+    void aMessageAndABannerGoToEveryScreenAndAFailureDoesNotStopTheRest() {
+        Long a = ((Number) add(open, null).get("id")).longValue();
+        Long b = ((Number) add(locked, null).get("id")).longValue();
+
+        List<Map> sent = (List<Map>) send(HttpMethod.POST, SCREENS + "/message", Map.of("screenIds", List.of(a, b),
+                "title", "Finals being calculated", "text", "Lists will be up shortly", "style", "hold", "level", "info"),
+                directorToken, List.class).getBody();
+
+        assertThat(sent).hasSize(2);
+        assertThat(sent.get(0).get("ok")).isEqualTo(true);
+        assertThat(sent.get(1).get("ok")).isEqualTo(false);
+        assertThat((String) sent.get(1).get("error")).contains("needs a token");
+        assertThat(open.message()).contains("\"title\":\"Finals being calculated\"").contains("\"style\":\"hold\"");
+        assertThat(((Map) ((Map) screenInList(a).get("live")).get("message")).get("title")).isEqualTo("Finals being calculated");
+        assertThat(locked.message()).isNull();
+
+        List<Map> banner = (List<Map>) send(HttpMethod.POST, SCREENS + "/banner",
+                Map.of("screenIds", List.of(a), "text", "Pits close at 5", "level", "warning", "seconds", 300),
+                directorToken, List.class).getBody();
+        assertThat(banner).singleElement().satisfies(r -> assertThat(r.get("ok")).isEqualTo(true));
+        assertThat(open.banner()).contains("\"text\":\"Pits close at 5\"").contains("\"level\":\"warning\"");
+
+        send(HttpMethod.POST, SCREENS + "/message/clear", Map.of("screenIds", List.of(a)), directorToken, List.class);
+        send(HttpMethod.POST, SCREENS + "/banner/clear", Map.of("screenIds", List.of(a)), directorToken, List.class);
+        assertThat(open.message()).isNull();
+        assertThat(open.banner()).isNull();
+    }
+
+    @Test
+    void aScreenOlderThanTheMessageFeatureIsToldToUpdate() {
+        try (FakeScreen oldScreen = FakeScreen.old("it-old-" + suffix, null)) {
+            Long id = ((Number) add(oldScreen, null).get("id")).longValue();
+            monitor.poll(screenById(id));
+
+            List<Map> sent = (List<Map>) send(HttpMethod.POST, SCREENS + "/message",
+                    Map.of("screenIds", List.of(id), "title", "Hello"), directorToken, List.class).getBody();
+
+            assertThat(sent).singleElement().satisfies(r -> {
+                assertThat(r.get("ok")).isEqualTo(false);
+                assertThat((String) r.get("error")).contains("0.6.0");
+            });
+            assertThat((List<String>) screenInList(id).get("features")).doesNotContain("message", "banner");
+        }
+    }
+
+    @Test
+    void aMessageTheScreensWouldRefuseIsRefusedBeforeAnythingIsSent() {
+        Long id = ((Number) add(open, null).get("id")).longValue();
+
+        for (Map<String, Object> bad : List.<Map<String, Object>>of(
+                Map.of("screenIds", List.of(id), "title", " "),
+                Map.of("screenIds", List.of(id), "title", "x".repeat(121)),
+                Map.of("screenIds", List.of(id), "title", "Hi", "level", "purple"),
+                Map.of("screenIds", List.of(id), "title", "Hi", "style", "shout"))) {
+            assertThat(send(HttpMethod.POST, SCREENS + "/message", bad, directorToken).getStatusCode())
+                    .isEqualTo(HttpStatus.BAD_REQUEST);
+        }
+        assertThat(send(HttpMethod.POST, SCREENS + "/banner", Map.of("screenIds", List.of(id), "text", "y".repeat(501)),
+                directorToken).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(open.calls()).noneMatch(c -> c.contains("/message") || c.contains("/banner"));
+    }
+
+    @Test
+    void finalsUpPushesThePlaylistBeforeTheAnnouncement() {
+        Long id = ((Number) add(open, null).get("id")).longValue();
+        Long playlistId = createPlaylist("it-finals-" + suffix);
+
+        Map result = send(HttpMethod.POST, SCREENS + "/finals-up", Map.of("screenIds", List.of(id),
+                "playlistId", playlistId, "title", "Finals lists are up", "seconds", 30), directorToken).getBody();
+
+        assertThat((List<Map>) result.get("playlist")).singleElement().satisfies(r -> assertThat(r.get("ok")).isEqualTo(true));
+        assertThat((List<Map>) result.get("message")).singleElement().satisfies(r -> assertThat(r.get("ok")).isEqualTo(true));
+        List<String> calls = open.calls();
+        assertThat(calls.indexOf("PUT /playlist")).isGreaterThanOrEqualTo(0)
+                .isLessThan(calls.indexOf("PUT /message"));
+        assertThat(open.message()).contains("\"style\":\"announce\"").contains("Finals lists are up");
+    }
+
+    @Test
+    void finalsUpDoesNotAnnounceOnAScreenThatMissedThePlaylist() {
+        Long a = ((Number) add(open, null).get("id")).longValue();
+        Long b = ((Number) add(locked, null).get("id")).longValue();
+        Long playlistId = createPlaylist("it-finals-fail-" + suffix);
+
+        Map result = send(HttpMethod.POST, SCREENS + "/finals-up", Map.of("screenIds", List.of(a, b),
+                "playlistId", playlistId, "title", "Finals lists are up"), directorToken).getBody();
+
+        List<Map> playlist = (List<Map>) result.get("playlist");
+        List<Map> message = (List<Map>) result.get("message");
+        assertThat(playlist.get(0).get("ok")).isEqualTo(true);
+        assertThat(playlist.get(1).get("ok")).isEqualTo(false);
+        assertThat(message.get(0).get("ok")).isEqualTo(true);
+        assertThat(message.get(1).get("ok")).isEqualTo(false);
+        assertThat((String) message.get(1).get("error")).contains("did not reach");
+        assertThat(locked.calls()).noneMatch(c -> c.contains("/message"));
+    }
+
+    @Test
+    void presetsAndHooksAreSavedAndOnlyDirectorsAndAdminsMaySendOrSave() {
+        Map defaults = send(HttpMethod.GET, SCREENS + "/message-settings", null, refereeToken).getBody();
+        assertThat((List<Map>) defaults.get("presets")).hasSize(5);
+        assertThat(((Map) defaults.get("hooks")).get("holdAfterQualifying")).isEqualTo(false);
+        assertThat(((Map) defaults.get("hooks")).get("announceFinals")).isEqualTo(false);
+
+        Map<String, Object> message = Map.of("title", "Lunch", "text", "Back at 1", "style", "hold", "level", "info");
+        Map<String, Object> hooks = Map.of("holdAfterQualifying", true, "holdMessage", message, "announceFinals", false,
+                "finalsMessage", message);
+        Map<String, Object> body = Map.of("presets", List.of(Map.of("name", "Lunch", "message", message)), "hooks", hooks);
+
+        assertThat(send(HttpMethod.PUT, SCREENS + "/message-settings", body, refereeToken).getStatusCode())
+                .isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(send(HttpMethod.PUT, SCREENS + "/message-settings", body, directorToken).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+        Map saved = send(HttpMethod.GET, SCREENS + "/message-settings", null, directorToken).getBody();
+        assertThat((List<Map>) saved.get("presets")).singleElement().satisfies(p -> assertThat(p.get("name")).isEqualTo("Lunch"));
+        assertThat(((Map) saved.get("hooks")).get("holdAfterQualifying")).isEqualTo(true);
+
+        Long id = ((Number) add(open, null).get("id")).longValue();
+        assertThat(send(HttpMethod.POST, SCREENS + "/message", Map.of("screenIds", List.of(id), "title", "Hi"),
+                refereeToken).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
     // ---- helpers

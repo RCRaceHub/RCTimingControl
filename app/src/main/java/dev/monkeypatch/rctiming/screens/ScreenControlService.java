@@ -208,12 +208,13 @@ public class ScreenControlService {
         return results;
     }
 
-    private interface ScreenCall {
+    /** One call to one screen; may throw {@link ViewerException}. */
+    interface ScreenCall {
         void run(Screen screen);
     }
 
     /** Runs the call on every screen at once and collects each screen's outcome, in the order given. */
-    private List<ScreenActionResult> onEach(List<Screen> targets, ScreenCall call) {
+    List<ScreenActionResult> onEach(List<Screen> targets, ScreenCall call) {
         Function<Screen, ScreenActionResult> one = screen -> {
             try {
                 call.run(screen);
@@ -241,11 +242,11 @@ public class ScreenControlService {
         return results;
     }
 
-    private ViewerTarget target(Screen screen) {
+    ViewerTarget target(Screen screen) {
         return new ViewerTarget(screen.getHost(), screen.getPort(), screens.tokenOf(screen).orElse(null));
     }
 
-    private void audit(Actor actor, String action, String what, List<ScreenActionResult> results) {
+    void audit(Actor actor, String action, String what, List<ScreenActionResult> results) {
         String names = results.stream().map(r -> r.ok() ? r.name() : r.name() + " (failed)")
                 .reduce((a, b) -> a + ", " + b).orElse("no screens");
         screens.auditAction(actor, action, what + names);

@@ -7,6 +7,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
@@ -93,6 +94,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>board_views</code>.
      */
     public final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
+
+    /**
+     * The table <code>display_message_settings</code>.
+     */
+    public final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
 
     /**
      * The table <code>display_playlists</code>.
@@ -358,6 +364,7 @@ public class DefaultSchema extends SchemaImpl {
             AudioTemplates.AUDIO_TEMPLATES,
             AuditLog.AUDIT_LOG,
             BoardViews.BOARD_VIEWS,
+            DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS,
             DisplayPlaylists.DISPLAY_PLAYLISTS,
             DisplayScreens.DISPLAY_SCREENS,
             ChampionshipClasses.CHAMPIONSHIP_CLASSES,

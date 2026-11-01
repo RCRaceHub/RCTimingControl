@@ -53,7 +53,7 @@ public class ScreenMonitor {
     private final ExecutorService pollers = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Reading> readings = new ConcurrentHashMap<>();
     /** Whether each screen asks for a token, from its {@code /info}; read again every {@link #INFO_REFRESH}. */
-    private record AuthKnown(boolean required, Instant at) { }
+    private record AuthKnown(boolean required, List<String> features, Instant at) { }
     private final Map<String, AuthKnown> auth = new ConcurrentHashMap<>();
 
     @Autowired
@@ -114,14 +114,14 @@ public class ScreenMonitor {
         try {
             ViewerInfo info = client.info(new ViewerTarget(screen.getHost(), screen.getPort(), null));
             if (info != null) {
-                auth.put(screen.getScreenId(), new AuthKnown(info.authRequired(), clock.instant()));
+                auth.put(screen.getScreenId(), new AuthKnown(info.authRequired(), info.features(), clock.instant()));
             }
         } catch (ViewerException e) {
             // A 401 on /info means it asks for a token; any other failure keeps the old answer. Either way the next
             // try waits for the refresh period, not the next poll
             boolean required = e.httpStatus() != null && e.httpStatus() == 401
                     || known != null && known.required();
-            auth.put(screen.getScreenId(), new AuthKnown(required, clock.instant()));
+            auth.put(screen.getScreenId(), new AuthKnown(required, known == null ? null : known.features(), clock.instant()));
             log.debug("Could not read the info of screen {}: {}", screen.getScreenId(), e.getMessage());
         } catch (RuntimeException e) {
             log.debug("Unexpected failure reading the info of screen {}", screen.getScreenId(), e);
@@ -154,7 +154,7 @@ public class ScreenMonitor {
     public ScreenState stateOf(Screen screen) {
         Reading r = readings.get(screen.getScreenId());
         if (r == null) {
-            return new ScreenState(ScreenState.Connection.UNKNOWN, null, null, null, null, false, List.of());
+            return new ScreenState(ScreenState.Connection.UNKNOWN, null, null, null, null, false, null, List.of());
         }
         ScreenState.Connection connection = r.misses() == 0 ? ScreenState.Connection.ONLINE
                 : r.misses() < OFFLINE_AFTER_MISSES ? ScreenState.Connection.UNREACHABLE : ScreenState.Connection.OFFLINE;
@@ -166,7 +166,13 @@ public class ScreenMonitor {
             warnings.add(authWarning);
         }
         return new ScreenState(connection, status, r.statusAt(), r.error(), online ? r.skew() : null,
-                online && drifted(screen, status), warnings);
+                online && drifted(screen, status), featuresOf(screen), warnings);
+    }
+
+    /** What the screen's agent offers, from the last {@code /info} read; null until one has been read. */
+    private List<String> featuresOf(Screen screen) {
+        AuthKnown known = auth.get(screen.getScreenId());
+        return known == null ? null : known.features();
     }
 
     /**

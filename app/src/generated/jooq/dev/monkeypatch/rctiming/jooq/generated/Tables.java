@@ -7,6 +7,7 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
@@ -78,6 +79,11 @@ public class Tables {
      * The table <code>board_views</code>.
      */
     public static final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
+
+    /**
+     * The table <code>display_message_settings</code>.
+     */
+    public static final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
 
     /**
      * The table <code>display_playlists</code>.
