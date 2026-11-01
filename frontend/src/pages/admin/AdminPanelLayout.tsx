@@ -36,6 +36,7 @@ import { BoardsMenu } from '@/components/BoardsMenu';
 import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
+import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 
 interface NavEntry {
   to: string;
@@ -90,11 +91,13 @@ function NavItem({
   label,
   Icon,
   onClick,
+  badge,
 }: {
   to: string;
   label: string;
   Icon: React.ComponentType<{ className?: string }>;
   onClick?: () => void;
+  badge?: React.ReactNode;
 }) {
   return (
     <NavLink
@@ -111,7 +114,19 @@ function NavItem({
     >
       <Icon className="h-4 w-4 shrink-0" />
       {label}
+      {badge}
     </NavLink>
+  );
+}
+
+/** "3 unlinked" next to the RaceHub Classes entry while RaceHub lists classes that have no link yet. */
+function UnlinkedClassesBadge() {
+  const { data: count = 0 } = useUnlinkedRaceHubClassCount();
+  if (count === 0) return null;
+  return (
+    <span className="ml-auto rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
+      {count} unlinked
+    </span>
   );
 }
 
@@ -159,7 +174,14 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           Configuration
         </p>
         {visibleTo(configGroup, isAdmin, canRunEvent).map(({ to, label, Icon }) => (
-          <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
+          <NavItem
+            key={to}
+            to={to}
+            label={label}
+            Icon={Icon}
+            onClick={onNavClick}
+            badge={to === '/admin/racehub-classes' ? <UnlinkedClassesBadge /> : undefined}
+          />
         ))}
       </nav>
 

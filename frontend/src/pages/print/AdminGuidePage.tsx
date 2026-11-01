@@ -441,11 +441,17 @@ export default function AdminGuidePage() {
             it</span>. A QR code for the address is shown once the name is announced.
           </li>
           <li>
+            <span className="font-semibold">Step 7 — RaceHub Classes (optional):</span> If the
+            club books through RaceHub, link each class RaceHub lists to one of your classes,
+            or make a class for it. Skip it if the club does not use RaceHub; the same list is
+            under Admin &gt; RaceHub classes.
+          </li>
+          <li>
             <span className="font-semibold">Navigate the wizard:</span> Use
             <span className="font-semibold"> Save and Continue</span>,
             <span className="font-semibold"> Back</span> and, where a step offers it,
             <span className="font-semibold"> Skip for now</span> (the last step finishes with
-            <span className="font-semibold"> Save and Finish</span>). Completed steps show a
+            <span className="font-semibold"> Finish</span>). Completed steps show a
             green tick in the left sidebar. Once the club profile is saved, you can click any
             step in the sidebar to go back to it.
           </li>

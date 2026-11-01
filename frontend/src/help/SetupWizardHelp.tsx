@@ -9,7 +9,8 @@ export function SetupWizardHelp() {
         Track, Race Format, Staff Account, Decoder Config) and is marked complete with a
         green tick when done. Completed steps can be revisited by clicking them in the
         sidebar. A sixth, optional step, Network Name, suggests a name such as rctiming.local
-        so tablets and phones can reach the app without knowing the laptop's address.
+        so tablets and phones can reach the app without knowing the laptop's address. A seventh,
+        optional step, RaceHub Classes, links the classes RaceHub lists for the club to yours.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">
@@ -19,6 +20,7 @@ export function SetupWizardHelp() {
         <li><span className="font-semibold">Staff Account:</span> Create the first Race Director or Admin staff account so officials can log in.</li>
         <li><span className="font-semibold">Decoder Config:</span> Enter the IP address and port of the AMB/MyLaps decoder. The system will attempt a test connection.</li>
         <li><span className="font-semibold">Network Name (optional):</span> Pick a name such as rctiming. It is saved for the next start; after RC Timing is restarted, come back to check that this device can reach it and to show its QR code.</li>
+        <li><span className="font-semibold">RaceHub Classes (optional):</span> If the club books through RaceHub, link each class RaceHub lists to one of yours, or make a class for it (a new install can make them all at once). Skip it if the club does not use RaceHub; the same list is under Admin &gt; RaceHub classes.</li>
       </ul>
 
       <div className="mt-4 rounded-md bg-muted p-3 text-sm">

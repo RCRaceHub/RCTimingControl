@@ -78,6 +78,20 @@ describe('RaceHubClassesPage', () => {
     expect(screen.getByRole('button', { name: 'Link Old Buggy' })).toBeDisabled();
   });
 
+  it('flags how many classes are not linked yet', async () => {
+    api.raceHubClasses.list.mockResolvedValue({
+      error: null,
+      classes: [
+        raceHubClass({ id: '1', linkedRacingClassId: 102 }),
+        raceHubClass({ id: '2', name: 'B' }),
+        raceHubClass({ id: '3', name: 'C' }),
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByText('2 unlinked')).toBeInTheDocument();
+  });
+
   it('links a class to a racing class chosen once', async () => {
     api.raceHubClasses.list.mockResolvedValue({ error: null, classes: [raceHubClass({ id: '7' })] });
     api.raceHubClasses.link.mockResolvedValue([

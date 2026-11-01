@@ -44,7 +44,7 @@ describe('NetworkNameStep', () => {
 
     const input = await screen.findByLabelText('Name');
     expect(input).toHaveValue('rctiming');
-    fireEvent.click(screen.getByRole('button', { name: 'Save and Finish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
 
     await waitFor(() => expect(onNext).toHaveBeenCalled());
     expect(setupApi.saveNetworkName).toHaveBeenCalledWith('rctiming');
@@ -57,7 +57,7 @@ describe('NetworkNameStep', () => {
     renderStep();
 
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Timing.local' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save and Finish' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save and continue' }));
 
     await waitFor(() => expect(setupApi.saveNetworkName).toHaveBeenCalledWith('timing'));
   });
@@ -100,7 +100,7 @@ describe('NetworkNameStep when the environment decides the name', () => {
     renderStep();
 
     expect(await screen.findByText(/RCTIMING_NETWORK_MDNS_NAME/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save and Finish' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save and continue' })).toBeDisabled();
   });
 });
 

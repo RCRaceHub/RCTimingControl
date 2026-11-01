@@ -16,6 +16,21 @@ export function useRaceHubClasses(enabled = true) {
   });
 }
 
+/**
+ * How many of the club's RaceHub classes have no link yet, for the badge on the menu entry and the page. Shares the
+ * list's query but may be a minute old, so the menu does not ask RaceHub on every page. Zero when RaceHub cannot be
+ * asked.
+ */
+export function useUnlinkedRaceHubClassCount(enabled = true) {
+  return useQuery({
+    queryKey: adminQueryKeys.racehub.classes(),
+    queryFn: () => adminApi.raceHubClasses.list(),
+    enabled,
+    staleTime: 60_000,
+    select: list => list.classes.filter(c => c.linkedRacingClassId == null).length,
+  });
+}
+
 /** Links club classes to racing classes for the whole club; new racing classes show up in the class lists. */
 export function useLinkRaceHubClasses() {
   const qc = useQueryClient();
