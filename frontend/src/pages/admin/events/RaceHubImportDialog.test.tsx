@@ -18,6 +18,8 @@ vi.mock('@/lib/adminApi', () => ({
     listRaceHubClassMappings: vi.fn(),
     replaceRaceHubClassMappings: vi.fn(),
     listRacingClasses: vi.fn(),
+    resolveRaceHubClasses: vi.fn(),
+    formats: { list: vi.fn() },
   },
 }));
 
@@ -84,6 +86,7 @@ describe('RaceHubImportDialog', () => {
     // Reset, not just clear: an unused mockResolvedValueOnce must not leak into the next test
     vi.resetAllMocks();
     api.listRaceHubClassMappings.mockResolvedValue([]);
+    api.formats.list.mockResolvedValue([]);
     api.listRacingClasses.mockResolvedValue([
       { id: 101, name: '2WD Buggy', description: null },
       { id: 102, name: 'Stadium Truck', description: null },
@@ -152,6 +155,33 @@ describe('RaceHubImportDialog', () => {
     await waitFor(() => expect(api.importRaceHubEntries).toHaveBeenCalledTimes(2));
     expect(await screen.findByRole('button', { name: 'Import entries' })).toBeEnabled();
     expect(screen.queryByText('Buggy 2WD')).not.toBeInTheDocument();
+  });
+
+  it('creates a new class for an unmapped one, linking it for the whole club, then checks again', async () => {
+    api.importRaceHubEntries
+      .mockResolvedValueOnce(result({
+        blocked: true,
+        unmappedClasses: [{ racehubEventClassId: 'rh-buggy', rcClassName: 'Buggy 2WD', className: '2WD', entryCount: 2 }],
+      }))
+      .mockResolvedValueOnce(result());
+    api.resolveRaceHubClasses.mockResolvedValue([
+      { racehubEventClassId: 'rh-buggy', racingClassId: 300, eventClassId: 31, racingClassCreated: true },
+    ]);
+    renderDialog();
+
+    chooseFile(exportFile());
+
+    expect(await screen.findByText('Buggy 2WD', { selector: 'span' })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'new' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save mappings and check again' }));
+
+    await waitFor(() =>
+      expect(api.resolveRaceHubClasses).toHaveBeenCalledWith(5, [
+        { racehubEventClassId: 'rh-buggy', createName: 'Buggy 2WD', templateId: undefined },
+      ]),
+    );
+    expect(api.replaceRaceHubClassMappings).not.toHaveBeenCalled();
+    await waitFor(() => expect(api.importRaceHubEntries).toHaveBeenCalledTimes(2));
   });
 
   it('does not preview again when the dialog is closed while the class mappings save', async () => {

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
-import type { RaceHubClassMappingDto } from '@/lib/adminApi';
+import type { RaceHubClassMappingDto, ResolveRaceHubClassRequest } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
 export function useRaceHubClassMappings(eventId: number, enabled = true) {
@@ -18,6 +18,21 @@ export function useReplaceRaceHubClassMappings(eventId: number) {
       adminApi.replaceRaceHubClassMappings(eventId, mappings),
     onSuccess: data => {
       qc.setQueryData(adminQueryKeys.events.racehubClassMappings(eventId), data);
+    },
+  });
+}
+
+/**
+ * Settles classes an import could not place: links each to an existing or new racing class club-wide, adds it to
+ * the event with the format it last used, and maps it. Refreshes the event's queries, which include its classes.
+ */
+export function useResolveRaceHubClasses(eventId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (requests: ResolveRaceHubClassRequest[]) => adminApi.resolveRaceHubClasses(eventId, requests),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
+      qc.invalidateQueries({ queryKey: adminQueryKeys.racingClasses.all() });
     },
   });
 }

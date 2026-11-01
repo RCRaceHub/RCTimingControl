@@ -320,6 +320,21 @@ export interface SaveEntryFeedRequest {
   autoFetch: boolean;
 }
 
+/** One class to settle: an existing racing class or the name of a new one, and the format if it has not run before. */
+export interface ResolveRaceHubClassRequest {
+  racehubEventClassId: string;
+  racingClassId?: number;
+  createName?: string;
+  templateId?: number;
+}
+
+export interface ResolvedRaceHubClassDto {
+  racehubEventClassId: string;
+  racingClassId: number;
+  eventClassId: number;
+  racingClassCreated: boolean;
+}
+
 export interface RaceHubClassMappingDto {
   racehubEventClassId: string;
   eventClassId: number;
@@ -891,6 +906,12 @@ export const adminApi = {
   listRaceHubClassMappings: (eventId: number) =>
     api
       .get<RaceHubClassMappingDto[]>(`/api/v1/admin/events/${eventId}/racehub-class-mappings`)
+      .then(r => r.data),
+
+  /** Links classes club-wide, adds them to the event with their last format, and maps them for the event. */
+  resolveRaceHubClasses: (eventId: number, requests: ResolveRaceHubClassRequest[]) =>
+    api
+      .post<ResolvedRaceHubClassDto[]>(`/api/v1/admin/events/${eventId}/racehub-class-links`, requests)
       .then(r => r.data),
 
   replaceRaceHubClassMappings: (eventId: number, mappings: RaceHubClassMappingDto[]) =>

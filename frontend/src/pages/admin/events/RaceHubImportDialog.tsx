@@ -14,9 +14,11 @@ import {
 } from '@/components/ui/dialog';
 
 import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
-import { useImportClassMappings, useRaceHubImport } from '@/hooks/admin/useRaceHubImport';
+import { useFormatsList } from '@/hooks/admin/useAdminFormats';
+import { useImportClassMappings, useRaceHubImport, useResolveRaceHubClasses } from '@/hooks/admin/useRaceHubImport';
 import { useEntryFeedImport } from '@/hooks/admin/useEntryFeed';
-import type { EventClassDto, ImportedPhotoLink, RaceHubImportResult } from '@/lib/adminApi';
+import { getApiErrorMessage } from '@/lib/errors';
+import type { EventClassDto, ImportedPhotoLink, RaceHubImportResult, ResolveRaceHubClassRequest } from '@/lib/adminApi';
 import { ClassMappingPanel, ImportProblems, ImportWarnings } from './ImportPanels';
 import { ImportedPhotosPanel } from './ImportedPhotosPanel';
 
@@ -53,6 +55,7 @@ export default function RaceHubImportDialog({
   const [fileError, setFileError] = useState<string | null>(null);
   const [preview, setPreview] = useState<RaceHubImportResult | null>(null);
   const [classChoices, setClassChoices] = useState<Record<string, string>>({});
+  const [formatChoices, setFormatChoices] = useState<Record<string, string>>({});
   // Set once an import went through and its file named pictures; the dialog then offers to fetch them
   const [photoLinks, setPhotoLinks] = useState<ImportedPhotoLink[]>([]);
 
@@ -60,6 +63,8 @@ export default function RaceHubImportDialog({
   const feedImport = useEntryFeedImport(eventId);
   const importMutation = feed ? feedImport : fileImport;
   const classMappings = useImportClassMappings(eventId, open);
+  const resolveClasses = useResolveRaceHubClasses(eventId);
+  const { data: formats = [] } = useFormatsList();
   // Each file choice (and closing the dialog) starts a new request generation. A preview
   // response from an older generation is ignored, so the preview on screen always belongs to
   // the file that "Import entries" will send.
@@ -73,6 +78,7 @@ export default function RaceHubImportDialog({
       setFileError(null);
       setPreview(null);
       setClassChoices({});
+      setFormatChoices({});
       setPhotoLinks([]);
     }
     onOpenChange(next);
@@ -124,6 +130,7 @@ export default function RaceHubImportDialog({
     setPreview(null);
     setFileError(null);
     setClassChoices({});
+    setFormatChoices({});
     if (!file) return;
     let parsed: unknown;
     try {
@@ -141,15 +148,36 @@ export default function RaceHubImportDialog({
 
   async function saveMappingsAndRecheck() {
     const requestGeneration = generation.current;
+    // A number is one of the event's own classes. "rc:<id>" adds a racing class that is not in the event yet and
+    // "new" makes a class from the file's name; both are linked club-wide so later meetings need no mapping.
+    const settle: ResolveRaceHubClassRequest[] = [];
+    const plain: Record<string, string> = {};
+    for (const [key, value] of Object.entries(classChoices)) {
+      if (!value) continue;
+      const templateId = formatChoices[key] && formatChoices[key] !== 'last' ? Number(formatChoices[key]) : undefined;
+      if (value.startsWith('rc:')) {
+        settle.push({ racehubEventClassId: key, racingClassId: Number(value.slice(3)), templateId });
+      } else if (value === 'new') {
+        settle.push({
+          racehubEventClassId: key,
+          createName: unmapped.find(u => u.key === key)?.name,
+          templateId,
+        });
+      } else {
+        plain[key] = value;
+      }
+    }
     try {
-      if (!(await classMappings.save(classChoices))) return;
+      if (Object.keys(plain).length > 0 && !(await classMappings.save(plain))) return;
+      if (settle.length > 0) await resolveClasses.mutateAsync(settle);
       // The dialog was closed or another file chosen while the mappings saved
       if (requestGeneration !== generation.current) return;
       setClassChoices({});
+      setFormatChoices({});
       await runPreview(exportDocument);
-    } catch {
+    } catch (err) {
       if (requestGeneration !== generation.current) return;
-      toast.error('Could not save the class mappings. Try again.');
+      toast.error(getApiErrorMessage(err, 'Could not save the class mappings. Try again.'));
     }
   }
 
@@ -182,7 +210,8 @@ export default function RaceHubImportDialog({
     name: u.rcClassName ?? u.className ?? u.racehubEventClassId,
     entryCount: u.entryCount,
   }));
-  const busy = importMutation.isPending || classMappings.isSaving;
+  const busy = importMutation.isPending || classMappings.isSaving || resolveClasses.isPending;
+  const inEvent = new Set(classes.map(c => c.racingClassId));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -242,11 +271,20 @@ export default function RaceHubImportDialog({
 
             <ClassMappingPanel
               unmapped={unmapped}
-              intro="These RaceHub classes do not match a class in this event. Choose one for each."
+              intro="These RaceHub classes do not match a class in this event. Choose one of the event's classes, add one of your classes to it, or create a new class. The choice is remembered for every meeting."
               classes={classes}
               classLabel={classLabel}
               choices={classChoices}
               onChoose={(key, value) => setClassChoices(c => ({ ...c, [key]: value }))}
+              extraOptions={u => [
+                ...racingClasses
+                  .filter(rc => !inEvent.has(rc.id))
+                  .map(rc => ({ value: `rc:${rc.id}`, label: `Add ${rc.name} to this event` })),
+                { value: 'new', label: `Create a new class called ${u.name}` },
+              ]}
+              formats={formats}
+              formatChoices={formatChoices}
+              onChooseFormat={(key, value) => setFormatChoices(c => ({ ...c, [key]: value }))}
               mappingsLoadFailed={classMappings.loadFailed}
               canSave={classMappings.ready && !busy}
               onSave={() => void saveMappingsAndRecheck()}
