@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * A screen on the Screens page (#708): who it is, whether it answers, what it shows, and what an official should look
  * at. The saved token is never included, only whether there is one. Times in {@code live} are the screen's own clock in
- * Unix seconds; {@code lastSeenAt} is written when the screen goes offline.
+ * Unix seconds, {@code time} being the screen's clock when it was read; {@code lastSeenAt} is written when the screen goes offline.
  *
  * @param connection {@code ONLINE}, {@code UNREACHABLE}, {@code OFFLINE} or {@code UNKNOWN}
  * @param live       the last status the screen gave, or null if it has not answered since the app started
@@ -22,13 +22,13 @@ public record ScreenDto(Long id, String screenId, String name, String host, int 
                         Instant statusAt, Double clockSkewSeconds, boolean drifted, List<String> warnings, Live live) {
 
     /** What is on screen now. */
-    public record Live(String state, boolean paused, Integer index, Integer playlistLength, Long playlistRevision,
+    public record Live(String state, boolean paused, Double time, Integer index, Integer playlistLength, Long playlistRevision,
                        String playlistSource, String currentUrl, String currentLabel, Double currentEndsAt,
                        String overrideUrl, Double overrideUntil, Boolean pageReachable, boolean browserRunning,
                        Integer browserRestarts, String browserLastError) {
 
         static Live from(ViewerStatus s) {
-            return new Live(s.state(), s.paused(), s.index(),
+            return new Live(s.state(), s.paused(), s.time(), s.index(),
                     s.playlist() == null ? null : s.playlist().length(),
                     s.playlist() == null ? null : s.playlist().revision(),
                     s.playlist() == null ? null : s.playlist().source(),

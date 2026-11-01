@@ -1,0 +1,279 @@
+import { useState } from 'react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Pause, Play, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useConfirm } from '@/components/ConfirmDialog';
+import { QueryError } from '@/components/QueryError';
+import { useBoardPages, useScreenMutations, useScreens } from '@/hooks/admin/useAdminScreens';
+import { getApiErrorMessage } from '@/lib/errors';
+import { cn } from '@/lib/utils';
+import type { ControlAction, Screen, ScreenActionResult } from '@/lib/screensApi';
+import { PlaylistsPanel } from './PlaylistsPanel';
+import { AddScreenDialog, GotoDialog, ShowDialog, TokenDialog } from './ScreenDialogs';
+import { CONNECTION, secondsToNext, showing, stateLabel, summariseResults } from './screenFormat';
+
+type DialogName = 'add' | 'token' | 'show' | 'goto';
+
+/**
+ * The screen manager (#708): the EventScreenDisplay viewers on the venue network with their live status, and the
+ * playlists pushed to them. Tick screens to send them a command as a group. The list refreshes every few seconds,
+ * because the screens cannot push. Open to ADMIN and RACE_DIRECTOR.
+ */
+export default function ScreensPage() {
+  const { data, isLoading, isError, refetch } = useScreens();
+  const { data: boardPages } = useBoardPages();
+  const m = useScreenMutations();
+  const { confirm, dialog: confirmDialog } = useConfirm();
+  const [selected, setSelected] = useState<number[]>([]);
+  const [dialog, setDialog] = useState<DialogName | null>(null);
+
+  const screens = data?.screens ?? [];
+  const ids = selected.filter(id => screens.some(s => s.id === id));
+  const none = ids.length === 0;
+
+  function toggle(id: number) {
+    setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id]));
+  }
+
+  /** Tells the official how a command to a group went: success, or which screens refused and why. */
+  function report(results: ScreenActionResult[], done: string) {
+    const summary = summariseResults(results);
+    if (summary.ok) toast.success(done);
+    else toast.error(summary.text);
+  }
+
+  async function run<T>(action: () => Promise<T>, fallback: string, then?: (result: T) => void) {
+    try {
+      then?.(await action());
+    } catch (e) {
+      toast.error(getApiErrorMessage(e, fallback));
+    }
+  }
+
+  const control = (action: ControlAction, done: string, page?: number) =>
+    run(() => m.control.mutateAsync({ action, ids, page }), 'Could not send that to the screens.', r => report(r, done));
+
+  async function handleRemove(screen: Screen) {
+    const confirmed = await confirm({
+      title: `Forget ${screen.name}?`,
+      description: 'It keeps showing its playlist. It comes back if it is found on the network or added again.',
+      confirmLabel: 'Forget',
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await run(() => m.remove.mutateAsync(screen.id), 'Could not forget the screen.', () => toast.success('Screen forgotten'));
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h1 className="text-2xl font-semibold">Screens</h1>
+        <div className="flex flex-wrap gap-2">
+          {data?.discoveryEnabled && (
+            <Button variant="outline" disabled={m.scan.isPending}
+              onClick={() => void run(() => m.scan.mutateAsync(), 'Could not scan the network.', () => toast.success('Looking for screens…'))}>
+              <Search className="h-4 w-4 mr-1" />Scan network
+            </Button>
+          )}
+          <Button onClick={() => setDialog('add')}><Plus className="h-4 w-4 mr-1" />Add screen</Button>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
+        The Raspberry Pi screens around the venue. Tick one or more to control them together. Screens are found
+        automatically{data && !data.discoveryEnabled ? ' (switched off here: add them by hand)' : ''}, and one that
+        goes quiet stays in the list as offline.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2 mb-3" role="toolbar" aria-label="Control the ticked screens">
+        <span className="text-sm text-muted-foreground mr-1">{none ? 'Tick screens to control them' : `${ids.length} ticked`}</span>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => void control('previous', 'Went back')}>
+          <ChevronLeft className="h-4 w-4 mr-1" />Previous
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => void control('next', 'Moved on')}>
+          Next<ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => setDialog('goto')}>Go to page…</Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => void control('pause', 'Paused')}>
+          <Pause className="h-4 w-4 mr-1" />Pause
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => void control('resume', 'Resumed')}>
+          <Play className="h-4 w-4 mr-1" />Resume
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => void control('reload', 'Reloaded')}>
+          <RefreshCw className="h-4 w-4 mr-1" />Reload
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => setDialog('show')}>
+          <Upload className="h-4 w-4 mr-1" />Show a page…
+        </Button>
+        <Button variant="outline" size="sm" disabled={none}
+          onClick={() => void run(() => m.clearShow.mutateAsync(ids), 'Could not clear the page.', r => report(r, 'Back to the playlists'))}>
+          <X className="h-4 w-4 mr-1" />Clear page
+        </Button>
+        <Button variant="outline" size="sm" disabled={none} onClick={() => setDialog('token')}>Set token…</Button>
+      </div>
+
+      {isError && <QueryError variant="banner" message="Failed to load the screens." onRetry={refetch} />}
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-14 rounded-lg bg-muted animate-pulse" />)}
+        </div>
+      ) : (
+        <div className="rounded-lg border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox aria-label="Tick all screens" checked={screens.length > 0 && ids.length === screens.length}
+                    onCheckedChange={c => setSelected(c ? screens.map(s => s.id) : [])} />
+                </TableHead>
+                <TableHead>Screen</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Showing</TableHead>
+                <TableHead>Next in</TableHead>
+                <TableHead>Playlist</TableHead>
+                <TableHead>Browser</TableHead>
+                <TableHead className="w-24" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {screens.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-sm text-muted-foreground">
+                    No screens yet. Switch a screen on, scan the network, or add it by hand.
+                  </TableCell>
+                </TableRow>
+              )}
+              {screens.map(screen => (
+                <ScreenRow key={screen.id} screen={screen} ticked={selected.includes(screen.id)}
+                  onToggle={() => toggle(screen.id)} onRemove={() => void handleRemove(screen)}
+                  onRepush={() => void run(() => m.repush.mutateAsync(screen.id), 'Could not push again.', r => report(r, 'Playlist pushed again'))} />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <PlaylistsPanel selectedIds={ids} onPushed={r => report(r, 'Playlist pushed')} />
+
+      {dialog === 'add' && (
+        <AddScreenDialog open onOpenChange={o => { if (!o) setDialog(null); }}
+          onSubmit={async v => {
+            await run(() => m.add.mutateAsync(v), 'Could not add the screen.', s => {
+              toast.success(`Added ${s.name}`);
+              setDialog(null);
+            });
+          }} />
+      )}
+      {dialog === 'token' && (
+        <TokenDialog open onOpenChange={o => { if (!o) setDialog(null); }} count={ids.length}
+          onSubmit={async token => {
+            await run(() => m.setToken.mutateAsync({ ids, token }), 'Could not save the token.', () => {
+              toast.success(token ? 'Token saved' : 'Token cleared');
+              setDialog(null);
+            });
+          }} />
+      )}
+      {dialog === 'show' && (
+        <ShowDialog open onOpenChange={o => { if (!o) setDialog(null); }} count={ids.length} boardPages={boardPages}
+          onSubmit={async v => {
+            await run(() => m.show.mutateAsync({ ids, ...v }), 'Could not show the page.', r => {
+              report(r, 'Page shown');
+              setDialog(null);
+            });
+          }} />
+      )}
+      {dialog === 'goto' && (
+        <GotoDialog open onOpenChange={o => { if (!o) setDialog(null); }}
+          onSubmit={async page => {
+            await run(() => m.control.mutateAsync({ action: 'goto', ids, page }), 'Could not move the screens.', r => {
+              report(r, `Went to page ${page}`);
+              setDialog(null);
+            });
+          }} />
+      )}
+      {confirmDialog}
+    </div>
+  );
+}
+
+function ScreenRow({ screen, ticked, onToggle, onRemove, onRepush }: {
+  screen: Screen;
+  ticked: boolean;
+  onToggle: () => void;
+  onRemove: () => void;
+  onRepush: () => void;
+}) {
+  const connection = CONNECTION[screen.connection];
+  const next = secondsToNext(screen);
+  const live = screen.live;
+  const stale = screen.connection === 'UNREACHABLE' || screen.connection === 'OFFLINE';
+  const problems = [...screen.warnings, ...(screen.connection === 'OFFLINE' && screen.error ? [screen.error] : [])];
+
+  return (
+    <TableRow data-state={ticked ? 'selected' : undefined}>
+      <TableCell className="align-top">
+        <Checkbox aria-label={`Tick ${screen.name}`} checked={ticked} onCheckedChange={onToggle} />
+      </TableCell>
+      <TableCell className="align-top">
+        <div className="font-medium">{screen.name}</div>
+        <div className="text-xs text-muted-foreground font-mono">{screen.screenId}</div>
+        <div className="text-xs text-muted-foreground">{screen.host}:{screen.port}{screen.agentVersion ? ` · v${screen.agentVersion}` : ''}</div>
+        {screen.hasToken && <div className="text-xs text-muted-foreground">Token saved</div>}
+      </TableCell>
+      <TableCell className="align-top">
+        <Badge variant="outline" className={cn('border-transparent', connection.className)}>{connection.label}</Badge>
+        {screen.connection === 'OFFLINE' && screen.lastSeenAt && (
+          <div className="text-xs text-muted-foreground mt-1">Last seen {new Date(screen.lastSeenAt).toLocaleString()}</div>
+        )}
+        {problems.map(w => (
+          <div key={w} className="mt-1 flex items-start gap-1 text-xs text-warning max-w-64">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />{w}
+          </div>
+        ))}
+        {screen.drifted && (
+          <div className="mt-1">
+            <Badge variant="outline" className="border-transparent bg-warning/15 text-warning">Changed outside the manager</Badge>
+            {screen.playlistId != null && (
+              <Button variant="link" size="sm" className="px-1 h-auto" onClick={onRepush}>Push again</Button>
+            )}
+          </div>
+        )}
+      </TableCell>
+      <TableCell className={cn('align-top text-sm max-w-64', stale && 'text-muted-foreground')}>
+        {live ? (
+          <>
+            <div>{stateLabel(screen)}</div>
+            <div className="truncate text-muted-foreground" title={showing(screen)}>{showing(screen)}</div>
+          </>
+        ) : '—'}
+      </TableCell>
+      <TableCell className="align-top text-sm">
+        {!stale && next != null ? `${next} s` : '—'}
+      </TableCell>
+      <TableCell className="align-top text-sm">
+        {screen.playlistName ?? (live?.playlistLength ? 'Set elsewhere' : '—')}
+        {live?.playlistRevision != null && (
+          <div className="text-xs text-muted-foreground">revision {live.playlistRevision}, {live.playlistLength ?? 0} page(s)</div>
+        )}
+      </TableCell>
+      <TableCell className="align-top text-sm">
+        {live ? (live.browserRunning ? 'Running' : <span className="text-destructive">Not running</span>) : '—'}
+        {live?.browserRestarts ? <div className="text-xs text-warning">{live.browserRestarts} restart(s)</div> : null}
+        {live?.pageReachable === false && <div className="text-xs text-destructive">Cannot reach the page</div>}
+        {screen.clockSkewSeconds != null && Math.abs(screen.clockSkewSeconds) > 1 && (
+          <div className="text-xs text-muted-foreground">Clock {screen.clockSkewSeconds > 0 ? '+' : ''}{Math.round(screen.clockSkewSeconds)} s</div>
+        )}
+      </TableCell>
+      <TableCell className="align-top">
+        <Button variant="ghost" size="icon-sm" aria-label={`Forget ${screen.name}`} onClick={onRemove}>
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
