@@ -45,6 +45,7 @@ class ScreenManagerIT extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired ScreenMonitor monitor;
     @Autowired ScreenRepository screenRepository;
+    @Autowired ScreenControlService control;
 
     private String directorToken;
     private String refereeToken;
@@ -250,6 +251,62 @@ class ScreenManagerIT extends AbstractIntegrationTest {
         ResponseEntity<Map> r = send(HttpMethod.POST, PLAYLISTS, playlistBody(name), directorToken);
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         return ((Number) r.getBody().get("id")).longValue();
+    }
+
+    @Test
+    void aScreenFoundOnTheNetworkWaitsUntilAnOfficialAddsIt() {
+        control.discovered("127.0.0.1", open.port());
+
+        assertThat(screens()).noneMatch(s -> s.get("screenId").equals("it-open-" + suffix));
+        assertThat(found()).anySatisfy(f -> {
+            assertThat(f.get("screenId")).isEqualTo("it-open-" + suffix);
+            assertThat(((Number) f.get("port")).intValue()).isEqualTo(open.port());
+        });
+
+        add(open, null);
+
+        assertThat(screens()).anyMatch(s -> s.get("screenId").equals("it-open-" + suffix));
+        assertThat(found()).noneMatch(f -> f.get("screenId").equals("it-open-" + suffix));
+    }
+
+    @Test
+    void aScreenAlreadyAddedAndAnsweringIsNotMovedByAnotherDeviceUsingItsId() {
+        Long id = ((Number) add(locked, "secret").get("id")).longValue();
+        monitor.poll(screenById(id));
+        try (FakeScreen impostor = new FakeScreen("it-locked-" + suffix, null)) {
+            control.discovered("127.0.0.1", impostor.port());
+
+            assertThat(screenById(id).getPort()).isEqualTo(locked.port());
+            assertThat(impostor.calls()).noneMatch(c -> c.contains("(auth)"));
+        }
+    }
+
+    @Test
+    void anOfflineScreenWithATokenIsNotMovedByAnnouncementsUntilAnOfficialAddsItAgain() {
+        Long id = ((Number) add(locked, "secret").get("id")).longValue();
+        int oldPort = locked.port();
+        locked.close();
+        try (FakeScreen moved = new FakeScreen("it-locked-" + suffix, "secret")) {
+            control.discovered("127.0.0.1", moved.port());
+
+            assertThat(screenById(id).getPort()).isEqualTo(oldPort);
+            assertThat(found()).anyMatch(f -> f.get("screenId").equals("it-locked-" + suffix));
+            assertThat(moved.calls()).noneMatch(c -> c.contains("(auth)"));
+
+            Map<String, Object> body = Map.of("host", "127.0.0.1", "port", moved.port());
+            assertThat(send(HttpMethod.POST, SCREENS, body, directorToken).getStatusCode().is2xxSuccessful()).isTrue();
+            assertThat(screenById(id).getPort()).isEqualTo(moved.port());
+            assertThat(screens().stream().filter(s -> ((Number) s.get("id")).longValue() == id).findFirst().orElseThrow()
+                    .get("hasToken")).isEqualTo(true);
+        }
+    }
+
+    private List<Map> screens() {
+        return (List<Map>) send(HttpMethod.GET, SCREENS, null, directorToken).getBody().get("screens");
+    }
+
+    private List<Map> found() {
+        return (List<Map>) send(HttpMethod.GET, SCREENS, null, directorToken).getBody().get("found");
     }
 
     private Map add(FakeScreen screen, String token) {

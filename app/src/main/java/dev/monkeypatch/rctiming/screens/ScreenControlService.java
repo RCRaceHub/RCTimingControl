@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.screens.viewer.ViewerPlaylist;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerStatus;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerTarget;
 import jakarta.annotation.PreDestroy;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.function.Function;
  * ScreenActionResult} without stopping the rest. Runs on the request thread. Every command that goes out is audited.
  */
 @Service
+@EnableConfigurationProperties(ScreensProperties.class)
 public class ScreenControlService {
 
     /** Most screens discovery will add by itself; more are added by hand. */
@@ -37,11 +39,15 @@ public class ScreenControlService {
     private final ViewerClient client;
     private final ScreenMonitor monitor;
     private final ScreenPagePolicy pagePolicy;
+    private final PendingScreens pending;
+    private final boolean autoAdd;
     private final ExecutorService workers = Executors.newVirtualThreadPerTaskExecutor();
 
     public ScreenControlService(ScreenService screens, ViewerClient client, ScreenMonitor monitor,
-                                ScreenPagePolicy pagePolicy) {
+                                ScreenPagePolicy pagePolicy, PendingScreens pending, ScreensProperties properties) {
         this.pagePolicy = pagePolicy;
+        this.pending = pending;
+        this.autoAdd = properties.autoAdd();
         this.screens = screens;
         this.client = client;
         this.monitor = monitor;
@@ -74,12 +80,21 @@ public class ScreenControlService {
         String cleanHost = ScreenRules.checkHost(host);
         int cleanPort = ScreenRules.checkPort(port);
         ViewerInfo info = client.info(new ViewerTarget(cleanHost, cleanPort, null));
-        return screens.upsert(actor, info, cleanHost, cleanPort, token);
+        Screen saved = screens.upsert(actor, info, cleanHost, cleanPort, token);
+        pending.forget(info.id());
+        return saved;
+    }
+
+    /** Screens mDNS has found that nobody has added yet, for the Screens page's "Found, not added" list. */
+    public List<PendingScreens.Found> pending() {
+        return pending.list();
     }
 
     /**
-     * Adds or updates a screen found by mDNS at {@code host}:{@code port}, called by {@link ScreenDiscovery} on its own
-     * thread. A screen that does not answer {@code /info} is skipped by the caller.
+     * Handles a screen found by mDNS at {@code host}:{@code port}, called by {@link ScreenDiscovery} on its own
+     * thread. A screen already added is brought up to date (a new address after a DHCP change). One not added yet is
+     * only remembered in {@link PendingScreens} for an official to add, unless {@code rctiming.screens.auto-add} is on.
+     * A screen that does not answer {@code /info} is skipped by the caller.
      */
     public void discovered(String host, int port) {
         // Already known at this address and answering: nothing to learn, and no call to make
@@ -92,6 +107,16 @@ public class ScreenControlService {
         // moved (its saved token would go to the new host), and the number of screens found this way is capped
         Screen known = screens.findByScreenId(info.id()).orElse(null);
         if (known != null && monitor.stateOf(known).connection() == ScreenState.Connection.ONLINE) {
+            return;
+        }
+        // A screen holding a saved token is never moved by an announcement: anyone could claim its id, and the token
+        // would follow. It waits to be added again at its new address, which keeps the token
+        if (known != null && screens.tokenOf(known).isPresent()) {
+            pending.put(info, host, port);
+            return;
+        }
+        if (known == null && !autoAdd) {
+            pending.put(info, host, port);
             return;
         }
         if (known == null && screens.screens().size() >= MAX_DISCOVERED) {

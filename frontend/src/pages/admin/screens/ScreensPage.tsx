@@ -11,7 +11,7 @@ import { QueryError } from '@/components/QueryError';
 import { useBoardPages, useScreenMutations, useScreens } from '@/hooks/admin/useAdminScreens';
 import { getApiErrorMessage } from '@/lib/errors';
 import { cn } from '@/lib/utils';
-import type { ControlAction, Screen, ScreenActionResult } from '@/lib/screensApi';
+import type { ControlAction, FoundScreen, Screen, ScreenActionResult } from '@/lib/screensApi';
 import { PlaylistsPanel } from './PlaylistsPanel';
 import { AddScreenDialog, GotoDialog, ShowDialog, TokenDialog } from './ScreenDialogs';
 import { CONNECTION, secondsToNext, showing, stateLabel, summariseResults } from './screenFormat';
@@ -32,6 +32,7 @@ export default function ScreensPage() {
   const [dialog, setDialog] = useState<DialogName | null>(null);
 
   const screens = data?.screens ?? [];
+  const found = data?.found ?? [];
   const ids = selected.filter(id => screens.some(s => s.id === id));
   const none = ids.length === 0;
 
@@ -54,13 +55,19 @@ export default function ScreensPage() {
     }
   }
 
+  async function addFound(f: FoundScreen) {
+    await run(() => m.add.mutateAsync({ host: f.host, port: f.port, token: undefined }), 'Could not add the screen.',
+      s => toast.success(`Added ${s.name}`));
+  }
+
   const control = (action: ControlAction, done: string, page?: number) =>
     run(() => m.control.mutateAsync({ action, ids, page }), 'Could not send that to the screens.', r => report(r, done));
 
   async function handleRemove(screen: Screen) {
     const confirmed = await confirm({
       title: `Forget ${screen.name}?`,
-      description: 'It keeps showing its playlist. It comes back if it is found on the network or added again.',
+      description: 'It keeps showing its playlist and still accepts the token it has, because only the screen itself can '
+        + 'change that. To lock it out, change its api_token. It shows under "Found, not added" again if it is on the network.',
       confirmLabel: 'Forget',
       destructive: true,
     });
@@ -83,10 +90,30 @@ export default function ScreensPage() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
-        The Raspberry Pi screens around the venue. Tick one or more to control them together. Screens are found
-        automatically{data && !data.discoveryEnabled ? ' (switched off here: add them by hand)' : ''}, and one that
-        goes quiet stays in the list as offline.
+        The Raspberry Pi screens around the venue. Tick one or more to control them together. Screens are
+        found on the network{data && !data.discoveryEnabled ? ' (switched off here: add them by hand)' : ''} and
+        wait under "Found, not added" until you add them. One that goes quiet stays in the list as offline.
       </p>
+
+      {found.length > 0 && (
+        <div className="mb-4 rounded-lg border p-3" role="region" aria-label="Found, not added">
+          <h2 className="text-sm font-medium mb-1">Found, not added</h2>
+          <p className="text-xs text-muted-foreground mb-2">
+            Anyone on the network can announce a screen, so check the name and address are one of yours before adding it.
+          </p>
+          <ul className="space-y-1">
+            {found.map(f => (
+              <li key={f.screenId} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-medium">{f.name}</span>
+                <span className="text-xs text-muted-foreground font-mono">{f.screenId}</span>
+                <span className="text-xs text-muted-foreground">{f.host}:{f.port}{f.authRequired ? ' · asks for a token' : ''}</span>
+                <Button size="sm" variant="outline" className="ml-auto" disabled={m.add.isPending}
+                  onClick={() => void addFound(f)}>Add</Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 mb-3" role="toolbar" aria-label="Control the ticked screens">
         <span className="text-sm text-muted-foreground mr-1">{none ? 'Tick screens to control them' : `${ids.length} ticked`}</span>
@@ -170,7 +197,16 @@ export default function ScreensPage() {
           }} />
       )}
       {dialog === 'token' && (
-        <TokenDialog open onOpenChange={o => { if (!o) setDialog(null); }} count={ids.length}
+        <TokenDialog open onOpenChange={o => { if (!o) setDialog(null); }}
+          screens={screens.filter(s => ids.includes(s.id)).map(s => ({ id: s.id, name: s.name }))}
+          onSubmitEach={async tokens => {
+            await run(async () => {
+              for (const t of tokens) await m.setToken.mutateAsync({ ids: [t.id], token: t.token });
+            }, 'Could not save the tokens.', () => {
+              toast.success('Tokens saved');
+              setDialog(null);
+            });
+          }}
           onSubmit={async token => {
             await run(() => m.setToken.mutateAsync({ ids, token }), 'Could not save the token.', () => {
               toast.success(token ? 'Token saved' : 'Token cleared');

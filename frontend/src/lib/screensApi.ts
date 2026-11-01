@@ -49,7 +49,18 @@ export type Screen = {
   live: ScreenLive | null;
 };
 
-export type ScreenList = { discoveryEnabled: boolean; screens: Screen[] };
+/** A screen heard on the network that has not been added yet. */
+export type FoundScreen = {
+  screenId: string;
+  name: string;
+  host: string;
+  port: number;
+  agentVersion: string | null;
+  authRequired: boolean;
+  seenAt: string;
+};
+
+export type ScreenList = { discoveryEnabled: boolean; screens: Screen[]; found: FoundScreen[] };
 
 /** How one screen took a command sent to a group. */
 export type ScreenActionResult = { id: number; screenId: string; name: string; ok: boolean; error: string | null };
@@ -75,7 +86,7 @@ export function pageUrl(base: string, path: string): string {
 export const screensApi = {
   list: () => api.get<ScreenList>('/api/v1/admin/screens').then(r => r.data),
   boardPages: () => api.get<BoardPages>('/api/v1/admin/screens/board-pages').then(r => r.data),
-  add: (body: { host: string; port: number | null; token: string }) =>
+  add: (body: { host: string; port: number | null; token?: string }) =>
     api.post<Screen>('/api/v1/admin/screens', body).then(r => r.data),
   scan: () => api.post('/api/v1/admin/screens/scan'),
   remove: (id: number) => api.delete(`/api/v1/admin/screens/${id}`),

@@ -18,7 +18,7 @@ class ScreenPagePolicyTest {
 
     private ScreenPagePolicy policy(boolean restrict, String... allowed) {
         when(lan.urls()).thenReturn(List.of("http://192.168.1.5:8080/", "http://timing.local:8080/"));
-        return new ScreenPagePolicy(new ScreensProperties(false, restrict, List.of(allowed)), lan);
+        return new ScreenPagePolicy(new ScreensProperties(false, restrict, List.of(allowed), false), lan);
     }
 
     @Test

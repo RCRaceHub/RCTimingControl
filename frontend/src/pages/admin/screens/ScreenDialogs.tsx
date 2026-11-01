@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,25 +68,37 @@ export function randomToken(): string {
 }
 
 /**
- * Sets one token on the selected screens; leaving it blank clears it. Generate makes a random one and shows it so it
- * can be copied: a screen's token lives in its own config (api_token), which this app cannot change, so the same value
- * has to be put on each screen. Once saved here the token is not shown again.
+ * Sets a token on the selected screens; leaving it blank clears it. Generate makes a random one and shows it so it can
+ * be copied: a screen's token lives in its own config (api_token), which this app cannot change, so it has to be put
+ * on each screen by hand. With several screens, "A different token for each" gives every screen its own, so one
+ * leaked or copied token opens only one screen. Once saved here the tokens are not shown again.
  */
-export function TokenDialog({ open, onOpenChange, count, onSubmit }: Shell & {
-  count: number;
+export function TokenDialog({ open, onOpenChange, screens, onSubmit, onSubmitEach }: Shell & {
+  screens: { id: number; name: string }[];
   onSubmit: (token: string) => Promise<void>;
+  onSubmitEach: (tokens: { id: number; token: string }[]) => Promise<void>;
 }) {
+  const count = screens.length;
   const [token, setToken] = useState('');
   const [shown, setShown] = useState(false);
+  const [each, setEach] = useState(false);
+  const [eachTokens, setEachTokens] = useState<{ id: number; name: string; token: string }[]>([]);
   const [saving, setSaving] = useState(false);
 
   async function submit() {
     setSaving(true);
     try {
-      await onSubmit(token.trim());
+      if (each) await onSubmitEach(eachTokens.map(t => ({ id: t.id, token: t.token })));
+      else await onSubmit(token.trim());
     } finally {
       setSaving(false);
     }
+  }
+
+  function generate() {
+    if (each) setEachTokens(screens.map(s => ({ id: s.id, name: s.name, token: randomToken() })));
+    else setToken(randomToken());
+    setShown(true);
   }
 
   return (
@@ -98,23 +111,48 @@ export function TokenDialog({ open, onOpenChange, count, onSubmit }: Shell & {
             only accepts changes that carry it. Leave blank to clear it.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-1">
-          <Label htmlFor="tk-token" className="text-xs">Token</Label>
-          <div className="flex gap-2">
-            <Input id="tk-token" type={shown ? 'text' : 'password'} autoComplete="off" value={token}
-              onChange={e => setToken(e.target.value)} />
-            <Button type="button" variant="outline" onClick={() => { setToken(randomToken()); setShown(true); }}>Generate</Button>
+        {count > 1 && (
+          <label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={each} onCheckedChange={c => { setEach(c === true); setShown(false); setEachTokens([]); setToken(''); }} />
+            A different token for each screen (safer)
+          </label>
+        )}
+        {each ? (
+          <div className="space-y-2">
+            <Button type="button" variant="outline" onClick={generate}>Generate a token for each screen</Button>
+            {eachTokens.length > 0 && (
+              <>
+                <ul className="text-sm space-y-1">
+                  {eachTokens.map(t => (
+                    <li key={t.id}><span className="font-medium">{t.name}</span>{' '}<code className="text-xs break-all">{t.token}</code></li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Copy these now and set each as <code>api_token</code> in that screen's config. This app cannot change
+                  it on the screen, and will not show them again.
+                </p>
+              </>
+            )}
           </div>
-          {shown && (
-            <p className="text-xs text-muted-foreground">
-              Copy this now and set it as <code>api_token</code> in each screen's config. This app cannot change it on the
-              screen, and will not show it again.
-            </p>
-          )}
-        </div>
+        ) : (
+          <div className="space-y-1">
+            <Label htmlFor="tk-token" className="text-xs">Token</Label>
+            <div className="flex gap-2">
+              <Input id="tk-token" type={shown ? 'text' : 'password'} autoComplete="off" value={token}
+                onChange={e => setToken(e.target.value)} />
+              <Button type="button" variant="outline" onClick={generate}>Generate</Button>
+            </div>
+            {shown && (
+              <p className="text-xs text-muted-foreground">
+                Copy this now and set it as <code>api_token</code> in each screen's config. This app cannot change it on the
+                screen, and will not show it again.
+              </p>
+            )}
+          </div>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button disabled={saving} onClick={() => void submit()}>Save</Button>
+          <Button disabled={saving || (each && eachTokens.length === 0)} onClick={() => void submit()}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
