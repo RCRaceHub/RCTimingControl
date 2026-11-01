@@ -56,7 +56,7 @@ export default function ScreensPage() {
   }
 
   async function addFound(f: FoundScreen) {
-    await run(() => m.add.mutateAsync({ host: f.host, port: f.port, token: '' }), 'Could not add the screen.',
+    await run(() => m.add.mutateAsync({ host: f.host, port: f.port, token: undefined }), 'Could not add the screen.',
       s => toast.success(`Added ${s.name}`));
   }
 
@@ -90,7 +90,7 @@ export default function ScreensPage() {
         </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
-        The Raspberry Pi screens around the venue. Tick one or more to control them together. Screens are found
+        The Raspberry Pi screens around the venue. Tick one or more to control them together. Screens are
         found on the network{data && !data.discoveryEnabled ? ' (switched off here: add them by hand)' : ''} and
         wait under "Found, not added" until you add them. One that goes quiet stays in the list as offline.
       </p>

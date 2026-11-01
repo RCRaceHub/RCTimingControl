@@ -32,8 +32,13 @@ const screens = [
   makeScreen({ id: 3, screenId: 'screen-03', name: 'Paddock', drifted: true, warnings: ['The screen cannot reach the page\'s server.'] }),
 ];
 
+const found = [{
+  screenId: 'screen-09', name: 'New Pi', host: '10.0.0.9', port: 8080, agentVersion: '1.0', authRequired: true,
+  seenAt: '2026-11-01T10:00:00Z',
+}];
+
 vi.mock('@/hooks/admin/useAdminScreens', () => ({
-  useScreens: () => ({ data: { discoveryEnabled: true, screens, found: [{ screenId: 'screen-09', name: 'New Pi', host: '10.0.0.9', port: 8080, agentVersion: '1.0', authRequired: true, seenAt: '2026-11-01T10:00:00Z' }] }, isLoading: false, isError: false, refetch: vi.fn() }),
+  useScreens: () => ({ data: { discoveryEnabled: true, screens, found }, isLoading: false, isError: false, refetch: vi.fn() }),
   useBoardPages: () => ({ data: { baseUrls: ['http://10.0.0.2:8080/'], pages: [{ label: 'Results', path: '/boards/results' }] } }),
   useScreenPlaylists: () => ({
     data: [{ id: 3, name: 'Pit', defaultDuration: 30, items: [{ url: 'http://10.0.0.2:8080/boards/results', duration: 20, label: 'Results', id: null }] }],
@@ -111,7 +116,7 @@ describe('ScreensPage', () => {
     expect(add).not.toHaveBeenCalled();
     fireEvent.click(found.getByRole('button', { name: 'Add' }));
 
-    await waitFor(() => expect(add).toHaveBeenCalledWith({ host: '10.0.0.9', port: 8080, token: '' }));
+    await waitFor(() => expect(add).toHaveBeenCalledWith({ host: '10.0.0.9', port: 8080, token: undefined }));
   });
 
   it('gives each ticked screen its own token when asked', async () => {

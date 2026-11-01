@@ -86,7 +86,7 @@ export function pageUrl(base: string, path: string): string {
 export const screensApi = {
   list: () => api.get<ScreenList>('/api/v1/admin/screens').then(r => r.data),
   boardPages: () => api.get<BoardPages>('/api/v1/admin/screens/board-pages').then(r => r.data),
-  add: (body: { host: string; port: number | null; token: string }) =>
+  add: (body: { host: string; port: number | null; token?: string }) =>
     api.post<Screen>('/api/v1/admin/screens', body).then(r => r.data),
   scan: () => api.post('/api/v1/admin/screens/scan'),
   remove: (id: number) => api.delete(`/api/v1/admin/screens/${id}`),

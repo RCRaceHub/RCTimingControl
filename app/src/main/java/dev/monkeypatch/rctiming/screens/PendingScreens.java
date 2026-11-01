@@ -54,7 +54,8 @@ public class PendingScreens {
             return;
         }
         String name = info.name() != null && !info.name().isBlank() ? info.name() : info.id();
-        found.put(info.id(), new Found(info.id(), name, host, port, info.version(), info.authRequired(), clock.instant()));
+        found.put(info.id(), new Found(info.id(), clip(name, 255), host, port, clip(info.version(), 50), info.authRequired(),
+                clock.instant()));
     }
 
     /** The screens waiting to be added, by name. */
@@ -66,6 +67,10 @@ public class PendingScreens {
     /** Drops a screen once it has been added. */
     void forget(String screenId) {
         found.remove(screenId);
+    }
+
+    private static String clip(String value, int max) {
+        return value == null || value.length() <= max ? value : value.substring(0, max);
     }
 
     private void prune() {

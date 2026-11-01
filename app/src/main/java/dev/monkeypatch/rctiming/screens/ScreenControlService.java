@@ -109,6 +109,12 @@ public class ScreenControlService {
         if (known != null && monitor.stateOf(known).connection() == ScreenState.Connection.ONLINE) {
             return;
         }
+        // A screen holding a saved token is never moved by an announcement: anyone could claim its id, and the token
+        // would follow. It waits to be added again at its new address, which keeps the token
+        if (known != null && screens.tokenOf(known).isPresent()) {
+            pending.put(info, host, port);
+            return;
+        }
         if (known == null && !autoAdd) {
             pending.put(info, host, port);
             return;

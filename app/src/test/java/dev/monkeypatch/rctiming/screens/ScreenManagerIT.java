@@ -281,6 +281,26 @@ class ScreenManagerIT extends AbstractIntegrationTest {
         }
     }
 
+    @Test
+    void anOfflineScreenWithATokenIsNotMovedByAnnouncementsUntilAnOfficialAddsItAgain() {
+        Long id = ((Number) add(locked, "secret").get("id")).longValue();
+        int oldPort = locked.port();
+        locked.close();
+        try (FakeScreen moved = new FakeScreen("it-locked-" + suffix, "secret")) {
+            control.discovered("127.0.0.1", moved.port());
+
+            assertThat(screenById(id).getPort()).isEqualTo(oldPort);
+            assertThat(found()).anyMatch(f -> f.get("screenId").equals("it-locked-" + suffix));
+            assertThat(moved.calls()).noneMatch(c -> c.contains("(auth)"));
+
+            Map<String, Object> body = Map.of("host", "127.0.0.1", "port", moved.port());
+            assertThat(send(HttpMethod.POST, SCREENS, body, directorToken).getStatusCode().is2xxSuccessful()).isTrue();
+            assertThat(screenById(id).getPort()).isEqualTo(moved.port());
+            assertThat(screens().stream().filter(s -> ((Number) s.get("id")).longValue() == id).findFirst().orElseThrow()
+                    .get("hasToken")).isEqualTo(true);
+        }
+    }
+
     private List<Map> screens() {
         return (List<Map>) send(HttpMethod.GET, SCREENS, null, directorToken).getBody().get("screens");
     }
