@@ -9,7 +9,6 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository.EventClassRef
 import dev.monkeypatch.rctiming.domain.format.EventClassService;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassService;
-import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,12 +64,6 @@ public class RaceHubClassLinkService {
     public record Resolved(String racehubEventClassId, Long racingClassId, Long eventClassId, boolean racingClassCreated) {
     }
 
-    /** Every club-wide link, ordered by class key. */
-    @ReadTransaction
-    public List<RaceHubClassLink> list() {
-        return linkRepository.findAllOrderByClassKey();
-    }
-
     /**
      * Settles each class in {@code resolutions} for the event, all or none, and records
      * {@code RACEHUB_CLASS_LINKED} for each.
@@ -82,6 +75,9 @@ public class RaceHubClassLinkService {
      */
     @Transactional
     public List<Resolved> resolve(Actor actor, Long eventId, List<Resolution> resolutions) {
+        if (resolutions == null || resolutions.isEmpty()) {
+            throw new IllegalArgumentException("Give at least one class to settle");
+        }
         eventRepository.requireExists(eventId);
         List<Resolved> results = new ArrayList<>();
         for (Resolution r : resolutions) {
@@ -114,9 +110,14 @@ public class RaceHubClassLinkService {
             racingClass = racingClassService.findById(r.racingClassId());
         }
 
-        Long eventClassId = eventClassRepository.findRefsByEventId(eventId).stream()
+        List<Long> inEvent = eventClassRepository.findRefsByEventId(eventId).stream()
                 .filter(ec -> racingClass.getId().equals(ec.getRacingClassId()))
-                .map(EventClassRef::getId).findFirst().orElse(null);
+                .map(EventClassRef::getId).toList();
+        if (inEvent.size() > 1) {
+            throw new IllegalArgumentException(racingClass.getName() + " is in this event more than once: "
+                    + "map " + key + " to the right one from the class mappings instead");
+        }
+        Long eventClassId = inEvent.isEmpty() ? null : inEvent.get(0);
         if (eventClassId == null) {
             Long templateId = r.templateId() != null ? r.templateId()
                     : eventClassRepository.findLastTemplateId(racingClass.getId()).orElse(null);

@@ -26,12 +26,12 @@ public final class EventClasses {
      */
     EventClasses(Map<String, Long> mapped, List<Long> inOrder, Map<String, List<Long>> byName,
                  Map<Long, String> names, Map<String, Long> clubLinks, Map<Long, List<Long>> byRacingClass) {
-        this.clubLinks = Map.copyOf(clubLinks);
-        this.byRacingClass = Map.copyOf(byRacingClass);
         this.mapped = Map.copyOf(mapped);
         this.inOrder = List.copyOf(inOrder);
         this.byName = Map.copyOf(byName);
         this.names = Map.copyOf(names);
+        this.clubLinks = Map.copyOf(clubLinks);
+        this.byRacingClass = Map.copyOf(byRacingClass);
     }
 
     /** The event class a stored mapping puts {@code mappingKey} in. */

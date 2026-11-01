@@ -47,7 +47,8 @@ public class RaceHubMeetingService {
     public Meeting findOrCreate(Actor actor, RaceHubEntryExport export) {
         if (export == null || !Objects.equals(export.schemaVersion(), RaceHubImportService.SUPPORTED_SCHEMA_VERSION)
                 || export.event() == null) {
-            throw new IllegalArgumentException("This is not a supported Entry Export file (schema_version 1 with an event)");
+            throw new IllegalArgumentException(
+                    "This is not a supported Entry Export file (schema_version 1 with an event)");
         }
         boolean fromRaceHub = ExternalSources.RACEHUB.equals(RaceHubImportService.sourceOf(export));
         String racehubEventId = fromRaceHub ? blankToNull(export.event().id()) : null;

@@ -6,7 +6,10 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
-/** Maps a class link between entity and row; MapStruct generates the implementation {@link RaceHubClassLinkRepository} uses. */
+/**
+ * Maps a class link between entity and row; MapStruct generates the implementation
+ * {@link RaceHubClassLinkRepository} uses.
+ */
 @Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
 interface RaceHubClassLinkMapper {
 

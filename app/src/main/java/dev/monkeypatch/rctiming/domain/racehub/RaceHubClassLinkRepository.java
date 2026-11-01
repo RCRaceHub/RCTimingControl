@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.domain.racehub;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassLinksRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
@@ -34,7 +35,7 @@ public class RaceHubClassLinkRepository extends JooqRepository<RaceHubClassLink,
 
     /** Every link, ordered by class key. */
     public List<RaceHubClassLink> findAllOrderByClassKey() {
-        return findWhere(org.jooq.impl.DSL.trueCondition(), RACEHUB_CLASS_LINKS.CLASS_KEY.asc());
+        return findWhere(DSL.trueCondition(), RACEHUB_CLASS_LINKS.CLASS_KEY.asc());
     }
 
     @Override

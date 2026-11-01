@@ -421,6 +421,25 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void settlingAClassWhoseRacingClassIsInTheEventTwice_isRefused() {
+        long racingClassId = jdbc.queryForObject("select racing_class_id from event_classes where id = ?",
+                Long.class, buggyClassId);
+        jdbc.update("""
+                insert into event_classes (event_id, racing_class_id, config_snapshot)
+                values (?, ?, '{"type":"TIMED"}')""", eventId, racingClassId);
+
+        var resp = resolveClasses(List.of(Map.of(
+                "racehubEventClassId", "rh-class-electric-" + run, "racingClassId", racingClassId)));
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void settlingNoClasses_isRefused() {
+        assertThat(resolveClasses(List.of()).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void settlingAClass_needsExactlyOneOfAnExistingClassOrANewName() {
         var neither = resolveClasses(List.of(Map.of("racehubEventClassId", "rh-class-electric-" + run)));
         assertThat(neither.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
