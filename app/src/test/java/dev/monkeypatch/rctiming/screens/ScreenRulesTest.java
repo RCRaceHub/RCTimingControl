@@ -46,4 +46,45 @@ class ScreenRulesTest {
         assertThatThrownBy(() -> ScreenRules.checkHost("pi:8080")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ScreenRules.checkHost("")).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void aMessageNeedsATitleAndIsCleanedAndLowerCased() {
+        var body = ScreenRules.checkMessage(new ScreenMessage("  Finals being calculated ", " Lists soon ", " HOLD", "Warning", 30));
+
+        assertThat(body.title()).isEqualTo("Finals being calculated");
+        assertThat(body.text()).isEqualTo("Lists soon");
+        assertThat(body.style()).isEqualTo("hold");
+        assertThat(body.level()).isEqualTo("warning");
+        assertThat(body.duration()).isEqualTo(30);
+        var plain = ScreenRules.checkMessage(new ScreenMessage("Hi", " ", null, null, null));
+        assertThat(plain.text()).isNull();
+        assertThat(plain.style()).isNull();
+        assertThat(plain.duration()).isNull();
+    }
+
+    @Test
+    void aMessageTheScreensWouldRefuseIsRefusedHere() {
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage(" ", null, null, null, null)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("title");
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage("x".repeat(121), null, null, null, null)))
+                .hasMessageContaining("120");
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage("Hi", "y".repeat(501), null, null, null)))
+                .hasMessageContaining("500");
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage("Hi", null, "shout", null, null)))
+                .hasMessageContaining("style");
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage("Hi", null, null, "purple", null)))
+                .hasMessageContaining("level");
+        assertThatThrownBy(() -> ScreenRules.checkMessage(new ScreenMessage("Hi", null, null, null, 0)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(ScreenRules.checkMessage(new ScreenMessage("x".repeat(120), "y".repeat(500), null, null, null)).title())
+                .hasSize(120);
+    }
+
+    @Test
+    void aBannerNeedsTextOfAtMost500Characters() {
+        assertThat(ScreenRules.checkBanner(new ScreenBanner(" Pits close at 5 ", "urgent", 60)).text()).isEqualTo("Pits close at 5");
+        assertThatThrownBy(() -> ScreenRules.checkBanner(new ScreenBanner(" ", null, null))).hasMessageContaining("text");
+        assertThatThrownBy(() -> ScreenRules.checkBanner(new ScreenBanner("z".repeat(501), null, null))).hasMessageContaining("500");
+        assertThatThrownBy(() -> ScreenRules.checkBanner(new ScreenBanner("Hi", "blue", null))).hasMessageContaining("level");
+    }
 }

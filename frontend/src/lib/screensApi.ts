@@ -23,7 +23,33 @@ export type ScreenLive = {
   browserRunning: boolean;
   browserRestarts: number | null;
   browserLastError: string | null;
+  /** The full-screen message that is up, if any (agent 0.6.0+). */
+  message: ScreenMessageLive | null;
+  /** The banner that is up, if any (agent 0.6.0+). */
+  banner: ScreenBannerLive | null;
 };
+
+/** A message as the screen reports it. Times are the screen's clock in Unix seconds; `until` is null when open-ended. */
+export type ScreenMessageLive = {
+  style: MessageStyle | string;
+  title: string;
+  text: string | null;
+  level: MessageLevel | string;
+  since: number | null;
+  until: number | null;
+};
+
+/** A banner as the screen reports it. `visible` is false when the screen cannot draw it over the page now showing. */
+export type ScreenBannerLive = {
+  text: string;
+  level: MessageLevel | string;
+  since: number | null;
+  until: number | null;
+  visible: boolean;
+};
+
+export type MessageStyle = 'hold' | 'announce';
+export type MessageLevel = 'info' | 'warning' | 'urgent';
 
 export type Screen = {
   id: number;
@@ -46,6 +72,8 @@ export type Screen = {
   clockSkewSeconds: number | null;
   drifted: boolean;
   warnings: string[];
+  /** What the screen's agent offers (`message`, `banner`, ...), or null until it has been read. */
+  features: string[] | null;
   live: ScreenLive | null;
 };
 
@@ -75,6 +103,36 @@ export type BoardPages = { baseUrls: string[]; pages: { label: string; path: str
 
 export type ControlAction = 'next' | 'previous' | 'goto' | 'pause' | 'resume' | 'reload';
 
+/** A message to put over the whole screen. `seconds` null means until cleared. */
+export type ScreenMessageInput = {
+  title: string;
+  text: string | null;
+  style: MessageStyle;
+  level: MessageLevel;
+  seconds: number | null;
+};
+
+/** A message saved under a name. */
+export type MessagePreset = { name: string; message: ScreenMessageInput };
+
+/** The two opt-in hooks from the event flow (both off by default); they go to every screen. */
+export type MessageHooks = {
+  holdAfterQualifying: boolean;
+  holdMessage: ScreenMessageInput;
+  announceFinals: boolean;
+  finalsPlaylistId: number | null;
+  finalsMessage: ScreenMessageInput;
+};
+
+export type MessageSettings = { presets: MessagePreset[]; hooks: MessageHooks };
+
+/** How "Finals are up" went, one list per step. */
+export type FinalsUpResult = { playlist: ScreenActionResult[]; message: ScreenActionResult[] };
+
+/** The longest a message title, and a message text or banner, can be. */
+export const MAX_TITLE = 120;
+export const MAX_TEXT = 500;
+
 /** A blank playlist for the editor to start from. */
 export const NEW_PLAYLIST: ScreenPlaylistInput = { name: '', defaultDuration: 30, items: [] };
 
@@ -102,6 +160,20 @@ export const screensApi = {
       .then(r => r.data),
   clearShow: (screenIds: number[]) =>
     api.post<ScreenActionResult[]>('/api/v1/admin/screens/show/clear', { screenIds }).then(r => r.data),
+  sendMessage: (screenIds: number[], message: ScreenMessageInput) =>
+    api.post<ScreenActionResult[]>('/api/v1/admin/screens/message', { screenIds, ...message }).then(r => r.data),
+  clearMessage: (screenIds: number[]) =>
+    api.post<ScreenActionResult[]>('/api/v1/admin/screens/message/clear', { screenIds }).then(r => r.data),
+  sendBanner: (screenIds: number[], banner: { text: string; level: MessageLevel; seconds: number | null }) =>
+    api.post<ScreenActionResult[]>('/api/v1/admin/screens/banner', { screenIds, ...banner }).then(r => r.data),
+  clearBanner: (screenIds: number[]) =>
+    api.post<ScreenActionResult[]>('/api/v1/admin/screens/banner/clear', { screenIds }).then(r => r.data),
+  finalsUp: (body: { screenIds: number[]; playlistId: number | null; title: string; text: string | null;
+    level: MessageLevel; seconds: number | null }) =>
+    api.post<FinalsUpResult>('/api/v1/admin/screens/finals-up', body).then(r => r.data),
+  messageSettings: () => api.get<MessageSettings>('/api/v1/admin/screens/message-settings').then(r => r.data),
+  saveMessageSettings: (settings: MessageSettings) =>
+    api.put<MessageSettings>('/api/v1/admin/screens/message-settings', settings).then(r => r.data),
 };
 
 export const screenPlaylistsApi = {

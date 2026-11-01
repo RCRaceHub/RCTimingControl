@@ -335,6 +335,38 @@ sequenceDiagram
     end
 ```
 
+## Messages and banners on the screens (#716)
+
+```mermaid
+sequenceDiagram
+    participant O as Official (Screens page)
+    participant C as AdminScreenMessageController
+    participant M as ScreenMessageService
+    participant S as ScreenControlService
+    participant V as ViewerClient
+    participant P as Screens (agent 0.6.0+)
+    participant H as ScreenMessageHooks
+    participant L as FinalsLineupService
+
+    O->>C: POST /admin/screens/finals-up (screens, playlist, announcement)
+    C->>M: finalsUp
+    M->>S: push(playlist) to all screens at once
+    S->>V: PUT /playlist
+    V->>P: playlist replaced
+    M->>M: keep the screens whose push worked
+    M->>S: onEach(put up the announcement)
+    S->>V: PUT /message (bearer token)
+    V->>P: message drawn by the screen itself
+    M-->>C: one result list per step
+    C-->>O: playlist step and announcement step, per screen
+    Note over L,H: the opt-in hooks do the same without an official
+    L->>L: confirm the finals line-ups (first time)
+    L-->>H: FinalsPublished, after the commit
+    H->>M: finalsUp(settings: playlist, announcement) on its own thread
+```
+
+A message, a banner and their clear calls go through the same per-screen send, so a screen that is off or an agent older than 0.6.0 (404) is one failed result and never stops the rest. The hold when qualifying ends comes from `RaceStatusChangedEvent`: after the commit `ScreenMessageHooks` asks `FinalsLineupService.review` whether the finals line-up review is now due, which is true only once every qualifying heat has finished.
+
 ## Signing in and staying signed in
 
 ```mermaid

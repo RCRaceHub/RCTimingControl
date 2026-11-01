@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PendingScreensTest {
 
     private static ViewerInfo info(String id, String name) {
-        return new ViewerInfo(id, name, null, "1.0", "1", null, false, null);
+        return new ViewerInfo(id, name, null, "1.0", "1", null, false, null, null);
     }
 
     @Test

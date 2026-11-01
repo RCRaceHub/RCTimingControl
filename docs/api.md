@@ -881,6 +881,24 @@ The commands below take screen ids and answer **200** with one result per screen
 | `POST /admin/screens/show` | `{ "screenIds", "url", "seconds"?, "label"? }` | A temporary page for `seconds`, or until cleared when left out |
 | `POST /admin/screens/show/clear` | `{ "screenIds" }` | Ends the temporary page |
 
+### Messages and banners
+
+Messages and banners (#716) use the screens' agent 0.6.0 and later. They take screen ids and answer **200** with one result per screen like the commands above; a screen on an older agent answers `"error": "This screen cannot show messages yet. Update it to 0.6.0"`, and an agent's own 400 text (for example a title that is too long) is passed through. All are `ADMIN` or `RACE_DIRECTOR` and audited, except `GET message-settings`.
+
+| Request | Body | Does |
+|---|---|---|
+| `POST /admin/screens/message` | `{ "screenIds", "title", "text"?, "style"?, "level"?, "seconds"? }` | A full-screen message. `title` up to 120 characters; `text` up to 500; `style` is `hold` (default) or `announce`; `level` is `info` (default), `warning` or `urgent`; `seconds` left out means until cleared. **400** for a bad field, before anything is sent |
+| `POST /admin/screens/message/clear` | `{ "screenIds" }` | Takes the message down |
+| `POST /admin/screens/banner` | `{ "screenIds", "text", "level"?, "seconds"? }` | A strip along the bottom; `text` up to 500 characters |
+| `POST /admin/screens/banner/clear` | `{ "screenIds" }` | Takes the banner down |
+| `POST /admin/screens/finals-up` | `{ "screenIds", "playlistId"?, "title", "text"?, "level"?, "seconds"? }` | Pushes the playlist (when given), then announces. Answers `{ "playlist": [results], "message": [results] }`; a screen whose playlist failed is also listed as failed under `message` and is not announced on |
+| `GET /admin/screens/message-settings` | none | The saved presets and hooks, or the defaults (any official) |
+| `PUT /admin/screens/message-settings` | the same shape | Replaces them; **400** for a bad preset, a duplicate name or more than 30; **404** for an unknown playlist |
+
+The settings are `{ "presets": [{ "name", "message": { "title", "text", "style", "level", "seconds" } }], "hooks": { "holdAfterQualifying", "holdMessage", "announceFinals", "finalsPlaylistId", "finalsMessage" } }`. Both hooks are off by default and send to every screen.
+
+Each screen in `GET /admin/screens` now also carries `features` (what its agent offers, or `null` until read) and, inside `live`, `message` (`style`, `title`, `text`, `level`, `since`, `until`) and `banner` (`text`, `level`, `since`, `until`, `visible`), or `null`. Times are the screen's own clock in Unix seconds; `until` is `null` for one with no end; `visible: false` means the screen cannot draw the banner over the page now showing.
+
 ## Spectator boards
 
 No authentication: these are the read-only feeds behind the venue TV boards at `/boards/now-next`, `/boards/live-race` and `/boards/results`. Each takes an optional `eventId`; without it the board shows the event with a race on track, or failing that the most recent event in progress, so it keeps its event between races. The board is empty (every field `null`, `results` empty) only when the requested `eventId` doesn't exist, or none was given and no event is racing or in progress.

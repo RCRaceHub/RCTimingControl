@@ -10,12 +10,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param state    {@code idle}, {@code playing}, {@code paused} or {@code override}
  * @param time     the screen's clock, for spotting a wrong one
  * @param override the temporary page while one is showing, otherwise null
+ * @param message  the full-screen message while one is up (agent 0.6.0+), otherwise null
+ * @param banner   the banner while one is up (agent 0.6.0+), otherwise null
  * @param network  null before the screen's first reachability check and on its idle page
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ViewerStatus(String id, Double uptime, Double time, String state, boolean paused, Integer index,
                            Current current, ShowOverride override, Network network, PlaylistSummary playlist,
-                           Browser browser) {
+                           Browser browser, ViewerMessage message, ViewerBanner banner) {
 
     /** The page on screen; {@code endsAt} is null when it will not change by itself. */
     @JsonIgnoreProperties(ignoreUnknown = true)

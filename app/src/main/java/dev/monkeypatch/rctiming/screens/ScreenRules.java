@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.screens;
 
+import dev.monkeypatch.rctiming.screens.viewer.ViewerBanner;
+import dev.monkeypatch.rctiming.screens.viewer.ViewerMessage;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -105,6 +108,62 @@ final class ScreenRules {
             throw new IllegalArgumentException("The time must be between 1 and " + MAX_DURATION + " seconds");
         }
         return seconds;
+    }
+
+    /** The longest message title the screens accept. */
+    static final int MAX_TITLE = 120;
+    /** The longest message text or banner the screens accept. */
+    static final int MAX_TEXT = 500;
+    private static final List<String> STYLES = List.of("hold", "announce");
+    private static final List<String> LEVELS = List.of("info", "warning", "urgent");
+
+    /** A full-screen message, cleaned and ready to send: a title, and style and level from the screens' own lists. */
+    static ViewerMessage.Body checkMessage(ScreenMessage message) {
+        if (message == null) {
+            throw new IllegalArgumentException("A message needs a title");
+        }
+        String title = message.title() == null ? "" : message.title().strip();
+        if (title.isEmpty()) {
+            throw new IllegalArgumentException("A message needs a title");
+        }
+        if (title.length() > MAX_TITLE) {
+            throw new IllegalArgumentException("The title can be at most " + MAX_TITLE + " characters");
+        }
+        String text = blankToNull(message.text());
+        if (text != null && text.strip().length() > MAX_TEXT) {
+            throw new IllegalArgumentException("The text can be at most " + MAX_TEXT + " characters");
+        }
+        return new ViewerMessage.Body(title, text == null ? null : text.strip(),
+                oneOf(message.style(), STYLES, "style"), oneOf(message.level(), LEVELS, "level"),
+                checkShowDuration(message.duration()));
+    }
+
+    /** A banner, cleaned and ready to send. */
+    static ViewerBanner.Body checkBanner(ScreenBanner banner) {
+        String text = banner == null || banner.text() == null ? "" : banner.text().strip();
+        if (text.isEmpty()) {
+            throw new IllegalArgumentException("A banner needs some text");
+        }
+        if (text.length() > MAX_TEXT) {
+            throw new IllegalArgumentException("The banner can be at most " + MAX_TEXT + " characters");
+        }
+        return new ViewerBanner.Body(text, oneOf(banner.level(), LEVELS, "level"), checkShowDuration(banner.duration()));
+    }
+
+    private static String oneOf(String value, List<String> allowed, String what) {
+        String clean = blankToNull(value);
+        if (clean == null) {
+            return null;
+        }
+        String lower = clean.strip().toLowerCase(Locale.ROOT);
+        if (!allowed.contains(lower)) {
+            throw new IllegalArgumentException("The " + what + " must be one of " + String.join(", ", allowed));
+        }
+        return lower;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static String limit(String value, int max, String what) {

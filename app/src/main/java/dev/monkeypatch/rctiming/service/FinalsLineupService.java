@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.FinalsPublished;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -21,6 +22,7 @@ import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsLineupDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +59,7 @@ public class FinalsLineupService {
     private final AutoFinalsSeedingService autoFinalsSeedingService;
     private final AuditService audit;
     private final EventRepository eventRepository;
+    private final ApplicationEventPublisher events;
 
     public FinalsLineupService(EventClassRepository eventClassRepository,
                                RacingClassRepository racingClassRepository,
@@ -67,7 +70,8 @@ public class FinalsLineupService {
                                QualifyingStandingsService qualifyingStandingsService,
                                AutoFinalsSeedingService autoFinalsSeedingService,
                                AuditService audit,
-                               EventRepository eventRepository) {
+                               EventRepository eventRepository,
+                               ApplicationEventPublisher events) {
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
@@ -78,6 +82,7 @@ public class FinalsLineupService {
         this.autoFinalsSeedingService = autoFinalsSeedingService;
         this.audit = audit;
         this.eventRepository = eventRepository;
+        this.events = events;
     }
 
     /** One line-up per class of the event that has finals, finals in letter order (A first). */
@@ -135,7 +140,7 @@ public class FinalsLineupService {
     /**
      * Confirms the event's finals line-ups so the cockpit returns and the finals can be called. Refused until
      * qualifying is over, every class that can have its finals calculated has them, and while a final has started.
-     * Confirming again keeps the first confirmation. Audited; runs in one transaction on the request thread.
+     * Confirming again keeps the first confirmation. The first confirmation publishes {@link FinalsPublished}. Audited; runs in one transaction on the request thread.
      *
      * @throws EntityNotFoundException if there is no such event
      * @throws StateConflictException  if the event has no finals, qualifying is not over, a class is still to be
@@ -155,6 +160,7 @@ public class FinalsLineupService {
             eventRepository.save(event);
             audit.entry(actor, "FINALS_LINEUP_CONFIRMED").entity("event", eventId).event(eventId)
                     .summary("Confirmed the finals line-ups for " + event.getName()).record();
+            events.publishEvent(new FinalsPublished(eventId));
         }
         return new FinalsReviewDto(false, event.getFinalsLineupConfirmedAt());
     }

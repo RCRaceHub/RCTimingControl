@@ -12,9 +12,10 @@ import { useBoardPages, useScreenMutations, useScreens } from '@/hooks/admin/use
 import { getApiErrorMessage } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import type { ControlAction, FoundScreen, Screen, ScreenActionResult } from '@/lib/screensApi';
+import { MessagesPanel } from './MessagesPanel';
 import { PlaylistsPanel } from './PlaylistsPanel';
 import { AddScreenDialog, GotoDialog, ShowDialog, TokenDialog } from './ScreenDialogs';
-import { CONNECTION, secondsToNext, showing, stateLabel, summariseResults } from './screenFormat';
+import { CONNECTION, bannerBadge, messageBadge, secondsToNext, showing, stateLabel, summariseResults, supports } from './screenFormat';
 
 type DialogName = 'add' | 'token' | 'show' | 'goto';
 
@@ -187,6 +188,8 @@ export default function ScreensPage() {
 
       <PlaylistsPanel selectedIds={ids} onPushed={r => report(r, 'Playlist pushed')} />
 
+      <MessagesPanel screens={screens} selectedIds={ids} />
+
       {dialog === 'add' && (
         <AddScreenDialog open onOpenChange={o => { if (!o) setDialog(null); }}
           onSubmit={async v => {
@@ -233,6 +236,40 @@ export default function ScreensPage() {
           }} />
       )}
       {confirmDialog}
+    </div>
+  );
+}
+
+/**
+ * What is up on a screen besides its playlist: the message (style, title, time left; an open-ended one is shaded
+ * as a warning because it is easy to forget), the banner (with a warning when the screen cannot draw it over the page
+ * showing), and a note on a screen whose agent is too old for either.
+ */
+function MessageBadges({ screen }: { screen: Screen }) {
+  const message = messageBadge(screen);
+  const banner = bannerBadge(screen);
+  return (
+    <div className="mt-1 space-y-1 whitespace-normal">
+      {message && (
+        <Badge variant="outline" className={cn('border-transparent h-auto whitespace-normal text-left',
+          message.openEnded ? 'bg-warning/15 text-warning' : 'bg-info/15 text-info')}>
+          {message.openEnded && <AlertTriangle className="h-3.5 w-3.5 shrink-0 mr-1" aria-hidden />}{message.text}
+        </Badge>
+      )}
+      {banner && (
+        <div>
+          <Badge variant="outline" className="border-transparent h-auto whitespace-normal text-left bg-info/15 text-info">{banner.text}</Badge>
+          {banner.hidden && (
+            <div className="mt-1 flex items-start gap-1 text-xs text-warning max-w-64">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />
+              This screen cannot draw the banner over the page it is showing
+            </div>
+          )}
+        </div>
+      )}
+      {(!supports(screen, 'message') || !supports(screen, 'banner')) && (
+        <div className="text-xs text-muted-foreground">Update this screen to 0.6.0 for messages and banners</div>
+      )}
     </div>
   );
 }
@@ -285,6 +322,7 @@ function ScreenRow({ screen, ticked, onToggle, onRemove, onRepush }: {
           <>
             <div>{stateLabel(screen)}</div>
             <div className="truncate text-muted-foreground" title={showing(screen)}>{showing(screen)}</div>
+            <MessageBadges screen={screen} />
           </>
         ) : '—'}
       </TableCell>
