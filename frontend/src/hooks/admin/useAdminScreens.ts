@@ -3,6 +3,9 @@ import {
   screenPlaylistsApi,
   screensApi,
   type ControlAction,
+  type MessageSettings,
+  type ScreenMessageInput,
+  type MessageLevel,
   type ScreenPlaylistInput,
 } from '@/lib/screensApi';
 import { adminQueryKeys } from './adminQueryKeys';
@@ -22,6 +25,11 @@ export function useScreens(options: { refetchInterval?: number | false } = {}) {
 /** The pages of this app, and the addresses the screens can reach it at, for building a playlist. */
 export function useBoardPages() {
   return useQuery({ queryKey: adminQueryKeys.screens.boardPages(), queryFn: screensApi.boardPages });
+}
+
+/** The saved message presets and the two event hooks. */
+export function useScreenMessageSettings() {
+  return useQuery({ queryKey: adminQueryKeys.screens.messageSettings(), queryFn: screensApi.messageSettings });
 }
 
 /** Every saved playlist. */
@@ -57,6 +65,22 @@ export function useScreenMutations() {
       onSuccess: refreshScreens,
     }),
     clearShow: useMutation({ mutationFn: screensApi.clearShow, onSuccess: refreshScreens }),
+    sendMessage: useMutation({
+      mutationFn: ({ ids, message }: { ids: number[]; message: ScreenMessageInput }) => screensApi.sendMessage(ids, message),
+      onSuccess: refreshScreens,
+    }),
+    clearMessage: useMutation({ mutationFn: screensApi.clearMessage, onSuccess: refreshScreens }),
+    sendBanner: useMutation({
+      mutationFn: ({ ids, banner }: { ids: number[]; banner: { text: string; level: MessageLevel; seconds: number | null } }) =>
+        screensApi.sendBanner(ids, banner),
+      onSuccess: refreshScreens,
+    }),
+    clearBanner: useMutation({ mutationFn: screensApi.clearBanner, onSuccess: refreshScreens }),
+    finalsUp: useMutation({ mutationFn: screensApi.finalsUp, onSuccess: refreshScreens }),
+    saveMessageSettings: useMutation({
+      mutationFn: (settings: MessageSettings) => screensApi.saveMessageSettings(settings),
+      onSuccess: data => qc.setQueryData(adminQueryKeys.screens.messageSettings(), data),
+    }),
     createPlaylist: useMutation({
       mutationFn: (b: ScreenPlaylistInput) => screenPlaylistsApi.create(b),
       onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.screens.playlists() }),

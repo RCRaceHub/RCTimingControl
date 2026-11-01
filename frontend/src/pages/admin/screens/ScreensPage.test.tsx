@@ -16,11 +16,12 @@ function makeScreen(over: Partial<Screen>): Screen {
     id: 1, screenId: 'screen-01', name: 'Pit screen', host: '10.0.0.5', port: 8080, agentVersion: '0.1.0', apiVersion: '1',
     hasToken: false, playlistId: 3, playlistName: 'Pit', pushedRevision: 4, pushedSource: 'rctc:playlist-3', pushedAt: null,
     lastSeenAt: null, connection: 'ONLINE', error: null, statusAt: null, clockSkewSeconds: null, drifted: false, warnings: [],
+    features: ['playlist', 'control', 'message', 'banner'],
     live: {
       state: 'playing', paused: false, time: 1000, index: 0, playlistLength: 2, playlistRevision: 4,
       playlistSource: 'rctc:playlist-3', currentUrl: 'http://10.0.0.2:8080/boards/results', currentLabel: 'Results',
       currentEndsAt: 1012, overrideUrl: null, overrideUntil: null, pageReachable: true, browserRunning: true,
-      browserRestarts: 0, browserLastError: null,
+      browserRestarts: 0, browserLastError: null, message: null, banner: null,
     },
     ...over,
   };
@@ -29,6 +30,11 @@ function makeScreen(over: Partial<Screen>): Screen {
 const screens = [
   makeScreen({}),
   makeScreen({ id: 2, screenId: 'screen-02', name: 'Bar screen', connection: 'OFFLINE', live: null, drifted: false }),
+  makeScreen({ id: 4, screenId: 'screen-04', name: 'Grid screen', live: {
+    ...makeScreen({}).live!, message: { style: 'hold', title: 'Finals being calculated', text: null, level: 'info', since: 900, until: null },
+    banner: { text: 'Pits close at 5', level: 'warning', since: 900, until: 1125, visible: false },
+  } }),
+  makeScreen({ id: 5, screenId: 'screen-05', name: 'Old screen', features: ['playlist', 'control'] }),
   makeScreen({ id: 3, screenId: 'screen-03', name: 'Paddock', drifted: true, warnings: ['The screen cannot reach the page\'s server.'] }),
 ];
 
@@ -40,6 +46,9 @@ const found = [{
 vi.mock('@/hooks/admin/useAdminScreens', () => ({
   useScreens: () => ({ data: { discoveryEnabled: true, screens, found }, isLoading: false, isError: false, refetch: vi.fn() }),
   useBoardPages: () => ({ data: { baseUrls: ['http://10.0.0.2:8080/'], pages: [{ label: 'Results', path: '/boards/results' }] } }),
+  useScreenMessageSettings: () => ({ data: { presets: [], hooks: {
+    holdAfterQualifying: false, holdMessage: { title: 'Hold', text: null, style: 'hold', level: 'info', seconds: null },
+    announceFinals: false, finalsPlaylistId: null, finalsMessage: { title: 'Up', text: null, style: 'announce', level: 'info', seconds: 30 } } } }),
   useScreenPlaylists: () => ({
     data: [{ id: 3, name: 'Pit', defaultDuration: 30, items: [{ url: 'http://10.0.0.2:8080/boards/results', duration: 20, label: 'Results', id: null }] }],
     isLoading: false, isError: false, refetch: vi.fn(),
@@ -48,6 +57,9 @@ vi.mock('@/hooks/admin/useAdminScreens', () => ({
     add: { mutateAsync: add, isPending: false }, scan: { mutateAsync: vi.fn(), isPending: false }, remove: { mutateAsync: vi.fn() },
     setToken: { mutateAsync: setToken }, push: { mutateAsync: push }, repush: { mutateAsync: repush },
     control: { mutateAsync: control }, show: { mutateAsync: vi.fn() }, clearShow: { mutateAsync: vi.fn() },
+    sendMessage: { mutateAsync: vi.fn(), isPending: false }, clearMessage: { mutateAsync: vi.fn(), isPending: false },
+    sendBanner: { mutateAsync: vi.fn(), isPending: false }, clearBanner: { mutateAsync: vi.fn(), isPending: false },
+    finalsUp: { mutateAsync: vi.fn(), isPending: false }, saveMessageSettings: { mutateAsync: vi.fn(), isPending: false },
     createPlaylist: { mutateAsync: vi.fn() }, updatePlaylist: { mutateAsync: vi.fn() }, deletePlaylist: { mutateAsync: vi.fn() },
   }),
 }));
@@ -136,5 +148,14 @@ describe('ScreensPage', () => {
     expect(second.ids).toEqual([3]);
     expect(first.token).toMatch(/^[0-9a-f]{32}$/);
     expect(first.token).not.toBe(second.token);
+  });
+
+  it('shows an open-ended message and a banner the screen cannot draw, and tells an old screen to update', () => {
+    render(<ScreensPage />);
+
+    expect(screen.getByText('Hold: Finals being calculated · until cleared')).toBeInTheDocument();
+    expect(screen.getByText('Banner: Pits close at 5 · 2:05 left')).toBeInTheDocument();
+    expect(screen.getByText(/cannot draw the banner/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Update this screen to 0\.6\.0/)).toHaveLength(1);
   });
 });

@@ -32,6 +32,7 @@ export const adminQueryKeys = {
     all: () => ['admin', 'screens'] as const,
     playlists: () => ['admin', 'screens', 'playlists'] as const,
     boardPages: () => ['admin', 'screens', 'board-pages'] as const,
+    messageSettings: () => ['admin', 'screens', 'message-settings'] as const,
   },
   tracks: {
     all: () => ['admin', 'tracks'] as const,
