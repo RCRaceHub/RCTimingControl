@@ -23,6 +23,8 @@ An official can ask RaceHub which events are ready (Events page, **Find RaceHub 
 
 `id` is the same id the entry export carries as `event.id`. RaceHub decides which events are listed; RCTC suggests only those the club has released to timing and that are not completed. `entries_url` is where that event's Entry Export v1 is fetched, and must be on the same host as the events address, because the club's key is sent to it. When an official takes an event, RCTC creates it (name and date from here) if it has no event with that `id` yet, and sets its entry feed to `entries_url` with auto-fetch on. A `401` or `403` is shown as a refused key. RCTC ignores fields it doesn't know, so RaceHub may add more.
 
+If RaceHub is behind Cloudflare Access, RCTC also sends the club's service token (`CF-Access-Client-Id` and `CF-Access-Client-Secret`, set in `application.properties`, see [installing.md](installing.md)) on every call to RaceHub's host: this list, the entry feed and results. It is never sent to another host, and RaceHub itself still checks the bearer key.
+
 ## What the file carries
 
 One entry is one driver in one class. Required fields are `entry_id`, `entry_version`, `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` and `event_class_id`.
