@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.screens;
 
+import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.event.FinalsPublished;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
@@ -15,6 +16,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,6 +45,8 @@ public class ScreenMessageHooks {
     private final RaceRepository races;
     private final EventClassRepository eventClasses;
     private final FinalsLineupService lineups;
+    /** Events whose hold is up, so one finished race after another does not put it back after an official cleared it. */
+    private final Set<Long> held = ConcurrentHashMap.newKeySet();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(
             r -> Thread.ofPlatform().daemon().name("screen-message-hooks").unstarted(r));
 
@@ -80,7 +85,7 @@ public class ScreenMessageHooks {
         }
         Long eventId = races.findById(raceId)
                 .map(race -> eventClasses.getOrThrow(race.getEventClassId()).getEventId()).orElse(null);
-        if (eventId == null || !lineups.review(eventId).required()) {
+        if (eventId == null || !lineups.review(eventId).required() || !held.add(eventId)) {
             return;
         }
         List<Long> ids = allScreens();
@@ -94,6 +99,7 @@ public class ScreenMessageHooks {
 
     /** Pushes the finals playlist, if one is set, then announces, when the hook is on. */
     void announceFinals(long eventId) {
+        held.remove(eventId);
         MessageSettings.Hooks hooks = settings.get().hooks();
         if (!hooks.announceFinals()) {
             return;
@@ -102,11 +108,25 @@ public class ScreenMessageHooks {
         if (ids.isEmpty()) {
             return;
         }
-        FinalsUpResult result = messages.finalsUp(ACTOR, hooks.finalsPlaylistId(), ids, hooks.finalsMessage());
+        FinalsUpResult result = messages.finalsUp(ACTOR, existing(hooks.finalsPlaylistId()), ids, hooks.finalsMessage());
         log.info("Finals are up for event {}: playlist {} on {} screen(s), {} failed; announced \"{}\" on {} screen(s), {} failed",
                 eventId, hooks.finalsPlaylistId() == null ? "not pushed" : "pushed", result.playlist().size(),
                 failures(result.playlist()), hooks.finalsMessage().title(), result.message().size(),
                 failures(result.message()));
+    }
+
+    /** The playlist id if that playlist still exists, else null so the announcement still goes out. */
+    private Long existing(Long playlistId) {
+        if (playlistId == null) {
+            return null;
+        }
+        try {
+            screens.playlist(playlistId);
+            return playlistId;
+        } catch (EntityNotFoundException e) {
+            log.warn("The saved finals playlist {} no longer exists; announcing without it", playlistId);
+            return null;
+        }
     }
 
     private List<Long> allScreens() {

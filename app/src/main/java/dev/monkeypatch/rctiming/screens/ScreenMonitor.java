@@ -52,7 +52,7 @@ public class ScreenMonitor {
     private final Clock clock;
     private final ExecutorService pollers = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Reading> readings = new ConcurrentHashMap<>();
-    /** Whether each screen asks for a token, from its {@code /info}; read again every {@link #INFO_REFRESH}. */
+    /** Whether each screen asks for a token and what it offers, from its {@code /info}; read again every {@link #INFO_REFRESH}. */
     private record AuthKnown(boolean required, List<String> features, Instant at) { }
     private final Map<String, AuthKnown> auth = new ConcurrentHashMap<>();
 

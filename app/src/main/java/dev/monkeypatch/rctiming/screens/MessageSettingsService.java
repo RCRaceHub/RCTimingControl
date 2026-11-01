@@ -61,7 +61,9 @@ public class MessageSettingsService {
     private MessageSettings parse(String text) {
         try {
             MessageSettings settings = json.readValue(text, MessageSettings.class);
-            if (settings.presets() == null || settings.hooks() == null) {
+            MessageSettings.Hooks h = settings.hooks();
+            if (settings.presets() == null || h == null || h.holdMessage() == null || h.finalsMessage() == null
+                    || settings.presets().stream().anyMatch(p -> p == null || p.message() == null)) {
                 throw new IllegalStateException("incomplete");
             }
             return settings;
@@ -102,8 +104,11 @@ public class MessageSettingsService {
         if (hooks.finalsPlaylistId() != null) {
             screens.playlist(hooks.finalsPlaylistId());
         }
+        MessageSettings defaults = MessageSettings.defaults();
         MessageSettings cleaned = new MessageSettings(presets, new MessageSettings.Hooks(hooks.holdAfterQualifying(),
-                clean(hooks.holdMessage()), hooks.announceFinals(), hooks.finalsPlaylistId(), clean(hooks.finalsMessage())));
+                cleanHook(hooks.holdMessage(), hooks.holdAfterQualifying(), defaults.hooks().holdMessage()),
+                hooks.announceFinals(), hooks.finalsPlaylistId(),
+                cleanHook(hooks.finalsMessage(), hooks.announceFinals(), defaults.hooks().finalsMessage())));
         repository.save(json.writeValueAsString(cleaned), clock.instant());
         audit.entry(actor, "SCREEN_MESSAGES_SAVED").summary("Saved the screen messages: " + presets.size()
                 + " preset(s), qualifying hold " + onOff(cleaned.hooks().holdAfterQualifying()) + ", finals announcement "
@@ -113,6 +118,18 @@ public class MessageSettingsService {
 
     private static String onOff(boolean on) {
         return on ? "on" : "off";
+    }
+
+    /** A hook's message: checked when the hook is on; a switched-off hook with an unusable message keeps the default. */
+    private static ScreenMessage cleanHook(ScreenMessage message, boolean enabled, ScreenMessage fallback) {
+        if (enabled) {
+            return clean(message);
+        }
+        try {
+            return clean(message);
+        } catch (IllegalArgumentException e) {
+            return fallback;
+        }
     }
 
     /** The message as the screens will get it, so the saved copy is always one they accept. */

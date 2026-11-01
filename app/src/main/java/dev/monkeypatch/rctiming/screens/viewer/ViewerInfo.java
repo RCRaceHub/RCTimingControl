@@ -21,7 +21,6 @@ public record ViewerInfo(String id, String name, String hostname, String version
         return features != null && features.contains(feature);
     }
 
-
     /** The shortest dwell and the default dwell the screen accepts, in whole seconds. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Limits(@JsonProperty("default_duration") Integer defaultDuration,

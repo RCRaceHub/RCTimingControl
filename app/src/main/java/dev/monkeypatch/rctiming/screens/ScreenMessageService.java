@@ -97,8 +97,9 @@ public class ScreenMessageService {
      * @throws IllegalArgumentException (400) for an empty playlist or a message the screens would refuse; nothing is sent
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException (404) for an unknown playlist or screen
      */
-    public FinalsUpResult finalsUp(Actor actor, Long playlistId, List<Long> screenIds, ScreenMessage message) {
+    public FinalsUpResult finalsUp(Actor actor, Long playlistId, List<Long> askedIds, ScreenMessage message) {
         ScreenRules.checkMessage(message);
+        List<Long> screenIds = askedIds.stream().distinct().toList();
         List<ScreenActionResult> pushed = List.of();
         List<Long> toAnnounce = screenIds;
         if (playlistId != null) {

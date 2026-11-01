@@ -67,6 +67,22 @@ class MessageSettingsServiceTest {
     }
 
     @Test
+    void aSwitchedOffHookMayHaveABlankMessageAndKeepsTheDefault() {
+        var hooks = new MessageSettings.Hooks(false, message(""), false, null, message("Up"));
+
+        MessageSettings saved = service.save(Actor.system("t"), new MessageSettings(List.of(), hooks));
+
+        assertThat(saved.hooks().holdMessage()).isEqualTo(MessageSettings.defaults().hooks().holdMessage());
+    }
+
+    @Test
+    void aSavedDocumentMissingAHookMessageFallsBackToTheDefaults() {
+        when(repository.find()).thenReturn(Optional.of("{\"presets\":[],\"hooks\":{\"holdAfterQualifying\":true}}"));
+
+        assertThat(service.get()).isEqualTo(MessageSettings.defaults());
+    }
+
+    @Test
     void anUnreadableSavedDocumentFallsBackToTheDefaults() {
         when(repository.find()).thenReturn(Optional.of("{\"presets\": 5}"));
 

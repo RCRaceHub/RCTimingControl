@@ -65,6 +65,27 @@ class ScreenMessageHooksTest {
     }
 
     @Test
+    void theHoldIsNotPutBackByAnotherFinishedRaceOfTheSameEvent() {
+        hooksSet(true, false, null);
+
+        hooks.holdAfterQualifying(5L);
+        hooks.holdAfterQualifying(5L);
+
+        verify(messages, org.mockito.Mockito.times(1)).sendMessage(any(), any(), any());
+    }
+
+    @Test
+    void aDeletedFinalsPlaylistStillLetsTheAnnouncementOut() {
+        hooksSet(false, true, 3L);
+        when(screens.playlist(3L)).thenThrow(new dev.monkeypatch.rctiming.domain.EntityNotFoundException("gone"));
+        when(messages.finalsUp(any(), any(), any(), any())).thenReturn(new FinalsUpResult(List.of(), List.of()));
+
+        hooks.announceFinals(9L);
+
+        verify(messages).finalsUp(any(), eq(null), eq(List.of(1L, 2L)), eq(UP));
+    }
+
+    @Test
     void nothingIsSentWhileTheHooksAreOff() {
         hooksSet(false, false, null);
 
