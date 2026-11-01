@@ -14,7 +14,7 @@ Each export is the **whole event as it stands**, not just the race that changed.
 |------|----------|
 | Top level | `schema_version` (always `1`), `revision`, `generated_at`, and `source` (`system` and the club's name) |
 | `event` | `racehub_event_id` (the RaceHub event the entries were imported from), `rctc_event_id`, `name`, `date`, `status` |
-| `races[]` | Every finished race, in running order: its class (`rctc_event_class_id`, the `racehub_event_class_ids` that the entries on its grid were booked under, finishers or not, and `class_name`), `round_type`, `round_number`, `heat_number`, `final_letter` (`A`, `B` and so on; `Z` for a Shikabane zombie round), `status` (`FINISHED` or `ABANDONED`) and `finished_at` |
+| `races[]` | Every finished race, in running order: its class (`rctc_event_class_id`, the `club_class_ids` of the entries on its grid, finishers or not, and `class_name`), `round_type`, `round_number`, `heat_number`, `final_letter` (`A`, `B` and so on; `Z` for a Shikabane zombie round), `status` (`FINISHED` or `ABANDONED`) and `finished_at` |
 | `races[].results[]` | One row per finisher: `position`, `laps`, `total_time_ms`, `best_lap_ms`, `car_number`, `display_name`, the RaceHub ids, RCTC's own ids and the `penalties` given in that race |
 | `championships[]` | For each championship the event is a round of: its `round_number`, and per class the full `standings` as they stand now, with this event's position and points for each driver and whether they were dropped or excluded |
 
@@ -22,7 +22,9 @@ Points belong to championship rounds, not to single races, so they appear only i
 
 ### Ids
 
-A result row for an entry imported from RaceHub has `external_source: "RACEHUB"`, and carries RaceHub's `entry_id`, `driver_profile_id` and `racehub_event_class_id`. The schema requires `entry_id` and `driver_profile_id` on such a row.
+`club_class_ids` (a race) and `club_class_id` (a result row) are left out of the document, never sent empty or null, when there is none: a race whose entries are all walk-ins, a walk-in's row, and a RaceHub entry that was last imported before the club class id existed. RaceHub's per-meeting `racehub_event_class_ids` and `racehub_event_class_id` are gone; `rctc_event_class_id` is RCTC's own id and is unchanged.
+
+A result row for an entry imported from RaceHub has `external_source: "RACEHUB"`, and carries RaceHub's `entry_id`, `driver_profile_id` and `club_class_id` (RaceHub's club-level class id, which RCTC took from the entry export). The schema requires `entry_id` and `driver_profile_id` on such a row.
 
 A result row for a walk-in added at the track has `external_source: null` and null RaceHub ids. It is identified by `rctc_entry_id` and `rctc_competitor_id` instead. Every row carries the RCTC ids, so RaceHub can match a walk-in across exports. An entry from anywhere other than RaceHub, such as the RC-Timing CSV import or another booking system's entry file, is sent the same way, since RaceHub doesn't know its ids.
 

@@ -7,9 +7,6 @@ package dev.monkeypatch.rctiming.jooq.generated;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AudioTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.AuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.BoardViews;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
-import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipEventLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipExclusions;
@@ -20,10 +17,13 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
+import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
-import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryPhotos;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
@@ -44,6 +44,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEliminations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -96,21 +97,6 @@ public class DefaultSchema extends SchemaImpl {
     public final BoardViews BOARD_VIEWS = BoardViews.BOARD_VIEWS;
 
     /**
-     * The table <code>display_message_settings</code>.
-     */
-    public final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
-
-    /**
-     * The table <code>display_playlists</code>.
-     */
-    public final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
-
-    /**
-     * The table <code>display_screens</code>.
-     */
-    public final DisplayScreens DISPLAY_SCREENS = DisplayScreens.DISPLAY_SCREENS;
-
-    /**
      * The table <code>championship_classes</code>.
      */
     public final ChampionshipClasses CHAMPIONSHIP_CLASSES = ChampionshipClasses.CHAMPIONSHIP_CLASSES;
@@ -161,6 +147,21 @@ public class DefaultSchema extends SchemaImpl {
     public final DecoderLoops DECODER_LOOPS = DecoderLoops.DECODER_LOOPS;
 
     /**
+     * The table <code>display_message_settings</code>.
+     */
+    public final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
+
+    /**
+     * The table <code>display_playlists</code>.
+     */
+    public final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
+
+    /**
+     * The table <code>display_screens</code>.
+     */
+    public final DisplayScreens DISPLAY_SCREENS = DisplayScreens.DISPLAY_SCREENS;
+
+    /**
      * The table <code>entries</code>.
      */
     public final Entries ENTRIES = Entries.ENTRIES;
@@ -171,14 +172,14 @@ public class DefaultSchema extends SchemaImpl {
     public final EntryAuditLog ENTRY_AUDIT_LOG = EntryAuditLog.ENTRY_AUDIT_LOG;
 
     /**
-     * The table <code>entry_feeds</code>.
-     */
-    public final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
-
-    /**
      * The table <code>entry_car_colours</code>.
      */
     public final EntryCarColours ENTRY_CAR_COLOURS = EntryCarColours.ENTRY_CAR_COLOURS;
+
+    /**
+     * The table <code>entry_feeds</code>.
+     */
+    public final EntryFeeds ENTRY_FEEDS = EntryFeeds.ENTRY_FEEDS;
 
     /**
      * The table <code>entry_photos</code>.
@@ -281,6 +282,11 @@ public class DefaultSchema extends SchemaImpl {
     public final RacePointPenalties RACE_POINT_PENALTIES = RacePointPenalties.RACE_POINT_PENALTIES;
 
     /**
+     * The table <code>racehub_class_links</code>.
+     */
+    public final RacehubClassLinks RACEHUB_CLASS_LINKS = RacehubClassLinks.RACEHUB_CLASS_LINKS;
+
+    /**
      * The table <code>racehub_class_mappings</code>.
      */
     public final RacehubClassMappings RACEHUB_CLASS_MAPPINGS = RacehubClassMappings.RACEHUB_CLASS_MAPPINGS;
@@ -364,9 +370,6 @@ public class DefaultSchema extends SchemaImpl {
             AudioTemplates.AUDIO_TEMPLATES,
             AuditLog.AUDIT_LOG,
             BoardViews.BOARD_VIEWS,
-            DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS,
-            DisplayPlaylists.DISPLAY_PLAYLISTS,
-            DisplayScreens.DISPLAY_SCREENS,
             ChampionshipClasses.CHAMPIONSHIP_CLASSES,
             ChampionshipEventLinks.CHAMPIONSHIP_EVENT_LINKS,
             ChampionshipExclusions.CHAMPIONSHIP_EXCLUSIONS,
@@ -377,10 +380,13 @@ public class DefaultSchema extends SchemaImpl {
             CompetitorMedia.COMPETITOR_MEDIA,
             Competitors.COMPETITORS,
             DecoderLoops.DECODER_LOOPS,
+            DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS,
+            DisplayPlaylists.DISPLAY_PLAYLISTS,
+            DisplayScreens.DISPLAY_SCREENS,
             Entries.ENTRIES,
             EntryAuditLog.ENTRY_AUDIT_LOG,
-            EntryFeeds.ENTRY_FEEDS,
             EntryCarColours.ENTRY_CAR_COLOURS,
+            EntryFeeds.ENTRY_FEEDS,
             EntryPhotos.ENTRY_PHOTOS,
             EventClasses.EVENT_CLASSES,
             EventSponsors.EVENT_SPONSORS,
@@ -401,6 +407,7 @@ public class DefaultSchema extends SchemaImpl {
             RaceEntries.RACE_ENTRIES,
             RaceFormatTemplates.RACE_FORMAT_TEMPLATES,
             RacePointPenalties.RACE_POINT_PENALTIES,
+            RacehubClassLinks.RACEHUB_CLASS_LINKS,
             RacehubClassMappings.RACEHUB_CLASS_MAPPINGS,
             Races.RACES,
             RacingClasses.RACING_CLASSES,

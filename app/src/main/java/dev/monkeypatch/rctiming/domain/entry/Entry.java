@@ -59,8 +59,8 @@ public class Entry implements UpdatedAt {
     private String importedTransponderNumber;
     private String importedSecondaryTransponderNumber;
 
-    /** The RaceHub event_class_id this entry was booked in (#27). Null for walk-ins. */
-    private String racehubEventClassId;
+    /** The club class id (RaceHub club_class_id) this entry was booked in, sent back with its results (#27). Null for walk-ins. */
+    private String racehubClubClassId;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -138,7 +138,7 @@ public class Entry implements UpdatedAt {
         this.importedSecondaryTransponderNumber = importedSecondaryTransponderNumber;
     }
 
-    public String getRacehubEventClassId() { return racehubEventClassId; }
-    public void setRacehubEventClassId(String racehubEventClassId) { this.racehubEventClassId = racehubEventClassId; }
+    public String getRacehubClubClassId() { return racehubClubClassId; }
+    public void setRacehubClubClassId(String racehubClubClassId) { this.racehubClubClassId = racehubClubClassId; }
 
 }

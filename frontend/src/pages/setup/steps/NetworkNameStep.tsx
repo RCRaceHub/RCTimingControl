@@ -35,7 +35,7 @@ async function nameAnswers(host: string): Promise<boolean | null> {
 }
 
 /**
- * Optional last wizard step (#604): suggests a network name such as rctiming.local so tablets and phones can open the
+ * Optional wizard step (#604): suggests a network name such as rctiming.local so tablets and phones can open the
  * app without knowing the laptop's address, saves it to the settings file, and, once the app has been restarted with
  * it, checks that this device can reach it and shows the address as a QR code. The app announces the name itself, so
  * the laptop does not have to be renamed.
@@ -158,7 +158,7 @@ export default function NetworkNameStep({ onNext, onBack }: Props) {
       <div className="flex gap-2">
         {onBack && <Button variant="outline" onClick={onBack}>Back</Button>}
         <Button variant="ghost" onClick={onNext}>Skip for now</Button>
-        <Button onClick={() => saveName(true)} disabled={save.isPending || data.overriddenByEnvironment}>Save and Finish</Button>
+        <Button onClick={() => saveName(true)} disabled={save.isPending || data.overriddenByEnvironment}>Save and continue</Button>
       </div>
     </div>
   );

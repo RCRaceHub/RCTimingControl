@@ -231,16 +231,16 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     }
 
     /**
-     * Setter for <code>entries.racehub_event_class_id</code>.
+     * Setter for <code>entries.racehub_club_class_id</code>.
      */
-    public void setRacehubEventClassId(String value) {
+    public void setRacehubClubClassId(String value) {
         set(15, value);
     }
 
     /**
-     * Getter for <code>entries.racehub_event_class_id</code>.
+     * Getter for <code>entries.racehub_club_class_id</code>.
      */
-    public String getRacehubEventClassId() {
+    public String getRacehubClubClassId() {
         return (String) get(15);
     }
 
@@ -323,7 +323,7 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
     /**
      * Create a detached, initialised EntriesRecord
      */
-    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, String racehubEventClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber, String thirdTransponderNumber, String fourthTransponderNumber) {
+    public EntriesRecord(Long id, Long eventId, Long eventClassId, String transponderNumber, String status, Instant submittedAt, Instant updatedAt, Instant confirmedAt, Instant withdrawnAt, Long competitorId, String secondaryTransponderNumber, String externalSource, String externalEntryId, Long externalEntryVersion, String racehubArrival, String racehubClubClassId, String importedTransponderNumber, String importedSecondaryTransponderNumber, String thirdTransponderNumber, String fourthTransponderNumber) {
         super(Entries.ENTRIES);
 
         setId(id);
@@ -341,7 +341,7 @@ public class EntriesRecord extends UpdatableRecordImpl<EntriesRecord> {
         setExternalEntryId(externalEntryId);
         setExternalEntryVersion(externalEntryVersion);
         setRacehubArrival(racehubArrival);
-        setRacehubEventClassId(racehubEventClassId);
+        setRacehubClubClassId(racehubClubClassId);
         setImportedTransponderNumber(importedTransponderNumber);
         setImportedSecondaryTransponderNumber(importedSecondaryTransponderNumber);
         setThirdTransponderNumber(thirdTransponderNumber);

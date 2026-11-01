@@ -207,7 +207,7 @@ app/src/main/java/dev/monkeypatch/rctiming/
 │   ├── club/ track/ raceclass/ format/ event/ race/ championship/ practice/
 │   ├── competitor/      # Competitors (display name, RaceHub driver ID, BRCA number, club)
 │   ├── entry/           # Entries with primary and secondary transponders, audit log
-│   ├── racehub/         # Entry Export v1 import and class mapping
+│   ├── racehub/         # Entry Export v1 import and club-wide class links
 │   ├── transponder/     # Transponder swaps
 │   └── user/ auth/      # Officials and refresh tokens
 ├── query/               # jOOQ read side: boards, championship standings,

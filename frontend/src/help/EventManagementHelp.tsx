@@ -32,7 +32,13 @@ export function EventManagementHelp() {
           status — fields are read-only once published. Status transitions are one-way
           (except Draft ↔ Published): you cannot revert from Entries Closed back to Open.
           Map every class in the file to one of the event's classes before importing: an import
-          with an unmapped class saves nothing (the dialog lists the classes to map). Importing a
+          with an unmapped class saves nothing (the dialog lists the classes to map). For each one
+          you can pick a class already in the event, add one of your classes to the event, or create
+          a new class. A class you add or create gets the race format it last used (you choose one
+          the first time), and RCTC remembers the link for every meeting, so the same RaceHub class
+          is placed without asking next time. On the Events page, Import entries from a file
+          makes the event from the file's name and date if there is not one yet, so you do not
+          create the event first. Importing a
           newer RaceHub file never overwrites a transponder swapped on the day; the entry
           list shows the number the booking has so you can compare.
         </p>

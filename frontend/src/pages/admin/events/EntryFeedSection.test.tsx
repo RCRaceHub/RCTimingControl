@@ -17,9 +17,9 @@ vi.mock('@/lib/adminApi', () => ({
     fetchEntryFeed: vi.fn(),
     previewEntryFeed: vi.fn(),
     applyEntryFeed: vi.fn(),
-    listRaceHubClassMappings: vi.fn(),
-    replaceRaceHubClassMappings: vi.fn(),
     listRacingClasses: vi.fn(),
+    resolveRaceHubClasses: vi.fn(),
+    formats: { list: vi.fn() },
   },
 }));
 
@@ -55,8 +55,8 @@ function renderSection() {
 describe('EntryFeedSection', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    api.listRaceHubClassMappings.mockResolvedValue([]);
     api.listRacingClasses.mockResolvedValue([]);
+    vi.mocked(adminApi.formats.list).mockResolvedValue([]);
   });
 
   it('saves a new feed with its token', async () => {

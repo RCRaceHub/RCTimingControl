@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  * so replaying an export is a no-op. A withdrawn entry is marked WITHDRAWN and never deleted.
  *
  * <p>Another booking system can send the same format with its own {@code source} (#41). Its entries,
- * competitors and class mappings are keyed by that source, so its ids never meet RaceHub's, and it never
+ * competitors and class links are keyed by that source, so its ids never meet RaceHub's, and it never
  * links the event to a RaceHub event, so no results are sent to RaceHub for it.
  */
 @Service
@@ -108,8 +108,8 @@ public class RaceHubImportService {
      * Imports the file, or with {@code dryRun} only previews it. {@code actor} is who is importing (an official,
      * or the system for the automatic fetch); it is not needed, and may be null, for a dry run.
      *
-     * <p>Runs in one write transaction, a dry run included. Nothing is saved when the result is blocked (unmapped
-     * classes, invalid rows, a BRCA number shared by two competitors from the same source, or a driver who would
+     * <p>Runs in one write transaction, a dry run included. Nothing is saved when the result is blocked (classes with no
+     * club link, invalid rows, a BRCA number shared by two competitors from the same source, or a driver who would
      * have two entries in a class). Withdrawals are applied before the
      * other rows so a replacement entry does not meet the old one in the one-active-entry index. A real import that
      * changes entries writes one audit row.
@@ -144,7 +144,8 @@ public class RaceHubImportService {
         checkFinalState(eventId, plan, competitors, eventClasses, errors, warnings);
 
         List<UnmappedClass> unmappedClasses = unmapped.entrySet().stream()
-                .map(e -> new UnmappedClass(e.getKey(), e.getValue().rcClassName, e.getValue().className, e.getValue().count))
+                .map(e -> new UnmappedClass(e.getKey(), e.getValue().rcClassName, e.getValue().className,
+                        e.getValue().count, eventClasses.linkedRacingClass(e.getKey()).orElse(null)))
                 .toList();
         boolean blocked = !errors.isEmpty() || !unmappedClasses.isEmpty();
         boolean apply = !dryRun && !blocked;
@@ -238,7 +239,7 @@ public class RaceHubImportService {
                 .after(after).record();
     }
 
-    /** The event's class mappings, ordered by RaceHub class id; a 404 if there is no such event. */
+    /** The event's per-meeting class mappings (the RC-Timing CSV import's), ordered by key; a 404 if there is no such event. */
     @ReadTransaction
     public List<RaceHubClassMapping> listMappings(Long eventId) {
         eventRepository.requireExists(eventId);
@@ -246,7 +247,8 @@ public class RaceHubImportService {
     }
 
     /**
-     * Replaces the event's class mappings with {@code mappings} (RaceHub event_class_id → event class id) and records
+     * Replaces the event's per-meeting class mappings with {@code mappings} (class key → event class id; the RaceHub
+     * import does not use them) and records
      * {@code CLASS_MAPPINGS_REPLACED}.
      *
      * @throws IllegalArgumentException if a key is blank or an event class is not one of this event's
@@ -261,7 +263,7 @@ public class RaceHubImportService {
                 .map(EventClassRef::getId).collect(Collectors.toSet());
         mappings.forEach((racehubId, eventClassId) -> {
             if (racehubId == null || racehubId.isBlank()) {
-                throw new IllegalArgumentException("RaceHub event_class_id is required");
+                throw new IllegalArgumentException("A class key is required");
             }
             if (!eventClassIds.contains(eventClassId)) {
                 throw new IllegalArgumentException("Event class " + eventClassId + " is not in this event");
@@ -317,8 +319,8 @@ public class RaceHubImportService {
         if (row.driverProfileId() == null || row.driverProfileId().isBlank()) {
             problems.add(label + " has no driver_profile_id");
         }
-        if (row.eventClassId() == null || row.eventClassId().isBlank()) {
-            problems.add(label + " has no event_class_id");
+        if (row.clubClassId() == null || row.clubClassId().isBlank()) {
+            problems.add(label + " has no club_class_id");
         }
         return problems;
     }
@@ -366,7 +368,7 @@ public class RaceHubImportService {
                 if (resolved.isPresent()) {
                     eventClassId = resolved.get();
                 } else {
-                    unmapped.computeIfAbsent(classes.mappingKey(row), k -> new UnmappedAccumulator(row)).count++;
+                    unmapped.computeIfAbsent(classes.linkKey(row), k -> new UnmappedAccumulator(row)).count++;
                 }
                 transponders = transponders(row, existing,
                         existing == null ? Set.of() : swapped.getOrDefault(existing.getId(), Set.of()));
@@ -489,7 +491,14 @@ public class RaceHubImportService {
         Instant now = Instant.now();
         switch (p.action) {
             case UNCHANGED, STALE -> {
-                return p.existing.getId();
+                Entry kept = p.existing;
+                // A row already applied before entries carried the club class id names it again: keep it for the results
+                if (p.action == Action.UNCHANGED && kept.getRacehubClubClassId() == null
+                        && ExternalSources.RACEHUB.equals(source) && !isBlank(row.clubClassId())) {
+                    kept.setRacehubClubClassId(row.clubClassId());
+                    return entryRepository.save(kept).getId();
+                }
+                return kept.getId();
             }
             case SKIP -> {
                 return null;
@@ -514,8 +523,8 @@ public class RaceHubImportService {
                 }
                 e.setCompetitorId(competitor.getId());
                 e.setEventClassId(p.eventClassId);
-                // Results go back to RaceHub by its class ids (#27), so another system's are not kept
-                e.setRacehubEventClassId(ExternalSources.RACEHUB.equals(source) ? row.eventClassId() : null);
+                // Results go back to RaceHub by the club class id (#27), so another system's is not kept
+                e.setRacehubClubClassId(ExternalSources.RACEHUB.equals(source) ? row.clubClassId() : null);
                 e.setTransponderNumberSnapshot(p.transponders.primary());
                 e.setSecondaryTransponderNumber(p.transponders.secondary());
                 e.setImportedTransponderNumber(p.transponders.importedPrimary());
@@ -561,6 +570,10 @@ public class RaceHubImportService {
 
     private static String secondaryOf(ExportEntry row) {
         return blankToNull(row.primaryTransponder()) == null ? null : blankToNull(row.secondaryTransponder());
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     private static String blankToNull(String s) {
@@ -629,22 +642,19 @@ public class RaceHubImportService {
     }
 
     /**
-     * Finds the event class for a RaceHub class: a stored mapping first, then the one event class
-     * whose racing class has the same name as {@code rc_class_name}. Another source's mappings are
-     * keyed by that source and its class id, so they never meet RaceHub's.
+     * Finds the event class for an entry through the club's link from its {@code club_class_id} to a racing class
+     * that is in the event. It never matches by name: a class with no link, or whose racing class is not in the event
+     * (or is in it more than once), is reported for an official to settle. Another source's links are keyed by that
+     * source and its class id, so they never meet RaceHub's.
      */
     private record ClassResolver(String source, EventClasses classes) {
 
-        String mappingKey(ExportEntry row) {
-            return ExternalSources.RACEHUB.equals(source) ? row.eventClassId() : source + ":" + row.eventClassId();
+        String linkKey(ExportEntry row) {
+            return ExternalSources.RACEHUB.equals(source) ? row.clubClassId() : source + ":" + row.clubClassId();
         }
 
         Optional<Long> resolve(ExportEntry row) {
-            Optional<Long> mapped = classes.mapped(mappingKey(row));
-            if (mapped.isPresent() || row.rcClassName() == null) {
-                return mapped;
-            }
-            return classes.byName(row.rcClassName());
+            return classes.linked(linkKey(row));
         }
     }
 }

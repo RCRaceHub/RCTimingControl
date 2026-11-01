@@ -40,7 +40,7 @@
     "text": { "type": ["string", "null"] },
     "entry": {
       "type": "object",
-      "required": ["entry_id", "entry_version", "entry_status", "driver_profile_id", "event_class_id"],
+      "required": ["entry_id", "entry_version", "entry_status", "driver_profile_id", "club_class_id"],
       "properties": {
         "entry_id": { "$ref": "#/$defs/id" },
         "entry_version": {
@@ -49,9 +49,11 @@
         },
         "entry_status": { "enum": ["CONFIRMED", "WITHDRAWN"] },
         "race_day_status": { "enum": ["NOT_ARRIVED", "ARRIVED", null] },
-        "event_class_id": { "$ref": "#/$defs/id" },
+        "club_class_id": {
+          "description": "The club-level class id: stable across meetings and the club's lifetime. RCTC links it to one of its racing classes once, and never matches a class by name.",
+          "$ref": "#/$defs/id"
+        },
         "rc_class_name": { "$ref": "#/$defs/text" },
-        "rc_class_number": { "$ref": "#/$defs/text" },
         "class_name": { "$ref": "#/$defs/text" },
         "driver_profile_id": { "$ref": "#/$defs/id" },
         "driver_display_name": { "$ref": "#/$defs/text" },

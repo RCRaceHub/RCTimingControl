@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ChampionshipClasses.ChampionshipClassesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks.RacehubClassLinksPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds.TrackLapThresholdsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacingClassesRecord;
 import dev.monkeypatch.rctiming.persistence.convert.InstantMicrosConverter;
@@ -204,6 +205,19 @@ public class RacingClasses extends TableImpl<RacingClassesRecord> {
             _trackLapThresholds = new TrackLapThresholdsPath(this, null, Keys.TRACK_LAP_THRESHOLDS__FK_THRESHOLD_RACING_CLASS.getInverseKey());
 
         return _trackLapThresholds;
+    }
+
+    private transient RacehubClassLinksPath _racehubClassLinks;
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>racehub_class_links</code> table
+     */
+    public RacehubClassLinksPath racehubClassLinks() {
+        if (_racehubClassLinks == null)
+            _racehubClassLinks = new RacehubClassLinksPath(this, null, Keys.RACEHUB_CLASS_LINKS__RACEHUB_CLASS_LINKS_RACING_CLASS_ID_FKEY.getInverseKey());
+
+        return _racehubClassLinks;
     }
 
     @Override

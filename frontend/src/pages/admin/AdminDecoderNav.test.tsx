@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import AdminPanelLayout from './AdminPanelLayout';
 import { HelpProvider } from '@/context/HelpContext';
@@ -19,11 +20,13 @@ vi.mock('@/hooks/useAuth', () => ({
 
 function renderLayout() {
   return render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
     <MemoryRouter initialEntries={['/admin']}>
       <HelpProvider>
         <AdminPanelLayout />
       </HelpProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

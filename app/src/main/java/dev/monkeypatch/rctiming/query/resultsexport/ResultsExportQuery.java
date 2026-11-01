@@ -109,7 +109,7 @@ public class ResultsExportQuery {
                 .fetch();
 
         Map<Long, List<PenaltyRow>> penalties = penalties(eventId);
-        Map<Long, TreeSet<String>> racehubClassIds = racehubClassIds(eventId);
+        Map<Long, TreeSet<String>> clubClassIds = clubClassIds(eventId);
         List<ResultsExportV1.Race> races = new ArrayList<>();
         for (Record r : rows) {
             long raceId = r.get(RACES.ID);
@@ -127,7 +127,7 @@ public class ResultsExportQuery {
                         entry == null ? null : entry.externalSource(),
                         entry == null ? null : entry.externalEntryId(),
                         entry == null ? null : entry.driverProfileId(),
-                        entry == null ? null : entry.racehubEventClassId(),
+                        entry == null ? null : entry.clubClassId(),
                         p.entryId(),
                         // The entry's competitor now, not the snapshot's: a merge moves entries to another competitor
                         entry != null ? Long.valueOf(entry.competitorId()) : p.competitorId(),
@@ -141,7 +141,7 @@ public class ResultsExportQuery {
             races.add(new ResultsExportV1.Race(
                     raceId,
                     r.get(RACES.EVENT_CLASS_ID),
-                    List.copyOf(racehubClassIds.getOrDefault(raceId, new TreeSet<>())),
+                    List.copyOf(clubClassIds.getOrDefault(raceId, new TreeSet<>())),
                     r.get(RACING_CLASSES.NAME),
                     r.get(ROUNDS.TYPE),
                     r.get(ROUNDS.ROUND_NUMBER),
@@ -194,18 +194,18 @@ public class ResultsExportQuery {
         return byEntry;
     }
 
-    /** The RaceHub classes of everyone on each race's grid, finishers or not. */
-    private Map<Long, TreeSet<String>> racehubClassIds(long eventId) {
+    /** The club class ids of everyone on each race's grid, finishers or not. */
+    private Map<Long, TreeSet<String>> clubClassIds(long eventId) {
         Map<Long, TreeSet<String>> byRace = new LinkedHashMap<>();
-        dsl.selectDistinct(RACE_ENTRIES.RACE_ID, ENTRIES.RACEHUB_EVENT_CLASS_ID)
+        dsl.selectDistinct(RACE_ENTRIES.RACE_ID, ENTRIES.RACEHUB_CLUB_CLASS_ID)
                 .from(RACE_ENTRIES)
                 .join(ENTRIES).on(ENTRIES.ID.eq(RACE_ENTRIES.ENTRY_ID))
                 .join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
                 .join(ROUNDS).on(ROUNDS.ID.eq(RACES.ROUND_ID))
                 .where(ROUNDS.EVENT_ID.eq(eventId))
-                .and(ENTRIES.RACEHUB_EVENT_CLASS_ID.isNotNull())
+                .and(ENTRIES.RACEHUB_CLUB_CLASS_ID.isNotNull())
                 .forEach(r -> byRace.computeIfAbsent(r.get(RACE_ENTRIES.RACE_ID), k -> new TreeSet<>())
-                        .add(r.get(ENTRIES.RACEHUB_EVENT_CLASS_ID)));
+                        .add(r.get(ENTRIES.RACEHUB_CLUB_CLASS_ID)));
         return byRace;
     }
 
@@ -300,7 +300,7 @@ public class ResultsExportQuery {
 
     private Map<Long, EntryRef> entries(long eventId) {
         Map<Long, EntryRef> entries = new LinkedHashMap<>();
-        dsl.select(ENTRIES.ID, ENTRIES.EXTERNAL_SOURCE, ENTRIES.EXTERNAL_ENTRY_ID, ENTRIES.RACEHUB_EVENT_CLASS_ID,
+        dsl.select(ENTRIES.ID, ENTRIES.EXTERNAL_SOURCE, ENTRIES.EXTERNAL_ENTRY_ID, ENTRIES.RACEHUB_CLUB_CLASS_ID,
                         COMPETITORS.ID, COMPETITORS.DISPLAY_NAME, COMPETITORS.EXTERNAL_ID)
                 .from(ENTRIES)
                 .join(COMPETITORS).on(COMPETITORS.ID.eq(ENTRIES.COMPETITOR_ID))
@@ -312,7 +312,7 @@ public class ResultsExportQuery {
                     entries.put(e.get(ENTRIES.ID), new EntryRef(
                             fromRaceHub ? ExternalSources.RACEHUB : null,
                             fromRaceHub ? e.get(ENTRIES.EXTERNAL_ENTRY_ID) : null,
-                            e.get(ENTRIES.RACEHUB_EVENT_CLASS_ID),
+                            e.get(ENTRIES.RACEHUB_CLUB_CLASS_ID),
                             e.get(COMPETITORS.ID),
                             e.get(COMPETITORS.DISPLAY_NAME),
                             // A driver profile id only means something alongside a RaceHub entry
@@ -321,7 +321,7 @@ public class ResultsExportQuery {
         return entries;
     }
 
-    private record EntryRef(String externalSource, String externalEntryId, String racehubEventClassId,
+    private record EntryRef(String externalSource, String externalEntryId, String clubClassId,
                             long competitorId, String displayName, String driverProfileId) {
     }
 

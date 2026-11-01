@@ -63,15 +63,16 @@ class DropCheckInMigrationTest {
 
         migrate(null);
 
+        // V59 renames the RaceHub class column and empties it: a per-meeting id is no club class id
         assertThat(count("select count(*) from race_entries where race_id = 7 and entry_id = 5")).isEqualTo(1);
         assertThat(count("select count(*) from entry_audit_log where entry_id = 5")).isEqualTo(1);
         assertThat(jdbc.queryForMap("""
                 select competitor_id, transponder_number, secondary_transponder_number, external_entry_id,
-                       racehub_arrival, racehub_event_class_id, imported_transponder_number
+                       racehub_arrival, racehub_club_class_id, imported_transponder_number
                 from entries where id = 5"""))
                 .containsEntry("competitor_id", 4).containsEntry("transponder_number", "101")
                 .containsEntry("secondary_transponder_number", "102").containsEntry("external_entry_id", "rh-1")
-                .containsEntry("racehub_arrival", "ARRIVED").containsEntry("racehub_event_class_id", "rh-class")
+                .containsEntry("racehub_arrival", "ARRIVED").containsEntry("racehub_club_class_id", null)
                 .containsEntry("imported_transponder_number", "202");
         assertThat(jdbc.queryForObject("select seq from sqlite_sequence where name = 'entries'", Integer.class))
                 .isEqualTo(8);

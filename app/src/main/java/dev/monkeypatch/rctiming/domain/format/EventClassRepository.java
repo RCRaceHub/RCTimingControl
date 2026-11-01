@@ -44,6 +44,19 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
                 .fetch(row -> new EventClassRef(row.value1(), row.value2()));
     }
 
+    /**
+     * The format template the racing class was last entered with in any event, or empty when it was never entered
+     * from a template. Used to give a class added by an import the format it used last time.
+     */
+    public Optional<Long> findLastTemplateId(Long racingClassId) {
+        return dsl.select(EVENT_CLASSES.TEMPLATE_ID)
+                .from(EVENT_CLASSES)
+                .where(EVENT_CLASSES.RACING_CLASS_ID.eq(racingClassId), EVENT_CLASSES.TEMPLATE_ID.isNotNull())
+                .orderBy(EVENT_CLASSES.ID.desc())
+                .limit(1)
+                .fetchOptional(EVENT_CLASSES.TEMPLATE_ID);
+    }
+
     /** The event a class belongs to, without loading its format config. Empty when there is no such class. */
     public Optional<Long> findEventIdById(Long eventClassId) {
         return dsl.select(EVENT_CLASSES.EVENT_ID)

@@ -10,6 +10,8 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository.EventClassRef;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassLink;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassLinkRepository;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassMapping;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassMappingRepository;
 import org.springframework.stereotype.Component;
@@ -31,17 +33,20 @@ import java.util.stream.Collectors;
 public class EntryImports {
 
     private final RaceHubClassMappingRepository mappingRepository;
+    private final RaceHubClassLinkRepository linkRepository;
     private final EventClassRepository eventClassRepository;
     private final RacingClassRepository racingClassRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
 
     public EntryImports(RaceHubClassMappingRepository mappingRepository,
+                        RaceHubClassLinkRepository linkRepository,
                         EventClassRepository eventClassRepository,
                         RacingClassRepository racingClassRepository,
                         EntryRepository entryRepository,
                         CompetitorRepository competitorRepository) {
         this.mappingRepository = mappingRepository;
+        this.linkRepository = linkRepository;
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.entryRepository = entryRepository;
@@ -67,7 +72,13 @@ public class EntryImports {
                 .filter(ec -> racingClassNames.containsKey(ec.getRacingClassId()))
                 .collect(Collectors.groupingBy(ec -> Names.matchKey(racingClassNames.get(ec.getRacingClassId())),
                         Collectors.mapping(EventClassRef::getId, Collectors.toList())));
-        return new EventClasses(mapped, eventClasses.stream().map(EventClassRef::getId).toList(), byName, names);
+        Map<String, Long> clubLinks = linkRepository.findAllOrderByClassKey().stream()
+                .collect(Collectors.toMap(RaceHubClassLink::getClassKey, RaceHubClassLink::getRacingClassId));
+        Map<Long, List<Long>> byRacingClass = eventClasses.stream().filter(ec -> ec.getRacingClassId() != null)
+                .collect(Collectors.groupingBy(EventClassRef::getRacingClassId,
+                        Collectors.mapping(EventClassRef::getId, Collectors.toList())));
+        return new EventClasses(mapped, eventClasses.stream().map(EventClassRef::getId).toList(), byName, names,
+                clubLinks, byRacingClass);
     }
 
     /**

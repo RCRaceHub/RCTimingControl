@@ -15,10 +15,15 @@ classDiagram
         liveFeedEnabled
         resultsExportRevision
     }
+    class RacingClass
     class EventClass {
         eventId
         racingClassId
         templateId
+    }
+    class RaceHubClassLink {
+        classKey : RaceHub club class id
+        racingClassId : club-wide, one per key
     }
     class Competitor {
         displayName
@@ -86,6 +91,7 @@ classDiagram
     class IncidentReport
 
     Event "1" --> "*" EventClass
+    RaceHubClassLink "*" --> "1" RacingClass : an import finds the event class through it
     Event "1" --> "*" Round
     Event "1" --> "*" Entry
     Competitor "1" --> "*" Entry

@@ -12,6 +12,17 @@ This page records what RCTimingControl (RCTC) reads from a RaceHub **Entry Expor
 
 An official either chooses the file on the event's Entries tab (**Import entries from RaceHub**), or RCTC fetches it from the event's entry feed (a web address that serves the file, optionally with a token). Either way the official sees a preview of what will change before anything is saved. RaceHub never calls RCTC: RCTC runs on a laptop at the venue that other systems usually cannot reach. The list of events ready for timing is fetched the same way, see [Finding events ready for timing](#finding-events-ready-for-timing).
 
+## The club's classes
+
+An official links each of the club's classes to an RCTC racing class once, on the **RaceHub classes** page (Configuration menu), so a newly attached instance with no history starts there. RCTC sends `GET /api/rctc/v1/classes` (the same address as the events list with `events` replaced by `classes`, the same bearer key, ability `entries:read`) and expects the club's classes ordered by name, either as a bare JSON array or as an object holding the array under `classes`:
+
+```json
+[ { "id": "12", "name": "2WD Buggy", "rc_class_name": "2WD Buggy", "active": true },
+  { "id": "9", "name": "Old Modified", "rc_class_name": "Modified", "active": false } ]
+```
+
+`id` is the same value the export carries as `club_class_id`. Inactive classes (`active: false`) are shown distinctly but can still be linked, because old meetings refer to them. When an import is held on a `club_class_id` that has no link, the official can fetch the list again (the club may have added a class since the links were made) and link the new one. Results go back to RaceHub by the same id, see [Results Export v1](results-export-v1.md).
+
 ## Finding events ready for timing
 
 An official can ask RaceHub which events are ready (Events page, **Find RaceHub events**) instead of pasting each event's feed address. RCTC sends `GET <events address>` with `Authorization: Bearer <the club's key>` and expects JSON:
@@ -27,7 +38,7 @@ If RaceHub is behind Cloudflare Access, RCTC also sends the club's service token
 
 ## What the file carries
 
-One entry is one driver in one class. Required fields are `entry_id`, `entry_version`, `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` and `event_class_id`.
+One entry is one driver in one class. Required fields are `entry_id`, `entry_version`, `entry_status` (`CONFIRMED` or `WITHDRAWN`), `driver_profile_id` and `club_class_id`.
 
 | Field | Used for |
 |-------|----------|
@@ -36,7 +47,8 @@ One entry is one driver in one class. Required fields are `entry_id`, `entry_ver
 | `entry_status` | `WITHDRAWN` marks the RCTC entry withdrawn. Entries are never deleted, so their race history stays. |
 | `driver_profile_id` | The driver's identity. Becomes one RCTC **competitor**, matched by this id (and the `source`), so results and championship points follow the driver across events. |
 | `driver_display_name` | The name shown. Whether it shows in full is the driver's setting in RCTC. |
-| `event_class_id`, `rc_class_name`, `rc_class_number`, `class_name` | The class. Matched to an RCTC racing class by `rc_class_name` (ignoring case); otherwise an official maps `event_class_id` to a class once. |
+| `club_class_id` | The class. The club-level id: it is the same at every meeting and for the club's lifetime (a class that has been used is made inactive, never deleted). RCTC links it to one of its own racing classes **once**, and every imported meeting finds the class through that link. A `club_class_id` with no link holds the whole import (file or fetched revision) for an official; the entry is never dropped and a class is never guessed by name. `event_class_id`, the per-meeting class id RaceHub used to send, is no longer read. |
+| `rc_class_name`, `class_name` | Labels only: shown beside a held class so the official knows what it is, and used to suggest a racing class on the RaceHub classes screen. They never place an entry. |
 | `primary_transponder`, `secondary_transponder` | The two transponder numbers for the event. |
 | `brca_number`, `brca_source`, `home_club` | The competitor's BRCA number and home club. |
 | `race_day_status` | `NOT_ARRIVED` or `ARRIVED`, kept for information. |
@@ -55,7 +67,7 @@ Three optional fields on an entry let RaceHub supply the pictures the boards and
 ```json
 {
   "entry_id": "a1", "entry_version": 4, "entry_status": "CONFIRMED",
-  "driver_profile_id": "drv-ada", "event_class_id": "rh-class-buggy",
+  "driver_profile_id": "drv-ada", "club_class_id": "12",
   "driver_display_name": "Ada Lovelace",
   "headshot_url": "https://media.example.org/drivers/drv-ada.png",
   "car_photo_url": "https://media.example.org/entries/a1/car.jpg",

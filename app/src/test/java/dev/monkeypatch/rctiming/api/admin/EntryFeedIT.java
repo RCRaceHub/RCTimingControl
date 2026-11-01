@@ -79,7 +79,9 @@ class EntryFeedIT extends AbstractIntegrationTest {
                 values (?, date('now', '+14 days'), 'OPEN') returning id""",
                 Long.class, "Entry feed " + run);
         buggyClassId = createEventClass("RH Buggy " + run);
-        createEventClass("RH Truck " + run);
+        long truckClassId = createEventClass("RH Truck " + run);
+        linkClass("club-class-buggy-" + run, buggyClassId);
+        linkClass("club-class-truck-" + run, truckClassId);
 
         feedServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         feedServer.createContext("/entries", exchange -> {
@@ -113,7 +115,7 @@ class EntryFeedIT extends AbstractIntegrationTest {
         jdbc.update("delete from entries where event_id = ?", eventId);
         competitorIds.forEach(id -> jdbc.update(
                 "delete from competitors where id = ? and not exists (select 1 from entries where competitor_id = ?)", id, id));
-        jdbc.update("delete from racehub_class_mappings where event_id = ?", eventId);
+        jdbc.update("delete from racehub_class_links where class_key like ?", "club-class-%-" + run);
         List<Long> racingClassIds = jdbc.queryForList(
                 "select racing_class_id from event_classes where event_id = ?", Long.class, eventId);
         jdbc.update("delete from event_classes where event_id = ?", eventId);
@@ -217,15 +219,14 @@ class EntryFeedIT extends AbstractIntegrationTest {
         JsonNode feed = getFeed().getBody();
         assertThat(feed.get("lastStatus").asString()).isEqualTo("WAITING");
         assertThat(feed.get("waiting").asBoolean()).isTrue();
-        assertThat(feed.get("lastMessage").asString()).contains("1 class needs mapping");
+        assertThat(feed.get("lastMessage").asString()).contains("1 class needs linking");
         assertThat(entryRepository.findByEventId(eventId)).isEmpty();
         assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
 
-        // The official maps the class and confirms
-        restTemplate.exchange("/api/v1/admin/events/" + eventId + "/racehub-class-mappings",
-                HttpMethod.PUT, new HttpEntity<>(List.of(Map.of(
-                        "racehubEventClassId", "rh-class-electric-" + run, "eventClassId", buggyClassId)), headers()),
-                JsonNode.class);
+        // The official links the class and confirms
+        jdbc.update("""
+                insert into racehub_class_links (class_key, racing_class_id)
+                select ?, racing_class_id from event_classes where id = ?""", "club-class-electric-" + run, buggyClassId);
         assertThat(post("/preview").getBody().get("blocked").asBoolean()).isFalse();
         assertThat(post("/apply").getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(entryRepository.findByEventId(eventId)).hasSize(1);
@@ -430,6 +431,12 @@ class EntryFeedIT extends AbstractIntegrationTest {
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private void linkClass(String classKey, long eventClassId) {
+        jdbc.update("""
+                insert into racehub_class_links (class_key, racing_class_id)
+                select ?, racing_class_id from event_classes where id = ?""", classKey, eventClassId);
     }
 
     private long createEventClass(String racingClassName) {

@@ -109,7 +109,7 @@ See [docs/testing.md](docs/testing.md) for the full test matrix, including `deco
 | Area | What it does |
 |------|-------------|
 | Club setup | First-run wizard, club profile, tracks and decoder loops, racing classes, race formats, officials and their roles |
-| Entries | RaceHub Entry Export v1 import with class mapping, walk-ins added by hand, competitors with no login, a primary and secondary transponder per entry |
+| Entries | RaceHub Entry Export v1 import with club-wide class links, walk-ins added by hand, competitors with no login, a primary and secondary transponder per entry |
 | Race day | Transponder swaps on the day, round generator, race control (grid, start/stop, marshal laps), referee tools, unknown-transponder linking, open practice |
 | Live timing | Direct AMB RC-4 decoder listener, WebSocket live display, voice announcements (Piper TTS or the browser's voice), spectator boards, a streaming overlay for OBS, a live feed to a relay for remote viewers |
 | Results | Result snapshots, best-X-from-Y championship standings, public results pages, printable results, results sent back to RaceHub through a queue that waits for the network |

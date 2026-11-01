@@ -19,7 +19,11 @@ export function useSetRaceHubEventsAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (eventsUrl: string) => adminApi.raceHubEvents.setAddress(eventsUrl),
-    onSuccess: data => qc.setQueryData(adminQueryKeys.racehub.events(), data),
+    onSuccess: data => {
+      qc.setQueryData(adminQueryKeys.racehub.events(), data);
+      // The class list is fetched from beside the same address
+      qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.classes() });
+    },
   });
 }
 
@@ -32,5 +36,14 @@ export function useTakeRaceHubEvent() {
       qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() });
       qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.events() });
     },
+  });
+}
+
+/** Finds or creates the event for an Entry Export file, so it can be imported without making an event first. */
+export function useRaceHubMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (exportDocument: unknown) => adminApi.raceHubMeeting.findOrCreate(exportDocument),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() }),
   });
 }

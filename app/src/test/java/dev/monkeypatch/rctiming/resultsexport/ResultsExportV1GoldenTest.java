@@ -86,19 +86,19 @@ class ResultsExportV1GoldenTest {
     /** The example in docs/results-export-v1.md: a final, an abandoned heat, and one championship. */
     static ResultsExportV1 example() {
         var finalA = new ResultsExportV1.Race(
-                412, 37, List.of("rh-class-buggy"), "2WD Buggy", "FINAL", 1, 1, "A", "FINISHED",
+                412, 37, List.of("club-class-buggy"), "2WD Buggy", "FINAL", 1, 1, "A", "FINISHED",
                 "2026-10-18T15:42:10Z",
                 List.of(
                         new ResultsExportV1.Row(1, "RACEHUB", "6f1c2a9e-0d4b-4c55-9b1e-2f9d1c7a5e01", "drv-ada",
-                                "rh-class-buggy", 1201L, 88L, "Ada Lovelace", "1", 22, 301_456L, 13_102L,
+                                "club-class-buggy", 1201L, 88L, "Ada Lovelace", "1", 22, 301_456L, 13_102L,
                                 List.of()),
                         new ResultsExportV1.Row(2, "RACEHUB", "0b7e4d12-8a3f-4f0e-a1c2-9e5d6b4c3a02", "drv-grace",
-                                "rh-class-buggy", 1202L, 89L, "Grace Hopper", "2", 21, 300_990L, 13_250L,
+                                "club-class-buggy", 1202L, 89L, "Grace Hopper", "2", 21, 300_990L, 13_250L,
                                 List.of(new ResultsExportV1.Penalty("LAP", new BigDecimal("1"), "Short cut at the chicane", true))),
                         new ResultsExportV1.Row(3, null, null, null, null, 1250L, 140L, "Walk-in Wendy", "3", 20,
                                 302_004L, 14_011L, List.of())));
         var abandonedHeat = new ResultsExportV1.Race(
-                398, 37, List.of("rh-class-buggy"), "2WD Buggy", "QUALIFIER", 2, 1, null, "ABANDONED",
+                398, 37, List.of("club-class-buggy"), "2WD Buggy", "QUALIFIER", 2, 1, null, "ABANDONED",
                 "2026-10-18T11:05:33Z", List.of());
         var standings = List.of(
                 new ResultsExportV1.Standing(1, "RACEHUB", "drv-ada", 88, "Ada Lovelace", 96, 1, 25, false, false),

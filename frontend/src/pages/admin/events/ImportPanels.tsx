@@ -52,6 +52,10 @@ export function ClassMappingPanel({
   mappingsLoadFailed,
   canSave,
   onSave,
+  extraOptions,
+  formats,
+  formatChoices,
+  onChooseFormat,
 }: {
   unmapped: UnmappedImportClass[];
   intro: string;
@@ -62,6 +66,12 @@ export function ClassMappingPanel({
   mappingsLoadFailed: boolean;
   canSave: boolean;
   onSave: () => void;
+  /** More choices for a class after the event's own: add a racing class to the event, or create a new one. */
+  extraOptions?: (u: UnmappedImportClass) => { value: string; label: string }[];
+  /** Formats to offer for a class that will be added to the event; "last used" is the default. */
+  formats?: { id: number; name: string }[];
+  formatChoices?: Record<string, string>;
+  onChooseFormat?: (key: string, templateId: string) => void;
 }) {
   if (unmapped.length === 0) return null;
   const allChosen = unmapped.every(u => choices[u.key]);
@@ -89,8 +99,28 @@ export function ClassMappingPanel({
                   {classLabel(cls)}
                 </SelectItem>
               ))}
+              {(extraOptions?.(u) ?? []).map(o => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {formats && onChooseFormat && /^(rc:|new$)/.test(choices[u.key] ?? '') && (
+            <Select value={formatChoices?.[u.key] ?? 'last'} onValueChange={v => onChooseFormat(u.key, v)}>
+              <SelectTrigger className="sm:w-48" aria-label={`Format for ${u.name}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last">Format it last used</SelectItem>
+                {formats.map(f => (
+                  <SelectItem key={f.id} value={String(f.id)}>
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       ))}
       {mappingsLoadFailed && (

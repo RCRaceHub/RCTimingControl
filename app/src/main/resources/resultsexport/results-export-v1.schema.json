@@ -36,12 +36,15 @@
     "timestamp": { "type": "string", "format": "date-time" },
     "race": {
       "type": "object",
-      "required": ["rctc_race_id", "rctc_event_class_id", "racehub_event_class_ids", "class_name", "round_type",
+      "required": ["rctc_race_id", "rctc_event_class_id", "class_name", "round_type",
         "round_number", "heat_number", "final_letter", "status", "finished_at", "results"],
       "properties": {
         "rctc_race_id": { "type": "integer" },
         "rctc_event_class_id": { "type": "integer" },
-        "racehub_event_class_ids": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "club_class_ids": {
+          "description": "The club class ids (RaceHub club_class_id) of the entries in the race. Left out when the race has none.",
+          "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true
+        },
         "class_name": { "type": "string" },
         "round_type": { "enum": ["PRACTICE", "QUALIFIER", "FINAL"] },
         "round_number": { "type": "integer" },
@@ -54,7 +57,7 @@
     },
     "row": {
       "type": "object",
-      "required": ["position", "external_source", "entry_id", "driver_profile_id", "racehub_event_class_id",
+      "required": ["position", "external_source", "entry_id", "driver_profile_id",
         "rctc_entry_id", "rctc_competitor_id", "display_name", "car_number", "laps", "total_time_ms", "best_lap_ms",
         "penalties"],
       "properties": {
@@ -62,7 +65,10 @@
         "external_source": { "enum": ["RACEHUB", null] },
         "entry_id": { "type": ["string", "null"] },
         "driver_profile_id": { "type": ["string", "null"] },
-        "racehub_event_class_id": { "type": ["string", "null"] },
+        "club_class_id": {
+          "description": "The entry's club class id. Left out, not null, when it has none, such as a walk-in.",
+          "type": "string", "minLength": 1
+        },
         "rctc_entry_id": { "type": ["integer", "null"] },
         "rctc_competitor_id": { "type": ["integer", "null"] },
         "display_name": { "type": ["string", "null"] },

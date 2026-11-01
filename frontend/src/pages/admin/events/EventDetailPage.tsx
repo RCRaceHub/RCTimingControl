@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -109,6 +109,8 @@ export default function EventDetailPage() {
   const { id: idParam } = useParams<{ id: string }>();
   const id = Number(idParam);
   const navigate = useNavigate();
+  // "Import entries from a file" on the Events page makes the event, then brings its file here to be previewed
+  const startDocument = (useLocation().state as { importDocument?: unknown } | null)?.importDocument;
 
   useHelpContent(EventManagementHelp);
 
@@ -120,7 +122,7 @@ export default function EventDetailPage() {
 
   const [transitionTarget, setTransitionTarget] = useState<EventStatus | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(startDocument !== undefined);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const {
@@ -256,7 +258,7 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={startDocument !== undefined ? 'entries' : 'overview'}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
@@ -372,6 +374,7 @@ export default function EventDetailPage() {
             classes={data.classes}
             open={importOpen}
             onOpenChange={setImportOpen}
+            initialDocument={startDocument}
           />
           <CsvImportDialog
             eventId={id}

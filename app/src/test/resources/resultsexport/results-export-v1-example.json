@@ -17,8 +17,8 @@
     {
       "rctc_race_id": 398,
       "rctc_event_class_id": 37,
-      "racehub_event_class_ids": [
-        "rh-class-buggy"
+      "club_class_ids": [
+        "club-class-buggy"
       ],
       "class_name": "2WD Buggy",
       "round_type": "QUALIFIER",
@@ -32,8 +32,8 @@
     {
       "rctc_race_id": 412,
       "rctc_event_class_id": 37,
-      "racehub_event_class_ids": [
-        "rh-class-buggy"
+      "club_class_ids": [
+        "club-class-buggy"
       ],
       "class_name": "2WD Buggy",
       "round_type": "FINAL",
@@ -48,7 +48,7 @@
           "external_source": "RACEHUB",
           "entry_id": "6f1c2a9e-0d4b-4c55-9b1e-2f9d1c7a5e01",
           "driver_profile_id": "drv-ada",
-          "racehub_event_class_id": "rh-class-buggy",
+          "club_class_id": "club-class-buggy",
           "rctc_entry_id": 1201,
           "rctc_competitor_id": 88,
           "display_name": "Ada Lovelace",
@@ -63,7 +63,7 @@
           "external_source": "RACEHUB",
           "entry_id": "0b7e4d12-8a3f-4f0e-a1c2-9e5d6b4c3a02",
           "driver_profile_id": "drv-grace",
-          "racehub_event_class_id": "rh-class-buggy",
+          "club_class_id": "club-class-buggy",
           "rctc_entry_id": 1202,
           "rctc_competitor_id": 89,
           "display_name": "Grace Hopper",
@@ -85,7 +85,6 @@
           "external_source": null,
           "entry_id": null,
           "driver_profile_id": null,
-          "racehub_event_class_id": null,
           "rctc_entry_id": 1250,
           "rctc_competitor_id": 140,
           "display_name": "Walk-in Wendy",
