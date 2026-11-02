@@ -48,7 +48,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // #26: the app keeps its data in one SQLite file; only persistence/ may use these directly
-    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
+    implementation("org.xerial:sqlite-jdbc:3.54.1.0")
 
     // jOOQ for all reads and writes, with Spring JDBC transactions and the Hikari pools (#69)
     implementation("org.springframework.boot:spring-boot-starter-jooq")
@@ -70,7 +70,7 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
     annotationProcessor(project(":mapstruct-jooq"))
 
-    jooqGenerator("org.xerial:sqlite-jdbc:3.53.4.0")
+    jooqGenerator("org.xerial:sqlite-jdbc:3.54.1.0")
     jooqGenerator("org.slf4j:slf4j-simple:2.0.20")
 }
 
