@@ -37,9 +37,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.jmdns:jmdns:3.6.4")
+    implementation("org.jmdns:jmdns:3.6.5")
     // #503: makes the club certificate authority and the HTTPS certificate it signs
-    implementation("org.bouncycastle:bcpkix-jdk18on:1.86")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.87")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
@@ -48,7 +48,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // #26: the app keeps its data in one SQLite file; only persistence/ may use these directly
-    implementation("org.xerial:sqlite-jdbc:3.53.4.0")
+    implementation("org.xerial:sqlite-jdbc:3.54.1.0")
 
     // jOOQ for all reads and writes, with Spring JDBC transactions and the Hikari pools (#69)
     implementation("org.springframework.boot:spring-boot-starter-jooq")
@@ -63,14 +63,14 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-resttestclient")
     // Checks Results Export v1 documents against their published JSON schema (#27)
-    testImplementation("com.networknt:json-schema-validator:3.0.8")
+    testImplementation("com.networknt:json-schema-validator:3.0.9")
 
     // Generates the record <-> entity mappers at compile time (see docs/development.md, "Mapping")
     implementation("org.mapstruct:mapstruct:1.6.3")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.6.3")
     annotationProcessor(project(":mapstruct-jooq"))
 
-    jooqGenerator("org.xerial:sqlite-jdbc:3.53.4.0")
+    jooqGenerator("org.xerial:sqlite-jdbc:3.54.1.0")
     jooqGenerator("org.slf4j:slf4j-simple:2.0.20")
 }
 
