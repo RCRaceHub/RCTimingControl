@@ -34,7 +34,7 @@ jobs:
             os: ubuntu-24.04-arm
             artifact: installer-linux-arm64
           - name: macOS installer (pkg)
-            os: macos-14
+            os: macos-15
             artifact: installer-macos
           # windows-2022 has the WiX 3 toolset jpackage needs
           - name: Windows installer (msi)
