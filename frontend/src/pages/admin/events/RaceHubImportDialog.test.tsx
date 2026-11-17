@@ -176,6 +176,33 @@ describe('RaceHubImportDialog', () => {
     expect(screen.queryByText('Buggy 2WD')).not.toBeInTheDocument();
   });
 
+  it('uses the first format for a new class, which has no last-used format to fall back on', async () => {
+    vi.mocked(adminApi.formats.list).mockResolvedValue([{ id: 7, name: 'Qualifying' }] as never);
+    api.importRaceHubEntries
+      .mockResolvedValueOnce(result({
+        blocked: true,
+        unmappedClasses: [{ classKey: 'club-micro', rcClassName: 'MicroB', className: 'MicroB', entryCount: 3 }],
+      }))
+      .mockResolvedValueOnce(result());
+    api.resolveRaceHubClasses.mockResolvedValue([
+      { classKey: 'club-micro', racingClassId: 300, eventClassId: 31, racingClassCreated: true },
+    ]);
+    renderDialog();
+
+    chooseFile(exportFile());
+
+    expect(await screen.findByText('MicroB', { selector: 'span' })).toBeInTheDocument();
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'new' } });
+    expect(screen.queryByRole('option', { name: 'Format it last used' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save mappings and check again' }));
+
+    await waitFor(() =>
+      expect(api.resolveRaceHubClasses).toHaveBeenCalledWith(5, [
+        { classKey: 'club-micro', createName: 'MicroB', templateId: 7 },
+      ]),
+    );
+  });
+
   it('creates a new class for an unmapped one, linking it for the whole club, then checks again', async () => {
     api.importRaceHubEntries
       .mockResolvedValueOnce(result({

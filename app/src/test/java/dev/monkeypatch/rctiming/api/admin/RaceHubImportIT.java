@@ -408,6 +408,48 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aFirstMeetingClassIsCreatedLinkedAndAddedToTheEventInOneCall_withTheFormatTheOfficialPicks() {
+        long templateId = createTemplate();
+
+        // No "last used" format exists for a new class, so leaving the format out is refused
+        var refused = resolveClasses(List.of(Map.of(
+                "classKey", "club-class-electric-" + run, "createName", "Brand New " + run)));
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+
+        var resp = resolveClasses(List.of(Map.of(
+                "classKey", "club-class-electric-" + run, "createName", "Brand New " + run,
+                "templateId", templateId)));
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getBody().get(0).get("racingClassCreated").asBoolean()).isTrue();
+
+        // The held file now goes through with no further setup
+        assertThat(importFixture("entries-v1-unmapped-class.json", false).getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void theClassListSaysWhichClassesHaveALastUsedFormat() {
+        long templateId = createTemplate();
+        long used = racingClassInAnotherEvent("RH Used " + run, templateId);
+        long unused = jdbc.queryForObject("insert into racing_classes (name) values (?) returning id",
+                Long.class, "RH Unused " + run);
+
+        var resp = restTemplate.exchange("/api/v1/admin/classes", HttpMethod.GET,
+                new HttpEntity<>(adminHeaders()), JsonNode.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode usedClass = null;
+        JsonNode unusedClass = null;
+        for (JsonNode c : resp.getBody()) {
+            if (c.get("id").asLong() == used) usedClass = c;
+            if (c.get("id").asLong() == unused) unusedClass = c;
+        }
+        assertThat(usedClass).isNotNull();
+        assertThat(unusedClass).isNotNull();
+        assertThat(usedClass.get("lastTemplateId").asLong()).isEqualTo(templateId);
+        assertThat(unusedClass.get("lastTemplateId").isNull()).isTrue();
+    }
+
+    @Test
     void aLinkedClassThatIsNotInAnotherEventYetIsSuggestedForIt() {
         long electric = racingClassInAnotherEvent("RH Electric Touring " + run, createTemplate());
         assertThat(resolveClasses(List.of(Map.of(

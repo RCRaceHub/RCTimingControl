@@ -9,6 +9,7 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,6 +56,20 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
                 .orderBy(EVENT_CLASSES.ID.desc())
                 .limit(1)
                 .fetchOptional(EVENT_CLASSES.TEMPLATE_ID);
+    }
+
+    /**
+     * For every racing class entered from a template, the template of its most recent event class, keyed by racing
+     * class id. One query for the whole list, so a screen can tell which classes have a "last used" format.
+     */
+    public Map<Long, Long> findLastTemplateIds() {
+        Map<Long, Long> last = new HashMap<>();
+        dsl.select(EVENT_CLASSES.RACING_CLASS_ID, EVENT_CLASSES.TEMPLATE_ID)
+                .from(EVENT_CLASSES)
+                .where(EVENT_CLASSES.TEMPLATE_ID.isNotNull())
+                .orderBy(EVENT_CLASSES.ID)
+                .forEach(row -> last.put(row.value1(), row.value2()));
+        return last;
     }
 
     /** The event a class belongs to, without loading its format config. Empty when there is no such class. */
