@@ -338,6 +338,32 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aRevisionAppliedWhileItIsFetchedByHand_isNotHeldForReview() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        // The scheduler applies the same revision between the manual fetch reading the feed and saving its outcome
+        duringFetch = () -> jdbc.update("update entry_feeds set applied_revision = 4 where event_id = ?", eventId);
+
+        JsonNode fetched = post("/fetch").getBody();
+
+        assertThat(fetched.get("waiting").asBoolean()).isFalse();
+        assertThat(fetched.get("lastStatus").asString()).isEqualTo("UNCHANGED");
+        assertThat(jdbc.queryForObject("select held_document from entry_feeds where event_id = ?", String.class, eventId))
+                .isNull();
+    }
+
+    @Test
+    void manualFetchStillWorksForACompletedMeeting() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        JsonNode fetched = post("/fetch").getBody();
+
+        assertThat(fetched.get("waiting").asBoolean()).isTrue();
+    }
+
+    @Test
     void aFeedRemovedWhileItIsFetched_staysRemovedAndFetchNowIsA404() {
         feedBody = fixture("entries-v1-initial.json");
         saveFeed(feedUrl(), TOKEN, false);

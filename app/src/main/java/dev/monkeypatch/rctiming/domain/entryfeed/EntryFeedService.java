@@ -268,6 +268,15 @@ public class EntryFeedService {
             throw new IllegalStateException("Could not store the fetched file", e);
         }
         return update(feed, f -> {
+            // The scheduler may have applied this revision while it was being fetched by hand (the feed as read by
+            // update() is current), so it is no longer waiting for anyone
+            if (Objects.equals(export.revision(), f.getAppliedRevision())) {
+                if (f.getHeldDocument() == null) {
+                    f.setLastStatus(EntryFeedStatus.UNCHANGED);
+                    f.setLastError(null);
+                }
+                return;
+            }
             f.setHeldDocument(document);
             f.setHeldRevision(export.revision());
             f.setLastStatus(EntryFeedStatus.WAITING);
