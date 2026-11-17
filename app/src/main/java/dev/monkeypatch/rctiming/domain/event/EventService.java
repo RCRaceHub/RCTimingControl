@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -178,8 +179,9 @@ public class EventService {
 
     /**
      * The statuses the event may move to from where it is, for the admin screen. Pure: it reads the event it is
-     * given and touches no table.
+     * given and touches no table, so it takes part in no transaction and never waits for the write connection.
      */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public Set<EventStatus> allowedMoves(Event event) {
         return stateMachineService.allowedMoves(event);
     }

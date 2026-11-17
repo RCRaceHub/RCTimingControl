@@ -12,7 +12,8 @@ import java.util.List;
  * An event with its classes, the answer of {@code GET /api/v1/admin/events/{id}}. {@code racehubLastImportAt} and
  * {@code racehubLastRevision} say when and at which revision RaceHub entries were last imported; both are null until the
  * first import. {@code racehubLinked} says the event is a RaceHub meeting, and {@code allowedTransitions} lists the
- * statuses the server will accept as the next move, so the screen never keeps its own copy of the state machine.
+ * statuses the server will accept as the next move (in the order of {@link EventStatus}), so the screen never keeps
+ * its own copy of the state machine.
  */
 public record EventDetailDto(
         Long id,
@@ -20,7 +21,7 @@ public record EventDetailDto(
         LocalDate eventDate,
         EventStatus status,
         Long trackId,
-        List<EventClassDto> classes,  // EventClassDto created in Task 2
+        List<EventClassDto> classes,
         Instant racehubLastImportAt,
         Long racehubLastRevision,
         boolean racehubLinked,
