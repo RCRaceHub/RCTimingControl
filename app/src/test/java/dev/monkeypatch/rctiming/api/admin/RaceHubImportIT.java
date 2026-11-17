@@ -437,13 +437,16 @@ class RaceHubImportIT extends AbstractIntegrationTest {
                 new HttpEntity<>(adminHeaders()), JsonNode.class);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode usedClass = null;
+        JsonNode unusedClass = null;
         for (JsonNode c : resp.getBody()) {
-            if (c.get("id").asLong() == used) {
-                assertThat(c.get("lastTemplateId").asLong()).isEqualTo(templateId);
-            } else if (c.get("id").asLong() == unused) {
-                assertThat(c.get("lastTemplateId").isNull()).isTrue();
-            }
+            if (c.get("id").asLong() == used) usedClass = c;
+            if (c.get("id").asLong() == unused) unusedClass = c;
         }
+        assertThat(usedClass).isNotNull();
+        assertThat(unusedClass).isNotNull();
+        assertThat(usedClass.get("lastTemplateId").asLong()).isEqualTo(templateId);
+        assertThat(unusedClass.get("lastTemplateId").isNull()).isTrue();
     }
 
     @Test

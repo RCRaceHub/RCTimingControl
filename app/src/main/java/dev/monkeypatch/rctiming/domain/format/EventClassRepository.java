@@ -9,6 +9,7 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,7 +63,7 @@ public class EventClassRepository extends JooqRepository<EventClass, EventClasse
      * class id. One query for the whole list, so a screen can tell which classes have a "last used" format.
      */
     public Map<Long, Long> findLastTemplateIds() {
-        Map<Long, Long> last = new java.util.HashMap<>();
+        Map<Long, Long> last = new HashMap<>();
         dsl.select(EVENT_CLASSES.RACING_CLASS_ID, EVENT_CLASSES.TEMPLATE_ID)
                 .from(EVENT_CLASSES)
                 .where(EVENT_CLASSES.TEMPLATE_ID.isNotNull())

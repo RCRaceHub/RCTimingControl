@@ -107,7 +107,7 @@ export default function RaceHubImportDialog({
   /** The format picked for a held class, or the sensible default: the last one used, else the first format. */
   function formatFor(key: string) {
     const picked = formatChoices[key];
-    if (picked) return picked;
+    if (picked && !(picked === 'last' && !lastFormatAvailable(key))) return picked;
     return lastFormatAvailable(key) ? 'last' : String(formats[0]?.id ?? 'last');
   }
 
