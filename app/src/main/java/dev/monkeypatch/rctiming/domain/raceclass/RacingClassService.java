@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.raceclass;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,13 @@ import java.util.Map;
 public class RacingClassService {
 
     private final RacingClassRepository racingClassRepository;
+    private final EventClassRepository eventClassRepository;
     private final AuditService audit;
 
-    public RacingClassService(RacingClassRepository racingClassRepository, AuditService audit) {
+    public RacingClassService(RacingClassRepository racingClassRepository,
+                              EventClassRepository eventClassRepository, AuditService audit) {
         this.racingClassRepository = racingClassRepository;
+        this.eventClassRepository = eventClassRepository;
         this.audit = audit;
     }
 
@@ -31,6 +35,15 @@ public class RacingClassService {
     @ReadTransaction
     public List<RacingClass> findAll() {
         return racingClassRepository.findAll();
+    }
+
+    /**
+     * The format template each racing class was last entered with, keyed by racing class id; a class never entered
+     * from a template is absent. Lets the import screen say whether "the format it last used" exists for a class.
+     */
+    @ReadTransaction
+    public Map<Long, Long> lastTemplateIds() {
+        return eventClassRepository.findLastTemplateIds();
     }
 
     /** A racing class; a 404 if there is none. */

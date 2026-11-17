@@ -224,6 +224,8 @@ PUT    /admin/classes/{id}
 DELETE /admin/classes/{id}     # 204
 ```
 
+`GET /admin/classes` also gives each class `lastTemplateId`, the format template it was last entered with (null when it never was). The import screen uses it to offer "the format it last used" only for a class that has one.
+
 Request body:
 ```json
 {

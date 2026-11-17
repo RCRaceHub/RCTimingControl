@@ -94,6 +94,23 @@ export default function RaceHubImportDialog({
     return racingClass?.name ?? `Class ${cls.id}`;
   }
 
+  /**
+   * Whether the class chosen for a held class has a format it was last entered with. A new class never has one, and
+   * a racing class that was never in an event has none, so the official must pick a format (the first one is offered).
+   */
+  function lastFormatAvailable(key: string) {
+    const choice = classChoices[key] ?? '';
+    if (!choice.startsWith('rc:')) return false;
+    return racingClasses.find(rc => rc.id === Number(choice.slice(3)))?.lastTemplateId != null;
+  }
+
+  /** The format picked for a held class, or the sensible default: the last one used, else the first format. */
+  function formatFor(key: string) {
+    const picked = formatChoices[key];
+    if (picked) return picked;
+    return lastFormatAvailable(key) ? 'last' : String(formats[0]?.id ?? 'last');
+  }
+
   function runImport(document: unknown, dryRun: boolean) {
     return feed
       ? feedImport.mutateAsync({ dryRun })
@@ -178,7 +195,8 @@ export default function RaceHubImportDialog({
     const settle: ResolveRaceHubClassRequest[] = [];
     for (const [key, value] of Object.entries(classChoices)) {
       if (!value) continue;
-      const templateId = formatChoices[key] && formatChoices[key] !== 'last' ? Number(formatChoices[key]) : undefined;
+      const picked = formatFor(key);
+      const templateId = picked !== 'last' ? Number(picked) : undefined;
       if (value.startsWith('rc:')) {
         settle.push({ classKey: key, racingClassId: Number(value.slice(3)), templateId });
       } else if (value === 'new') {
@@ -329,7 +347,8 @@ export default function RaceHubImportDialog({
                 { value: 'new', label: `Create a new class called ${u.name}` },
               ]}
               formats={formats}
-              formatChoices={formatChoices}
+              formatChoices={Object.fromEntries(unmapped.map(u => [u.key, formatFor(u.key)]))}
+              lastFormatAvailable={lastFormatAvailable}
               onChooseFormat={(key, value) => setFormatChoices(c => ({ ...c, [key]: value }))}
               mappingsLoadFailed={false}
               canSave={!busy}

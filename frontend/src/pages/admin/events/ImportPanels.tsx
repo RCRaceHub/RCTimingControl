@@ -56,6 +56,7 @@ export function ClassMappingPanel({
   formats,
   formatChoices,
   onChooseFormat,
+  lastFormatAvailable,
 }: {
   unmapped: UnmappedImportClass[];
   intro: string;
@@ -72,6 +73,8 @@ export function ClassMappingPanel({
   formats?: { id: number; name: string }[];
   formatChoices?: Record<string, string>;
   onChooseFormat?: (key: string, templateId: string) => void;
+  /** Whether the class chosen for this held class was entered before, so "the format it last used" exists. */
+  lastFormatAvailable?: (key: string) => boolean;
 }) {
   if (unmapped.length === 0) return null;
   const allChosen = unmapped.every(u => choices[u.key]);
@@ -112,7 +115,9 @@ export function ClassMappingPanel({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="last">Format it last used</SelectItem>
+                {(lastFormatAvailable?.(u.key) ?? true) && (
+                  <SelectItem value="last">Format it last used</SelectItem>
+                )}
                 {formats.map(f => (
                   <SelectItem key={f.id} value={String(f.id)}>
                     {f.name}

@@ -459,6 +459,8 @@ export interface RacingClassDto {
   description: string | null;
   /** The colour the club picked for the class as #rrggbb, or null for none (#482). */
   colour?: string | null;
+  /** The format template the class was last entered with, or null when it never was. */
+  lastTemplateId?: number | null;
 }
 
 export type RacingClassInput = { name: string; description: string | null; colour: string | null };

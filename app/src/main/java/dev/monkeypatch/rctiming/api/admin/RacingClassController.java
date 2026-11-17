@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Racing classes under {@code /api/v1/admin/classes}. Reads are open to ADMIN, RACE_DIRECTOR and REFEREE; creating,
@@ -36,10 +37,12 @@ public class RacingClassController {
         this.racingClassService = racingClassService;
     }
 
-    /** Every racing class. {@code GET}; read only. */
+    /** Every racing class, each with the format it was last entered with. {@code GET}; read only. */
     @GetMapping
     public List<RacingClassDto> listRacingClasses() {
-        return racingClassService.findAll().stream().map(RacingClassDto::from).toList();
+        Map<Long, Long> lastTemplates = racingClassService.lastTemplateIds();
+        return racingClassService.findAll().stream()
+                .map(rc -> RacingClassDto.from(rc, lastTemplates.get(rc.getId()))).toList();
     }
 
     /** One racing class. {@code GET /{id}}; 404 if it does not exist. */
