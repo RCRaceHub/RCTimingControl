@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
+import type { EntryFeedDto } from '@/lib/adminApi';
+import { getApiErrorMessage } from '@/lib/errors';
 import { adminQueryKeys } from './adminQueryKeys';
 
 /**
@@ -31,16 +33,22 @@ export function useSetRaceHubEventsAddress() {
  * Takes an offered event, then fetches its entries straight away so the official is not left waiting for the
  * scheduled fetch (every few minutes). The fetch only holds a new revision for review; nothing is imported until the
  * official confirms. A fetch that fails does not undo the take: the event exists and its feed is saved, so the
- * failure comes back as `feed` with the reason, or `null` when the answer could not be read at all. The events list
- * changes (a new event, or a link on one), so it is refreshed.
+ * failure comes back as `feed` with the reason, or as `feed: null` with `fetchError` when the call itself failed.
+ * The events list changes (a new event, or a link on one), so it is refreshed.
  */
 export function useTakeRaceHubEvent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (raceHubEventId: string) => {
       const event = await adminApi.raceHubEvents.take(raceHubEventId);
-      const feed = await adminApi.fetchEntryFeed(event.id).catch(() => null);
-      return { event, feed };
+      let feed: EntryFeedDto | null = null;
+      let fetchError: string | null = null;
+      try {
+        feed = await adminApi.fetchEntryFeed(event.id);
+      } catch (err) {
+        fetchError = getApiErrorMessage(err, 'The fetch failed');
+      }
+      return { event, feed, fetchError };
     },
     onSuccess: ({ event, feed }) => {
       qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() });

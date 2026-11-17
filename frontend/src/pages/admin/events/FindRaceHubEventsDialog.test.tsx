@@ -112,7 +112,7 @@ describe('FindRaceHubEventsDialog', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
 
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5', { state: { openTab: 'entries' } }));
-    expect(toast.warning).toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledWith(expect.stringContaining('could not be fetched yet'));
   });
 
   it('does not fetch when the take itself fails', async () => {

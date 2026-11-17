@@ -63,15 +63,15 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
   async function takeEvent(raceHubEventId: string) {
     setTakingId(raceHubEventId);
     try {
-      const { event, feed } = await take.mutateAsync(raceHubEventId);
+      const { event, feed, fetchError } = await take.mutateAsync(raceHubEventId);
       if (feed?.waiting) {
         toast.success('Event taken. Its entries are ready to review and import.');
       } else if (feed && feed.lastStatus === 'UNCHANGED') {
         toast.success('Event taken. Its entries are already imported.');
       } else {
         toast.warning(
-          feed?.lastMessage
-            ? `Event taken, but its entries could not be fetched yet: ${feed.lastMessage}`
+          (feed?.lastMessage ?? fetchError)
+            ? `Event taken, but its entries could not be fetched yet: ${feed?.lastMessage ?? fetchError}`
             : 'Event taken, but its entries could not be fetched yet. They will be tried again every few minutes.',
         );
       }
