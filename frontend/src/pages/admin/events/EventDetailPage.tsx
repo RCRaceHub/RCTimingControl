@@ -45,18 +45,10 @@ import EntryFeedSection from './EntryFeedSection';
 import EventSponsorsSection from './EventSponsorsSection';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
+import { offeredTransitions, startNeedsEntriesWarning, transitionLabelFor } from './eventTransitions';
 import { formatDateTime, formatEventDate } from '@/lib/dates';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 import { QueryError } from '@/components/QueryError';
-
-const VALID_NEXT: Record<EventStatus, EventStatus[]> = {
-  DRAFT: ['PUBLISHED'],
-  PUBLISHED: ['OPEN', 'DRAFT'],
-  OPEN: ['ENTRIES_CLOSED'],
-  ENTRIES_CLOSED: ['IN_PROGRESS'],
-  IN_PROGRESS: ['COMPLETED'],
-  COMPLETED: [],
-};
 
 // Keyed by the status the event moves to
 const transitionLabel: Record<EventStatus, string> = {
@@ -96,6 +88,14 @@ const transitionConfirmCopy: Partial<Record<EventStatus, ConfirmCopy>> = {
     confirmLabel: 'Complete Event',
     destructive: false,
   },
+};
+
+// A RaceHub meeting that has never had entries imported is started only after the official has seen this
+const startWithoutEntriesCopy: ConfirmCopy = {
+  title: 'Start without any RaceHub entries?',
+  body: 'No entries have been imported from RaceHub for this meeting yet. Entries are fetched every few minutes, or you can import them from the Entries tab. You can also start now and add walk-ins.',
+  confirmLabel: 'Start meeting',
+  destructive: false,
 };
 
 const editEventSchema = z.object({
@@ -138,9 +138,14 @@ export default function EventDetailPage() {
       : undefined,
   });
 
+  function confirmCopyFor(target: EventStatus): ConfirmCopy | null {
+    if (data && startNeedsEntriesWarning(target, data)) return startWithoutEntriesCopy;
+    return transitionConfirmCopy[target] ?? null;
+  }
+
   function requestTransition(target: EventStatus) {
     setTransitionTarget(target);
-    if (transitionConfirmCopy[target]) {
+    if (confirmCopyFor(target)) {
       setConfirmOpen(true);
     } else {
       void fireTransition(target);
@@ -201,8 +206,8 @@ export default function EventDetailPage() {
     );
   }
 
-  const validNextStatuses = VALID_NEXT[data.status];
-  const confirmCopy = transitionTarget ? transitionConfirmCopy[transitionTarget] : null;
+  const validNextStatuses = offeredTransitions(data);
+  const confirmCopy = transitionTarget ? confirmCopyFor(transitionTarget) : null;
   const canEditDetails = data.status === 'DRAFT';
   const hasResults = data.status === 'IN_PROGRESS' || data.status === 'COMPLETED';
   const trackName = tracks.find(t => t.id === data.trackId)?.name ?? null;
@@ -251,7 +256,7 @@ export default function EventDetailPage() {
                 {transitionMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 )}
-                {transitionLabel[target]}
+                {transitionLabelFor(target, data, transitionLabel)}
               </Button>
             ))}
           </div>
