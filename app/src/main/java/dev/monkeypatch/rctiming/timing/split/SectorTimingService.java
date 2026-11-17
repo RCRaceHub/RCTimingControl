@@ -3,6 +3,8 @@ package dev.monkeypatch.rctiming.timing.split;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,7 +17,7 @@ import java.util.TreeMap;
  * Works out sector times from the finish loop's passings and the split loops' passings (#672).
  *
  * <p>Both kinds arrive as events published on the single timing thread, so this class needs no locking: it only ever
- * runs there. For each transponder it remembers when the car last crossed the finish loop and which splits it has hit
+ * runs there; the one exception is the change notice, which only bumps a volatile counter. For each transponder it remembers when the car last crossed the finish loop and which splits it has hit
  * since. When the car crosses the finish loop again and has hit every enabled split in order, it publishes a
  * {@link SectorTimesEvent}. A lap with a missing or out-of-order split gets no sector times at all, never wrong ones.
  *
@@ -44,16 +46,23 @@ public class SectorTimingService {
     private final Map<String, CarLap> cars = new HashMap<>();
     private long currentRaceId = LapPassingEvent.NO_RACE;
     private List<Integer> expectedSplits = null;
+    /** Bumped by a request thread when the split decoders change; the timing thread resets its state when it sees it. */
+    private volatile int configVersion = 0;
+    private int seenConfigVersion = 0;
 
     public SectorTimingService(SplitDecoderRepository repository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.eventPublisher = eventPublisher;
     }
 
-    /** Forgets the cached list of enabled splits so the next lap reads it again. */
-    @EventListener
+    /**
+     * Notes that the split decoders changed. Runs on the request thread after the change commits, so it only bumps a
+     * counter; the timing thread then drops its cached splits and every car's progress, which was measured against
+     * the old set of splits, the next time it handles a passing.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onDecodersChanged(SplitDecodersChangedEvent event) {
-        expectedSplits = null;
+        configVersion++;
     }
 
     /** A finish-loop crossing: closes the car's lap if it has every split, and starts the next one. */
@@ -89,6 +98,7 @@ public class SectorTimingService {
         if (event.raceId() == LapPassingEvent.NO_RACE) {
             return;
         }
+        splitsExpected();
         resetIfNewRace(event.raceId());
         CarLap car = cars.get(event.transponderNumber());
         if (car == null || event.rtcTimeMicros() <= car.finishMicros) {
@@ -123,6 +133,12 @@ public class SectorTimingService {
     }
 
     private List<Integer> splitsExpected() {
+        int version = configVersion;
+        if (version != seenConfigVersion) {
+            seenConfigVersion = version;
+            expectedSplits = null;
+            cars.clear();
+        }
         if (expectedSplits == null) {
             expectedSplits = repository.findAll().stream().filter(SplitDecoder::enabled)
                     .map(SplitDecoder::splitNumber).sorted().toList();

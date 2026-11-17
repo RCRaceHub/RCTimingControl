@@ -148,4 +148,25 @@ class SectorTimingServiceTest {
         verify(publisher).publishEvent(captor.capture());
         assertThat(captor.getValue().sectorMicros()).containsExactly(4 * SECOND, 11 * SECOND);
     }
+
+    @Test
+    void aChangeToTheSplitDecoders_forgetsLapsMeasuredAgainstTheOldSplits() {
+        finish("101", 100);
+        split(1, "101", 104);
+        split(2, "101", 109);
+        when(repository.findAll()).thenReturn(List.of(
+                new SplitDecoder(1L, "Back straight", "10.0.0.2", 5100, 1, 0, true)));
+
+        service.onDecodersChanged(new SplitDecodersChangedEvent());
+        finish("101", 115);
+        // The first crossing after the change only starts a lap again
+        verify(publisher, never()).publishEvent(any(Object.class));
+
+        split(1, "101", 119);
+        finish("101", 130);
+
+        ArgumentCaptor<SectorTimesEvent> captor = ArgumentCaptor.forClass(SectorTimesEvent.class);
+        verify(publisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().sectorMicros()).containsExactly(4 * SECOND, 11 * SECOND);
+    }
 }

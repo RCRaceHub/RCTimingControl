@@ -1,9 +1,10 @@
 package dev.monkeypatch.rctiming.timing.split;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.StateConflictException;
+import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,7 @@ public class SplitDecoderService {
     }
 
     /** Every split decoder, in split order. */
-    @Transactional(readOnly = true)
+    @ReadTransaction
     public List<SplitDecoder> list() {
         return repository.findAll();
     }
@@ -65,7 +66,8 @@ public class SplitDecoderService {
         requireFreeSplitNumber(splitNumber, id);
         repository.update(new SplitDecoder(id, name.trim(), host.trim(), port, splitNumber, clockOffsetMs, enabled));
         audit.entry(actor, "SPLIT_DECODER_CHANGED").entity("split_decoders", id)
-                .summary("Changed split decoder " + splitNumber + " (" + name.trim() + "), offset " + clockOffsetMs + " ms")
+                .summary("Changed split decoder " + splitNumber + " (" + name.trim() + ") at " + host.trim() + ":" + port
+                        + ", offset " + clockOffsetMs + " ms")
                 .record();
         eventPublisher.publishEvent(new SplitDecodersChangedEvent());
         return repository.findById(id).orElseThrow();
