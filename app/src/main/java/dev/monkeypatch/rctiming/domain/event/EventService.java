@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Race meetings: creating and editing one, moving it through its states ({@link EventStateMachineService}) and
@@ -173,6 +174,14 @@ public class EventService {
                         "autoStart", autoStart))
                 .record();
         return saved;
+    }
+
+    /**
+     * The statuses the event may move to from where it is, for the admin screen. Pure: it reads the event it is
+     * given and touches no table.
+     */
+    public Set<EventStatus> allowedMoves(Event event) {
+        return stateMachineService.allowedMoves(event);
     }
 
     /** The event, read in a read-only transaction. Throws a 404 if there is none. */

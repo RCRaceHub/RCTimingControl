@@ -4,6 +4,9 @@ import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.admin.dto.EventDto;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.EventDetailDto;
+import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.track.Track;
 import dev.monkeypatch.rctiming.domain.track.TrackRepository;
 import dev.monkeypatch.rctiming.domain.user.Role;
@@ -44,6 +47,9 @@ class EventControllerIT extends AbstractIntegrationTest {
 
     @Autowired
     PasswordEncoder passwordEncoder;
+
+    @Autowired
+    EventRepository eventRepository;
 
     private String adminToken;
 
@@ -169,6 +175,54 @@ class EventControllerIT extends AbstractIntegrationTest {
                 Map.class);
 
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void transitionEvent_raceHubLinkedDraftToInProgress_returns200() {
+        Long id = createLinkedEvent("Linked Direct Start", "2026-10-01", "E-42");
+
+        ResponseEntity<EventDto> started = restTemplate.exchange(
+                "/api/v1/admin/events/" + id + "/transition", HttpMethod.POST,
+                new HttpEntity<>(Map.of("targetStatus", "IN_PROGRESS"), adminHeaders()), EventDto.class);
+
+        assertThat(started.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(started.getBody().status().name()).isEqualTo("IN_PROGRESS");
+    }
+
+    @Test
+    void getEvent_raceHubLinkedDraft_offersTheDirectStart() {
+        Long id = createLinkedEvent("Linked Detail", "2026-10-02", "E-43");
+
+        EventDetailDto detail = restTemplate.exchange("/api/v1/admin/events/" + id, HttpMethod.GET,
+                new HttpEntity<>(adminHeaders()), EventDetailDto.class).getBody();
+
+        assertThat(detail.racehubLinked()).isTrue();
+        assertThat(detail.allowedTransitions().stream().map(Enum::name))
+                .containsExactlyInAnyOrder("PUBLISHED", "IN_PROGRESS");
+    }
+
+    @Test
+    void getEvent_unlinkedDraft_offersOnlyPublish() {
+        ResponseEntity<EventDto> created = restTemplate.exchange(
+                "/api/v1/admin/events", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", "Unlinked Detail", "eventDate", "2026-10-03"), adminHeaders()),
+                EventDto.class);
+
+        EventDetailDto detail = restTemplate.exchange("/api/v1/admin/events/" + created.getBody().id(),
+                HttpMethod.GET, new HttpEntity<>(adminHeaders()), EventDetailDto.class).getBody();
+
+        assertThat(detail.racehubLinked()).isFalse();
+        assertThat(detail.allowedTransitions().stream().map(Enum::name)).containsExactly("PUBLISHED");
+    }
+
+    private Long createLinkedEvent(String name, String date, String racehubEventId) {
+        Long id = restTemplate.exchange("/api/v1/admin/events", HttpMethod.POST,
+                new HttpEntity<>(Map.of("name", name, "eventDate", date), adminHeaders()),
+                EventDto.class).getBody().id();
+        Event event = eventRepository.getOrThrow(id);
+        event.setRacehubEventId(racehubEventId);
+        eventRepository.save(event);
+        return id;
     }
 
     @Test
