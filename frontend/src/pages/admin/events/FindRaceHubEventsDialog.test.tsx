@@ -5,13 +5,15 @@ import { MemoryRouter } from 'react-router-dom';
 
 import FindRaceHubEventsDialog from './FindRaceHubEventsDialog';
 import { adminApi } from '@/lib/adminApi';
-import type { RaceHubEventsDto } from '@/lib/adminApi';
+import type { EntryFeedDto, RaceHubEventsDto } from '@/lib/adminApi';
+import { toast } from 'sonner';
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     raceHubEvents: { list: vi.fn(), setAddress: vi.fn(), take: vi.fn() },
+    fetchEntryFeed: vi.fn(),
   },
 }));
 
@@ -22,6 +24,15 @@ vi.mock('react-router-dom', async importOriginal => ({
 }));
 
 const api = vi.mocked(adminApi.raceHubEvents);
+const fetchEntryFeed = vi.mocked(adminApi.fetchEntryFeed);
+
+function feed(overrides: Partial<EntryFeedDto> = {}): EntryFeedDto {
+  return {
+    url: 'https://racehub.example/api/rctc/v1/events/E-7/entries', tokenSaved: true, tokenHint: null,
+    autoFetch: true, lastFetchAt: null, lastStatus: 'WAITING', lastMessage: null, appliedRevision: null,
+    waiting: true, waitingRevision: 3, ...overrides,
+  };
+}
 
 function answer(overrides: Partial<RaceHubEventsDto> = {}): RaceHubEventsDto {
   return {
@@ -63,16 +74,57 @@ describe('FindRaceHubEventsDialog', () => {
     expect(screen.getByRole('button', { name: 'Taken, open' })).toBeInTheDocument();
   });
 
-  it('takes an event and opens it', async () => {
+  it('takes an event, fetches its entries and opens the Entries tab', async () => {
     api.list.mockResolvedValue(answer());
     api.take.mockResolvedValue({ id: 5 });
+    fetchEntryFeed.mockResolvedValue(feed());
     const onOpenChange = renderDialog();
 
     fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
 
     await waitFor(() => expect(api.take).toHaveBeenCalledWith('E-7'));
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5'));
+    await waitFor(() => expect(fetchEntryFeed).toHaveBeenCalledWith(5));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5', { state: { openTab: 'entries' } }));
+    expect(toast.success).toHaveBeenCalledWith('Event taken. Its entries are ready to review and import.');
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('still opens the event when the first fetch fails, and says why', async () => {
+    api.list.mockResolvedValue(answer());
+    api.take.mockResolvedValue({ id: 5 });
+    fetchEntryFeed.mockResolvedValue(
+      feed({ waiting: false, lastStatus: 'AUTH_FAILED', lastMessage: 'The feed refused the token (401).' }));
+    renderDialog();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5', { state: { openTab: 'entries' } }));
+    expect(toast.warning).toHaveBeenCalledWith(
+      'Event taken, but its entries could not be fetched yet: The feed refused the token (401).');
+  });
+
+  it('still opens the event when the fetch call itself errors', async () => {
+    api.list.mockResolvedValue(answer());
+    api.take.mockResolvedValue({ id: 5 });
+    fetchEntryFeed.mockRejectedValue(new Error('network'));
+    renderDialog();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5', { state: { openTab: 'entries' } }));
+    expect(toast.warning).toHaveBeenCalled();
+  });
+
+  it('does not fetch when the take itself fails', async () => {
+    api.list.mockResolvedValue(answer());
+    api.take.mockRejectedValue(new Error('RaceHub no longer offers it'));
+    renderDialog();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(fetchEntryFeed).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('shows why RaceHub could not be asked', async () => {

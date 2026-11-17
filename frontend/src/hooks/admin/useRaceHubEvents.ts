@@ -27,14 +27,25 @@ export function useSetRaceHubEventsAddress() {
   });
 }
 
-/** Takes an offered event. The events list changes (a new event, or a link on one), so it is refreshed. */
+/**
+ * Takes an offered event, then fetches its entries straight away so the official is not left waiting for the
+ * scheduled fetch (every few minutes). The fetch only holds a new revision for review; nothing is imported until the
+ * official confirms. A fetch that fails does not undo the take: the event exists and its feed is saved, so the
+ * failure comes back as `feed` with the reason, or `null` when the answer could not be read at all. The events list
+ * changes (a new event, or a link on one), so it is refreshed.
+ */
 export function useTakeRaceHubEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (raceHubEventId: string) => adminApi.raceHubEvents.take(raceHubEventId),
-    onSuccess: () => {
+    mutationFn: async (raceHubEventId: string) => {
+      const event = await adminApi.raceHubEvents.take(raceHubEventId);
+      const feed = await adminApi.fetchEntryFeed(event.id).catch(() => null);
+      return { event, feed };
+    },
+    onSuccess: ({ event, feed }) => {
       qc.invalidateQueries({ queryKey: adminQueryKeys.events.all() });
       qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.events() });
+      if (feed) qc.setQueryData(adminQueryKeys.events.entryFeed(event.id), feed);
     },
   });
 }

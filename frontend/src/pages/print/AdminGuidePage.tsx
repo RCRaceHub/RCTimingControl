@@ -112,8 +112,8 @@ export default function AdminGuidePage() {
           <span className="font-semibold">A meeting from RaceHub is shorter.</span> RaceHub owns
           booking and has already closed entries, so the Publish, Open Entries and Close Entries
           steps below do not apply. Use <span className="font-semibold">Find RaceHub events</span>
-          on the Events page to take the meeting, choose its track on the event&apos;s page, check the
-          entries have arrived on the Entries tab, then click
+          on the Events page to take the meeting. It opens on the Entries tab with the fetched entries
+          waiting for you to review and import. Choose its track on the Overview tab, then click
           <span className="font-semibold"> Start meeting</span> to move straight to IN_PROGRESS.
           If no entries have been imported yet you are asked to confirm first. Later changes from
           RaceHub (a withdrawal, a new transponder) still import while the meeting runs.
