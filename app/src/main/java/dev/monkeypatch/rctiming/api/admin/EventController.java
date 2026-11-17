@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.api.admin.dto.SeedFinalsRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.TransitionEventRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.UpdateEventRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
+import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.format.EventClassService;
 import dev.monkeypatch.rctiming.query.event.AdminEventListDto;
@@ -67,9 +68,11 @@ public class EventController {
     /** One event with its classes. {@code GET /{id}}; 404 if it does not exist. */
     @GetMapping("/{id}")
     public EventDetailDto getEvent(@PathVariable Long id) {
+        Event event = eventService.findByIdOrThrow(id);
         return EventDetailDto.from(
-            eventService.findByIdOrThrow(id),
-            eventClassService.listClassesForEvent(id).stream().map(EventClassDto::from).toList()
+            event,
+            eventClassService.listClassesForEvent(id).stream().map(EventClassDto::from).toList(),
+            eventService.allowedMoves(event)
         );
     }
 
@@ -98,8 +101,9 @@ public class EventController {
 
     /**
      * Moves the event to the next state: DRAFT, PUBLISHED, OPEN, ENTRIES_CLOSED, IN_PROGRESS, COMPLETED (a published
-     * event can also go back to DRAFT). {@code POST /{id}/transition}; RACE_DIRECTOR or ADMIN. 409 for a move the
-     * event's state machine does not allow. Completing an event starts a backup and a results export. Audited.
+     * event can also go back to DRAFT). An event linked to RaceHub can also go to IN_PROGRESS straight from DRAFT,
+     * PUBLISHED or OPEN. {@code POST /{id}/transition}; RACE_DIRECTOR or ADMIN. 409 for a move the event's state
+     * machine does not allow. Completing an event starts a backup and a results export. Audited.
      */
     @Audited("audit_log")
     @PostMapping("/{id}/transition")

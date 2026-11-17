@@ -61,6 +61,11 @@ stateDiagram-v2
     PUBLISHED --> DRAFT
     OPEN --> ENTRIES_CLOSED
     ENTRIES_CLOSED --> IN_PROGRESS
+    DRAFT --> IN_PROGRESS : RaceHub-linked event only
+    PUBLISHED --> IN_PROGRESS : RaceHub-linked event only
+    OPEN --> IN_PROGRESS : RaceHub-linked event only
     IN_PROGRESS --> COMPLETED
     COMPLETED --> [*]
 ```
+
+A meeting linked to RaceHub (it has a `racehubEventId`) may go from `DRAFT`, `PUBLISHED` or `OPEN` straight to `IN_PROGRESS` (the link can arrive late, when the first import links an event made by hand): RaceHub owns booking and has already closed entries, so publishing, opening and closing entries mean nothing for it. The event detail carries `allowedTransitions`, from `EventStateMachineService.allowedMoves`, so the admin screen never keeps its own copy of the table.
