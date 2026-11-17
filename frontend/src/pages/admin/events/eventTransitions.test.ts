@@ -24,8 +24,14 @@ describe('offeredTransitions', () => {
     expect(offeredTransitions({ racehubLinked: true, allowedTransitions: ['COMPLETED'] })).toEqual(['COMPLETED']);
   });
 
-  it('keeps Re-open as Draft for a published RaceHub meeting that was published the old way', () => {
-    expect(offeredTransitions({ racehubLinked: true, allowedTransitions: ['OPEN', 'DRAFT'] })).toEqual(['DRAFT']);
+  it('offers a RaceHub meeting published the old way Re-open as Draft and the start', () => {
+    expect(offeredTransitions({ racehubLinked: true, allowedTransitions: ['OPEN', 'DRAFT', 'IN_PROGRESS'] }))
+      .toEqual(['DRAFT', 'IN_PROGRESS']);
+  });
+
+  it('offers a RaceHub meeting opened the old way only the start', () => {
+    expect(offeredTransitions({ racehubLinked: true, allowedTransitions: ['ENTRIES_CLOSED', 'IN_PROGRESS'] }))
+      .toEqual(['IN_PROGRESS']);
   });
 });
 
