@@ -6,12 +6,15 @@ One Spring Boot process, one SQLite file. The packages below are under `dev.monk
 flowchart LR
     subgraph venue[Venue network]
         dec[AMB decoder<br/>RC-4 text, TCP 5100]
+        sdec[Split-loop decoders<br/>RC-4 text, optional]
         br[Browsers<br/>race control, announcer, boards]
     end
 
     subgraph app[RCTimingControl process]
         direction TB
         dl[timing.DecoderListener<br/>Netty, own thread]
+        sl[timing.split.SplitLoopListener<br/>one Netty source per split decoder]
+        sts[timing.split.SectorTimingService<br/>sector times, timing thread]
         te[timingExecutor<br/>single timing thread]
         lts[timing.LapTimingService<br/>in-memory LiveRaceState]
         hub[timing.LiveTimingHub<br/>STOMP broadcast]
@@ -38,6 +41,8 @@ flowchart LR
     relay[Live feed relay<br/>remote viewers]
 
     dec -->|passings| dl --> te --> lts
+    sdec -->|split passings| sl --> te --> sts
+    lts -.->|LapPassingEvent| sts
     lts --> hub -->|/topic/race/id/timing, battles| br
     br -->|REST + JWT| sec --> api
     api --> svc --> dom --> db
