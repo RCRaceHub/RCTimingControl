@@ -13,10 +13,11 @@ import java.util.Set;
  * back, to draft; from there on it is forward only, and a completed meeting is never reopened, since its
  * results have gone to RaceHub and its championships count them.
  *
- * <p>A meeting linked to RaceHub (it has a {@code racehubEventId}) may also go straight from draft to in progress.
- * RaceHub owns booking, has already closed entries and has released the meeting to timing, so publishing it, opening
- * entries and closing them mean nothing here. Every other meeting keeps the full path, and nothing else about the
- * table changes for a linked meeting.
+ * <p>A meeting linked to RaceHub (it has a {@code racehubEventId}) may also go straight to in progress from draft,
+ * published or open. RaceHub owns booking, has already closed entries and has released the meeting to timing, so
+ * publishing it, opening entries and closing them mean nothing here. The link can arrive late (the first import
+ * links an event that was made by hand), so a meeting already published or open the old way must still be able to
+ * start. Every other meeting keeps the full path, and nothing else about the table changes for a linked meeting.
  *
  * <p>It only moves the event in memory; the caller saves it.
  */
@@ -24,6 +25,10 @@ import java.util.Set;
 public class EventStateMachineService {
 
     private static final Map<EventStatus, Set<EventStatus>> VALID_TRANSITIONS;
+
+    /** Where a RaceHub-linked meeting may start from: every status before in progress that RaceHub has done for it. */
+    private static final Set<EventStatus> SKIPPABLE_BY_RACEHUB =
+            EnumSet.of(EventStatus.DRAFT, EventStatus.PUBLISHED, EventStatus.OPEN);
 
     static {
         Map<EventStatus, Set<EventStatus>> m = new EnumMap<>(EventStatus.class);
@@ -43,7 +48,7 @@ public class EventStateMachineService {
     public Set<EventStatus> allowedMoves(Event event) {
         Set<EventStatus> valid = EnumSet.noneOf(EventStatus.class);
         valid.addAll(VALID_TRANSITIONS.getOrDefault(event.getStatus(), Set.of()));
-        if (event.getStatus() == EventStatus.DRAFT && event.getRacehubEventId() != null) {
+        if (event.getRacehubEventId() != null && SKIPPABLE_BY_RACEHUB.contains(event.getStatus())) {
             valid.add(EventStatus.IN_PROGRESS);
         }
         return valid;

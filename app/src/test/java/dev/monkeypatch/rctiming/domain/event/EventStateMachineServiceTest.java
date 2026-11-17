@@ -46,9 +46,24 @@ class EventStateMachineServiceTest {
     }
 
     @Test
-    void linkedEventKeepsTheNormalTableOnceItLeavesDraft() {
+    void linkedEventPublishedOrOpenedTheOldWayCanStillStartDirectly() {
         assertThat(machine.allowedMoves(event(EventStatus.PUBLISHED, "E-1")))
+                .containsExactlyInAnyOrder(EventStatus.OPEN, EventStatus.DRAFT, EventStatus.IN_PROGRESS);
+        assertThat(machine.allowedMoves(event(EventStatus.OPEN, "E-1")))
+                .containsExactlyInAnyOrder(EventStatus.ENTRIES_CLOSED, EventStatus.IN_PROGRESS);
+        assertThat(machine.allowedMoves(event(EventStatus.ENTRIES_CLOSED, "E-1")))
+                .containsExactly(EventStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void unlinkedPublishedOrOpenCannotSkipAhead() {
+        assertThat(machine.allowedMoves(event(EventStatus.PUBLISHED, null)))
                 .containsExactlyInAnyOrder(EventStatus.OPEN, EventStatus.DRAFT);
+        assertThat(machine.allowedMoves(event(EventStatus.OPEN, null))).containsExactly(EventStatus.ENTRIES_CLOSED);
+    }
+
+    @Test
+    void linkedEventKeepsTheNormalTableOnceItIsRunning() {
         assertThat(machine.allowedMoves(event(EventStatus.IN_PROGRESS, "E-1")))
                 .containsExactly(EventStatus.COMPLETED);
         assertThat(machine.allowedMoves(event(EventStatus.COMPLETED, "E-1"))).isEmpty();

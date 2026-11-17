@@ -101,8 +101,9 @@ public class EventController {
 
     /**
      * Moves the event to the next state: DRAFT, PUBLISHED, OPEN, ENTRIES_CLOSED, IN_PROGRESS, COMPLETED (a published
-     * event can also go back to DRAFT, and an event linked to RaceHub can go from DRAFT straight to IN_PROGRESS). {@code POST /{id}/transition}; RACE_DIRECTOR or ADMIN. 409 for a move the
-     * event's state machine does not allow. Completing an event starts a backup and a results export. Audited.
+     * event can also go back to DRAFT). An event linked to RaceHub can also go to IN_PROGRESS straight from DRAFT,
+     * PUBLISHED or OPEN. {@code POST /{id}/transition}; RACE_DIRECTOR or ADMIN. 409 for a move the event's state
+     * machine does not allow. Completing an event starts a backup and a results export. Audited.
      */
     @Audited("audit_log")
     @PostMapping("/{id}/transition")

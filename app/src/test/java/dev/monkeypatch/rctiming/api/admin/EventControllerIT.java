@@ -1,10 +1,10 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
+import dev.monkeypatch.rctiming.api.admin.dto.EventDetailDto;
 import dev.monkeypatch.rctiming.api.admin.dto.EventDto;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.EventDetailDto;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.track.Track;
