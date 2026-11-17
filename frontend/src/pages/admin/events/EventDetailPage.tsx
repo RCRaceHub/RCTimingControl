@@ -110,7 +110,10 @@ export default function EventDetailPage() {
   const id = Number(idParam);
   const navigate = useNavigate();
   // "Import entries from a file" on the Events page makes the event, then brings its file here to be previewed
-  const startDocument = (useLocation().state as { importDocument?: unknown } | null)?.importDocument;
+  const locationState = useLocation().state as { importDocument?: unknown; openTab?: string } | null;
+  const startDocument = locationState?.importDocument;
+  // "Find RaceHub events" takes an event and sends the official to the Entries tab, where a fetched file waits
+  const startTab = startDocument !== undefined || locationState?.openTab === 'entries' ? 'entries' : 'overview';
 
   useHelpContent(EventManagementHelp);
 
@@ -263,7 +266,7 @@ export default function EventDetailPage() {
         )}
       </div>
 
-      <Tabs defaultValue={startDocument !== undefined ? 'entries' : 'overview'}>
+      <Tabs defaultValue={startTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
