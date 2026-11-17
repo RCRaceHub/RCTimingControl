@@ -157,6 +157,10 @@ export interface EventDetailDto {
   classes: EventClassDto[];
   racehubLastImportAt: string | null;
   racehubLastRevision: number | null;
+  /** True for a meeting linked to RaceHub, which may start straight from draft */
+  racehubLinked: boolean;
+  /** The statuses the server will accept as the next move */
+  allowedTransitions: EventStatus[];
 }
 
 // Pictures an entry import named by address (#699)
