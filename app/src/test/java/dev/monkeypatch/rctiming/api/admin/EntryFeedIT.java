@@ -210,6 +210,37 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void automaticFetch_importsALateRevisionIntoAMeetingThatIsInProgress() {
+        jdbc.update("update events set status = 'IN_PROGRESS' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+
+        // RaceHub withdraws a driver after the meeting has started
+        feedBody = fixture("entries-v1-update.json");
+        scheduler.fetchAll();
+
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+        assertThat(jdbc.queryForObject(
+                "select status from entries where external_source = 'RACEHUB' and external_entry_id = ?",
+                String.class, "b2-" + run)).isEqualTo("WITHDRAWN");
+    }
+
+    @Test
+    void automaticFetch_leavesACompletedMeetingAlone() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        scheduler.fetchAll();
+
+        assertThat(entryRepository.findByEventId(eventId)).isEmpty();
+        assertThat(authorizations).isEmpty();
+        assertThat(getFeed().getBody().get("lastFetchAt").isNull()).isTrue();
+    }
+
+    @Test
     void automaticFetch_holdsABlockedImportForAnOfficial() {
         feedBody = fixture("entries-v1-unmapped-class.json");
         saveFeed(feedUrl(), TOKEN, true);
@@ -304,6 +335,32 @@ class EntryFeedIT extends AbstractIntegrationTest {
     void plainHttpToAnotherComputer_isRefused() {
         ResponseEntity<JsonNode> resp = saveFeed("http://booking.example.com/entries", TOKEN, false);
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void aRevisionAppliedWhileItIsFetchedByHand_isNotHeldForReview() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        // The scheduler applies the same revision between the manual fetch reading the feed and saving its outcome
+        duringFetch = () -> jdbc.update("update entry_feeds set applied_revision = 4 where event_id = ?", eventId);
+
+        JsonNode fetched = post("/fetch").getBody();
+
+        assertThat(fetched.get("waiting").asBoolean()).isFalse();
+        assertThat(fetched.get("lastStatus").asString()).isEqualTo("UNCHANGED");
+        assertThat(jdbc.queryForObject("select held_document from entry_feeds where event_id = ?", String.class, eventId))
+                .isNull();
+    }
+
+    @Test
+    void manualFetchStillWorksForACompletedMeeting() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        JsonNode fetched = post("/fetch").getBody();
+
+        assertThat(fetched.get("waiting").asBoolean()).isTrue();
     }
 
     @Test
