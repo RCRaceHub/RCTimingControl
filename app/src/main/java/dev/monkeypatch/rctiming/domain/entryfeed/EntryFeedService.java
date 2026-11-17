@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
@@ -183,10 +184,16 @@ public class EntryFeedService {
 
     /**
      * The automatic fetch: imports a new revision when it applies cleanly, and holds it for an official when
-     * something would block it. Never throws.
+     * something would block it. Does nothing for a completed event: its results have been exported and its
+     * championships count them, so a late revision from the booking system must not change its entries (an
+     * official can still fetch or import by hand). Runs on the scheduler thread. Never throws.
      */
     public void autoFetch(EntryFeed feed) {
         try {
+            if (eventRepository.findById(feed.getEventId()).filter(e -> e.getStatus() == EventStatus.COMPLETED)
+                    .isPresent()) {
+                return;
+            }
             Download download = download(feed);
             if (download.problem != null) {
                 recordFailure(feed, download.problem);

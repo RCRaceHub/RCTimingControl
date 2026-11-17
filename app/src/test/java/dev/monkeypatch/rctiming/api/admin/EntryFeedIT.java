@@ -210,6 +210,37 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void automaticFetch_importsALateRevisionIntoAMeetingThatIsInProgress() {
+        jdbc.update("update events set status = 'IN_PROGRESS' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+
+        // RaceHub withdraws a driver after the meeting has started
+        feedBody = fixture("entries-v1-update.json");
+        scheduler.fetchAll();
+
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+        assertThat(jdbc.queryForObject(
+                "select status from entries where external_source = 'RACEHUB' and external_entry_id = ?",
+                String.class, "b2-" + run)).isEqualTo("WITHDRAWN");
+    }
+
+    @Test
+    void automaticFetch_leavesACompletedMeetingAlone() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        scheduler.fetchAll();
+
+        assertThat(entryRepository.findByEventId(eventId)).isEmpty();
+        assertThat(authorizations).isEmpty();
+        assertThat(getFeed().getBody().get("lastFetchAt").isNull()).isTrue();
+    }
+
+    @Test
     void automaticFetch_holdsABlockedImportForAnOfficial() {
         feedBody = fixture("entries-v1-unmapped-class.json");
         saveFeed(feedUrl(), TOKEN, true);
