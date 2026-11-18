@@ -16,7 +16,11 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.LapSectors.LAP_SECT
 @Repository
 public class LapSectorRepository {
 
-    /** One sector of one lap of one car. {@code sectorNumber} counts from 1; {@code durationMs} is the sector time. */
+    /**
+     * One sector of one lap of one car. {@code lapNumber} is the sector service's own count of finish crossings, which
+     * can differ from the credited lap number after marshal adjustments, so do not join it to lap history.
+     * {@code sectorNumber} counts from 1; {@code durationMs} is the sector time.
+     */
     public record Row(long entryId, int lapNumber, int sectorNumber, long durationMs) {
     }
 

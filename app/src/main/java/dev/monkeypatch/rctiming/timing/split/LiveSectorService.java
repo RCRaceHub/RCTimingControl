@@ -90,7 +90,8 @@ public class LiveSectorService {
             }
             List<Long> last = new ArrayList<>();
             for (long micros : event.sectorMicros()) {
-                last.add(Math.round(micros / 1000.0));
+                // At least 1 ms: lap_sectors only holds positive durations, and a sector this short means a mis-set clock offset
+                last.add(Math.max(1L, Math.round(micros / 1000.0)));
             }
             SectorRowDto before = current.rows.get(entryId.get());
             List<Long> best = new ArrayList<>();
@@ -129,10 +130,12 @@ public class LiveSectorService {
                 current.saved.values().forEach(rows::addAll);
             }
         }
-        if (rows.isEmpty()) {
-            return;
-        }
         try {
+            if (rows.isEmpty()) {
+                // A re-run with no sectors must not leave an earlier run's rows to print against its result
+                lapSectors.deleteForRace(raceId);
+                return;
+            }
             lapSectors.replaceForRace(raceId, rows);
         } catch (RuntimeException e) {
             log.error("Could not save the sector times of race {}", raceId, e);

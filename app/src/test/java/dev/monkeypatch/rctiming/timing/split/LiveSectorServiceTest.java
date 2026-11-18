@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -169,7 +170,15 @@ class LiveSectorServiceTest {
         doThrow(new IllegalStateException("database busy")).when(lapSectors)
                 .replaceForRace(anyLong(), any());
 
+        assertThatCode(() -> service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aFinishedRaceWithNoSectors_clearsAnyEarlierSavedRows() {
         service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED));
+
+        verify(lapSectors).deleteForRace(RACE);
     }
 
     @Test

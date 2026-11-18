@@ -99,9 +99,9 @@ function SectorSheet({ positions, sectors }: { positions: ResultSnapshotDto['pos
                 {indexes.map((i) => (
                   <td
                     key={i}
-                    className={`py-0.5 pr-2 text-right font-mono ${best[i] !== undefined && best[i] === sectors.overallBestMs[i] ? 'font-bold' : ''}`}
+                    className={`py-0.5 pr-2 text-right font-mono ${best[i] != null && best[i] === sectors.overallBestMs[i] ? 'font-bold' : ''}`}
                   >
-                    {best[i] !== undefined ? fmtMs(best[i]) : ''}
+                    {best[i] != null ? fmtMs(best[i]) : ''}
                   </td>
                 ))}
               </tr>
