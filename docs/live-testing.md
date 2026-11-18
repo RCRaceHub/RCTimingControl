@@ -6,30 +6,30 @@ Do a dry run first. [trial-quickstart.md](trial-quickstart.md) loads a demo club
 
 ## Before you go
 
-- Check the **About** page (`/about`) shows the version you expect. An older installed copy has caused false alarms before.
+- Check the **About** page (`/about`) shows the version you expect, so you know which build you are testing.
 - Make a backup (**Admin → Backups → Back up now**) and note the decoder's IP address. Give the laptop a fixed address if you can.
-- Decide whether anything else needs the decoder. Most decoders take one connection at a time, and nothing detects a second program. To run RCTC and another program together, put the recorder in front and point both at it (see "Record the whole session" below). Do not run two programs on port 5100.
+- Decide whether anything else needs the decoder. A decoder may accept only one connection at a time, and nothing detects a second program. To run RCTC and another program together, put the recorder in front and point both at it (see "Record the whole session" below). Do not run two programs on port 5100.
 - Have a paper tally ready: who drives, which transponder, roughly how many laps.
 
 ## 1. Connect
 
 1. Open **Admin → Decoder**. Enter the decoder's address, leave the protocol on **RC4** and the port on 5100, and click **Test Connection**, then **Save**.
-2. The **DECODER** badge in race control turns green. Amber means it is retrying; red means no decoder is set or it can't be reached. [decoder.md](decoder.md#troubleshooting) covers each.
+2. The **DECODER** badge in race control turns green. Amber (reconnecting) means it is retrying; red means no decoder is set or it can't be reached. [decoder.md](decoder.md#troubleshooting) covers each.
 3. Pass a transponder over the loop. In open practice (below) its lap should appear within a second or two.
 
 ## 2. Record the whole session
 
-Record what the decoder sends, so you can check RCTC against it afterwards and replay it later. Run the recorder on the laptop in a second terminal and leave it running. If RCTC is also to read the decoder, share the connection:
+Record what the decoder sends, so you can check RCTC against it afterwards and replay it later. Start the recorder before you connect RCTC, on the laptop in a second terminal, and leave it running. The commands below are shown short; on an installed system use the full path for your system from [recording-the-decoder.md](recording-the-decoder.md#record-to-a-file). If RCTC is also to read the decoder, share the connection:
 
 ```
 RCTimingControl record --host=192.168.1.50 --listen-port=5101 --out=session.dump
 ```
 
-Then set **Admin → Decoder** to `localhost` and port **5101**. Without `--listen-port` the recorder holds the decoder's only connection, so RCTC could not connect. The full guide, with the commands for each system, is [recording-the-decoder.md](recording-the-decoder.md). Keep `session.dump` and `session.dump.times` together.
+Then set **Admin → Decoder** to host `localhost` and port **5101** (this replaces the address from step 1 once the recorder is running; the recorder holds the decoder's address instead). Without `--listen-port` the recorder holds the decoder's only connection, so RCTC could not connect. The full guide, with the commands for each system, is [recording-the-decoder.md](recording-the-decoder.md). Keep `session.dump` and `session.dump.times` together.
 
 ## 3. Start with open practice
 
-Open practice needs no event, heats or run order, so it is the easiest first test. In race control choose **Practice → New session → Start practice** ([trial-quickstart.md](trial-quickstart.md#open-practice)). A transponder RCTC doesn't know appears as unknown; give it a driver on the spot.
+Open practice needs no event, heats or run order, so it is the easiest first test. In race control choose the event, then **Practice** in the top bar, **New Session** and **Start Practice** ([trial-quickstart.md](trial-quickstart.md#open-practice)). A transponder RCTC doesn't know appears as unknown; give it a driver on the spot.
 
 Things worth trying:
 
@@ -43,7 +43,7 @@ Things worth trying:
 
 Once practice is right, run a short meeting with a few drivers:
 
-1. Create the event and add its classes ([user-manual.md](user-manual.md#5-create-the-event-and-bring-in-the-entries)). Bring in entries from a RaceHub export (**Find RaceHub events**, with each RaceHub class linked once under **RaceHub classes**), an RC-Timing CSV, or add walk-ins by hand.
+1. Create the event and add its classes ([user-manual.md](user-manual.md#5-create-the-event-and-bring-in-the-entries)). Bring in entries from a RaceHub export (**Find RaceHub events**, with each RaceHub class linked once under **Admin → RaceHub classes**), an RC-Timing CSV, or add walk-ins by hand.
 2. Check transponders under **Race Control → Transponders**. A number shared by two entries in the same event is allowed with a warning; if both are in one race, the passing goes to the referee.
 3. Generate the rounds, then for each race call the grid, start and finish it. The **Warm-up** column on the grid shows which transponders the decoder has seen since the grid was called, so a flat transponder is found before the start.
 4. Try the things that go wrong on a real day: a marshal lap +1 and −1, a lap or time penalty, a stop and resume, an unknown transponder linked to an entry, and a restart.
@@ -70,7 +70,7 @@ You can also replay the recording into a fresh practice session to see that the 
 RCTimingControl simulate --mode=playback --file=session.dump --speed=4
 ```
 
-Point **Admin → Decoder** at `localhost` for the replay and back to the real decoder afterwards ([decoder.md](decoder.md#using-the-simulator-development)).
+Point **Admin → Decoder** at host `localhost`, port 5100, for the replay, and back to the recorder's or decoder's address afterwards. Use the same full path for these commands as for the recorder ([decoder.md](decoder.md#using-the-simulator-development)).
 
 ## 6. After the session
 

@@ -25,7 +25,7 @@ AMB Decoder (TCP :5100)  or  Fake Decoder Simulator
              Browser clients
 ```
 
-RCTC is the only client that connects to the decoder. Nothing connects in to RCTC except browsers.
+RCTC is the only client that connects to the decoder (unless you use the recorder's `--listen-port`, see below). Nothing connects in to RCTC except browsers.
 
 ---
 
@@ -72,7 +72,7 @@ Generative mode options (pass them with `--args` if you run the module directly)
 - `--interval-ms=12500`: base lap time in milliseconds
 - `--jitter-ms=2500`: spread of the per-lap noise. Each driver also has a fixed pace up to 5% faster or slower than the base lap, laps vary down to the millisecond (bell-curve noise, clamped to ±`jitterMs`), and about one lap in 15 is a slow lap (a spin or marshal stop) adding up to 2.5 × `jitterMs`. `0` gives steady laps at each driver's pace.
 
-Playback mode options: `--file=capture.dump` (default: a bundled sample), `--speed=4` (a multiple of real time, default 1). Both modes take `--port=5100`.
+Playback mode options: `--file=capture.dump` (default: a bundled sample), `--speed=4` (a multiple of real time, default 1). Both modes take `--port` (default 5100).
 
 The simulator prints each PASSING record to stdout.
 
