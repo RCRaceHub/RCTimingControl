@@ -22,7 +22,7 @@ The first time, a wizard asks for the club profile, a track, a race format, the 
 
 ### 3. Connect the decoder
 
-Under **Admin → Decoder**, enter the decoder's address, leave the protocol on RC4 for firmware below 4.5, and click **Test Connection**, then **Save**. Never connect RCTC and another timing program to the same decoder at once. Setup, hardware notes and troubleshooting are in [decoder.md](decoder.md).
+Under **Admin → Decoder**, enter the decoder's address, leave the protocol on RC4 for firmware below 4.5, and click **Test Connection**, then **Save**. Never connect RCTC and another timing program to the same decoder at once. Setup, hardware notes and troubleshooting are in [decoder.md](decoder.md). The first time you run on a real decoder, [live-testing.md](live-testing.md) is a step-by-step checklist, and [recording-the-decoder.md](recording-the-decoder.md) shows how to record what the decoder sends so you can check every lap afterwards.
 
 ### 4. Set up the club, tracks, formats and officials
 

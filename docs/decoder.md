@@ -8,7 +8,7 @@ In development you use the built-in **fake decoder simulator** in place of hardw
 
 ## Never connect two timing programs to one decoder
 
-**Never connect RCTC and another timing program (such as RCResults) to the same decoder, or the same simulator instance, at the same time.** Both dial out to the decoder's TCP port. The RC-4 text protocol's tolerance for several clients at once is unconfirmed, so one may silently stop receiving PASSING records. Neither program can detect the other. This is operator discipline.
+**Never connect RCTC and another timing program (such as RCResults) to the same decoder, or the same simulator instance, at the same time.** Both dial out to the decoder's TCP port. The RC-4 text protocol's tolerance for several clients at once is unconfirmed, so one may silently stop receiving PASSING records. Neither program can detect the other. This is operator discipline. The one safe way to share a decoder is the recorder's `--listen-port`: it holds the single connection and passes every record to each program ([recording-the-decoder.md](recording-the-decoder.md#share-one-decoder-between-programs)).
 
 ---
 
@@ -25,7 +25,7 @@ AMB Decoder (TCP :5100)  or  Fake Decoder Simulator
              Browser clients
 ```
 
-RCTC is the only client that connects to the decoder. Nothing connects in to RCTC except browsers.
+RCTC is the only client that connects to the decoder (unless you use the recorder's `--listen-port`, see below). Nothing connects in to RCTC except browsers.
 
 ---
 
@@ -72,7 +72,11 @@ Generative mode options (pass them with `--args` if you run the module directly)
 - `--interval-ms=12500`: base lap time in milliseconds
 - `--jitter-ms=2500`: spread of the per-lap noise. Each driver also has a fixed pace up to 5% faster or slower than the base lap, laps vary down to the millisecond (bell-curve noise, clamped to ±`jitterMs`), and about one lap in 15 is a slow lap (a spin or marshal stop) adding up to 2.5 × `jitterMs`. `0` gives steady laps at each driver's pace.
 
+Playback mode options: `--file=capture.dump` (default: a bundled sample), `--speed=4` (a multiple of real time, default 1). Both modes take `--port` (default 5100).
+
 The simulator prints each PASSING record to stdout.
+
+**With the installed app** there is no `make`. Run the program's `simulate` command (the paths are in [trial-quickstart.md](trial-quickstart.md#step-3-start-the-simulated-decoder)) with the same flags, for example `RCTimingControl simulate --mode=generative --transponders=101,102,103 --interval-ms=15000`. With no flags it plays the demo club's transponders 101 to 116. Set **Admin → Decoder** to `localhost` while it runs, and back to the real decoder afterwards.
 
 ### Using real hardware
 
@@ -80,7 +84,7 @@ Set the decoder's IP address as the host in **Admin → Decoder**. Port 5100 is 
 
 ### Recording a real decoder to a file
 
-To capture real race data as test data, or to share one decoder between several programs, see [recording-the-decoder.md](recording-the-decoder.md).
+To capture real race data as test data, or to share one decoder between several programs, see [recording-the-decoder.md](recording-the-decoder.md). For a checklist covering the first run on a real decoder, from connecting to checking laps against a recording, see [live-testing.md](live-testing.md).
 
 ---
 
