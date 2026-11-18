@@ -15,6 +15,7 @@ flowchart LR
         dl[timing.DecoderListener<br/>Netty, own thread]
         sl[timing.split.SplitLoopListener<br/>one Netty source per split decoder]
         sts[timing.split.SectorTimingService<br/>sector times, timing thread]
+        lss[timing.split.LiveSectorService<br/>last and best sectors per car]
         te[timingExecutor<br/>single timing thread]
         lts[timing.LapTimingService<br/>in-memory LiveRaceState]
         hub[timing.LiveTimingHub<br/>STOMP broadcast]
@@ -43,7 +44,8 @@ flowchart LR
     dec -->|passings| dl --> te --> lts
     sdec -->|split passings| sl --> te --> sts
     lts -.->|LapPassingEvent| sts
-    lts --> hub -->|/topic/race/id/timing, battles| br
+    sts -->|SectorTimesEvent| lss --> hub
+    lts --> hub -->|/topic/race/id/timing, battles, sectors| br
     br -->|REST + JWT| sec --> api
     api --> svc --> dom --> db
     api --> sm

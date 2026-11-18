@@ -31,6 +31,8 @@ import { CarThumb } from '@/components/CarThumb';
 import { carColoursFor } from '@/lib/carColours';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
+import { useSectors } from '@/hooks/race-control/useSectors';
+import { sectorTone } from '@/lib/sectors';
 
 type Props = {
   raceId: number;
@@ -51,6 +53,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const elim = useEliminations(raceId);
   const settings = useBoardSettings();
   const media = useRaceMedia(raceId);
+  const sectors = useSectors(raceId);
+  const sectorRows = useMemo(() => new Map(sectors.rows.map((r) => [r.entryId, r])), [sectors.rows]);
   const barClock = useLapBarClock(sorted, status, settings.lateMarginMs);
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
@@ -88,6 +92,9 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
               <TableHead className="w-28 text-right">Total Time</TableHead>
               <TableHead className="w-24 text-right">Last Lap</TableHead>
               <TableHead className="w-24 text-right">Best Lap</TableHead>
+              {Array.from({ length: sectors.sectorCount }, (_, i) => (
+                <TableHead key={`s${i}`} className="w-20 text-right">S{i + 1}</TableHead>
+              ))}
               <TableHead className="w-24 text-right">Interval</TableHead>
               <TableHead className="w-24 text-right">Leader</TableHead>
               {elim.shikabane && <TableHead className="w-32 text-right">Shikabane</TableHead>}
@@ -158,6 +165,23 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.lastLapMs)}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
+                {Array.from({ length: sectors.sectorCount }, (_, i) => {
+                  const sectorRow = sectorRows.get(row.entryId);
+                  const tone = sectorRow ? sectorTone(sectorRow, sectors, i) : 'normal';
+                  return (
+                    <TableCell
+                      key={`s${i}`}
+                      className={cn(
+                        'text-right font-mono',
+                        tone === 'overall-best' && 'font-semibold text-race-best',
+                        tone === 'personal-best' && 'text-success',
+                        !sectorRow && 'text-muted-foreground',
+                      )}
+                    >
+                      {sectorRow ? fmtMs(sectorRow.lastMs[i]) : '—'}
+                    </TableCell>
+                  );
+                })}
                 <TableCell className="text-right font-mono text-muted-foreground">
                   {gapLabel(row.position, row.intervalLapsDown, row.gapToAheadMs)}
                 </TableCell>

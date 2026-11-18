@@ -82,6 +82,21 @@ The simulator prints each PASSING record to stdout.
 
 Set the decoder's IP address as the host in **Admin → Decoder**. Port 5100 is the RC-4 text protocol (firmware ≤ 4.4). See `docs/AMB_DECODER_PROTOCOL.md` in the source repository for protocol details.
 
+### Trying split loops with the simulator
+
+Track mode runs a start/finish decoder and fake split decoders that see the same cars, so you can try split loops without a second real decoder:
+
+```bash
+# Finish decoder on 5100, two split decoders on 5101 and 5102
+RCTimingControl simulate --mode=track --port=5100 --split-ports=5101,5102 \
+    --split-positions=0.35,0.7 --split-delay-ms=0,25
+```
+
+- `--split-positions` is how far round the lap each split is, from 0 to 1 (default: spread evenly).
+- `--split-delay-ms` holds a split decoder's records back, so RCTC anchors its clock late. It fakes the clock offset between two real decoders. Set the matching **clock offset** on that split decoder (a negative number to correct a delay) and see whether the sector times line up.
+
+Point the main decoder at `localhost:5100` under **Admin → Decoder**, and add the split decoders on ports 5101 and 5102.
+
 ### Recording a real decoder to a file
 
 To capture real race data as test data, or to share one decoder between several programs, see [recording-the-decoder.md](recording-the-decoder.md). For a checklist covering the first run on a real decoder, from connecting to checking laps against a recording, see [live-testing.md](live-testing.md).
@@ -92,7 +107,7 @@ To capture real race data as test data, or to share one decoder between several 
 
 The decoder above is the **start/finish loop**: it is the only one that credits laps. You can add decoders at split points round the track through the admin API `/api/v1/admin/split-decoders` (an ADMIN task; the admin page for it is still to come). Each has a name, address, port, a **split number** (1 for the first split after the finish loop, up to 9, each used once) and a **clock offset**.
 
-A split decoder never credits a lap. When a car crosses the finish loop and has crossed every enabled split in order, RCTC works out the sector times: finish to split 1, split 1 to split 2, and so on to the finish. A lap with a missing or out-of-order split gets no sector times, never wrong ones. Nothing about lap counting or results changes. In this first version the sector times are worked out in memory only; showing and saving them is planned (see issue #672).
+A split decoder never credits a lap. When a car crosses the finish loop and has crossed every enabled split in order, RCTC works out the sector times: finish to split 1, split 1 to split 2, and so on to the finish. A lap with a missing or out-of-order split gets no sector times, never wrong ones. Nothing about lap counting or results changes. Race control's live timing table gets an **S1, S2, ...** column for each sector, showing each car's latest lap, with the fastest of anyone in purple and a car's own best in green. A car with no complete lap yet shows a dash. With no split decoders there are no sector columns at all, so a club with one decoder sees nothing change. The sector times are held in memory; saving them with the results, and showing them on the boards and the overlay, are still to come (see issue #672).
 
 RC-4 decoders send seconds since power-on, not a clock time, so RCTC lines each decoder up with the server clock when its first passing arrives. Two decoders can therefore disagree by some milliseconds. The **clock offset** (milliseconds, added to every passing from that decoder) lets you correct a known difference.
 

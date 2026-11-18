@@ -17,10 +17,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p><strong>[SIMULATOR] DEV-ONLY — do not run on production hosts</strong>
  *
- * <p>Supports two operating modes:
+ * <p>Supports these operating modes:
  * <ul>
  *   <li>{@link #playback(int, String, double)} — replays a {@code .dump} file at configurable speed</li>
  *   <li>{@link #generative(int, List, long, long)} — emits synthetic PASSING records for a list of transponders</li>
+ *   <li>{@link #trackLoop(int, TrackSimulation, int, long)} — one loop of a track shared with other servers, so a finish
+ *       decoder and split decoders see the same cars (#678)</li>
  * </ul>
  *
  * <p>Each accepted TCP connection is handled on a separate daemon thread.
@@ -69,6 +71,16 @@ public class FakeDecoderServer {
                                                long intervalMs, long jitterMs) {
         return new FakeDecoderServer(port, "GENERATIVE",
                 out -> GenerativeMode.run(out, transponders, intervalMs, jitterMs));
+    }
+
+    /**
+     * Create a server for one loop of a shared {@link TrackSimulation}: the start/finish loop (0) or a split (1 up).
+     *
+     * @param delayMs how long each record is held back, ms; see {@link TrackMode}
+     */
+    public static FakeDecoderServer trackLoop(int port, TrackSimulation track, int loop, long delayMs) {
+        return new FakeDecoderServer(port, loop == 0 ? "TRACK finish loop" : "TRACK split " + loop,
+                out -> TrackMode.run(out, track, loop, delayMs));
     }
 
     /**
