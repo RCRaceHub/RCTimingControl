@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.LapSectors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
@@ -141,6 +142,11 @@ public class Tables {
      * The table <code>split_decoders</code>.
      */
     public static final SplitDecoders SPLIT_DECODERS = SplitDecoders.SPLIT_DECODERS;
+
+    /**
+     * The table <code>lap_sectors</code>.
+     */
+    public static final LapSectors LAP_SECTORS = LapSectors.LAP_SECTORS;
 
     /**
      * The table <code>display_playlists</code>.

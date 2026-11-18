@@ -16,6 +16,7 @@ export const publicQueryKeys = {
     settings: () => ['boards', 'settings'] as const,
     battles: (raceId: number | null) => ['boards', 'battles', raceId] as const,
     sectors: (raceId: number | null) => ['boards', 'sectors', raceId] as const,
+    sectorResults: (raceId: number | null) => ['boards', 'sector-results', raceId] as const,
     results: (eventId: number | null) => ['boards', 'results', eventId] as const,
     qualifying: (eventId: number | null) => ['boards', 'qualifying', eventId] as const,
     liveQualifying: (eventId: number | null) => ['boards', 'live-qualifying', eventId] as const,

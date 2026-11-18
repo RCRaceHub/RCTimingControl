@@ -33,3 +33,17 @@ export function sectorTone(row: SectorRow, board: SectorBoard, sector: number): 
   if (row.bestMs[sector] === value) return 'personal-best';
   return 'normal';
 }
+
+/** One car's sector times in a finished race: its best in each sector (#676). */
+export type DriverSectorResults = {
+  entryId: number;
+  bestMs: number[];
+  laps: { lapNumber: number; sectorMs: number[] }[];
+};
+
+/** A finished race's saved sector times. {@code sectorCount} is 0 when the race has none, so a printout shows no sector section. */
+export type SectorResults = {
+  sectorCount: number;
+  overallBestMs: (number | null)[];
+  drivers: DriverSectorResults[];
+};

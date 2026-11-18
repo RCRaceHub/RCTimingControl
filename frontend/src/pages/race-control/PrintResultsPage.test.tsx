@@ -4,10 +4,15 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrintResultsPage from './PrintResultsPage';
 import { getRaceHistory, getRaceResult } from '@/lib/raceControlApi';
+import { getBoardSectorResults } from '@/lib/boardsApi';
 
 vi.mock('@/lib/raceControlApi', () => ({
   getRaceResult: vi.fn(),
   getRaceHistory: vi.fn(),
+}));
+
+vi.mock('@/lib/boardsApi', () => ({
+  getBoardSectorResults: vi.fn(),
 }));
 
 const snapshot = {
@@ -69,6 +74,7 @@ describe('PrintResultsPage', () => {
     vi.clearAllMocks();
     vi.mocked(getRaceResult).mockResolvedValue(raceResult as never);
     vi.mocked(getRaceHistory).mockResolvedValue([]);
+    vi.mocked(getBoardSectorResults).mockResolvedValue({ sectorCount: 0, overallBestMs: [], drivers: [] });
   });
 
   it('shows each driver\'s average lap and leaves the lap sheet off by default', async () => {
@@ -78,6 +84,33 @@ describe('PrintResultsPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Avg Lap' })).toBeInTheDocument();
     expect(screen.getByText('20.500')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Lap times' })).not.toBeInTheDocument();
+  });
+
+  it('has no sector section for a race without sector times', async () => {
+    renderPage();
+
+    expect(await tableName('Ann Racer')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Sector times' })).not.toBeInTheDocument();
+  });
+
+  it('prints each driver\'s best sectors in finishing order with the overall best in bold', async () => {
+    vi.mocked(getBoardSectorResults).mockResolvedValue({
+      sectorCount: 2,
+      overallBestMs: [9_000, 11_000],
+      drivers: [
+        { entryId: 11, bestMs: [9_000, 12_000], laps: [] },
+        { entryId: 10, bestMs: [9_500, 11_000], laps: [] },
+      ],
+    });
+    renderPage();
+
+    const region = await screen.findByRole('region', { name: 'Sector times' });
+    const rows = within(region).getAllByRole('row');
+    // Header, then Ann (1st) before Bob (2nd) whatever order the sectors came in
+    expect(within(rows[1]).getByRole('rowheader')).toHaveTextContent('Ann Racer');
+    expect(within(rows[1]).getByText('11.000')).toHaveClass('font-bold');
+    expect(within(rows[1]).getByText('9.500')).not.toHaveClass('font-bold');
+    expect(within(rows[2]).getByText('9.000')).toHaveClass('font-bold');
   });
 
   it('shows where each driver started and the event it belongs to', async () => {
