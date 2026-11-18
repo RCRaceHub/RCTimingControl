@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,7 +34,8 @@ import java.util.function.Function;
  *   <li>{@code --split-positions} — {@code track} mode: where each split is, as a share of the lap after the finish
  *       loop, such as {@code 0.35,0.7} (default: spread evenly)</li>
  *   <li>{@code --split-delay-ms} — {@code track} mode: how long each split decoder holds its records back, to fake a
- *       clock offset against the finish decoder, such as {@code 25,-0} (default: 0 each; the finish decoder is never
+ *       clock offset against the finish decoder, such as {@code 0,25}, never negative (default: 0 each; the finish
+ *       decoder is never
  *       delayed)</li>
  * </ul>
  *
@@ -102,12 +105,19 @@ public class SimulatorMain {
         }
         List<Long> delays = flags.containsKey("--split-delay-ms")
                 ? parseList(flags.get("--split-delay-ms"), Long::parseLong)
-                : java.util.Collections.nCopies(ports.length, 0L);
+                : Collections.nCopies(ports.length, 0L);
         if (positions.length != ports.length || delays.size() != ports.length) {
             printUsageAndExit("--split-ports, --split-positions and --split-delay-ms need the same number of entries");
         }
+        if (delays.stream().anyMatch(d -> d < 0)) {
+            printUsageAndExit("--split-delay-ms must not be negative");
+        }
+        if (Arrays.stream(ports).anyMatch(p -> p == port)
+                || Arrays.stream(ports).distinct().count() != ports.length) {
+            printUsageAndExit("--port and --split-ports must all be different");
+        }
         for (int i = 0; i < positions.length; i++) {
-            if (positions[i] <= 0 || positions[i] >= 1 || (i > 0 && positions[i] <= positions[i - 1])) {
+            if (!(positions[i] > 0 && positions[i] < 1) || (i > 0 && positions[i] <= positions[i - 1])) {
                 printUsageAndExit("--split-positions must rise and stay between 0 and 1");
             }
         }

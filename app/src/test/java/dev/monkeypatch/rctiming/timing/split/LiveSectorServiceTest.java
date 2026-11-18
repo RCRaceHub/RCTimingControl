@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
@@ -7,12 +9,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -42,13 +46,13 @@ class LiveSectorServiceTest {
     }
 
     private void lap(String transponder, int lapNumber, long... sectorMs) {
-        List<Long> micros = java.util.Arrays.stream(sectorMs).map(ms -> ms * 1000).boxed().toList();
+        List<Long> micros = Arrays.stream(sectorMs).map(ms -> ms * 1000).boxed().toList();
         service.onSectorTimes(new SectorTimesEvent(RACE, transponder, lapNumber, micros));
     }
 
     private SectorBoardDto lastBroadcast() {
         ArgumentCaptor<SectorBoardDto> captor = ArgumentCaptor.forClass(SectorBoardDto.class);
-        verify(hub, org.mockito.Mockito.atLeastOnce()).broadcastSectors(anyLong(), captor.capture());
+        verify(hub, atLeastOnce()).broadcastSectors(anyLong(), captor.capture());
         return captor.getAllValues().get(captor.getAllValues().size() - 1);
     }
 
@@ -103,6 +107,36 @@ class LiveSectorServiceTest {
 
         assertThat(service.boardOf(RACE).rows()).isEmpty();
         assertThat(service.boardOf(6L).rows()).hasSize(1);
+    }
+
+    @Test
+    void aFaultLookingUpTheEntry_isSwallowedSoItCannotCostALap() {
+        when(lapTimingService.entryOf(RACE, "101")).thenThrow(new IllegalStateException("database busy"));
+
+        lap("101", 1, 4_000, 5_000, 6_000);
+
+        verify(hub, never()).broadcastSectors(anyLong(), any());
+    }
+
+    @Test
+    void aRestart_dropsTheBoardAndBroadcastsAnEmptyOne() {
+        lap("101", 1, 4_000, 5_000, 6_000);
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.PENDING));
+
+        SectorBoardDto empty = lastBroadcast();
+        assertThat(empty.rows()).isEmpty();
+        assertThat(empty.sectorCount()).isEqualTo(3);
+        assertThat(service.boardOf(RACE).rows()).isEmpty();
+    }
+
+    @Test
+    void aChangeToTheSplitDecoders_dropsTheBoard() {
+        lap("101", 1, 4_000, 5_000, 6_000);
+
+        service.onDecodersChanged(new SplitDecodersChangedEvent());
+
+        assertThat(service.boardOf(RACE).rows()).isEmpty();
     }
 
     @Test

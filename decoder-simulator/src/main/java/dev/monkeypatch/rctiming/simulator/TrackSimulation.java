@@ -46,8 +46,8 @@ final class TrackSimulation {
      * @param jitterMs       lap-time noise, as for {@link GenerativeMode}
      * @param splitPositions where each split loop is, as a share of the lap after the finish loop: 0.35 is just over a
      *                       third of the way round; each must be above 0 and below 1, and later splits further round
-     * @param startMs        when the race starts, epoch ms; cars cross the finish loop for the first time one lap
-     *                       later, staggered across one lap as in {@link GenerativeMode}
+     * @param startMs        when the race starts, epoch ms; each car's first finish crossing is at the start plus
+     *                       its share of one lap, so the cars are staggered across a lap
      * @param seed           seed for lap times
      */
     TrackSimulation(List<String> transponders, long intervalMs, long jitterMs, double[] splitPositions,

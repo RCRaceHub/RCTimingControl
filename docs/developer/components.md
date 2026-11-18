@@ -45,7 +45,7 @@ flowchart LR
     sdec -->|split passings| sl --> te --> sts
     lts -.->|LapPassingEvent| sts
     sts -->|SectorTimesEvent| lss --> hub
-    lts --> hub -->|/topic/race/id/timing, battles| br
+    lts --> hub -->|/topic/race/id/timing, battles, sectors| br
     br -->|REST + JWT| sec --> api
     api --> svc --> dom --> db
     api --> sm

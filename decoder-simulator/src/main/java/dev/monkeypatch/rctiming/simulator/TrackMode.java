@@ -15,7 +15,8 @@ import java.util.Locale;
  * client connected are sent. {@code delayMs} holds every record back that long before it is sent, which is how the
  * simulator fakes a decoder whose clock the app anchors late: the app anchors each decoder to the server's arrival
  * time of its first passing, so a delay shifts all of that decoder's times against the others. The record itself keeps
- * the true time, as a real decoder's would.
+ * the true time, as a real decoder's would. Records go out on a 20 ms tick, so two decoders with no delay can still
+ * differ by up to that much at the moment each is first anchored.
  */
 final class TrackMode {
 
@@ -44,7 +45,7 @@ final class TrackMode {
         while (!Thread.currentThread().isInterrupted()) {
             long nowMs = System.currentTimeMillis();
             if (nowMs - lastStatusMs >= 5_000) {
-                Rc4Lines.write(out, String.format(Locale.ROOT, "#\t20\t%d\t72\t0\txDEAD", seqNum++));
+                Rc4Lines.write(out, String.format(Locale.ROOT, "#\t%d\t%d\t72\t0\txDEAD", 20 + loop, seqNum++));
                 lastStatusMs = nowMs;
             }
             double due = nowMs - delayMs;

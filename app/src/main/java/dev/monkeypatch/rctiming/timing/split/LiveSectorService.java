@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
@@ -8,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +64,14 @@ public class LiveSectorService {
     /** Records one lap's sector times against the car's entry and broadcasts the race's board. Timing thread. */
     @EventListener
     public void onSectorTimes(SectorTimesEvent event) {
-        Optional<Long> entryId = lapTimingService.entryOf(event.raceId(), event.transponderNumber());
+        Optional<Long> entryId;
+        try {
+            entryId = lapTimingService.entryOf(event.raceId(), event.transponderNumber());
+        } catch (RuntimeException e) {
+            // A fault here must never cost the finish passing that is being credited at the same moment
+            log.error("Could not work out whose sector times these are (transponder {})", event.transponderNumber(), e);
+            return;
+        }
         if (entryId.isEmpty()) {
             log.debug("Sector times for transponder {} dropped: no entry in race {}", event.transponderNumber(),
                     event.raceId());
@@ -68,7 +79,8 @@ public class LiveSectorService {
         }
         SectorBoardDto board;
         synchronized (this) {
-            if (current == null || current.raceId != event.raceId() || current.sectorCount != event.sectorMicros().size()) {
+            if (current == null || current.raceId != event.raceId()
+                    || current.sectorCount != event.sectorMicros().size()) {
                 current = new RaceSectors(event.raceId(), event.sectorMicros().size());
             }
             List<Long> last = new ArrayList<>();
@@ -89,6 +101,33 @@ public class LiveSectorService {
             board = boardOfCurrent();
         }
         liveTimingHub.broadcastSectors(event.raceId(), board);
+    }
+
+    /**
+     * A race put back to PENDING (a restart) starts its sector board afresh: the old rows and bests are dropped and an
+     * empty board is broadcast, so a screen does not keep the last run's times. Runs on the thread that changed the race.
+     */
+    @EventListener
+    public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        SectorBoardDto empty = null;
+        synchronized (this) {
+            if (event.getNewStatus() == RaceStatus.PENDING && current != null && current.raceId == event.getRaceId()) {
+                empty = new SectorBoardDto(current.sectorCount, List.of(), List.of());
+                current = null;
+            }
+        }
+        if (empty != null) {
+            liveTimingHub.broadcastSectors(event.getRaceId(), empty);
+        }
+    }
+
+    /**
+     * Drops the board when the split decoders change, once the change has committed: times recorded against the old
+     * set of splits no longer line up with the sectors of a lap. The next lap with every split starts it again.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public synchronized void onDecodersChanged(SplitDecodersChangedEvent event) {
+        current = null;
     }
 
     /**
