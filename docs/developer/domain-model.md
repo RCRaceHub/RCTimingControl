@@ -156,6 +156,8 @@ classDiagram
     class SectorTimingService
     class SectorTimesEvent
     class LiveSectorService
+    class LapSectorRepository
+    class LapSectorQuery
 
     DecoderListener ..> LapTimingService : LapPassingEvent
     SplitLoopListener ..> SectorTimingService : SplitPassingEvent
@@ -163,6 +165,7 @@ classDiagram
     SectorTimingService ..> SectorTimesEvent
     SectorTimesEvent ..> LiveSectorService : last and best sectors per car
     LiveSectorService --> LiveTimingHub : /topic/race/id/sectors
+    LiveSectorService --> LapSectorRepository : save on FINISHED, delete on RaceRestartedEvent
     LapTimingService o-- LiveRaceState : one per running race
     LapTimingService --> LiveTimingHub
     RaceStateMachineService --> LapTimingService

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.domain.race.RaceRestartedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -14,9 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,6 +34,7 @@ class LiveSectorServiceTest {
     private LapTimingService lapTimingService;
     private LiveTimingHub hub;
     private SplitDecoderRepository splitDecoders;
+    private LapSectorRepository lapSectors;
     private LiveSectorService service;
 
     @BeforeEach
@@ -37,12 +42,13 @@ class LiveSectorServiceTest {
         lapTimingService = mock(LapTimingService.class);
         hub = mock(LiveTimingHub.class);
         splitDecoders = mock(SplitDecoderRepository.class);
+        lapSectors = mock(LapSectorRepository.class);
         when(splitDecoders.findAll()).thenReturn(List.of(
                 new SplitDecoder(1L, "A", "h", 5100, 1, 0, true),
                 new SplitDecoder(2L, "B", "h", 5100, 2, 0, true)));
         when(lapTimingService.entryOf(RACE, "101")).thenReturn(Optional.of(11L));
         when(lapTimingService.entryOf(RACE, "202")).thenReturn(Optional.of(22L));
-        service = new LiveSectorService(lapTimingService, hub, splitDecoders);
+        service = new LiveSectorService(lapTimingService, hub, splitDecoders, lapSectors);
     }
 
     private void lap(String transponder, int lapNumber, long... sectorMs) {
@@ -122,12 +128,57 @@ class LiveSectorServiceTest {
     void aRestart_dropsTheBoardAndBroadcastsAnEmptyOne() {
         lap("101", 1, 4_000, 5_000, 6_000);
 
-        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.PENDING));
+        service.onRaceRestarted(new RaceRestartedEvent(RACE));
 
         SectorBoardDto empty = lastBroadcast();
         assertThat(empty.rows()).isEmpty();
         assertThat(empty.sectorCount()).isEqualTo(3);
         assertThat(service.boardOf(RACE).rows()).isEmpty();
+    }
+
+    @Test
+    void aRestart_alsoRemovesTheSavedSectors() {
+        service.onRaceRestarted(new RaceRestartedEvent(RACE));
+
+        verify(lapSectors).deleteForRace(RACE);
+    }
+
+    @Test
+    void aFinishedRace_hasEveryLapSavedWithItsSectors() {
+        lap("101", 1, 4_000, 5_000, 6_000);
+        lap("101", 2, 4_500, 4_900, 6_100);
+
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<LapSectorRepository.Row>> captor = ArgumentCaptor.forClass(List.class);
+        verify(lapSectors).replaceForRace(eq(RACE), captor.capture());
+        assertThat(captor.getValue()).hasSize(6)
+                .contains(new LapSectorRepository.Row(11L, 1, 1, 4_000), new LapSectorRepository.Row(11L, 2, 3, 6_100));
+    }
+
+    @Test
+    void aFinishedRaceWithNoSectors_savesNothing() {
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED));
+
+        verify(lapSectors, never()).replaceForRace(anyLong(), any());
+    }
+
+    @Test
+    void aFaultSavingSectors_doesNotFailTheFinish() {
+        lap("101", 1, 4_000, 5_000, 6_000);
+        doThrow(new IllegalStateException("database busy")).when(lapSectors)
+                .replaceForRace(anyLong(), any());
+
+        assertThatCode(() -> service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void aFinishedRaceWithNoSectors_clearsAnyEarlierSavedRows() {
+        service.onRaceStatusChanged(new RaceStatusChangedEvent(this, RACE, RaceStatus.FINISHED));
+
+        verify(lapSectors).deleteForRace(RACE);
     }
 
     @Test

@@ -210,6 +210,7 @@ public class RaceStateMachineService {
         resultSnapshotService.deleteByRaceId(race.getId());
         raceEliminationRepository.deleteByRaceId(race.getId());
         racePointPenaltyRepository.deleteByRaceId(race.getId());
+        eventPublisher.publishEvent(new RaceRestartedEvent(race.getId()));
         liveTimingHub.broadcastStateChange(race.getId(), RaceStatus.PENDING);
     }
 

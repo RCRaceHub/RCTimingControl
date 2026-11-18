@@ -9,6 +9,9 @@ import { PositionChart } from '@/components/print/PositionChart';
 import { HeatResultTable } from '@/components/print/HeatResultTable';
 import { SheetHeader } from '@/components/print/SheetHeader';
 import { fmtMs } from '@/lib/format';
+import { getBoardSectorResults } from '@/lib/boardsApi';
+import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import type { SectorResults } from '@/lib/sectors';
 import { formatDateTime } from '@/lib/dates';
 
 /** Every lap time, one column per driver in finishing order, each driver's quickest lap in bold. */
@@ -63,6 +66,54 @@ function LapSheet({
   );
 }
 
+/**
+ * Each driver's best time in every sector, in finishing order, the fastest of anyone in bold. Only drawn when the race
+ * has sector times, so a single-decoder club's printout has no empty columns (#676).
+ */
+function SectorSheet({ positions, sectors }: { positions: ResultSnapshotDto['positions']; sectors: SectorResults }) {
+  const byEntry = new Map(sectors.drivers.map((d) => [d.entryId, d]));
+  const rows = [...positions].sort((a, b) => a.position - b.position).filter((row) => byEntry.has(row.entryId));
+  if (sectors.sectorCount === 0 || rows.length === 0) return null;
+  const indexes = Array.from({ length: sectors.sectorCount }, (_, i) => i);
+  return (
+    <section aria-label="Sector times" className="mt-6 text-xs print:break-inside-avoid">
+      <h2 className="mb-2 text-sm font-semibold">Best sector times</h2>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b-2 border-foreground">
+            <th scope="col" className="py-1 pr-2 text-left">Driver</th>
+            {indexes.map((i) => (
+              <th key={i} scope="col" className="py-1 pr-2 text-right">S{i + 1}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const best = byEntry.get(row.entryId)!.bestMs;
+            return (
+              <tr key={row.entryId} className="border-b border-border/50">
+                <th scope="row" className="py-0.5 pr-2 text-left font-normal">
+                  {row.carNumber ? `${row.carNumber} ` : ''}
+                  {row.driverName}
+                </th>
+                {indexes.map((i) => (
+                  <td
+                    key={i}
+                    className={`py-0.5 pr-2 text-right font-mono ${best[i] != null && best[i] === sectors.overallBestMs[i] ? 'font-bold' : ''}`}
+                  >
+                    {best[i] != null ? fmtMs(best[i]) : ''}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="mt-2 text-muted-foreground">Bold is the quickest anyone went in that sector.</p>
+    </section>
+  );
+}
+
 export default function PrintResultsPage() {
   const { raceId: raceIdStr } = useParams<{ raceId: string }>();
   const raceId = Number(raceIdStr);
@@ -88,6 +139,14 @@ export default function PrintResultsPage() {
     enabled: raceId > 0,
     staleTime: 30_000,
   });
+  // Sector times only exist where the club has split decoders; if they can't be read the result still prints
+  const sectorQuery = useQuery({
+    queryKey: publicQueryKeys.boards.sectorResults(raceId),
+    queryFn: () => getBoardSectorResults(raceId),
+    enabled: raceId > 0,
+    staleTime: 30_000,
+  });
+  const sectors = sectorQuery.data;
   const penalties = (history.data ?? []).filter((item) => item.kind === 'PENALTY');
 
   useEffect(() => {
@@ -144,6 +203,8 @@ export default function PrintResultsPage() {
           <PositionChart series={chartSeries} />
         </section>
       )}
+
+      {sectors && <SectorSheet positions={data.positions} sectors={sectors} />}
 
       {showLaps && <LapSheet positions={data.positions} lapHistory={data.lapHistory} />}
 
