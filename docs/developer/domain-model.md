@@ -155,11 +155,14 @@ classDiagram
     class SplitLoopListener
     class SectorTimingService
     class SectorTimesEvent
+    class LiveSectorService
 
     DecoderListener ..> LapTimingService : LapPassingEvent
     SplitLoopListener ..> SectorTimingService : SplitPassingEvent
     DecoderListener ..> SectorTimingService : LapPassingEvent (finish crossing)
     SectorTimingService ..> SectorTimesEvent
+    SectorTimesEvent ..> LiveSectorService : last and best sectors per car
+    LiveSectorService --> LiveTimingHub : /topic/race/id/sectors
     LapTimingService o-- LiveRaceState : one per running race
     LapTimingService --> LiveTimingHub
     RaceStateMachineService --> LapTimingService
