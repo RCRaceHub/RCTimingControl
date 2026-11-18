@@ -4,6 +4,18 @@ This guide is for the first time you run RCTC against your own decoder and cars,
 
 Do a dry run first. [trial-quickstart.md](trial-quickstart.md) loads a demo club with a simulated decoder, so you know what a healthy screen looks like before the real thing.
 
+## Short version: record practice sessions
+
+For a practice-only test, do these in order. The numbered sections below explain each step.
+
+1. **Recorder first.** In a terminal on the laptop, in a folder you will find again, run the `record` command with `--host=<decoder IP>`, `--listen-port=5101` and `--out=practice.dump` (section 2 has the full paths for each system). Leave it running until you finish. It prints `Recording ...` once it has the decoder.
+2. **Point RCTC at the recorder.** **Admin → Decoder**: host `localhost`, protocol RC4, port **5101**, **Test Connection**, **Save**. The DECODER badge in race control should be green.
+3. **Make sure the cars are known.** Open practice names a car from the entry that holds its transponder, so either add the drivers to an event first (walk-ins are fine), or leave them unknown and name each one on the practice page.
+4. **Start a practice session.** Race Control, choose the event, **Practice** in the top bar, **New Session**, **Start Practice**. Practice needs no run order. Laps appear as cars cross the loop.
+5. **Stop.** Click **Stop Practice**, then press `Ctrl+C` in the recorder window.
+6. **Where everything is.** The recording is `practice.dump` and `practice.dump.times`, in the folder the terminal was in when you ran the command (or the path you gave to `--out`). RCTC keeps the practice laps in its own database, which is under the Practice list in race control (**Print Results** gives a sheet once a session is stopped) and is included in **Admin → Backups**; the backups folder and log are described in [installing.md](installing.md#where-things-are-kept).
+7. **Check it.** Run `dump-summary --file=practice.dump` and compare its passings per transponder with the lap counts on the practice page (section 5).
+
 ## Before you go
 
 - Check the **About** page (`/about`) shows the version you expect, so you know which build you are testing.
@@ -29,7 +41,7 @@ Then set **Admin → Decoder** to host `localhost` and port **5101** (this repla
 
 ## 3. Start with open practice
 
-Open practice needs no event, heats or run order, so it is the easiest first test. In race control choose the event, then **Practice** in the top bar, **New Session** and **Start Practice** ([trial-quickstart.md](trial-quickstart.md#open-practice)). A transponder RCTC doesn't know appears as unknown; give it a driver on the spot.
+Open practice needs no heats or run order, so it is the easiest first test. In race control choose the event (the session belongs to the event whose race control you opened it from), then **Practice** in the top bar, **New Session** and **Start Practice** ([trial-quickstart.md](trial-quickstart.md#open-practice)). A transponder RCTC doesn't know appears as unknown; give it a driver on the spot.
 
 Things worth trying:
 
