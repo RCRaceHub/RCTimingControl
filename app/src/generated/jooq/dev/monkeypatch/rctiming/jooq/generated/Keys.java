@@ -18,6 +18,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
@@ -72,6 +73,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorMediaRec
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.CompetitorsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DecoderLoopsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DisplayMessageSettingsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.SplitDecodersRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DisplayPlaylistsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DisplayScreensRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
@@ -148,6 +150,7 @@ public class Keys {
     public static final UniqueKey<CompetitorsRecord> COMPETITORS__UQ_COMPETITORS_EXTERNAL = Internal.createUniqueKey(Competitors.COMPETITORS, DSL.name("uq_competitors_external"), new TableField[] { Competitors.COMPETITORS.EXTERNAL_SOURCE, Competitors.COMPETITORS.EXTERNAL_ID }, true);
     public static final UniqueKey<DecoderLoopsRecord> DECODER_LOOPS__PK_DECODER_LOOPS = Internal.createUniqueKey(DecoderLoops.DECODER_LOOPS, DSL.name("pk_decoder_loops"), new TableField[] { DecoderLoops.DECODER_LOOPS.ID }, true);
     public static final UniqueKey<DisplayMessageSettingsRecord> DISPLAY_MESSAGE_SETTINGS__PK_DISPLAY_MESSAGE_SETTINGS = Internal.createUniqueKey(DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS, DSL.name("pk_display_message_settings"), new TableField[] { DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS.ID }, true);
+    public static final UniqueKey<SplitDecodersRecord> SPLIT_DECODERS__PK_SPLIT_DECODERS = Internal.createUniqueKey(SplitDecoders.SPLIT_DECODERS, DSL.name("pk_split_decoders"), new TableField[] { SplitDecoders.SPLIT_DECODERS.ID }, true);
     public static final UniqueKey<DisplayPlaylistsRecord> DISPLAY_PLAYLISTS__DISPLAY_PLAYLISTS_NAME_KEY = Internal.createUniqueKey(DisplayPlaylists.DISPLAY_PLAYLISTS, DSL.name("display_playlists_name_key"), new TableField[] { DisplayPlaylists.DISPLAY_PLAYLISTS.NAME }, true);
     public static final UniqueKey<DisplayPlaylistsRecord> DISPLAY_PLAYLISTS__PK_DISPLAY_PLAYLISTS = Internal.createUniqueKey(DisplayPlaylists.DISPLAY_PLAYLISTS, DSL.name("pk_display_playlists"), new TableField[] { DisplayPlaylists.DISPLAY_PLAYLISTS.ID }, true);
     public static final UniqueKey<DisplayScreensRecord> DISPLAY_SCREENS__DISPLAY_SCREENS_SCREEN_ID_KEY = Internal.createUniqueKey(DisplayScreens.DISPLAY_SCREENS, DSL.name("display_screens_screen_id_key"), new TableField[] { DisplayScreens.DISPLAY_SCREENS.SCREEN_ID }, true);

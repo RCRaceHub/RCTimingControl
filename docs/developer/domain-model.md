@@ -152,8 +152,14 @@ classDiagram
     class AutoFinalsSeedingService
     class FinalsLineupService
     class DecoderListener
+    class SplitLoopListener
+    class SectorTimingService
+    class SectorTimesEvent
 
     DecoderListener ..> LapTimingService : LapPassingEvent
+    SplitLoopListener ..> SectorTimingService : SplitPassingEvent
+    DecoderListener ..> SectorTimingService : LapPassingEvent (finish crossing)
+    SectorTimingService ..> SectorTimesEvent
     LapTimingService o-- LiveRaceState : one per running race
     LapTimingService --> LiveTimingHub
     RaceStateMachineService --> LapTimingService
