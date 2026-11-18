@@ -78,6 +78,21 @@ The simulator prints each PASSING record to stdout.
 
 Set the decoder's IP address as the host in **Admin → Decoder**. Port 5100 is the RC-4 text protocol (firmware ≤ 4.4). See `docs/AMB_DECODER_PROTOCOL.md` in the source repository for protocol details.
 
+### Trying split loops with the simulator
+
+Track mode runs a start/finish decoder and fake split decoders that see the same cars, so you can try split loops without a second real decoder:
+
+```bash
+# Finish decoder on 5100, two split decoders on 5101 and 5102
+RCTimingControl simulate --mode=track --port=5100 --split-ports=5101,5102 \
+    --split-positions=0.35,0.7 --split-delay-ms=0,25
+```
+
+- `--split-positions` is how far round the lap each split is, from 0 to 1 (default: spread evenly).
+- `--split-delay-ms` holds a split decoder's records back, so RCTC anchors its clock late. It fakes the clock offset between two real decoders. Set the matching **clock offset** on that split decoder (a negative number to correct a delay) and see whether the sector times line up.
+
+Point the main decoder at `localhost:5100` under **Admin → Decoder**, and add the split decoders on ports 5101 and 5102.
+
 ### Recording a real decoder to a file
 
 To capture real race data as test data, or to share one decoder between several programs, see [recording-the-decoder.md](recording-the-decoder.md).
