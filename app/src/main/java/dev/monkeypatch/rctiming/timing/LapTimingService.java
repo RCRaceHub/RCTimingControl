@@ -128,6 +128,16 @@ public class LapTimingService {
         });
     }
 
+    /**
+     * The entry a transponder number belongs to in a race (#676): a runtime link first, then the entries' own numbers,
+     * as {@link #onLapPassing} does. Empty when unknown or when more than one entry matches. Runs on the timing thread
+     * for sector times; it queries the database like a passing does.
+     */
+    public Optional<Long> entryOf(long raceId, String transponderNumber) {
+        Long linked = peek(raceId).map(state -> state.getRuntimeLink(transponderNumber)).orElse(null);
+        return Optional.ofNullable(linked != null ? linked : resolveEntryId(raceId, transponderNumber));
+    }
+
     /** The club's battle thresholds, read once as a race's state is made so a passing never queries for them. */
     private BattleTracker.Settings battleSettings() {
         return clubProfileService == null ? BattleTracker.Settings.defaults()

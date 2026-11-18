@@ -41,6 +41,8 @@ import dev.monkeypatch.rctiming.timing.RaceClockService;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
+import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
+import dev.monkeypatch.rctiming.timing.split.LiveSectorService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,6 +66,7 @@ public class BoardController {
     private final BoardQuery boardQuery;
     private final ResultSnapshotQuery resultSnapshotQuery;
     private final LapTimingService lapTimingService;
+    private final LiveSectorService liveSectorService;
     private final RaceClockService raceClockService;
     private final PublicNames publicNames;
     private final QualifyingTableService qualifyingTableService;
@@ -84,6 +87,7 @@ public class BoardController {
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
+                           LiveSectorService liveSectorService,
                            RaceClockService raceClockService,
                            PublicNames publicNames,
                            QualifyingTableService qualifyingTableService,
@@ -108,6 +112,7 @@ public class BoardController {
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
+        this.liveSectorService = liveSectorService;
         this.raceClockService = raceClockService;
         this.publicNames = publicNames;
         this.qualifyingTableService = qualifyingTableService;
@@ -341,6 +346,17 @@ public class BoardController {
     @GetMapping("/races/{raceId}/battles")
     public List<BattleGroupDto> battles(@PathVariable long raceId) {
         return lapTimingService.battlesOf(raceId);
+    }
+
+    /**
+     * The sector times of a race on a track with split decoders (#676): the same board the race's
+     * {@code /topic/race/{raceId}/sectors} frames carry, for a page that opens mid-race. {@code sectorCount} is 0 when
+     * the club has no split decoders, so a page shows no sector columns; rows are empty until a car has a lap with
+     * every split.
+     */
+    @GetMapping("/races/{raceId}/sectors")
+    public SectorBoardDto sectors(@PathVariable long raceId) {
+        return liveSectorService.boardOf(raceId);
     }
 
     /**

@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
+import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
 import dev.monkeypatch.rctiming.timing.dto.FeaturedDriverDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
@@ -19,6 +20,7 @@ import java.util.Map;
 /**
  * STOMP broadcast hub. Broadcasts on these topics:
  * - /topic/race/{raceId}/timing — live position updates
+ * - /topic/race/{raceId}/sectors — each car's latest and best sector times, where the club has split decoders (#676)
  * - /topic/race/{raceId}/battles — cars running close together and whether each gap is closing or growing
  * - /topic/race/{raceId}/state  — race state transitions
  * - /topic/race/{raceId}/featured — the race director's featured-driver lower third for the overlay (#533)
@@ -56,6 +58,15 @@ public class LiveTimingHub {
      */
     public void broadcastBattles(long raceId, List<BattleGroupDto> battles) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/battles", battles);
+    }
+
+    /**
+     * Sends the race's sector times (#676): the whole board each time, so a client that misses a message is right again
+     * at the next. Only sent where the club has split decoders. Anonymous clients may subscribe, like the timing topic.
+     * Sent at once, from the timing thread.
+     */
+    public void broadcastSectors(long raceId, SectorBoardDto board) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/sectors", board);
     }
 
     /**
