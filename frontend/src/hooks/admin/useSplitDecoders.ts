@@ -15,6 +15,7 @@ export function useSplitDecoders() {
   });
 }
 
+/** Adds a split decoder, or changes it when an id is given, then refreshes the list. */
 export function useSaveSplitDecoder() {
   const qc = useQueryClient();
   return useMutation({
@@ -24,6 +25,7 @@ export function useSaveSplitDecoder() {
   });
 }
 
+/** Removes a split decoder, then refreshes the list. */
 export function useDeleteSplitDecoder() {
   const qc = useQueryClient();
   return useMutation({

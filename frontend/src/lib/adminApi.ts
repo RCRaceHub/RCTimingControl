@@ -488,7 +488,6 @@ export interface TrackDto {
   lapThresholds?: TrackLapThresholdDto[];
 }
 
-/** What is sent to create or change a track; its lap limits are saved separately. */
 /** A split-loop decoder (#672). {@code state} is CONNECTED, RECONNECTING or DISCONNECTED. */
 export interface SplitDecoderDto {
   id: number;
@@ -503,6 +502,7 @@ export interface SplitDecoderDto {
 
 export type SplitDecoderInput = Omit<SplitDecoderDto, 'id' | 'state'>;
 
+/** What is sent to create or change a track; its lap limits are saved separately. */
 export type TrackInput = Pick<TrackDto, 'name' | 'venueNotes' | 'trackLength'>;
 
 /** The track-wide lap limits in seconds, or null for none. The longest wait needs a shortest lap as well. */

@@ -63,7 +63,8 @@ describe('SplitDecodersCard', () => {
     vi.mocked(adminApi.splitDecoders.create).mockResolvedValue(split2);
     renderCard();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Add split decoder/ }));
+    await screen.findByText('Back straight');
+    fireEvent.click(screen.getByRole('button', { name: /Add split decoder/ }));
     expect(screen.getByLabelText('Split number')).toHaveValue(2);
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Hairpin' } });
     fireEvent.change(screen.getByLabelText('Host'), { target: { value: '192.168.1.52' } });
@@ -72,5 +73,54 @@ describe('SplitDecodersCard', () => {
     await waitFor(() => expect(adminApi.splitDecoders.create).toHaveBeenCalledWith({
       name: 'Hairpin', host: '192.168.1.52', port: 5100, splitNumber: 2, clockOffsetMs: 0, enabled: true,
     }));
+  });
+
+  it('edits a split decoder, prefilled, and saves it with a PUT', async () => {
+    vi.mocked(adminApi.splitDecoders.list).mockResolvedValue([split1]);
+    vi.mocked(adminApi.splitDecoders.update).mockResolvedValue(split1);
+    renderCard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Back straight' }));
+    expect(screen.getByLabelText('Host')).toHaveValue('192.168.1.51');
+    fireEvent.change(screen.getByLabelText('Clock offset (ms)'), { target: { value: '5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(adminApi.splitDecoders.update).toHaveBeenCalledWith(1, {
+      name: 'Back straight', host: '192.168.1.51', port: 5100, splitNumber: 1, clockOffsetMs: 5, enabled: true,
+    }));
+  });
+
+  it('refuses a port of 0 without calling the server', async () => {
+    vi.mocked(adminApi.splitDecoders.list).mockResolvedValue([]);
+    renderCard();
+
+    await screen.findByText(/No split decoders/);
+    fireEvent.click(screen.getByRole('button', { name: /Add split decoder/ }));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Hairpin' } });
+    fireEvent.change(screen.getByLabelText('Host'), { target: { value: 'h' } });
+    fireEvent.change(screen.getByLabelText('Port'), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Port 1 to 65535')).toBeInTheDocument();
+    expect(adminApi.splitDecoders.create).not.toHaveBeenCalled();
+  });
+
+  it('removes a split decoder after the confirm dialog', async () => {
+    vi.mocked(adminApi.splitDecoders.list).mockResolvedValue([split1]);
+    vi.mocked(adminApi.splitDecoders.delete).mockResolvedValue(undefined);
+    renderCard();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Back straight' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => expect(adminApi.splitDecoders.delete).toHaveBeenCalledWith(1));
+  });
+
+  it('shows an error banner with a retry when the list cannot be read', async () => {
+    vi.mocked(adminApi.splitDecoders.list).mockRejectedValue(new Error('down'));
+    renderCard();
+
+    expect(await screen.findByText('Could not load the split decoders.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add split decoder/ })).toBeDisabled();
   });
 });

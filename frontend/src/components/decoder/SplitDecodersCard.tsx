@@ -148,7 +148,8 @@ export function SplitDecodersCard() {
   const remove = useDeleteSplitDecoder();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [editing, setEditing] = useState<SplitDecoderDto | null>(null);
-  const [adding, setAdding] = useState(false);
+  /** The split number the add dialog opens with, fixed when Add is clicked so a refresh can't reset a half-typed form. */
+  const [addingSplit, setAddingSplit] = useState<number | null>(null);
 
   async function handleDelete(decoder: SplitDecoderDto) {
     const ok = await confirm({
@@ -171,7 +172,7 @@ export function SplitDecodersCard() {
     <Card className="max-w-3xl mt-6">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">Split decoders</CardTitle>
-        <Button size="sm" onClick={() => setAdding(true)} disabled={list.length >= 9}>
+        <Button size="sm" onClick={() => setAddingSplit(nextSplit(list))} disabled={isError || isLoading || list.length >= 9}>
           <Plus className="h-4 w-4 mr-1" />
           Add split decoder
         </Button>
@@ -224,8 +225,13 @@ export function SplitDecodersCard() {
           </div>
         )}
       </CardContent>
-      {adding && (
-        <SplitDecoderDialog open onOpenChange={setAdding} initial={null} suggestedSplit={nextSplit(list)} />
+      {addingSplit !== null && (
+        <SplitDecoderDialog
+          open
+          onOpenChange={(open) => { if (!open) setAddingSplit(null); }}
+          initial={null}
+          suggestedSplit={addingSplit}
+        />
       )}
       {editing && (
         <SplitDecoderDialog
