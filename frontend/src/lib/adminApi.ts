@@ -488,6 +488,20 @@ export interface TrackDto {
   lapThresholds?: TrackLapThresholdDto[];
 }
 
+/** A split-loop decoder (#672). {@code state} is CONNECTED, RECONNECTING or DISCONNECTED. */
+export interface SplitDecoderDto {
+  id: number;
+  name: string;
+  host: string;
+  port: number;
+  splitNumber: number;
+  clockOffsetMs: number;
+  enabled: boolean;
+  state: 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED';
+}
+
+export type SplitDecoderInput = Omit<SplitDecoderDto, 'id' | 'state'>;
+
 /** What is sent to create or change a track; its lap limits are saved separately. */
 export type TrackInput = Pick<TrackDto, 'name' | 'venueNotes' | 'trackLength'>;
 
@@ -1121,6 +1135,18 @@ export const adminApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       }).then(r => r.data);
     },
+  },
+
+  // Split-loop decoders (#672)
+  splitDecoders: {
+    list: () =>
+      api.get<SplitDecoderDto[]>('/api/v1/admin/split-decoders').then(r => r.data),
+    create: (body: SplitDecoderInput) =>
+      api.post<SplitDecoderDto>('/api/v1/admin/split-decoders', body).then(r => r.data),
+    update: (id: number, body: SplitDecoderInput) =>
+      api.put<SplitDecoderDto>(`/api/v1/admin/split-decoders/${id}`, body).then(r => r.data),
+    delete: (id: number) =>
+      api.delete(`/api/v1/admin/split-decoders/${id}`).then(() => undefined),
   },
 
   // Tracks (full CRUD)

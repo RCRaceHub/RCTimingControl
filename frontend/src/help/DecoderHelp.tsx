@@ -16,6 +16,13 @@ export function DecoderHelp() {
         <li><span className="font-semibold">Save:</span> Click &quot;Save&quot; to keep the details. A test on its own does not save them.</li>
       </ul>
 
+      <p className="text-sm text-muted-foreground">
+        <span className="font-semibold">Split decoders</span> (below the connection) are extra decoders round the track
+        for sector times. Give each a name, its address, a split number (1 is the first after the start/finish line) and
+        a clock offset in milliseconds if its times run early or late. The status shows whether it is connected right now.
+        Leave the list empty and nothing changes.
+      </p>
+
       <div className="mt-4 rounded-md bg-muted p-3 text-sm">
         <p className="font-semibold mb-1">Common mistakes</p>
         <p>

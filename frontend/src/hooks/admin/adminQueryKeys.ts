@@ -41,6 +41,9 @@ export const adminQueryKeys = {
   tracks: {
     all: () => ['admin', 'tracks'] as const,
   },
+  splitDecoders: {
+    all: () => ['admin', 'split-decoders'] as const,
+  },
   formats: {
     all: () => ['admin', 'formats'] as const,
   },
