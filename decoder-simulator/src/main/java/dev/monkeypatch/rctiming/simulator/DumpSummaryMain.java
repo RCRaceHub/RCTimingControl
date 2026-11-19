@@ -15,7 +15,12 @@ import java.util.List;
  *
  * <pre>
  * RCTimingControl dump-summary --file=capture.dump [--split-gap=120] [--windows=races.csv]
+ * RCTimingControl dump-summary --file=finish.dump --file=split1.dump [--pair-window=2000]
  * </pre>
+ *
+ * <p>Give {@code --file} once per decoder to summarise each recording and compare them (see
+ * {@link DumpComparison}); {@code --pair-window} is how many milliseconds apart two arrivals of one car may be and
+ * still count as the same passing (default 2000).
  *
  * <p>{@code --split-gap} starts a new section after that many seconds with no passings. {@code --windows}
  * names a text file with one race per line, {@code name,start,end}, the instants in ISO form such as
@@ -33,15 +38,21 @@ public class DumpSummaryMain {
 
     /** Parses the flags and prints the report. */
     public static void main(String[] args) {
-        Path file = null;
+        List<Path> files = new ArrayList<>();
+        long pairWindow = 2000;
         Path windowsFile = null;
         long splitGap = 0;
         try {
             for (String arg : args) {
                 if (arg.startsWith("--file=")) {
-                    file = Path.of(arg.substring("--file=".length()));
+                    files.add(Path.of(arg.substring("--file=".length())));
                 } else if (arg.startsWith("--windows=")) {
                     windowsFile = Path.of(arg.substring("--windows=".length()));
+                } else if (arg.startsWith("--pair-window=")) {
+                    pairWindow = Long.parseLong(arg.substring("--pair-window=".length()));
+                    if (pairWindow < 1) {
+                        usage("--pair-window must be 1 or more milliseconds");
+                    }
                 } else if (arg.startsWith("--split-gap=")) {
                     splitGap = Long.parseLong(arg.substring("--split-gap=".length()));
                     if (splitGap < 0) {
@@ -54,13 +65,15 @@ public class DumpSummaryMain {
         } catch (InvalidPathException e) {
             usage("A file name is not valid");
         } catch (NumberFormatException e) {
-            usage("--split-gap must be a whole number of seconds");
+            usage("--split-gap and --pair-window must be whole numbers");
         }
-        if (file == null) {
+        if (files.isEmpty()) {
             usage("--file is required");
         }
-        if (!Files.isRegularFile(file)) {
-            usage("No such file: " + file);
+        for (Path file : files) {
+            if (!Files.isRegularFile(file)) {
+                usage("No such file: " + file);
+            }
         }
         if (windowsFile != null && splitGap > 0) {
             usage("Use --split-gap or --windows, not both");
@@ -68,11 +81,30 @@ public class DumpSummaryMain {
         if (windowsFile != null && !Files.isRegularFile(windowsFile)) {
             usage("No such file: " + windowsFile);
         }
+        if (files.stream().map(f -> f.toAbsolutePath().normalize()).distinct().count() < files.size()) {
+            usage("The same file is given twice");
+        }
+        Path reading = files.get(0);
         try {
             List<DumpSummary.Window> windows = windowsFile == null ? List.of() : readWindows(windowsFile);
-            DumpSummary.read(file, splitGap, windows).print(System.out);
+            List<DumpSummary> summaries = new ArrayList<>();
+            for (Path file : files) {
+                reading = file;
+                DumpSummary summary = DumpSummary.read(file, splitGap, windows);
+                if (files.size() > 1) {
+                    System.out.println();
+                    System.out.println("=== " + file + " ===");
+                }
+                summary.print(System.out);
+                summaries.add(summary);
+            }
+            // The first recording is the reference; each other is measured against it
+            for (int i = 1; i < files.size(); i++) {
+                DumpComparison.print(System.out, files.get(0).toString(), summaries.get(0),
+                        files.get(i).toString(), summaries.get(i), pairWindow);
+            }
         } catch (IOException e) {
-            System.err.println("Error: could not read " + file + " or its .times file or the windows file: " + e);
+            System.err.println("Error: could not read " + reading + " or its .times file or the windows file: " + e);
             System.exit(1);
         }
     }
@@ -105,6 +137,7 @@ public class DumpSummaryMain {
         System.err.println("""
             Usage:
               dump-summary --file=capture.dump [--split-gap=120] [--windows=races.csv]
+              dump-summary --file=a.dump --file=b.dump [--pair-window=2000]
             """);
         System.exit(2);
     }
