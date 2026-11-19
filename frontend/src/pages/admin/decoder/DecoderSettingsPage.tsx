@@ -1,4 +1,5 @@
 import { DecoderSettingsForm } from '@/components/decoder/DecoderSettingsForm';
+import { SplitDecodersCard } from '@/components/decoder/SplitDecodersCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHelpContent } from '@/context/HelpContext';
 import { DecoderHelp } from '@/help/DecoderHelp';
@@ -22,6 +23,8 @@ export default function DecoderSettingsPage() {
           <DecoderSettingsForm saveLabel="Save" />
         </CardContent>
       </Card>
+
+      <SplitDecodersCard />
     </div>
   );
 }
