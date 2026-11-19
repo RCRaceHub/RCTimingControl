@@ -54,7 +54,7 @@ test.describe('Admin login and navigation', () => {
 
   test('admin can open decoder settings page', async ({ page }) => {
     await page.goto('/admin/decoder');
-    await expect(page.getByRole('heading', { name: /decoder/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Decoder', exact: true })).toBeVisible();
   });
 });
 
