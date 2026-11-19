@@ -62,6 +62,16 @@ The dump does not say which race was running. The `capture.dump.times` file besi
 
 Both need the `.times` file, so keep it with the dump.
 
+### Compare two decoders
+
+Give `--file` once for each decoder's recording (record them at the same time, one `record` per decoder) and `dump-summary` reports each, then compares every later recording with the first:
+
+```
+RCTimingControl dump-summary --file=finish.dump --file=split1.dump
+```
+
+It pairs each passing of a transponder at one decoder with the same car's passing at the other (arrivals within `--pair-window=2000` milliseconds), lists the passings only one of them saw, and reports the median, smallest and largest difference in when the laptop received the pairs. This needs the `.times` files. For a test with both decoders on the **same loop** (or one decoder's loop read through two ports), the true difference is zero, so the median is the **clock offset** to set on the second decoder (the report prints the number to enter, a minus of the median) and a small spread means that offset will stay steady. With loops in different places the difference includes the car's travel time between them, so use it only to check that cars are seen at both.
+
 ## Share one decoder between programs
 
 A decoder may accept only one connection at a time, and the limit on port 5100 is not documented. Add `--listen-port` and the recorder keeps the single connection and passes every record on to the others:

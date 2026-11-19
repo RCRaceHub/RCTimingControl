@@ -89,6 +89,8 @@ final class DumpSummary {
     private final List<Section> windows;
     private final long splitGapMs;
     private final List<String> gaps = new ArrayList<>();
+    /** Each transponder's passing times on the laptop's clock (UTC ms), oldest first; empty without a .times file. */
+    private final Map<String, List<Long>> wallTimes = new TreeMap<>();
     private long statusRecords;
     private long passings;
     private long unreadable;
@@ -179,6 +181,9 @@ final class DumpSummary {
             Section section = sectionFor(wallMs);
             passings++;
             section.add(f[3], time, wallMs);
+            if (wallMs >= 0) {
+                wallTimes.computeIfAbsent(f[3], k -> new ArrayList<>()).add(wallMs);
+            }
             previousPassingMs = wallMs;
         } catch (RuntimeException e) {
             unreadable++;
@@ -209,6 +214,16 @@ final class DumpSummary {
             sections.add(s);
             return s;
         });
+    }
+
+    /** Each transponder's passing times on the laptop's clock, for comparing decoders; see {@link DumpComparison}. */
+    Map<String, List<Long>> wallTimes() {
+        return wallTimes;
+    }
+
+    /** Whether the recording had a {@code .times} file, so its passings carry the laptop's clock. */
+    boolean hasWallClock() {
+        return hasWallClock;
     }
 
     /** Number of PASSING records in the file. */
