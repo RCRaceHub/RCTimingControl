@@ -68,4 +68,34 @@ describe('BoardLiveTable', () => {
     expect(screen.getByRole('columnheader', { name: 'Pred' })).toBeInTheDocument();
     expect(screen.queryByText('7')).toBeNull();
   });
+
+  describe('sector columns', () => {
+    const sectors = {
+      sectorCount: 2,
+      overallBestMs: [4_000, 5_000],
+      rows: [{ entryId: 1, lapNumber: 3, lastMs: [4_000, 5_200], bestMs: [4_000, 5_100] }],
+    };
+
+    it('adds no columns for a club without split decoders', () => {
+      render(<BoardLiveTable rows={[row(1)]} />);
+      expect(screen.queryByRole('columnheader', { name: 'S1' })).toBeNull();
+      render(<BoardLiveTable rows={[row(1)]} sectors={{ sectorCount: 0, overallBestMs: [], rows: [] }} />);
+      expect(screen.queryByRole('columnheader', { name: 'S1' })).toBeNull();
+    });
+
+    it('shows each car\'s latest sectors, the fastest of anyone marked, and a dash for a car with none yet', () => {
+      render(<BoardLiveTable rows={[row(1), row(2)]} sectors={sectors} />);
+
+      expect(screen.getByRole('columnheader', { name: 'S1' })).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'S2' })).toBeInTheDocument();
+      const [first, second] = screen.getAllByRole('row').slice(1);
+      expect(first.querySelectorAll('td[data-sector-tone]')[0]).toHaveAttribute('data-sector-tone', 'overall-best');
+      expect(first.querySelectorAll('td[data-sector-tone]')[1]).toHaveAttribute('data-sector-tone', 'normal');
+      expect(first).toHaveTextContent('4.000');
+      expect(first).toHaveTextContent('5.200');
+      // Same number of cells for the car without sector times, so no column is ragged
+      expect(second.querySelectorAll('td')).toHaveLength(first.querySelectorAll('td').length);
+      expect(second.querySelectorAll('td[data-sector-tone]')[0]).toHaveTextContent('—');
+    });
+  });
 });

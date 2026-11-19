@@ -13,6 +13,7 @@ import { CarThumb } from '@/components/CarThumb';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { cn } from '@/lib/utils';
 import { TimingLegend, type LegendKind } from '@/components/TimingLegend';
+import { NO_SECTORS, sectorTone, type SectorBoard } from '@/lib/sectors';
 import { gapText } from './boardFormat';
 
 interface BoardLiveTableProps {
@@ -27,6 +28,11 @@ interface BoardLiveTableProps {
   predicted?: PredictedClock;
   /** Car photos by entry id, shown beside the driver's name (#521); omitted or empty leaves the rows as they were. */
   media?: Map<number, RaceMediaDto>;
+  /**
+   * Sector times where the club has split decoders (#676): one column per sector after Best, each car's latest lap,
+   * the fastest of anyone in purple and the car's own best in green. Omitted, or with no sectors, adds no columns.
+   */
+  sectors?: SectorBoard;
   /** Show the key to the close-running tint under the table (`legend=hide` on the address turns it off). */
   showLegend?: boolean;
 }
@@ -43,7 +49,9 @@ export interface PredictedClock {
  * round its lap against its average. Given {@code predicted} it adds the laps each car is on course to finish
  * with; {@code showArrows} adds an arrow for places gained or lost since the grid, for finals (#479).
  */
-export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, showLegend = false }: BoardLiveTableProps) {
+export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false, predicted, media, sectors = NO_SECTORS, showLegend = false }: BoardLiveTableProps) {
+  const sectorRows = new Map(sectors.rows.map((r) => [r.entryId, r]));
+  const sectorIndexes = Array.from({ length: sectors.sectorCount }, (_, i) => i);
   const legendKinds: LegendKind[] = showLegend
     ? [...(closeMs > 0 ? ['close' as const] : []), ...(barClock ? ['pace' as const] : []), ...(barClock ? ['status' as const] : [])]
     : [];
@@ -61,6 +69,9 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             <th className="py-2 pr-4 text-right">Total</th>
             <th className="py-2 pr-4 text-right">Last</th>
             <th className="py-2 pr-4 text-right">Best</th>
+            {sectorIndexes.map((i) => (
+              <th key={i} className="py-2 pr-4 text-right">S{i + 1}</th>
+            ))}
             <th className="py-2 pr-4 text-right">Ahead</th>
             <th className="py-2 text-right">Gap</th>
           </tr>
@@ -95,6 +106,24 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.totalTimeMs)}</td>
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.lastLapMs)}</td>
               <td className="py-3 pr-4 text-right tabular-nums">{fmtMs(row.bestLapMs)}</td>
+              {sectorIndexes.map((i) => {
+                const sectorRow = sectorRows.get(row.entryId);
+                const tone = sectorRow ? sectorTone(sectorRow, sectors, i) : 'normal';
+                return (
+                  <td
+                    key={i}
+                    data-sector-tone={tone}
+                    className={cn(
+                      'py-3 pr-4 text-right tabular-nums',
+                      tone === 'overall-best' && 'font-bold text-purple-400',
+                      tone === 'personal-best' && 'text-green-400',
+                      !sectorRow && 'text-slate-500',
+                    )}
+                  >
+                    {sectorRow ? fmtMs(sectorRow.lastMs[i]) : '—'}
+                  </td>
+                );
+              })}
               <td className="py-3 pr-4 text-right tabular-nums text-slate-300">{gapText(row)}</td>
               <td className="py-3 text-right tabular-nums text-slate-300">{gapLabel(row.position, row.lapsDown, row.gapToLeaderMs)}</td>
             </tr>

@@ -123,12 +123,21 @@ export function parseSeparatorImage(value: string | null): string | null {
   return /^https?:\/\/\S+$/i.test(v) || /^\/(?![/\\])\S*$/.test(v) ? v : null;
 }
 
+/** The room one sector column takes in the tower, in rem: its w-14 and one gap (#672). */
+const TOWER_SECTOR_REM = 3.875;
+
+/** The panel width of the tower in rem with {@code sectorCount} sector columns; the plain width when there are none. */
+export function towerWidthRem(sectorCount: number): number {
+  return 24 + sectorCount * TOWER_SECTOR_REM;
+}
+
 const OVERLAY_DEFAULT_TOP = 10;
 const OVERLAY_MAX_TOP = 40;
 
 /**
  * The streaming overlay's options from its query string; anything unrecognised falls back to the default.
  * {@code headshots=show} puts each driver's headshot beside their name and {@code carcolours=show} a swatch of their car colours (#686, #688), both off unless asked.
+ * {@code sectors=show} adds each car's latest sector times to the tower, where the club has split decoders (#672); off unless asked.
  * {@code battlestyle=rows|both} puts the chasing car's row in the tower or table in place of, or as well as, the battles strip (#681).
  */
 export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: number = DEFAULT_CLOSE_MS) {
@@ -148,6 +157,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     showClassTags: params.get('tags')?.toLowerCase() !== 'hide',
     showHeadshots: params.get('headshots')?.toLowerCase() === 'show',
     showCarColours: params.get('carcolours')?.toLowerCase() === 'show',
+    showSectors: params.get('sectors')?.toLowerCase() === 'show',
     lowerThird: parseLowerThird(params.get('lower')),
     battleStyle: parseBattleStyle(params.get('battlestyle')),
     gap: parseGapMode(params.get('gap')),
@@ -294,6 +304,8 @@ export type OverlayDesign = {
   showHeadshots: boolean;
   /** Show a swatch of each car's colours (the entry's, else its class colour) beside the name (#688); off unless asked. */
   showCarColours: boolean;
+  /** Show each car's latest sector times in the tower (#672); off unless asked, and only where the club has split decoders. */
+  showSectors: boolean;
   gap: GapMode;
   gapEverySeconds: number;
   /** The address of an image to put between ticker items instead of the diamond; null keeps the diamond. */
@@ -334,6 +346,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   showClassTags: true,
   showHeadshots: false,
   showCarColours: false,
+  showSectors: false,
   gap: 'int',
   gapEverySeconds: DEFAULT_GAP_EVERY_S,
   separatorImage: null,
@@ -360,7 +373,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return design;
   const r = raw as Record<string, unknown>;
   for (const key of ['showClass', 'showChart', 'showSponsors', 'showQualifying', 'showBumpLine', 'showTqPace', 'showClassTags',
-    'showHeadshots', 'showCarColours', 'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
+    'showHeadshots', 'showCarColours', 'showSectors', 'showPredicted', 'showBars', 'showArrows', 'showBattles', 'showLegend', 'highContrast'] as const) {
     if (typeof r[key] === 'boolean') design[key] = r[key];
   }
   if (Array.isArray(r.rowIcons)) design.rowIcons = ROW_ICONS.filter((icon) => (r.rowIcons as unknown[]).includes(icon));
@@ -419,6 +432,7 @@ export function overlayQuery(design: OverlayDesign): string {
   if (!design.showClassTags) q.set('tags', 'hide');
   if (design.showHeadshots) q.set('headshots', 'show');
   if (design.showCarColours) q.set('carcolours', 'show');
+  if (design.showSectors) q.set('sectors', 'show');
   if (design.gap !== 'int') q.set('gap', design.gap);
   if (design.gap === 'auto' && design.gapEverySeconds !== DEFAULT_GAP_EVERY_S) {
     q.set('gapevery', String(design.gapEverySeconds));

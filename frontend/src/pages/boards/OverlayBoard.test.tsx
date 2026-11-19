@@ -19,6 +19,7 @@ vi.mock('@/hooks/race-control/useStomp', () => ({
 }));
 
 vi.mock('@/lib/boardsApi', () => ({
+  getBoardSectors: vi.fn(),
   getNowNext: vi.fn(),
   getBoardLiveTiming: vi.fn(),
   getRaceClock: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('@/lib/boardsApi', () => ({
 
 import {
   getBoardLiveTiming,
+  getBoardSectors,
   getNowNext,
   getPositionHistory,
   getRaceClock,
@@ -391,6 +393,38 @@ describe('OverlayBoard timing tower', () => {
     expect(screen.queryByText('QUAL')).not.toBeInTheDocument();
   });
 
+  it('adds each car\'s latest sector times to the tower only with sectors=show and split decoders', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500), row(2, 'Ada Lovelace', 14_100)];
+    stompFrames['/topic/race/12/sectors'] = {
+      sectorCount: 2,
+      overallBestMs: [4_000, 5_000],
+      rows: [{ entryId: 1, lapNumber: 2, lastMs: [4_000, 5_200], bestMs: [4_000, 5_100] }],
+    };
+    vi.mocked(getBoardSectors).mockResolvedValue({ sectorCount: 0, overallBestMs: [], rows: [] });
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    const off = renderOverlay();
+    await screen.findAllByRole('row');
+    expect(screen.queryByText('S1')).not.toBeInTheDocument();
+    off.unmount();
+
+    renderOverlay('/boards/overlay?sectors=show');
+    await screen.findAllByRole('row');
+    expect(screen.getByText('S1')).toBeInTheDocument();
+    expect(screen.getByText('S2')).toBeInTheDocument();
+    const [first, second] = screen.getAllByRole('row');
+    expect(first.querySelector('[data-sector-tone="overall-best"]')).toHaveTextContent('4.000');
+    expect(second.querySelectorAll('[data-sector-tone]')).toHaveLength(2);
+  });
+
+  it('leaves the tower plain with sectors=show but no split decoders', async () => {
+    stompFrames['/topic/race/12/timing'] = [row(1, 'Grace Hopper', 13_500)];
+    vi.mocked(getBoardSectors).mockResolvedValue({ sectorCount: 0, overallBestMs: [], rows: [] });
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    renderOverlay('/boards/overlay?sectors=show');
+    await screen.findAllByRole('row');
+    expect(screen.queryByText('S1')).not.toBeInTheDocument();
+  });
+
   it('labels the gap column INT, and gap=leader shows the gap to the leader and labels it GAP', async () => {
     stompFrames['/topic/race/12/timing'] = [
       row(1, 'Grace Hopper', 13_500),
@@ -551,6 +585,7 @@ describe('overlay options', () => {
       showClassTags: true,
       showHeadshots: false,
       showCarColours: false,
+      showSectors: false,
       gap: 'int',
       gapEverySeconds: 6,
       separatorImage: null,
