@@ -11,6 +11,7 @@ import { ClassSwatch } from '@/components/ClassSwatch';
 import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { useBattles } from '@/hooks/race-control/useBattles';
+import { useSectors } from '@/hooks/race-control/useSectors';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { BoardLiveTable } from './BoardLiveTable';
@@ -31,6 +32,7 @@ export default function LiveRaceBoard() {
   const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast, rowIcons } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
   useHighContrast(highContrast);
   const battleGroups = useBattles(showBattles ? raceId : null);
+  const sectors = useSectors(raceId);
   const media = useRaceMedia(raceId);
   const barClock = useLapBarClock(rows, currentRace?.status, settings.lateMarginMs);
   const { data: clock, dataUpdatedAt: clockReadAt } = useRaceClockQuery(raceId, { intervalMs: BOARD_POLL_MS, enabled: showPredicted });
@@ -77,6 +79,7 @@ export default function LiveRaceBoard() {
         <BoardLiveTable
           rows={rows}
           media={media}
+          sectors={sectors}
           barClock={showBars && currentRace.status === 'RUNNING' ? barClock : undefined}
           closeMs={closeMs}
           showLegend={showLegend}

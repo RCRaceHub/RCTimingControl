@@ -6,6 +6,7 @@ import { ClassSwatch } from '@/components/ClassSwatch';
 import type { LapBarClock } from '@/components/LapProgressBar';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import { CarThumb } from '@/components/CarThumb';
+import { useSectors } from '@/hooks/race-control/useSectors';
 import { BoardLiveTable, type PredictedClock } from './BoardLiveTable';
 import { BoardResultsTable } from './BoardResultsTable';
 import { LiveTopTable } from './LiveTopTable';
@@ -37,6 +38,7 @@ function Empty({ children }: { children: string }) {
 
 function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
   const race = ctx.nowNext?.currentRace ?? null;
+  const sectors = useSectors(race?.raceId ?? null);
   if (!race) {
     return <Empty>{ctx.nowNext?.nextRace ? `Next up: ${ctx.nowNext.nextRace.label}` : 'No race on track'}</Empty>;
   }
@@ -61,6 +63,7 @@ function LiveTimingPanel({ ctx }: { ctx: PanelContext }) {
         <BoardLiveTable
           rows={ctx.rows}
           media={ctx.media}
+          sectors={sectors}
           barClock={race.status === 'RUNNING' ? ctx.barClock : undefined}
           closeMs={ctx.closeMs}
           showLegend={ctx.showLegend}
