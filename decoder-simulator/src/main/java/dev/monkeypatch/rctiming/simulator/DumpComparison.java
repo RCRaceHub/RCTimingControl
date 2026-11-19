@@ -19,7 +19,7 @@ import java.util.Map;
  * time between them and is only a check that cars pass both.
  *
  * <p>Passings are paired per transponder in time order: a passing of one decoder pairs with the next passing of
- * the other within {@code windowMs}. Anything left over is unpaired, which for decoders on the same loop means one
+ * the other within {@code windowMs}, so keep the window below the shortest lap. Anything left over is unpaired, which for decoders on the same loop means one
  * decoder missed the car.
  */
 final class DumpComparison {
@@ -102,7 +102,9 @@ final class DumpComparison {
         }
         out.printf("  Arrival time of %s minus %s: median %d ms, from %d to %d ms (spread %d ms)%n", nameB, nameA,
                 r.medianMs(), r.minMs(), r.maxMs(), r.maxMs() - r.minMs());
-        out.println("  On the same loop, set " + nameB + "'s clock offset to " + (-r.medianMs())
-                + " ms to line it up with " + nameA + "; a wide spread means the offset is not steady.");
+        out.println("  On the same loop, set " + nameB + "'s clock offset to about " + (-r.medianMs())
+                + " ms to line it up with " + nameA + ". This is an estimate: RCTimingControl pins each decoder at its"
+                + " first passing, so the delay of that one passing is kept until the next restart, and a wide spread"
+                + " means the offset is not steady.");
     }
 }

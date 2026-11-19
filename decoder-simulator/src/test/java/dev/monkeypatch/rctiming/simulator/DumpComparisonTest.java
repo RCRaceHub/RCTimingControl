@@ -72,7 +72,35 @@ class DumpComparisonTest {
         assertThat(out.toString(StandardCharsets.UTF_8))
                 .contains("Paired passings: 1")
                 .contains("median 25 ms")
-                .contains("clock offset to -25 ms");
+                .contains("clock offset to about -25 ms");
+    }
+
+    @Test
+    void measuresADecoderThatArrivesEarlierAsANegativeDifferenceWithAnEvenCountMedian(@TempDir Path dir)
+            throws IOException {
+        DumpSummary a = summary(dir, "a.dump", line(10_000, 1, "100") + line(20_000, 2, "100"));
+        DumpSummary b = summary(dir, "b.dump", line(9_970, 1, "100") + line(19_990, 2, "100"));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        DumpComparison.Result r = DumpComparison.compare("a", a, "b", b, 2_000);
+        DumpComparison.print(new PrintStream(out, true, StandardCharsets.UTF_8), "a", a, "b", b, 2_000);
+
+        assertThat(r.minMs()).isEqualTo(-30);
+        assertThat(r.maxMs()).isEqualTo(-10);
+        assertThat(r.medianMs()).isEqualTo(-20);
+        assertThat(out.toString(StandardCharsets.UTF_8)).contains("median -20 ms").contains("offset to about 20 ms");
+    }
+
+    @Test
+    void countsTheEarlierPassingAsUnpairedWhenItIsTheSecondDecodersOwn(@TempDir Path dir) throws IOException {
+        DumpSummary a = summary(dir, "a.dump", line(20_000, 1, "100"));
+        DumpSummary b = summary(dir, "b.dump", line(10_000, 1, "100") + line(20_010, 2, "100"));
+
+        DumpComparison.Result r = DumpComparison.compare("a", a, "b", b, 2_000);
+
+        assertThat(r.paired()).isEqualTo(1);
+        assertThat(r.unpairedA()).isZero();
+        assertThat(r.unpairedB()).isEqualTo(1);
     }
 
     @Test
@@ -82,7 +110,8 @@ class DumpComparisonTest {
         Files.writeString(bare, "\u0001@\t20\t1\t100\t1.0\t400\t163\t2\txB\r\n", StandardCharsets.ISO_8859_1);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        DumpComparison.print(new PrintStream(out, true, StandardCharsets.UTF_8), "a", a, "b", DumpSummary.read(bare), 2_000);
+        DumpComparison.print(new PrintStream(out, true, StandardCharsets.UTF_8), "a", a, "b",
+                DumpSummary.read(bare), 2_000);
 
         assertThat(out.toString(StandardCharsets.UTF_8)).contains("need their .times file");
     }

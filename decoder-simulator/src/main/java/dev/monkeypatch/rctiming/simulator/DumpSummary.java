@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -216,9 +217,9 @@ final class DumpSummary {
         });
     }
 
-    /** Each transponder's passing times on the laptop's clock, for comparing decoders; see {@link DumpComparison}. */
+    /** Each transponder's passing times on the laptop's clock, for comparing decoders; see {@link DumpComparison}. Read only. */
     Map<String, List<Long>> wallTimes() {
-        return wallTimes;
+        return Collections.unmodifiableMap(wallTimes);
     }
 
     /** Whether the recording had a {@code .times} file, so its passings carry the laptop's clock. */

@@ -81,25 +81,30 @@ public class DumpSummaryMain {
         if (windowsFile != null && !Files.isRegularFile(windowsFile)) {
             usage("No such file: " + windowsFile);
         }
+        if (files.stream().map(f -> f.toAbsolutePath().normalize()).distinct().count() < files.size()) {
+            usage("The same file is given twice");
+        }
+        Path reading = files.get(0);
         try {
             List<DumpSummary.Window> windows = windowsFile == null ? List.of() : readWindows(windowsFile);
             List<DumpSummary> summaries = new ArrayList<>();
             for (Path file : files) {
+                reading = file;
                 DumpSummary summary = DumpSummary.read(file, splitGap, windows);
                 if (files.size() > 1) {
                     System.out.println();
-                    System.out.println("=== " + file.getFileName() + " ===");
+                    System.out.println("=== " + file + " ===");
                 }
                 summary.print(System.out);
                 summaries.add(summary);
             }
             // The first recording is the reference; each other is measured against it
             for (int i = 1; i < files.size(); i++) {
-                DumpComparison.print(System.out, files.get(0).getFileName().toString(), summaries.get(0),
-                        files.get(i).getFileName().toString(), summaries.get(i), pairWindow);
+                DumpComparison.print(System.out, files.get(0).toString(), summaries.get(0),
+                        files.get(i).toString(), summaries.get(i), pairWindow);
             }
         } catch (IOException e) {
-            System.err.println("Error: could not read a dump file or its .times file or the windows file: " + e);
+            System.err.println("Error: could not read " + reading + " or its .times file or the windows file: " + e);
             System.exit(1);
         }
     }
