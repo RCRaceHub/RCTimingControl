@@ -17,6 +17,7 @@ import {
   parseEventParam,
   parseOverlayOptions,
   roundBestLap,
+  towerWidthRem,
   tickerSegments,
   type TickerItem,
 } from './boardFormat';
@@ -24,6 +25,7 @@ import { useBoardRace } from './useBoardRace';
 import { useHighContrast } from '@/hooks/useHighContrast';
 import { TqPace } from '@/components/TqPace';
 import { OverlayTower, TOWER_WIDTH_CLASS, type ProjectedQualifying } from './OverlayTower';
+import { useSectors } from '@/hooks/race-control/useSectors';
 import { useGapView } from '@/hooks/useGapView';
 import { useRemainingAt } from '@/hooks/race-control/useRemainingAt';
 import { useLivePositionSeries } from './useLivePositionSeries';
@@ -273,7 +275,7 @@ export default function OverlayBoard() {
   const { searchParams, lookId } = useOverlayParams();
   const settings = useBoardSettings();
   const {
-    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, gap,
+    eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, showSectors, gap,
     gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, rowIcons, placement,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
@@ -294,6 +296,8 @@ export default function OverlayBoard() {
   // The chasing car's row, when battles are to show on the rows (#681)
   const battleRows = battleShowing && battleStyle !== 'panel' ? battleChasers(battleGroups) : undefined;
   const featuredEntryId = useFeaturedDriver(raceId, lowerThird, battleGroups, lapCounted && race?.status === 'RUNNING');
+  // Only the tower draws sectors, and only when asked, so no request is made otherwise
+  const sectors = useSectors(showSectors && layout === 'tower' ? raceId : null);
   const media = useRaceMedia(lowerThird === 'off' && !showHeadshots && !showCarColours ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
@@ -366,6 +370,7 @@ export default function OverlayBoard() {
   const towerBlock = (
     <section
       className={cn(layout === 'tower' ? TOWER_WIDTH_CLASS : 'w-[26rem]', 'overflow-hidden rounded-lg font-sans shadow-lg', colours.panel)}
+      style={layout === 'tower' && sectors.sectorCount > 0 ? { width: `${towerWidthRem(sectors.sectorCount)}rem` } : undefined}
       aria-label="Live timing overlay"
     >
       <header className="flex items-center gap-3 px-4 py-2.5">
@@ -403,6 +408,7 @@ export default function OverlayBoard() {
           lapsView={lapsView.view === 'int' ? 'laps' : 'predicted'}
           lapsFading={lapsView.fading}
           battles={battleRows}
+          sectors={sectors}
         />
       )}
       {showTqPace && isQualifier && layout === 'tower' && race.status === 'RUNNING' && (

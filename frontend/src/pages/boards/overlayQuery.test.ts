@@ -158,6 +158,17 @@ describe('battle style', () => {
   });
 });
 
+describe('sector times', () => {
+  it('are left off the address until asked for and read back (#672)', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    const query = overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showSectors: true });
+    expect(query).toBe('?sectors=show');
+    expect(parseOverlayOptions(new URLSearchParams(query))).toMatchObject({ showSectors: true });
+    expect(parseOverlayOptions(new URLSearchParams(''))).toMatchObject({ showSectors: false });
+    expect(overlayDesignFromTheme({ showSectors: true }).showSectors).toBe(true);
+  });
+});
+
 describe('driver pictures', () => {
   it('are left off the address until asked for and read back (#686, #688)', () => {
     expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');

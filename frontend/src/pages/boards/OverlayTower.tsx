@@ -16,6 +16,8 @@ import type { BattleLink } from '@/lib/battles';
 import { DriverMark } from '@/components/DriverMark';
 import type { RaceMediaDto } from '@/lib/boardsApi';
 import { isClose } from '@/lib/lapProgress';
+import { fmtMs } from '@/lib/format';
+import { NO_SECTORS, sectorTone, type SectorBoard } from '@/lib/sectors';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
 import type { PredictedClock } from './BoardLiveTable';
 import { gapText, leaderGapText } from './boardFormat';
@@ -72,6 +74,11 @@ interface OverlayTowerProps {
   lapsView?: 'laps' | 'predicted';
   /** The laps column is fading out ahead of a change. */
   lapsFading?: boolean;
+  /**
+   * Each car's latest sector times (#672), one column per sector before the gap, the fastest of anyone in purple and the
+   * car's own best in green. Omitted, or with no sectors, leaves the tower as it was.
+   */
+  sectors?: SectorBoard;
   /** The chasing cars in a battle by entry id (#681); their rows are highlighted and say BATTLE. Omitted to leave rows plain. */
   battles?: Map<number, BattleLink>;
 }
@@ -155,7 +162,10 @@ export function OverlayTower({
   lapsView = 'laps',
   lapsFading = false,
   battles,
+  sectors = NO_SECTORS,
 }: OverlayTowerProps) {
+  const sectorRows = new Map(sectors.rows.map((r) => [r.entryId, r]));
+  const sectorIndexes = Array.from({ length: sectors.sectorCount }, (_, i) => i);
   const noSignal = useNoSignal(allRows, barClock);
   const tagging = classTags && new Set(allRows.map((r) => r.classColour ?? null)).size > 1;
   const showQualifying = qualifying !== undefined && qualifying.size > 0;
@@ -175,6 +185,9 @@ export function OverlayTower({
           {showPredicted ? 'PRED' : 'LAP'}
         </span>
         {showQualifying && <span className="w-12 shrink-0 text-right" title="Qualifying place">QUAL</span>}
+        {sectorIndexes.map((i) => (
+          <span key={i} className="w-14 shrink-0 text-right" title={`Sector ${i + 1}, latest lap`}>S{i + 1}</span>
+        ))}
         <span className={cn('w-[4.5rem] shrink-0 text-right', gapClass)}>{gap === 'int' ? 'INT' : 'GAP'}</span>
       </div>
       <div
@@ -261,6 +274,24 @@ export function OverlayTower({
                   {projected && <QualifyingChip projected={projected} final={qualifyingFinal} />}
                 </span>
               )}
+              {sectorIndexes.map((i) => {
+                const sectorRow = sectorRows.get(row.entryId);
+                const tone = sectorRow ? sectorTone(sectorRow, sectors, i) : 'normal';
+                return (
+                  <span
+                    key={i}
+                    data-sector-tone={tone}
+                    className={cn(
+                      'w-14 shrink-0 text-right text-sm tabular-nums',
+                      tone === 'normal' && colours.muted,
+                      tone === 'overall-best' && 'font-bold text-purple-500',
+                      tone === 'personal-best' && 'text-green-500',
+                    )}
+                  >
+                    {sectorRow ? fmtMs(sectorRow.lastMs[i]) : '—'}
+                  </span>
+                );
+              })}
               <span className={cn('w-[4.5rem] shrink-0 text-right text-lg font-semibold tabular-nums', gapClass)}>
                 {battle ? <BattleRowTag link={battle} /> : gap === 'int' ? gapText(row) : leaderGapText(row)}
               </span>
