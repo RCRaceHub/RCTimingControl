@@ -47,3 +47,6 @@ docs/local-*.md
 
 # Compound Engineering per-machine config
 .compound-engineering/*.local.yaml
+
+# Race day Docker folders: database, backups and decoder recordings (docs/race-day-docker.md)
+raceday/

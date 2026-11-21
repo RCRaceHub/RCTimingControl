@@ -125,6 +125,7 @@ See [docs/testing.md](docs/testing.md) for the full test matrix, including `deco
 - [Trying it out](docs/trial-quickstart.md) — a demo club and a simulated decoder, no developer setup needed
 - [Running with Docker](docs/docker.md) — the demo on any system with Docker, and the club's own server on a laptop or small server
 - [Decoder setup guide](docs/decoder.md) — connecting the AMB decoder, simulator, status
+- [Race day with Docker](docs/race-day-docker.md) — recorder plus a fresh RCTimingControl, all data on the laptop's disk
 - [Recording the decoder](docs/recording-the-decoder.md) — capture real decoder data to a file, or share one decoder between programs
 - [API reference](docs/api.md) — all endpoints with example requests
 - [Development guide](docs/development.md) — environment setup, config, env vars

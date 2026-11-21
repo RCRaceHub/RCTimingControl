@@ -14,6 +14,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'installing', title: 'Installing', file: 'installing.md', section: 'Setting up' },
   { slug: 'docker', title: 'Running with Docker', file: 'docker.md', section: 'Setting up' },
   { slug: 'decoder', title: 'Decoder', file: 'decoder.md', section: 'Setting up' },
+  { slug: 'race-day-docker', title: 'Race day with Docker', file: 'race-day-docker.md', section: 'Setting up' },
   { slug: 'recording-the-decoder', title: 'Recording the decoder', file: 'recording-the-decoder.md', section: 'Setting up' },
   { slug: 'live-testing', title: 'Trying it on a real decoder', file: 'live-testing.md', section: 'Setting up' },
   { slug: 'screens-and-printouts', title: 'Screens and printouts', file: 'screens-and-printouts.md', section: 'Using RCTC' },
