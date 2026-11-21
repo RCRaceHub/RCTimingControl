@@ -68,6 +68,8 @@ On Windows Command Prompt, run `set HOST_PORT=8081` first. Then open `http://loc
 
 The demo includes the announcer voice server (Piper) with one voice, so race control speaks announcements from the server. The first start downloads the voice, so it needs the internet; after that it runs offline. If the voice server is down, race control falls back to the browser's own voice.
 
+For a live meeting where the decoder must be recorded and shared with the club's other timing system, use `docker-compose.raceday.yml`: see [race-day-docker.md](race-day-docker.md).
+
 ## Running the club's server with Docker
 
 Docker can run the club's own copy of the app on a laptop or a small server on the club network, in place of the installer. `docker-compose.club.yml` starts the app and the announcer voices (Piper) and restarts them whenever Docker starts.

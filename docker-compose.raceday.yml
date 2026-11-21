@@ -1,0 +1,62 @@
+# Race day on a laptop: a decoder recorder/proxy plus a fresh RCTimingControl, with everything
+# kept in ordinary folders on the laptop's disk. See docs/race-day-docker.md.
+#
+#   1. Put DECODER_HOST (and CLUB_ADDRESS) in a .env file beside this one.
+#   2. docker compose -f docker-compose.raceday.yml up -d --build
+#   3. Open http://localhost:8080, then set Admin > Decoder to host "recorder", port 5101.
+#
+# The recorder is the only program that connects to the decoder. It writes every record to
+# ./raceday/captures/, and passes them on to RCTimingControl and to the club's own timing system
+# (point that at this laptop, port 5101).
+services:
+  # Creates the two folders and gives the app's and recorder's user (uid 10001) the right to write
+  # to them. Runs once per start, then exits.
+  init:
+    image: busybox:stable
+    restart: "no"
+    command: sh -c "mkdir -p /data /captures && chown 10001:10001 /data /captures"
+    volumes:
+      - ./raceday/data:/data
+      - ./raceday/captures:/captures
+
+  # Holds the decoder's single connection. Writes capture-<date>-<time>.dump (and a .dump.times
+  # file) into ./raceday/captures, and re-serves every record on port 5101.
+  recorder:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.recorder
+    image: rctc-recorder:local
+    restart: unless-stopped
+    stop_grace_period: 10s
+    command:
+      - --host=${DECODER_HOST:?Set DECODER_HOST in .env to the decoder's IP address}
+      - --port=${DECODER_PORT:-5100}
+      - --listen-port=5101
+    ports:
+      - "${PROXY_PORT:-5101}:5101"
+    volumes:
+      - ./raceday/captures:/captures
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  # A fresh RCTimingControl. The database, backups, uploads and sign-in key are in ./raceday/data.
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: rctimingcontrol:local
+    restart: unless-stopped
+    environment:
+      # The address phones, tablets and boards use to reach this laptop, shown on the About page.
+      RCTIMING_NETWORK_ADDRESSES: ${CLUB_ADDRESS:-}
+      TTS_ENABLED: "false"
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    volumes:
+      - ./raceday/data:/data
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      recorder:
+        condition: service_started
