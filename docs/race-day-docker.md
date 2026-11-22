@@ -11,10 +11,10 @@ It is for RC-4 text decoders (firmware below 4.5, port 5100, such as the AMB RC3
                       decoder (192.168.1.50:5100)
                                  |
                           [ recorder ] --> raceday/captures/*.dump
-                          port 5101
+                          port 5100
                          /                \
               RCTimingControl         club timing system
-              (recorder:5101)        (laptop address:5101)
+              (recorder:5100)        (laptop address:5100)
 ```
 
 ## Before you start
@@ -34,7 +34,7 @@ It is for RC-4 text decoders (firmware below 4.5, port 5100, such as the AMB RC3
    CLUB_ADDRESS=192.168.1.20
    ```
 
-   Optional: `DECODER_PORT` (default 5100), `PROXY_PORT` (the port the club's other timing system uses on this laptop, default 5101) and `HOST_PORT` (the web port, default 8080).
+   Optional: `DECODER_PORT` (default 5100), `PROXY_PORT` (the port the recorder shares on this laptop; it defaults to the decoder's port, so clients keep their usual port) and `HOST_PORT` (the web port, default 8080).
 
 2. Build and start:
 
@@ -51,9 +51,9 @@ It is for RC-4 text decoders (firmware below 4.5, port 5100, such as the AMB RC3
 
    The log shows `Recording 192.168.1.50:5100 ...`. The decoder sends a status record every 5 seconds, so the `.dump` file starts growing within a few seconds.
 
-4. Open **http://localhost:8080** and follow the setup wizard to create the first official and the club. When it asks for the decoder, or later under **Admin → Decoder**, enter host **`recorder`** and port **`5101`** (not the decoder's own address). Click **Test Connection**, then **Save**.
+4. Open **http://localhost:8080** and follow the setup wizard to create the first official and the club. When it asks for the decoder, or later under **Admin → Decoder**, enter host **`recorder`** and port **`5100`** (the same port as the decoder, but the host is the recorder, not the decoder's address). Click **Test Connection**, then **Save**.
 
-5. Point the club's existing timing system at **the laptop's address, port 5101**, instead of at the decoder. It receives every record from the moment it connects.
+5. Point the club's existing timing system at **the laptop's address, port 5100**, instead of at the decoder. It receives every record from the moment it connects.
 
 If the other timing system must read the decoder directly, don't use this setup: a decoder may allow only one connection.
 
@@ -81,7 +81,7 @@ docker compose -f docker-compose.raceday.yml ps         # is everything up?
 
 Both services restart automatically when Docker starts. If the laptop sleeps, laps are lost, so turn off sleep on race day.
 
-- **Firewall:** other devices must reach port 8080 (web) and 5101 (the shared decoder feed). On Windows, allow Docker Desktop through the firewall; on Linux with `ufw`, `sudo ufw allow 8080/tcp` and `sudo ufw allow 5101/tcp`.
+- **Firewall:** other devices must reach port 8080 (web) and 5100 (the shared decoder feed). On Windows, allow Docker Desktop through the firewall; on Linux with `ufw`, `sudo ufw allow 8080/tcp` and `sudo ufw allow 5100/tcp`.
 - **Starting fresh:** stop the stack, then move or delete `raceday/data` (for a new database) or `raceday/captures`. Never delete `raceday/data` during a meeting.
 - **Upgrading:** `git pull`, then `docker compose -f docker-compose.raceday.yml up -d --build`. Take a backup under **Admin → Backups** first.
 
@@ -95,5 +95,5 @@ Both services restart automatically when Docker starts. If the laptop sleeps, la
 
 - **`DECODER_HOST` error on start:** the `.env` file is missing or has no `DECODER_HOST` line.
 - **"Connection failed" repeats in the recorder log:** check the address, `ping` it, and that nothing else holds the decoder's connection.
-- **RCTimingControl shows the decoder as disconnected:** check **Admin → Decoder** says host `recorder`, port `5101`, and that `docker compose ... ps` shows the recorder running.
+- **RCTimingControl shows the decoder as disconnected:** check **Admin → Decoder** says host `recorder`, port `5100`, and that `docker compose ... ps` shows the recorder running.
 - **A permissions error writing to `raceday/`:** run `docker compose -f docker-compose.raceday.yml up -d` again; the `init` step fixes the folder's owner. If the folder sits on a USB stick or network share that ignores ownership, use a folder on the laptop's own disk.
