@@ -3,11 +3,11 @@
 #
 #   1. Put DECODER_HOST (and CLUB_ADDRESS) in a .env file beside this one.
 #   2. docker compose -f docker-compose.raceday.yml up -d --build
-#   3. Open http://localhost:8080, then set Admin > Decoder to host "recorder", port 5101.
+#   3. Open http://localhost:8080, then set Admin > Decoder to host "recorder", port 5100.
 #
 # The recorder is the only program that connects to the decoder. It writes every record to
 # ./raceday/captures/, and passes them on to RCTimingControl and to the club's own timing system
-# (point that at this laptop, port 5101).
+# (point that at this laptop, same port as the decoder, 5100).
 services:
   # Creates the two folders and gives the app's and recorder's user (uid 10001) the right to write
   # to them. Runs once per start, then exits.
@@ -20,7 +20,7 @@ services:
       - ./raceday/captures:/captures
 
   # Holds the decoder's single connection. Writes capture-<date>-<time>.dump (and a .dump.times
-  # file) into ./raceday/captures, and re-serves every record on port 5101.
+  # file) into ./raceday/captures, and re-serves every record on the decoder's own port number (5100).
   recorder:
     build:
       context: .
@@ -31,9 +31,9 @@ services:
     command:
       - --host=${DECODER_HOST:?Set DECODER_HOST in .env to the decoder's IP address}
       - --port=${DECODER_PORT:-5100}
-      - --listen-port=5101
+      - --listen-port=${PROXY_PORT:-${DECODER_PORT:-5100}}
     ports:
-      - "${PROXY_PORT:-5101}:5101"
+      - "${PROXY_PORT:-${DECODER_PORT:-5100}}:${PROXY_PORT:-${DECODER_PORT:-5100}}"
     volumes:
       - ./raceday/captures:/captures
     depends_on:
