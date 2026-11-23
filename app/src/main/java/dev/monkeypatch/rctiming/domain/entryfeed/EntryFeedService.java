@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Pulls an event's entries from a URL (#42). RCTC runs on a venue laptop that booking systems usually can't
@@ -116,6 +117,38 @@ public class EntryFeedService {
                 .summary("Saved the entry feed settings of " + event.getName())
                 .before(before).after(after).record();
         return saved;
+    }
+
+    /**
+     * Gives every feed whose address passes {@code addressMatches} the same new token, for a rotated RaceHub key.
+     * Each feed keeps its address, settings and held file; only the encrypted token and its hint change. Runs in the
+     * caller's request thread, in one transaction, and records nothing itself: the caller audits the rotation.
+     *
+     * @param newToken the plain token, or null to remove it
+     * @return how many feeds changed
+     */
+    @Transactional
+    public int replaceTokenWhere(Predicate<URI> addressMatches, String newToken) {
+        int changed = 0;
+        for (EntryFeed feed : feedRepository.findAll()) {
+            URI address;
+            try {
+                address = URI.create(feed.getUrl());
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+            if (!addressMatches.test(address)) {
+                continue;
+            }
+            feed.setTokenEncrypted(newToken == null ? null : tokenCipher.encrypt(newToken));
+            feed.setTokenHint(newToken == null || newToken.length() < 8 ? null : newToken.substring(newToken.length() - 4));
+            // The old key's verdict no longer applies; the next fetch decides
+            feed.setLastStatus(null);
+            feed.setLastError(null);
+            feedRepository.save(feed);
+            changed++;
+        }
+        return changed;
     }
 
     /**

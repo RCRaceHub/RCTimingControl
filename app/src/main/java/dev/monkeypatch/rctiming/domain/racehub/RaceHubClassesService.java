@@ -122,7 +122,7 @@ public class RaceHubClassesService {
         String token = endpoint.token();
         if (token == null) {
             throw new StateConflictException(
-                    "The club's key for RaceHub is not set (rctiming.racehub.token in the settings file).");
+                    "The club's key for RaceHub is not set (paste it on Results to RaceHub, or set rctiming.racehub.token in the settings file).");
         }
         URI url = classesUrl(RaceHubResultsEndpoint.parse(saved));
         return switch (client.fetch(url, token)) {

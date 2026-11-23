@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -37,10 +38,19 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
 
     private final RaceHubResultsProperties properties;
     private final ClubProfileService clubProfileService;
+    private final RaceHubKeyStore keyStore;
 
-    public RaceHubResultsEndpoint(RaceHubResultsProperties properties, ClubProfileService clubProfileService) {
+    @Autowired
+    public RaceHubResultsEndpoint(RaceHubResultsProperties properties, ClubProfileService clubProfileService,
+                                  RaceHubKeyStore keyStore) {
         this.properties = properties;
         this.clubProfileService = clubProfileService;
+        this.keyStore = keyStore;
+    }
+
+    /** With only the settings file's key. */
+    public RaceHubResultsEndpoint(RaceHubResultsProperties properties, ClubProfileService clubProfileService) {
+        this(properties, clubProfileService, RaceHubKeyStore.none());
     }
 
     /**
@@ -63,7 +73,7 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
         if (url == null) {
             missing.add("the RaceHub address");
         }
-        if (properties.token() == null) {
+        if (token() == null) {
             missing.add(RaceHubResultsProperties.TOKEN_SETTING);
         }
         return new Snapshot(url, saved, missing.isEmpty(), missing);
@@ -74,9 +84,30 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
         return snapshot().resultsUrl();
     }
 
-    /** The club's key for RaceHub, from the settings file only; null when unset. Never log or return it. */
+    /**
+     * The club's key for RaceHub: the one saved in the admin panel ({@link RaceHubKeyStore}), else the settings
+     * file's; null when neither is set. Read on every call, so a rotated key applies without a restart. Never log
+     * or return it.
+     */
     public String token() {
-        return properties.token();
+        return keyStore.saved().orElse(properties.token());
+    }
+
+    /** Whether a key saved in the admin panel is in use, so the settings file's is being overridden. */
+    public boolean keySaved() {
+        return keyStore.saved().isPresent();
+    }
+
+    /** Whether the settings file has a key, the one that applies when none is saved. */
+    public boolean settingsFileKeySet() {
+        return properties.token() != null;
+    }
+
+    /** Whether {@code target} is RaceHub's own host: the results address in use or the saved events address. */
+    public boolean isRaceHub(URI target) {
+        return target != null && target.getHost() != null
+                && (sameHost(target, snapshot().resultsUrl())
+                || sameHost(target, clubProfileService.getRaceHubEventsUrl().map(RaceHubResultsEndpoint::lenient).orElse(null)));
     }
 
     /**
@@ -90,9 +121,7 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
         if (!properties.accessConfigured() || target == null || target.getHost() == null) {
             return Map.of();
         }
-        boolean raceHub = sameHost(target, snapshot().resultsUrl())
-                || sameHost(target, clubProfileService.getRaceHubEventsUrl().map(RaceHubResultsEndpoint::lenient).orElse(null));
-        return raceHub
+        return isRaceHub(target)
                 ? Map.of("CF-Access-Client-Id", properties.accessClientId(),
                         "CF-Access-Client-Secret", properties.accessClientSecret())
                 : Map.of();

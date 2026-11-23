@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
+import { useClearRaceHubKey, useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetRaceHubKey, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
 import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus, ResultsPublishTarget } from '@/lib/adminApi';
@@ -157,6 +157,69 @@ function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: stri
 }
 
 /**
+ * The club's key for RaceHub. Pasting a new one takes effect at once, with no restart, so the key can be rotated:
+ * make the new key in RaceHub, paste it here, then revoke the old one. The key is never shown back.
+ */
+function KeyForm({ source }: { source: 'SAVED' | 'SETTINGS_FILE' | 'NONE' }) {
+  const setKey = useSetRaceHubKey();
+  const clearKey = useClearRaceHubKey();
+  const [value, setValue] = useState('');
+
+  return (
+    <form
+      className="space-y-2"
+      onSubmit={e => {
+        e.preventDefault();
+        setKey.mutate(value, {
+          onSuccess: () => {
+            setValue('');
+            toast.success('RaceHub key saved. It is used from the next request.');
+          },
+          onError: err => toast.error(getApiErrorMessage(err, 'Could not save the RaceHub key.')),
+        });
+      }}
+    >
+      <Label htmlFor="racehub-key">RaceHub key</Label>
+      <div className="flex gap-2">
+        <Input
+          id="racehub-key"
+          type="password"
+          autoComplete="off"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder="Paste a new key"
+        />
+        <Button type="submit" disabled={setKey.isPending || value.trim() === ''}>
+          Save key
+        </Button>
+        {source === 'SAVED' && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={clearKey.isPending}
+            onClick={() =>
+              clearKey.mutate(undefined, {
+                onSuccess: () => toast.success('Saved key removed.'),
+                onError: err => toast.error(getApiErrorMessage(err, 'Could not remove the saved key.')),
+              })
+            }
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {source === 'SAVED' && 'A key saved here is in use instead of the settings file’s. '}
+        {source === 'SETTINGS_FILE' && 'The key in the settings file is in use; saving one here replaces it. '}
+        {source === 'NONE' && 'No key is set yet. '}
+        To change keys without a restart, make the new key in RaceHub, paste it here, then revoke the old one. The key
+        is never shown again, and the events already taken from RaceHub use it too.
+      </p>
+    </form>
+  );
+}
+
+/**
  * Results sent to RaceHub (#27). Results for an event imported from RaceHub are queued when a race
  * finishes, when a finished race is corrected, and when the race day is closed. The app sends them
  * in the background and keeps retrying while RaceHub cannot be reached.
@@ -190,6 +253,8 @@ export default function ResultsExportsPage() {
 
       {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
 
+      {data && <KeyForm source={data.keySource} />}
+
       {data?.sendingEnabled && (
         <p className="text-sm">
           Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
@@ -205,9 +270,9 @@ export default function ResultsExportsPage() {
             {!data.resultsUrl && 'Enter the address above. '}
             {data.missingSettings.includes('rctiming.racehub.token') && (
               <>
-                Set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
+                Paste the key above, or set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
-                folder, then restart the app.{' '}
+                folder and restart the app.{' '}
               </>
             )}
             You can still download an event&apos;s results from its page.
