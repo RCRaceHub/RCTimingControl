@@ -14,6 +14,10 @@ allprojects {
 subprojects {
     // Print a failed assertion's message, not just its class and line, so a failure seen only in CI can
     // be read from the build log (#117)
+    // Name each deprecated or removal-marked API a compile uses, instead of javac's one-line "Note"
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:deprecation")
+    }
     tasks.withType<Test>().configureEach {
         testLogging {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
