@@ -183,7 +183,8 @@ describe('ResultsExportsPage', () => {
     fireEvent.change(box, { target: { value: 'new-key-123456' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save key' }));
 
-    await waitFor(() => expect(api.resultsExports.setKey).toHaveBeenCalledWith('new-key-123456'));
+    await waitFor(() => expect(api.resultsExports.setKey).toHaveBeenCalled());
+    expect(api.resultsExports.setKey.mock.calls[0][0]).toBe('new-key-123456');
     await waitFor(() => expect(screen.getByLabelText('RaceHub key')).toHaveValue(''));
   });
 });
