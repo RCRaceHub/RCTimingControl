@@ -15,6 +15,11 @@ on:
       - 'scripts/installer-smoke.sh'
       - '.github/workflows/installers.yml'
 
+# A newer commit on the same pull request cancels the run it supersedes. Pushes to main and tags always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -50,7 +55,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v5
 
       - uses: actions/setup-node@v7
         with:

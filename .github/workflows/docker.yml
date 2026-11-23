@@ -9,6 +9,11 @@ on:
   # Every pull request: app, UI, simulator and build changes can all break the image
   pull_request:
 
+# A newer commit on the same pull request cancels the run it supersedes. Pushes to main and tags always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 

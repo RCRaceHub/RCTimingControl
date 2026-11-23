@@ -1,9 +1,15 @@
 name: CI
 
 on:
+  # Pull requests run on the pull_request event; pushing a branch as well would run everything twice
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
+
+# A newer commit on the same pull request cancels the run it supersedes. Pushes to main and tags always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Nothing here writes to the repository, so the token is read-only whatever the repository default is.
 permissions:
@@ -20,7 +26,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v5
 
       # The backend tests run on temporary SQLite files, so none of them needs Docker.
       # -x generateJooq uses the committed jOOQ sources; it only applies to :app's task graph.
@@ -62,7 +69,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v5
 
       - uses: actions/setup-node@v7
         with:
@@ -91,6 +99,12 @@ jobs:
           echo "App did not become ready in time"
           cat "$RUNNER_TEMP/app.log"
           exit 1
+
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
