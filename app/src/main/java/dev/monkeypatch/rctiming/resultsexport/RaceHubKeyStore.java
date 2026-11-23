@@ -58,7 +58,11 @@ public class RaceHubKeyStore {
         if (current == null) {
             synchronized (this) {
                 if (cached == null) {
-                    cached = load();
+                    Optional<String> loaded = load();
+                    if (loaded == null) {
+                        return Optional.empty();
+                    }
+                    cached = loaded;
                 }
                 current = cached;
             }
@@ -94,15 +98,20 @@ public class RaceHubKeyStore {
         cached = Optional.empty();
     }
 
+    /** The key as saved, empty if none or unreadable, or null if the file could not be read this time. */
     private Optional<String> load() {
         if (file == null || !Files.exists(file)) {
             return Optional.empty();
         }
         try {
             return Optional.of(cipher.decrypt(Files.readString(file, StandardCharsets.US_ASCII).trim()));
-        } catch (IOException | TokenCipher.UnreadableTokenException e) {
+        } catch (TokenCipher.UnreadableTokenException e) {
             log.warn("The saved RaceHub key can't be read, so the settings file's key is used: {}", e.getMessage());
             return Optional.empty();
+        } catch (IOException e) {
+            // Not cached (null): a transient read failure must not hide the saved key until a restart
+            log.warn("The saved RaceHub key could not be read just now: {}", e.getMessage());
+            return null;
         }
     }
 }

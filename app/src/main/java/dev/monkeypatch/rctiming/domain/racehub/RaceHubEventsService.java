@@ -126,7 +126,7 @@ public class RaceHubEventsService {
         }
         String token = endpoint.token();
         if (token == null) {
-            return new Failure("The club's key for RaceHub is not set (rctiming.racehub.token in the settings file).");
+            return new Failure("The club's key for RaceHub is not set (paste it on Results to RaceHub, or set rctiming.racehub.token in the settings file).");
         }
         URI url;
         try {

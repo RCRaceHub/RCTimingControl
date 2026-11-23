@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Pulls an event's entries from a URL (#42). RCTC runs on a venue laptop that booking systems usually can't
@@ -127,7 +128,7 @@ public class EntryFeedService {
      * @return how many feeds changed
      */
     @Transactional
-    public int replaceTokenWhere(java.util.function.Predicate<URI> addressMatches, String newToken) {
+    public int replaceTokenWhere(Predicate<URI> addressMatches, String newToken) {
         int changed = 0;
         for (EntryFeed feed : feedRepository.findAll()) {
             URI address;
@@ -141,6 +142,9 @@ public class EntryFeedService {
             }
             feed.setTokenEncrypted(newToken == null ? null : tokenCipher.encrypt(newToken));
             feed.setTokenHint(newToken == null || newToken.length() < 8 ? null : newToken.substring(newToken.length() - 4));
+            // The old key's verdict no longer applies; the next fetch decides
+            feed.setLastStatus(null);
+            feed.setLastError(null);
             feedRepository.save(feed);
             changed++;
         }
