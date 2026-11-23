@@ -2,8 +2,8 @@ package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.api.admin.dto.LinkRaceHubClassRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.LinkRaceHubFormatRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.RaceHubFormatsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubClassesDto;
+import dev.monkeypatch.rctiming.api.admin.dto.RaceHubFormatsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ResolvedRaceHubClassDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassLinkService;

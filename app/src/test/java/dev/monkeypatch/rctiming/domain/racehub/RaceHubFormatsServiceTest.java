@@ -20,9 +20,11 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -109,7 +111,7 @@ class RaceHubFormatsServiceTest {
 
         service("key").link(actor, " 1 ", 41L);
 
-        verify(linkRepository).save(org.mockito.ArgumentMatchers.argThat(l ->
+        verify(linkRepository).save(argThat(l ->
                 "1".equals(l.getFormatKey()) && Long.valueOf(41L).equals(l.getTemplateId())));
     }
 
@@ -127,6 +129,6 @@ class RaceHubFormatsServiceTest {
         service("key").unlink(actor, "9");
 
         verify(linkRepository).deleteById(5L);
-        verify(linkRepository, org.mockito.Mockito.times(1)).deleteById(any());
+        verify(linkRepository, times(1)).deleteById(any());
     }
 }

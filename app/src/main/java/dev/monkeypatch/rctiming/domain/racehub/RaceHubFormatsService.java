@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -144,10 +145,10 @@ public class RaceHubFormatsService {
             for (JsonNode node : array) {
                 RaceHubFormatList f = objectMapper.treeToValue(node, RaceHubFormatList.class);
                 if (f != null && f.id() != null && !f.id().isBlank()) {
-                    formats.add(f);
+                    formats.add(new RaceHubFormatList(f.id().strip(), f.name(), f.active()));
                 }
             }
-            formats.sort(Comparator.comparing(f -> f.name() == null ? "" : f.name().toLowerCase()));
+            formats.sort(Comparator.comparing(f -> f.name() == null ? "" : f.name().toLowerCase(Locale.ROOT)));
             return formats;
         } catch (JacksonException e) {
             throw new StateConflictException("RaceHub's answer is not a list of race formats.");
