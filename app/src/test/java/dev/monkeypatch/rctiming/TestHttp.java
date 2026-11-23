@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -23,19 +24,22 @@ import java.net.http.HttpClient;
  *
  * <p>It has the same four calls the tests used, with the same behaviour: an address is relative to the
  * app's random port, and a 4xx or 5xx answer comes back as a {@link ResponseEntity} for the test to assert
- * on instead of throwing. Redirects are not followed, so a test sees the 3xx itself. Cookies are not kept;
- * a test that needs one sends it as a header.
+ * on instead of throwing. Redirects are followed. Cookies are not kept; a test that needs one sends it as a
+ * header. The request and response bodies use the app's own message converters, through Boot's
+ * {@code RestClient.Builder}, so a type is read and written as the app does (YAML included).
  *
  * <p>Runs on the test thread; one instance is shared by every test class through {@link Config}.
  */
 public class TestHttp {
 
     private final Environment environment;
+    private final ObjectProvider<RestClient.Builder> builders;
     private volatile URI base;
     private volatile RestClient client;
 
-    TestHttp(Environment environment) {
+    TestHttp(Environment environment, ObjectProvider<RestClient.Builder> builders) {
         this.environment = environment;
+        this.builders = builders;
     }
 
     /**
@@ -48,8 +52,8 @@ public class TestHttp {
             synchronized (this) {
                 if (client == null) {
                     base = URI.create("http://localhost:" + environment.getRequiredProperty("local.server.port"));
-                    HttpClient jdk = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
-                    client = RestClient.builder()
+                    HttpClient jdk = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+                    client = builders.getObject()
                             .baseUrl(base.toString())
                             .requestFactory(new JdkClientHttpRequestFactory(jdk))
                             .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> { })
@@ -66,8 +70,8 @@ public class TestHttp {
     public static class Config {
 
         @Bean
-        TestHttp testHttp(@Autowired Environment environment) {
-            return new TestHttp(environment);
+        TestHttp testHttp(@Autowired Environment environment, ObjectProvider<RestClient.Builder> builders) {
+            return new TestHttp(environment, builders);
         }
     }
 
