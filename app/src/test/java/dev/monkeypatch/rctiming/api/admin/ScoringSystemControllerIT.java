@@ -204,8 +204,10 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
         assertThat(send(HttpMethod.DELETE, URL + "/" + systemId, null, adminToken).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         Long formatId = ((Number) created.getBody().get("id")).longValue();
+        HttpHeaders yamlExport = headers(adminToken);
+        yamlExport.setAccept(List.of(MediaType.parseMediaType("application/yaml")));
         ResponseEntity<String> exported = restTemplate.exchange("/api/v1/admin/formats/" + formatId + "/export",
-                HttpMethod.GET, new HttpEntity<>(headers(adminToken)), String.class);
+                HttpMethod.GET, new HttpEntity<>(yamlExport), String.class);
         assertThat(exported.getBody()).contains("finalLegs: 2").contains("scoringSystemId: null");
 
         format.put("scoringSystemId", 999_999_999);
