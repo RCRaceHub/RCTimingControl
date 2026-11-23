@@ -22,8 +22,8 @@ class RaceHubKeyStoreTest {
 
     private TokenCipher cipher() {
         TokenCipher cipher = mock(TokenCipher.class);
-        when(cipher.encrypt(anyString())).thenAnswer(i -> "enc:" + i.getArgument(0));
-        when(cipher.decrypt(anyString())).thenAnswer(i -> ((String) i.getArgument(0)).substring(4));
+        when(cipher.encrypt(anyString())).thenAnswer(i -> new StringBuilder((String) i.getArgument(0)).reverse().toString());
+        when(cipher.decrypt(anyString())).thenAnswer(i -> new StringBuilder((String) i.getArgument(0)).reverse().toString());
         return cipher;
     }
 
