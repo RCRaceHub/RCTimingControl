@@ -27,6 +27,22 @@ export function useSetResultsAddress() {
   });
 }
 
+export function useSetRaceHubKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.resultsExports.setKey,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.resultsExports.all() }),
+  });
+}
+
+export function useClearRaceHubKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.resultsExports.clearKey,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.resultsExports.all() }),
+  });
+}
+
 export function useSetResultsTarget() {
   const queryClient = useQueryClient();
   return useMutation({

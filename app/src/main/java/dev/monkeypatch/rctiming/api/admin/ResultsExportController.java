@@ -1,10 +1,12 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.api.admin.dto.PublishTargetRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.RaceHubKeyRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
+import dev.monkeypatch.rctiming.resultsexport.RaceHubKeyService;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
@@ -18,6 +20,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,16 +45,19 @@ public class ResultsExportController {
     private final ClubProfileService clubProfileService;
     private final ResultsPublishSettings publishSettings;
     private final ResultsSiteService siteService;
+    private final RaceHubKeyService keyService;
 
     public ResultsExportController(ResultsExportService exportService, ResultsOutboxQuery outboxQuery,
                                    RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService,
-                                   ResultsPublishSettings publishSettings, ResultsSiteService siteService) {
+                                   ResultsPublishSettings publishSettings, ResultsSiteService siteService,
+                                   RaceHubKeyService keyService) {
         this.exportService = exportService;
         this.outboxQuery = outboxQuery;
         this.endpoint = endpoint;
         this.clubProfileService = clubProfileService;
         this.publishSettings = publishSettings;
         this.siteService = siteService;
+        this.keyService = keyService;
     }
 
     /**
@@ -59,12 +65,13 @@ public class ResultsExportController {
      * @param resultsUrl      the address in use, or null
      * @param savedUrl        the address set here, or null when the settings file's is in use
      * @param missingSettings what is still needed before anything is sent
+     * @param keySource       where the key comes from: {@code SAVED} (set here), {@code SETTINGS_FILE} or {@code NONE}
      * @param publishTarget   where results are published now: the club's choice, else the default
      * @param chosenTarget    the club's choice, or null when it has not made one
      * @param exports         the newest exports first
      */
     public record ResultsExportsDto(boolean sendingEnabled, String resultsUrl, String savedUrl,
-                                    List<String> missingSettings, ResultsPublishTarget publishTarget,
+                                    List<String> missingSettings, String keySource, ResultsPublishTarget publishTarget,
                                     ResultsPublishTarget chosenTarget,
                                     List<ResultsOutboxQuery.OutboxRow> exports) {}
 
@@ -75,6 +82,7 @@ public class ResultsExportController {
                 settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
                 settings.savedUrl(),
                 settings.missingSettings(),
+                keySource(),
                 publishSettings.effective(),
                 publishSettings.chosen(),
                 outboxQuery.latest(OUTBOX_ROWS));
@@ -88,6 +96,29 @@ public class ResultsExportController {
         }
         clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
         return list();
+    }
+
+    /**
+     * Saves a new RaceHub key, used by the next request with no restart, and gives it to the entry feeds that point
+     * at RaceHub. {@code PUT}; the key is never returned. A 400 for a key with spaces. Audited without the key.
+     */
+    @Audited("audit_log")
+    @PutMapping("/results-exports/key")
+    public ResultsExportsDto setKey(@RequestBody @Valid RaceHubKeyRequest request) {
+        keyService.save(CurrentOfficial.actor(), request.key());
+        return list();
+    }
+
+    /** Forgets the saved key so the settings file's applies again. {@code DELETE}. Audited. */
+    @Audited("audit_log")
+    @DeleteMapping("/results-exports/key")
+    public ResultsExportsDto clearKey() {
+        keyService.clear(CurrentOfficial.actor());
+        return list();
+    }
+
+    private String keySource() {
+        return endpoint.keySaved() ? "SAVED" : endpoint.settingsFileKeySet() ? "SETTINGS_FILE" : "NONE";
     }
 
     @Audited("audit_log")

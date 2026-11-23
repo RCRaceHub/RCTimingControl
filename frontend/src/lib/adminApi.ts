@@ -793,6 +793,8 @@ export interface ResultsExportsDto {
   savedUrl: string | null;
   /** What is still needed before anything is sent */
   missingSettings: string[];
+  /** Where the RaceHub key comes from: pasted here, the settings file, or not set */
+  keySource: 'SAVED' | 'SETTINGS_FILE' | 'NONE';
   /** Where results are published now: the club's choice, else the default */
   publishTarget: ResultsPublishTarget;
   /** The club's choice, or null when it has not made one */
@@ -1328,6 +1330,12 @@ export const adminApi = {
     /** Blank clears it, so the settings file's address applies */
     setAddress: (resultsUrl: string) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
+    /** Saves a new RaceHub key, used straight away; it is never sent back */
+    setKey: (key: string) =>
+      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/key', { key }).then(r => r.data),
+    /** Forgets the key saved here, so the settings file's applies again */
+    clearKey: () =>
+      api.delete<ResultsExportsDto>('/api/v1/admin/results-exports/key').then(r => r.data),
     /** Null clears the choice, so the default applies */
     setTarget: (target: ResultsPublishTarget | null) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/target', { target }).then(r => r.data),

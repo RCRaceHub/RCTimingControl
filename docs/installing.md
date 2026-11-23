@@ -129,7 +129,9 @@ rctiming.racehub.results-url=https://racehub.example/api/results
 rctiming.racehub.token=the-key-from-racehub
 ```
 
-The address must start with `https://`, since the key goes with every request. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **Results to RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand.
+The address must start with `https://`, since the key goes with every request.
+
+To change the key later without a restart, paste the new one into **RaceHub key** on the **Results to RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **Results to RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand.
 
 ### If RaceHub is behind Cloudflare Access
 
