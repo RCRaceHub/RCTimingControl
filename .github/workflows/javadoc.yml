@@ -5,7 +5,7 @@ name: Javadoc
 
 on:
   push:
-    branches: ['**']
+    branches: [main]
     paths:
       - 'app/src/main/java/**'
       - 'app/build.gradle.kts'
@@ -20,6 +20,11 @@ on:
       - '.github/workflows/javadoc.yml'
       - '.github/scripts/check-class-javadoc.py'
   workflow_dispatch:
+
+# A newer commit on the same pull request cancels the run it supersedes. Pushes to main and tags always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -45,7 +50,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v5
 
       # -x generateJooq uses the committed jOOQ sources, which the Javadoc leaves out
       - name: Build the Javadoc

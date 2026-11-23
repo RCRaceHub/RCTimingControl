@@ -8,7 +8,10 @@ plugins {
 allprojects {
     group = "dev.monkeypatch"
     version = "0.0.1-SNAPSHOT"
-    repositories { mavenCentral() }
+    repositories {
+        maven { url = uri("https://maven-central.storage-download.googleapis.com/maven2/") }
+        mavenCentral()
+    }
 }
 
 subprojects {

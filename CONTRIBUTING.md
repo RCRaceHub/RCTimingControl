@@ -76,7 +76,7 @@ test: add E2E test for race control login
 
 ## CI pipeline
 
-Three jobs run on every push and pull request:
+Three jobs run on every pull request and on every push to `main` (a branch with an open pull request is built once, by the pull request). A newer commit on a pull request cancels the older run. Gradle's dependency cache is kept by `gradle/actions/setup-gradle`, the Playwright browsers are cached, and the build looks in Google's mirror of Maven Central first (see `settings.gradle.kts`), because GitHub's runners are often rate limited (HTTP 429) by Maven Central:
 
 ```mermaid
 flowchart LR
