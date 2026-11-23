@@ -18,7 +18,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PublicResultsControllerTest extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestHttp restTemplate;
 
     @Autowired
     EventRepository eventRepository;
@@ -125,7 +125,7 @@ class PublicResultsControllerTest extends AbstractIntegrationTest {
 
     @Test
     void publicResultsReturnSnapshotWithoutAuth() {
-        // No Authorization header — TestRestTemplate sends no auth by default
+        // No Authorization header — TestHttp sends no auth by default
         ResponseEntity<Map> response = restTemplate.getForEntity(
                 "/api/v1/results/" + finishedRaceId, Map.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

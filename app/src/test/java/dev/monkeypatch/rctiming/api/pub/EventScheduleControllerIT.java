@@ -3,7 +3,7 @@ package dev.monkeypatch.rctiming.api.pub;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EventScheduleControllerIT extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestHttp restTemplate;
 
     @Test
     void listEvents_anonymous_returns200() {

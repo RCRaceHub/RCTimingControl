@@ -6,7 +6,7 @@ import dev.monkeypatch.rctiming.domain.championship.ChampionshipRepository;
 import dev.monkeypatch.rctiming.domain.championship.ScoringSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PublicChampionshipControllerTest extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestHttp restTemplate;
 
     @Autowired
     ChampionshipRepository championshipRepository;
@@ -43,7 +43,7 @@ class PublicChampionshipControllerTest extends AbstractIntegrationTest {
         champ.setUpdatedAt(now);
         champ = championshipRepository.save(champ);
 
-        // No Authorization header — TestRestTemplate sends no auth by default
+        // No Authorization header — TestHttp sends no auth by default
         ResponseEntity<List> response = restTemplate.getForEntity(
                 "/api/v1/championships/" + champ.getId(), List.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

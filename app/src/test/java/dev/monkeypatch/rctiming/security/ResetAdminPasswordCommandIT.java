@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ResetAdminPasswordCommandIT extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate rest;
+    TestHttp rest;
 
     @Autowired
     UserRepository userRepository;

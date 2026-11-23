@@ -9,7 +9,7 @@ import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,7 +49,7 @@ class SqliteConcurrencyIT extends AbstractIntegrationTest {
     @Autowired CompetitorRepository competitorRepository;
     @Autowired ApplicationEventPublisher eventPublisher;
     @Autowired TransactionTemplate transactionTemplate;
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired @Qualifier("read") DataSource readDataSource;
 
     @Test

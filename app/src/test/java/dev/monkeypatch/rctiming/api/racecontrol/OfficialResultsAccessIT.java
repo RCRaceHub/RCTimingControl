@@ -3,7 +3,7 @@ package dev.monkeypatch.rctiming.api.racecontrol;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** The officials' result endpoints carry real names, so an anonymous caller must never reach them. */
 class OfficialResultsAccessIT extends AbstractIntegrationTest {
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
 
     @Test
     void eventResultsNeedASignIn() {

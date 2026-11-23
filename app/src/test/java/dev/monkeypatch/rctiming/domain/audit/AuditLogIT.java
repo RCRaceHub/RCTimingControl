@@ -13,7 +13,7 @@ import dev.monkeypatch.rctiming.query.audit.AuditQueryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -42,7 +42,7 @@ class AuditLogIT extends AbstractIntegrationTest {
     @Autowired TransactionTemplate transactions;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired JdbcTemplate jdbc;
 
     /** Users this test created, removed afterwards: every test class shares one database. */

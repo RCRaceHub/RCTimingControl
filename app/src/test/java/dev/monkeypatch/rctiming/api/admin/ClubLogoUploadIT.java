@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -51,7 +51,7 @@ class ClubLogoUploadIT extends AbstractIntegrationTest {
     org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Autowired
-    TestRestTemplate rest;
+    TestHttp rest;
 
     @Autowired
     UserRepository userRepository;

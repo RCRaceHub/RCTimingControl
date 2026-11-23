@@ -9,7 +9,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -33,7 +33,7 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
 
     private static final String URL = "/api/v1/admin/scoring-systems";
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired JdbcTemplate jdbc;
@@ -204,8 +204,10 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
         assertThat(send(HttpMethod.DELETE, URL + "/" + systemId, null, adminToken).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
 
         Long formatId = ((Number) created.getBody().get("id")).longValue();
+        HttpHeaders yamlExport = headers(adminToken);
+        yamlExport.setAccept(List.of(MediaType.parseMediaType("application/yaml")));
         ResponseEntity<String> exported = restTemplate.exchange("/api/v1/admin/formats/" + formatId + "/export",
-                HttpMethod.GET, new HttpEntity<>(headers(adminToken)), String.class);
+                HttpMethod.GET, new HttpEntity<>(yamlExport), String.class);
         assertThat(exported.getBody()).contains("finalLegs: 2").contains("scoringSystemId: null");
 
         format.put("scoringSystemId", 999_999_999);
