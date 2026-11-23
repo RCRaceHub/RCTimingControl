@@ -47,6 +47,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubFormatLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
@@ -282,6 +283,11 @@ public class Tables {
      * The table <code>racehub_class_links</code>.
      */
     public static final RacehubClassLinks RACEHUB_CLASS_LINKS = RacehubClassLinks.RACEHUB_CLASS_LINKS;
+
+    /**
+     * The table <code>racehub_format_links</code>.
+     */
+    public static final RacehubFormatLinks RACEHUB_FORMAT_LINKS = RacehubFormatLinks.RACEHUB_FORMAT_LINKS;
 
     /**
      * The table <code>racehub_class_mappings</code>.
