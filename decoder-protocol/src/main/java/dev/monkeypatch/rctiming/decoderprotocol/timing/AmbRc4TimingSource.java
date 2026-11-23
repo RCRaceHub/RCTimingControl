@@ -2,7 +2,7 @@ package dev.monkeypatch.rctiming.decoderprotocol.timing;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
@@ -58,7 +58,7 @@ public class AmbRc4TimingSource implements TimingSource {
     private final EpochAnchor     epochAnchor = new EpochAnchor();
     private final SeqGapDetector  gapDetector = new SeqGapDetector();
 
-    private final NioEventLoopGroup group = new NioEventLoopGroup(1);
+    private final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
 
     private volatile boolean stopped     = false;
     private          int     backoffIdx  = 0;
