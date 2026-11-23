@@ -9,7 +9,7 @@ import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -33,7 +33,7 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
 
     private static final String URL = "/api/v1/admin/scoring-systems";
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired JdbcTemplate jdbc;

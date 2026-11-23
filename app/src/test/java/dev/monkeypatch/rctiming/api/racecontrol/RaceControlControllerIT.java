@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RaceControlControllerIT extends AbstractIntegrationTest {
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired RaceRepository raceRepository;

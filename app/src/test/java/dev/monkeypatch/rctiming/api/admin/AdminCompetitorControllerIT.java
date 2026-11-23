@@ -13,7 +13,7 @@ import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 /** How a competitor's name is said aloud: set, cleared and heard (#119). */
 class AdminCompetitorControllerIT extends AbstractIntegrationTest {
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired CompetitorService competitorService;

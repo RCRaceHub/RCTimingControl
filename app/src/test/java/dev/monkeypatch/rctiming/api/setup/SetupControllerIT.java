@@ -14,7 +14,7 @@ import dev.monkeypatch.rctiming.domain.track.TrackRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SetupControllerIT extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestHttp restTemplate;
 
     @Autowired
     ClubProfileRepository clubProfileRepository;

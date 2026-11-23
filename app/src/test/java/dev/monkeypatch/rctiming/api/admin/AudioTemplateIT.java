@@ -14,7 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -39,7 +39,7 @@ class AudioTemplateIT extends AbstractIntegrationTest {
     private static final String URL = "/api/v1/race-control/settings/audio/templates";
     private static final String SETTINGS = "/api/v1/race-control/settings/audio";
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired ClubProfileRepository clubProfileRepository;

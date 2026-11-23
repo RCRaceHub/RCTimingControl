@@ -3,7 +3,7 @@ package dev.monkeypatch.rctiming.config;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @TestPropertySource(properties = "rctiming.docs.javadoc.enabled=true")
 class JavadocIT extends AbstractIntegrationTest {
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
 
     @Test
     void servesTheJavadocWithoutSigningIn() {

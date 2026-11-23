@@ -6,7 +6,7 @@ import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AuthControllerIT extends AbstractIntegrationTest {
 
     @Autowired
-    TestRestTemplate restTemplate;
+    TestHttp restTemplate;
 
     @Autowired
     UserRepository userRepository;

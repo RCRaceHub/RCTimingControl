@@ -26,7 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.resttestclient.TestRestTemplate;
+import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings({"unchecked", "rawtypes"})
 class BoardControllerIT extends AbstractIntegrationTest {
 
-    @Autowired TestRestTemplate restTemplate;
+    @Autowired TestHttp restTemplate;
     @Autowired EventRepository eventRepository;
     @Autowired RacingClassRepository racingClassRepository;
     @Autowired EventClassRepository eventClassRepository;
