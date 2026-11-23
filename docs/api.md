@@ -396,7 +396,7 @@ Entry Export v1 is the format any booking system can produce to send its entries
 |-------|---------|
 | `schema_version` | Always `1` |
 | `source` | Optional. The system the ids come from: up to 30 capital letters, digits or underscores, starting with a letter. Defaults to `RACEHUB`. `CSV` is taken by the RC-Timing CSV import. |
-| `event` | `id` (required), and optionally `external_reference`, `name`, `event_local_date` (YYYY-MM-DD) and `timezone` |
+| `event` | `id` (required), and optionally `external_reference`, `name`, `event_local_date` (YYYY-MM-DD), `timezone`, and `race_format_id` / `race_format_name` (the race format the organiser chose for the whole meeting; null or absent when none, see [racehub-expectations.md](racehub-expectations.md)) |
 | `revision` | A number that goes up each time the system exports this event |
 | `generated_at` | Optional ISO-8601 time the file was made |
 | `entries` | One object per entry, below |
@@ -437,11 +437,17 @@ POST /admin/racehub/meeting
 
 The body is an Entry Export. Requires `ADMIN`. Answers `{ "eventId": 12, "name": "Club Round 3", "created": true }`. A RaceHub file is matched to an event by the file's RaceHub event id and linked to it (the same match the Find RaceHub events picker uses); when none exists, a DRAFT event is created from the file's `event.name` and `event.event_local_date`. A file from another booking system makes an event that is not linked to RaceHub. Nothing is imported: the Events page then opens the event with the file ready to preview. 400 for a file that is not schema version 1, has no `event`, or gives no usable date. Audited.
 
+### The club's RaceHub race formats
+
+`GET /admin/racehub/formats` asks RaceHub for the club's race formats (`GET /api/rctc/v1/formats`, same key and address rule as the class list) and answers `{ "formats": [ { "id", "name", "active", "linkedTemplateId" } ], "error": null }`. As with classes, an unreachable RaceHub is **200** with `error` set. `PUT /admin/racehub/format-links` with `{ "formatId", "templateId" }` links a RaceHub format to one of RCTC's format templates for the whole club; a null `templateId` removes the link. 404 for an unknown template; audited as `RACEHUB_FORMAT_LINKED` / `RACEHUB_FORMAT_UNLINKED`. Requires `ADMIN`. An import preview carries `raceFormat: { id, name, linkedTemplateId }` (null when the file names no format) so the held-classes panel can default each class it adds to that template. A format with no link, or a file with no format, changes nothing.
+
 ### The club's RaceHub classes
 
 ```http
 GET  /admin/racehub/classes
 POST /admin/racehub/class-links
+GET  /admin/racehub/formats
+PUT  /admin/racehub/format-links
 
 [ { "clubClassId": "12", "racingClassId": 7 },
   { "clubClassId": "13", "createName": "2WD Stock" } ]

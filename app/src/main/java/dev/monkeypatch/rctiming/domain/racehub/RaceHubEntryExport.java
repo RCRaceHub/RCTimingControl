@@ -31,7 +31,9 @@ public record RaceHubEntryExport(
             String externalReference,
             String name,
             String eventLocalDate,
-            String timezone) {
+            String timezone,
+            String raceFormatId,
+            String raceFormatName) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

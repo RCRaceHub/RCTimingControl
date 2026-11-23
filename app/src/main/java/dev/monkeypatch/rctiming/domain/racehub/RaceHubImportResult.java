@@ -25,7 +25,16 @@ public record RaceHubImportResult(
         List<String> errors,
         List<String> warnings,
         List<Row> rows,
-        List<PhotoLink> photoLinks) {
+        List<PhotoLink> photoLinks,
+        RaceFormat raceFormat) {
+
+    /**
+     * The race format the file's meeting was given in RaceHub, null when the file names none. {@code linkedTemplateId}
+     * is the club's RCTC format template linked to it, null when the club has not linked it yet; the screen then
+     * offers it for each class the import adds, so one meeting runs to one format.
+     */
+    public record RaceFormat(String id, String name, Long linkedTemplateId) {
+    }
 
     /** How many export entries fall under each {@link Action}. */
     public record Summary(int created, int updated, int withdrawn, int unchanged, int stale, int skipped) {

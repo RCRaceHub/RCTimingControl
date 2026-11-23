@@ -13,6 +13,8 @@ vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     listRacingClasses: vi.fn(),
     raceHubClasses: { list: vi.fn(), link: vi.fn() },
+    raceHubFormats: { list: vi.fn(), link: vi.fn() },
+    formats: { list: vi.fn() },
     raceHubEvents: { setAddress: vi.fn() },
   },
 }));
@@ -55,6 +57,8 @@ function renderPage() {
 describe('RaceHubClassesPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    api.raceHubFormats.list.mockResolvedValue({ formats: [], error: null });
+    api.formats.list.mockResolvedValue([]);
     api.listRacingClasses.mockResolvedValue([
       { id: 101, name: '2WD Buggy', description: null },
       { id: 102, name: 'Stadium Truck', description: null },

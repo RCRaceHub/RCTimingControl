@@ -22,7 +22,9 @@
         "external_reference": { "type": ["string", "null"] },
         "name": { "type": ["string", "null"] },
         "event_local_date": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-        "timezone": { "type": ["string", "null"] }
+        "timezone": { "type": ["string", "null"] },
+        "race_format_id": { "type": ["string", "null"], "description": "The race format the organiser chose in the booking system for the whole meeting; null when none. RCTC runs it with the template the club linked to this id." },
+        "race_format_name": { "type": ["string", "null"] }
       }
     },
     "revision": {

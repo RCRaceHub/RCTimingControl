@@ -231,6 +231,13 @@ export interface RaceHubImportResult {
   }[];
   /** Pictures the entries name; fetched afterwards (#699). Empty for a preview. */
   photoLinks: ImportedPhotoLink[];
+  /** The race format RaceHub gave the meeting, or null when it names none */
+  raceFormat?: {
+    id: string;
+    name: string | null;
+    /** The format template the club linked to it, or null when not linked yet */
+    linkedTemplateId: number | null;
+  } | null;
 }
 
 // RC-Timing CSV import (#39, #40)
@@ -372,6 +379,26 @@ export interface LinkRaceHubClassRequest {
   clubClassId: string;
   racingClassId?: number;
   createName?: string;
+}
+
+/** One race format of the club's as RaceHub lists it, with the format template it is linked to. */
+export interface RaceHubFormatDto {
+  id: string;
+  name: string | null;
+  active: boolean;
+  linkedTemplateId: number | null;
+}
+
+export interface RaceHubFormatsDto {
+  formats: RaceHubFormatDto[];
+  /** Why RaceHub could not be asked, or null */
+  error: string | null;
+}
+
+/** Links a RaceHub race format to a format template for the whole club; a null `templateId` removes the link. */
+export interface LinkRaceHubFormatRequest {
+  formatId: string;
+  templateId: number | null;
 }
 
 /** A per-meeting mapping, used by the RC-Timing CSV import only. */
@@ -1317,6 +1344,13 @@ export const adminApi = {
     list: () => api.get<RaceHubClassesDto>('/api/v1/admin/racehub/classes').then(r => r.data),
     link: (requests: LinkRaceHubClassRequest[]) =>
       api.post<ResolvedRaceHubClassDto[]>('/api/v1/admin/racehub/class-links', requests).then(r => r.data),
+  },
+
+  // The club's race formats as RaceHub lists them, and the club-wide links to format templates
+  raceHubFormats: {
+    /** Asks RaceHub now, so calling it again re-fetches */
+    list: () => api.get<RaceHubFormatsDto>('/api/v1/admin/racehub/formats').then(r => r.data),
+    link: (request: LinkRaceHubFormatRequest) => api.put<void>('/api/v1/admin/racehub/format-links', request),
   },
 
   // Results sent to RaceHub (#27)

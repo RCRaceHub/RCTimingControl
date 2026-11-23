@@ -73,6 +73,7 @@ public class RaceHubImportService {
     private final TransponderSwapService transponderSwapService;
     private final EntryImports entryImports;
     private final EntryMediaImport mediaImport;
+    private final RaceHubFormatLinkRepository formatLinkRepository;
     private final AuditService audit;
 
     public RaceHubImportService(EventRepository eventRepository,
@@ -83,6 +84,7 @@ public class RaceHubImportService {
                                 TransponderSwapService transponderSwapService,
                                 EntryImports entryImports,
                                 EntryMediaImport mediaImport,
+                                RaceHubFormatLinkRepository formatLinkRepository,
                                 AuditService audit) {
         this.eventRepository = eventRepository;
         this.eventClassRepository = eventClassRepository;
@@ -92,6 +94,7 @@ public class RaceHubImportService {
         this.transponderSwapService = transponderSwapService;
         this.entryImports = entryImports;
         this.mediaImport = mediaImport;
+        this.formatLinkRepository = formatLinkRepository;
         this.audit = audit;
     }
 
@@ -196,7 +199,18 @@ public class RaceHubImportService {
         }
         return new RaceHubImportResult(dryRun, blocked, apply,
                 export.event() == null ? null : export.event().name(), export.revision(),
-                summary, unmappedClasses, errors, warnings, rows, photoLinks.stream().distinct().toList());
+                summary, unmappedClasses, errors, warnings, rows, photoLinks.stream().distinct().toList(),
+                raceFormatOf(export));
+    }
+
+    /** The meeting's race format and the template the club linked to it; null when the file names no format. */
+    private RaceHubImportResult.RaceFormat raceFormatOf(RaceHubEntryExport export) {
+        if (export.event() == null || blankToNull(export.event().raceFormatId()) == null) {
+            return null;
+        }
+        String id = export.event().raceFormatId().strip();
+        Long templateId = formatLinkRepository.findByFormatKey(id).map(RaceHubFormatLink::getTemplateId).orElse(null);
+        return new RaceHubImportResult.RaceFormat(id, blankToNull(export.event().raceFormatName()), templateId);
     }
 
     /** A RaceHub file must name its event, and one event takes one RaceHub event's entries. */
