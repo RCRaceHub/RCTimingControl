@@ -30,50 +30,67 @@ import java.net.http.HttpClient;
  */
 public class TestHttp {
 
-    private final URI base;
-    private final RestClient client;
+    private final Environment environment;
+    private volatile URI base;
+    private volatile RestClient client;
 
-    TestHttp(URI base) {
-        this.base = base;
-        HttpClient jdk = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
-        this.client = RestClient.builder()
-                .baseUrl(base.toString())
-                .requestFactory(new JdkClientHttpRequestFactory(jdk))
-                .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> { })
-                .build();
+    TestHttp(Environment environment) {
+        this.environment = environment;
+    }
+
+    /**
+     * Built on the first call, not at start-up: the app's random port is only set once the web server has
+     * started, which is after this bean is created.
+     */
+    private RestClient client() {
+        RestClient ready = client;
+        if (ready == null) {
+            synchronized (this) {
+                if (client == null) {
+                    base = URI.create("http://localhost:" + environment.getRequiredProperty("local.server.port"));
+                    HttpClient jdk = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build();
+                    client = RestClient.builder()
+                            .baseUrl(base.toString())
+                            .requestFactory(new JdkClientHttpRequestFactory(jdk))
+                            .defaultStatusHandler(HttpStatusCode::isError, (request, response) -> { })
+                            .build();
+                }
+                ready = client;
+            }
+        }
+        return ready;
     }
 
     /** Makes this available to every test class that extends {@link AbstractIntegrationTest}. */
     @TestConfiguration(proxyBeanMethods = false)
     public static class Config {
 
-        /** Points the client at the app's random port, known once the web server has started. */
         @Bean
         TestHttp testHttp(@Autowired Environment environment) {
-            return new TestHttp(URI.create("http://localhost:" + environment.getProperty("local.server.port")));
+            return new TestHttp(environment);
         }
     }
 
     public <T> ResponseEntity<T> exchange(String url, HttpMethod method, HttpEntity<?> request, Class<T> type,
             Object... uriVariables) {
-        return send(client.method(method).uri(url, uriVariables), request, type);
+        return send(client().method(method).uri(url, uriVariables), request, type);
     }
 
     public <T> ResponseEntity<T> exchange(String url, HttpMethod method, HttpEntity<?> request,
             ParameterizedTypeReference<T> type, Object... uriVariables) {
-        return send(client.method(method).uri(url, uriVariables), request, type);
+        return send(client().method(method).uri(url, uriVariables), request, type);
     }
 
     public <T> ResponseEntity<T> exchange(URI url, HttpMethod method, HttpEntity<?> request, Class<T> type) {
-        return send(client.method(method).uri(resolve(url)), request, type);
+        return send(client().method(method).uri(resolve(url)), request, type);
     }
 
     public <T> ResponseEntity<T> exchange(RequestEntity<?> request, Class<T> type) {
-        return send(client.method(request.getMethod()).uri(resolve(request.getUrl())), request, type);
+        return send(client().method(request.getMethod()).uri(resolve(request.getUrl())), request, type);
     }
 
     public <T> ResponseEntity<T> exchange(RequestEntity<?> request, ParameterizedTypeReference<T> type) {
-        return send(client.method(request.getMethod()).uri(resolve(request.getUrl())), request, type);
+        return send(client().method(request.getMethod()).uri(resolve(request.getUrl())), request, type);
     }
 
     public <T> ResponseEntity<T> getForEntity(String url, Class<T> type, Object... uriVariables) {
