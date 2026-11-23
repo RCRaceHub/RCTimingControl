@@ -49,7 +49,7 @@ public class RaceHubKeyStore {
 
     /** A store that never holds a key, for a caller that only has the settings file's. */
     static RaceHubKeyStore none() {
-        return new RaceHubKeyStore(null, null);
+        return new RaceHubKeyStore((Path) null, null);
     }
 
     /** The saved key, or empty when none is saved or it cannot be read. Never log or return it. */
