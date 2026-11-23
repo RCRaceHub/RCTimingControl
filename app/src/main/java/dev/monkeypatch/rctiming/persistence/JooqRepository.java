@@ -135,19 +135,19 @@ public abstract class JooqRepository<E, R extends UpdatableRecord<R>> {
         toRecord(entity, record);
         Long entityId = idOf(entity);
         if (entityId == null) {
-            record.changed(id, false);
+            record.touched(id, false);
             record.insert();
             setId(entity, record.get(id));
             return entity;
         }
         record.set(id, entityId);
-        record.changed(id, false);
-        insertOnly().forEach(field -> record.changed(field, false));
+        record.touched(id, false);
+        insertOnly().forEach(field -> record.touched(field, false));
         int updated = dsl.update(table).set(record).where(id.eq(entityId)).execute();
         if (updated == 0) {
             // As JPA's merge does, an entity whose row has gone is inserted again with its id
-            record.changed(id, true);
-            insertOnly().forEach(field -> record.changed(field, true));
+            record.touched(id, true);
+            insertOnly().forEach(field -> record.touched(field, true));
             dsl.insertInto(table).set(record).execute();
         }
         return entity;

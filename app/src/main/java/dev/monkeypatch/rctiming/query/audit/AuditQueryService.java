@@ -70,7 +70,7 @@ public class AuditQueryService {
             return objectMapper.readTree(json);
         } catch (JacksonException e) {
             // The column is checked with json_valid, so this is not expected; show the text rather than fail the page
-            return objectMapper.getNodeFactory().textNode(json);
+            return objectMapper.getNodeFactory().stringNode(json);
         }
     }
 }

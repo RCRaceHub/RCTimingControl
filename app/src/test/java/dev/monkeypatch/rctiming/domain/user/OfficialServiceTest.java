@@ -4,7 +4,7 @@ import dev.monkeypatch.rctiming.domain.auth.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -22,6 +22,19 @@ import static org.mockito.Mockito.when;
 
 /** The guard rails that keep a club from locking itself out (#61). */
 class OfficialServiceTest {
+    /** Stores and matches passwords as plain text, so a test can read what the service saved. */
+    private static final PasswordEncoder PLAIN_PASSWORDS = new PasswordEncoder() {
+        @Override
+        public String encode(CharSequence raw) {
+            return raw.toString();
+        }
+
+        @Override
+        public boolean matches(CharSequence raw, String encoded) {
+            return raw.toString().equals(encoded);
+        }
+    };
+
 
     private static final Instant NOW = Instant.parse("2026-10-05T12:00:00Z");
     private static final long ACTOR = 1L;
@@ -34,7 +47,7 @@ class OfficialServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OfficialService(users, auditLog, refreshTokens, NoOpPasswordEncoder.getInstance(), events,
+        service = new OfficialService(users, auditLog, refreshTokens, PLAIN_PASSWORDS, events,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
