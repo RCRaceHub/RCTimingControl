@@ -16,19 +16,13 @@ import { useReplacePointsScale } from '@/hooks/admin/useAdminChampionships';
 import type { PointsScaleEntryDto } from '@/lib/adminApi';
 
 // Starting points for the editor. Choosing one only fills the draft; nothing is saved until Save.
-const ROAR_PRESET: PointsScaleEntryDto[] = [
-  { position: 1, points: 20 }, { position: 2, points: 17 }, { position: 3, points: 15 },
-  { position: 4, points: 13 }, { position: 5, points: 12 }, { position: 6, points: 11 },
-  { position: 7, points: 10 }, { position: 8, points: 9 }, { position: 9, points: 8 },
-  { position: 10, points: 7 },
-];
-
-const BRCA_PRESET: PointsScaleEntryDto[] = [
-  { position: 1, points: 100 }, { position: 2, points: 95 }, { position: 3, points: 91 },
-  { position: 4, points: 88 }, { position: 5, points: 85 }, { position: 6, points: 83 },
-  { position: 7, points: 81 }, { position: 8, points: 79 }, { position: 9, points: 77 },
-  { position: 10, points: 75 },
-];
+// BRCA 1/10th Electric Off-Road Rules 2026 V1, rule 18.2: the A final winner scores 130, second 129 and so on
+// down to 1 point at 130th place "and beyond" (so places 131 to 200, the most a scale holds, score 1).
+// See docs/scoring-references.md before changing it.
+const BRCA_PRESET: PointsScaleEntryDto[] = Array.from({ length: 200 }, (_, i) => ({
+  position: i + 1,
+  points: Math.max(130 - i, 1),
+}));
 
 interface Props {
   championshipId: number;
@@ -97,9 +91,6 @@ export function PointsScaleEditor({ championshipId, initialScale }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Presets:</span>
-        <Button variant="outline" size="sm" onClick={() => applyPreset(ROAR_PRESET)}>
-          ROAR
-        </Button>
         <Button variant="outline" size="sm" onClick={() => applyPreset(BRCA_PRESET)}>
           BRCA
         </Button>

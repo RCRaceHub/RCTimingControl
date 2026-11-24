@@ -310,8 +310,12 @@ class ChampionshipControllerIT extends AbstractIntegrationTest {
         Map<String, Object> detail = restTemplate.exchange("/api/v1/admin/championships/" + champId, HttpMethod.GET,
                 new HttpEntity<>(adminHeaders()), Map.class).getBody();
         List<Map<String, Object>> scale = (List<Map<String, Object>>) detail.get("pointsScale");
-        assertEquals(10, scale.size());
-        assertEquals(100, scale.get(0).get("points"));
+        assertEquals(200, scale.size());
+        assertEquals(130, scale.get(0).get("points"));
+        assertEquals(129, scale.get(1).get("points"));
+        assertEquals(1, scale.get(129).get("points"));
+        assertEquals(1, scale.get(199).get("points"));
+        assertEquals(1, ((Number) detail.get("tqBonusPoints")).intValue());
         assertEquals("Applied scoring", detail.get("name"));
 
         assertEquals(HttpStatus.BAD_REQUEST, restTemplate.exchange(
