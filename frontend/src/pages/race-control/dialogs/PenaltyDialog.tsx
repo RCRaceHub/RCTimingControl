@@ -55,7 +55,7 @@ type Props = {
 export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers, defaultEntryId, defaultReason }: Props) {
   const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { entryId: 0, penaltyType: 'LAP', value: 1, reason: '' },
+    defaultValues: { entryId: 0, penaltyType: 'TIME', value: 5, reason: '' },
   });
 
   function handleSubmit(values: FormValues) {
@@ -67,7 +67,7 @@ export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers
   const { reset } = form;
   useEffect(() => {
     if (!open) reset();
-    else reset({ entryId: defaultEntryId ?? 0, penaltyType: 'LAP', value: 1, reason: defaultReason ?? '' });
+    else reset({ entryId: defaultEntryId ?? 0, penaltyType: 'TIME', value: 5, reason: defaultReason ?? '' });
   }, [open, reset, defaultEntryId, defaultReason]);
 
   const penaltyType = useWatch({ control: form.control, name: 'penaltyType' });
