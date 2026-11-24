@@ -264,9 +264,11 @@ new system. The same operations are available under `/api/v1/admin/scoring-syste
 and export them through the API.
 
 Four are built in and locked, a *Club default* and *BRCA 1/10 off-road* of each kind; clone one to change it. The BRCA
-championship system holds the published BRCA points: 130 for 1st, 129 for 2nd and so on down to 1, one extra point for the
-TQ, and the best 4 of 6 rounds counting (2026 BRCA 1/10th Electric Off-Road Rules, rules 5.2 and 18.2). Where each
-built-in value comes from is in [scoring-references.md](scoring-references.md). Each system
+championship system holds the published BRCA points: 130 for 1st, 129 for 2nd and so on down to 1 (130th place and
+beyond score 1), one extra point for the TQ, and the best 4 of 6 rounds counting (2026 BRCA 1/10th Electric Off-Road
+Rules, rules 5.2 and 18.2). Those are the National Championship values, so applying it to a regional championship needs
+the best X changed (regional series count the best 3 of their rounds), and the TQ point applies only at National and
+Regional events. Where each built-in value comes from is in [scoring-references.md](scoring-references.md). Each system
 is JSON with a `type`: `CLASSIC` or `BRCA` for races, `PLACE_POINTS` for championships. A file carries only numbers and
 switches, never logic, so a genuinely new kind of rule is a new `type` in the app. Values are range-checked on save and
 import, and every change is audited.

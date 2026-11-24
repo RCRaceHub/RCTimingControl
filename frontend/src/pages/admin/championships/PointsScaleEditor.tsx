@@ -17,10 +17,11 @@ import type { PointsScaleEntryDto } from '@/lib/adminApi';
 
 // Starting points for the editor. Choosing one only fills the draft; nothing is saved until Save.
 // BRCA 1/10th Electric Off-Road Rules 2026 V1, rule 18.2: the A final winner scores 130, second 129 and so on
-// down to 1 point at 130th place. See docs/scoring-references.md before changing it.
-const BRCA_PRESET: PointsScaleEntryDto[] = Array.from({ length: 130 }, (_, i) => ({
+// down to 1 point at 130th place "and beyond" (so places 131 to 200, the most a scale holds, score 1).
+// See docs/scoring-references.md before changing it.
+const BRCA_PRESET: PointsScaleEntryDto[] = Array.from({ length: 200 }, (_, i) => ({
   position: i + 1,
-  points: 130 - i,
+  points: Math.max(130 - i, 1),
 }));
 
 interface Props {
