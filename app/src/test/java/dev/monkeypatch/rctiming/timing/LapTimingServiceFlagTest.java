@@ -164,8 +164,9 @@ class LapTimingServiceFlagTest {
     @Test
     void aStaggeredCarKeepsRacingUntilItsOwnWindowEnds() {
         staggerWithSecondCar(5_000);
-        elapsedMs = 100_000;
+        elapsedMs = 0;
         lapOf("1010", 10);
+        elapsedMs = 5_000;
         lapOf("1011", 12);
 
         // The race clock is up for the first car, but the second left 5 s later and has 5 s to go
@@ -181,10 +182,29 @@ class LapTimingServiceFlagTest {
     }
 
     @Test
+    void aStaggeredCarCrossingLateGetsItsFullTimeFromItsOwnCrossing() {
+        staggerWithSecondCar(5_000);
+        elapsedMs = 0;
+        lapOf("1010", 10);
+        // Car 11's slot was 5 s but it first crosses at 20 s, so its time runs to 320 s
+        elapsedMs = 20_000;
+        lapOf("1011", 22);
+
+        elapsedMs = 305_000;
+        lapOf("1010", 40);
+        lapOf("1011", 42);
+        verify(publisher, never()).publishEvent(any(AllCarsFlaggedEvent.class));
+
+        elapsedMs = 321_000;
+        lapOf("1011", 70);
+        verify(publisher).publishEvent(new AllCarsFlaggedEvent(RACE));
+    }
+
+    @Test
     void theRaceIsNotOverWhileTheLastCarToStartHasNotCrossed() {
         staggerWithSecondCar(120_000);
         // Car 10's window is up, car 11 left 2 minutes later and has not crossed the line yet
-        elapsedMs = 100_000;
+        elapsedMs = 1_000;
         lapOf("1010", 10);
         elapsedMs = 305_000;
         lapOf("1010", 40);

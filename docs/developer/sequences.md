@@ -43,6 +43,9 @@ sequenceDiagram
         end
     else a race is running
         LTS->>LRS: getRuntimeLink(transponder), else resolveEntryId
+        opt a stagger start and the car's first crossing is after its slot
+            LTS->>LRS: onStaggerCrossing(entryId, elapsedMs, maxLateMs), start offset moves to the crossing
+        end
         LTS->>LRS: applyLapPassing(event, entryId, now, windowEnded)
         opt no entry matches (or more than one), first sighting of that transponder
             LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
