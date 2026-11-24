@@ -34,11 +34,20 @@ Verified against the code on `main` (PR #702, issue #699):
 | Colours | Saved by the import itself (no fetch step). | `EntryMediaImport` |
 | Safety | https only, public hosts only, no redirects, 10 s and 20 s limits, never fetched for a driver whose name is not shown in full (#265), existing pictures kept unless **Replace** is ticked. | `PhotoLink.problem`, `PhotoFetcher.isPublic` |
 
-### Gaps found
+### What RaceHub sends
 
-1. **RaceHub does not send these fields yet.** Its `EntryExportBuilder` emits none of them (its schema copy lists them but nothing fills them), so a RaceHub import currently brings in no headshots, car photos or colours. The code RCTC needs is built and tested with fixture files (`entries-v1-media.json`), not with a real RaceHub export. RaceHub also keeps headshots (`photo_path`) and paint-scheme photos (`driver_paint_schemes.photo_*_path`) on a private disk with a visibility setting, so it needs a consent rule and a download link that does not need a RaceHub login. Its merge-order note lists this as optional and not built.
-2. **The automatic entry feed never fetches pictures.** A feed revision that applies by itself saves the car colours but leaves the picture links unfetched; an official has to import the file by hand to fetch them. Recorded as a follow-up on #699.
-3. **Car colours are not always paintwork photos.** `car_colours` is up to four `#rrggbb` values; RaceHub's paint scheme is a photo. RaceHub would need to derive colours or send the photo as `car_photo_url`.
+RaceHub now fills `headshot_url` and `car_photo_url` (RaceHub PR #399, not yet merged or tested end to end as of 2026-11-24), but only for a driver who opted in: their **Photo visibility** is Event media / commentators or Public (Private, the default, sends nothing, and the field is left out so RCTC keeps what it has).
+
+- The links are signed, last 12 hours and need no RaceHub login, so RCTC's fetch works as it is. RCTC fetches right after the import, well inside that time. A link older than 12 hours (an import left unfinished overnight) fails with a 403; import again to get fresh links.
+- RaceHub re-checks consent on every download, so a driver who withdraws consent stops the next fetch.
+- `car_photo_url` is the photo of the paint scheme on the car the entry uses.
+- **RaceHub sends no `car_colours`.** It holds a photo of the paintwork, not colour values, so RCTC's colours stay as an official set them.
+
+### Remaining gaps
+
+1. **The automatic entry feed never fetches pictures.** A feed revision that applies by itself saves the car colours but leaves the picture links unfetched; an official has to import the file by hand to fetch them. Recorded as a follow-up on #699. Because RaceHub's links expire after 12 hours, this follow-up should fetch at the moment the feed applies.
+2. **No colours from RaceHub** (above). Colours still come from the CSV import or an official.
+3. The pictures have not yet been tried with a real RaceHub export; the tests use fixture files (`entries-v1-media.json`).
 
 ## Versions
 

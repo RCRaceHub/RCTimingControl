@@ -2,7 +2,7 @@
 
 This page records what RCTimingControl (RCTC) reads from a RaceHub **Entry Export v1** file and from the RC-Timing driver CSV, and what it does with each field. It is written from RCTC's side only: it says what RCTC accepts and how it behaves, not what RaceHub must build. Every field below that is marked optional can be left out, and a file without them imports exactly as before.
 
-**Status.** The fields in [Pictures and car colours](#pictures-and-car-colours) (#699) are RCTC's proposal for RaceHub. RCTC reads them from this release; RaceHub has not agreed or built them yet, so until it does the fields are simply absent from its files (checked 2026-11-24: its entry export does not emit them). Everything else on this page is the existing Entry Export v1.
+**Status.** The fields in [Pictures and car colours](#pictures-and-car-colours) (#699) are RCTC's proposal for RaceHub. RCTC reads them from this release; RaceHub has built `headshot_url` and `car_photo_url` (opt-in: the driver's Photo visibility is Event media or Public; signed links valid for 12 hours; PR #399, awaiting testing as of 2026-11-24) but sends no `car_colours`, since it holds a photo of the paintwork and not colour values. A file without a field imports as before. Everything else on this page is the existing Entry Export v1.
 
 - The JSON Schema (draft 2020-12) is `app/src/main/resources/racehub/entry-export-v1.schema.json`, and a test checks every import test file against it. The same file format can be produced by any booking system (set `source`); see `docs/api.md`, "The file format for any booking system".
 - The Java model is `domain/racehub/RaceHubEntryExport`, and the import is `RaceHubImportService`.
