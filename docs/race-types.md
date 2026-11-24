@@ -146,7 +146,7 @@ result is ranked.
 
 ## 4. The formats
 
-A club that books through RaceHub can pick the meeting's race format there. RCTC runs it with the format template the club linked to it once (RaceHub classes page, Race formats); see [RaceHub expectations](racehub-expectations.md#race-format-of-the-meeting). Without a link, or without RaceHub, you choose each class's format yourself as before.
+A club that books through RaceHub can pick the meeting's race format there. RCTC runs it with the format template the club linked to it once (RaceHub classes page, Race formats); see the RaceHub expectations page in the source repository. Without a link, or without RaceHub, you choose each class's format yourself as before.
 
 ### 4.1 Timed
 
