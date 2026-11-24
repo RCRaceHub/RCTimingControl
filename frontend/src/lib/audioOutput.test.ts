@@ -140,6 +140,13 @@ describe('routeCue', () => {
     expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: 0 });
   });
 
+  it('puts a spoken line\'s side back before it plays, whatever sounded in between', async () => {
+    routing({ raceCalls: ['rostrum'] });
+    routeCue('raceCalls', 1, { kind: 'speech', text: 'Race started.' });
+    routeCue('lapBeep', 1, { kind: 'lapBeep', pace: 'onPace' });
+    await vi.waitFor(() => expect(sounds.setOutputTarget).toHaveBeenCalledWith({ deviceId: null, pan: -1 }));
+  });
+
   it('splits a long spoken line into pieces the speech preview takes', () => {
     const line = `Running order: ${Array.from({ length: 12 }, (_, i) => `${i + 1}, Driver Number${i}`).join('. ')}.`;
     const pieces = speechPieces(line);
