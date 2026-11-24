@@ -1,0 +1,959 @@
+# The schemas are lifted unchanged from the *-v1.schema.json contract files; change them there first and keep this file in step.
+openapi: 3.1.0
+info:
+  title: RaceHub timing integration API
+  version: 1.0.0
+  summary: How RCTimingControl (RCTC) pulls entries from RaceHub and pushes results back.
+  description: 'Club-level bearer keys (Laravel Sanctum). One key belongs to one club and carries `entries:read`
+    and `results:write`; it may optionally be narrowed to one meeting. RCTC runs on a venue laptop with
+    no public address, so it only ever calls out: entries are pulled, results are pushed.
+
+
+    Schemas under `EntryExport*`, `ClassList*`, `FormatList*` and `ResultsExport*` are the JSON Schema
+    2020-12 contracts, lifted unchanged; the files `entry-export-v1.schema.json`, `classes-v1.schema.json`,
+    `formats-v1.schema.json` and `results-export-v1.schema.json` remain the source of truth. This file
+    is generated from them, see docs/rctc/API.md.
+
+
+    Every response is JSON. Calls are rate limited to 30 a minute per key.
+
+
+    Versioning: the major version is in the path (`/v1`). At most two major versions are live at once.
+    Adding an optional field or a new endpoint is not a breaking change and does not bump the version;
+    readers ignore fields they do not know. A deprecated version keeps working and answers with `Deprecation`,
+    `Sunset` and `Link: <...>; rel="successor-version"` headers; after its sunset date it answers 410.
+    See docs/rctc/VERSIONING.md.'
+  license:
+    name: Proprietary
+servers:
+- url: https://{host}/api/rctc/v1
+  variables:
+    host:
+      default: racehub.example
+      description: The RaceHub host the club's RCTC is configured with.
+tags:
+- name: Entries
+  description: 'Read side: what RCTC pulls.'
+- name: Results
+  description: 'Write side: what RCTC pushes.'
+security:
+- bearerAuth: []
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      summary: List the club's meetings
+      description: '`state=ready` (default) lists only meetings the club released to timing. `state=all`
+        adds the club''s other open meetings, which carry no `entries_url` until released.'
+      tags:
+      - Entries
+      security:
+      - bearerAuth:
+        - entries:read
+      parameters:
+      - &id001
+        name: If-None-Match
+        in: header
+        required: false
+        schema:
+          type: string
+        description: The ETag from the last answer; an unchanged list or export answers 304 with no body.
+      - name: state
+        in: query
+        required: false
+        schema:
+          enum:
+          - ready
+          - all
+          default: ready
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventListV1'
+          headers: &id002
+            ETag:
+              description: Entity tag. Send it back as If-None-Match.
+              schema:
+                type: string
+        '304':
+          description: Not modified
+        '401': &id003
+          description: No bearer token, or the token is revoked or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403': &id004
+          description: The token lacks the ability, belongs to another club, or is narrowed to a different
+            meeting. A meeting that does not exist and another club's meeting both answer 403 on the results
+            routes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429': &id005
+          description: Over 30 calls a minute for this token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+  /classes:
+    get:
+      operationId: listClasses
+      summary: List the club's classes
+      description: '`id` is the club-level class id, the same value as `club_class_id` on every entry.
+        Inactive classes are included.'
+      tags:
+      - Entries
+      security:
+      - bearerAuth:
+        - entries:read
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassListV1'
+          headers: *id002
+        '304':
+          description: Not modified
+        '401': *id003
+        '403': *id004
+        '429': *id005
+  /formats:
+    get:
+      operationId: listFormats
+      summary: List the club's race formats
+      description: '`id` is the value the entry export sends as `event.race_format_id`. Inactive formats
+        are included.'
+      tags:
+      - Entries
+      security:
+      - bearerAuth:
+        - entries:read
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatListV1'
+          headers: *id002
+        '304':
+          description: Not modified
+        '401': *id003
+        '403': *id004
+        '429': *id005
+  /events/{event}/entries:
+    get:
+      operationId: getEntryExport
+      summary: Entry Export v1 for one meeting
+      tags:
+      - Entries
+      description: Every entry of the meeting, withdrawn ones included (RCTC withdraws, never deletes).
+        Only released meetings are served. Contact, date of birth, guardian and payment data are never
+        included.
+      security:
+      - bearerAuth:
+        - entries:read
+      parameters:
+      - &id006
+        name: event
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The RaceHub event id.
+      - *id001
+      - name: since_revision
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+        description: Answer 304 when the meeting's revision is not higher than this.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntryExportV1'
+          headers: *id002
+        '304':
+          description: Not modified
+        '409':
+          description: The meeting has not been released to timing. Deliberately not 403, which RCTC reads
+            as a refused key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: since_revision is not a non-negative integer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401': *id003
+        '403': *id004
+        '429': *id005
+  /results:
+    post:
+      operationId: postResults
+      summary: Push results (meeting named in the body)
+      tags:
+      - Results
+      description: 'The address RCTC is configured with: one for every meeting. The meeting is `event.racehub_event_id`
+        in the body. Not gated on release, so results still land if a club unreleases a meeting after
+        race day. Each export is the whole event; a higher revision replaces the one held.'
+      security:
+      - bearerAuth:
+        - results:write
+      parameters:
+      - &id007
+        name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+        description: RCTC sends rctc-results-<racehub_event_id>-r<revision>. A repeat of the key RaceHub
+          holds answers 200 ignored.
+      requestBody: &id008
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResultsExportV1'
+      responses:
+        '200': &id009
+          description: 'Ignored: nothing changed.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsReceipt'
+        '201': &id010
+          description: 'Accepted: stored.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultsReceipt'
+        '422': &id011
+          description: The body is not a valid Results Export v1, or names a different meeting.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401': *id003
+        '403': *id004
+        '429': *id005
+  /events/{event}/results:
+    post:
+      operationId: postEventResults
+      summary: Push results (meeting in the path)
+      tags:
+      - Results
+      description: Same as `POST /results` with the meeting in the path. The body's `event.racehub_event_id`
+        must equal the path id.
+      security:
+      - bearerAuth:
+        - results:write
+      parameters:
+      - *id006
+      - *id007
+      requestBody: *id008
+      responses:
+        '200': *id009
+        '201': *id010
+        '422': *id011
+        '401': *id003
+        '403': *id004
+        '429': *id005
+        '404':
+          description: No such meeting.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: 'A club integration key created by a club owner on the Timing integration page, shown
+        once. Abilities: `entries:read`, `results:write`. Revoking deletes it, effective on the next call.'
+  schemas:
+    EntryExportV1:
+      title: Entry Export v1
+      description: An event's entries, as imported by RCTimingControl. RaceHub produces it, and any other
+        booking system can produce it too by setting `source`. Fields not named here are ignored. See
+        docs/api.md, Admin — RaceHub import.
+      type: object
+      required:
+      - schema_version
+      - event
+      - revision
+      - entries
+      additionalProperties: true
+      properties:
+        schema_version:
+          const: 1
+        source:
+          description: The system the ids come from, kept apart from every other source's ids. Defaults
+            to RACEHUB. CSV is taken by RCTimingControl's own CSV import.
+          type: string
+          pattern: ^[A-Z][A-Z0-9_]{0,29}$
+          not:
+            const: CSV
+        event:
+          type: object
+          required:
+          - id
+          properties:
+            id:
+              $ref: '#/components/schemas/EntryExportId'
+            external_reference:
+              type:
+              - string
+              - 'null'
+            name:
+              type:
+              - string
+              - 'null'
+            event_local_date:
+              type:
+              - string
+              - 'null'
+              pattern: ^\d{4}-\d{2}-\d{2}$
+            timezone:
+              type:
+              - string
+              - 'null'
+            race_format_id:
+              type:
+              - string
+              - 'null'
+              description: The race format the organiser chose in the booking system for the whole meeting;
+                null when none. RCTC runs it with the template the club linked to this id.
+            race_format_name:
+              type:
+              - string
+              - 'null'
+        revision:
+          description: Increases each time the source exports this event.
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryExportEntry'
+    EntryExportId:
+      type: string
+      minLength: 1
+      pattern: \S
+    EntryExportText:
+      type:
+      - string
+      - 'null'
+    EntryExportEntry:
+      type: object
+      required:
+      - entry_id
+      - entry_version
+      - entry_status
+      - driver_profile_id
+      - club_class_id
+      properties:
+        entry_id:
+          $ref: '#/components/schemas/EntryExportId'
+        entry_version:
+          description: Increases each time the entry changes. An entry is applied only when its version
+            is higher than the one already imported.
+          type: integer
+        entry_status:
+          enum:
+          - CONFIRMED
+          - WITHDRAWN
+        race_day_status:
+          enum:
+          - NOT_ARRIVED
+          - ARRIVED
+          - null
+        club_class_id:
+          description: 'The club-level class id: stable across meetings and the club''s lifetime. RCTC
+            links it to one of its racing classes once, and never matches a class by name.'
+          $ref: '#/components/schemas/EntryExportId'
+        rc_class_name:
+          $ref: '#/components/schemas/EntryExportText'
+        class_name:
+          $ref: '#/components/schemas/EntryExportText'
+        driver_profile_id:
+          $ref: '#/components/schemas/EntryExportId'
+        driver_display_name:
+          $ref: '#/components/schemas/EntryExportText'
+        brca_number:
+          $ref: '#/components/schemas/EntryExportText'
+        brca_source:
+          $ref: '#/components/schemas/EntryExportText'
+        home_club:
+          $ref: '#/components/schemas/EntryExportText'
+        age_category:
+          $ref: '#/components/schemas/EntryExportText'
+        grade:
+          $ref: '#/components/schemas/EntryExportText'
+        primary_transponder:
+          $ref: '#/components/schemas/EntryExportText'
+        secondary_transponder:
+          $ref: '#/components/schemas/EntryExportText'
+        club_car_requested:
+          type:
+          - boolean
+          - 'null'
+        club_car_name:
+          $ref: '#/components/schemas/EntryExportText'
+        headshot_url:
+          description: An https address of the driver's headshot (PNG or JPEG, up to 2 MB). RCTC fetches
+            it only when an official asks, and only for a driver whose name it shows in full.
+          type:
+          - string
+          - 'null'
+          pattern: ^https://
+          maxLength: 500
+        car_photo_url:
+          description: An https address of a photo of the entry's car (PNG or JPEG, up to 2 MB).
+          type:
+          - string
+          - 'null'
+          pattern: ^https://
+          maxLength: 500
+        car_colours:
+          description: 'Up to four #rrggbb colours of the entry''s car, main colour first. Absent leaves
+            RCTC''s colours alone; present replaces them.'
+          type:
+          - array
+          - 'null'
+          maxItems: 4
+          items:
+            type: string
+            pattern: ^#[0-9a-fA-F]{6}$
+    ClassListV1:
+      title: RaceHub class list v1 (GET /api/rctc/v1/classes)
+      description: 'The token''s club''s classes, ordered by name. id is the club-level class id: the
+        same value the Entry Export v1 sends as club_class_id on each entry. Inactive classes are included
+        because earlier meetings still use them.'
+      type: object
+      required:
+      - schema_version
+      - source
+      - generated_at
+      - classes
+      additionalProperties: false
+      properties:
+        schema_version:
+          const: 1
+        source:
+          const: RACEHUB
+        generated_at:
+          type: string
+          format: date-time
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassListClass'
+    ClassListClass:
+      type: object
+      required:
+      - id
+      - name
+      - rc_class_name
+      - active
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          pattern: \S
+        name:
+          type: string
+          description: The class name shown to racers.
+        rc_class_name:
+          type:
+          - string
+          - 'null'
+          description: Same value the entry export sends as rc_class_name.
+        active:
+          type: boolean
+          description: Whether the club still offers the class.
+    FormatListV1:
+      title: RaceHub race format list v1 (GET /api/rctc/v1/formats)
+      description: The token's club's race formats. id is the same value the Entry Export v1 sends as
+        event.race_format_id. Inactive formats are included because earlier meetings still use them.
+      type: object
+      required:
+      - schema_version
+      - source
+      - generated_at
+      - formats
+      additionalProperties: false
+      properties:
+        schema_version:
+          const: 1
+        source:
+          const: RACEHUB
+        generated_at:
+          type: string
+          format: date-time
+        formats:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormatListFormat'
+    FormatListFormat:
+      type: object
+      required:
+      - id
+      - name
+      - active
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          minLength: 1
+          pattern: \S
+        name:
+          type: string
+        active:
+          type: boolean
+    ResultsExportV1:
+      title: RCTimingControl Results Export v1
+      description: An event's results so far, sent by RCTimingControl to RaceHub. Each export carries
+        the whole event; keep the highest revision seen for an event. See docs/results-export-v1.md.
+      type: object
+      required:
+      - schema_version
+      - revision
+      - generated_at
+      - source
+      - event
+      - races
+      - championships
+      additionalProperties: true
+      properties:
+        schema_version:
+          const: 1
+        revision:
+          type: integer
+          minimum: 0
+        generated_at:
+          $ref: '#/components/schemas/ResultsExportTimestamp'
+        source:
+          type: object
+          required:
+          - system
+          - club_name
+          properties:
+            system:
+              const: RCTimingControl
+            club_name:
+              type:
+              - string
+              - 'null'
+        event:
+          type: object
+          required:
+          - racehub_event_id
+          - rctc_event_id
+          - name
+          - date
+          - status
+          properties:
+            racehub_event_id:
+              type:
+              - string
+              - 'null'
+            rctc_event_id:
+              type: integer
+            name:
+              type: string
+            date:
+              type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+            status:
+              enum:
+              - DRAFT
+              - PUBLISHED
+              - OPEN
+              - ENTRIES_CLOSED
+              - IN_PROGRESS
+              - COMPLETED
+        races:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultsExportRace'
+        championships:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultsExportChampionship'
+    ResultsExportTimestamp:
+      type: string
+      format: date-time
+    ResultsExportRace:
+      type: object
+      required:
+      - rctc_race_id
+      - rctc_event_class_id
+      - class_name
+      - round_type
+      - round_number
+      - heat_number
+      - final_letter
+      - status
+      - finished_at
+      - results
+      properties:
+        rctc_race_id:
+          type: integer
+        rctc_event_class_id:
+          type: integer
+        club_class_ids:
+          description: The club class ids (RaceHub club_class_id) of the entries in the race. Left out
+            when the race has none.
+          type: array
+          minItems: 1
+          items:
+            type: string
+          uniqueItems: true
+        class_name:
+          type: string
+        round_type:
+          enum:
+          - PRACTICE
+          - QUALIFIER
+          - FINAL
+        round_number:
+          type: integer
+        heat_number:
+          type: integer
+        final_letter:
+          type:
+          - string
+          - 'null'
+        status:
+          enum:
+          - FINISHED
+          - ABANDONED
+        finished_at:
+          oneOf:
+          - $ref: '#/components/schemas/ResultsExportTimestamp'
+          - type: 'null'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultsExportRow'
+    ResultsExportRow:
+      type: object
+      required:
+      - position
+      - external_source
+      - entry_id
+      - driver_profile_id
+      - rctc_entry_id
+      - rctc_competitor_id
+      - display_name
+      - car_number
+      - laps
+      - total_time_ms
+      - best_lap_ms
+      - penalties
+      properties:
+        position:
+          type: integer
+          minimum: 1
+        external_source:
+          enum:
+          - RACEHUB
+          - null
+        entry_id:
+          type:
+          - string
+          - 'null'
+        driver_profile_id:
+          type:
+          - string
+          - 'null'
+        club_class_id:
+          description: The entry's club class id. Left out, not null, when it has none, such as a walk-in.
+          type: string
+          minLength: 1
+        rctc_entry_id:
+          type:
+          - integer
+          - 'null'
+        rctc_competitor_id:
+          type:
+          - integer
+          - 'null'
+        display_name:
+          type:
+          - string
+          - 'null'
+        car_number:
+          type:
+          - string
+          - 'null'
+        laps:
+          type: integer
+          minimum: 0
+        total_time_ms:
+          type: integer
+          minimum: 0
+        best_lap_ms:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+        penalties:
+          type: array
+          items:
+            type: object
+            required:
+            - type
+            - value
+            - reason
+            - included_in_result
+            properties:
+              type:
+                enum:
+                - LAP
+                - TIME
+              value:
+                type: number
+              reason:
+                type:
+                - string
+                - 'null'
+              included_in_result:
+                type: boolean
+      if:
+        properties:
+          external_source:
+            const: RACEHUB
+      then:
+        properties:
+          entry_id:
+            type: string
+          driver_profile_id:
+            type: string
+    ResultsExportChampionship:
+      type: object
+      required:
+      - rctc_championship_id
+      - name
+      - round_number
+      - classes
+      properties:
+        rctc_championship_id:
+          type: integer
+        name:
+          type: string
+        round_number:
+          type: integer
+        classes:
+          type: array
+          items:
+            type: object
+            required:
+            - rctc_racing_class_id
+            - class_name
+            - standings
+            properties:
+              rctc_racing_class_id:
+                type: integer
+              class_name:
+                type:
+                - string
+                - 'null'
+              standings:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResultsExportStanding'
+    ResultsExportStanding:
+      type: object
+      required:
+      - position
+      - external_source
+      - driver_profile_id
+      - rctc_competitor_id
+      - display_name
+      - total_points
+      - round_position
+      - round_points
+      - round_dropped
+      - round_excluded
+      properties:
+        position:
+          type: integer
+          minimum: 1
+        external_source:
+          enum:
+          - RACEHUB
+          - null
+        driver_profile_id:
+          type:
+          - string
+          - 'null'
+        rctc_competitor_id:
+          type: integer
+        display_name:
+          type:
+          - string
+          - 'null'
+        total_points:
+          type: integer
+        round_position:
+          type:
+          - integer
+          - 'null'
+        round_points:
+          type:
+          - integer
+          - 'null'
+        round_dropped:
+          type: boolean
+        round_excluded:
+          type: boolean
+      if:
+        properties:
+          external_source:
+            const: RACEHUB
+      then:
+        properties:
+          driver_profile_id:
+            type: string
+    EventListV1:
+      type: object
+      title: RaceHub event list v1 (GET /api/rctc/v1/events)
+      description: The token's club's meetings that RCTC may take. Ordered by date then id. Cancelled
+        meetings and meetings before yesterday are never listed.
+      required:
+      - schema_version
+      - source
+      - generated_at
+      - events
+      properties:
+        schema_version:
+          const: 1
+        source:
+          const: RACEHUB
+        generated_at:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventListItem'
+    EventListItem:
+      type: object
+      required:
+      - id
+      - name
+      - event_local_date
+      - timezone
+      - venue
+      - entry_count
+      - revision
+      - released_at
+      - entries_url
+      properties:
+        id:
+          type: string
+          description: RaceHub event id. The same value as event.id in the entry export and event.racehub_event_id
+            in a results export.
+        name:
+          type: string
+        event_local_date:
+          type: string
+          format: date
+        timezone:
+          type:
+          - string
+          - 'null'
+          description: The club's IANA time zone.
+        venue:
+          type:
+          - string
+          - 'null'
+        entry_count:
+          type: integer
+          minimum: 0
+          description: Entries that are not withdrawn or cancelled.
+        revision:
+          type: integer
+          minimum: 0
+          description: The meeting's entry export revision; it goes up whenever an entry RCTC reads changes.
+        released_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: When the club released the meeting to timing; null when it has not.
+        entries_url:
+          type:
+          - string
+          - 'null'
+          format: uri
+          description: Where to GET the entry export. Null until the meeting is released.
+    ResultsReceipt:
+      type: object
+      required:
+      - status
+      - revision
+      properties:
+        status:
+          enum:
+          - accepted
+          - ignored
+          description: 'accepted: stored, replacing any lower revision. ignored: the revision is not higher
+            than the one held, or the Idempotency-Key was already used; nothing changed. Both mean RCTC
+            should treat the export as sent.'
+        revision:
+          type: integer
+          description: The revision RaceHub now holds for the meeting.
+    Error:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+      description: Laravel's JSON error body for 401, 403, 404, 409 and 429. Responses to /api/* are always
+        JSON.
+    ValidationError:
+      type: object
+      required:
+      - message
+      - errors
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Keyed by field. A results body that fails the schema is reported under "body",
+            at most ten pointers.
