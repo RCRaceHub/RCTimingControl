@@ -36,12 +36,14 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The two audio settings endpoints (AUDIO-07): the admin form's PUT keeps the countdown intervals it does not
- * carry, race control's PATCH changes only the fields it is sent, and both refuse an out-of-range depth (#137).
+ * The audio settings endpoint (AUDIO-07), which the admin audio page and race control share: a PATCH changes only
+ * the fields it is sent, keeps the countdown intervals, horns and lead-in it does not carry, and refuses an
+ * out-of-range value (#137).
  */
 class AudioSettingsIT extends AbstractIntegrationTest {
 
-    private static final String ADMIN_SETTINGS = "/api/v1/admin/audio/settings";
+    /** The admin audio page and race control share the one settings endpoint. */
+    private static final String ADMIN_SETTINGS = "/api/v1/race-control/settings/audio";
     private static final String RACE_CONTROL_SETTINGS = "/api/v1/race-control/settings/audio";
 
     @Autowired TestHttp restTemplate;
@@ -83,7 +85,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "runningOrderAllUpTo", 4,
                 "defaultVoiceId", "en_GB-alan-medium");
 
-        ResponseEntity<JsonNode> saved = call(HttpMethod.PUT, ADMIN_SETTINGS, form);
+        ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, ADMIN_SETTINGS, form);
 
         assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
         ClubAudioSettings now = clubProfileRepository
@@ -102,7 +104,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50,
                 "defaultVoiceId", "en_GB-alan-medium");
 
-        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(call(HttpMethod.PATCH, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
@@ -199,7 +201,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
                 "defaultVoiceId", "en_GB-alan-medium", "countdownIntervals", new int[]{900, 45},
                 "wording", Map.of("raceFinished", "That is the race."));
-        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(call(HttpMethod.PATCH, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.OK);
 
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
@@ -210,7 +212,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
                 "defaultVoiceId", "en_GB-alan-medium");
-        call(HttpMethod.PUT, ADMIN_SETTINGS, bare);
+        call(HttpMethod.PATCH, ADMIN_SETTINGS, bare);
         ClubAudioSettings kept = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
         assertThat(kept.countdownIntervals()).containsExactly(900, 45);
@@ -220,7 +222,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderDepth", 3,
                 "defaultVoiceId", "en_GB-alan-medium", "countdownIntervals", new int[]{0});
-        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, flood).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, ADMIN_SETTINGS, flood).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
@@ -248,7 +250,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50));
         form.put("defaultVoiceId", null);
-        ResponseEntity<JsonNode> saved = call(HttpMethod.PUT, ADMIN_SETTINGS, form);
+        ResponseEntity<JsonNode> saved = call(HttpMethod.PATCH, ADMIN_SETTINGS, form);
 
         assertThat(saved.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(clubProfileRepository.findById(profile.getId()).orElseThrow().getDefaultVoiceId()).isEmpty();
@@ -288,7 +290,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true,
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 500,
                 "defaultVoiceId", "en_GB-alan-medium");
-        assertThat(call(HttpMethod.PUT, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(call(HttpMethod.PATCH, ADMIN_SETTINGS, form).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();
@@ -362,7 +364,7 @@ class AudioSettingsIT extends AbstractIntegrationTest {
                 "announceFinish", true, "announceRunningOrder", true, "runningOrderPercent", 50,
                 "defaultVoiceId", "en_GB-alan-medium");
 
-        call(HttpMethod.PUT, ADMIN_SETTINGS, form);
+        call(HttpMethod.PATCH, ADMIN_SETTINGS, form);
 
         ClubAudioSettings now = clubProfileRepository
                 .findById(clubProfileService.getSingletonProfileId()).orElseThrow().getAudioSettings();

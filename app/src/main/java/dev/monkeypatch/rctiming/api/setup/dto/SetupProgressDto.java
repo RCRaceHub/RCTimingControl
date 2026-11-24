@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.setup.dto;
 
-import dev.monkeypatch.rctiming.service.SetupService;
+import dev.monkeypatch.rctiming.domain.setup.SetupService;
 
 /**
  * Which setup wizard steps are done, answer of {@code GET /api/v1/setup/progress}. {@code staff} is true only once

@@ -173,7 +173,7 @@ export default function EventListPage() {
     });
     if (!ok) return;
     reupload.mutate(event.id, {
-      onSuccess: () => toast.success('Queued for RaceHub. Progress shows under Results to RaceHub.'),
+      onSuccess: () => toast.success('Queued for RaceHub. Progress shows under RaceHub.'),
       onError: err => toast.error(getApiErrorMessage(err, 'Could not queue the results.')),
     });
   }

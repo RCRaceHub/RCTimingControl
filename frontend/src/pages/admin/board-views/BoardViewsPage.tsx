@@ -19,7 +19,7 @@ function reason(error: unknown, fallback: string): string {
 type DialogState = { mode: 'create' } | { mode: 'edit'; view: BoardView };
 
 /**
- * The saved board views (#481): screens built from panels, each opened at its own address so a commentator or a
+ * The saved custom views (#481): screens built from panels, each opened at its own address so a commentator or a
  * trackside monitor can have a layout of their own. Open to ADMIN and RACE_DIRECTOR.
  */
 export default function BoardViewsPage() {
@@ -32,14 +32,14 @@ export default function BoardViewsPage() {
     try {
       if (dialog?.mode === 'edit') {
         await m.update.mutateAsync({ id: dialog.view.id, ...input });
-        toast.success('Board view updated');
+        toast.success('Custom view updated');
       } else {
         await m.create.mutateAsync(input);
-        toast.success('Board view created');
+        toast.success('Custom view created');
       }
       setDialog(null);
     } catch (e) {
-      toast.error(reason(e, 'Could not save the board view. Try again.'));
+      toast.error(reason(e, 'Could not save the custom view. Try again.'));
     }
   }
 
@@ -53,9 +53,9 @@ export default function BoardViewsPage() {
     if (!confirmed) return;
     try {
       await m.remove.mutateAsync(view.id);
-      toast.success('Board view deleted');
+      toast.success('Custom view deleted');
     } catch (e) {
-      toast.error(reason(e, 'Could not delete the board view.'));
+      toast.error(reason(e, 'Could not delete the custom view.'));
     }
   }
 
@@ -64,17 +64,17 @@ export default function BoardViewsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h1 className="text-2xl font-semibold">Board views</h1>
+        <h1 className="text-2xl font-semibold">Custom views</h1>
         <Button onClick={() => setDialog({ mode: 'create' })}><Plus className="h-4 w-4 mr-1" />New view</Button>
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
-        A board view is a screen you build from panels (live timing, the live top table, the next race, marshals, the
+        A custom view is a screen you build from panels (live timing, the live top table, the next race, marshals, the
         last result). Each opens at its own address, so the commentator and each trackside monitor can have their own.
         Add <code>?event=ID</code> to follow one event.
       </p>
 
       {isError && (
-        <QueryError variant="banner" message="Failed to load board views." onRetry={refetch} />
+        <QueryError variant="banner" message="Failed to load custom views." onRetry={refetch} />
       )}
 
       {isLoading ? (
@@ -128,7 +128,7 @@ export default function BoardViewsPage() {
           key={dialog.mode === 'edit' ? dialog.view.id : 'new'}
           open
           onOpenChange={open => { if (!open) setDialog(null); }}
-          title={dialog.mode === 'edit' ? `Edit ${dialog.view.name}` : 'New board view'}
+          title={dialog.mode === 'edit' ? `Edit ${dialog.view.name}` : 'New custom view'}
           initial={dialog.mode === 'edit' ? dialog.view : NEW_BOARD_VIEW}
           onSubmit={handleSave}
         />

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.UnknownTransponderLinkRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;
 import org.jooq.DSLContext;

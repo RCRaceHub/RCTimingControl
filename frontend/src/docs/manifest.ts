@@ -13,6 +13,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'trial-quickstart', title: 'Trial quickstart', file: 'trial-quickstart.md', section: 'Getting started' },
   { slug: 'installing', title: 'Installing', file: 'installing.md', section: 'Setting up' },
   { slug: 'docker', title: 'Running with Docker', file: 'docker.md', section: 'Setting up' },
+  { slug: 'provisioning', title: 'Skipping the setup wizard', file: 'provisioning.md', section: 'Setting up' },
   { slug: 'decoder', title: 'Decoder', file: 'decoder.md', section: 'Setting up' },
   { slug: 'race-day-docker', title: 'Race day with Docker', file: 'race-day-docker.md', section: 'Setting up' },
   { slug: 'recording-the-decoder', title: 'Recording the decoder', file: 'recording-the-decoder.md', section: 'Setting up' },

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.PracticeRankingDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
@@ -29,14 +30,6 @@ public class PracticeRankingController {
 
     public PracticeRankingController(EventService eventService) {
         this.eventService = eventService;
-    }
-
-    /**
-     * The body of the update and the answer of both calls.
-     *
-     * @param ranking {@code FASTEST}, {@code BEST_2} or {@code BEST_3}
-     */
-    public record PracticeRankingDto(@NotNull PracticeRanking ranking) {
     }
 
     /** The event's practice ranking. {@code GET}; 404 if the event does not exist. */

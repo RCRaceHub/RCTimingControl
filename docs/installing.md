@@ -43,7 +43,7 @@ sudo apt install ./rctimingcontrol_<version>_amd64.deb
 
 ## First run
 
-1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the first official's account, then the club, track and decoder details.
+1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the first official's account, then the club, track and decoder details. To skip the wizard on a new install, give those answers in the settings file instead; see [provisioning.md](provisioning.md).
 2. Open **http://localhost:8080/about** to see the addresses other devices should use, for example `http://192.168.1.50:8080/`. The same addresses are written to the log each time the app starts.
 3. On a phone connected to the same Wi-Fi or network, open one of those addresses and sign in.
 
@@ -122,7 +122,7 @@ Uploading straight from the app to Dropbox or Google Drive, with encryption, is 
 
 ## Sending results to RaceHub
 
-For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. The address can be typed into **Results to RaceHub** in the admin panel; the key goes in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
+For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. The address can be typed into **RaceHub** in the admin panel; the key goes in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
 
 ```properties
 rctiming.racehub.results-url=https://racehub.example/api/results
@@ -131,7 +131,7 @@ rctiming.racehub.token=the-key-from-racehub
 
 The address must start with `https://`, since the key goes with every request.
 
-To change the key later without a restart, paste the new one into **RaceHub key** on the **Results to RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **Results to RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand, and each event's row in **Events** has a **Re-upload** button that queues its results for RaceHub again.
+To change the key later without a restart, paste the new one into **RaceHub key** on the **RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand, and each event's row in **Events** has a **Re-upload** button that queues its results for RaceHub again.
 
 ### If RaceHub is behind Cloudflare Access
 
@@ -146,7 +146,7 @@ They are sent as the `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers
 
 ## Publishing a results site
 
-A club without RaceHub can still put its results on the web. Choose **A results site** (or both) under **Publish results to** in **Results to RaceHub**, then press **Download results site (zip)** and upload the files to the club's web space; they are plain pages with no scripts. To have the app keep a folder up to date by itself after each race, correction and day close, set the folder in `application.properties` and point a sync tool at it:
+A club without RaceHub can still put its results on the web. Choose **A results site** (or both) under **Publish results to** in **RaceHub**, then press **Download results site (zip)** and upload the files to the club's web space; they are plain pages with no scripts. To have the app keep a folder up to date by itself after each race, correction and day close, set the folder in `application.properties` and point a sync tool at it:
 
 ```
 rctiming.results-site.directory=C:/Users/club/results-site

@@ -3,7 +3,7 @@ import { DatabaseBackup, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
-import { useAdminBackups, useBackupNow } from '@/hooks/admin/useAdminBackups';
+import { useAdminBackups, useBackupNow, useRetentionPolicy } from '@/hooks/admin/useAdminBackups';
 import { useHelpContent } from '@/context/HelpContext';
 import { BackupsHelp } from '@/help/BackupsHelp';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -32,6 +32,7 @@ export default function BackupsPage() {
   useHelpContent(BackupsHelp);
   const { data, isLoading, isError } = useAdminBackups();
   const backupNow = useBackupNow();
+  const retention = useRetentionPolicy();
 
   // Read once when the page opens: the prompt does not need to expire while the page is up
   const [now] = useState(() => Date.now());
@@ -133,6 +134,21 @@ export default function BackupsPage() {
           starts again.
         </p>
       </div>
+
+      {retention.data && (
+        <div className="rounded-lg border p-4 text-sm space-y-2">
+          <h2 className="font-semibold">How long data is kept</h2>
+          <p className="text-muted-foreground">
+            Refused sign-ins are deleted after {retention.data.failedSignInDays} days.{' '}
+            {retention.data.auditDays === 0
+              ? 'Other audit rows are kept for ever.'
+              : `Other audit rows are deleted after ${retention.data.auditDays} days.`}{' '}
+            Race history is never deleted. The clean-up runs every night
+            {retention.data.runOnStartup ? ' and once when the app starts' : ''}. The periods are set in the app's
+            settings file.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

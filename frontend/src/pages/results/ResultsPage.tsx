@@ -1,5 +1,5 @@
 // The public Results page: an event's qualifying standings, finals, podium and championship standings as tabs, with
-// one print button and one QR code. Replaces the separate /qualifying, /finals and /podium pages, which redirect here.
+// one print button and one QR code.
 import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';

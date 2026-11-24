@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,7 +20,6 @@ const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
 const ResultsPage = lazy(() => import('@/pages/results/ResultsPage'));
-const ResultsRedirect = lazy(() => import('@/pages/results/ResultsRedirect'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
 const EventDetailPage = lazy(() => import('@/pages/admin/events/EventDetailPage'));
@@ -30,14 +29,9 @@ const ClubProfilePage = lazy(() => import('@/pages/admin/club/ClubProfilePage'))
 const AdminAudioSettingsPage = lazy(() => import('@/pages/admin/club/AdminAudioSettingsPage'));
 const AudioOutputPage = lazy(() => import('@/pages/audio/AudioOutputPage'));
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
-const TracksPage = lazy(() => import('@/pages/admin/tracks/TracksPage'));
-const ClassesPage = lazy(() => import('@/pages/admin/classes/ClassesPage'));
-const RaceHubClassesPage = lazy(() => import('@/pages/admin/racehub-classes/RaceHubClassesPage'));
-const FormatsPage = lazy(() => import('@/pages/admin/formats/FormatsPage'));
-const BoardViewsPage = lazy(() => import('@/pages/admin/board-views/BoardViewsPage'));
-const ScreensPage = lazy(() => import('@/pages/admin/screens/ScreensPage'));
-const OverlayDesignerPage = lazy(() => import('@/pages/admin/board-views/OverlayDesignerPage'));
-const ScoringSystemsPage = lazy(() => import('@/pages/admin/scoring/ScoringSystemsPage'));
+const AuditLogPage = lazy(() => import('@/pages/admin/audit/AuditLogPage'));
+const DisplaysPage = lazy(() => import('@/pages/admin/displays/DisplaysPage'));
+const RacingSetupPage = lazy(() => import('@/pages/admin/racing-setup/RacingSetupPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
 const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSettingsPage'));
 const BackupsPage = lazy(() => import('@/pages/admin/backups/BackupsPage'));
@@ -90,12 +84,6 @@ function RootLayout() {
   );
 }
 
-/** The chart screen became the Live Race screen; keeps a TV's old /boards/chart address (and ?event=) working. */
-function ChartRedirect() {
-  const { search } = useLocation();
-  return <Navigate to={`/boards/live-race${search}`} replace />;
-}
-
 const router = createBrowserRouter([
   {
     element: <RootLayout />,
@@ -118,20 +106,24 @@ const router = createBrowserRouter([
           { path: 'championships', element: <ChampionshipListPage /> },
           { path: 'championships/:id', element: <ChampionshipDetailPage /> },
           { path: 'club', element: <ProtectedRoute roles={['ADMIN']}><ClubProfilePage /></ProtectedRoute> },
-          { path: 'tracks', element: <ProtectedRoute roles={['ADMIN']}><TracksPage /></ProtectedRoute> },
-          { path: 'classes', element: <ProtectedRoute roles={['ADMIN']}><ClassesPage /></ProtectedRoute> },
-          { path: 'racehub-classes', element: <ProtectedRoute roles={['ADMIN']}><RaceHubClassesPage /></ProtectedRoute> },
-          { path: 'formats', element: <ProtectedRoute roles={['ADMIN']}><FormatsPage /></ProtectedRoute> },
-          { path: 'scoring-systems', element: <ProtectedRoute roles={['ADMIN']}><ScoringSystemsPage /></ProtectedRoute> },
+          { path: 'audit', element: <ProtectedRoute roles={['ADMIN']}><AuditLogPage /></ProtectedRoute> },
+          { path: 'racing-setup', element: <ProtectedRoute roles={['ADMIN']}><RacingSetupPage /></ProtectedRoute> },
+          { path: 'tracks', element: <Navigate to="/admin/racing-setup?tab=tracks" replace /> },
+          { path: 'classes', element: <Navigate to="/admin/racing-setup?tab=classes" replace /> },
+          { path: 'formats', element: <Navigate to="/admin/racing-setup?tab=formats" replace /> },
+          { path: 'scoring-systems', element: <Navigate to="/admin/racing-setup?tab=scoring" replace /> },
+          { path: 'racehub-classes', element: <Navigate to="/admin/racehub?tab=classes" replace /> },
+          { path: 'results-exports', element: <Navigate to="/admin/racehub" replace /> },
           { path: 'race-control', element: <RaceControlSelectPage /> },
           { path: 'decoder', element: <ProtectedRoute roles={['ADMIN']}><DecoderSettingsPage /></ProtectedRoute> },
           { path: 'backups', element: <ProtectedRoute roles={['ADMIN']}><BackupsPage /></ProtectedRoute> },
-          { path: 'results-exports', element: <ProtectedRoute roles={['ADMIN']}><ResultsExportsPage /></ProtectedRoute> },
+          { path: 'racehub', element: <ProtectedRoute roles={['ADMIN']}><ResultsExportsPage /></ProtectedRoute> },
           { path: 'officials', element: <ProtectedRoute roles={['ADMIN']}><OfficialsPage /></ProtectedRoute> },
-          { path: 'audio', element: <AdminAudioSettingsPage /> },
-          { path: 'board-views', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><BoardViewsPage /></ProtectedRoute> },
-          { path: 'screens', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><ScreensPage /></ProtectedRoute> },
-          { path: 'overlay-designer', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><OverlayDesignerPage /></ProtectedRoute> },
+          { path: 'audio', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><AdminAudioSettingsPage /></ProtectedRoute> },
+          { path: 'displays', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><DisplaysPage /></ProtectedRoute> },
+          { path: 'board-views', element: <Navigate to="/admin/displays?tab=views" replace /> },
+          { path: 'screens', element: <Navigate to="/admin/displays?tab=screens" replace /> },
+          { path: 'overlay-designer', element: <Navigate to="/admin/displays?tab=overlay" replace /> },
           { path: 'competitors', element: <CompetitorsPage /> },
         ],
       },
@@ -209,9 +201,6 @@ const router = createBrowserRouter([
       { path: '/setup', element: <SetupLayout /> },
       { path: '/events', element: <EventSchedulePage /> },
       { path: '/results', element: <ResultsPage /> },
-      { path: '/qualifying', element: <ResultsRedirect tab="qualifying" /> },
-      { path: '/finals', element: <ResultsRedirect tab="finals" /> },
-      { path: '/podium', element: <ResultsRedirect tab="podium" /> },
       { path: '/results/:raceId', element: <PublicResultsPage /> },
       { path: '/championships/:id', element: <PublicChampionshipPage /> },
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },
@@ -231,7 +220,6 @@ const router = createBrowserRouter([
       { path: '/boards/live-race', element: <LiveRaceBoard /> },
       { path: '/boards/top', element: <LiveTopBoard /> },
       { path: '/boards/view/:slug', element: <BoardViewPage /> },
-      { path: '/boards/chart', element: <ChartRedirect /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
       { path: '*', element: <NotFoundPage /> },

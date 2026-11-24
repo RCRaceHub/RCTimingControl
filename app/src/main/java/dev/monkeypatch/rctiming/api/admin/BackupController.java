@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.BackupsDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.backup.BackupFile;
@@ -30,10 +31,6 @@ public class BackupController {
     public BackupController(BackupService backupService, AuditService audit) {
         this.backupService = backupService;
         this.audit = audit;
-    }
-
-    /** The backups answer: the absolute path of the backup directory and the backup files in it. */
-    public record BackupsDto(String directory, List<BackupFile> backups) {
     }
 
     /** The backups on disk and where they are kept. {@code GET}; read only. */

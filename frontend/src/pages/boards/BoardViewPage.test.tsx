@@ -114,6 +114,6 @@ describe('BoardViewPage', () => {
 
     renderView('/boards/view/nope');
 
-    expect(await screen.findByText('There is no board view called "nope".')).toBeInTheDocument();
+    expect(await screen.findByText('There is no custom view called "nope".')).toBeInTheDocument();
   });
 });

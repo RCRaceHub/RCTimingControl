@@ -1,4 +1,5 @@
 import { useRoles } from '@/hooks/useRoles';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -43,7 +44,10 @@ function ReadOnlyUnlessAdmin({ isAdmin, children }: { isAdmin: boolean; children
   );
 }
 
+const CHAMPIONSHIP_TABS = ['config','classes','events','points-scale','standings','exclusions'] as const;
+
 export default function ChampionshipDetailPage() {
+  const [tab, setTab] = useTabParam(CHAMPIONSHIP_TABS, 'config');
   const { id: idParam } = useParams<{ id: string }>();
   const id = Number(idParam);
   const navigate = useNavigate();
@@ -99,12 +103,12 @@ export default function ChampionshipDetailPage() {
 
       <h1 className="text-2xl font-semibold mb-6">{data.name}</h1>
 
-      <Tabs defaultValue="config">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="config">Config</TabsTrigger>
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
           <TabsTrigger value="events">Events ({data.events.length})</TabsTrigger>
-          <TabsTrigger value="points-scale">Points Scale</TabsTrigger>
+          <TabsTrigger value="points-scale">Points scale</TabsTrigger>
           <TabsTrigger value="standings">Standings</TabsTrigger>
           <TabsTrigger value="exclusions">Exclusions ({exclusions.length})</TabsTrigger>
         </TabsList>

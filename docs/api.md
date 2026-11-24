@@ -390,6 +390,8 @@ A transponder swapped on the day survives a re-import (#50). When an update carr
 
 ### The file format, for any booking system
 
+The whole RaceHub API contract is also published as OpenAPI 3.1 in [racehub-api/openapi.yaml](racehub-api/openapi.yaml); the end-to-end guide is [racehub-import.md](racehub-import.md).
+
 Entry Export v1 is the format any booking system can produce to send its entries to RCTC, not only RaceHub. Its JSON Schema (draft 2020-12) is `app/src/main/resources/racehub/entry-export-v1.schema.json`, and a test checks every import test file against it.
 
 | Field | Meaning |
@@ -880,11 +882,11 @@ Open practice is a timing session with no heats and no result that scores. `POST
 
 `link-transponder` takes `{ "transponderNumber", "competitorId", "newName", "confirmNewCompetitor" }` and names a transponder in a session: an existing competitor, or a new walk-in made from `newName`. A name that matches someone already there answers **409** with the matches unless `confirmNewCompetitor` is true. **400** for a missing or over-long number, **404** for an unknown session. `drivers` lists the transponders named in a session. Changes are audited. Live rows arrive on `/topic/practice/{sessionId}/timing` and unknown transponders on `/topic/practice/{sessionId}/unknown-transponder`.
 
-## Admin — Audio horns and settings
+## Admin — Audio horns
+
+The announcer settings themselves are `GET` and `PATCH /race-control/settings/audio` (`ADMIN` or `RACE_DIRECTOR`), used by race control's panel and the admin audio page alike. `PATCH` saves only the fields it is sent, including the default Piper voice `defaultVoiceId` (blank keeps the stored one), answers the settings as saved, and is **400** for a value out of range (for example `runningOrderPercent` 1 to 100, `startCountdownSeconds` 0 to 60, `timeUpText` at most 200 characters). `hornSounds` is ignored on a write. The change is audited with the values before and after.
 
 ```
-GET    /admin/audio/settings
-PUT    /admin/audio/settings
 PUT    /admin/audio/horns/{horn}        (multipart form data)
 DELETE /admin/audio/horns/{horn}
 ```
@@ -923,7 +925,7 @@ GET /privacy-notice                 (anonymous)
 GET /admin/retention                (ADMIN)
 ```
 
-`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "hiddenRowIcons" }`, the club's thresholds (#505). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever). The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
+`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "hiddenRowIcons" }`, the club's thresholds (#505). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays", "runOnStartup" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever), and whether it also runs when the app starts; the Backups page shows it. The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
 
 ## Admin — Screens
 
@@ -933,7 +935,7 @@ The screen manager (#708): EventScreenDisplay viewers on the venue network. Read
 
 `POST /admin/screens` takes `{ "host", "port"?, "token"? }` (port 8080 when left out), reads the screen's `/info` and adds it, or updates it if its id is already known; **201**, **400** for a bad host or port, **502** if the screen cannot be reached or refuses. `POST /admin/screens/scan` asks the network now (**204**). `DELETE /admin/screens/{id}` forgets a screen (**204**, **404**). `PUT /admin/screens/token` takes `{ "screenIds", "token" }`; a blank token clears it (**204**).
 
-`GET /admin/screens/board-pages` answers `{ "baseUrls": ["http://192.168.1.5:8080/"], "pages": [{ "label", "path" }] }`: the app's own boards and saved board views, and the addresses the screens can reach the server at (never `localhost`).
+`GET /admin/screens/board-pages` answers `{ "baseUrls": ["http://192.168.1.5:8080/"], "pages": [{ "label", "path" }] }`: the app's own boards and saved custom views, and the addresses the screens can reach the server at (never `localhost`).
 
 `GET`, `POST /admin/screen-playlists` and `PUT`, `DELETE /admin/screen-playlists/{id}` keep saved playlists `{ "id", "name", "defaultDuration", "items": [{ "url", "duration", "label", "id" }] }`. Each item needs an absolute http(s) `url`; `duration` is whole seconds from 5 (blank for the playlist default); a playlist holds 1 to 100 pages. Unless `rctiming.screens.restrict-pages` is off, every page (in a playlist, a push or a temporary page) must be on one of this server's venue-network hosts or in `rctiming.screens.allowed-hosts`, else **400**. **400** for a bad field, **409** for a name already used. Changing a playlist does not touch the screens.
 

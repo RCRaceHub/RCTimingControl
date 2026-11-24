@@ -67,6 +67,12 @@ export const adminQueryKeys = {
     mergePreview: (keepId: number, duplicateId: number) =>
       ['admin', 'competitors', 'merge-preview', keepId, duplicateId] as const,
   },
+  audit: {
+    page: (filter: object, page: number) => ['admin', 'audit', filter, page] as const,
+  },
+  retention: {
+    policy: () => ['admin', 'retention'] as const,
+  },
   backups: {
     all: () => ['admin', 'backups'] as const,
   },
@@ -77,6 +83,5 @@ export const adminQueryKeys = {
     all: () => ['admin', 'officials'] as const,
     changes: () => ['admin', 'officials', 'changes'] as const,
   },
-  audioSettings: () => ['admin', 'audio-settings'] as const,
   voices: () => ['admin', 'voices'] as const,
 };

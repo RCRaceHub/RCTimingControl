@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import AdminAudioSettingsPage from './AdminAudioSettingsPage';
 
 // Mock audioApi
 vi.mock('@/lib/audioApi', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/audioApi')>()),
-  getAdminAudioSettings: vi.fn(),
-  saveAdminAudioSettings: vi.fn(),
+  getAudioSettings: vi.fn(),
+  patchAudioSettings: vi.fn(),
   listVoices: vi.fn(),
   listAudioTemplates: vi.fn(),
   applyAudioTemplate: vi.fn(),
@@ -33,14 +34,21 @@ const voices = [
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
+
+/** Whether the tab holding a field is the one showing (the others stay mounted, hidden by their state). */
+const shown = (label: string) => screen.getByLabelText(label).closest('[role="tabpanel"]')?.getAttribute('data-state');
 
 describe('AdminAudioSettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(audioApi.getAdminAudioSettings).mockResolvedValue(defaultSettings as never);
-    vi.mocked(audioApi.saveAdminAudioSettings).mockResolvedValue(defaultSettings as never);
+    vi.mocked(audioApi.getAudioSettings).mockResolvedValue(defaultSettings as never);
+    vi.mocked(audioApi.patchAudioSettings).mockResolvedValue(defaultSettings as never);
     vi.mocked(audioApi.listVoices).mockResolvedValue(voices as never);
     vi.mocked(audioApi.listAudioTemplates).mockResolvedValue([{ id: 7, name: 'Practice', settings: {} as never }]);
   });
@@ -79,7 +87,7 @@ describe('AdminAudioSettingsPage', () => {
   });
 
   it('shows the start lead-in and saves a change to it', async () => {
-    vi.mocked(audioApi.getAdminAudioSettings).mockResolvedValue(
+    vi.mocked(audioApi.getAudioSettings).mockResolvedValue(
       { ...defaultSettings, startCountdownSeconds: 10 } as never,
     );
     render(<AdminAudioSettingsPage />, { wrapper });
@@ -90,8 +98,8 @@ describe('AdminAudioSettingsPage', () => {
     fireEvent.blur(field);
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
 
-    await waitFor(() => expect(audioApi.saveAdminAudioSettings).toHaveBeenCalled());
-    expect(vi.mocked(audioApi.saveAdminAudioSettings).mock.calls[0][0]).toMatchObject({ startCountdownSeconds: 20 });
+    await waitFor(() => expect(audioApi.patchAudioSettings).toHaveBeenCalled());
+    expect(vi.mocked(audioApi.patchAudioSettings).mock.calls[0][0]).toMatchObject({ startCountdownSeconds: 20 });
   });
 
   it('offers the audio templates, and asks before one replaces unsaved edits', async () => {
@@ -116,5 +124,32 @@ describe('AdminAudioSettingsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(audioApi.applyAudioTemplate).toHaveBeenCalledWith(7));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('groups the settings on tabs and keeps edits made on one when moving to another', async () => {
+    render(<AdminAudioSettingsPage />, { wrapper });
+    const toggle = await screen.findByLabelText('Lap beeps');
+    expect(shown('Grid call')).toBe('inactive');
+    fireEvent.click(toggle);
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    expect(shown('Grid call')).toBe('active');
+    expect(shown('Lap beeps')).toBe('inactive');
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Timings and tones' }), { button: 0 });
+    expect(shown('Lap beep pitch')).toBe('active');
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Announcements' }), { button: 0 });
+    expect(screen.getByLabelText('Lap beeps')).toBeChecked();
+  });
+
+  it('keeps text typed into a box when the tab is switched before it loses focus', async () => {
+    render(<AdminAudioSettingsPage />, { wrapper });
+    await screen.findByLabelText('Lap beeps');
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('Grid call'), { target: { value: 'Cars to the grid' } });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Timings and tones' }), { button: 0 });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    expect(screen.getByLabelText('Grid call')).toHaveValue('Cars to the grid');
   });
 });

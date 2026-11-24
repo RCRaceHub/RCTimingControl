@@ -11,7 +11,7 @@ import dev.monkeypatch.rctiming.api.racecontrol.dto.PenaltyRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.RefereeOrAdmin;
-import dev.monkeypatch.rctiming.service.RefereeService;
+import dev.monkeypatch.rctiming.domain.racecontrol.RefereeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;

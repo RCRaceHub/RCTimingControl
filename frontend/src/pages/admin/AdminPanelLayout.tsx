@@ -4,13 +4,11 @@ import {
   Calendar,
   Trophy,
   Building2,
-  MapPin,
-  Sliders,
-  Scale,
   LogOut,
   Menu,
   Flag,
   Radio,
+  ScrollText,
   Volume2,
   Users,
   Wand2,
@@ -20,11 +18,8 @@ import {
   UserCog,
   BookOpen,
   Tv,
-  MonitorPlay,
   Tag,
-  Link2,
   Timer,
-  Cast,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,6 +31,7 @@ import { BoardsMenu } from '@/components/BoardsMenu';
 import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
+import { useRaceHubConnected } from '@/hooks/admin/useResultsExports';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 
 interface NavEntry {
@@ -54,31 +50,26 @@ const eventsGroup: NavEntry[] = [
 ];
 
 const operationsGroup: NavEntry[] = [
-  { to: '/admin/race-control', label: 'Race Control', Icon: Flag },
+  { to: '/admin/race-control', label: 'Race control', Icon: Flag },
   { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true },
   { to: '/admin/competitors', label: 'Competitors', Icon: Users },
-  { to: '/setup', label: 'Setup Wizard', Icon: Wand2 },
+  { to: '/setup', label: 'Setup wizard', Icon: Wand2 },
 ];
 
 // Decoder settings, backups and results sent to RaceHub are admin-only, so these items are shown only to ADMIN users.
 const adminOnlyOperations: NavEntry[] = [
   { to: '/admin/decoder', label: 'Decoder', Icon: Radio },
   { to: '/admin/backups', label: 'Backups', Icon: DatabaseBackup },
-  { to: '/admin/results-exports', label: 'Results to RaceHub', Icon: CloudUpload },
+  { to: '/admin/racehub', label: 'RaceHub', Icon: CloudUpload },
   { to: '/admin/officials', label: 'Officials', Icon: UserCog },
+  { to: '/admin/audit', label: 'Audit log', Icon: ScrollText },
 ];
 
 const configGroup: NavEntry[] = [
-  { to: '/admin/tracks', label: 'Tracks', Icon: MapPin, adminOnly: true },
-  { to: '/admin/classes', label: 'Classes', Icon: Tag, adminOnly: true },
-  { to: '/admin/racehub-classes', label: 'RaceHub Classes', Icon: Link2, adminOnly: true },
-  { to: '/admin/formats', label: 'Formats', Icon: Sliders, adminOnly: true },
-  { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
-  { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
-  { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
-  { to: '/admin/board-views', label: 'Board Views', Icon: Tv, runEventOnly: true },
-  { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
-  { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },
+  { to: '/admin/racing-setup', label: 'Racing setup', Icon: Tag, adminOnly: true },
+  { to: '/admin/club', label: 'Club profile', Icon: Building2, adminOnly: true },
+  { to: '/admin/audio', label: 'Audio settings', Icon: Volume2, runEventOnly: true },
+  { to: '/admin/displays', label: 'Displays', Icon: Tv, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */
@@ -135,6 +126,8 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin, canRunEvent } = useRoles();
   const eventId = useMatch('/admin/events/:id/*')?.params.id;
+  const raceHubConnected = useRaceHubConnected(isAdmin);
+  const onRaceHubPage = useMatch('/admin/racehub') != null;
 
   return (
     <div className="flex flex-col h-full">
@@ -162,9 +155,19 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
         ))}
         {isAdmin &&
-          adminOnlyOperations.map(({ to, label, Icon }) => (
-            <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
-          ))}
+          adminOnlyOperations
+            // A standalone club has no RaceHub key, so its page is left out until one is saved (Club profile links to it)
+            .filter(({ to }) => to !== '/admin/racehub' || raceHubConnected !== false || onRaceHubPage)
+            .map(({ to, label, Icon }) => (
+              <NavItem
+                key={to}
+                to={to}
+                label={label}
+                Icon={Icon}
+                onClick={onNavClick}
+                badge={to === '/admin/racehub' ? <UnlinkedClassesBadge /> : undefined}
+              />
+            ))}
 
         <div className="pt-4">
           <Separator />
@@ -180,7 +183,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
             label={label}
             Icon={Icon}
             onClick={onNavClick}
-            badge={to === '/admin/racehub-classes' ? <UnlinkedClassesBadge /> : undefined}
           />
         ))}
       </nav>

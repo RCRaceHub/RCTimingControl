@@ -1,4 +1,7 @@
 import { useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { useRaceHubConnected } from '@/hooks/admin/useResultsExports';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,11 +46,15 @@ function toRequest(values: FormValues): UpdateClubProfileRequest {
   };
 }
 
+const PROFILE_TABS = ['profile','live-timing','https','privacy','settings-file'] as const;
+
 export default function ClubProfilePage() {
+  const [tab, setTab] = useTabParam(PROFILE_TABS, 'profile');
   const { data, isLoading, isError, refetch } = useClubProfile();
   const updateMutation = useUpdateClubProfile();
   const uploadLogoMutation = useUploadClubLogo();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const raceHubConnected = useRaceHubConnected();
 
   const {
     register,
@@ -111,9 +118,16 @@ export default function ClubProfilePage() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <h1 className="text-2xl font-semibold">Club Profile</h1>
+      <h1 className="text-2xl font-semibold">Club profile</h1>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      {raceHubConnected === false && (
+        <p className="text-sm text-muted-foreground">
+          This club runs standalone. To take entries from RaceHub, send it results or publish a results website,{' '}
+          <Link to="/admin/racehub" className="underline">open the RaceHub page</Link>.
+        </p>
+      )}
+
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="live-timing">Live timing</TabsTrigger>

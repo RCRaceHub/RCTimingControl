@@ -2,7 +2,7 @@
 
 This page records what RCTimingControl (RCTC) reads from a RaceHub **Entry Export v1** file and from the RC-Timing driver CSV, and what it does with each field. It is written from RCTC's side only: it says what RCTC accepts and how it behaves, not what RaceHub must build. Every field below that is marked optional can be left out, and a file without them imports exactly as before.
 
-**Status.** The fields in [Pictures and car colours](#pictures-and-car-colours) (#699) are RCTC's proposal for RaceHub. RCTC reads them from this release; RaceHub has not agreed or built them yet, so until it does the fields are simply absent from its files. Everything else on this page is the existing Entry Export v1.
+**Status.** The fields in [Pictures and car colours](#pictures-and-car-colours) (#699) are RCTC's proposal for RaceHub. RCTC reads them from this release; RaceHub has built `headshot_url` and `car_photo_url` (opt-in: the driver's Photo visibility is Event media or Public; signed links valid for 12 hours; PR #399, awaiting testing as of 2026-11-24) but sends no `car_colours`, since it holds a photo of the paintwork and not colour values. A file without a field imports as before. Everything else on this page is the existing Entry Export v1.
 
 - The JSON Schema (draft 2020-12) is `app/src/main/resources/racehub/entry-export-v1.schema.json`, and a test checks every import test file against it. The same file format can be produced by any booking system (set `source`); see `docs/api.md`, "The file format for any booking system".
 - The Java model is `domain/racehub/RaceHubEntryExport`, and the import is `RaceHubImportService`.
@@ -14,7 +14,7 @@ An official either chooses the file on the event's Entries tab (**Import entries
 
 ## The club's classes
 
-An official links each of the club's classes to an RCTC racing class once, on the **RaceHub classes** page (Configuration menu), so a newly attached instance with no history starts there. RCTC sends `GET /api/rctc/v1/classes` (the same address as the events list with `events` replaced by `classes`, the same bearer key, ability `entries:read`) and expects the club's classes ordered by name, either as a bare JSON array or as an object holding the array under `classes`:
+An official links each of the club's classes to an RCTC racing class once, on the **Classes and formats** tab of the **RaceHub** page, so a newly attached instance with no history starts there. RCTC sends `GET /api/rctc/v1/classes` (the same address as the events list with `events` replaced by `classes`, the same bearer key, ability `entries:read`) and expects the club's classes ordered by name, either as a bare JSON array or as an object holding the array under `classes`:
 
 ```json
 [ { "id": "12", "name": "2WD Buggy", "rc_class_name": "2WD Buggy", "active": true },
@@ -29,7 +29,7 @@ The organiser picks **one race format for the whole meeting** in RaceHub (every 
 
 - The entry export's `event` carries `race_format_id` (a stable club-level id, as a string) and `race_format_name`, both null or absent when the organiser chose none.
 - RCTC sends `GET /api/rctc/v1/formats` (beside the events list like `classes`, same key, ability `entries:read`) and expects `{ "formats": [ { "id": "3", "name": "BRCA bump-up 5 min", "active": true } ] }`, as a bare array or under `formats`. Inactive formats stay listed because old meetings use them.
-- An official links each format to one of RCTC's format templates once, on the **RaceHub classes** page (Race formats). When an import holds a class and offers to add it to the event, the format defaults to the template linked to the meeting's format. An unknown or unlinked format, or none at all, falls back to the format the class last used, so RCTC works without RaceHub.
+- An official links each format to one of RCTC's format templates once, on the **Classes and formats** tab of the **RaceHub** page. When an import holds a class and offers to add it to the event, the format defaults to the template linked to the meeting's format. An unknown or unlinked format, or none at all, falls back to the format the class last used, so RCTC works without RaceHub.
 
 ## Finding events ready for timing
 
@@ -56,7 +56,7 @@ One entry is one driver in one class. Required fields are `entry_id`, `entry_ver
 | `driver_profile_id` | The driver's identity. Becomes one RCTC **competitor**, matched by this id (and the `source`), so results and championship points follow the driver across events. |
 | `driver_display_name` | The name shown. Whether it shows in full is the driver's setting in RCTC. |
 | `club_class_id` | The class. The club-level id: it is the same at every meeting and for the club's lifetime (a class that has been used is made inactive, never deleted). RCTC links it to one of its own racing classes **once**, and every imported meeting finds the class through that link. A `club_class_id` with no link holds the whole import (file or fetched revision) for an official; the entry is never dropped and a class is never guessed by name. `event_class_id`, the per-meeting class id RaceHub used to send, is no longer read. |
-| `rc_class_name`, `class_name` | Labels only: shown beside a held class so the official knows what it is, and used to suggest a racing class on the RaceHub classes screen. They never place an entry. |
+| `rc_class_name`, `class_name` | Labels only: shown beside a held class so the official knows what it is, and used to suggest a racing class on the Classes and formats tab. They never place an entry. |
 | `primary_transponder`, `secondary_transponder` | The two transponder numbers for the event. |
 | `brca_number`, `brca_source`, `home_club` | The competitor's BRCA number and home club. |
 | `race_day_status` | `NOT_ARRIVED` or `ARRIVED`, kept for information. |

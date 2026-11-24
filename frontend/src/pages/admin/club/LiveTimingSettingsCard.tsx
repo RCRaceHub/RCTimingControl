@@ -117,7 +117,7 @@ export default function LiveTimingSettingsCard() {
       <div>
         <h2 id="live-timing-settings-heading" className="text-sm font-semibold">Live timing thresholds</h2>
         <p className="text-xs text-muted-foreground">
-          These apply to the referee screen, the live race board, the board views and the streaming overlay. A change
+          These apply to the referee screen, the live race board, the custom views and the streaming overlay. A change
           reaches a race in progress at its next update. An address option such as close=2 on a board still wins over
           the close car tint here.
         </p>
@@ -143,7 +143,7 @@ export default function LiveTimingSettingsCard() {
       <fieldset className="space-y-1.5">
         <legend className="text-sm font-medium">Icons beside driver names</legend>
         <p className="text-xs text-muted-foreground">
-          Untick an icon to take it off the referee screen, the live race board and the board views. The streaming
+          Untick an icon to take it off the referee screen, the live race board and the custom views. The streaming
           overlay has its own choice in each overlay theme, and an address option such as icons=hide on a board still wins.
         </p>
         {ROW_ICONS.map((icon) => (

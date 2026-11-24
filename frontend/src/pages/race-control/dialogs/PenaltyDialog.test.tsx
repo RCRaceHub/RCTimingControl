@@ -57,4 +57,16 @@ describe('PenaltyDialog', () => {
     rerender(dialog(true, onSubmit));
     expect(screen.getByPlaceholderText('Brief reason')).toHaveValue('');
   });
+
+  it('opens on a five second time penalty, the usual one at a track', async () => {
+    const onSubmit = vi.fn();
+    render(dialog(true, onSubmit));
+
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '7' } });
+    fireEvent.change(screen.getByPlaceholderText('Brief reason'), { target: { value: 'Contact' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply Penalty' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ penaltyType: 'TIME', value: 5 });
+  });
 });

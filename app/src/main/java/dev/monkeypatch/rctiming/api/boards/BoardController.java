@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.api.boards.dto.ForcedCloseDto;
 import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
@@ -25,15 +26,15 @@ import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
 import dev.monkeypatch.rctiming.query.racecontrol.LapSectorQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
-import dev.monkeypatch.rctiming.service.AutoRunService;
-import dev.monkeypatch.rctiming.service.BoardTickerService;
-import dev.monkeypatch.rctiming.service.FinalLegsService;
-import dev.monkeypatch.rctiming.service.FinalsBoardService;
-import dev.monkeypatch.rctiming.service.LiveFinalService;
-import dev.monkeypatch.rctiming.service.LiveQualifyingService;
-import dev.monkeypatch.rctiming.service.PodiumBoardService;
-import dev.monkeypatch.rctiming.service.RaceHighlightsService;
-import dev.monkeypatch.rctiming.service.QualifyingTableService;
+import dev.monkeypatch.rctiming.domain.round.AutoRunService;
+import dev.monkeypatch.rctiming.domain.result.BoardTickerService;
+import dev.monkeypatch.rctiming.domain.round.FinalLegsService;
+import dev.monkeypatch.rctiming.domain.result.FinalsBoardService;
+import dev.monkeypatch.rctiming.domain.result.LiveFinalService;
+import dev.monkeypatch.rctiming.domain.result.LiveQualifyingService;
+import dev.monkeypatch.rctiming.domain.result.PodiumBoardService;
+import dev.monkeypatch.rctiming.domain.result.RaceHighlightsService;
+import dev.monkeypatch.rctiming.domain.result.QualifyingTableService;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LastLapTimeout;
@@ -402,27 +403,15 @@ public class BoardController {
         return new ForcedCloseDto(lastLapTimeout.closesInMs(raceId).orElse(null));
     }
 
-    /** See {@link #closesIn}. */
-    public record ForcedCloseDto(Long closesInMs) {}
-
     /**
      * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the
      * running heat's own best comes from its live timing).
      */
     @GetMapping("/races/{raceId}/round-fastest-lap")
     public RoundFastestLapDto roundFastestLap(@PathVariable long raceId) {
-        ResultSnapshotDto.ResultRow fastest = null;
-        for (long finishedId : boardQuery.finishedRaceIdsInRound(raceId)) {
-            for (ResultSnapshotDto.ResultRow row : resultRows(finishedId)) {
-                if (row.bestLapMs() != null && row.bestLapMs() > 0
-                        && (fastest == null || row.bestLapMs() < fastest.bestLapMs())) {
-                    fastest = row;
-                }
-            }
-        }
-        return fastest == null
-                ? new RoundFastestLapDto(null, null)
-                : new RoundFastestLapDto(fastest.bestLapMs(), fastest.driverName());
+        return raceHighlightsService.roundFastestLap(raceId)
+                .map(lap -> new RoundFastestLapDto(lap.lapMs(), lap.driverName()))
+                .orElseGet(() -> new RoundFastestLapDto(null, null));
     }
 
     /**

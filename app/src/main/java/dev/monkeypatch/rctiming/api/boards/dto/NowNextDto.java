@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.api.boards.dto;
 
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
-import dev.monkeypatch.rctiming.service.AutoRunService.BoardView;
+import dev.monkeypatch.rctiming.domain.round.AutoRunService.BoardView;
 
 /**
  * What the now/next board shows for one event (L12). Any race may be

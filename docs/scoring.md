@@ -258,7 +258,7 @@ round. Had Dan simply not been on the grid in round 3, there would be no round 3
 
 A **scoring system** is a named, saved set of scoring rules, in two kinds: *race* systems (rounds counted, tied places,
 A final legs, cut-off window, and default finals layout) and *championship* systems (points scale, best X from Y,
-bonuses, overall table). Admins manage them on the **Scoring Systems** page in the admin panel (under Configuration): create
+bonuses, overall table). Admins manage them on the **Scoring systems** tab of **Racing setup** in the admin panel (under Configuration → Racing setup): create
 a race or championship system, edit or delete a custom one, clone any system, export one to a file and import a file as a
 new system. The same operations are available under `/api/v1/admin/scoring-systems`. Race directors and referees can read
 and export them through the API.

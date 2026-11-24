@@ -115,6 +115,7 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_RETENTION_FAILED_SIGN_IN_DAYS` (`rctiming.retention.failed-sign-in-days`) | `90` | How long refused sign-ins stay in the audit log |
 | `RCTIMING_RETENTION_AUDIT_DAYS` (`rctiming.retention.audit-days`) | `730` | How long other audit rows stay; `0` keeps them for ever |
 | `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
+| `rctiming.provisioning.admin.*` / `.club.*` / `.decoder.*` | empty | First-start answers to the setup wizard (first admin, club details, decoder address); applied only while the database has no accounts. See [provisioning.md](provisioning.md) |
 | `rctiming.network.addresses` / `rctiming.network.mdns-name` | empty | Addresses the About page shows (needed in a container) and the `.local` name advertised on the network |
 | `rctiming.screens.discovery` | `true` | Browse the venue network for EventScreenDisplay screens by mDNS (`_eventscreen._tcp`) every 30 seconds; turn off where multicast is blocked and add screens by hand |
 | `rctiming.screens.auto-add` | `false` | Add screens found by mDNS without waiting for an official to press Add on the Screens page; off, they wait under "Found, not added" |
@@ -212,7 +213,6 @@ app/src/main/java/dev/monkeypatch/rctiming/
 │   └── user/ auth/      # Officials and refresh tokens
 ├── query/               # jOOQ read side: boards, championship standings,
 │                        #   competitors, entries, events, race control, results export
-├── service/             # Round generation, bump-up seeding, qualifying standings, result snapshots
 ├── timing/              # Decoder listener, live race state, race clock, STOMP broadcasts
 ├── practice/            # Open practice timing
 ├── livefeed/            # Live Feed v1 to a relay (docs/live-feed-v1.md)
@@ -388,7 +388,7 @@ Moving to another database means:
 
 - **`domain/<area>/`** holds an area's entities, their `JooqRepository` subclasses and the write-side services. A service that must touch tables with no entity of its own (bulk rewrites, audit logs) gets a plain `@Repository` in the same package, such as `CompetitorErasureRepository`.
 - **`query/`** holds the read side: projections and aggregations, with `@ReadTransaction`.
-- **`service/`** holds logic that spans several areas (round generation, bump-up seeding, result snapshots).
+- **Logic that spans several tables** lives in the area it serves: `domain/round/` (round and finals generation, seeding, run order), `domain/result/` (result snapshots, qualifying standings, live and board tables), `domain/racecontrol/` (race control commands, marshals, referee, transponder links) and `domain/setup/` (first-run setup and provisioning). There is no top-level `service/` package.
 - **`api/<area>/`** holds controllers and their `dto/` records. A controller calls one service or query class.
 - **No `DSLContext` outside repositories and query classes.** A service or controller that needs SQL asks a repository for it. The one exception is `security/ResetAdminPasswordCommand`, which runs with the app stopped on its own connection.
 - **A repository for a table keyed by something other than an `id`** (`ChampionshipPointsScaleRepository`, keyed by championship and position) does not extend `JooqRepository`, and says so in its Javadoc.
@@ -400,6 +400,8 @@ Moving to another database means:
 - **Exports:** a page that a route loads lazily, and a layout, has a `default` export. Everything else (components, hooks, helpers) is a named export.
 - **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
 - **Small screens:** the smallest screen to support is a 1920x1080 laptop, which at 125% or 150% Windows scaling gives a browser viewport as small as 1280x600. A page must not scroll sideways at that size. Dense screens tighten under the `short` variant (viewport 820px tall or less, defined in `index.css`), as race control does for its header, run order and live timing rows.
+- **Tabs** keep the chosen tab in the address with `useTabParam` (`?tab=name`), so a refresh or a link lands on it. Tab and page labels are in sentence case ("Scoring systems"). Pages converted so far: Racing setup and RaceHub.
+- **Words in the UI.** Use **event** for what an official creates and runs in the admin panel (Events, an event's page, "the event's classes"). **Meeting** is the club's word for the day itself and is fine in guides and in RaceHub-facing text ("Start meeting", "meeting pack"); do not mix the two in one sentence. **Race control** is the area and the page; the cockpit is its main screen. **Displays** is the admin area for custom views, screens and the overlay designer. **RaceHub** is the admin area for the connection, class and format links and sent results.
 - **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.
 
 ### Submitting a PR

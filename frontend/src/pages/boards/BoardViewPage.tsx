@@ -1,4 +1,4 @@
-// A saved board view (#481): the panels an official picked, laid out in columns, at /boards/view/{slug}. Anonymous like
+// A saved custom view (#481): the panels an official picked, laid out in columns, at /boards/view/{slug}. Anonymous like
 // the other boards. The race on track is followed once here and shared by the panels; options on the address are the
 // live race board's (bars=hide, arrows=hide, predict=hide, close=SECONDS) and event=ID.
 import { RowIconsProvider } from '@/components/RowIconsContext';
@@ -43,7 +43,7 @@ export default function BoardViewPage() {
     const notFound = (error as { response?: { status?: number } })?.response?.status === 404;
     return notFound ? (
       <BoardShell>
-        <BoardMessage>{`There is no board view called "${slug}".`}</BoardMessage>
+        <BoardMessage>{`There is no custom view called "${slug}".`}</BoardMessage>
       </BoardShell>
     ) : (
       <BoardUnreachable />

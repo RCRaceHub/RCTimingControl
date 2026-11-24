@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.LiveFeedSettingDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.livefeed.LiveFeedPublisher;
@@ -32,14 +33,6 @@ public class LiveFeedController {
     public LiveFeedController(LiveFeedPublisher publisher, EventService eventService) {
         this.publisher = publisher;
         this.eventService = eventService;
-    }
-
-    /**
-     * An event's live feed switch: the body of {@code PUT /events/{eventId}/live-feed} and its answer.
-     *
-     * @param enabled whether the event's races are sent to the relay while they run
-     */
-    public record LiveFeedSettingDto(@NotNull Boolean enabled) {
     }
 
     /** Whether the live feed is connected to its relay. {@code GET /live-feed/status}; read only. */

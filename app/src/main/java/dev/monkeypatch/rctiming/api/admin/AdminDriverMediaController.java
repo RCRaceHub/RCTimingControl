@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.CarColoursResponse;
+import dev.monkeypatch.rctiming.api.admin.dto.CarPhotoResponse;
 import dev.monkeypatch.rctiming.api.admin.dto.CarColoursRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.SponsorsRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
@@ -41,12 +43,6 @@ public class AdminDriverMediaController {
     public AdminDriverMediaController(DriverMediaService service) {
         this.service = service;
     }
-
-    /** The answer for a car photo: its address, null when the entry has none. */
-    public record CarPhotoResponse(String url) {}
-
-    /** The answer for car colours: {@code #rrggbb} values in order, empty when none are set. */
-    public record CarColoursResponse(List<String> colours) {}
 
     /** A competitor's headshot and sponsors. {@code GET /competitors/{id}/media}; read only. */
     @GetMapping("/competitors/{id}/media")

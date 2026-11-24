@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin.dto;
 
-import dev.monkeypatch.rctiming.service.dto.RoundGenerationRequest;
+import dev.monkeypatch.rctiming.domain.round.dto.RoundGenerationRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

@@ -14,7 +14,7 @@ export default function RaceControlSelectPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Race Control</h1>
+        <h1 className="text-2xl font-semibold">Race control</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Select an in-progress event to open the race control cockpit.
         </p>

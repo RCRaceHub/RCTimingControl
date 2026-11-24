@@ -494,8 +494,8 @@ export default function AdminGuidePage() {
             replaces is kept beside it.
           </li>
           <li>
-            <span className="font-semibold">Results to RaceHub:</span> Click
-            <span className="font-semibold"> Results to RaceHub</span> to see what has been sent back.
+            <span className="font-semibold">RaceHub:</span> Click
+            <span className="font-semibold"> RaceHub</span> to see what has been sent back.
             For events whose entries were imported from RaceHub, results are queued when a race
             finishes, when a finished race is corrected, and when you complete the event, and sent in
             the background. Each row shows its state (<span className="font-semibold">Waiting to
