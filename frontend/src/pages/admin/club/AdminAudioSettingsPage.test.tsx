@@ -36,6 +36,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
 }
 
+/** Whether the tab holding a field is the one showing (the others stay mounted, hidden by their state). */
+const shown = (label: string) => screen.getByLabelText(label).closest('[role="tabpanel"]')?.getAttribute('data-state');
+
 describe('AdminAudioSettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -116,5 +119,32 @@ describe('AdminAudioSettingsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     await waitFor(() => expect(audioApi.applyAudioTemplate).toHaveBeenCalledWith(7));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('groups the settings on tabs and keeps edits made on one when moving to another', async () => {
+    render(<AdminAudioSettingsPage />, { wrapper });
+    const toggle = await screen.findByLabelText('Lap beeps');
+    expect(shown('Grid call')).toBe('inactive');
+    fireEvent.click(toggle);
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    expect(shown('Grid call')).toBe('active');
+    expect(shown('Lap beeps')).toBe('inactive');
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Timings and tones' }), { button: 0 });
+    expect(shown('Lap beep pitch')).toBe('active');
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Announcements' }), { button: 0 });
+    expect(screen.getByLabelText('Lap beeps')).toBeChecked();
+  });
+
+  it('keeps text typed into a box when the tab is switched before it loses focus', async () => {
+    render(<AdminAudioSettingsPage />, { wrapper });
+    await screen.findByLabelText('Lap beeps');
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    fireEvent.change(screen.getByLabelText('Grid call'), { target: { value: 'Cars to the grid' } });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Timings and tones' }), { button: 0 });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    expect(screen.getByLabelText('Grid call')).toHaveValue('Cars to the grid');
   });
 });

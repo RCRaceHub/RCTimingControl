@@ -226,11 +226,24 @@ export function AudioSettingsPanel() {
                 <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
               </div>
 
-              <AudioDetailFields
-                settings={settings}
-                onChange={(next) => mutation.mutate(next)}
-                idPrefix="rc"
-              />
+              <details className="rounded-md border px-3 py-2">
+                <summary className="cursor-pointer text-sm font-medium select-none">Spoken wording and countdown</summary>
+                <AudioDetailFields
+                  settings={settings}
+                  onChange={(next) => mutation.mutate(next)}
+                  idPrefix="rc"
+                  section="wording"
+                />
+              </details>
+              <details className="rounded-md border px-3 py-2">
+                <summary className="cursor-pointer text-sm font-medium select-none">Timings and tones</summary>
+                <AudioDetailFields
+                  settings={settings}
+                  onChange={(next) => mutation.mutate(next)}
+                  idPrefix="rc"
+                  section="timings"
+                />
+              </details>
 
               <p className="text-xs font-semibold text-muted-foreground pt-2">
                 Volume

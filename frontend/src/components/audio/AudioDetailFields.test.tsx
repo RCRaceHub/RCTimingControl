@@ -85,4 +85,14 @@ describe('AudioDetailFields', () => {
 
     expect(onChange.mock.calls[0][0].tuning.finalSeconds).toBe(10);
   });
+
+  it('shows only the group it is asked for', () => {
+    const { rerender } = render(<AudioDetailFields settings={settings} onChange={vi.fn()} idPrefix="t" section="wording" />);
+    expect(screen.getByLabelText('Race started')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Final seconds counted')).toBeNull();
+
+    rerender(<AudioDetailFields settings={settings} onChange={vi.fn()} idPrefix="t" section="timings" />);
+    expect(screen.getByLabelText('Final seconds counted')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Race started')).toBeNull();
+  });
 });
