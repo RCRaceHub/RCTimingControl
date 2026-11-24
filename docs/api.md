@@ -390,6 +390,8 @@ A transponder swapped on the day survives a re-import (#50). When an update carr
 
 ### The file format, for any booking system
 
+The whole RaceHub API contract is also published as OpenAPI 3.1 in [racehub-api/openapi.yaml](racehub-api/openapi.yaml); the end-to-end guide is [racehub-import.md](racehub-import.md).
+
 Entry Export v1 is the format any booking system can produce to send its entries to RCTC, not only RaceHub. Its JSON Schema (draft 2020-12) is `app/src/main/resources/racehub/entry-export-v1.schema.json`, and a test checks every import test file against it.
 
 | Field | Meaning |
