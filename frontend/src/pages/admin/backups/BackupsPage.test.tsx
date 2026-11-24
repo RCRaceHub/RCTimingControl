@@ -6,7 +6,7 @@ import BackupsPage from './BackupsPage';
 import { adminApi } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { backups: { list: vi.fn(), create: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { backups: { list: vi.fn(), create: vi.fn() }, retention: { policy: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -23,7 +23,18 @@ function renderPage() {
 }
 
 describe('BackupsPage', () => {
-  beforeEach(() => vi.resetAllMocks());
+  beforeEach(() => {
+    vi.resetAllMocks();
+    api.retention.policy.mockResolvedValue({ failedSignInDays: 90, auditDays: 730, runOnStartup: true });
+  });
+
+  it('says how long data is kept', async () => {
+    api.backups.list.mockResolvedValue({ directory: '/data/backups', backups: [] });
+    renderPage();
+
+    expect(await screen.findByText(/Refused sign-ins are deleted after 90 days/)).toBeInTheDocument();
+    expect(screen.getByText(/Other audit rows are deleted after 730 days/)).toBeInTheDocument();
+  });
 
   it('lists backups with why each was taken', async () => {
     api.backups.list.mockResolvedValue({

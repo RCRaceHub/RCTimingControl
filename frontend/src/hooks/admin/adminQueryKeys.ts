@@ -70,6 +70,9 @@ export const adminQueryKeys = {
   audit: {
     page: (filter: object, page: number) => ['admin', 'audit', filter, page] as const,
   },
+  retention: {
+    policy: () => ['admin', 'retention'] as const,
+  },
   backups: {
     all: () => ['admin', 'backups'] as const,
   },

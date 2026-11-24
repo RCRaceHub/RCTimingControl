@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,7 +20,6 @@ const SetupLayout = lazy(() => import('@/pages/setup/SetupLayout'));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage'));
 const EventSchedulePage = lazy(() => import('@/pages/events/EventSchedulePage'));
 const ResultsPage = lazy(() => import('@/pages/results/ResultsPage'));
-const ResultsRedirect = lazy(() => import('@/pages/results/ResultsRedirect'));
 const AdminPanelLayout = lazy(() => import('@/pages/admin/AdminPanelLayout'));
 const EventListPage = lazy(() => import('@/pages/admin/events/EventListPage'));
 const EventDetailPage = lazy(() => import('@/pages/admin/events/EventDetailPage'));
@@ -83,12 +82,6 @@ function RootLayout() {
       <Toaster />
     </AuthProvider>
   );
-}
-
-/** The chart screen became the Live Race screen; keeps a TV's old /boards/chart address (and ?event=) working. */
-function ChartRedirect() {
-  const { search } = useLocation();
-  return <Navigate to={`/boards/live-race${search}`} replace />;
 }
 
 const router = createBrowserRouter([
@@ -208,9 +201,6 @@ const router = createBrowserRouter([
       { path: '/setup', element: <SetupLayout /> },
       { path: '/events', element: <EventSchedulePage /> },
       { path: '/results', element: <ResultsPage /> },
-      { path: '/qualifying', element: <ResultsRedirect tab="qualifying" /> },
-      { path: '/finals', element: <ResultsRedirect tab="finals" /> },
-      { path: '/podium', element: <ResultsRedirect tab="podium" /> },
       { path: '/results/:raceId', element: <PublicResultsPage /> },
       { path: '/championships/:id', element: <PublicChampionshipPage /> },
       { path: '/print/meeting-guide', element: <MeetingGuidePage /> },
@@ -230,7 +220,6 @@ const router = createBrowserRouter([
       { path: '/boards/live-race', element: <LiveRaceBoard /> },
       { path: '/boards/top', element: <LiveTopBoard /> },
       { path: '/boards/view/:slug', element: <BoardViewPage /> },
-      { path: '/boards/chart', element: <ChartRedirect /> },
       { path: '/boards/overlay', element: <OverlayBoard /> },
       { path: '/unauthorized', element: <UnauthorizedPage /> },
       { path: '*', element: <NotFoundPage /> },

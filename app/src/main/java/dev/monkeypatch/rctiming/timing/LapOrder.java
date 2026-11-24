@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 
 import java.util.ArrayList;

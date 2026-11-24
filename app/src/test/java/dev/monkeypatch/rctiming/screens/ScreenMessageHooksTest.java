@@ -5,7 +5,7 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalsReviewDto;
-import dev.monkeypatch.rctiming.service.FinalsLineupService;
+import dev.monkeypatch.rctiming.domain.round.FinalsLineupService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

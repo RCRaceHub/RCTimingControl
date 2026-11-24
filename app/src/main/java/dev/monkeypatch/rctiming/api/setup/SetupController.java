@@ -16,7 +16,7 @@ import dev.monkeypatch.rctiming.domain.user.UserService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.JwtTokenService;
-import dev.monkeypatch.rctiming.service.SetupService;
+import dev.monkeypatch.rctiming.domain.setup.SetupService;
 import dev.monkeypatch.rctiming.timing.DecoderProbe;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

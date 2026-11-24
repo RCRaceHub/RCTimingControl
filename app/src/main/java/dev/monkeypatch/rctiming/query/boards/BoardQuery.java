@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.boards;
 
+import dev.monkeypatch.rctiming.domain.round.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
@@ -24,7 +25,7 @@ import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_EN
 import static dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses.RACING_CLASSES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
-import static dev.monkeypatch.rctiming.service.BumpUpSeedingService.ZOMBIE_LETTER;
+import static dev.monkeypatch.rctiming.domain.round.BumpUpSeedingService.ZOMBIE_LETTER;
 
 /**
  * jOOQ read side of the spectator boards (L12).

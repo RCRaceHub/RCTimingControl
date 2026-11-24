@@ -6,7 +6,9 @@ import AdminPanelLayout from './AdminPanelLayout';
 import { HelpProvider } from '@/context/HelpContext';
 
 // The current user's roles, changed per test.
-const auth = vi.hoisted(() => ({ roles: ['ADMIN'] as string[] }));
+const auth = vi.hoisted(() => ({ roles: ['ADMIN'] as string[], raceHub: true }));
+
+vi.mock('@/hooks/admin/useResultsExports', () => ({ useRaceHubConnected: () => auth.raceHub }));
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
@@ -78,6 +80,14 @@ describe('AdminPanelLayout Backups entry', () => {
 describe('AdminPanelLayout RaceHub entry', () => {
   beforeEach(() => {
     auth.roles = ['ADMIN'];
+    auth.raceHub = true;
+  });
+
+  it('is hidden while the club runs standalone, with no RaceHub key', () => {
+    auth.raceHub = false;
+    renderLayout();
+
+    expect(screen.queryByRole('link', { name: /^RaceHub/ })).not.toBeInTheDocument();
   });
 
   it('is shown to ADMIN users', () => {

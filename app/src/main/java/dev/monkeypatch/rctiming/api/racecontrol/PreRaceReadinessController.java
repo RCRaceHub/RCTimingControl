@@ -2,7 +2,7 @@ package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.query.racecontrol.PreRaceReadinessDto;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
-import dev.monkeypatch.rctiming.service.RaceControlService;
+import dev.monkeypatch.rctiming.domain.racecontrol.RaceControlService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;

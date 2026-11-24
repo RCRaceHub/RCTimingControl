@@ -213,7 +213,6 @@ app/src/main/java/dev/monkeypatch/rctiming/
 │   └── user/ auth/      # Officials and refresh tokens
 ├── query/               # jOOQ read side: boards, championship standings,
 │                        #   competitors, entries, events, race control, results export
-├── service/             # Round generation, bump-up seeding, qualifying standings, result snapshots
 ├── timing/              # Decoder listener, live race state, race clock, STOMP broadcasts
 ├── practice/            # Open practice timing
 ├── livefeed/            # Live Feed v1 to a relay (docs/live-feed-v1.md)
@@ -389,7 +388,7 @@ Moving to another database means:
 
 - **`domain/<area>/`** holds an area's entities, their `JooqRepository` subclasses and the write-side services. A service that must touch tables with no entity of its own (bulk rewrites, audit logs) gets a plain `@Repository` in the same package, such as `CompetitorErasureRepository`.
 - **`query/`** holds the read side: projections and aggregations, with `@ReadTransaction`.
-- **`service/`** holds logic that spans several areas (round generation, bump-up seeding, result snapshots).
+- **Logic that spans several tables** lives in the area it serves: `domain/round/` (round and finals generation, seeding, run order), `domain/result/` (result snapshots, qualifying standings, live and board tables), `domain/racecontrol/` (race control commands, marshals, referee, transponder links) and `domain/setup/` (first-run setup and provisioning). There is no top-level `service/` package.
 - **`api/<area>/`** holds controllers and their `dto/` records. A controller calls one service or query class.
 - **No `DSLContext` outside repositories and query classes.** A service or controller that needs SQL asks a repository for it. The one exception is `security/ResetAdminPasswordCommand`, which runs with the app stopped on its own connection.
 - **A repository for a table keyed by something other than an `id`** (`ChampionshipPointsScaleRepository`, keyed by championship and position) does not extend `JooqRepository`, and says so in its Javadoc.

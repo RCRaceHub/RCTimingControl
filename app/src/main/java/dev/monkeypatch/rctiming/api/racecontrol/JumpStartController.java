@@ -1,7 +1,7 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
-import dev.monkeypatch.rctiming.service.RaceControlService;
+import dev.monkeypatch.rctiming.domain.racecontrol.RaceControlService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
