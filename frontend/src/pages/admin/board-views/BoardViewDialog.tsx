@@ -14,7 +14,7 @@ function withType(panel: BoardPanel, type: BoardPanelType): BoardPanel {
 }
 
 /**
- * Builds or changes a saved board view: its address name, name, columns and an ordered list of panels, each with a
+ * Builds or changes a saved custom view: its address name, name, columns and an ordered list of panels, each with a
  * type, a width in columns and (for the live top table) a number of places. The server checks the layout again.
  */
 export function BoardViewDialog({

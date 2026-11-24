@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { boardViewsAdminApi, type BoardViewInput } from '@/lib/boardViewsApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
-/** Every saved board view, for the Board views page. */
+/** Every saved board view, for the Custom views page. */
 export function useBoardViews() {
   return useQuery({ queryKey: adminQueryKeys.boardViews.all(), queryFn: boardViewsAdminApi.list });
 }
