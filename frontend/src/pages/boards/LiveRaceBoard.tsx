@@ -15,6 +15,7 @@ import { useSectors } from '@/hooks/race-control/useSectors';
 import { BattleStrip } from '@/components/BattleStrip';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { BoardLiveTable } from './BoardLiveTable';
+import { BoardRaceClock } from './BoardRaceClock';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { useHighContrast } from '@/hooks/useHighContrast';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
@@ -29,7 +30,7 @@ export default function LiveRaceBoard() {
   const series = useLivePositionSeries(raceId, rows);
 
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast, rowIcons } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
+  const { showBars, showArrows, showPredicted, closeMs, showBattles, showLegend, highContrast, rowIcons, overrunColour } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
   useHighContrast(highContrast);
   const battleGroups = useBattles(showBattles ? raceId : null);
   const sectors = useSectors(raceId);
@@ -65,6 +66,7 @@ export default function LiveRaceBoard() {
           <ClassSwatch colour={currentRace.classColour} className="mr-3" />
           {currentRace.label}
         </h1>
+        <BoardRaceClock raceId={raceId} overrunColour={overrunColour} className="ml-auto text-4xl lg:text-6xl" />
         <span
           className={
             currentRace.status === 'STOPPED'
