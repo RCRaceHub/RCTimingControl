@@ -23,7 +23,7 @@ export default function RaceHubClassesStep({ onNext, onBack }: Props) {
         </p>
       </div>
 
-      <RaceHubClassesPanel />
+      <RaceHubClassesPanel keyOnRaceHubPage={false} />
 
       <div className="flex gap-2">
         {onBack && <Button variant="outline" onClick={onBack}>Back</Button>}

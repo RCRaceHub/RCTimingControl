@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -103,8 +103,11 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
 
         {data && !data.tokenSet && (
           <p className="text-sm text-warning">
-            The club&apos;s key for RaceHub is not set. Add <code>rctiming.racehub.token</code> to the settings file
-            and restart.
+            The club&apos;s key for RaceHub is not set. Paste it into <strong>RaceHub key</strong> on the{' '}
+            <Link to="/admin/racehub?tab=settings" className="underline" onClick={() => onOpenChange(false)}>
+              RaceHub page
+            </Link>
+            , or set <code>rctiming.racehub.token</code> in the settings file and restart.
           </p>
         )}
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,7 +30,7 @@ function raceHubName(c: RaceHubClassDto) {
  * no longer offers are shown as inactive but can still be linked, because old meetings use them. The list is asked
  * from RaceHub each time, so "Fetch again" picks up a class the club added since.
  */
-export function RaceHubClassesPanel() {
+export function RaceHubClassesPanel({ keyOnRaceHubPage = true }: { keyOnRaceHubPage?: boolean }) {
   const classesQuery = useRaceHubClasses();
   const { data: racingClasses = [] } = useRacingClasses();
   const link = useLinkRaceHubClasses();
@@ -106,8 +107,21 @@ export function RaceHubClassesPanel() {
 
       {classesQuery.data && !classesQuery.data.tokenSet && (
         <p className="text-sm text-warning" role="status">
-          The club&apos;s key for RaceHub is not set. Add <code>rctiming.racehub.token</code> to the settings file and
-          restart RC Timing.
+          The club&apos;s key for RaceHub is not set.{' '}
+          {keyOnRaceHubPage ? (
+            <>
+              Paste it into <strong>RaceHub key</strong> on the{' '}
+              <Link to="/admin/racehub?tab=settings" className="underline">
+                Connection tab
+              </Link>
+              , or set <code>rctiming.racehub.token</code> in the settings file and restart RC Timing.
+            </>
+          ) : (
+            <>
+              Add <code>rctiming.racehub.token</code> to the settings file and restart RC Timing, or paste it into{' '}
+              <strong>RaceHub key</strong> on the RaceHub page once setup is finished.
+            </>
+          )}
         </p>
       )}
 
