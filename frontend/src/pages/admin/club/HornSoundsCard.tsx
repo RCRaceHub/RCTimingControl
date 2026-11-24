@@ -4,20 +4,23 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { removeHornSound, uploadHornSound, type SoundName } from '@/lib/audioApi';
-import { playFinishHorn, playLapBeep, playStartHorn, playTick, type HornSounds } from '@/lib/sounds';
+import { playCueHere, type Cue } from '@/lib/audioOutput';
+import type { HornSounds } from '@/lib/sounds';
 import { ON_PACE_TOLERANCE } from '@/hooks/race-control/raceAudioCues';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
+const beep = (pace: 'faster' | 'onPace' | 'slower') => (sounds?: HornSounds): Cue => ({ kind: 'lapBeep', pace, sounds });
+
 const HORNS = [
-  { horn: 'start', label: 'Start horn', play: playStartHorn, url: 'startUrl' },
-  { horn: 'finish', label: 'Finish horn', play: playFinishHorn, url: 'finishUrl' },
-  { horn: 'tick', label: 'Tick', play: (v: number, s?: HornSounds) => playTick(v, false, s), url: 'tickUrl' },
-  { horn: 'lap-beep', label: 'On-pace lap beep', play: (v: number, s?: HornSounds) => playLapBeep(v, 'onPace', undefined, s),
-    url: 'lapBeepUrl' },
-  { horn: 'faster-beep', label: 'Faster lap beep', url: 'fasterBeepUrl',
-    play: (v: number, s?: HornSounds) => playLapBeep(v, 'faster', undefined, s) },
-  { horn: 'slower-beep', label: 'Slower lap beep', url: 'slowerBeepUrl',
-    play: (v: number, s?: HornSounds) => playLapBeep(v, 'slower', undefined, s) },
+  { horn: 'start', label: 'Start horn', cue: (sounds?: HornSounds): Cue => ({ kind: 'horn', horn: 'start', sounds }),
+    url: 'startUrl' },
+  { horn: 'finish', label: 'Finish horn', cue: (sounds?: HornSounds): Cue => ({ kind: 'horn', horn: 'finish', sounds }),
+    url: 'finishUrl' },
+  { horn: 'tick', label: 'Tick', cue: (sounds?: HornSounds): Cue => ({ kind: 'horn', horn: 'tick', sounds }),
+    url: 'tickUrl' },
+  { horn: 'lap-beep', label: 'On-pace lap beep', cue: beep('onPace'), url: 'lapBeepUrl' },
+  { horn: 'faster-beep', label: 'Faster lap beep', cue: beep('faster'), url: 'fasterBeepUrl' },
+  { horn: 'slower-beep', label: 'Slower lap beep', cue: beep('slower'), url: 'slowerBeepUrl' },
 ] as const;
 
 /** How long a sound file plays, in milliseconds, read by the browser before it is uploaded. */
@@ -78,7 +81,7 @@ export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
           {ON_PACE_TOLERANCE * 100}% of it, and slower is anything beyond. A faster or slower lap with no file of its
           own uses the on-pace one.
         </p>
-        {HORNS.map(({ horn, label, play, url }) => {
+        {HORNS.map(({ horn, label, cue, url }) => {
           const custom = Boolean(sounds?.[url]);
           return (
             <div key={horn} className="flex flex-wrap items-center gap-2">
@@ -102,7 +105,7 @@ export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
                       disabled={upload.isPending}>
                 Choose file
               </Button>
-              <Button variant="outline" size="sm" onClick={() => play(0.8, sounds)}>
+              <Button variant="outline" size="sm" onClick={() => playCueHere(cue(sounds), 0.8)}>
                 ▶ Play
               </Button>
               {custom && (
