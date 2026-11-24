@@ -231,6 +231,7 @@ public class LapTimingService {
             // A rolling start's clock waits for the first car; this starts it
             raceClockService.onFirstPassing(raceId);
             checkJumpStart(raceId, state, entryId);
+            settleStaggerStart(raceId, state, entryId);
         }
 
         boolean firstUnknown = state.applyLapPassing(event, entryId, System.currentTimeMillis(),
@@ -266,6 +267,23 @@ public class LapTimingService {
             log.info("Race {}: entry {} crossed the line {} ms before its start", raceId, entryId, earlyMs);
             liveTimingHub.broadcastJumpStarts(raceId, state.jumpStarts());
             publisher.publishEvent(new JumpStartDetectedEvent(raceId, entryId, earlyMs));
+        }
+    }
+
+    /**
+     * In a stagger start a car's own time starts when it first crosses the line, if that is after its slot, so a
+     * late car still gets its full race time; how late is limited by the format's max race window (see
+     * {@link RaceClockService.RacePlan#maxLateStartMs()}). Called for each passing that resolves to an entry, after
+     * the jump start check, which judges the crossing against the slot. Does nothing for other starts. Timing thread.
+     */
+    private void settleStaggerStart(long raceId, LiveRaceState state, long entryId) {
+        RaceClockService.RacePlan plan = planOf(raceId);
+        if (plan.staggerIntervalMs() <= 0 || state.crossedStart.contains(entryId)) {
+            return;
+        }
+        long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
+        if (state.onStaggerCrossing(entryId, elapsedMs, plan.maxLateStartMs())) {
+            log.info("Race {}: entry {} crossed late, its time starts at {} ms", raceId, entryId, state.startOffsetMs(entryId));
         }
     }
 

@@ -73,6 +73,8 @@ public class LiveRaceState {
      * sends the cars off one at a time, so each has its own window. An entry not listed starts at 0.
      */
     final Map<Long, Long> startOffsetMs = new HashMap<>();
+    /** Entries in a stagger start whose first crossing has been seen, so their start offset is settled. */
+    final Set<Long> crossedStart = new HashSet<>();
     /** Whether the finish has been asked for, so it is asked for once. */
     boolean finishRequested = false;
     /** Whether the race was ended by its maximum race window, so cars not yet flagged did not finish. */
@@ -130,6 +132,25 @@ public class LiveRaceState {
      */
     public synchronized long startOffsetMs(long entryId) {
         return startOffsetMs.getOrDefault(entryId, lastStartOffsetMs());
+    }
+
+    /**
+     * Settles an entry's own start in a stagger start at its first crossing of the line: its time on the track runs
+     * from then, not from its slot, when it crossed after its slot. A crossing before the slot (a jump start) keeps
+     * the slot, and only the first crossing counts. Does nothing for an entry with no slot.
+     *
+     * @param elapsedMs  the race clock at the crossing, in milliseconds
+     * @param maxLateMs  the most a car's start may slip past its slot, or null for no limit
+     * @return true if this crossing moved the entry's start
+     */
+    public synchronized boolean onStaggerCrossing(long entryId, long elapsedMs, Long maxLateMs) {
+        Long slot = startOffsetMs.get(entryId);
+        if (slot == null || !crossedStart.add(entryId) || elapsedMs <= slot) {
+            return false;
+        }
+        long start = maxLateMs == null ? elapsedMs : Math.min(elapsedMs, slot + Math.max(0, maxLateMs));
+        startOffsetMs.put(entryId, start);
+        return start != slot;
     }
 
     /** Whether the entry has a slot in the stagger; false for an entry added after the offsets were set. */

@@ -73,7 +73,7 @@ a race that never started.
 | Start type | What happens | Cars' own time |
 |---|---|---|
 | `GRID` | The start horn and every car goes together | Every car has the full race length from the start |
-| `STAGGER` | The start horn, then each driver is called by name every N seconds in grid order | A car's time starts when it is called, so the last car to leave is last to finish |
+| `STAGGER` | The start horn, then each driver is called by name every N seconds in grid order | A car's time starts when it first crosses the line after it is called, so the last car to leave is last to finish |
 | `ROLLING` | Drivers are not called one by one. Cars take the start as they cross the line, and the clock waits for the first one | Every car has the same end time: the clock starts at the first car's first crossing |
 
 N is the format's **stagger interval** (seconds). A stagger interval of 0 or less is taken as 1 second. Race control
@@ -83,7 +83,14 @@ shows how the race will start, and the drivers' call order for a staggered start
 
 In a staggered start the driver in grid position 1 leaves first, position 2 N seconds later, and so on. The timing code
 gives each car its own start offset (position × N seconds) and works out each car's own time on the track from it. A
-driver with no grid position is called last. So a car's flag comes N seconds after the car before it, and the race is
+driver with no grid position is called last.
+
+A car's time starts at its **first crossing of the line** when that is later than its slot, so a driver who crosses late
+still gets the full race length. How late is limited by the format's max race window: a car's start can slip past its slot
+by at most the window less the race length (BRCA: 6:30 less 5:00 is 90 seconds); with no window set there is no limit. A
+car that crosses before its slot keeps the slot (and is flagged as a jump start). Only the first crossing counts. A car
+that has not crossed yet is counted at its slot, so the race can finish before a car that never crosses. Finals start
+every car together and are not affected. So a car's flag comes N seconds after the car before it, and the race is
 over for everyone only when the last car to leave has had its full time (section 3).
 
 #### Jump starts
