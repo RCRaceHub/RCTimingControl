@@ -117,4 +117,21 @@ describe('AdminAudioSettingsPage', () => {
     await waitFor(() => expect(audioApi.applyAudioTemplate).toHaveBeenCalledWith(7));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('groups the settings on tabs and keeps edits made on one when moving to another', async () => {
+    render(<AdminAudioSettingsPage />, { wrapper });
+    const toggle = await screen.findByLabelText('Lap beeps');
+    expect(screen.queryByLabelText('Grid call')).toBeNull();
+    fireEvent.click(toggle);
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Wording' }), { button: 0 });
+    expect(await screen.findByLabelText('Grid call')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Lap beeps')).toBeNull();
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Timings and tones' }), { button: 0 });
+    expect(await screen.findByLabelText('Lap beep pitch')).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Announcements' }), { button: 0 });
+    expect(await screen.findByLabelText('Lap beeps')).toBeChecked();
+  });
 });

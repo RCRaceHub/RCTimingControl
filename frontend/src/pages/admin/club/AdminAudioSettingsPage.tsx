@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -82,123 +83,166 @@ export default function AdminAudioSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-xl font-semibold">Audio Settings</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Announcement Types</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {settingsLoading ? (
-            <div className="flex items-center gap-2 py-4">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              <span className="text-sm text-muted-foreground">Loading settings…</span>
-            </div>
-          ) : displaySettings ? (
-            <>
-              <AudioTemplatesBar
-                unsaved={
-                  hasUnsaved
-                    ? { save: () => saveSettingsMutation.mutateAsync(localSettings), discard: () => setLocalSettings(null) }
-                    : null
-                }
-              />
+      {settingsLoading ? (
+        <div className="flex items-center gap-2 py-4">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          <span className="text-sm text-muted-foreground">Loading settings…</span>
+        </div>
+      ) : displaySettings ? (
+        <>
+          <AudioTemplatesBar
+            unsaved={
+              hasUnsaved
+                ? { save: () => saveSettingsMutation.mutateAsync(localSettings), discard: () => setLocalSettings(null) }
+                : null
+            }
+          />
 
-              {ANNOUNCEMENT_TOGGLES.map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between h-10">
-                  <Label htmlFor={`admin-toggle-${key}`}>{label}</Label>
-                  <Switch
-                    id={`admin-toggle-${key}`}
-                    checked={displaySettings[key] !== false}
-                    onCheckedChange={() => handleToggle(key)}
-                    aria-label={label}
+          <Tabs defaultValue="announcements" className="space-y-6">
+            <TabsList className="h-auto flex-wrap justify-start">
+              <TabsTrigger value="announcements">Announcements</TabsTrigger>
+              <TabsTrigger value="wording">Wording</TabsTrigger>
+              <TabsTrigger value="timings">Timings and tones</TabsTrigger>
+              <TabsTrigger value="outputs">Outputs</TabsTrigger>
+              <TabsTrigger value="sounds">Horn sounds</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="announcements">
+              <Card>
+                <CardHeader>
+                  <CardTitle>What is announced</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {ANNOUNCEMENT_TOGGLES.map(({ key, label }) => (
+                    <div key={key} className="flex items-center justify-between h-10">
+                      <Label htmlFor={`admin-toggle-${key}`}>{label}</Label>
+                      <Switch
+                        id={`admin-toggle-${key}`}
+                        checked={displaySettings[key] !== false}
+                        onCheckedChange={() => handleToggle(key)}
+                        aria-label={label}
+                      />
+                    </div>
+                  ))}
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <Label htmlFor="admin-start-countdown" className="shrink-0">Start lead-in</Label>
+                    <Input
+                      id="admin-start-countdown"
+                      key={displaySettings.startCountdownSeconds}
+                      type="number"
+                      min={0}
+                      max={60}
+                      defaultValue={displaySettings.startCountdownSeconds ?? 10}
+                      onBlur={(e) =>
+                        setLocalSettings({
+                          ...displaySettings,
+                          startCountdownSeconds: Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)),
+                        })
+                      }
+                      className="w-20 h-8 text-center"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      seconds between pressing Start and the race starting (0 for none)
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor="default-voice">Default voice</Label>
+                    {voicesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading voices…</p>
+                    ) : voiceOptions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No voices available. Announcer voices (Piper) are switched off.
+                      </p>
+                    ) : (
+                      <Select
+                        value={displaySettings.defaultVoiceId ?? ''}
+                        onValueChange={handleVoiceChange}
+                      >
+                        <SelectTrigger id="default-voice">
+                          <SelectValue placeholder="Select default voice" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {voiceOptions.map((v) => (
+                            <SelectItem key={v.voiceId} value={v.voiceId}>
+                              {v.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="wording">
+              <Card>
+                <CardHeader>
+                  <CardTitle>What is said</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin-time-up-text">When the race time is up, say</Label>
+                    <Input
+                      id="admin-time-up-text"
+                      key={displaySettings.timeUpText}
+                      maxLength={200}
+                      defaultValue={displaySettings.timeUpText ?? ''}
+                      onBlur={(e) => setLocalSettings({ ...displaySettings, timeUpText: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
+                  </div>
+                  <AudioDetailFields
+                    settings={displaySettings}
+                    onChange={setLocalSettings}
+                    idPrefix="admin"
+                    section="wording"
                   />
-                </div>
-              ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div className="flex items-center gap-2 pt-2">
-                <Label htmlFor="admin-start-countdown" className="shrink-0">Start lead-in</Label>
-                <Input
-                  id="admin-start-countdown"
-                  key={displaySettings.startCountdownSeconds}
-                  type="number"
-                  min={0}
-                  max={60}
-                  defaultValue={displaySettings.startCountdownSeconds ?? 10}
-                  onBlur={(e) =>
-                    setLocalSettings({
-                      ...displaySettings,
-                      startCountdownSeconds: Math.min(60, Math.max(0, parseInt(e.target.value, 10) || 0)),
-                    })
-                  }
-                  className="w-20 h-8 text-center"
-                />
-                <span className="text-sm text-muted-foreground">
-                  seconds between pressing Start and the race starting (0 for none)
-                </span>
-              </div>
+            <TabsContent value="timings">
+              <Card>
+                <CardContent className="pt-6">
+                  <AudioDetailFields
+                    settings={displaySettings}
+                    onChange={setLocalSettings}
+                    idPrefix="admin"
+                    section="timings"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="admin-time-up-text">When the race time is up, say</Label>
-                <Input
-                  id="admin-time-up-text"
-                  key={displaySettings.timeUpText}
-                  maxLength={200}
-                  defaultValue={displaySettings.timeUpText ?? ''}
-                  onBlur={(e) => setLocalSettings({ ...displaySettings, timeUpText: e.target.value })}
-                />
-                <p className="text-xs text-muted-foreground">Leave empty for the standard wording.</p>
-              </div>
+            <TabsContent value="outputs">
+              <AudioRoutingCard />
+            </TabsContent>
 
-              <AudioDetailFields settings={displaySettings} onChange={setLocalSettings} idPrefix="admin" />
+            <TabsContent value="sounds">
+              <HornSoundsCard sounds={settings?.hornSounds} />
+            </TabsContent>
+          </Tabs>
 
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="default-voice">Default voice</Label>
-                {voicesLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading voices…</p>
-                ) : voiceOptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No voices available. Announcer voices (Piper) are switched off.
-                  </p>
-                ) : (
-                  <Select
-                    value={displaySettings.defaultVoiceId ?? ''}
-                    onValueChange={handleVoiceChange}
-                  >
-                    <SelectTrigger id="default-voice">
-                      <SelectValue placeholder="Select default voice" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {voiceOptions.map((v) => (
-                        <SelectItem key={v.voiceId} value={v.voiceId}>
-                          {v.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              <Button
-                onClick={handleSave}
-                disabled={saveSettingsMutation.isPending}
-                className="mt-2"
-              >
-                {saveSettingsMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                    Saving…
-                  </>
-                ) : (
-                  'Save Settings'
-                )}
-              </Button>
-            </>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      <AudioRoutingCard />
-
-      <HornSoundsCard sounds={settings?.hornSounds} />
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSave} disabled={saveSettingsMutation.isPending || !hasUnsaved}>
+              {saveSettingsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  Saving…
+                </>
+              ) : (
+                'Save Settings'
+              )}
+            </Button>
+            {hasUnsaved && (
+              <span className="text-sm text-warning">Unsaved changes. Outputs and horn sounds save as you change them.</span>
+            )}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
