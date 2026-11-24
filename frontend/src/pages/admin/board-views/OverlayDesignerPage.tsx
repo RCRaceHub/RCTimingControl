@@ -9,6 +9,7 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DEFAULT_OVERLAY_DESIGN, DEFAULT_OVERRUN_COLOUR, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayDesignFromTheme, overlayQuery,
   parseBattleStyle, parseLowerThird, parseOverrunColour, parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
@@ -224,297 +225,312 @@ export default function OverlayDesignerPage() {
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-5">
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Theme</legend>
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-theme">Saved theme</Label>
-              <select
-                id="ov-theme"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                value={themeId ?? ''}
-                onChange={(e) => pick(e.target.value === '' ? null : Number(e.target.value))}
-              >
-                <option value="">None (design below)</option>
-                {themes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.isDefault ? `${t.name} (default)` : t.name}</option>
+          <Tabs defaultValue="theme" className="space-y-5">
+            <TabsList className="h-auto flex-wrap justify-start">
+              <TabsTrigger value="theme">Theme</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="layout">Placement</TabsTrigger>
+            </TabsList>
+
+            {/* Every tab stays mounted (hidden when not shown) so a half-typed field is not lost on a switch */}
+            <TabsContent value="theme" forceMount className="space-y-5 data-[state=inactive]:hidden">
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Theme</legend>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-theme">Saved theme</Label>
+                  <select
+                    id="ov-theme"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={themeId ?? ''}
+                    onChange={(e) => pick(e.target.value === '' ? null : Number(e.target.value))}
+                  >
+                    <option value="">None (design below)</option>
+                    {themes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.isDefault ? `${t.name} (default)` : t.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-theme-name">Theme name</Label>
+                  <Input id="ov-theme-name" value={themeName} maxLength={100} onChange={(e) => setThemeName(e.target.value)} />
+                </div>
+                {unsaved && (
+                  <p className="text-xs text-muted-foreground">
+                    You have changed this theme. The address below holds the design as it stands; save the theme to give
+                    OBS a short address that follows later edits.
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {themes.some((t) => t.isDefault)
+                    ? `The plain overlay link (/boards/overlay, from the Boards menu) opens ${themes.find((t) => t.isDefault)?.name}.`
+                    : 'No default theme: the plain overlay link shows the standard look. Save a theme as the default to change that.'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    disabled={themeId === null || themeName.trim() === '' || saveTheme.isPending}
+                    onClick={() => saveTheme.mutate({ id: themeId, name: themeName.trim() })}
+                  >
+                    Save theme
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={themeName.trim() === '' || saveTheme.isPending}
+                    onClick={() => saveTheme.mutate({ id: themeId, name: themeName.trim(), makeDefault: true })}
+                  >
+                    Save and make default
+                  </Button>
+                  {theme?.isDefault && (
+                    <Button size="sm" variant="outline" disabled={clearDefault.isPending} onClick={() => clearDefault.mutate()}>
+                      Clear default
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={themeName.trim() === '' || saveTheme.isPending}
+                    onClick={() => saveTheme.mutate({ id: null, name: themeName.trim() })}
+                  >
+                    Save as new
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={theme === null || duplicateTheme.isPending}
+                    onClick={() => theme && duplicateTheme.mutate(theme)}
+                  >
+                    Duplicate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={theme === null || deleteTheme.isPending}
+                    onClick={async () => {
+                      if (theme && await confirm({
+                        title: `Delete the theme ${theme.name}?`,
+                        description: 'Overlays already open keep its look until reloaded, then use their address options.',
+                        confirmLabel: 'Delete',
+                        destructive: true,
+                      })) {
+                        deleteTheme.mutate(theme.id);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </fieldset>
+
+              <fieldset className="space-y-2" data-testid="theme-sponsors">
+                <legend className="text-sm font-medium">Theme sponsors</legend>
+                {theme ? (
+                  <ThemeSponsors key={theme.id} themeId={theme.id} />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.
+                  </p>
+                )}
+              </fieldset>
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Look</legend>
+                <Check label="Sponsor bar" checked={design.showSponsors} onChange={(v) => set('showSponsors', v)} />
+                <Check label="Light theme" checked={design.theme === 'light'} onChange={(v) => set('theme', v ? 'light' : 'dark')} />
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-separator">Ticker separator image (blank keeps the diamond)</Label>
+                  <Input
+                    id="ov-separator"
+                    placeholder="https://… or /storage/…"
+                    value={separatorText}
+                    onChange={(e) => {
+                      setSeparatorText(e.target.value);
+                      set('separatorImage', e.target.value);
+                    }}
+                  />
+                  {separatorText.trim() !== '' && parseSeparatorImage(separatorText) === null && (
+                    <p className="text-xs text-destructive">Use a web address (https://…) or a path on this server (/…).</p>
+                  )}
+                </div>
+              </fieldset>
+            </TabsContent>
+
+            <TabsContent value="content" forceMount className="space-y-5 data-[state=inactive]:hidden">
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Timing</legend>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-layout">Layout</Label>
+                  <select
+                    id="ov-layout"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={design.layout}
+                    onChange={(e) => set('layout', e.target.value as OverlayDesign['layout'])}
+                  >
+                    <option value="tower">Timing tower</option>
+                    <option value="table">Table</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-gap">Gap column (tower)</Label>
+                  <select
+                    id="ov-gap"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={design.gap}
+                    onChange={(e) => set('gap', e.target.value as OverlayDesign['gap'])}
+                  >
+                    <option value="int">INT: gap to the car ahead</option>
+                    <option value="leader">GAP: gap to the leader</option>
+                    <option value="auto">Take turns</option>
+                  </select>
+                </div>
+                {design.gap === 'auto' && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ov-gap-every">Seconds on each</Label>
+                    <Input
+                      id="ov-gap-every"
+                      type="number"
+                      min={1}
+                      max={GAP_EVERY_LIMIT}
+                      value={gapEveryText}
+                      onChange={(e) => {
+                        setGapEveryText(e.target.value);
+                        const n = Math.round(Number(e.target.value));
+                        if (e.target.value.trim() !== '' && Number.isFinite(n)) {
+                          set('gapEverySeconds', Math.min(GAP_EVERY_LIMIT, Math.max(1, n)));
+                        }
+                      }}
+                      onBlur={() => setGapEveryText(String(design.gapEverySeconds))}
+                    />
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-top">Places shown</Label>
+                  <Input
+                    id="ov-top"
+                    type="number"
+                    min={1}
+                    max={OVERLAY_TOP_LIMIT}
+                    value={topText}
+                    onChange={(e) => {
+                      setTopText(e.target.value);
+                      const n = Math.round(Number(e.target.value));
+                      if (e.target.value.trim() !== '' && Number.isFinite(n)) {
+                        set('top', Math.min(OVERLAY_TOP_LIMIT, Math.max(1, n)));
+                      }
+                    }}
+                    onBlur={() => setTopText(String(design.top))}
+                  />
+                </div>
+                <Check label="Class name" checked={design.showClass} onChange={(v) => set('showClass', v)} />
+                <Check label="Predicted laps" checked={design.showPredicted} onChange={(v) => set('showPredicted', v)} />
+                <Check label="Qualifying position chip" checked={design.showQualifying} onChange={(v) => set('showQualifying', v)} />
+                <Check label="Class colour tags (mixed classes)" checked={design.showClassTags} onChange={(v) => set('showClassTags', v)} />
+                <Check label="Driver headshots (where added)" checked={design.showHeadshots} onChange={(v) => set('showHeadshots', v)} />
+                <Check label="Car colours (entry colours, else class colour)" checked={design.showCarColours} onChange={(v) => set('showCarColours', v)} />
+                <Check label="Sector times (needs split decoders)" checked={design.showSectors} onChange={(v) => set('showSectors', v)} />
+                <Check label="Pace against the top qualifier" checked={design.showTqPace} onChange={(v) => set('showTqPace', v)} />
+                <Check label="Bump-up line in finals" checked={design.showBumpLine} onChange={(v) => set('showBumpLine', v)} />
+                <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />
+                <Check label="Places gained arrows" checked={design.showArrows} onChange={(v) => set('showArrows', v)} />
+                <Check label="Battles" checked={design.showBattles} onChange={(v) => set('showBattles', v)} />
+                <label className="flex items-center justify-between gap-2 text-sm">
+                  Battles shown as
+                  <select
+                    className="h-8 rounded border bg-background px-2"
+                    value={design.battleStyle}
+                    disabled={!design.showBattles}
+                    onChange={(e) => set('battleStyle', parseBattleStyle(e.target.value))}
+                  >
+                    <option value="panel">Bottom-left panel</option>
+                    <option value="rows">Highlighted row of the chasing car</option>
+                    <option value="both">Panel and highlighted row</option>
+                  </select>
+                </label>
+                <label className="flex items-center justify-between gap-2 text-sm">
+                  Featured-driver lower third
+                  <select
+                    className="h-8 rounded border bg-background px-2"
+                    value={design.lowerThird}
+                    onChange={(e) => set('lowerThird', parseLowerThird(e.target.value))}
+                  >
+                    <option value="both">Race director and battles</option>
+                    <option value="director">Race director only</option>
+                    <option value="battle">Battles only</option>
+                    <option value="off">Off</option>
+                  </select>
+                </label>
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <label htmlFor="ov-overrun-colour">Clock colour once the race time is up</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="ov-overrun-colour"
+                      type="color"
+                      className="h-8 w-12 cursor-pointer rounded border bg-background"
+                      value={design.overrunColour ?? DEFAULT_OVERRUN_COLOUR}
+                      onChange={(e) => set('overrunColour', parseOverrunColour(e.target.value))}
+                    />
+                    <Button type="button" variant="outline" size="sm" onClick={() => set('overrunColour', null)} disabled={design.overrunColour === null}>
+                      Red
+                    </Button>
+                  </div>
+                </div>
+                <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
+                <div className="space-y-1.5 rounded border p-2">
+                  <p className="text-sm font-medium">Icons beside driver names</p>
+                  <p className="text-xs text-muted-foreground">Untick the ones that make the screen too busy. The pace thumbs start switched off.</p>
+                  {ROW_ICONS.map((icon) => (
+                    <Check
+                      key={icon}
+                      label={ROW_ICON_LABELS[icon]}
+                      checked={design.rowIcons.includes(icon)}
+                      onChange={(v) => set('rowIcons', ROW_ICONS.filter((i) => (i === icon ? v : design.rowIcons.includes(i))))}
+                    />
+                  ))}
+                </div>
+                <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
+                <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />
+              </fieldset>
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Ticker</legend>
+                {TICKER_ITEMS.map((item) => (
+                  <Check
+                    key={item}
+                    label={TICKER_LABELS[item]}
+                    checked={design.tickerItems.includes(item)}
+                    onChange={(v) => toggleTicker(item, v)}
+                  />
                 ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-theme-name">Theme name</Label>
-              <Input id="ov-theme-name" value={themeName} maxLength={100} onChange={(e) => setThemeName(e.target.value)} />
-            </div>
-            {unsaved && (
-              <p className="text-xs text-muted-foreground">
-                You have changed this theme. The address below holds the design as it stands; save the theme to give
-                OBS a short address that follows later edits.
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              {themes.some((t) => t.isDefault)
-                ? `The plain overlay link (/boards/overlay, from the Boards menu) opens ${themes.find((t) => t.isDefault)?.name}.`
-                : 'No default theme: the plain overlay link shows the standard look. Save a theme as the default to change that.'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                disabled={themeId === null || themeName.trim() === '' || saveTheme.isPending}
-                onClick={() => saveTheme.mutate({ id: themeId, name: themeName.trim() })}
-              >
-                Save theme
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={themeName.trim() === '' || saveTheme.isPending}
-                onClick={() => saveTheme.mutate({ id: themeId, name: themeName.trim(), makeDefault: true })}
-              >
-                Save and make default
-              </Button>
-              {theme?.isDefault && (
-                <Button size="sm" variant="outline" disabled={clearDefault.isPending} onClick={() => clearDefault.mutate()}>
-                  Clear default
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={themeName.trim() === '' || saveTheme.isPending}
-                onClick={() => saveTheme.mutate({ id: null, name: themeName.trim() })}
-              >
-                Save as new
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={theme === null || duplicateTheme.isPending}
-                onClick={() => theme && duplicateTheme.mutate(theme)}
-              >
-                Duplicate
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={theme === null || deleteTheme.isPending}
-                onClick={async () => {
-                  if (theme && await confirm({
-                    title: `Delete the theme ${theme.name}?`,
-                    description: 'Overlays already open keep its look until reloaded, then use their address options.',
-                    confirmLabel: 'Delete',
-                    destructive: true,
-                  })) {
-                    deleteTheme.mutate(theme.id);
-                  }
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </fieldset>
+              </fieldset>
 
-          <fieldset className="space-y-2" data-testid="theme-sponsors">
-            <legend className="text-sm font-medium">Theme sponsors</legend>
-            {theme ? (
-              <ThemeSponsors key={theme.id} themeId={theme.id} />
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.
-              </p>
-            )}
-          </fieldset>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Event</legend>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ov-event">Event ID (blank follows the event racing now)</Label>
+                  <Input
+                    id="ov-event"
+                    inputMode="numeric"
+                    value={eventText}
+                    onChange={(e) => {
+                      setEventText(e.target.value);
+                      const n = Number(e.target.value);
+                      set('eventId', e.target.value.trim() !== '' && Number.isSafeInteger(n) && n > 0 ? n : null);
+                    }}
+                  />
+                </div>
+              </fieldset>
+            </TabsContent>
 
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Timing</legend>
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-layout">Layout</Label>
-              <select
-                id="ov-layout"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                value={design.layout}
-                onChange={(e) => set('layout', e.target.value as OverlayDesign['layout'])}
-              >
-                <option value="tower">Timing tower</option>
-                <option value="table">Table</option>
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-gap">Gap column (tower)</Label>
-              <select
-                id="ov-gap"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                value={design.gap}
-                onChange={(e) => set('gap', e.target.value as OverlayDesign['gap'])}
-              >
-                <option value="int">INT: gap to the car ahead</option>
-                <option value="leader">GAP: gap to the leader</option>
-                <option value="auto">Take turns</option>
-              </select>
-            </div>
-            {design.gap === 'auto' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="ov-gap-every">Seconds on each</Label>
-                <Input
-                  id="ov-gap-every"
-                  type="number"
-                  min={1}
-                  max={GAP_EVERY_LIMIT}
-                  value={gapEveryText}
-                  onChange={(e) => {
-                    setGapEveryText(e.target.value);
-                    const n = Math.round(Number(e.target.value));
-                    if (e.target.value.trim() !== '' && Number.isFinite(n)) {
-                      set('gapEverySeconds', Math.min(GAP_EVERY_LIMIT, Math.max(1, n)));
-                    }
-                  }}
-                  onBlur={() => setGapEveryText(String(design.gapEverySeconds))}
-                />
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-top">Places shown</Label>
-              <Input
-                id="ov-top"
-                type="number"
-                min={1}
-                max={OVERLAY_TOP_LIMIT}
-                value={topText}
-                onChange={(e) => {
-                  setTopText(e.target.value);
-                  const n = Math.round(Number(e.target.value));
-                  if (e.target.value.trim() !== '' && Number.isFinite(n)) {
-                    set('top', Math.min(OVERLAY_TOP_LIMIT, Math.max(1, n)));
-                  }
-                }}
-                onBlur={() => setTopText(String(design.top))}
-              />
-            </div>
-            <Check label="Class name" checked={design.showClass} onChange={(v) => set('showClass', v)} />
-            <Check label="Predicted laps" checked={design.showPredicted} onChange={(v) => set('showPredicted', v)} />
-            <Check label="Qualifying position chip" checked={design.showQualifying} onChange={(v) => set('showQualifying', v)} />
-            <Check label="Class colour tags (mixed classes)" checked={design.showClassTags} onChange={(v) => set('showClassTags', v)} />
-            <Check label="Driver headshots (where added)" checked={design.showHeadshots} onChange={(v) => set('showHeadshots', v)} />
-            <Check label="Car colours (entry colours, else class colour)" checked={design.showCarColours} onChange={(v) => set('showCarColours', v)} />
-            <Check label="Sector times (needs split decoders)" checked={design.showSectors} onChange={(v) => set('showSectors', v)} />
-            <Check label="Pace against the top qualifier" checked={design.showTqPace} onChange={(v) => set('showTqPace', v)} />
-            <Check label="Bump-up line in finals" checked={design.showBumpLine} onChange={(v) => set('showBumpLine', v)} />
-            <Check label="Lap progress bars" checked={design.showBars} onChange={(v) => set('showBars', v)} />
-            <Check label="Places gained arrows" checked={design.showArrows} onChange={(v) => set('showArrows', v)} />
-            <Check label="Battles" checked={design.showBattles} onChange={(v) => set('showBattles', v)} />
-            <label className="flex items-center justify-between gap-2 text-sm">
-              Battles shown as
-              <select
-                className="h-8 rounded border bg-background px-2"
-                value={design.battleStyle}
-                disabled={!design.showBattles}
-                onChange={(e) => set('battleStyle', parseBattleStyle(e.target.value))}
-              >
-                <option value="panel">Bottom-left panel</option>
-                <option value="rows">Highlighted row of the chasing car</option>
-                <option value="both">Panel and highlighted row</option>
-              </select>
-            </label>
-            <label className="flex items-center justify-between gap-2 text-sm">
-              Featured-driver lower third
-              <select
-                className="h-8 rounded border bg-background px-2"
-                value={design.lowerThird}
-                onChange={(e) => set('lowerThird', parseLowerThird(e.target.value))}
-              >
-                <option value="both">Race director and battles</option>
-                <option value="director">Race director only</option>
-                <option value="battle">Battles only</option>
-                <option value="off">Off</option>
-              </select>
-            </label>
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <label htmlFor="ov-overrun-colour">Clock colour once the race time is up</label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="ov-overrun-colour"
-                  type="color"
-                  className="h-8 w-12 cursor-pointer rounded border bg-background"
-                  value={design.overrunColour ?? DEFAULT_OVERRUN_COLOUR}
-                  onChange={(e) => set('overrunColour', parseOverrunColour(e.target.value))}
-                />
-                <Button type="button" variant="outline" size="sm" onClick={() => set('overrunColour', null)} disabled={design.overrunColour === null}>
-                  Red
-                </Button>
-              </div>
-            </div>
-            <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
-            <div className="space-y-1.5 rounded border p-2">
-              <p className="text-sm font-medium">Icons beside driver names</p>
-              <p className="text-xs text-muted-foreground">Untick the ones that make the screen too busy. The pace thumbs start switched off.</p>
-              {ROW_ICONS.map((icon) => (
-                <Check
-                  key={icon}
-                  label={ROW_ICON_LABELS[icon]}
-                  checked={design.rowIcons.includes(icon)}
-                  onChange={(v) => set('rowIcons', ROW_ICONS.filter((i) => (i === icon ? v : design.rowIcons.includes(i))))}
-                />
-              ))}
-            </div>
-            <Check label="Colour key" checked={design.showLegend} onChange={(v) => set('showLegend', v)} />
-            <Check label="Position chart" checked={design.showChart} onChange={(v) => set('showChart', v)} />
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Layout on screen</legend>
-            <p className="text-xs text-muted-foreground">
-              Drag each part to the area of the screen where it should sit. Parts in the same area stack.
-            </p>
-            <OverlayLayoutEditor placement={design.placement} off={offParts} onChange={(p) => set('placement', p)} />
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Ticker</legend>
-            {TICKER_ITEMS.map((item) => (
-              <Check
-                key={item}
-                label={TICKER_LABELS[item]}
-                checked={design.tickerItems.includes(item)}
-                onChange={(v) => toggleTicker(item, v)}
-              />
-            ))}
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Look</legend>
-            <Check label="Sponsor bar" checked={design.showSponsors} onChange={(v) => set('showSponsors', v)} />
-            <Check label="Light theme" checked={design.theme === 'light'} onChange={(v) => set('theme', v ? 'light' : 'dark')} />
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-separator">Ticker separator image (blank keeps the diamond)</Label>
-              <Input
-                id="ov-separator"
-                placeholder="https://… or /storage/…"
-                value={separatorText}
-                onChange={(e) => {
-                  setSeparatorText(e.target.value);
-                  set('separatorImage', e.target.value);
-                }}
-              />
-              {separatorText.trim() !== '' && parseSeparatorImage(separatorText) === null && (
-                <p className="text-xs text-destructive">Use a web address (https://…) or a path on this server (/…).</p>
-              )}
-            </div>
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Event</legend>
-            <div className="space-y-1.5">
-              <Label htmlFor="ov-event">Event ID (blank follows the event racing now)</Label>
-              <Input
-                id="ov-event"
-                inputMode="numeric"
-                value={eventText}
-                onChange={(e) => {
-                  setEventText(e.target.value);
-                  const n = Number(e.target.value);
-                  set('eventId', e.target.value.trim() !== '' && Number.isSafeInteger(n) && n > 0 ? n : null);
-                }}
-              />
-            </div>
-          </fieldset>
+            <TabsContent value="layout" forceMount className="space-y-5 data-[state=inactive]:hidden">
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Layout on screen</legend>
+                <p className="text-xs text-muted-foreground">
+                  Drag each part to the area of the screen where it should sit. Parts in the same area stack.
+                </p>
+                <OverlayLayoutEditor placement={design.placement} off={offParts} onChange={(p) => set('placement', p)} />
+              </fieldset>
+            </TabsContent>
+          </Tabs>
 
           <Button
             variant="outline"
