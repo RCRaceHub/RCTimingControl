@@ -80,7 +80,7 @@ function ThemeSponsors({ themeId }: { themeId: number }) {
 const DESIGNER_TABS = ['theme','content','layout'] as const;
 
 export default function OverlayDesignerPage() {
-  const [tab, setTab] = useTabParam(DESIGNER_TABS, 'theme');
+  const [tab, setTab] = useTabParam(DESIGNER_TABS, 'theme', 'designer');
   const { confirm, dialog } = useConfirm();
   const [design, setDesign] = useState<OverlayDesign>(DEFAULT_OVERLAY_DESIGN);
   const set = <K extends keyof OverlayDesign>(key: K, value: OverlayDesign[K]) =>

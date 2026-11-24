@@ -1322,11 +1322,11 @@ export const adminApi = {
         .then(r => r.data),
   },
 
-  // Database backups (#22)
   audit: {
     search: (filter: AuditFilterParams, page: number, size: number) =>
       api.get<AuditPageDto>('/api/v1/admin/audit', { params: { ...filter, page, size } }).then(r => r.data),
   },
+  // Database backups (#22)
   backups: {
     list: () =>
       api.get<BackupsDto>('/api/v1/admin/backups').then(r => r.data),

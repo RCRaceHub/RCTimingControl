@@ -30,7 +30,7 @@ export default function AuditLogPage() {
     setFilter({
       entityType: entityType.trim() || undefined,
       action: action.trim().toUpperCase() || undefined,
-      eventId: eventId.trim() && Number.isFinite(id) ? id : undefined,
+      eventId: eventId.trim() && Number.isInteger(id) && id > 0 ? id : undefined,
     });
     setPage(0);
   }
