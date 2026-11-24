@@ -8,6 +8,7 @@ import {
   Menu,
   Flag,
   Radio,
+  ScrollText,
   Volume2,
   Users,
   Wand2,
@@ -60,6 +61,7 @@ const adminOnlyOperations: NavEntry[] = [
   { to: '/admin/backups', label: 'Backups', Icon: DatabaseBackup },
   { to: '/admin/racehub', label: 'RaceHub', Icon: CloudUpload },
   { to: '/admin/officials', label: 'Officials', Icon: UserCog },
+  { to: '/admin/audit', label: 'Audit log', Icon: ScrollText },
 ];
 
 const configGroup: NavEntry[] = [
