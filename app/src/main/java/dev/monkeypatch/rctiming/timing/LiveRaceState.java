@@ -148,9 +148,14 @@ public class LiveRaceState {
         if (slot == null || !crossedStart.add(entryId) || elapsedMs <= slot) {
             return false;
         }
-        long start = maxLateMs == null ? elapsedMs : Math.min(elapsedMs, slot + Math.max(0, maxLateMs));
+        long start = maxLateMs == null ? elapsedMs : Math.min(elapsedMs, slot + maxLateMs);
         startOffsetMs.put(entryId, start);
         return start != slot;
+    }
+
+    /** Whether the entry's first crossing has been seen, so its start is settled (see {@link #onStaggerCrossing}). */
+    public synchronized boolean hasCrossedStart(long entryId) {
+        return crossedStart.contains(entryId);
     }
 
     /** Whether the entry has a slot in the stagger; false for an entry added after the offsets were set. */

@@ -278,12 +278,13 @@ public class LapTimingService {
      */
     private void settleStaggerStart(long raceId, LiveRaceState state, long entryId) {
         RaceClockService.RacePlan plan = planOf(raceId);
-        if (plan.staggerIntervalMs() <= 0 || state.crossedStart.contains(entryId)) {
+        if (plan.staggerIntervalMs() <= 0 || state.hasCrossedStart(entryId)) {
             return;
         }
         long elapsedMs = raceClockService.clockOf(raceId, RaceStatus.RUNNING, plan.durationMs()).elapsedMs();
         if (state.onStaggerCrossing(entryId, elapsedMs, plan.maxLateStartMs())) {
-            log.info("Race {}: entry {} crossed late, its time starts at {} ms", raceId, entryId, state.startOffsetMs(entryId));
+            log.debug("Race {}: entry {} crossed after its slot, its time starts at {} ms",
+                    raceId, entryId, state.startOffsetMs(entryId));
         }
     }
 
