@@ -75,91 +75,90 @@ export function AudioDetailFields({ settings, onChange, idPrefix, section = 'all
     <div className="space-y-4">
       {showWording && (
         <>
-        <p className="text-xs font-semibold text-muted-foreground pt-2">Spoken wording</p>
-        <p className="text-xs text-muted-foreground">
-          Leave a box empty for the standard wording. The words in braces are filled in as the line is spoken.
-        </p>
-        {WORDING_FIELDS.map(({ key, label, fills }) => (
-          <div key={key} className="space-y-1">
-            <Label htmlFor={`${idPrefix}-wording-${key}`}>{label}</Label>
+          <p className="text-xs font-semibold text-muted-foreground pt-2">Spoken wording</p>
+          <p className="text-xs text-muted-foreground">
+            Leave a box empty for the standard wording. The words in braces are filled in as the line is spoken.
+          </p>
+          {WORDING_FIELDS.map(({ key, label, fills }) => (
+            <div key={key} className="space-y-1">
+              <Label htmlFor={`${idPrefix}-wording-${key}`}>{label}</Label>
+              <Input
+                id={`${idPrefix}-wording-${key}`}
+                key={wording[key]}
+                maxLength={200}
+                defaultValue={wording[key]}
+                placeholder={DEFAULT_WORDING[key]}
+                onBlur={(e) => {
+                  if (e.target.value === wording[key]) return;
+                  onChange({ ...settings, wording: { ...wording, [key]: e.target.value } });
+                }}
+                className="h-8"
+              />
+              {fills && <p className="text-xs text-muted-foreground">Fills in: {fills}</p>}
+            </div>
+          ))}
+
+          <p className="text-xs font-semibold text-muted-foreground pt-2">Countdown calls</p>
+          <div className="space-y-1">
+            <Label htmlFor={`${idPrefix}-intervals`}>Seconds before the end of a timed race</Label>
             <Input
-              id={`${idPrefix}-wording-${key}`}
-              key={wording[key]}
-              maxLength={200}
-              defaultValue={wording[key]}
-              placeholder={DEFAULT_WORDING[key]}
+              id={`${idPrefix}-intervals`}
+              key={intervals.join(',')}
+              defaultValue={intervals.join(', ')}
               onBlur={(e) => {
-                if (e.target.value === wording[key]) return;
-                onChange({ ...settings, wording: { ...wording, [key]: e.target.value } });
+                const parsed = parseIntervals(e.target.value);
+                if (!parsed) {
+                  toast.error('Give up to 10 times, each from 1 to 3600 seconds, such as 600, 300, 120, 60, 30.');
+                  e.target.value = intervals.join(', ');
+                  return;
+                }
+                if (parsed.join(',') === intervals.join(',')) return;
+                onChange({ ...settings, countdownIntervals: parsed });
               }}
               className="h-8"
             />
-            {fills && <p className="text-xs text-muted-foreground">Fills in: {fills}</p>}
+            <p className="text-xs text-muted-foreground">Seconds, separated by commas (600 is 10 minutes).</p>
           </div>
-        ))}
 
-        <p className="text-xs font-semibold text-muted-foreground pt-2">Countdown calls</p>
-        <div className="space-y-1">
-          <Label htmlFor={`${idPrefix}-intervals`}>Seconds before the end of a timed race</Label>
-          <Input
-            id={`${idPrefix}-intervals`}
-            key={intervals.join(',')}
-            defaultValue={intervals.join(', ')}
-            onBlur={(e) => {
-              const parsed = parseIntervals(e.target.value);
-              if (!parsed) {
-                toast.error('Give up to 10 times, each from 1 to 3600 seconds, such as 600, 300, 120, 60, 30.');
-                e.target.value = intervals.join(', ');
-                return;
-              }
-              if (parsed.join(',') === intervals.join(',')) return;
-              onChange({ ...settings, countdownIntervals: parsed });
-            }}
-            className="h-8"
-          />
-          <p className="text-xs text-muted-foreground">Seconds, separated by commas (600 is 10 minutes).</p>
-        </div>
-
-        <p className="text-xs font-semibold text-muted-foreground pt-2">Names</p>
-        <div className="flex items-center gap-2">
-          <Switch
-            id={`${idPrefix}-first-names`}
-            checked={tuning.firstNamesOnly}
-            onCheckedChange={(checked) => onChange({ ...settings, tuning: { ...tuning, firstNamesOnly: checked } })}
-          />
-          <Label htmlFor={`${idPrefix}-first-names`}>Say first names only when calling drivers to start</Label>
-        </div>
-
+          <p className="text-xs font-semibold text-muted-foreground pt-2">Names</p>
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`${idPrefix}-first-names`}
+              checked={tuning.firstNamesOnly}
+              onCheckedChange={(checked) => onChange({ ...settings, tuning: { ...tuning, firstNamesOnly: checked } })}
+            />
+            <Label htmlFor={`${idPrefix}-first-names`}>Say first names only when calling drivers to start</Label>
+          </div>
         </>
       )}
 
       {showTimings && (
         <>
-        <p className="text-xs font-semibold text-muted-foreground pt-2">Timings and tones</p>
-        {TUNING_FIELDS.map(({ key, label, unit, min, max }) => (
-          <div key={key} className="flex flex-wrap items-center gap-2">
-            <Label htmlFor={`${idPrefix}-tuning-${key}`} className="shrink-0">{label}</Label>
-            <Input
-              id={`${idPrefix}-tuning-${key}`}
-              key={tuning[key]}
-              type="number"
-              min={min}
-              max={max}
-              defaultValue={tuning[key]}
-              onBlur={(e) => {
-                const typed = parseInt(e.target.value, 10);
-                const value = Number.isNaN(typed) ? tuning[key] : clamp(typed, min, max);
-                if (value === tuning[key]) {
-                  e.target.value = String(value);
-                  return;
-                }
-                onChange({ ...settings, tuning: { ...tuning, [key]: value } });
-              }}
-              className="w-24 h-8 text-center"
-            />
-            <span className="text-sm text-muted-foreground">{unit}</span>
-          </div>
-        ))}
+          <p className="text-xs font-semibold text-muted-foreground pt-2">Timings and tones</p>
+          {TUNING_FIELDS.map(({ key, label, unit, min, max }) => (
+            <div key={key} className="flex flex-wrap items-center gap-2">
+              <Label htmlFor={`${idPrefix}-tuning-${key}`} className="shrink-0">{label}</Label>
+              <Input
+                id={`${idPrefix}-tuning-${key}`}
+                key={tuning[key]}
+                type="number"
+                min={min}
+                max={max}
+                defaultValue={tuning[key]}
+                onBlur={(e) => {
+                  const typed = parseInt(e.target.value, 10);
+                  const value = Number.isNaN(typed) ? tuning[key] : clamp(typed, min, max);
+                  if (value === tuning[key]) {
+                    e.target.value = String(value);
+                    return;
+                  }
+                  onChange({ ...settings, tuning: { ...tuning, [key]: value } });
+                }}
+                className="w-24 h-8 text-center"
+              />
+              <span className="text-sm text-muted-foreground">{unit}</span>
+            </div>
+          ))}
         </>
       )}
     </div>

@@ -26,13 +26,14 @@ import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { HornSoundsCard } from './HornSoundsCard';
 import { AudioRoutingCard } from './AudioRoutingCard';
+import { QueryError } from '@/components/QueryError';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 export default function AdminAudioSettingsPage() {
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
-  const { data: settings, isLoading: settingsLoading } = useQuery({
+  const { data: settings, isLoading: settingsLoading, isError: settingsError, refetch: refetchSettings } = useQuery({
     queryKey: adminQueryKeys.audioSettings(),
     queryFn: () => getAdminAudioSettings(),
   });
@@ -83,7 +84,9 @@ export default function AdminAudioSettingsPage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h1 className="text-xl font-semibold">Audio Settings</h1>
 
-      {settingsLoading ? (
+      {settingsError ? (
+        <QueryError message="Failed to load audio settings." onRetry={refetchSettings} />
+      ) : settingsLoading ? (
         <div className="flex items-center gap-2 py-4">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           <span className="text-sm text-muted-foreground">Loading settings…</span>
@@ -99,6 +102,7 @@ export default function AdminAudioSettingsPage() {
           />
 
           <Tabs defaultValue="announcements" className="space-y-6">
+            {/* Every tab stays mounted (hidden when not shown) so a box typed into is not lost before it commits on blur */}
             <TabsList className="h-auto flex-wrap justify-start">
               <TabsTrigger value="announcements">Announcements</TabsTrigger>
               <TabsTrigger value="wording">Wording</TabsTrigger>
@@ -107,7 +111,7 @@ export default function AdminAudioSettingsPage() {
               <TabsTrigger value="sounds">Horn sounds</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="announcements">
+            <TabsContent value="announcements" forceMount className="data-[state=inactive]:hidden">
               <Card>
                 <CardHeader>
                   <CardTitle>What is announced</CardTitle>
@@ -177,7 +181,7 @@ export default function AdminAudioSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="wording">
+            <TabsContent value="wording" forceMount className="data-[state=inactive]:hidden">
               <Card>
                 <CardHeader>
                   <CardTitle>What is said</CardTitle>
@@ -204,9 +208,12 @@ export default function AdminAudioSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="timings">
+            <TabsContent value="timings" forceMount className="data-[state=inactive]:hidden">
               <Card>
-                <CardContent className="pt-6">
+                <CardHeader>
+                  <CardTitle>Timings and tones</CardTitle>
+                </CardHeader>
+                <CardContent>
                   <AudioDetailFields
                     settings={displaySettings}
                     onChange={setLocalSettings}
@@ -217,17 +224,17 @@ export default function AdminAudioSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="outputs">
+            <TabsContent value="outputs" forceMount className="data-[state=inactive]:hidden">
               <AudioRoutingCard />
             </TabsContent>
 
-            <TabsContent value="sounds">
+            <TabsContent value="sounds" forceMount className="data-[state=inactive]:hidden">
               <HornSoundsCard sounds={settings?.hornSounds} />
             </TabsContent>
           </Tabs>
 
           <div className="flex items-center gap-3">
-            <Button onClick={handleSave} disabled={saveSettingsMutation.isPending || !hasUnsaved}>
+            <Button onClick={handleSave} disabled={saveSettingsMutation.isPending}>
               {saveSettingsMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
