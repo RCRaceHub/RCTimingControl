@@ -36,6 +36,12 @@ function useFitToScreen<T extends HTMLElement>() {
   return ref;
 }
 
+/** The text zoom `?size=large` (1.25) or `?size=xlarge` (1.5) asks for, so a monitor read from further away can have bigger type (#772). */
+export function boardTextZoom(search: string): number {
+  const size = new URLSearchParams(search).get('size')?.toLowerCase();
+  return size === 'xlarge' ? 1.5 : size === 'large' ? 1.25 : 1;
+}
+
 // Full-screen dark frame for a venue TV: large type, high contrast, no app chrome. It never scrolls: what would
 // run past the bottom of the screen is scaled down to fit.
 export function BoardShell({
@@ -51,6 +57,7 @@ export function BoardShell({
   children: ReactNode;
 }) {
   const frame = useFitToScreen<HTMLDivElement>();
+  const zoom = boardTextZoom(window.location.search);
   return (
     <div className="dark h-screen overflow-hidden bg-slate-950">
     <div ref={frame} className="flex origin-top-left flex-col gap-8 p-8 text-slate-50 lg:p-12">
@@ -59,7 +66,7 @@ export function BoardShell({
           {eventName}
         </p>
       )}
-      {children}
+      {zoom === 1 ? children : <div className="flex flex-col gap-8" style={{ zoom }}>{children}</div>}
       {showQr && (
         <div className="mt-auto flex justify-end">
           <QrLink

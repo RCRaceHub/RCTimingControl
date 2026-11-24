@@ -28,4 +28,15 @@ describe('useSidebarLayout', () => {
     act(() => result.current.resetWidth());
     expect(result.current.width).toBe(SIDEBAR_DEFAULT_WIDTH);
   });
+
+  it('starts collapsed on a narrow screen until a choice is remembered (#768)', () => {
+    window.innerWidth = 900;
+    try {
+      const { result } = renderHook(() => useSidebarLayout());
+
+      expect(result.current.collapsed).toBe(true);
+    } finally {
+      window.innerWidth = 1280;
+    }
+  });
 });

@@ -30,6 +30,15 @@ import { TextField } from '@/components/TextField';
 
 const INCIDENT_TYPES = ['JUMP_START', 'COLLISION', 'SHORTCUT', 'DANGEROUS_DRIVING', 'OTHER'] as const;
 
+/** Quick pick labels for the incident types, so the referee taps one rather than opening a list (#771). */
+const INCIDENT_LABELS: Record<(typeof INCIDENT_TYPES)[number], string> = {
+  JUMP_START: 'Jump start',
+  COLLISION: 'Contact',
+  SHORTCUT: 'Shortcut',
+  DANGEROUS_DRIVING: 'Dangerous driving',
+  OTHER: 'Other',
+};
+
 const schema = z.object({
   entryId: z.coerce.number().int().positive('Select a driver'),
   incidentType: z.enum(INCIDENT_TYPES),
@@ -45,9 +54,11 @@ type Props = {
   onSubmit: (req: IncidentReportRequest) => void;
   isPending: boolean;
   drivers: { entryId: number; driverName: string; carNumber?: string | null }[];
+  /** The driver the form opens on, when it was opened from that driver's row (#771). */
+  defaultEntryId?: number;
 };
 
-export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, drivers }: Props) {
+export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, drivers, defaultEntryId }: Props) {
   const form = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { entryId: 0, incidentType: 'OTHER', description: '' },
@@ -59,10 +70,11 @@ export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, driver
 
   // The form is cleared when the dialog closes, which the page does once the request has gone through. It
   // was cleared as soon as it was sent, so a request that failed lost what had been typed.
-  const { reset } = form;
+  const { reset, setValue } = form;
   useEffect(() => {
     if (!open) reset();
-  }, [open, reset]);
+    else if (defaultEntryId) setValue('entryId', defaultEntryId);
+  }, [open, reset, setValue, defaultEntryId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,18 +117,21 @@ export function IncidentDialog({ open, onOpenChange, onSubmit, isPending, driver
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {INCIDENT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Incident type">
+                    {INCIDENT_TYPES.map((t) => (
+                      <Button
+                        key={t}
+                        type="button"
+                        size="sm"
+                        role="radio"
+                        aria-checked={field.value === t}
+                        variant={field.value === t ? 'default' : 'outline'}
+                        onClick={() => field.onChange(t)}
+                      >
+                        {INCIDENT_LABELS[t]}
+                      </Button>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

@@ -46,6 +46,8 @@ import { getFinalsReview, moveFinal, type RunOrderItemDto } from '@/lib/raceCont
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { MoreMenu } from '@/components/MoreMenu';
+import { RaceStateChip } from '@/components/RaceStateChip';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
@@ -392,7 +394,7 @@ function CockpitView() {
 
   async function onAbandon() {
     const confirmed = await confirm({
-      title: 'Abandon this race?',
+      title: `Abandon ${raceTitle(selectedRace)}?`,
       description: 'The race ends now and its result is saved as it stands.',
       confirmLabel: 'Abandon',
       destructive: true,
@@ -409,7 +411,7 @@ function CockpitView() {
 
   async function onRestart() {
     const confirmed = await confirm({
-      title: 'Restart this race from scratch?',
+      title: `Restart ${raceTitle(selectedRace)} from scratch?`,
       description: 'Its timing and any saved result will be cleared.',
       confirmLabel: 'Restart',
       destructive: true,
@@ -419,6 +421,30 @@ function CockpitView() {
       onError: commandFailed('Restart'),
     });
   }
+
+  /** Restart and Abandon live behind a More button (#769), away from Stop and Finish; each still asks to confirm. */
+  const moreMenu = (
+    <MoreMenu>
+      {(close) => (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => { close(); void onRestart(); }}
+            disabled={mutations.restart.isPending}
+          >
+            Restart
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => { close(); void onAbandon(); }}
+            disabled={mutations.abandon.isPending}
+          >
+            Abandon
+          </Button>
+        </>
+      )}
+    </MoreMenu>
+  );
 
   function renderMainPanel() {
     if (isError) {
@@ -459,12 +485,15 @@ function CockpitView() {
       case 'PENDING':
         return (
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
+            </div>
             <p className="text-sm text-muted-foreground">Race is pending. Call the grid when ready.</p>
             <Button
               onClick={onCallGrid}
               disabled={mutations.callGrid.isPending || finalBlocked}
-              className="w-fit"
+              className="w-fit pointer-coarse:min-h-11"
             >
               {mutations.callGrid.isPending ? 'Calling grid…' : 'Call Grid'}
             </Button>
@@ -542,22 +571,18 @@ function CockpitView() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
-                  <Button onClick={onFinish} disabled={mutations.finish.isPending}>
+                  <Button className="pointer-coarse:min-h-11" onClick={onFinish} disabled={mutations.finish.isPending}>
                     {mutations.finish.isPending ? 'Finishing…' : 'Finish Race'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={onStop} disabled={mutations.stop.isPending}>
+                <Button className="pointer-coarse:min-h-11" variant="outline" onClick={onStop} disabled={mutations.stop.isPending}>
                   {mutations.stop.isPending ? 'Stopping…' : 'Stop'}
                 </Button>
-                <Button variant="outline" onClick={onRestart} disabled={mutations.restart.isPending}>
-                  Restart
-                </Button>
-                <Button variant="destructive" onClick={onAbandon} disabled={mutations.abandon.isPending}>
-                  Abandon
-                </Button>
+                {moreMenu}
               </div>
             </div>
             {sections.isShown('liveTiming') && (
@@ -595,9 +620,10 @@ function CockpitView() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
-                <Button onClick={onStart} disabled={mutations.start.isPending}>
+                <Button className="pointer-coarse:min-h-11" onClick={onStart} disabled={mutations.start.isPending}>
                   {mutations.start.isPending ? 'Resuming…' : 'Resume Race'}
                 </Button>
                 {canControlRace && (
@@ -605,12 +631,7 @@ function CockpitView() {
                     {mutations.finish.isPending ? 'Finishing…' : 'Finish Race'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={onRestart} disabled={mutations.restart.isPending}>
-                  Restart
-                </Button>
-                <Button variant="destructive" onClick={onAbandon} disabled={mutations.abandon.isPending}>
-                  Abandon
-                </Button>
+                {moreMenu}
               </div>
             </div>
             {sections.isShown('liveTiming') && (

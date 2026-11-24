@@ -1,6 +1,6 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, Link, useParams, useMatches } from 'react-router-dom';
-import { BookOpen, Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus, Printer } from 'lucide-react';
+import { Moon, Sun, BookOpen, Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus, Printer } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -18,6 +18,7 @@ import { FinalLegsScopeSelect } from './panels/FinalLegsScopeSelect';
 import { PracticeRankingSelect } from './panels/PracticeRankingSelect';
 import { RaceControlErrorBoundary } from '@/components/RaceControlErrorBoundary';
 import PageLoading from '@/components/PageLoading';
+import { useRaceControlTheme } from '@/hooks/race-control/useRaceControlTheme';
 import { BoardsMenu } from '@/components/BoardsMenu';
 
 export default function RaceControlLayout() {
@@ -25,6 +26,8 @@ export default function RaceControlLayout() {
   const { user, logout } = useAuth();
   const { helpContent, isOpen, setIsOpen } = useHelp();
   const matches = useMatches();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const rcTheme = useRaceControlTheme();
 
   const base = `/race-control/event/${eventId}`;
   const isPractice = matches.some((m) => m.pathname.includes('/practice'));
@@ -47,10 +50,12 @@ export default function RaceControlLayout() {
         <Link
           to="/admin/race-control"
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+         
           aria-label="Back to event select"
+          title="Back to event select"
         >
           <ChevronLeft className="h-4 w-4" />
-          <span className="text-sm font-semibold">RC Timing</span>
+          <span className="text-sm font-semibold">Events</span>
         </Link>
 
         <nav className="flex items-center gap-1 ml-4">
@@ -82,6 +87,15 @@ export default function RaceControlLayout() {
 
         <div className="ml-auto flex items-center gap-3">
           <BoardsMenu eventId={eventId} />
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={rcTheme.toggle}
+            aria-label={rcTheme.theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
+            title={rcTheme.theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'}
+          >
+            {rcTheme.theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
           <span className="text-xs text-muted-foreground hidden sm:block">
             {user ? `${user.firstName} ${user.lastName}` : ''}
           </span>
@@ -101,7 +115,7 @@ export default function RaceControlLayout() {
               <HelpCircle className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon-sm" onClick={logout} aria-label="Log out">
+          <Button variant="ghost" size="icon-sm" onClick={logout} aria-label="Log out" title="Log out">
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
@@ -122,10 +136,26 @@ export default function RaceControlLayout() {
       <Separator />
 
       <DecoderStatusBar>
-        {eventId && <PracticeRankingSelect eventId={Number(eventId)} />}
-        {eventId && <FinalLegsScopeSelect eventId={Number(eventId)} />}
         {eventId && <LiveFeedStatus eventId={Number(eventId)} />}
+        {eventId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            Event settings
+          </Button>
+        )}
       </DecoderStatusBar>
+      {/* Setup choices, kept off the live bar so a stray tap during a race cannot change them (#769) */}
+      {eventId && settingsOpen && (
+        <div className="flex flex-wrap items-center gap-4 border-b bg-muted/40 px-4 py-2 shrink-0">
+          <PracticeRankingSelect eventId={Number(eventId)} />
+          <FinalLegsScopeSelect eventId={Number(eventId)} />
+        </div>
+      )}
 
       {/* Page content fills remaining height */}
       <div className="flex-1 overflow-hidden">

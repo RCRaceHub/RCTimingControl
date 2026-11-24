@@ -65,15 +65,15 @@ export function BoardLiveTable({ rows, barClock, closeMs = 0, showArrows = false
             <th className="py-2 pr-4">Car</th>
             <th className="py-2 pr-4">Driver</th>
             <th className="py-2 pr-4 text-right">Laps</th>
-            {predicted && <th className="py-2 pr-4 text-right">Pred</th>}
+            {predicted && <th className="py-2 pr-4 text-right" title="Laps the car is on course to finish with">Pred laps</th>}
             <th className="py-2 pr-4 text-right">Total</th>
             <th className="py-2 pr-4 text-right">Last</th>
             <th className="py-2 pr-4 text-right">Best</th>
             {sectorIndexes.map((i) => (
               <th key={i} className="py-2 pr-4 text-right">S{i + 1}</th>
             ))}
-            <th className="py-2 pr-4 text-right">Ahead</th>
-            <th className="py-2 text-right">Gap</th>
+            <th className="py-2 pr-4 text-right">Interval</th>
+            <th className="py-2 text-right">Leader</th>
           </tr>
         </thead>
         <tbody>

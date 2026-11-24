@@ -202,7 +202,8 @@ describe('CockpitPage final guard', () => {
   it('blocks Call Grid on a final while a qualifying heat is unfinished', () => {
     runOrderWith('PENDING');
     renderCockpit();
-    fireEvent.click(screen.getByText(/Final/));
+    // The run order groups heats under their round; the final is the last row
+    fireEvent.click(screen.getAllByRole('button', { name: /13.5 Touring/ }).at(-1)!);
     expect(screen.getByRole('button', { name: 'Call Grid' })).toBeDisabled();
     expect(screen.getByText(/1 qualifying heat for 13.5 Touring still to finish/)).toBeInTheDocument();
   });

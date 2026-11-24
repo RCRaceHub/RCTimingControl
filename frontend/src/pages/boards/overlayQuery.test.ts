@@ -62,8 +62,8 @@ describe('overlayQuery', () => {
     expect(overlayQuery({ ...DEFAULT_OVERLAY_DESIGN, showLegend: true })).toBe('?legend=show');
     expect(parseOverlayOptions(new URLSearchParams('?legend=show')).showLegend).toBe(true);
     expect(parseOverlayOptions(new URLSearchParams('')).showLegend).toBe(false);
-    expect(parseLiveRaceOptions(new URLSearchParams('')).showLegend).toBe(true);
-    expect(parseLiveRaceOptions(new URLSearchParams('?legend=hide')).showLegend).toBe(false);
+    expect(parseLiveRaceOptions(new URLSearchParams('')).showLegend).toBe(false);
+    expect(parseLiveRaceOptions(new URLSearchParams('?legend=show')).showLegend).toBe(true);
   });
 
   it('hides the whole ticker when no item is chosen', () => {
