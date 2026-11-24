@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.domain.csvimport;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Clock;
 import dev.monkeypatch.rctiming.domain.ExternalSources;
 import dev.monkeypatch.rctiming.domain.Names;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -61,6 +63,7 @@ import java.util.stream.Collectors;
 @Service
 public class CsvImportService {
 
+    private final Clock clock;
     private final EventRepository eventRepository;
     private final EntryRepository entryRepository;
     private final CompetitorRepository competitorRepository;
@@ -68,12 +71,25 @@ public class CsvImportService {
     private final EntryMediaImport mediaImport;
     private final AuditService audit;
 
+    @Autowired
     public CsvImportService(EventRepository eventRepository,
                             EntryRepository entryRepository,
                             CompetitorRepository competitorRepository,
                             EntryImports entryImports,
                             EntryMediaImport mediaImport,
                             AuditService audit) {
+        this(eventRepository, entryRepository, competitorRepository, entryImports, mediaImport, audit, Clock.systemUTC());
+    }
+
+    /** For tests: the clock is injected so time can be fixed. */
+    CsvImportService(EventRepository eventRepository,
+                            EntryRepository entryRepository,
+                            CompetitorRepository competitorRepository,
+                            EntryImports entryImports,
+                            EntryMediaImport mediaImport,
+                            AuditService audit,
+                      Clock clock) {
+        this.clock = clock;
         this.eventRepository = eventRepository;
         this.entryRepository = entryRepository;
         this.competitorRepository = competitorRepository;
@@ -133,7 +149,7 @@ public class CsvImportService {
         boolean apply = !dryRun && !blocked;
 
         Map<Long, String> competitorNames = entryImports.competitorNames(missing);
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         List<CsvImportResult.Row> rows = new ArrayList<>();
         // Withdrawals first, so a replacement entry in the same class doesn't meet the old one in the
         // one-active-entry index.

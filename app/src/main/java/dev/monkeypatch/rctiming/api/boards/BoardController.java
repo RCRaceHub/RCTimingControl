@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.api.boards.dto.ForcedCloseDto;
 import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
@@ -401,9 +402,6 @@ public class BoardController {
     public ForcedCloseDto closesIn(@PathVariable long raceId) {
         return new ForcedCloseDto(lastLapTimeout.closesInMs(raceId).orElse(null));
     }
-
-    /** See {@link #closesIn}. */
-    public record ForcedCloseDto(Long closesInMs) {}
 
     /**
      * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.FinalLegsScopeDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.domain.event.FinalLegsScope;
@@ -29,14 +30,6 @@ public class FinalLegsScopeController {
 
     public FinalLegsScopeController(EventService eventService) {
         this.eventService = eventService;
-    }
-
-    /**
-     * The body of the update and the answer of both calls.
-     *
-     * @param scope {@code A_ONLY} or {@code ALL}
-     */
-    public record FinalLegsScopeDto(@NotNull FinalLegsScope scope) {
     }
 
     /** The event's setting. {@code GET}; 404 if the event does not exist. */

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.pub;
 
+import dev.monkeypatch.rctiming.api.pub.dto.PrivacyNoticeDto;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,4 @@ public class PrivacyNoticeController {
         return new PrivacyNoticeDto(n.clubName(), n.email(), n.phone(), n.text());
     }
 
-    /** The privacy notice page's data: the club's name, contact {@code email} and {@code phone}, and the notice text. */
-    public record PrivacyNoticeDto(String clubName, String email, String phone, String text) {}
 }

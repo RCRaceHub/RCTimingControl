@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Clock;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustment;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustmentRepository;
@@ -64,6 +66,7 @@ public class ResultSnapshotService {
 
     private static final Logger log = LoggerFactory.getLogger(ResultSnapshotService.class);
 
+    private final Clock clock;
     private final RaceRepository raceRepository;
     private final RoundRepository roundRepository;
     private final LapTimingService lapTimingService;
@@ -77,6 +80,7 @@ public class ResultSnapshotService {
     private final FinalsMarshalPenalties finalsMarshalPenalties;
     private final RaceEliminationRepository raceEliminationRepository;
 
+    @Autowired
     public ResultSnapshotService(RaceRepository raceRepository,
                                   RoundRepository roundRepository,
                                   LapTimingService lapTimingService,
@@ -89,6 +93,24 @@ public class ResultSnapshotService {
                                   MarshalAdjustmentRepository marshalAdjustmentRepository,
                                   FinalsMarshalPenalties finalsMarshalPenalties,
                                   RaceEliminationRepository raceEliminationRepository) {
+        this(raceRepository, roundRepository, lapTimingService, resultSnapshotRepository, snapshotJson, raceEntryRepository, entryRepository, competitorRepository, penaltyRepository, marshalAdjustmentRepository, finalsMarshalPenalties, raceEliminationRepository, Clock.systemUTC());
+    }
+
+    /** For tests: the clock is injected so time can be fixed. */
+    ResultSnapshotService(RaceRepository raceRepository,
+                                  RoundRepository roundRepository,
+                                  LapTimingService lapTimingService,
+                                  ResultSnapshotRepository resultSnapshotRepository,
+                                  ResultSnapshotJson snapshotJson,
+                                  RaceEntryRepository raceEntryRepository,
+                                  EntryRepository entryRepository,
+                                  CompetitorRepository competitorRepository,
+                                  PenaltyRepository penaltyRepository,
+                                  MarshalAdjustmentRepository marshalAdjustmentRepository,
+                                  FinalsMarshalPenalties finalsMarshalPenalties,
+                                  RaceEliminationRepository raceEliminationRepository,
+                           Clock clock) {
+        this.clock = clock;
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
         this.lapTimingService = lapTimingService;
@@ -162,7 +184,7 @@ public class ResultSnapshotService {
         ResultSnapshot snapshot = resultSnapshotRepository.findByRaceId(raceId)
                 .orElseGet(ResultSnapshot::new);
         snapshot.setRaceId(raceId);
-        snapshot.setFinishedAt(race.getFinishedAt() != null ? race.getFinishedAt() : Instant.now());
+        snapshot.setFinishedAt(race.getFinishedAt() != null ? race.getFinishedAt() : clock.instant());
 
         snapshot.setTimedPositionsJson(snapshotJson.write(raceId, positions));
         snapshot.setPositionsJson(snapshotJson.write(raceId, corrected(race, snapshot.getFinishedAt(), positions)));
