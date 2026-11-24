@@ -169,55 +169,55 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
           Settings
         </summary>
         <div className="mt-2 flex flex-col gap-2">
-      {canControl && (
-        <>
+          {canControl && (
+            <>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="auto-run-gap" className="text-xs">Gap between races (seconds)</Label>
+                <Input
+                  id="auto-run-gap"
+                  type="number"
+                  min={0}
+                  max={3600}
+                  className="h-8 w-20"
+                  value={gapValue}
+                  onChange={(e) => setGap(e.target.value)}
+                  onBlur={() => { if (!gapValid) setGap(null); }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="auto-run-hold"
+                  checked={hold ?? state.holdBeforeFinals}
+                  onCheckedChange={(checked) => setHold(checked === true)}
+                />
+                <Label htmlFor="auto-run-hold" className="text-xs">Hold after qualifying, before the finals</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="auto-run-auto-start"
+                  checked={autoStart ?? state.autoStart}
+                  onCheckedChange={(checked) => setAutoStart(checked === true)}
+                />
+                <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on by itself when a race is started by hand (otherwise only Go starts it)</Label>
+              </div>
+            </>
+          )}
+
           <div className="flex items-center gap-2">
-            <Label htmlFor="auto-run-gap" className="text-xs">Gap between races (seconds)</Label>
+            <Label htmlFor="auto-run-results-hold" className="text-xs">Keep results on screen after a race (seconds)</Label>
             <Input
-              id="auto-run-gap"
+              id="auto-run-results-hold"
               type="number"
               min={0}
-              max={3600}
+              max={MAX_RESULTS_HOLD_SECONDS}
               className="h-8 w-20"
-              value={gapValue}
-              onChange={(e) => setGap(e.target.value)}
-              onBlur={() => { if (!gapValid) setGap(null); }}
+              value={resultsHold}
+              onChange={(e) => {
+                const seconds = parseInt(e.target.value, 10);
+                setResultsHold(Number.isFinite(seconds) ? Math.min(MAX_RESULTS_HOLD_SECONDS, Math.max(0, seconds)) : 0);
+              }}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="auto-run-hold"
-              checked={hold ?? state.holdBeforeFinals}
-              onCheckedChange={(checked) => setHold(checked === true)}
-            />
-            <Label htmlFor="auto-run-hold" className="text-xs">Hold after qualifying, before the finals</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="auto-run-auto-start"
-              checked={autoStart ?? state.autoStart}
-              onCheckedChange={(checked) => setAutoStart(checked === true)}
-            />
-            <Label htmlFor="auto-run-auto-start" className="text-xs">Switch on by itself when a race is started by hand (otherwise only Go starts it)</Label>
-          </div>
-        </>
-      )}
-
-      <div className="flex items-center gap-2">
-        <Label htmlFor="auto-run-results-hold" className="text-xs">Keep results on screen after a race (seconds)</Label>
-        <Input
-          id="auto-run-results-hold"
-          type="number"
-          min={0}
-          max={MAX_RESULTS_HOLD_SECONDS}
-          className="h-8 w-20"
-          value={resultsHold}
-          onChange={(e) => {
-            const seconds = parseInt(e.target.value, 10);
-            setResultsHold(Number.isFinite(seconds) ? Math.min(MAX_RESULTS_HOLD_SECONDS, Math.max(0, seconds)) : 0);
-          }}
-        />
-      </div>
         </div>
       </details>
     </section>

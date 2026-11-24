@@ -50,7 +50,9 @@ export default function RaceControlLayout() {
         <Link
           to="/admin/race-control"
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Back to event select" title="Back to event select"
+         
+          aria-label="Back to event select"
+          title="Back to event select"
         >
           <ChevronLeft className="h-4 w-4" />
           <span className="text-sm font-semibold">Events</span>

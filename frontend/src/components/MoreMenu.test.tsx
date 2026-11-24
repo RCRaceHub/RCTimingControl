@@ -7,25 +7,25 @@ describe('MoreMenu', () => {
     const onRestart = vi.fn();
     render(
       <MoreMenu>
-        {(close) => <button role="menuitem" onClick={() => { close(); onRestart(); }}>Restart</button>}
+        {(close) => <button  onClick={() => { close(); onRestart(); }}>Restart</button>}
       </MoreMenu>,
     );
 
-    expect(screen.queryByRole('menuitem', { name: 'Restart' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Restart' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'More' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Restart' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Restart' }));
 
     expect(onRestart).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('menuitem', { name: 'Restart' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Restart' })).not.toBeInTheDocument();
   });
 
   it('closes on Escape', () => {
-    render(<MoreMenu>{() => <button role="menuitem">Abandon</button>}</MoreMenu>);
+    render(<MoreMenu>{() => <button >Abandon</button>}</MoreMenu>);
 
     fireEvent.click(screen.getByRole('button', { name: 'More' }));
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Abandon' })).not.toBeInTheDocument();
   });
 });

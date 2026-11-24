@@ -29,11 +29,11 @@ export function MoreMenu({ children, label = 'More' }: { children: (close: () =>
 
   return (
     <div ref={ref} className="relative">
-      <Button type="button" variant="outline" className="pointer-coarse:min-h-11" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button type="button" variant="outline" className="pointer-coarse:min-h-11" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {label}
       </Button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-20 mt-1 flex min-w-40 flex-col gap-1 rounded-md border bg-card p-2 shadow-md">
+        <div role="group" aria-label={label} className="absolute right-0 top-full z-20 mt-1 flex min-w-40 flex-col gap-1 rounded-md border bg-card p-2 shadow-md">
           {children(() => setOpen(false))}
         </div>
       )}

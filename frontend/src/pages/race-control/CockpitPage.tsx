@@ -1,5 +1,3 @@
-import { MoreMenu } from '@/components/MoreMenu';
-import { RaceStateChip } from '@/components/RaceStateChip';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,6 +46,8 @@ import { getFinalsReview, moveFinal, type RunOrderItemDto } from '@/lib/raceCont
 import { roundName } from '@/lib/format';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { MoreMenu } from '@/components/MoreMenu';
+import { RaceStateChip } from '@/components/RaceStateChip';
 import { ClassSwatch } from '@/components/ClassSwatch';
 import { useRoles } from '@/hooks/useRoles';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
@@ -429,7 +429,6 @@ function CockpitView() {
         <>
           <Button
             variant="outline"
-            role="menuitem"
             onClick={() => { close(); void onRestart(); }}
             disabled={mutations.restart.isPending}
           >
@@ -437,7 +436,6 @@ function CockpitView() {
           </Button>
           <Button
             variant="destructive"
-            role="menuitem"
             onClick={() => { close(); void onAbandon(); }}
             disabled={mutations.abandon.isPending}
           >
