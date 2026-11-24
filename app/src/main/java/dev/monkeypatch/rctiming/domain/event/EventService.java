@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -51,15 +52,23 @@ public class EventService {
     }
 
     /**
-     * Changes an event's name, date and track and records {@code EVENT_UPDATED}.
+     * Changes an event's name, date and track and records {@code EVENT_UPDATED}. The name and date can only change
+     * while the event is in DRAFT. The track can be assigned or changed at any point until the event is COMPLETED,
+     * because a meeting is often started before anyone has picked the track. A request that repeats the current name
+     * and date and changes only the track is therefore accepted after DRAFT.
      *
-     * @throws IllegalStateTransitionException if the event is not in DRAFT (HTTP 409)
+     * @throws IllegalStateTransitionException if the name or date changes outside DRAFT, or the track changes once
+     *                                         the event is COMPLETED (HTTP 409)
      */
     public Event update(Actor actor, Long id, String name, LocalDate eventDate, Long trackId) {
         Event event = getEventOrThrow(id);
-        if (event.getStatus() != EventStatus.DRAFT) {
+        boolean draft = event.getStatus() == EventStatus.DRAFT;
+        if (!draft && (!Objects.equals(event.getName(), name) || !Objects.equals(event.getEventDate(), eventDate))) {
             throw new IllegalStateTransitionException(
-                "Event details can only be updated while in DRAFT status");
+                "The name and date can only be updated while the event is in DRAFT status");
+        }
+        if (event.getStatus() == EventStatus.COMPLETED) {
+            throw new IllegalStateTransitionException("A completed event can no longer be changed");
         }
         Map<String, Object> before = detailsOf(event);
         event.setName(name);

@@ -161,6 +161,45 @@ class EventControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateEvent_afterTheMeetingHasStarted_changesTheTrackButNotTheNameOrDate() {
+        Long trackId = createTrackInDb();
+        Event event = new Event();
+        event.setName("Started Meeting");
+        event.setEventDate(java.time.LocalDate.of(2026, 11, 1));
+        event.setStatus(dev.monkeypatch.rctiming.domain.event.EventStatus.IN_PROGRESS);
+        Long id = eventRepository.save(event).getId();
+
+        ResponseEntity<EventDto> sameDetails = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Started Meeting", "eventDate", "2026-11-01", "trackId", trackId),
+                        adminHeaders()), EventDto.class);
+        ResponseEntity<Map> renamed = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Other", "eventDate", "2026-11-01", "trackId", trackId),
+                        adminHeaders()), Map.class);
+
+        assertThat(sameDetails.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(sameDetails.getBody().trackId()).isEqualTo(trackId);
+        assertThat(renamed.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void updateEvent_onceCompleted_isRefused() {
+        Event event = new Event();
+        event.setName("Done Meeting");
+        event.setEventDate(java.time.LocalDate.of(2026, 11, 2));
+        event.setStatus(dev.monkeypatch.rctiming.domain.event.EventStatus.COMPLETED);
+        Long id = eventRepository.save(event).getId();
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Done Meeting", "eventDate", "2026-11-02",
+                        "trackId", createTrackInDb()), adminHeaders()), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
     void transitionEvent_invalidTransition_returns409() {
         ResponseEntity<EventDto> created = restTemplate.exchange(
                 "/api/v1/admin/events", HttpMethod.POST,
