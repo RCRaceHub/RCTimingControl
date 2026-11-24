@@ -6,6 +6,8 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService.ClubDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.Set;
 
 /**
@@ -34,8 +36,8 @@ public class ProvisioningService {
      *
      * @return false, having changed nothing, when an account already exists; true once everything is saved
      * @throws IllegalStateException if the settings are incomplete or inconsistent (a missing password or name,
-     *                               a decoder with no club); the message names the setting
-     * @throws IllegalArgumentException if a value is invalid (short password, unknown time zone, bad port)
+     *                               a decoder with no club, a bad port, protocol or time zone); the message names the setting
+     * @throws IllegalArgumentException if the password is too short or the email is not usable
      */
     public boolean apply(ProvisioningProperties settings) {
         if (setupService.getStatus().bootstrapped()) {
@@ -51,22 +53,35 @@ public class ProvisioningService {
         boolean hasDecoder = decoder.host() != null && !decoder.host().isBlank();
         if (hasDecoder && !hasClub) {
             throw new IllegalStateException(
-                    "rctiming.provisioning.decoder.host needs rctiming.provisioning.club.name: the decoder address is kept in the club profile");
+                    "rctiming.provisioning.decoder.host needs rctiming.provisioning.club.name: "
+                            + "the decoder address is kept in the club profile");
         }
-        if (hasDecoder && (decoder.port() == null || decoder.port() < 1 || decoder.port() > 65535)) {
-            throw new IllegalArgumentException("rctiming.provisioning.decoder.port must be 1 to 65535");
+        int port = decoder.port() == null ? 5100 : decoder.port();
+        String protocol = blankToNull(decoder.protocol()) == null ? "RC4" : decoder.protocol().strip();
+        String timezone = blankToNull(club.timezone()) == null ? "UTC" : club.timezone().strip();
+        if (hasDecoder && (port < 1 || port > 65535)) {
+            throw new IllegalStateException("rctiming.provisioning.decoder.port must be 1 to 65535");
         }
-        if (hasDecoder && !Set.of("RC4", "P3").contains(decoder.protocol())) {
-            throw new IllegalArgumentException("rctiming.provisioning.decoder.protocol must be RC4 or P3");
+        if (hasDecoder && !Set.of("RC4", "P3").contains(protocol)) {
+            throw new IllegalStateException("rctiming.provisioning.decoder.protocol must be RC4 or P3");
+        }
+        if (hasClub) {
+            try {
+                ZoneId.of(timezone);
+            } catch (DateTimeException e) {
+                throw new IllegalStateException("rctiming.provisioning.club.timezone is not a time zone id: " + timezone, e);
+            }
         }
 
-        setupService.bootstrap(admin.email().strip(), admin.password(), admin.firstName().strip(), admin.lastName().strip());
+        setupService.bootstrap(admin.email().strip(), admin.password(),
+                admin.firstName().strip(), admin.lastName().strip());
         if (hasClub) {
-            clubProfileService.createOrUpdateProfile(ACTOR, new ClubDetails(club.name().strip(), blankToNull(club.email()),
-                    blankToNull(club.phone()), blankToNull(club.websiteUrl()), null, null, club.timezone()));
+            clubProfileService.createOrUpdateProfile(ACTOR, new ClubDetails(club.name().strip(),
+                    blankToNull(club.email()), blankToNull(club.phone()), blankToNull(club.websiteUrl()),
+                    null, null, timezone));
         }
         if (hasDecoder) {
-            clubProfileService.updateDecoderConfig(ACTOR, decoder.host().strip(), decoder.port(), decoder.protocol());
+            clubProfileService.updateDecoderConfig(ACTOR, decoder.host().strip(), port, protocol);
         }
         return true;
     }

@@ -101,4 +101,37 @@ class ProvisioningServiceTest {
                 new ProvisioningProperties.Club(null, null, null, null, "UTC"),
                 new ProvisioningProperties.Decoder(null, 5100, "RC4")).enabled()).isFalse();
     }
+
+    @Test
+    void blankTimezoneAndProtocolFallBackToTheirDefaults() {
+        when(setupService.getStatus()).thenReturn(new SetupService.Status(false, false));
+        ProvisioningProperties blank = new ProvisioningProperties(
+                new ProvisioningProperties.Admin("admin@club.test", "longenough", "Ann", "Admin"),
+                new ProvisioningProperties.Club("Wyvern RC", null, null, null, ""),
+                new ProvisioningProperties.Decoder("192.168.1.20", null, ""));
+
+        service.apply(blank);
+
+        ArgumentCaptor<ClubDetails> club = ArgumentCaptor.forClass(ClubDetails.class);
+        verify(clubProfileService).createOrUpdateProfile(any(), club.capture());
+        assertThat(club.getValue().timezone()).isEqualTo("UTC");
+        verify(clubProfileService).updateDecoderConfig(any(), eq("192.168.1.20"), eq(5100), eq("RC4"));
+    }
+
+    @Test
+    void applyRejectsABadTimezoneBeforeCreatingAnything() {
+        when(setupService.getStatus()).thenReturn(new SetupService.Status(false, false));
+        ProvisioningProperties bad = new ProvisioningProperties(
+                new ProvisioningProperties.Admin("admin@club.test", "longenough", "Ann", "Admin"),
+                new ProvisioningProperties.Club("Wyvern RC", null, null, null, "Mars/Olympus"),
+                new ProvisioningProperties.Decoder(null, 5100, "RC4"));
+
+        assertThatThrownBy(() -> service.apply(bad)).hasMessageContaining("rctiming.provisioning.club.timezone");
+        verify(setupService, never()).bootstrap(any(), any(), any(), any());
+    }
+
+    @Test
+    void theAdminSettingsNeverPrintThePassword() {
+        assertThat(settings("s3cret-pass", null, null).admin().toString()).doesNotContain("s3cret-pass");
+    }
 }

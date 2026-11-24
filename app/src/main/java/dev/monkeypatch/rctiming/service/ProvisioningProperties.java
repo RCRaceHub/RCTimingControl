@@ -20,9 +20,15 @@ public record ProvisioningProperties(
         @DefaultValue Decoder decoder) {
 
     /** The first admin; {@code password} is at least 8 characters, and best given as an environment variable. */
-    public record Admin(String email, String password, String firstName, String lastName) {}
+    public record Admin(String email, String password, String firstName, String lastName) {
+        /** Leaves the password out, so it cannot reach a log or an error message. */
+        @Override
+        public String toString() {
+            return "Admin[email=" + email + ", firstName=" + firstName + ", lastName=" + lastName + ", password=****]";
+        }
+    }
 
-    /** The club details the wizard's club step saves. {@code timezone} is an IANA zone id such as {@code Europe/London}. */
+    /** The club details the wizard's club step saves; {@code timezone} is an IANA zone id such as {@code Europe/London}. */
     public record Club(String name, String email, String phone, String websiteUrl,
                        @DefaultValue("UTC") String timezone) {}
 

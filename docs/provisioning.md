@@ -2,7 +2,7 @@
 
 A new install normally opens the setup wizard, which asks for the first official, the club and the decoder's address. A club that rebuilds its laptop often, or runs the Docker image, can give those answers in advance and skip the wizard.
 
-A complete, annotated example to copy is `docs/examples/provisioning.example.properties` in the source, and is the same as the block below with comments.
+A complete, annotated example to copy is `docs/examples/provisioning.example.properties` in the source, and carries the same settings with comments.
 
 Put these in the settings file (`application.properties` in the data folder, see [installing.md](installing.md)), or set the matching environment variables:
 
@@ -11,7 +11,7 @@ rctiming.provisioning.admin.email=admin@example.club
 rctiming.provisioning.admin.first-name=Ann
 rctiming.provisioning.admin.last-name=Admin
 # At least 8 characters. Better as an environment variable than in a file (see below)
-rctiming.provisioning.admin.password=change-me-now
+rctiming.provisioning.admin.password=
 
 rctiming.provisioning.club.name=Wyvern RC Club
 rctiming.provisioning.club.timezone=Europe/London
@@ -30,7 +30,7 @@ Setting `admin.email` switches it on, and the password and both names are then n
 
 Only on a **first start**: while the database has no accounts. Once an official exists the settings are ignored (the log says so), so editing the file later never changes a club that is already set up, and a restart never overwrites what officials have changed in the app. To start again from the defaults, stop the app, move the database file out of the data folder (or use a new data folder, or `docker compose down -v`) and start it again.
 
-If the settings are incomplete or invalid, the app stops with a message naming the setting, rather than starting with an open wizard.
+The settings are applied before the app starts accepting connections, so nobody on the network can complete the wizard first. If the settings are incomplete or invalid, the app stops with a message naming the setting, rather than starting with an open wizard.
 
 Everything is done in one step and recorded in the audit log as the system. Track, race formats, classes and more officials are still added in the app, or by an RaceHub import. The RaceHub key is set with `rctiming.racehub.token`.
 
