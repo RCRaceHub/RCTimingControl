@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type SortingState,
 } from '@tanstack/react-table';
-import { Plus, ArrowUpDown, Flag, Search, Upload } from 'lucide-react';
+import { Plus, ArrowUpDown, Flag, Search, Upload, CloudUpload } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,6 +45,8 @@ import { QueryError } from '@/components/QueryError';
 import FindRaceHubEventsDialog from './FindRaceHubEventsDialog';
 import { useRaceHubMeeting } from '@/hooks/admin/useRaceHubEvents';
 import { getApiErrorMessage } from '@/lib/errors';
+import { useReuploadResults } from '@/hooks/admin/useResultsExports';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const createEventSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -60,6 +62,8 @@ export default function EventListPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [raceHubOpen, setRaceHubOpen] = useState(false);
   const raceHubMeeting = useRaceHubMeeting();
+  const reupload = useReuploadResults();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const fileInput = useRef<HTMLInputElement>(null);
 
   useHelpContent(EntryManagementHelp);
@@ -120,23 +124,59 @@ export default function EventListPage() {
     }),
     columnHelper.display({
       id: 'actions',
-      cell: info =>
-        info.row.original.status === 'IN_PROGRESS' ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={e => {
-              e.stopPropagation();
-              navigate(`/race-control/event/${info.row.original.id}`);
-            }}
-            className="gap-1.5"
-          >
-            <Flag className="h-3 w-3" />
-            Race Control
-          </Button>
-        ) : null,
+      cell: info => {
+        const event = info.row.original;
+        const canReupload = isAdmin && event.fromRaceHub && (event.status === 'IN_PROGRESS' || event.status === 'COMPLETED');
+        return (
+          <div className="flex justify-end gap-2">
+            {canReupload && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                disabled={reupload.isPending}
+                onClick={e => {
+                  e.stopPropagation();
+                  void reuploadResults(event);
+                }}
+              >
+                <CloudUpload className="h-3 w-3" />
+                Re-upload
+              </Button>
+            )}
+            {event.status === 'IN_PROGRESS' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={e => {
+                  e.stopPropagation();
+                  navigate(`/race-control/event/${event.id}`);
+                }}
+                className="gap-1.5"
+              >
+                <Flag className="h-3 w-3" />
+                Race Control
+              </Button>
+            )}
+          </div>
+        );
+      },
     }),
   ];
+
+  /** Asks, then queues the event's results for RaceHub again. Safe to repeat: RaceHub keeps the newest. */
+  async function reuploadResults(event: AdminEventListDto) {
+    const ok = await confirm({
+      title: `Re-upload ${event.name} to RaceHub?`,
+      description: 'Every race result for this event is sent to RaceHub again. RaceHub keeps the newest copy, so sending twice does no harm.',
+      confirmLabel: 'Re-upload',
+    });
+    if (!ok) return;
+    reupload.mutate(event.id, {
+      onSuccess: () => toast.success('Queued for RaceHub. Progress shows under Results to RaceHub.'),
+      onError: err => toast.error(getApiErrorMessage(err, 'Could not queue the results.')),
+    });
+  }
 
   const table = useReactTable({
     data: events ?? [],
@@ -268,6 +308,7 @@ export default function EventListPage() {
         </div>
       )}
 
+      {confirmDialog}
       <FindRaceHubEventsDialog open={raceHubOpen} onOpenChange={setRaceHubOpen} />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

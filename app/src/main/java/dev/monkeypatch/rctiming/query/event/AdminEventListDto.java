@@ -9,11 +9,13 @@ import java.time.LocalDate;
  *
  * @param status    the meeting's lifecycle state
  * @param trackName the track's name, or null when the meeting has no track
+ * @param fromRaceHub whether the meeting came from RaceHub, so its results can be sent back there
  */
 public record AdminEventListDto(
         Long id,
         String name,
         LocalDate eventDate,
         EventStatus status,
-        String trackName       // nullable — LEFT JOIN on tracks
+        String trackName,      // nullable — LEFT JOIN on tracks
+        boolean fromRaceHub
 ) {}

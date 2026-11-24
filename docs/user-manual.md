@@ -120,7 +120,7 @@ RCTC backs up its database when you complete the event (that closes the race day
 
 ### 12. Send results back to RaceHub
 
-For events whose entries came from RaceHub, results are queued when a race finishes, when one is corrected and when you complete the event (that closes the day), then sent in the background. The address and key go in the settings file ([installing.md](installing.md#sending-results-to-racehub)), and **Admin → Results to RaceHub** shows what has gone. The file format is in [results-export-v1.md](results-export-v1.md).
+For events whose entries came from RaceHub, results are queued when a race finishes, when one is corrected and when you complete the event (that closes the day), then sent in the background. The address and key go in the settings file ([installing.md](installing.md#sending-results-to-racehub)), and **Admin → Results to RaceHub** shows what has gone. If an event's results never reached RaceHub, or you want them sent again after fixing something, press **Re-upload** on the event's row in **Admin → Events** (administrators only, for events from RaceHub). It sends the whole event again; RaceHub keeps the newest copy, so it is safe to press more than once. The file format is in [results-export-v1.md](results-export-v1.md).
 
 ### 13. Share a live feed
 

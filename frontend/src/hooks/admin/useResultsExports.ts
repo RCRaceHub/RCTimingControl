@@ -19,6 +19,15 @@ export function useRetryResultsExport() {
   });
 }
 
+/** Queues an event's results for RaceHub again, and refreshes the sent list. */
+export function useReuploadResults() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.resultsExports.reupload,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.resultsExports.all() }),
+  });
+}
+
 export function useSetResultsAddress() {
   const queryClient = useQueryClient();
   return useMutation({

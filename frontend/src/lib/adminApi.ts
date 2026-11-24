@@ -20,6 +20,8 @@ export interface AdminEventListDto {
   eventDate: string; // ISO date e.g. "2026-06-15"
   status: EventStatus;
   trackName: string | null;
+  /** Came from RaceHub, so its results can be sent back there */
+  fromRaceHub: boolean;
 }
 
 export type StartType = 'STAGGER' | 'GRID' | 'ROLLING';
@@ -1378,6 +1380,11 @@ export const adminApi = {
       api
         .get<Blob>('/api/v1/admin/results-site.zip', { responseType: 'blob' })
         .then(r => ({ blob: r.data, filename: filenameFrom(r.headers['content-disposition']) ?? 'results-site.zip' })),
+    /** Queues the event's results for RaceHub again; safe to repeat */
+    reupload: (eventId: number) =>
+      api
+        .post<{ exportId: number; revision: number }>(`/api/v1/admin/events/${eventId}/results-export/reupload`)
+        .then(r => r.data),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api
