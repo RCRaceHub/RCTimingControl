@@ -8,6 +8,7 @@ import {
   Menu,
   Flag,
   Radio,
+  ScrollText,
   Volume2,
   Users,
   Wand2,
@@ -17,10 +18,8 @@ import {
   UserCog,
   BookOpen,
   Tv,
-  MonitorPlay,
   Tag,
   Timer,
-  Cast,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,15 +61,14 @@ const adminOnlyOperations: NavEntry[] = [
   { to: '/admin/backups', label: 'Backups', Icon: DatabaseBackup },
   { to: '/admin/racehub', label: 'RaceHub', Icon: CloudUpload },
   { to: '/admin/officials', label: 'Officials', Icon: UserCog },
+  { to: '/admin/audit', label: 'Audit log', Icon: ScrollText },
 ];
 
 const configGroup: NavEntry[] = [
   { to: '/admin/racing-setup', label: 'Racing setup', Icon: Tag, adminOnly: true },
   { to: '/admin/club', label: 'Club profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio settings', Icon: Volume2, runEventOnly: true },
-  { to: '/admin/board-views', label: 'Custom views', Icon: Tv, runEventOnly: true },
-  { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
-  { to: '/admin/overlay-designer', label: 'Overlay designer', Icon: MonitorPlay, runEventOnly: true },
+  { to: '/admin/displays', label: 'Displays', Icon: Tv, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */

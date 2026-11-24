@@ -402,6 +402,7 @@ Moving to another database means:
 - **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
 - **Small screens:** the smallest screen to support is a 1920x1080 laptop, which at 125% or 150% Windows scaling gives a browser viewport as small as 1280x600. A page must not scroll sideways at that size. Dense screens tighten under the `short` variant (viewport 820px tall or less, defined in `index.css`), as race control does for its header, run order and live timing rows.
 - **Tabs** keep the chosen tab in the address with `useTabParam` (`?tab=name`), so a refresh or a link lands on it. Tab and page labels are in sentence case ("Scoring systems"). Pages converted so far: Racing setup and RaceHub.
+- **Words in the UI.** Use **event** for what an official creates and runs in the admin panel (Events, an event's page, "the event's classes"). **Meeting** is the club's word for the day itself and is fine in guides and in RaceHub-facing text ("Start meeting", "meeting pack"); do not mix the two in one sentence. **Race control** is the area and the page; the cockpit is its main screen. **Displays** is the admin area for custom views, screens and the overlay designer. **RaceHub** is the admin area for the connection, class and format links and sent results.
 - **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.
 
 ### Submitting a PR

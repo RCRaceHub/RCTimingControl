@@ -876,6 +876,36 @@ export interface TlsStatusDto {
   restartNeeded: boolean;
 }
 
+/** One audit log row (#138); `before` and `after` are the stored JSON, or null. */
+export interface AuditEntryDto {
+  id: number;
+  at: string;
+  actorUserId: number | null;
+  actor: string | null;
+  source: string | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  eventId: number | null;
+  raceId: number | null;
+  summary: string | null;
+}
+
+/** One page of the audit log, newest first. */
+export interface AuditPageDto {
+  entries: AuditEntryDto[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+/** Filters for the audit log; each one given must match. */
+export interface AuditFilterParams {
+  entityType?: string;
+  action?: string;
+  eventId?: number;
+}
+
 export const adminApi = {
   // RaceHub import. A blocked import answers 422 with the same preview body, so return it.
   importRaceHubEntries: (eventId: number, exportDocument: unknown, dryRun: boolean) =>
@@ -1292,6 +1322,10 @@ export const adminApi = {
         .then(r => r.data),
   },
 
+  audit: {
+    search: (filter: AuditFilterParams, page: number, size: number) =>
+      api.get<AuditPageDto>('/api/v1/admin/audit', { params: { ...filter, page, size } }).then(r => r.data),
+  },
   // Database backups (#22)
   backups: {
     list: () =>

@@ -32,4 +32,14 @@ describe('useTabParam', () => {
     act(() => result.current[1]('two'));
     expect(result.current[0]).toBe('two');
   });
+
+  it('keeps a nested page on its own parameter, leaving the outer tab alone', () => {
+    const { result } = renderHook(
+      () => ({ outer: useTabParam(['a', 'b'] as const, 'a'), inner: useTabParam(TABS, 'one', 'designer') }),
+      { wrapper: wrapper('/page?tab=b') },
+    );
+    act(() => result.current.inner[1]('three'));
+    expect(result.current.inner[0]).toBe('three');
+    expect(result.current.outer[0]).toBe('b');
+  });
 });

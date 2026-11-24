@@ -144,3 +144,5 @@ To let people away from the track follow a race, RCTC can send a live feed to a 
 - **No admin can sign in:** [installing.md](installing.md#locked-out).
 - **Need an old copy of the data back:** [installing.md](installing.md#restoring-a-backup).
 - **Upgrading:** [installing.md](installing.md#upgrading).
+
+An administrator can see who changed what, and when, on **Admin → Audit log** (filter by what was changed, the action name and the event).

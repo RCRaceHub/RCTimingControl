@@ -92,7 +92,7 @@ Options on the end of the address: `top=20` shows fewer places (thirty by defaul
 
 ## Custom views
 
-A custom view is a screen you build yourself. Open **Admin → Custom views**, press **New view**, give it a name and an address name (lower case letters, digits and dashes), choose 1 to 3 columns and add panels in the order you want them. Each panel is one of:
+A custom view is a screen you build yourself. Open **Admin → Displays** (Custom views tab), press **New view**, give it a name and an address name (lower case letters, digits and dashes), choose 1 to 3 columns and add panels in the order you want them. Each panel is one of:
 
 - **Live timing**, the race on track with its lap bars and gaps, as on the Live race screen.
 - **Live top table**, the class on track as it would stand if the heat ended now, with the number of places you choose (see [The Live top screen](#the-live-top-screen)).
@@ -108,7 +108,7 @@ The eye button at the top of race control's run order lists the sections of the 
 
 ## Display screens (Raspberry Pis)
 
-If the club has EventScreenDisplay screens (Raspberry Pis behind TVs, each showing a playlist of pages in a full-screen browser), you run them from **Admin → Screens** (ADMIN and RACE_DIRECTOR; others can look). The screens only ever show this app's pages, so they must be able to reach the laptop: the pages are always built from the laptop's address on the venue network, never `localhost`.
+If the club has EventScreenDisplay screens (Raspberry Pis behind TVs, each showing a playlist of pages in a full-screen browser), you run them from **Admin → Displays** (Screens tab) (ADMIN and RACE_DIRECTOR; others can look). The screens only ever show this app's pages, so they must be able to reach the laptop: the pages are always built from the laptop's address on the venue network, never `localhost`.
 
 **Finding screens.** A screen that is switched on and on the same network is found within about half a minute, and **Scan network** looks again at once. A found screen is not added by itself: it appears under **Found, not added** with its name, id and address, and joins the list when you press **Add**. Anyone on the network can announce a screen, so check the name and address are one of yours first. Clubs that would rather have found screens added automatically can set `rctiming.screens.auto-add=true`. Some venue Wi-Fi blocks finding; press **Add screen**, enter the screen's host name or IP address (and port, 8080 usually) and it is added the same way. Screens are remembered by the id they report, so a new address after a restart is no problem, and one that goes quiet stays in the list as **Offline** with when it was last seen. A screen that misses a few checks shows as **Not answering** first, because Wi-Fi drops briefly. A screen already in the list that is still answering at its saved address is never moved by another device claiming the same id. A screen with a saved token that turns up at a new address is not moved either: it appears under **Found, not added** at the new address, and **Add** moves it and keeps its token.
 
@@ -141,7 +141,7 @@ To use it in OBS:
 2. Set the address to `http://<laptop>:8080/boards/overlay`.
 3. Set the size to about 450 × 520 pixels, then place and scale it over the video.
 
-**Designer tabs.** The Overlay Designer's controls are on three tabs beside the preview: **Theme** (saved themes, theme sponsors, sponsor bar, light theme and the ticker separator), **Content** (the timing tower or table and its icons, the ticker and which event to follow) and **Placement** (drag each part to an area of the screen). Nothing is lost when you move between tabs.
+**Designer tabs.** The overlay designer (**Admin → Displays**, Overlay designer tab) has its controls on three tabs beside the preview: **Theme** (saved themes, theme sponsors, sponsor bar, light theme and the ticker separator), **Content** (the timing tower or table and its icons, the ticker and which event to follow) and **Placement** (drag each part to an area of the screen). Nothing is lost when you move between tabs.
 
 **Saved themes and the default.** In the Overlay Designer, **Save theme** keeps the look (parts shown, on-screen layout, colours, ticker, sponsors) as a named theme. Themes belong to the club, not to an event, so any event can use any theme: add `?look=ID` to the address, or pick it in the designer. Keep a set of standard overlays by saving one theme for each (use **Duplicate** or **Save as new** to start the next from the last). **Save and make default** saves the theme and makes it the club's default: the plain address `/boards/overlay` (with or without `?event=ID`), including the Streaming overlay link in the Boards menu, then opens that theme. An address that carries its own options, or a `look=`, is not changed. **Clear default** puts the plain link back to the standard look.
 
