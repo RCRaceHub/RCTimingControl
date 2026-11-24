@@ -43,7 +43,7 @@ sudo apt install ./rctimingcontrol_<version>_amd64.deb
 
 ## First run
 
-1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the first official's account, then the club, track and decoder details.
+1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the first official's account, then the club, track and decoder details. To skip the wizard on a new install, give those answers in the settings file instead; see [provisioning.md](provisioning.md).
 2. Open **http://localhost:8080/about** to see the addresses other devices should use, for example `http://192.168.1.50:8080/`. The same addresses are written to the log each time the app starts.
 3. On a phone connected to the same Wi-Fi or network, open one of those addresses and sign in.
 

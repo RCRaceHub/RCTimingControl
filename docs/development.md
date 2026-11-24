@@ -115,6 +115,7 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_RETENTION_FAILED_SIGN_IN_DAYS` (`rctiming.retention.failed-sign-in-days`) | `90` | How long refused sign-ins stay in the audit log |
 | `RCTIMING_RETENTION_AUDIT_DAYS` (`rctiming.retention.audit-days`) | `730` | How long other audit rows stay; `0` keeps them for ever |
 | `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
+| `rctiming.provisioning.admin.*` / `.club.*` / `.decoder.*` | empty | First-start answers to the setup wizard (first admin, club details, decoder address); applied only while the database has no accounts. See [provisioning.md](provisioning.md) |
 | `rctiming.network.addresses` / `rctiming.network.mdns-name` | empty | Addresses the About page shows (needed in a container) and the `.local` name advertised on the network |
 | `rctiming.screens.discovery` | `true` | Browse the venue network for EventScreenDisplay screens by mDNS (`_eventscreen._tcp`) every 30 seconds; turn off where multicast is blocked and add screens by hand |
 | `rctiming.screens.auto-add` | `false` | Add screens found by mDNS without waiting for an official to press Add on the Screens page; off, they wait under "Found, not added" |

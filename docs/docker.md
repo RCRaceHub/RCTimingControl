@@ -97,7 +97,7 @@ Then start it:
 docker compose -f docker-compose.club.yml up -d --build
 ```
 
-Open **http://localhost:8080** on that machine and follow the setup wizard to create the first official and the club, and set the decoder's address. Phones, tablets and boards use `http://192.168.1.50:8080/`. If they can't connect, check the machine's firewall allows port 8080 (on Linux with `ufw`, `sudo ufw allow 8080/tcp`; on Windows and macOS, allow Docker Desktop through the firewall).
+Open **http://localhost:8080** on that machine and follow the setup wizard to create the first official and the club, and set the decoder's address. To skip the wizard, give those answers as environment variables or a settings file instead; see [provisioning.md](provisioning.md). Phones, tablets and boards use `http://192.168.1.50:8080/`. If they can't connect, check the machine's firewall allows port 8080 (on Linux with `ufw`, `sudo ufw allow 8080/tcp`; on Windows and macOS, allow Docker Desktop through the firewall).
 
 To use port 80, so devices can open `http://192.168.1.50/` with no port, add `HOST_PORT=80` to `.env` and give the address as a full URL: `CLUB_ADDRESS=http://192.168.1.50/`.
 
