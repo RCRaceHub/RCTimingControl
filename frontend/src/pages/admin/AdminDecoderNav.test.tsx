@@ -121,6 +121,8 @@ describe('AdminPanelLayout config entries (#132)', () => {
     expect(screen.getAllByRole('link', { name: /^Championships$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^Competitors$/ }).length).toBeGreaterThan(0);
     // The audio settings are for an admin or a race director: the server refuses a referee
-    expect(screen.queryByRole('link', { name: /^Audio Settings$/ })).not.toBeInTheDocument();
+    const audio = screen.queryAllByRole('link', { name: /^Audio Settings$/ });
+    if (role === 'REFEREE') expect(audio).toHaveLength(0);
+    else expect(audio.length).toBeGreaterThan(0);
   });
 });

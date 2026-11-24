@@ -18,7 +18,9 @@
 - [x] **AUTH-06**: An admin manages officials after setup: adds one, changes roles, sets a password, and disables or re-enables an account (never deletes it). The last admin who can sign in can't be disabled or lose `ADMIN`, an admin can't disable themselves, a disabled official can't sign in or refresh, and every change is logged with who made it (#61)
 - [x] **AUTH-07**: A club with no admin who can sign in resets an admin's password from the laptop with `RCTimingControl reset-admin-password` (#61)
 
-### Racer Profile & Equipment
+### Entries and transponders (was Racer Profile & Equipment)
+
+Competitors have no account, so most of the old racer items are removed; the kept ones now describe entries and transponders.
 
 - ~~**RACER-01**: Racer can create and edit their profile (name, contact details)~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
 - ~~**RACER-02**: Racer can add and edit cars (name, primary class, notes); primary class is used for filtering entries and is not a hard constraint~~ **Removed** (#18): competitors have no account; RaceHub owns racer identity, garage and entry.
@@ -80,14 +82,6 @@
 - [x] **FORMAT-12**: For bump-up events, the system automatically calculates the number of finals and generates final grid assignments from qualifying results using the configured grid size and bump spots; the lowest final may have fewer than grid_size racers
 - [x] **FORMAT-13**: Championship points for bump-up events are assigned from a single class-wide finishing order: A-final positions fill first, then non-promoted finishers from each lower final in finish order cascading down
 - [x] **FORMAT-14**: Race format configurations can be exported as JSON and re-imported; imported configs are validated against the schema for the declared format type before saving; this allows format templates to be authored in external tools and shared between clubs
-
-### Local Forwarder (removed in #10)
-
-- ~~**FORWARDER-01**: A separate forwarder application runs on the club's local network, connects to the AMB decoder, and forwards timing data to the cloud service; the cloud service cannot reach the decoder directly~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
-- ~~**FORWARDER-02**: Forwarder connects to the decoder via TCP; serial transport is not required for v1~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
-- ~~**FORWARDER-03**: Forwarder streams decoded timing events to the cloud service via gRPC bidirectional streaming; the cloud can send RESEND requests back to the forwarder over the same stream~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
-- ~~**FORWARDER-04**: Forwarder is implemented as a Java Gradle submodule within the same repository, sharing domain model classes with the main application~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
-- ~~**FORWARDER-05**: Forwarder authenticates with the cloud service using a pre-configured API token before streaming begins~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
 
 ### Live Timing & AMB/MyLaps Integration
 
@@ -269,7 +263,7 @@
 | Public entry list | Not requested; reduces racer privacy before an event |
 | Racer accounts and online entry | **Removed** in #18: RaceHub owns racer identity, garage and entry |
 | Forwarder and cloud sync | **Removed** in #10 and #21: the app reads the decoder directly and race day runs locally |
-| Internet deployment (Docker, nginx, TLS) | **Removed** in #24: the app stays on the venue network |
+| Internet deployment (Docker, nginx, public TLS) | **Removed** in #24: the app stays on the venue network. Optional local HTTPS with the club's own certificate authority is INSTALL-03 |
 | Social / community features | Not a social platform — timing and management only |
 | Kafka / message broker | Single-club deployment; in-process STOMP broker is sufficient |
 | Timing protocols other than AMB/MyLaps | RC-4 text is the supported protocol; a new protocol would be a new parser in `decoder-protocol/` |
@@ -458,3 +452,16 @@
 *Previously updated: 2026-10-04 — removed the offline race-day app's requirements (retired in #21; race day moves to RCTC run locally at the venue, #8)*
 *Previously updated: 2026-10-03 — added the offline race-day app's requirements; removed "Offline mode" from Out of Scope (superseded)*
 *Previously updated: 2026-04-16 — added track entity (TRACK-01–03), EVENT-07 (track association), governing body membership (RACER-13–14, CLUB-01); removed min/max lap times from FORMAT section (moved to track config); renumbered FORMAT-10–13; removed FORMAT-03 (Reedy — deferred post-v1); added FORMAT-14 (race config JSON import/export); added AUTH-05 (stackable roles: ADMIN/RACE_DIRECTOR/REFEREE); added CLUB-02 (club profile); renumbered v2 CLUB-02→CLUB-03; updated TRACK-01 (optional track length); added TRACK-04 (decoder loop configuration); traceability populated (roadmap created)*
+
+## Appendix: removed requirements
+
+Kept for the record. None of these is built or planned.
+
+### Local Forwarder (removed in #10)
+
+- ~~**FORWARDER-01**: A separate forwarder application runs on the club's local network, connects to the AMB decoder, and forwards timing data to the cloud service; the cloud service cannot reach the decoder directly~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+- ~~**FORWARDER-02**: Forwarder connects to the decoder via TCP; serial transport is not required for v1~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+- ~~**FORWARDER-03**: Forwarder streams decoded timing events to the cloud service via gRPC bidirectional streaming; the cloud can send RESEND requests back to the forwarder over the same stream~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+- ~~**FORWARDER-04**: Forwarder is implemented as a Java Gradle submodule within the same repository, sharing domain model classes with the main application~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+- ~~**FORWARDER-05**: Forwarder authenticates with the cloud service using a pre-configured API token before streaming begins~~ **Removed** (#10): the app reads the decoder directly; there is no cloud service to forward to.
+

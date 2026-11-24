@@ -35,16 +35,19 @@ Officials run a full race meeting from a laptop at the track, on Windows, macOS 
 - [x] Streaming overlay page for OBS — #29
 - [x] Officials managed after setup (roles, passwords, disable), and a command-line admin password reset — #61
 
+- [x] Entry import from other systems: an RC-Timing CSV, and pull from a URL or from RaceHub's API (#38, #42, #704)
+- [x] Open practice, split-loop decoders and sector times, the screens manager, the overlay designer and custom board views, announcer audio with Piper, optional local HTTPS
+
 ### Active
 
-- [ ] Entry import from other systems: RC-Timing CSV and pull from a URL (#38)
+No open requirements at present. Planned but not built: a switch per optional feature (the modules framework).
 
 ### Out of Scope
 
 - Racer self-service portal, racer accounts and online entry — **removed** in #18: RaceHub owns racer identity, garage and entry.
 - Forwarder process and gRPC link to a cloud service — **removed** in #10: the app reads the decoder directly.
 - Separate offline race-day app with cloud sync — **removed** in #21: race day runs locally in RCTC itself.
-- Internet deployment (Docker stacks, nginx, TLS) — **removed** in #24: the app stays on the venue network.
+- Internet deployment (Docker stacks, nginx, public TLS) — **removed** in #24: the app stays on the venue network. The optional local HTTPS with the club's own certificate authority (INSTALL-03) is separate and stays.
 - Native mobile app — the web UI works on phones.
 - Payment processing — handled by RaceHub, or at the track.
 
@@ -94,4 +97,4 @@ Keep this document accurate as the project changes.
 4. Update Context to reflect current state
 
 ---
-*Last updated: 2026-10-05 — local-only timing in place through #29*
+*Last updated: 2026-11-24 — reviewed against the whole-app review (#784)*
