@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   DEFAULT_OVERLAY_DESIGN, GAP_EVERY_LIMIT, OVERLAY_TOP_LIMIT, TICKER_ITEMS, overlayDesignFromTheme, overlayQuery,
-  parseBattleStyle, parseLowerThird, parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
+  DEFAULT_OVERRUN_COLOUR, parseBattleStyle, parseLowerThird, parseOverrunColour, parseSeparatorImage, themeDesignToSave, type OverlayDesign, type TickerItem,
 } from '@/pages/boards/boardFormat';
 import type { OverlayThemeDto } from '@/lib/boardsApi';
 import { overlayThemesAdminApi } from '@/lib/overlayThemesApi';
@@ -426,6 +426,21 @@ export default function OverlayDesignerPage() {
                 <option value="off">Off</option>
               </select>
             </label>
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <label htmlFor="ov-overrun-colour">Clock colour once the race time is up</label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="ov-overrun-colour"
+                  type="color"
+                  className="h-8 w-12 cursor-pointer rounded border bg-background"
+                  value={design.overrunColour ?? DEFAULT_OVERRUN_COLOUR}
+                  onChange={(e) => set('overrunColour', parseOverrunColour(e.target.value))}
+                />
+                <Button type="button" variant="outline" size="sm" onClick={() => set('overrunColour', null)} disabled={design.overrunColour === null}>
+                  Red
+                </Button>
+              </div>
+            </div>
             <Check label="High contrast (outlined icons with text tags)" checked={design.highContrast} onChange={(v) => set('highContrast', v)} />
             <div className="space-y-1.5 rounded border p-2">
               <p className="text-sm font-medium">Icons beside driver names</p>

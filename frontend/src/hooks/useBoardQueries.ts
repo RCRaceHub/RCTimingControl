@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  getDefaultOverlayTheme, getLiveQualifying, getOverlayTheme, getRaceClock, getRaceHighlights, getResultsBoard, getRoundFastestLap,
+  getDefaultOverlayTheme, getLiveQualifying, getOverlayTheme, getForcedClose, getRaceClock, getRaceHighlights, getResultsBoard, getRoundFastestLap,
   getSponsors, getTicker,
 } from '@/lib/boardsApi';
 import { getBoardView } from '@/lib/boardViewsApi';
@@ -31,6 +31,21 @@ export function useRaceClockQuery(raceId: number | null, { intervalMs, enabled =
     queryFn: () => getRaceClock(raceId!),
     enabled: raceId !== null && enabled,
     refetchInterval: intervalMs,
+  });
+}
+
+/**
+ * Once a timed race's time is up, the time left before it is closed for you (the track's max last lap or the
+ * format's race window); {@code closesInMs} is null while no limit is counting down. A lap that counts puts the wait
+ * back, so it is read every few seconds and counted down between reads.
+ */
+export function useForcedCloseQuery(raceId: number | null, { intervalMs, enabled = true }: PollOptions) {
+  return useQuery({
+    queryKey: publicQueryKeys.boards.forcedClose(raceId),
+    queryFn: () => getForcedClose(raceId!),
+    enabled: raceId !== null && enabled,
+    refetchInterval: intervalMs,
+    gcTime: 0,
   });
 }
 
