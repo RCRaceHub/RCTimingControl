@@ -366,14 +366,17 @@ export default function OverlayBoard() {
   }
 
   const elapsed = clock ? clock.elapsedMs + (clock.running ? Math.max(0, now - clockReadAt) : 0) : null;
-  const timeLeftMs = elapsed !== null && clock?.durationMs != null ? clock.durationMs - elapsed : null;
-  // Past the race time the clock counts down what is left to finish, in the overrun colour, instead of sitting at 0:00
-  const overrun = timeLeftMs !== null && timeLeftMs <= 0 && clock?.running === true;
-  const clockText =
-    elapsed === null ? null
-      : !overrun && timeLeftMs !== null ? fmtClock(timeLeftMs)
-        : overrun ? fmtClock(forcedClose?.closesInMs == null ? 0 : forcedClose.closesInMs - Math.max(0, now - forcedCloseReadAt))
-          : fmtClock(elapsed);
+  // Past the race time the clock counts down what is left to finish, in the overrun colour, instead of sitting at 0:00.
+  // It is the same test that switches the forced-close poll on, so the two never disagree.
+  const overrun = runningOver;
+  let clockText: string | null = null;
+  if (elapsed !== null) {
+    if (overrun) {
+      clockText = fmtClock(forcedClose?.closesInMs == null ? 0 : forcedClose.closesInMs - Math.max(0, now - forcedCloseReadAt));
+    } else {
+      clockText = clock?.durationMs != null ? fmtClock(clock.durationMs - elapsed) : fmtClock(elapsed);
+    }
+  }
 
   const towerBlock = (
     <section

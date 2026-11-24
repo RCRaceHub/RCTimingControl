@@ -309,6 +309,24 @@ describe('OverlayBoard', () => {
     expect(left).toHaveStyle({ color: '#ff8800' });
   });
 
+  it('keeps the clock neutral past the race time when the race is not running', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: false }));
+    renderOverlay();
+
+    expect(await screen.findByLabelText('Race clock')).toHaveTextContent('0:00');
+    expect(getForcedClose).not.toHaveBeenCalled();
+  });
+
+  it('falls back to red when the overrun colour is not a colour', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: true }));
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: 42_000 });
+    renderOverlay('/boards/overlay?overrun=red');
+
+    expect(await screen.findByLabelText('Time left to finish')).toHaveClass('text-destructive');
+  });
+
   it('counts up for a race with no set length', async () => {
     vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
     vi.mocked(getRaceClock).mockResolvedValue(clock({ durationMs: null, remainingMs: null }));

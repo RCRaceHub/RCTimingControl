@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
-import { getForcedClose, type RaceClockDto } from '@/lib/boardsApi';
+import { useForcedCloseQuery } from '@/hooks/useBoardQueries';
+import type { RaceClockDto } from '@/lib/boardsApi';
 import { fmtClock } from '@/pages/boards/boardFormat';
 
 /**
@@ -10,12 +9,7 @@ import { fmtClock } from '@/pages/boards/boardFormat';
  * answers it counts down here. Shown only while the race is running.
  */
 function ForcedCloseCountdown({ raceId }: { raceId: number }) {
-  const { data, dataUpdatedAt, isError } = useQuery({
-    queryKey: publicQueryKeys.boards.forcedClose(raceId),
-    queryFn: () => getForcedClose(raceId),
-    refetchInterval: 3000,
-    gcTime: 0,
-  });
+  const { data, dataUpdatedAt, isError } = useForcedCloseQuery(raceId, { intervalMs: 3000 });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 500);
