@@ -503,8 +503,9 @@ export default function AdminGuidePage() {
             <span className="font-semibold"> Sent</span>, or <span className="font-semibold">Replaced
             by a newer export</span>) and the last error; click
             <span className="font-semibold"> Send now</span> to retry at once. Sending needs
-            RaceHub&apos;s address and the club&apos;s key in the settings file in the data folder
-            (the installation guide, &quot;Sending results to RaceHub&quot;); until they are set the
+            RaceHub&apos;s address and the club&apos;s key, both set on this page&apos;s
+            Connection tab (the key can instead go in the settings file in the data folder, see the
+            installation guide, &quot;Sending results to RaceHub&quot;); until they are set the
             page says so and results wait. Each event&apos;s page also has a
             <span className="font-semibold"> Download results</span> button for taking the file across
             by hand.

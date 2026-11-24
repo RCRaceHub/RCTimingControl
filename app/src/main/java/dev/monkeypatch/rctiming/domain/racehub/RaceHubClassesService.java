@@ -67,8 +67,9 @@ public class RaceHubClassesService {
 
     /**
      * What asking RaceHub produced: the classes, or {@code error} saying why not (then {@code classes} is empty).
-     * {@code eventsUrl} (the saved events address, null when none) and {@code tokenSet} (whether the club's key is in
-     * the settings file; the key itself is never sent) let the screen and the setup wizard say what is missing.
+     * {@code eventsUrl} (the saved events address, null when none) and {@code tokenSet} (whether the club has a key,
+     * saved in the app or in the settings file; the key itself is never sent) let the screen and the setup wizard say
+     * what is missing.
      */
     public record Listing(List<ClubClass> classes, String error, String eventsUrl, boolean tokenSet) {
     }

@@ -8,7 +8,7 @@ import java.util.List;
  * The "Find RaceHub events" picker's answer.
  *
  * @param eventsUrl the saved address RaceHub lists ready events at, or null
- * @param tokenSet  whether the club's key for RaceHub is set in the settings file (the key itself is never sent)
+ * @param tokenSet  whether the club has a key for RaceHub, saved in the app or in the settings file (the key itself is never sent)
  * @param events    the events RaceHub offers, empty when it could not be asked
  * @param error     why RaceHub could not be asked, or null
  */

@@ -122,7 +122,7 @@ Uploading straight from the app to Dropbox or Google Drive, with encryption, is 
 
 ## Sending results to RaceHub
 
-For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. The address can be typed into **RaceHub** in the admin panel; the key goes in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
+For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. Both can be entered on the **Connection** tab of **RaceHub** in the admin panel; or the key can go in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
 
 ```properties
 rctiming.racehub.results-url=https://racehub.example/api/results
