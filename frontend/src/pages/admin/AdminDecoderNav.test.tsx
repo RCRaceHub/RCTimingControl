@@ -75,7 +75,7 @@ describe('AdminPanelLayout Backups entry', () => {
   });
 });
 
-describe('AdminPanelLayout Results to RaceHub entry', () => {
+describe('AdminPanelLayout RaceHub entry', () => {
   beforeEach(() => {
     auth.roles = ['ADMIN'];
   });
@@ -83,19 +83,19 @@ describe('AdminPanelLayout Results to RaceHub entry', () => {
   it('is shown to ADMIN users', () => {
     renderLayout();
 
-    expect(screen.getAllByRole('link', { name: /Results to RaceHub/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /^RaceHub/ }).length).toBeGreaterThan(0);
   });
 
   it('is hidden from race directors', () => {
     auth.roles = ['RACE_DIRECTOR'];
     renderLayout();
 
-    expect(screen.queryByRole('link', { name: /Results to RaceHub/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^RaceHub/ })).not.toBeInTheDocument();
   });
 });
 
 describe('AdminPanelLayout config entries (#132)', () => {
-  const adminOnlyLinks = [/^Tracks$/, /^Formats$/, /^Club Profile$/];
+  const adminOnlyLinks = [/^Racing setup$/, /^Club Profile$/];
 
   beforeEach(() => {
     auth.roles = ['ADMIN'];

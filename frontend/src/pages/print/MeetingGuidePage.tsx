@@ -267,7 +267,7 @@ export default function MeetingGuidePage() {
             result as timed: laps and time are changed, the drivers are ranked again, and results
             pages, championship points and downloads all show the corrected result. For an event
             imported from RaceHub, a corrected result is also queued to be sent again (see
-            <span className="font-semibold"> Results to RaceHub</span> in Admin). Corrections made
+            <span className="font-semibold"> RaceHub</span> in Admin). Corrections made
             before the race was last restarted belong to the earlier run and are left out. To give a
             penalty after the finish, open the Referee View, choose the finished race in the run
             order and click Apply Penalty: the driver list holds everyone entered in that race.

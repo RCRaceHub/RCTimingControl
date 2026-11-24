@@ -400,6 +400,7 @@ Moving to another database means:
 - **Exports:** a page that a route loads lazily, and a layout, has a `default` export. Everything else (components, hooks, helpers) is a named export.
 - **Tests** sit beside the file they test, as `Name.test.tsx`. There are no `__tests__` folders.
 - **Small screens:** the smallest screen to support is a 1920x1080 laptop, which at 125% or 150% Windows scaling gives a browser viewport as small as 1280x600. A page must not scroll sideways at that size. Dense screens tighten under the `short` variant (viewport 820px tall or less, defined in `index.css`), as race control does for its header, run order and live timing rows.
+- **Tabs** keep the chosen tab in the address with `useTabParam` (`?tab=name`), so a refresh or a link lands on it. Tab and page labels are in sentence case ("Scoring systems"). Pages converted so far: Racing setup and RaceHub.
 - **Forms:** a form with more than one field, or any validation, uses React Hook Form with a Zod schema (`zodResolver`). A single-field inline editor may use `useState`.
 
 ### Submitting a PR

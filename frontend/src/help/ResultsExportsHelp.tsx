@@ -4,7 +4,7 @@ export function ResultsExportsHelp() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        The Results to RaceHub page shows the results RCTC has sent back to RaceHub. It only
+        The RaceHub page shows the results RCTC has sent back to RaceHub. It only
         applies to events whose entries were imported from RaceHub. Results are queued when a
         race finishes, when a finished race is corrected (for example a penalty is given after
         the finish), and when you complete the event (the race day closes), then sent in the

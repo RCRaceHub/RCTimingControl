@@ -311,7 +311,7 @@ describe('RaceHubImportDialog', () => {
     // 102 is already one of the event's classes (id 12), so that class is chosen, ready to link
     await waitFor(() => expect(screen.getAllByRole('combobox')[0]).toHaveValue('12'));
     expect(adminApi.raceHubClasses.list).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('link', { name: 'RaceHub classes' })).toHaveAttribute('href', '/admin/racehub-classes');
+    expect(screen.getByRole('link', { name: 'RaceHub classes' })).toHaveAttribute('href', '/admin/racehub?tab=classes');
   });
 
   it('shows why RaceHub could not be asked and offers nothing', async () => {

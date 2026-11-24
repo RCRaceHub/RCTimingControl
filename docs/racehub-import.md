@@ -8,8 +8,8 @@ RCTC only ever calls out to RaceHub. It never needs an address of its own on the
 
 | Step | RCTC | RaceHub call |
 |---|---|---|
-| Save the club's key and the events address | **Results to RaceHub** page, setup wizard, or `rctiming.racehub.token` in the settings file. An admin-saved key overrides the file. The key is stored encrypted and never shown back. | none |
-| Link classes once per club | **RaceHub classes** page, `GET /admin/racehub/classes` | `GET /api/rctc/v1/classes` |
+| Save the club's key and the events address | **RaceHub** page, setup wizard, or `rctiming.racehub.token` in the settings file. An admin-saved key overrides the file. The key is stored encrypted and never shown back. | none |
+| Link classes once per club | **RaceHub → Classes and formats** tab, `GET /admin/racehub/classes` | `GET /api/rctc/v1/classes` |
 | Link race formats once per club | same page, `GET /admin/racehub/formats` | `GET /api/rctc/v1/formats` |
 | Find a meeting | **Find RaceHub events**, `GET /admin/racehub/events` | `GET /api/rctc/v1/events?state=ready` |
 | Pull entries | entry feed (automatic every 5 minutes, or **Fetch now**), or **Import entries from RaceHub** by file | `GET /api/rctc/v1/events/{id}/entries` |
@@ -54,7 +54,7 @@ RaceHub now fills `headshot_url` and `car_photo_url` (RaceHub PR #399, not yet m
 RCTC currently calls `/api/rctc/v1` only, with the version in the saved address. The agreed policy is in RaceHub's `docs/rctc/VERSIONING.md`: at most two major versions live at once, deprecated versions answer with `Deprecation` and `Sunset` headers for at least six months, then `410`. RCTC's side of it:
 
 - RCTC will support the current and previous versions together, and use the highest one both sides list (from `GET /api/rctc/versions`).
-- A deprecation or sunset date shows as a warning on **Results to RaceHub** and **RaceHub classes**, once in the audit log, never as a blocking error.
+- A deprecation or sunset date shows as a warning on **RaceHub** (Connection and Classes and formats), once in the audit log, never as a blocking error.
 - A `410` leaves the results queue and the entries untouched; sending resumes after the club upgrades.
 - A new optional field in a document is not a version change, and RCTC ignores fields it does not know.
 
