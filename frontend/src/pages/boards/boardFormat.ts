@@ -54,7 +54,7 @@ export function parseLegendParam(value: string | null, shownByDefault: boolean):
 /**
  * The live race board's options from its query string: {@code bars=hide} leaves out the lap bars,
  * {@code arrows=hide} the places-gained arrows, {@code predict=hide} the predicted laps,
- * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code legend=show} the colour key (off unless asked for, so a TV shows the table and not a legend as tall as three rows, #772), {@code size=large} or {@code size=xlarge} bigger type, and {@code close=SECONDS} sets how near the car ahead counts as
+ * {@code battles=hide} the battles strip (#505), {@code contrast=high} thick outlined icons with a text tag (#591), {@code overrun=RRGGBB} the colour of the race clock once the race time is up, {@code legend=show} the colour key (off unless asked for, so a TV shows the table and not a legend as tall as three rows, #772), {@code size=large} or {@code size=xlarge} bigger type, and {@code close=SECONDS} sets how near the car ahead counts as
  * close (0 switches the tint off). A close value that is empty or not a number takes {@code defaultCloseMs}, the club's setting.
  * {@code icons=pace,flying,...} (or {@code icons=hide}) names the row icons to show (#696); without it the screen shows {@code defaultRowIcons}, which for the boards is every icon the club has not hidden.
  */
@@ -73,6 +73,7 @@ export function parseLiveRaceOptions(
     showLegend: parseLegendParam(params.get('legend'), false),
     highContrast: params.get('contrast')?.toLowerCase() === 'high',
     rowIcons: parseRowIconsParam(params.get('icons'), defaultRowIcons),
+    overrunColour: parseOverrunColour(params.get('overrun')),
     closeMs: Number.isFinite(seconds)
       ? Math.min(LIVE_RACE_MAX_CLOSE_S, Math.max(0, seconds)) * 1000
       : defaultCloseMs,
@@ -176,7 +177,6 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
-    overrunColour: parseOverrunColour(params.get('overrun')),
     placement: parsePlacementParam(params.get('place')),
     ...parseLiveRaceOptions(params, defaultCloseMs, OVERLAY_DEFAULT_ROW_ICONS),
     // After the spread on purpose: the overlay's key is off unless asked, the boards' is on

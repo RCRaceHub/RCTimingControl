@@ -72,6 +72,7 @@ Options go on the end of the address. They also work on a [board view](#board-vi
 | `predict=hide` | Leave out the **Pred laps** column in a race with a set length |
 | `close=SECONDS` | How near the car ahead counts as close for the amber row (default is the club's setting, 1 unless changed; `close=0` turns the tint off) |
 | `battles=hide` | Leave out the battles strip |
+| `overrun=ff8800` | The colour of the race clock once the race time is up (3 or 6 hex digits). The Live race screen and board views show the race clock (the time left, or the time so far in a race with no set length); from 0:00 it counts down the time left for the cars to finish (the track's max last lap or the format's max race window, whichever comes first) instead of sitting at 0:00, in red unless you pick a colour. The streaming overlay takes the same option |
 | `legend=show` | Show the small colour key under the table (off by default) |
 | `size=large` or `size=xlarge` | Bigger type on any board, for a monitor read from further away (1.25 and 1.5 times); the board still shrinks to fit the screen |
 | `contrast=high` | High contrast for poor light or compressed video (#591): the state icons get a thick stroke and a dark outline, and a short text tag sits beside each (FL fastest lap, PB personal best, UP quicker, SL slower, CL close, ON on pace, LAP lapped, PEN penalty, NS no signal) |

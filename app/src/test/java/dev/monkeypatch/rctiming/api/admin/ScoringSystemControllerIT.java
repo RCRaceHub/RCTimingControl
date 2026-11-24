@@ -70,7 +70,7 @@ class ScoringSystemControllerIT extends AbstractIntegrationTest {
 
         List<Map<String, Object>> champ = list("?kind=CHAMPIONSHIP");
         Map<String, Object> champBrca = champ.stream().filter(m -> "BRCA 1/10 off-road".equals(m.get("name"))).findFirst().orElseThrow();
-        assertThat((List<?>) ((Map<?, ?>) champBrca.get("config")).get("pointsScale")).hasSize(10);
+        assertThat((List<?>) ((Map<?, ?>) champBrca.get("config")).get("pointsScale")).hasSize(200);
 
         Long id = ((Number) brca.get("id")).longValue();
         assertThat(send(HttpMethod.DELETE, URL + "/" + id, null, adminToken).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);

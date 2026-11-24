@@ -308,7 +308,7 @@ export default function AdminGuidePage() {
           <li>
             <span className="font-semibold">Configure points scale (Points Scale tab):</span>
             The Points Scale tab shows the points awarded for each finishing position
-            (1st, 2nd, 3rd, etc.). Edit the points values, or start from the ROAR or BRCA preset, then click Save.
+            (1st, 2nd, 3rd, etc.). Edit the points values, or start from the BRCA preset (130 points for 1st, down to 1 point), then click Save.
           </li>
           <li>
             <span className="font-semibold">View standings (Standings tab):</span> The
