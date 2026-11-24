@@ -62,13 +62,13 @@ public class EventService {
      */
     public Event update(Actor actor, Long id, String name, LocalDate eventDate, Long trackId) {
         Event event = getEventOrThrow(id);
+        if (event.getStatus() == EventStatus.COMPLETED) {
+            throw new IllegalStateTransitionException("A completed event can no longer be changed");
+        }
         boolean draft = event.getStatus() == EventStatus.DRAFT;
         if (!draft && (!Objects.equals(event.getName(), name) || !Objects.equals(event.getEventDate(), eventDate))) {
             throw new IllegalStateTransitionException(
                 "The name and date can only be updated while the event is in DRAFT status");
-        }
-        if (event.getStatus() == EventStatus.COMPLETED) {
-            throw new IllegalStateTransitionException("A completed event can no longer be changed");
         }
         Map<String, Object> before = detailsOf(event);
         event.setName(name);

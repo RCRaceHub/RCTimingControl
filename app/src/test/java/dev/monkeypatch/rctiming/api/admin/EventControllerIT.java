@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.api.admin.dto.EventDto;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
 import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.track.Track;
 import dev.monkeypatch.rctiming.domain.track.TrackRepository;
@@ -27,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,8 +167,8 @@ class EventControllerIT extends AbstractIntegrationTest {
         Long trackId = createTrackInDb();
         Event event = new Event();
         event.setName("Started Meeting");
-        event.setEventDate(java.time.LocalDate.of(2026, 11, 1));
-        event.setStatus(dev.monkeypatch.rctiming.domain.event.EventStatus.IN_PROGRESS);
+        event.setEventDate(LocalDate.of(2026, 11, 1));
+        event.setStatus(EventStatus.IN_PROGRESS);
         Long id = eventRepository.save(event).getId();
 
         ResponseEntity<EventDto> sameDetails = restTemplate.exchange(
@@ -187,8 +189,8 @@ class EventControllerIT extends AbstractIntegrationTest {
     void updateEvent_onceCompleted_isRefused() {
         Event event = new Event();
         event.setName("Done Meeting");
-        event.setEventDate(java.time.LocalDate.of(2026, 11, 2));
-        event.setStatus(dev.monkeypatch.rctiming.domain.event.EventStatus.COMPLETED);
+        event.setEventDate(LocalDate.of(2026, 11, 2));
+        event.setStatus(EventStatus.COMPLETED);
         Long id = eventRepository.save(event).getId();
 
         ResponseEntity<Map> response = restTemplate.exchange(
