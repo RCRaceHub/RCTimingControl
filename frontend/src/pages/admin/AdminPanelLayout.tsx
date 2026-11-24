@@ -76,7 +76,7 @@ const configGroup: NavEntry[] = [
   { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
-  { to: '/admin/board-views', label: 'Board Views', Icon: Tv, runEventOnly: true },
+  { to: '/admin/board-views', label: 'Custom Views', Icon: Tv, runEventOnly: true },
   { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
   { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },
 ];
