@@ -159,6 +159,10 @@ sequenceDiagram
         T->>ES: queuePending(eventId)
         ES->>DB: build Results Export v1, insert outbox row
     end
+    opt official presses Re-upload on the events list
+        Note over ES,DB: reupload(): next revision, whole event, supersedes waiting rows
+        ES->>DB: insert outbox row directly (reason DAY_CLOSE) and audit it
+    end
     loop every ~15 s (scheduler thread)
         S->>DB: due outbox rows
         S->>RH: POST results (idempotency key per item)

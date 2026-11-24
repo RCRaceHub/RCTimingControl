@@ -56,6 +56,8 @@ Only events whose entries were imported from RaceHub are sent, since those are t
 | A finished race is corrected: a referee gives a penalty or the race director adjusts laps | `CORRECTION` |
 | The event is marked `COMPLETED` (the race day is closed) | `DAY_CLOSE` |
 
+An admin can also press **Re-upload** on an event in **Admin → Events** (shown for events from RaceHub that are in progress or completed). That queues the whole event again with the reason `DAY_CLOSE` and the next revision, so it uses only what RaceHub already accepts. It is for events that finished before RaceHub was ready to take them, or whose results went missing there. Pressing it twice is safe, for the same reason a repeated send is.
+
 A correction recalculates the race's stored result before the export is built, so the correction export carries the new laps, times and positions.
 
 Every export for an event takes the next `revision`, starting at 1. A higher revision always replaces a lower one, so RaceHub should ignore an export whose revision is not higher than the one it already holds.

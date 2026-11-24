@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.api.admin.dto.PublishTargetRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubKeyRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.ReuploadResponse;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
@@ -10,6 +11,7 @@ import dev.monkeypatch.rctiming.resultsexport.RaceHubKeyService;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportService;
 import dev.monkeypatch.rctiming.resultsexport.ResultsExportV1;
+import dev.monkeypatch.rctiming.resultsexport.ResultsOutboxItem;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishSettings;
 import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
 import dev.monkeypatch.rctiming.resultsexport.ResultsSiteService;
@@ -134,6 +136,17 @@ public class ResultsExportController {
     public ResponseEntity<Void> retry(@PathVariable long id) {
         exportService.retryNow(CurrentOfficial.actor(), id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Queues the event's results for RaceHub again. {@code 202} with the revision queued; 404 for an unknown event,
+     * 409 when the event is not from RaceHub or the club does not publish there. Audited. Repeating it is safe.
+     */
+    @Audited("audit_log")
+    @PostMapping("/events/{eventId}/results-export/reupload")
+    public ResponseEntity<ReuploadResponse> reupload(@PathVariable long eventId) {
+        ResultsOutboxItem item = exportService.reupload(CurrentOfficial.actor(), eventId);
+        return ResponseEntity.accepted().body(new ReuploadResponse(item.getId(), item.getRevision()));
     }
 
     /**

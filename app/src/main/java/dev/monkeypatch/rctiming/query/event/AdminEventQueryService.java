@@ -24,7 +24,7 @@ public class AdminEventQueryService {
     /** Every meeting in any state, newest meeting date first. A meeting without a track is listed with a null track name. */
     public List<AdminEventListDto> listEvents() {
         return dsl.select(
-                    EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE, EVENTS.STATUS,
+                    EVENTS.ID, EVENTS.NAME, EVENTS.EVENT_DATE, EVENTS.STATUS, EVENTS.RACEHUB_EVENT_ID,
                     TRACKS.NAME.as("trackName"))
                 .from(EVENTS)
                 .leftJoin(TRACKS).on(TRACKS.ID.eq(EVENTS.TRACK_ID))
@@ -34,7 +34,8 @@ public class AdminEventQueryService {
                         r.get(EVENTS.NAME),
                         r.get(EVENTS.EVENT_DATE),
                         EventStatus.valueOf(r.get(EVENTS.STATUS)),
-                        r.get("trackName", String.class)
+                        r.get("trackName", String.class),
+                        r.get(EVENTS.RACEHUB_EVENT_ID) != null
                 ));
     }
 }

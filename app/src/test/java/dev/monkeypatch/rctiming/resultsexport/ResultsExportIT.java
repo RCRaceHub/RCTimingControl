@@ -386,6 +386,52 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void reuploadingQueuesTheWholeEventAgainEachTimeAndSupersedesTheWaitingOne() {
+        importEntries();
+        finishedRace(entryId("a1-" + run), walkIn("Walk-in Wendy"));
+        ResultsOutboxItem first = exportService.enqueue(eventId, ExportReason.RACE_FINISHED).orElseThrow();
+
+        ResponseEntity<JsonNode> once = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/results-export/reupload",
+                HttpMethod.POST, new HttpEntity<>(headers()), JsonNode.class);
+        ResponseEntity<JsonNode> twice = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/results-export/reupload",
+                HttpMethod.POST, new HttpEntity<>(headers()), JsonNode.class);
+
+        assertThat(once.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        assertThat(once.getBody().get("revision").asLong()).isEqualTo(first.getRevision() + 1);
+        assertThat(twice.getBody().get("revision").asLong()).isEqualTo(first.getRevision() + 2);
+        List<ResultsOutboxItem> items = outbox();
+        assertThat(items).extracting(ResultsOutboxItem::getStatus)
+                .containsExactly(OutboxStatus.SUPERSEDED, OutboxStatus.SUPERSEDED, OutboxStatus.QUEUED);
+        assertThat(json(items.get(2).getPayload()).at("/races/0/results/0/entry_id").asString()).isEqualTo("a1-" + run);
+        assertThat(jdbc.queryForList("select * from audit_log where action = 'RESULTS_EXPORT_REUPLOADED'"))
+                .hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void reuploadingAnEventNotFromRaceHubIsRefused() {
+        long other = jdbc.queryForObject("""
+                insert into events (name, event_date, status) values (?, '2026-10-19', 'COMPLETED') returning id""",
+                Long.class, "Local meeting " + run);
+
+        ResponseEntity<String> response = restTemplate.exchange("/api/v1/admin/events/" + other + "/results-export/reupload",
+                HttpMethod.POST, new HttpEntity<>(headers()), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(outbox()).isEmpty();
+    }
+
+    @Test
+    void reuploadingIsRefusedWhenTheClubDoesNotPublishToRaceHub() {
+        importEntries();
+        jdbc.update("update club_profiles set results_publish_target = 'NONE'");
+
+        ResponseEntity<String> response = restTemplate.exchange("/api/v1/admin/events/" + eventId + "/results-export/reupload",
+                HttpMethod.POST, new HttpEntity<>(headers()), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
     void aRefusedExportIsRetriedLaterWithTheReason() throws IOException {
         importEntries();
         ResultsOutboxItem item = exportService.enqueue(eventId, ExportReason.DAY_CLOSE).orElseThrow();

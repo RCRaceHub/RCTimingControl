@@ -1164,6 +1164,11 @@ POST /api/v1/admin/results-exports/{id}/retry
 **204 No Content** — a waiting or failed export is sent with the next batch instead of waiting out its backoff. A sent or superseded one is left alone. **404** for an unknown id.
 
 ```http
+POST /api/v1/admin/events/{eventId}/results-export/reupload
+```
+**202 Accepted** — `{ "exportId": 12, "revision": 4 }`. Builds the event's results as they stand now and queues them for RaceHub again, replacing any export of that event still waiting; the sender takes it on its next pass. Sent with reason `DAY_CLOSE`. Repeating it is safe: each call takes the next revision and RaceHub keeps the highest. Audited as `RESULTS_EXPORT_REUPLOADED`. **404** for an unknown event; **409** when the event did not come from RaceHub or the club's publishing choice leaves RaceHub out.
+
+```http
 GET /api/v1/admin/events/{eventId}/results-export
 ```
 **200 OK** — the event's results as they stand now, as a Results Export v1 document, with `Content-Disposition: attachment; filename="results-event-{eventId}-r{revision}.json"`. Works for any event, imported from RaceHub or not, and queues nothing. **404** for an unknown event.
