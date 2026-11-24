@@ -50,10 +50,10 @@ const eventsGroup: NavEntry[] = [
 ];
 
 const operationsGroup: NavEntry[] = [
-  { to: '/admin/race-control', label: 'Race Control', Icon: Flag },
+  { to: '/admin/race-control', label: 'Race control', Icon: Flag },
   { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true },
   { to: '/admin/competitors', label: 'Competitors', Icon: Users },
-  { to: '/setup', label: 'Setup Wizard', Icon: Wand2 },
+  { to: '/setup', label: 'Setup wizard', Icon: Wand2 },
 ];
 
 // Decoder settings, backups and results sent to RaceHub are admin-only, so these items are shown only to ADMIN users.
@@ -66,11 +66,11 @@ const adminOnlyOperations: NavEntry[] = [
 
 const configGroup: NavEntry[] = [
   { to: '/admin/racing-setup', label: 'Racing setup', Icon: Tag, adminOnly: true },
-  { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
-  { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2, runEventOnly: true },
-  { to: '/admin/board-views', label: 'Custom Views', Icon: Tv, runEventOnly: true },
+  { to: '/admin/club', label: 'Club profile', Icon: Building2, adminOnly: true },
+  { to: '/admin/audio', label: 'Audio settings', Icon: Volume2, runEventOnly: true },
+  { to: '/admin/board-views', label: 'Custom views', Icon: Tv, runEventOnly: true },
   { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
-  { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },
+  { to: '/admin/overlay-designer', label: 'Overlay designer', Icon: MonitorPlay, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */

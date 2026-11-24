@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import OverlayDesignerPage from './OverlayDesignerPage';
 
 vi.mock('@/lib/overlayThemesApi', () => ({
@@ -22,7 +23,9 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <OverlayDesignerPage />
+      <MemoryRouter>
+        <OverlayDesignerPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }

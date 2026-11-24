@@ -123,7 +123,7 @@ export default function ScoringSystemsPage() {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-        <h1 className="text-2xl font-semibold">Scoring Systems</h1>
+        <h1 className="text-2xl font-semibold">Scoring systems</h1>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => fileInput.current?.click()}>
             <Upload className="h-4 w-4 mr-1" />Import file

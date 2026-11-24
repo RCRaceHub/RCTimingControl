@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTabParam } from '@/hooks/useTabParam';
 import { Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -30,7 +31,10 @@ import { QueryError } from '@/components/QueryError';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
+const AUDIO_TABS = ['announcements','wording','timings','outputs','sounds'] as const;
+
 export default function AdminAudioSettingsPage() {
+  const [tab, setTab] = useTabParam(AUDIO_TABS, 'announcements');
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
@@ -83,7 +87,7 @@ export default function AdminAudioSettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-xl font-semibold">Audio Settings</h1>
+      <h1 className="text-xl font-semibold">Audio settings</h1>
 
       {settingsError ? (
         <QueryError message="Failed to load audio settings." onRetry={refetchSettings} />
@@ -102,7 +106,7 @@ export default function AdminAudioSettingsPage() {
             }
           />
 
-          <Tabs defaultValue="announcements" className="space-y-6">
+          <Tabs value={tab} onValueChange={setTab} className="space-y-6">
             {/* Every tab stays mounted (hidden when not shown) so a box typed into is not lost before it commits on blur */}
             <TabsList className="h-auto flex-wrap justify-start">
               <TabsTrigger value="announcements">Announcements</TabsTrigger>

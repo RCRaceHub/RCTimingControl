@@ -95,7 +95,7 @@ describe('AdminPanelLayout RaceHub entry', () => {
 });
 
 describe('AdminPanelLayout config entries (#132)', () => {
-  const adminOnlyLinks = [/^Racing setup$/, /^Club Profile$/];
+  const adminOnlyLinks = [/^Racing setup$/, /^Club profile$/];
 
   beforeEach(() => {
     auth.roles = ['ADMIN'];
@@ -121,7 +121,7 @@ describe('AdminPanelLayout config entries (#132)', () => {
     expect(screen.getAllByRole('link', { name: /^Championships$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^Competitors$/ }).length).toBeGreaterThan(0);
     // The audio settings are for an admin or a race director: the server refuses a referee
-    const audio = screen.queryAllByRole('link', { name: /^Audio Settings$/ });
+    const audio = screen.queryAllByRole('link', { name: /^Audio settings$/ });
     if (role === 'REFEREE') expect(audio).toHaveLength(0);
     else expect(audio.length).toBeGreaterThan(0);
   });
