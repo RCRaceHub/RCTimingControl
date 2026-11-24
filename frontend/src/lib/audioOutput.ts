@@ -1,6 +1,13 @@
 import { adminApi } from '@/lib/adminApi';
 import { readOutputDevice } from '@/lib/audioDevice';
-import { LOCAL_OUTPUT_ID, loadRouting, outputsFor, panValue, type SoundRoute } from '@/lib/audioRouting';
+import {
+  LOCAL_OUTPUT_ID,
+  loadRouting,
+  outputsFor,
+  panValue,
+  type OutputPan,
+  type SoundRoute,
+} from '@/lib/audioRouting';
 import { speakWithBrowser } from '@/lib/speech';
 import {
   finishHornMs,
@@ -63,6 +70,8 @@ let lastDevice: string | null = null;
 let lastPan = NaN;
 /** Whether the audio engine has ever been given a target, so a later return to the default must be sent too. */
 let targetSet = false;
+/** The side to use instead of this tab's own while it stands in for an output page that is not open. */
+let standInPan: OutputPan | null = null;
 
 /** The channel to the other tabs of this browser, opened on first use; null where the browser has none. */
 function getChannel(): BroadcastChannel | null {
@@ -118,7 +127,7 @@ export function setThisOutput(id: string): () => void {
 export function applyOutputTarget() {
   const deviceId = readOutputDevice(thisOutput)?.deviceId ?? null;
   const def = loadRouting().outputs.find((o) => o.id === thisOutput);
-  const pan = panValue(def?.pan ?? 'both');
+  const pan = panValue(standInPan ?? def?.pan ?? 'both');
   if (pan === lastPan && deviceId === lastDevice) return;
   lastPan = pan;
   lastDevice = deviceId;
@@ -168,9 +177,14 @@ function speakHere(text: string, volume: number) {
     speakWithBrowser(text, volume);
     return;
   }
+  // The line plays later, after other sounds may have changed the target: put this one's side back first
+  const side = { deviceId: lastDevice, pan: lastPan };
   speaking = speaking.then(async () => {
     try {
-      for (const piece of speechPieces(text)) await playPiper(piece, volume);
+      for (const piece of speechPieces(text)) {
+        setOutputTarget(side);
+        await playPiper(piece, volume);
+      }
     } catch {
       speakWithBrowser(text, volume);
     }
@@ -230,12 +244,25 @@ function hornLength(cue: Cue): number {
  * the sound plays nowhere.
  */
 export function routeCue(sound: SoundRoute, volume: number, cue: Cue): number {
-  const outputs = outputsFor(loadRouting(), sound);
+  const routing = loadRouting();
+  const outputs = outputsFor(routing, sound);
   getChannel();
   const open = outputs.filter((id) => id !== thisOutput && isOutputOpen(id));
-  const missing = outputs.some((id) => id !== thisOutput && !open.includes(id));
+  const missing = outputs.filter((id) => id !== thisOutput && !open.includes(id));
   if (open.length > 0) getChannel()?.postMessage({ outputs: open, volume, cue } satisfies Envelope);
-  if (outputs.includes(thisOutput) || missing) return playCueHere(cue, volume) || hornLength(cue);
+  if (outputs.includes(thisOutput) || missing.length > 0) {
+    // Standing in only for an output page that is not open: keep that output's side, not race control's own
+    const sides = new Set(
+      outputs.includes(thisOutput) ? [] : missing.map((id) => routing.outputs.find((o) => o.id === id)?.pan ?? 'both'),
+    );
+    // Outputs on different sides: both speakers, so no side is left out
+    standInPan = sides.size === 0 ? null : sides.size === 1 ? [...sides][0] : 'both';
+    try {
+      return playCueHere(cue, volume) || hornLength(cue);
+    } finally {
+      standInPan = null;
+    }
+  }
   return open.length > 0 ? hornLength(cue) : 0;
 }
 
