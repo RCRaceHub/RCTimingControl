@@ -61,6 +61,8 @@ let thisOutput = LOCAL_OUTPUT_ID;
 /** The sound card and side last handed to the audio engine. */
 let lastDevice: string | null = null;
 let lastPan = NaN;
+/** Whether the audio engine has ever been given a target, so a later return to the default must be sent too. */
+let targetSet = false;
 
 /** The channel to the other tabs of this browser, opened on first use; null where the browser has none. */
 function getChannel(): BroadcastChannel | null {
@@ -118,11 +120,11 @@ export function applyOutputTarget() {
   const def = loadRouting().outputs.find((o) => o.id === thisOutput);
   const pan = panValue(def?.pan ?? 'both');
   if (pan === lastPan && deviceId === lastDevice) return;
-  const untouched = Number.isNaN(lastPan);
   lastPan = pan;
   lastDevice = deviceId;
   // Nothing to set on a tab that has never been panned or given a sound card
-  if (untouched && pan === 0 && !deviceId) return;
+  if (!targetSet && pan === 0 && !deviceId) return;
+  targetSet = true;
   setOutputTarget({ deviceId, pan });
 }
 

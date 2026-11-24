@@ -290,7 +290,7 @@ export function AudioSettingsPanel() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Plays a sample announcement and each sound to verify speakers are working. They play on the
-                sound card chosen for Race control under Admin, Audio, in this browser, which is where the race is announced.
+                sound card chosen above for Race control, in this browser, which is where the race is announced.
               </p>
             </>
           ) : null}

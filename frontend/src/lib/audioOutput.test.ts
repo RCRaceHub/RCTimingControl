@@ -123,6 +123,14 @@ describe('routeCue', () => {
     expect(speakWithBrowser).not.toHaveBeenCalled();
   });
 
+  it('sends the default target again when a tab with no sound card follows one that had a card', () => {
+    saveOutputDevice(LOCAL_OUTPUT_ID, { deviceId: 'usb', label: 'USB' });
+    playCueHere({ kind: 'horn', horn: 'tick' }, 1);
+    setThisOutput('pits');
+    playCueHere({ kind: 'horn', horn: 'tick' }, 1);
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: 0 });
+  });
+
   it('splits a long spoken line into pieces the speech preview takes', () => {
     const line = `Running order: ${Array.from({ length: 12 }, (_, i) => `${i + 1}, Driver Number${i}`).join('. ')}.`;
     const pieces = speechPieces(line);
