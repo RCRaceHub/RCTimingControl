@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { useLinkChampionshipEvent } from '@/hooks/admin/useAdminChampionships';
 import { useAdminEventsList } from '@/hooks/admin/useAdminEvents';
+import { formatEventDate } from '@/lib/dates';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const linkEventSchema = z.object({
@@ -76,9 +77,13 @@ export function LinkEventDialog({ championshipId, open, onOpenChange }: LinkEven
                 >
                   <SelectTrigger><SelectValue placeholder="Select an event" /></SelectTrigger>
                   <SelectContent>
-                    {events.map(e => (
-                      <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
-                    ))}
+                    {[...events]
+                      .sort((a, b) => b.eventDate.localeCompare(a.eventDate))
+                      .map(e => (
+                        <SelectItem key={e.id} value={String(e.id)}>
+                          {e.name} · {formatEventDate(e.eventDate)}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               )}
