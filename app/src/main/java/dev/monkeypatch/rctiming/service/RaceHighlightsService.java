@@ -44,6 +44,33 @@ public class RaceHighlightsService {
         this.publicNames = publicNames;
     }
 
+    /** The quickest lap of a round's other finished heats, with the driver's public name. */
+    public record FastestLap(long lapMs, String driverName) {}
+
+    /**
+     * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the
+     * running heat's own best comes from its live timing). A heat that is finished but not yet snapshotted counts
+     * for nothing.
+     *
+     * @return the lap, or empty when no other heat of the round has a timed lap
+     */
+    public Optional<FastestLap> roundFastestLap(long raceId) {
+        ResultSnapshotDto.ResultRow fastest = null;
+        for (long finishedId : boardQuery.finishedRaceIdsInRound(raceId)) {
+            try {
+                for (ResultSnapshotDto.ResultRow row : publicNames.rows(resultSnapshotQuery.load(finishedId).positions())) {
+                    if (row.bestLapMs() != null && row.bestLapMs() > 0
+                            && (fastest == null || row.bestLapMs() < fastest.bestLapMs())) {
+                        fastest = row;
+                    }
+                }
+            } catch (EntityNotFoundException e) {
+                // Finished but not yet snapshotted
+            }
+        }
+        return fastest == null ? Optional.empty() : Optional.of(new FastestLap(fastest.bestLapMs(), fastest.driverName()));
+    }
+
     /**
      * The standouts of a heat and of its round.
      *
