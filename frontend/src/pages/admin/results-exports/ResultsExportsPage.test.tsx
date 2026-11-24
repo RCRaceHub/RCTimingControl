@@ -108,7 +108,7 @@ describe('ResultsExportsPage', () => {
     renderPage();
 
     expect(await screen.findByText('No RaceHub address is set, so results wait here.')).toBeInTheDocument();
-    expect(screen.getByText(/Enter the address above/)).toBeInTheDocument();
+    expect(screen.getByText(/Enter the address on the Settings tab/)).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
     expect(screen.getByText('Waiting to send')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /now$/ })).not.toBeInTheDocument();
@@ -126,7 +126,7 @@ describe('ResultsExportsPage', () => {
 
     expect(await screen.findByText('No RaceHub key is set, so results wait here.')).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
-    expect(screen.queryByText(/Enter the address above/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Enter the address on the Settings tab/)).not.toBeInTheDocument();
   });
 
   it('saves a RaceHub address typed in', async () => {
@@ -186,5 +186,42 @@ describe('ResultsExportsPage', () => {
     await waitFor(() => expect(api.resultsExports.setKey).toHaveBeenCalled());
     expect(api.resultsExports.setKey.mock.calls[0][0]).toBe('new-key-123456');
     await waitFor(() => expect(screen.getByLabelText('RaceHub key')).toHaveValue(''));
+  });
+
+  const panelState = (label: string) => screen.getByLabelText(label).closest('[role="tabpanel"]')?.getAttribute('data-state');
+  const setup = (sendingEnabled: boolean) => ({
+    sendingEnabled, resultsUrl: sendingEnabled ? 'https://racehub.example/r' : null, savedUrl: null,
+    missingSettings: sendingEnabled ? [] : ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
+    publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+  });
+
+  it('opens on the settings until sending is set up, then on what was sent', async () => {
+    api.resultsExports.list.mockResolvedValue(setup(false));
+    renderPage();
+    await screen.findByLabelText('RaceHub address');
+    expect(panelState('RaceHub address')).toBe('active');
+  });
+
+  it('opens on the sent results once sending is set up', async () => {
+    api.resultsExports.list.mockResolvedValue(setup(true));
+    renderPage();
+    await screen.findByLabelText('RaceHub address');
+    expect(panelState('RaceHub address')).toBe('inactive');
+  });
+
+  it('keeps a half-typed address when the tab is switched and switched back', async () => {
+    api.resultsExports.list.mockResolvedValue(setup(false));
+    renderPage();
+    fireEvent.change(await screen.findByLabelText('RaceHub address'), { target: { value: 'https://half' } });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Sent results' }), { button: 0 });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Settings' }), { button: 0 });
+    expect(screen.getByLabelText('RaceHub address')).toHaveValue('https://half');
+  });
+
+  it('shows a failed load with a retry, whichever tab would be showing', async () => {
+    api.resultsExports.list.mockRejectedValue(new Error('down'));
+    renderPage();
+    expect(await screen.findByText('Could not load the results sent to RaceHub.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
   });
 });

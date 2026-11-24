@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { QueryError } from '@/components/QueryError';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClearRaceHubKey, useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetRaceHubKey, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
@@ -227,12 +228,9 @@ function KeyForm({ source }: { source: 'SAVED' | 'SETTINGS_FILE' | 'NONE' }) {
  */
 export default function ResultsExportsPage() {
   useHelpContent(ResultsExportsHelp);
-  const { data, isLoading, isError } = useResultsExports();
+  const { data, isLoading, isError, refetch } = useResultsExports();
   const retry = useRetryResultsExport();
   // Once sending is set up the list of what has gone is what people come for; until then the settings are
-  const [pickedTab, setPickedTab] = useState<string | null>(null);
-  const tab = pickedTab ?? (data?.sendingEnabled ? 'sent' : 'settings');
-
   function onRetry(id: number) {
     retry.mutate(id, {
       onSuccess: () => toast.success('It will be sent shortly.'),
@@ -251,100 +249,104 @@ export default function ResultsExportsPage() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={setPickedTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="sent">Sent results</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        {isLoading && (
+          <div className="flex items-center gap-2 py-8">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            <span className="text-sm text-muted-foreground">Loading results sent to RaceHub…</span>
+          </div>
+        )}
 
-        {/* Both tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
-        <TabsContent value="sent" forceMount className="space-y-6 data-[state=inactive]:hidden">
-          {isLoading && (
-            <div className="flex items-center gap-2 py-8">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              <span className="text-sm text-muted-foreground">Loading results sent to RaceHub…</span>
-            </div>
-          )}
+        {isError && <QueryError message="Could not load the results sent to RaceHub." onRetry={refetch} />}
 
-          {isError && <p className="text-sm text-destructive">Could not load the results sent to RaceHub.</p>}
 
-          {data && data.exports.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <CloudUpload className="h-10 w-10 text-muted-foreground mb-4" aria-hidden="true" />
-              <h2 className="text-lg font-semibold">Nothing sent yet</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Results appear here once a race finishes in an event imported from RaceHub.
-              </p>
-            </div>
-          )}
+        {data?.sendingEnabled && (
+          <p className="text-sm">
+            Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
+          </p>
+        )}
 
-          {data && data.exports.length > 0 && (
-            <ul className="divide-y rounded-lg border" aria-label="Results exports">
-              {data.exports.map(row => (
-                <li key={row.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{row.eventName}</p>
-                    <p className="text-xs text-muted-foreground">{detail(row)}</p>
-                    {row.lastError && row.status !== 'SENT' && (
-                      <p className="text-xs text-destructive mt-1 break-words">{row.lastError}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge className={STATUS_COLOR[row.status]}>{STATUS_LABEL[row.status] ?? row.status}</Badge>
-                    {(row.status === 'FAILED' || row.status === 'QUEUED') && data.sendingEnabled && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onRetry(row.id)}
-                        disabled={retry.isPending}
-                        aria-label={`Send ${row.eventName} revision ${row.revision} now`}
-                      >
-                        Send now
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </TabsContent>
-
-        <TabsContent value="settings" forceMount className="space-y-6 data-[state=inactive]:hidden">
-          {data && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
-
-          {data && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
-
-          {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
-
-          {data && <KeyForm source={data.keySource} />}
-
-          {data?.sendingEnabled && (
-            <p className="text-sm">
-              Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
+        {data && !data.sendingEnabled && (
+          <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
+            <p className="font-medium">
+              {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
             </p>
-          )}
+            <p className="text-muted-foreground mt-1">
+              {!data.resultsUrl && 'Enter the address on the Settings tab. '}
+              {data.missingSettings.includes('rctiming.racehub.token') && (
+                <>
+                  Paste the key on the Settings tab, or set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
+                  folder and restart the app.{' '}
+                </>
+              )}
+              You can still download an event&apos;s results from its page.
+            </p>
+          </div>
+        )}
 
-          {data && !data.sendingEnabled && (
-            <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
-              <p className="font-medium">
-                {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
-              </p>
-              <p className="text-muted-foreground mt-1">
-                {!data.resultsUrl && 'Enter the address above. '}
-                {data.missingSettings.includes('rctiming.racehub.token') && (
-                  <>
-                    Paste the key above, or set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
-                    <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
-                    folder and restart the app.{' '}
-                  </>
-                )}
-                You can still download an event&apos;s results from its page.
-              </p>
-            </div>
-          )}
+      {/* Tabs mount once the first answer is in, so the starting tab is picked then and a refresh never moves it:
+          the list once sending is set up, otherwise the settings */}
+      {data && (
+        <Tabs defaultValue={data.sendingEnabled ? 'sent' : 'settings'} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="sent">Sent results</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
 
-        </TabsContent>
-      </Tabs>
+          {/* Both tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
+          <TabsContent value="sent" forceMount className="space-y-6 data-[state=inactive]:hidden">
+            {data && data.exports.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <CloudUpload className="h-10 w-10 text-muted-foreground mb-4" aria-hidden="true" />
+                <h2 className="text-lg font-semibold">Nothing sent yet</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Results appear here once a race finishes in an event imported from RaceHub.
+                </p>
+              </div>
+            )}
+
+            {data && data.exports.length > 0 && (
+              <ul className="divide-y rounded-lg border" aria-label="Results exports">
+                {data.exports.map(row => (
+                  <li key={row.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{row.eventName}</p>
+                      <p className="text-xs text-muted-foreground">{detail(row)}</p>
+                      {row.lastError && row.status !== 'SENT' && (
+                        <p className="text-xs text-destructive mt-1 break-words">{row.lastError}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge className={STATUS_COLOR[row.status]}>{STATUS_LABEL[row.status] ?? row.status}</Badge>
+                      {(row.status === 'FAILED' || row.status === 'QUEUED') && data.sendingEnabled && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRetry(row.id)}
+                          disabled={retry.isPending}
+                          aria-label={`Send ${row.eventName} revision ${row.revision} now`}
+                        >
+                          Send now
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </TabsContent>
+
+          <TabsContent value="settings" forceMount className="space-y-6 data-[state=inactive]:hidden">
+            {data && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
+
+            {data && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
+
+            {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
+
+            {data && <KeyForm source={data.keySource} />}
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
