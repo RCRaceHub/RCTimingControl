@@ -161,7 +161,16 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
               </>
             )}
           </div>
+        </>
+      )}
 
+      <details className="group" data-testid="auto-run-settings">
+        <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+          Settings
+        </summary>
+        <div className="mt-2 flex flex-col gap-2">
+      {canControl && (
+        <>
           <div className="flex items-center gap-2">
             <Label htmlFor="auto-run-gap" className="text-xs">Gap between races (seconds)</Label>
             <Input
@@ -209,6 +218,8 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
           }}
         />
       </div>
+        </div>
+      </details>
     </section>
   );
 }

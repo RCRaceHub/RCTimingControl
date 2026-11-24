@@ -1,3 +1,5 @@
+import { MoreMenu } from '@/components/MoreMenu';
+import { RaceStateChip } from '@/components/RaceStateChip';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -392,7 +394,7 @@ function CockpitView() {
 
   async function onAbandon() {
     const confirmed = await confirm({
-      title: 'Abandon this race?',
+      title: `Abandon ${raceTitle(selectedRace)}?`,
       description: 'The race ends now and its result is saved as it stands.',
       confirmLabel: 'Abandon',
       destructive: true,
@@ -409,7 +411,7 @@ function CockpitView() {
 
   async function onRestart() {
     const confirmed = await confirm({
-      title: 'Restart this race from scratch?',
+      title: `Restart ${raceTitle(selectedRace)} from scratch?`,
       description: 'Its timing and any saved result will be cleared.',
       confirmLabel: 'Restart',
       destructive: true,
@@ -419,6 +421,32 @@ function CockpitView() {
       onError: commandFailed('Restart'),
     });
   }
+
+  /** Restart and Abandon live behind a More button (#769), away from Stop and Finish; each still asks to confirm. */
+  const moreMenu = (
+    <MoreMenu>
+      {(close) => (
+        <>
+          <Button
+            variant="outline"
+            role="menuitem"
+            onClick={() => { close(); void onRestart(); }}
+            disabled={mutations.restart.isPending}
+          >
+            Restart
+          </Button>
+          <Button
+            variant="destructive"
+            role="menuitem"
+            onClick={() => { close(); void onAbandon(); }}
+            disabled={mutations.abandon.isPending}
+          >
+            Abandon
+          </Button>
+        </>
+      )}
+    </MoreMenu>
+  );
 
   function renderMainPanel() {
     if (isError) {
@@ -459,7 +487,10 @@ function CockpitView() {
       case 'PENDING':
         return (
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
+            </div>
             <p className="text-sm text-muted-foreground">Race is pending. Call the grid when ready.</p>
             <Button
               onClick={onCallGrid}
@@ -542,6 +573,7 @@ function CockpitView() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
@@ -552,12 +584,7 @@ function CockpitView() {
                 <Button variant="outline" onClick={onStop} disabled={mutations.stop.isPending}>
                   {mutations.stop.isPending ? 'Stopping…' : 'Stop'}
                 </Button>
-                <Button variant="outline" onClick={onRestart} disabled={mutations.restart.isPending}>
-                  Restart
-                </Button>
-                <Button variant="destructive" onClick={onAbandon} disabled={mutations.abandon.isPending}>
-                  Abandon
-                </Button>
+                {moreMenu}
               </div>
             </div>
             {sections.isShown('liveTiming') && (
@@ -595,6 +622,7 @@ function CockpitView() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
+              <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 <Button onClick={onStart} disabled={mutations.start.isPending}>
@@ -605,12 +633,7 @@ function CockpitView() {
                     {mutations.finish.isPending ? 'Finishing…' : 'Finish Race'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={onRestart} disabled={mutations.restart.isPending}>
-                  Restart
-                </Button>
-                <Button variant="destructive" onClick={onAbandon} disabled={mutations.abandon.isPending}>
-                  Abandon
-                </Button>
+                {moreMenu}
               </div>
             </div>
             {sections.isShown('liveTiming') && (

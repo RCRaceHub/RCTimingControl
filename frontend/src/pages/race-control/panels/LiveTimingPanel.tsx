@@ -1,10 +1,11 @@
 import { RowIconsProvider } from '@/components/RowIconsContext';
-import { rowIconsWithout } from '@/lib/rowIcons';
+import { OperatorTimingControls } from '@/components/OperatorTimingControls';
+import { useOperatorRowIcons } from '@/hooks/race-control/useOperatorRowIcons';
 import { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { useLiveTiming } from '@/hooks/race-control/useLiveTiming';
 import { useLappedBadge } from '@/hooks/race-control/useLappedBadge';
 import { useLapFlash } from '@/hooks/race-control/useLapFlash';
-import { TimingLegend } from '@/components/TimingLegend';
 import { useEliminations } from '@/hooks/race-control/useEliminations';
 import type { RunOrderItemDto } from '@/lib/raceControlApi';
 import {
@@ -43,9 +44,24 @@ type Props = {
   jumpStartEntryIds?: Set<number>;
   /** Show the places gained or lost against the grid beside each position; for finals. */
   showArrows?: boolean;
+  /** Extra controls for each row, shown in a last column; the referee screen's Incident and Penalty buttons (#771). */
+  rowActions?: (row: ReturnType<typeof useLiveTiming>['rows'][number]) => ReactNode;
 };
 
-export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds, showArrows = false }: Props) {
+/**
+ * The tint a lap flash gives the two lap time cells (#767). Race control and the referee screen flash only those
+ * cells, so a lap flash does not read as an alert; the full row tint stays for close cars, a highlighted car and a jump start.
+ */
+function flashTint(flash: ReturnType<ReturnType<typeof useLapFlash>['get']>): string | false {
+  return (
+    (flash === 'race-best' && 'bg-race-best/30') ||
+    (flash === 'personal-best' && 'bg-info/30') ||
+    (flash === 'improving' && 'bg-success/30') ||
+    (flash === 'slow' && 'bg-destructive/30')
+  );
+}
+
+export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEntryIds, showArrows = false, rowActions }: Props) {
   const { rows: liveRows, wsStatus, snapshotFailed } = useLiveTiming(raceId);
   const sorted = useMemo(() => holdBackLapped(liveRows), [liveRows]);
   const lappedEntryIds = useLappedBadge(sorted);
@@ -56,10 +72,11 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const sectors = useSectors(raceId);
   const sectorRows = useMemo(() => new Map(sectors.rows.map((r) => [r.entryId, r])), [sectors.rows]);
   const barClock = useLapBarClock(sorted, status, settings.lateMarginMs);
+  const operatorIcons = useOperatorRowIcons(settings.hiddenRowIcons);
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
-    <RowIconsProvider shown={rowIconsWithout(settings.hiddenRowIcons)}>
+    <RowIconsProvider shown={operatorIcons.shown}>
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
         <h2 className="text-lg font-semibold">
@@ -73,6 +90,16 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
           title={wsStatus}
         />
         <span className="text-xs text-muted-foreground capitalize">{wsStatus}</span>
+        <div className="ml-auto">
+          <OperatorTimingControls
+            allowed={operatorIcons.allowed}
+            shown={operatorIcons.shown}
+            onToggle={operatorIcons.toggle}
+            onReset={operatorIcons.reset}
+            customised={operatorIcons.customised}
+            legendKinds={settings.closeGapMs > 0 ? ['lap', 'close', 'pace'] : ['lap', 'pace']}
+          />
+        </div>
       </div>
 
       {sorted.length === 0 ? (
@@ -98,6 +125,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
               <TableHead className="w-24 text-right">Interval</TableHead>
               <TableHead className="w-24 text-right">Leader</TableHead>
               {elim.shikabane && <TableHead className="w-32 text-right">Shikabane</TableHead>}
+              {rowActions && <TableHead className="w-44"><span className="sr-only">Actions</span></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -109,12 +137,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 key={row.entryId}
                 className={cn(
                   'transition-colors duration-500',
-                  flash === 'race-best'      && 'bg-race-best/30',
-                  flash === 'personal-best'  && 'bg-info/30',
-                  flash === 'improving'      && 'bg-success/30',
-                  flash === 'slow'           && 'bg-destructive/30',
-                  !flash && highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
-                  !flash && !highlightEntryIds?.has(row.entryId) && close && 'bg-warning/15',
+                  highlightEntryIds?.has(row.entryId) && 'bg-chart-3/20',
+                  !highlightEntryIds?.has(row.entryId) && close && 'bg-warning/15',
                   jumpStartEntryIds?.has(row.entryId) && 'bg-destructive/20',
                 )}
               >
@@ -163,8 +187,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 </TableCell>
                 <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
                 <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtMs(row.lastLapMs)}</TableCell>
-                <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
+                <TableCell className={cn('text-right font-mono transition-colors duration-500', flashTint(flash))}>{fmtMs(row.lastLapMs)}</TableCell>
+                <TableCell className={cn('text-right font-mono transition-colors duration-500', flashTint(flash))}>{fmtMs(row.bestLapMs)}</TableCell>
                 {Array.from({ length: sectors.sectorCount }, (_, i) => {
                   const sectorRow = sectorRows.get(row.entryId);
                   const tone = sectorRow ? sectorTone(sectorRow, sectors, i) : 'normal';
@@ -193,14 +217,12 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                     {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}
                   </TableCell>
                 )}
+                {rowActions && <TableCell className="text-right">{rowActions(row)}</TableCell>}
               </TableRow>
               );
             })}
           </TableBody>
         </Table>
-      )}
-      {sorted.length > 0 && (
-        <TimingLegend kinds={settings.closeGapMs > 0 ? ['lap', 'close', 'pace'] : ['lap', 'pace']} className="mt-2 text-muted-foreground" />
       )}
     </div>
     </RowIconsProvider>

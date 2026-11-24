@@ -16,6 +16,11 @@ export const ROW_ICON_LABELS: Record<RowIcon, string> = {
 /** The streaming overlay sits over the video, so it starts without the pace thumbs; the boards and race control show every icon. */
 export const OVERLAY_DEFAULT_ROW_ICONS: readonly RowIcon[] = ROW_ICONS.filter((icon) => icon !== 'pace');
 
+/**
+ * What race control and the referee screen show until the operator picks otherwise on that device (#766): only the
+ * markers that need action. The pace thumbs, flame and lap flash icons are one click away.
+ */
+export const OPERATOR_DEFAULT_ROW_ICONS: readonly RowIcon[] = ['close', 'lapped', 'penalty', 'signal'];
 
 /**
  * Reads {@code ?icons=}: the icons to show, comma separated, or {@code hide} for none. Absent or empty takes

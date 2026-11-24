@@ -14,6 +14,7 @@ import { PenaltyDialog } from './dialogs/PenaltyDialog';
 import { RunOrderPanel } from './panels/RunOrderPanel';
 import { RaceHistoryPanel } from './panels/RaceHistoryPanel';
 import { RaceClockDisplay } from './panels/RaceClockDisplay';
+import { RaceStateChip } from '@/components/RaceStateChip';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useBattles } from '@/hooks/race-control/useBattles';
@@ -44,6 +45,8 @@ export default function RefereePage() {
   const [penaltyOpen, setPenaltyOpen] = useState(false);
   // The driver the penalty form opens on, when it was opened from a jump start alert
   const [penaltyEntryId, setPenaltyEntryId] = useState<number | undefined>(undefined);
+  // The driver the incident form opens on, when it was opened from a row
+  const [incidentEntryId, setIncidentEntryId] = useState<number | undefined>(undefined);
 
   // Follow the race in progress as the run order moves on (adjusting state while rendering rather than
   // in an effect). Before any race is live, open on the first race not yet finished. The followed race
@@ -141,6 +144,7 @@ export default function RefereePage() {
       <main className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-semibold">Referee View</h1>
+          {selectedRace && <RaceStateChip status={selectedRace.status} />}
           <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
           {following ? (
             <span className="text-xs text-muted-foreground">
@@ -155,7 +159,7 @@ export default function RefereePage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIncidentOpen(true)}
+              onClick={() => { setIncidentEntryId(undefined); setIncidentOpen(true); }}
               disabled={!selectedRaceId}
             >
               Raise Incident
@@ -186,6 +190,26 @@ export default function RefereePage() {
               status={selectedRace?.status ?? 'PENDING'}
               highlightEntryIds={highlightEntryIds}
               jumpStartEntryIds={jumpStartEntryIds}
+              rowActions={(row) => (
+                <div className="flex justify-end gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Raise an incident for ${row.driverName}`}
+                    onClick={() => { setIncidentEntryId(row.entryId); setIncidentOpen(true); }}
+                  >
+                    Incident
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Apply a penalty to ${row.driverName}`}
+                    onClick={() => { setPenaltyEntryId(row.entryId); setPenaltyOpen(true); }}
+                  >
+                    Penalty
+                  </Button>
+                </div>
+              )}
             />
             <RaceHistoryPanel raceId={selectedRaceId} status={selectedRace?.status ?? 'PENDING'} />
           </>
@@ -198,6 +222,7 @@ export default function RefereePage() {
         onSubmit={onIncident}
         isPending={mutations.incident.isPending}
         drivers={drivers}
+        defaultEntryId={incidentEntryId}
       />
       <PenaltyDialog
         open={penaltyOpen}
@@ -206,7 +231,7 @@ export default function RefereePage() {
         isPending={mutations.penalty.isPending}
         drivers={drivers}
         defaultEntryId={penaltyEntryId}
-        defaultReason={penaltyEntryId ? 'Jump start' : undefined}
+        defaultReason={penaltyEntryId && jumpStartEntryIds.has(penaltyEntryId) ? 'Jump start' : undefined}
       />
     </div>
   );

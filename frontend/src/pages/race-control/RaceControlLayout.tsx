@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, Link, useParams, useMatches } from 'react-router-dom';
 import { BookOpen, Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus, Printer } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,6 +25,7 @@ export default function RaceControlLayout() {
   const { user, logout } = useAuth();
   const { helpContent, isOpen, setIsOpen } = useHelp();
   const matches = useMatches();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const base = `/race-control/event/${eventId}`;
   const isPractice = matches.some((m) => m.pathname.includes('/practice'));
@@ -122,10 +123,26 @@ export default function RaceControlLayout() {
       <Separator />
 
       <DecoderStatusBar>
-        {eventId && <PracticeRankingSelect eventId={Number(eventId)} />}
-        {eventId && <FinalLegsScopeSelect eventId={Number(eventId)} />}
         {eventId && <LiveFeedStatus eventId={Number(eventId)} />}
+        {eventId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            Event settings
+          </Button>
+        )}
       </DecoderStatusBar>
+      {/* Setup choices, kept off the live bar so a stray tap during a race cannot change them (#769) */}
+      {eventId && settingsOpen && (
+        <div className="flex flex-wrap items-center gap-4 border-b bg-muted/40 px-4 py-2 shrink-0">
+          <PracticeRankingSelect eventId={Number(eventId)} />
+          <FinalLegsScopeSelect eventId={Number(eventId)} />
+        </div>
+      )}
 
       {/* Page content fills remaining height */}
       <div className="flex-1 overflow-hidden">
