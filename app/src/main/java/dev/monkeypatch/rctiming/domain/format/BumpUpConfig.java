@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.format;
 
-import dev.monkeypatch.rctiming.domain.round.AutoFinalsSeedingService;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**

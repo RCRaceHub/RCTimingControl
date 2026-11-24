@@ -12,16 +12,18 @@ export function useResultsExports() {
 }
 
 /**
- * Whether the club has a RaceHub key (saved here or in the settings file) or publishes a results site. A club with neither
- * runs standalone, so the nav hides the RaceHub page. Does not poll; false until the answer arrives.
+ * Whether the club has a RaceHub key (saved here or in the settings file) or publishes a results site, so is not
+ * standalone. {@code undefined} until the answer is known, so a page does not flash "standalone" while loading. Only
+ * admins can read it (`enabled`), since the endpoint is admin only.
  */
-export function useRaceHubConnected() {
+export function useRaceHubConnected(enabled = true) {
   return useQuery({
     queryKey: adminQueryKeys.resultsExports.all(),
     queryFn: adminApi.resultsExports.list,
+    enabled,
     staleTime: 60_000,
     select: list => list.keySource !== 'NONE' || list.publishTarget === 'SITE' || list.publishTarget === 'BOTH',
-  }).data ?? false;
+  }).data;
 }
 
 export function useRetryResultsExport() {

@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.boardview;
 
-import dev.monkeypatch.rctiming.domain.result.LiveQualifyingService;
 /** What a panel of a saved board view shows. The page that draws a view has one component for each. */
 public enum BoardPanelType {
     /** The race on track with its live timing table and lap bars. */

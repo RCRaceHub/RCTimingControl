@@ -126,7 +126,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin, canRunEvent } = useRoles();
   const eventId = useMatch('/admin/events/:id/*')?.params.id;
-  const raceHubConnected = useRaceHubConnected();
+  const raceHubConnected = useRaceHubConnected(isAdmin);
   const onRaceHubPage = useMatch('/admin/racehub') != null;
 
   return (
@@ -157,17 +157,17 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         {isAdmin &&
           adminOnlyOperations
             // A standalone club has no RaceHub key, so its page is left out until one is saved (Club profile links to it)
-            .filter(({ to }) => to !== '/admin/racehub' || raceHubConnected || onRaceHubPage)
+            .filter(({ to }) => to !== '/admin/racehub' || raceHubConnected !== false || onRaceHubPage)
             .map(({ to, label, Icon }) => (
-            <NavItem
-              key={to}
-              to={to}
-              label={label}
-              Icon={Icon}
-              onClick={onNavClick}
-              badge={to === '/admin/racehub' ? <UnlinkedClassesBadge /> : undefined}
-            />
-          ))}
+              <NavItem
+                key={to}
+                to={to}
+                label={label}
+                Icon={Icon}
+                onClick={onNavClick}
+                badge={to === '/admin/racehub' ? <UnlinkedClassesBadge /> : undefined}
+              />
+            ))}
 
         <div className="pt-4">
           <Separator />

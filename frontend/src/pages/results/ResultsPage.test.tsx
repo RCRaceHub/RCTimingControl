@@ -98,5 +98,4 @@ describe('ResultsPage', () => {
     expect(await screen.findByText('No qualifying results yet.')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Qualifying' })).toHaveAttribute('aria-selected', 'true');
   });
-
 });

@@ -876,7 +876,6 @@ export interface TlsStatusDto {
   restartNeeded: boolean;
 }
 
-/** One audit log row (#138); `before` and `after` are the stored JSON, or null. */
 /** How long personal data is kept (#262): refused sign-ins, other audit rows (0 keeps them for ever). */
 export interface RetentionPolicyDto {
   failedSignInDays: number;
@@ -884,6 +883,7 @@ export interface RetentionPolicyDto {
   runOnStartup: boolean;
 }
 
+/** One audit log row (#138); `before` and `after` are the stored JSON, or null. */
 export interface AuditEntryDto {
   id: number;
   at: string;

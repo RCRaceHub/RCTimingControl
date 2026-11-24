@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.domain.race;
 
-import dev.monkeypatch.rctiming.domain.round.BumpUpSeedingService;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.persistence.JooqRepository;

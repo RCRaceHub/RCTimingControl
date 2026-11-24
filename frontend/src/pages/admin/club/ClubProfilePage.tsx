@@ -120,7 +120,7 @@ export default function ClubProfilePage() {
     <div className="max-w-xl space-y-8">
       <h1 className="text-2xl font-semibold">Club profile</h1>
 
-      {!raceHubConnected && (
+      {raceHubConnected === false && (
         <p className="text-sm text-muted-foreground">
           This club runs standalone. To take entries from RaceHub, send it results or publish a results website,{' '}
           <Link to="/admin/racehub" className="underline">open the RaceHub page</Link>.
