@@ -1,7 +1,3 @@
-import { Tags } from 'lucide-react';
-
-import { Badge } from '@/components/ui/badge';
-import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 import { RaceHubClassesPanel } from './RaceHubClassesPanel';
 import { RaceHubFormatsPanel } from './RaceHubFormatsPanel';
 
@@ -29,20 +25,6 @@ export function RaceHubClassesTab() {
         </p>
         <RaceHubFormatsPanel />
       </div>
-    </div>
-  );
-}
-
-/** The same content as its own page, kept for the old address's tests and links. */
-export default function RaceHubClassesPage() {
-  const { data: unlinked = 0 } = useUnlinkedRaceHubClassCount();
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        <Tags className="h-6 w-6" /> RaceHub classes
-        {unlinked > 0 && <Badge variant="outline">{unlinked} unlinked</Badge>}
-      </h1>
-      <RaceHubClassesTab />
     </div>
   );
 }

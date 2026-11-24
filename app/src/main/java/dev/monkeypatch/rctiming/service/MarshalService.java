@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 
 /**
  * Marshal lap adjustments (CTRL-03): a lap added to or taken off a car by hand. Each one is kept as a

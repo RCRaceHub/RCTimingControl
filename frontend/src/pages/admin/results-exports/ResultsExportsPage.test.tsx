@@ -7,7 +7,7 @@ import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -226,5 +226,22 @@ describe('ResultsExportsPage', () => {
     renderPage();
     expect(await screen.findByText('Could not load the results sent to RaceHub.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('flags on the classes tab how many RaceHub classes are not linked yet', async () => {
+    api.resultsExports.list.mockResolvedValue({
+      sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', savedUrl: null, missingSettings: [],
+      keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+    } as never);
+    api.raceHubClasses.list.mockResolvedValue({
+      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      classes: [
+        { id: '1', name: 'A', active: true, linkedRacingClassId: 5 },
+        { id: '2', name: 'B', active: true, linkedRacingClassId: null },
+      ],
+    } as never);
+    renderPage();
+
+    expect(await screen.findByText('1 unlinked')).toBeInTheDocument();
   });
 });

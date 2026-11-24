@@ -224,13 +224,13 @@ function KeyForm({ source }: { source: 'SAVED' | 'SETTINGS_FILE' | 'NONE' }) {
   );
 }
 
+const TABS = ['sent', 'classes', 'settings'] as const;
+
 /**
  * Results sent to RaceHub (#27). Results for an event imported from RaceHub are queued when a race
  * finishes, when a finished race is corrected, and when the race day is closed. The app sends them
  * in the background and keeps retrying while RaceHub cannot be reached.
  */
-const TABS = ['sent', 'classes', 'settings'] as const;
-
 export default function ResultsExportsPage() {
   useHelpContent(ResultsExportsHelp);
   const { data, isLoading, isError, refetch } = useResultsExports();
@@ -309,7 +309,7 @@ export default function ResultsExportsPage() {
 
           <TabsContent value="classes"><RaceHubClassesTab /></TabsContent>
 
-          {/* Both tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
+          {/* The sent and connection tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
           <TabsContent value="sent" forceMount className="space-y-6 data-[state=inactive]:hidden">
             {data && data.exports.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">

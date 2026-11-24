@@ -16,7 +16,6 @@ export default function RacingSetupPage() {
   const [tab, setTab] = useTabParam(TABS, 'classes');
   return (
     <div className="space-y-6">
-      <h1 className="sr-only">Racing setup</h1>
       <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="classes">Classes</TabsTrigger>
