@@ -30,10 +30,8 @@ const ClubProfilePage = lazy(() => import('@/pages/admin/club/ClubProfilePage'))
 const AdminAudioSettingsPage = lazy(() => import('@/pages/admin/club/AdminAudioSettingsPage'));
 const AudioOutputPage = lazy(() => import('@/pages/audio/AudioOutputPage'));
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
+const DisplaysPage = lazy(() => import('@/pages/admin/displays/DisplaysPage'));
 const RacingSetupPage = lazy(() => import('@/pages/admin/racing-setup/RacingSetupPage'));
-const BoardViewsPage = lazy(() => import('@/pages/admin/board-views/BoardViewsPage'));
-const ScreensPage = lazy(() => import('@/pages/admin/screens/ScreensPage'));
-const OverlayDesignerPage = lazy(() => import('@/pages/admin/board-views/OverlayDesignerPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
 const DecoderSettingsPage = lazy(() => import('@/pages/admin/decoder/DecoderSettingsPage'));
 const BackupsPage = lazy(() => import('@/pages/admin/backups/BackupsPage'));
@@ -127,9 +125,10 @@ const router = createBrowserRouter([
           { path: 'racehub', element: <ProtectedRoute roles={['ADMIN']}><ResultsExportsPage /></ProtectedRoute> },
           { path: 'officials', element: <ProtectedRoute roles={['ADMIN']}><OfficialsPage /></ProtectedRoute> },
           { path: 'audio', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><AdminAudioSettingsPage /></ProtectedRoute> },
-          { path: 'board-views', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><BoardViewsPage /></ProtectedRoute> },
-          { path: 'screens', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><ScreensPage /></ProtectedRoute> },
-          { path: 'overlay-designer', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><OverlayDesignerPage /></ProtectedRoute> },
+          { path: 'displays', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><DisplaysPage /></ProtectedRoute> },
+          { path: 'board-views', element: <Navigate to="/admin/displays?tab=views" replace /> },
+          { path: 'screens', element: <Navigate to="/admin/displays?tab=screens" replace /> },
+          { path: 'overlay-designer', element: <Navigate to="/admin/displays?tab=overlay" replace /> },
           { path: 'competitors', element: <CompetitorsPage /> },
         ],
       },
