@@ -26,6 +26,19 @@ export function parseTopParam(value: string | null): number {
   return Number.isInteger(top) && top > 0 ? Math.min(top, MAX_TOP) : DEFAULT_TOP;
 }
 
+/** The red a colour picker shows while the overlay's overrun colour is left at the theme's red. */
+export const DEFAULT_OVERRUN_COLOUR = '#ef4444';
+
+/**
+ * Reads {@code ?overrun=}: the colour (3 or 6 hex digits, with or without a leading #) the overlay's race clock
+ * turns once the race time is up, while it counts down the time left to finish. Null for anything else, which keeps
+ * the theme's red.
+ */
+export function parseOverrunColour(value: string | null | undefined): string | null {
+  const hex = value?.trim().replace(/^#/, '') ?? '';
+  return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(hex) ? `#${hex.toLowerCase()}` : null;
+}
+
 /** The most seconds `close=` may ask for on a board address. */
 const LIVE_RACE_MAX_CLOSE_S = 60;
 
@@ -163,6 +176,7 @@ export function parseOverlayOptions(params: URLSearchParams, defaultCloseMs: num
     gap: parseGapMode(params.get('gap')),
     gapEverySeconds: parseGapEvery(params.get('gapevery')),
     separatorImage: parseSeparatorImage(params.get('separator')),
+    overrunColour: parseOverrunColour(params.get('overrun')),
     placement: parsePlacementParam(params.get('place')),
     ...parseLiveRaceOptions(params, defaultCloseMs, OVERLAY_DEFAULT_ROW_ICONS),
     // After the spread on purpose: the overlay's key is off unless asked, the boards' is on
@@ -326,6 +340,8 @@ export type OverlayDesign = {
   rowIcons: RowIcon[];
   /** Seconds a car may be behind the one ahead and count as close; null takes the club's setting. */
   closeSeconds: number | null;
+  /** The colour of the race clock while it counts down the time left to finish after the race time is up; null is red. */
+  overrunColour: string | null;
   /** The zone of the screen each part of the overlay sits in (#667). */
   placement: OverlayPlacement;
 };
@@ -360,6 +376,7 @@ export const DEFAULT_OVERLAY_DESIGN: OverlayDesign = {
   highContrast: false,
   rowIcons: [...OVERLAY_DEFAULT_ROW_ICONS],
   closeSeconds: null,
+  overrunColour: null,
   placement: defaultPlacement(),
 };
 
@@ -390,6 +407,7 @@ export function overlayDesignFromTheme(raw: unknown): OverlayDesign {
     design.closeSeconds = r.closeSeconds;
   }
   if (typeof r.separatorImage === 'string') design.separatorImage = parseSeparatorImage(r.separatorImage);
+  if (typeof r.overrunColour === 'string') design.overrunColour = parseOverrunColour(r.overrunColour);
   design.placement = placementFromTheme(r.placement);
   if (Array.isArray(r.tickerItems)) {
     design.tickerItems = TICKER_ITEMS.filter((item) => (r.tickerItems as unknown[]).includes(item));
@@ -448,6 +466,8 @@ export function overlayQuery(design: OverlayDesign): string {
   const icons = rowIconsParam(design.rowIcons, OVERLAY_DEFAULT_ROW_ICONS);
   if (icons !== null) q.set('icons', icons);
   if (design.closeSeconds !== null) q.set('close', String(design.closeSeconds));
+  const overrun = parseOverrunColour(design.overrunColour);
+  if (overrun !== null) q.set('overrun', overrun.slice(1));
   const place = placementParam(design.placement);
   if (place) q.set('place', place);
   const text = q.toString().replace(/%2C/g, ',').replace(/%3A/g, ':');

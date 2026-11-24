@@ -23,6 +23,7 @@ vi.mock('@/lib/boardsApi', () => ({
   getNowNext: vi.fn(),
   getBoardLiveTiming: vi.fn(),
   getRaceClock: vi.fn(),
+  getForcedClose: vi.fn(),
   getRoundFastestLap: vi.fn(),
   getRaceHighlights: vi.fn(),
   getPositionHistory: vi.fn(),
@@ -39,6 +40,7 @@ import {
   getNowNext,
   getPositionHistory,
   getRaceClock,
+  getForcedClose,
   getRaceHighlights,
   getRoundFastestLap,
   getTicker,
@@ -284,6 +286,45 @@ describe('OverlayBoard', () => {
     });
 
     expect(raceClock).toHaveTextContent('3:42');
+  });
+
+  it('counts down the time left to finish in red once the race time is up', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: true }));
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: 42_000 });
+    renderOverlay();
+
+    const left = await screen.findByLabelText('Time left to finish');
+    await waitFor(() => expect(left).toHaveTextContent('0:42'));
+    expect(left).toHaveClass('text-destructive');
+  });
+
+  it('uses the colour the overlay was given for the time left to finish', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: true }));
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: 42_000 });
+    renderOverlay('/boards/overlay?overrun=ff8800');
+
+    const left = await screen.findByLabelText('Time left to finish');
+    expect(left).toHaveStyle({ color: '#ff8800' });
+  });
+
+  it('keeps the clock neutral past the race time when the race is not running', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: false }));
+    renderOverlay();
+
+    expect(await screen.findByLabelText('Race clock')).toHaveTextContent('0:00');
+    expect(getForcedClose).not.toHaveBeenCalled();
+  });
+
+  it('falls back to red when the overrun colour is not a colour', async () => {
+    vi.mocked(getNowNext).mockResolvedValue(nowNext(race));
+    vi.mocked(getRaceClock).mockResolvedValue(clock({ elapsedMs: 301_000, remainingMs: 0, running: true }));
+    vi.mocked(getForcedClose).mockResolvedValue({ closesInMs: 42_000 });
+    renderOverlay('/boards/overlay?overrun=red');
+
+    expect(await screen.findByLabelText('Time left to finish')).toHaveClass('text-destructive');
   });
 
   it('counts up for a race with no set length', async () => {
@@ -571,6 +612,7 @@ describe('overlay options', () => {
   it('falls back to the defaults for anything it does not recognise', () => {
     expect(parseOverlayOptions(new URLSearchParams('top=abc&theme=neon&class=yes'))).toEqual({
       eventId: null,
+      overrunColour: null,
       placement: DEFAULT_PLACEMENT,
       top: 10,
       showClass: true,

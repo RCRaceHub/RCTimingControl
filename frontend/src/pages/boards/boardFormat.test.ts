@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { parseLiveRaceOptions, tqPaceText } from './boardFormat';
+import { overlayDesignFromTheme, overlayQuery, parseOverrunColour, DEFAULT_OVERLAY_DESIGN, parseLiveRaceOptions, tqPaceText } from './boardFormat';
 
 describe('parseLiveRaceOptions', () => {
   const parse = (query: string) => parseLiveRaceOptions(new URLSearchParams(query));
@@ -63,5 +63,22 @@ describe('tqPaceText', () => {
     expect(tqPaceText(leader, undefined, 21)).toBeNull();
     expect(tqPaceText(leader, { ...tq, live: true }, 21)).toBeNull();
     expect(tqPaceText({ bestLapMs: null } as LiveTimingRowDto, tq, null)).toBeNull();
+  });
+});
+
+describe('overrun colour', () => {
+  it('takes 3 or 6 hex digits with or without a hash, and nothing else', () => {
+    expect(parseOverrunColour('ff8800')).toBe('#ff8800');
+    expect(parseOverrunColour('#F80')).toBe('#f80');
+    expect(parseOverrunColour('red')).toBeNull();
+    expect(parseOverrunColour('')).toBeNull();
+    expect(parseOverrunColour(null)).toBeNull();
+  });
+
+  it('is written to the overlay address only when it is not the default red, and read back from a saved theme', () => {
+    expect(overlayQuery(DEFAULT_OVERLAY_DESIGN)).toBe('');
+    const design = overlayDesignFromTheme({ overrunColour: '#ff8800' });
+    expect(design.overrunColour).toBe('#ff8800');
+    expect(overlayQuery(design)).toBe('?overrun=ff8800');
   });
 });
