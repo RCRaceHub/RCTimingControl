@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.domain.user;
 
+import dev.monkeypatch.rctiming.domain.setup.SetupService;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.springframework.stereotype.Service;

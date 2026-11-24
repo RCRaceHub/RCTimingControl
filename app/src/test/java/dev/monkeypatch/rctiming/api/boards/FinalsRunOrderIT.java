@@ -16,7 +16,7 @@ import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.query.racecontrol.RunOrderQuery;
-import dev.monkeypatch.rctiming.service.FinalsRunOrderService;
+import dev.monkeypatch.rctiming.domain.round.FinalsRunOrderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

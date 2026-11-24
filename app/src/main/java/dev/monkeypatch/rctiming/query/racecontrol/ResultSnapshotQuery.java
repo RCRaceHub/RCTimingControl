@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.racecontrol;
 
+import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.race.RaceLabel;
 import dev.monkeypatch.rctiming.domain.race.RoundType;
@@ -7,7 +8,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.query.championship.ChampionshipStandingsQuery;
-import dev.monkeypatch.rctiming.service.QualifyingStandingsService;
+import dev.monkeypatch.rctiming.domain.result.QualifyingStandingsService;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;
 

@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.championship;
 
+import dev.monkeypatch.rctiming.domain.round.RoundGeneratorService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;

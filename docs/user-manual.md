@@ -123,9 +123,11 @@ Photos look best on the boards and the streaming overlay with a transparent back
 
 When all races are done, complete the event. Results are on the public pages, printable, and downloadable from the event's page. If a result needs correcting after the finish, the stored result is worked out again and championship points follow. Sections 6 and 8 of the Race Meeting Guide cover finishing, corrections and publishing results. Championship standings update from the saved results and are on the championship's Standings tab and its public page. To give Junior, Vet or F-Grade drivers their own tables as well, set each driver's categories on the Competitors page, then list the categories on the championship's Config tab under Category splits; each split repeats the class tables for those drivers, ranked among themselves.
 
+A club with no RaceHub key and no results website runs standalone: the **RaceHub** item is left out of the Admin menu, and **Club profile** has a link to the page when you want to connect.
+
 ### 11. Backups
 
-RCTC backs up its database when you complete the event (that closes the race day) and every night, and **Admin → Backups** lists the copies and takes one on demand. The Backups page shows when the last one was taken, and after you close a race day it reminds you for a few days to copy a backup off the laptop. Keep a copy off the laptop: [installing.md](installing.md#copying-backups-off-the-laptop) shows how to use a Dropbox or Drive folder. Restoring is done on the laptop with the service stopped: [installing.md](installing.md#restoring-a-backup).
+RCTC backs up its database when you complete the event (that closes the race day) and every night, and **Admin → Backups** lists the copies and takes one on demand. The Backups page shows when the last one was taken and how long refused sign-ins and audit rows are kept, and after you close a race day it reminds you for a few days to copy a backup off the laptop. Keep a copy off the laptop: [installing.md](installing.md#copying-backups-off-the-laptop) shows how to use a Dropbox or Drive folder. Restoring is done on the laptop with the service stopped: [installing.md](installing.md#restoring-a-backup).
 
 ### 12. Send results back to RaceHub
 

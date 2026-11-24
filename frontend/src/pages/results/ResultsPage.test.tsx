@@ -3,7 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ResultsPage from './ResultsPage';
-import ResultsRedirect from './ResultsRedirect';
 
 vi.mock('@/lib/boardsApi', () => ({
   getQualifyingBoard: vi.fn(),
@@ -31,7 +30,6 @@ function renderAt(path: string) {
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/results" element={<ResultsPage />} />
-          <Route path="/finals" element={<ResultsRedirect tab="finals" />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -101,11 +99,4 @@ describe('ResultsPage', () => {
     expect(screen.getByRole('tab', { name: 'Qualifying' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('redirects the old /finals address to its tab, keeping the event', async () => {
-    vi.mocked(getFinalsBoard).mockResolvedValue(finalsWith(0));
-    renderAt('/finals?event=7');
-
-    expect(await screen.findByRole('tab', { name: 'Finals' })).toHaveAttribute('aria-selected', 'true');
-    expect(getFinalsBoard).toHaveBeenCalledWith(7);
-  });
 });

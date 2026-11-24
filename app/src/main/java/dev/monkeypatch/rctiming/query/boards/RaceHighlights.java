@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.query.boards;
 
+import dev.monkeypatch.rctiming.domain.result.RaceHighlightsService;
 import java.util.List;
 
 /**

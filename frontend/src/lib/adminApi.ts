@@ -877,6 +877,13 @@ export interface TlsStatusDto {
 }
 
 /** One audit log row (#138); `before` and `after` are the stored JSON, or null. */
+/** How long personal data is kept (#262): refused sign-ins, other audit rows (0 keeps them for ever). */
+export interface RetentionPolicyDto {
+  failedSignInDays: number;
+  auditDays: number;
+  runOnStartup: boolean;
+}
+
 export interface AuditEntryDto {
   id: number;
   at: string;
@@ -1325,6 +1332,9 @@ export const adminApi = {
   audit: {
     search: (filter: AuditFilterParams, page: number, size: number) =>
       api.get<AuditPageDto>('/api/v1/admin/audit', { params: { ...filter, page, size } }).then(r => r.data),
+  },
+  retention: {
+    policy: () => api.get<RetentionPolicyDto>('/api/v1/admin/retention').then(r => r.data),
   },
   // Database backups (#22)
   backups: {

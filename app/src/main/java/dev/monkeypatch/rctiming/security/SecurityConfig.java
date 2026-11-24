@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.security;
 
+import dev.monkeypatch.rctiming.domain.setup.SetupService;
 import dev.monkeypatch.rctiming.config.SpaConfig;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import jakarta.servlet.http.HttpServletRequest;

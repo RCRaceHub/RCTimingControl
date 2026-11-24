@@ -6,7 +6,7 @@ import dev.monkeypatch.rctiming.query.racecontrol.RaceEntryDto;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
-import dev.monkeypatch.rctiming.service.TransponderLinkService;
+import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
 import dev.monkeypatch.rctiming.timing.dto.LinkTransponderRequestDto;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

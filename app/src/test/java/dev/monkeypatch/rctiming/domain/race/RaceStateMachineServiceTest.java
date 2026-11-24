@@ -5,9 +5,9 @@ import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.StartType;
-import dev.monkeypatch.rctiming.service.BumpUpSeedingService;
-import dev.monkeypatch.rctiming.service.ResultSnapshotService;
-import dev.monkeypatch.rctiming.service.RoundGeneratorService;
+import dev.monkeypatch.rctiming.domain.round.BumpUpSeedingService;
+import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
+import dev.monkeypatch.rctiming.domain.round.RoundGeneratorService;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,7 +60,7 @@ class RaceStateMachineServiceTest {
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
                 mock(BumpUpSeedingService.class), raceFormatService,
                 eventClassRepository, mock(RaceEliminationRepository.class), mock(RacePointPenaltyRepository.class),
-                mock(dev.monkeypatch.rctiming.service.ShikabaneGridService.class), Clock.fixed(NOW, ZoneOffset.UTC));
+                mock(dev.monkeypatch.rctiming.domain.round.ShikabaneGridService.class), Clock.fixed(NOW, ZoneOffset.UTC));
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
             lastSaved = copy(race);

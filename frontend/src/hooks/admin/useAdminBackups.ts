@@ -16,3 +16,10 @@ export function useBackupNow() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.backups.all() }),
   });
 }
+
+export function useRetentionPolicy() {
+  return useQuery({
+    queryKey: adminQueryKeys.retention.policy(),
+    queryFn: adminApi.retention.policy,
+  });
+}

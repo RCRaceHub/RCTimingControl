@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.racecontrol.MarshalService;
+import dev.monkeypatch.rctiming.domain.racecontrol.RefereeService;
+import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
 import dev.monkeypatch.rctiming.domain.club.LiveTimingSettingsChangedEvent;

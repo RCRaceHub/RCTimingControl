@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
+import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
+import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
