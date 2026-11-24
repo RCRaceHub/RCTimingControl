@@ -104,10 +104,17 @@ export default function RaceHubImportDialog({
     return racingClasses.find(rc => rc.id === Number(choice.slice(3)))?.lastTemplateId != null;
   }
 
-  /** The format picked for a held class, or the sensible default: the last one used, else the first format. */
+  /** The template the club linked to the meeting's RaceHub race format, when it still exists. */
+  const meetingFormat = formats.find(f => f.id === preview?.raceFormat?.linkedTemplateId)?.id;
+
+  /**
+   * The format picked for a held class, or the sensible default: the format RaceHub gave the meeting (every class of
+   * a meeting runs to one format), else the last one used, else the first format.
+   */
   function formatFor(key: string) {
     const picked = formatChoices[key];
     if (picked && !(picked === 'last' && !lastFormatAvailable(key))) return picked;
+    if (meetingFormat != null) return String(meetingFormat);
     return lastFormatAvailable(key) ? 'last' : String(formats[0]?.id ?? 'last');
   }
 

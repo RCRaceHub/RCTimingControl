@@ -3,6 +3,7 @@ import { Tags } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 import { RaceHubClassesPanel } from './RaceHubClassesPanel';
+import { RaceHubFormatsPanel } from './RaceHubFormatsPanel';
 
 /**
  * Admin page for linking the club's RaceHub classes to its racing classes, once. The list and the links are in
@@ -24,6 +25,14 @@ export default function RaceHubClassesPage() {
         </p>
       </div>
       <RaceHubClassesPanel />
+      <div className="space-y-2 pt-2">
+        <h2 className="text-lg font-semibold">Race formats</h2>
+        <p className="text-sm text-muted-foreground max-w-2xl">
+          The organiser picks one race format for each meeting in RaceHub. Link each to one of your formats, once, and an
+          imported meeting adds its classes with it. A format you leave unlinked is asked for at import, as before.
+        </p>
+        <RaceHubFormatsPanel />
+      </div>
     </div>
   );
 }

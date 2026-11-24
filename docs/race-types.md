@@ -146,6 +146,8 @@ result is ranked.
 
 ## 4. The formats
 
+A club that books through RaceHub can pick the meeting's race format there. RCTC runs it with the format template the club linked to it once (RaceHub classes page, Race formats); see the RaceHub expectations page in the source repository. Without a link, or without RaceHub, you choose each class's format yourself as before.
+
 ### 4.1 Timed
 
 A **single timed race** per heat: it runs for the format's duration, with a start type (grid, stagger or rolling) for

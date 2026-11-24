@@ -23,6 +23,14 @@ An official links each of the club's classes to an RCTC racing class once, on th
 
 `id` is the same value the export carries as `club_class_id`. Inactive classes (`active: false`) are shown distinctly but can still be linked, because old meetings refer to them. When an import is held on a `club_class_id` that has no link, the official can fetch the list again (the club may have added a class since the links were made) and link the new one. Results go back to RaceHub by the same id, see [Results Export v1](results-export-v1.md).
 
+## Race format of the meeting
+
+The organiser picks **one race format for the whole meeting** in RaceHub (every class of a meeting runs to the same format). RaceHub names the format; RCTC runs it, so RaceHub never describes rules.
+
+- The entry export's `event` carries `race_format_id` (a stable club-level id, as a string) and `race_format_name`, both null or absent when the organiser chose none.
+- RCTC sends `GET /api/rctc/v1/formats` (beside the events list like `classes`, same key, ability `entries:read`) and expects `{ "formats": [ { "id": "3", "name": "BRCA bump-up 5 min", "active": true } ] }`, as a bare array or under `formats`. Inactive formats stay listed because old meetings use them.
+- An official links each format to one of RCTC's format templates once, on the **RaceHub classes** page (Race formats). When an import holds a class and offers to add it to the event, the format defaults to the template linked to the meeting's format. An unknown or unlinked format, or none at all, falls back to the format the class last used, so RCTC works without RaceHub.
+
 ## Finding events ready for timing
 
 An official can ask RaceHub which events are ready (Events page, **Find RaceHub events**) instead of pasting each event's feed address. RCTC sends `GET <events address>` with `Authorization: Bearer <the club's key>` and expects JSON:

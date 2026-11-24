@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
-import type { LinkRaceHubClassRequest } from '@/lib/adminApi';
+import type { LinkRaceHubClassRequest, LinkRaceHubFormatRequest } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
 
 /**
@@ -41,5 +41,24 @@ export function useLinkRaceHubClasses() {
       qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.classes() });
       qc.invalidateQueries({ queryKey: adminQueryKeys.racingClasses.all() });
     },
+  });
+}
+
+/** The club's race formats as RaceHub lists them, asked fresh each time; `error` is set when RaceHub cannot be asked. */
+export function useRaceHubFormats(enabled = true) {
+  return useQuery({
+    queryKey: adminQueryKeys.racehub.formats(),
+    queryFn: () => adminApi.raceHubFormats.list(),
+    enabled,
+    staleTime: 0,
+  });
+}
+
+/** Links a RaceHub race format to a format template for the whole club, or removes the link. */
+export function useLinkRaceHubFormat() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (request: LinkRaceHubFormatRequest) => adminApi.raceHubFormats.link(request),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.formats() }),
   });
 }

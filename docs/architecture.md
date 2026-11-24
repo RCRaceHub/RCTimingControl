@@ -56,6 +56,7 @@ RaceHub owns booking, racer accounts and payment. The boundary between the two i
 - Each entry is matched by its RaceHub `entry_id` and applied only when its `entry_version` is higher than the one already imported, so importing the same file twice is safe.
 - A withdrawn entry is marked `WITHDRAWN`, never deleted, and keeps its race history.
 - RaceHub classes map to the event's classes by `rc_class_name`, with a per-event override.
+- The meeting's race format (`event.race_format_id`, one per meeting) is linked once, club-wide, to one of RCTC's format templates (`racehub_format_links`). The import preview offers that template for classes the import adds; no format or no link falls back to asking the official.
 - A dry run previews the changes; an import with a class that has no club link, or with invalid rows, saves nothing.
 
 Officials add walk-ins by hand in the admin entry list. A file works with no internet at the track, and the same format could become a pull from RaceHub later.

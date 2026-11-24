@@ -13,6 +13,7 @@ export const adminQueryKeys = {
   racehub: {
     events: () => ['admin', 'racehub', 'events'] as const,
     classes: () => ['admin', 'racehub', 'classes'] as const,
+    formats: () => ['admin', 'racehub', 'formats'] as const,
   },
   entries: {
     history: (entryId: number) => ['admin', 'entries', entryId, 'history'] as const,
