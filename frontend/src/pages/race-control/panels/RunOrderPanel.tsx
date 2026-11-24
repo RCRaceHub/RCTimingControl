@@ -28,6 +28,18 @@ function statusBadge(status: RunOrderItemDto['status']) {
   }
 }
 
+/** The heading a heat sits under (#770): its round, with every final under one Finals heading. */
+function roundHeading(item: RunOrderItemDto) {
+  if (item.roundType === 'FINAL') return 'Finals';
+  if (item.roundType === 'QUALIFIER') return `Qualifier ${item.roundNumber}`;
+  return `Practice ${item.roundNumber}`;
+}
+
+/** Under the class name: the final's letter where it is one, then the heat. */
+function heatLabel(item: RunOrderItemDto) {
+  return item.roundType === 'FINAL' && item.finalLetter ? `${roundName(item)} · Heat ${item.heatNumber}` : `Heat ${item.heatNumber}`;
+}
+
 function raceLabel(item: RunOrderItemDto) {
   return `${roundName(item, true)} • ${item.className}`;
 }
@@ -40,11 +52,20 @@ export function RunOrderPanel({ items, selectedRaceId, onSelect, onMoveFinal }: 
   }
 
   // The finals can only be moved about when one runs in legs (the server enforces this and the rules on Bump Up)
+  // The next race to run is marked while nothing is on the grid or on track
+  const busy = items.some((i) => i.status === 'GRID' || i.status === 'RUNNING' || i.status === 'STOPPED');
+  const nextRaceId = busy ? null : items.find((i) => i.status === 'PENDING')?.raceId ?? null;
   const canReorder = onMoveFinal !== undefined && items.some((i) => i.finalLetter !== null && i.heatNumber > 1);
   return (
     <div className="flex flex-col gap-0.5 p-2">
       {items.map((item, index) => (
-        <div key={item.raceId} className="flex items-center gap-1">
+        <div key={item.raceId} className="contents">
+          {(index === 0 || roundHeading(items[index - 1]) !== roundHeading(item)) && (
+            <h4 className="mt-2 px-3 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground first:mt-0">
+              {roundHeading(item)}
+            </h4>
+          )}
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onSelect(item.raceId)}
             className={cn(
@@ -60,11 +81,17 @@ export function RunOrderPanel({ items, selectedRaceId, onSelect, onMoveFinal }: 
             <div className="min-w-0">
               <div className="truncate font-medium">
                 <ClassSwatch colour={item.classColour} className="mr-1.5" />
-                {raceLabel(item)}
+                {item.className}
               </div>
-              <div className="text-muted-foreground truncate">Heat {item.heatNumber}</div>
+              <div className="text-muted-foreground truncate">{heatLabel(item)}</div>
             </div>
-            <div className="shrink-0">{statusBadge(item.status)}</div>
+            <div className="shrink-0">
+              {item.raceId === nextRaceId ? (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">NEXT</Badge>
+              ) : (
+                statusBadge(item.status)
+              )}
+            </div>
           </button>
           {canReorder && item.finalLetter !== null && item.status === 'PENDING' && (
             <div className="flex shrink-0 flex-col">
@@ -88,6 +115,7 @@ export function RunOrderPanel({ items, selectedRaceId, onSelect, onMoveFinal }: 
               </button>
             </div>
           )}
+        </div>
         </div>
       ))}
     </div>

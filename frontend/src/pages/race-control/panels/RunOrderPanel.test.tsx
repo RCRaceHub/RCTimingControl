@@ -57,3 +57,34 @@ describe('RunOrderPanel', () => {
     expect(screen.queryByRole('button', { name: /earlier|later/ })).not.toBeInTheDocument();
   });
 });
+
+describe('RunOrderPanel grouping (#770)', () => {
+  it('groups heats under their round and marks the next race to run', () => {
+    render(
+      <RunOrderPanel
+        items={[
+          item({ raceId: 1, roundType: 'QUALIFIER', roundNumber: 1, finalLetter: null, status: 'FINISHED' }),
+          item({ raceId: 2, roundType: 'QUALIFIER', roundNumber: 1, finalLetter: null, heatNumber: 2 }),
+          item({ raceId: 3, roundType: 'FINAL', finalLetter: 'A' }),
+        ]}
+        selectedRaceId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent)).toEqual(['Qualifier 1', 'Finals']);
+    expect(screen.getAllByText('NEXT')).toHaveLength(1);
+  });
+
+  it('marks no race next while one is on track', () => {
+    render(
+      <RunOrderPanel
+        items={[item({ raceId: 1, status: 'RUNNING' }), item({ raceId: 2, heatNumber: 2 })]}
+        selectedRaceId={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    expect(screen.queryByText('NEXT')).not.toBeInTheDocument();
+  });
+});

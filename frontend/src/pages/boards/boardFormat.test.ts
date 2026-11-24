@@ -11,7 +11,7 @@ describe('parseLiveRaceOptions', () => {
       showArrows: true,
       showPredicted: true,
       showBattles: true,
-      showLegend: true,
+      showLegend: false,
       highContrast: false,
       rowIcons: ['pace', 'flying', 'lap', 'close', 'lapped', 'penalty', 'signal'],
       closeMs: 1000,

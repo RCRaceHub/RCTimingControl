@@ -21,12 +21,17 @@ function readWidth(): number {
   }
 }
 
+/** Below this window width the run order starts collapsed, so live timing gets the room (#768); a choice made here is remembered over it. */
+export const NARROW_SCREEN_PX = 1100;
+
 function readCollapsed(): boolean {
   try {
-    return localStorage.getItem(COLLAPSED_KEY) === 'true';
+    const stored = localStorage.getItem(COLLAPSED_KEY);
+    if (stored !== null) return stored === 'true';
   } catch {
-    return false;
+    // Fall through to the screen width
   }
+  return typeof window !== 'undefined' && window.innerWidth < NARROW_SCREEN_PX;
 }
 
 function save(key: string, value: string) {

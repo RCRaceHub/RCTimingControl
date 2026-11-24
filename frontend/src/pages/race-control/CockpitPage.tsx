@@ -495,7 +495,7 @@ function CockpitView() {
             <Button
               onClick={onCallGrid}
               disabled={mutations.callGrid.isPending || finalBlocked}
-              className="w-fit"
+              className="w-fit pointer-coarse:min-h-11"
             >
               {mutations.callGrid.isPending ? 'Calling grid…' : 'Call Grid'}
             </Button>
@@ -577,11 +577,11 @@ function CockpitView() {
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
                 {canControlRace && (
-                  <Button onClick={onFinish} disabled={mutations.finish.isPending}>
+                  <Button className="pointer-coarse:min-h-11" onClick={onFinish} disabled={mutations.finish.isPending}>
                     {mutations.finish.isPending ? 'Finishing…' : 'Finish Race'}
                   </Button>
                 )}
-                <Button variant="outline" onClick={onStop} disabled={mutations.stop.isPending}>
+                <Button className="pointer-coarse:min-h-11" variant="outline" onClick={onStop} disabled={mutations.stop.isPending}>
                   {mutations.stop.isPending ? 'Stopping…' : 'Stop'}
                 </Button>
                 {moreMenu}
@@ -625,7 +625,7 @@ function CockpitView() {
               <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
               <div className="flex gap-2 ml-auto">
-                <Button onClick={onStart} disabled={mutations.start.isPending}>
+                <Button className="pointer-coarse:min-h-11" onClick={onStart} disabled={mutations.start.isPending}>
                   {mutations.start.isPending ? 'Resuming…' : 'Resume Race'}
                 </Button>
                 {canControlRace && (

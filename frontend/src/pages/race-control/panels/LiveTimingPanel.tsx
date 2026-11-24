@@ -116,7 +116,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
               <TableHead className="w-16">Car</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead className="w-16 text-right">Laps</TableHead>
-              <TableHead className="w-28 text-right">Total Time</TableHead>
+              <TableHead className="hidden w-28 text-right xl:table-cell">Total Time</TableHead>
               <TableHead className="w-24 text-right">Last Lap</TableHead>
               <TableHead className="w-24 text-right">Best Lap</TableHead>
               {Array.from({ length: sectors.sectorCount }, (_, i) => (
@@ -186,7 +186,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                   {status === 'RUNNING' && <LapProgressBar row={row} clock={barClock} className="mt-1" />}
                 </TableCell>
                 <TableCell className="text-right font-mono">{row.lapsCompleted}</TableCell>
-                <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
+                <TableCell className="hidden text-right font-mono xl:table-cell">{fmtMs(row.totalTimeMs)}</TableCell>
                 <TableCell className={cn('text-right font-mono transition-colors duration-500', flashTint(flash))}>{fmtMs(row.lastLapMs)}</TableCell>
                 <TableCell className={cn('text-right font-mono transition-colors duration-500', flashTint(flash))}>{fmtMs(row.bestLapMs)}</TableCell>
                 {Array.from({ length: sectors.sectorCount }, (_, i) => {

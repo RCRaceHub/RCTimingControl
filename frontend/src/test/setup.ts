@@ -6,3 +6,6 @@ globalThis.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// A laptop-width window, so the run order starts expanded; narrow-screen tests set their own width
+window.innerWidth = 1280;

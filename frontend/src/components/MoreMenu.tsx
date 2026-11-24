@@ -29,7 +29,7 @@ export function MoreMenu({ children, label = 'More' }: { children: (close: () =>
 
   return (
     <div ref={ref} className="relative">
-      <Button type="button" variant="outline" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button type="button" variant="outline" className="pointer-coarse:min-h-11" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {label}
       </Button>
       {open && (

@@ -14,7 +14,7 @@ const row = (position: number, over: Partial<LiveTimingRowDto> = {}): LiveTiming
 describe('BoardLiveTable', () => {
   it('shows the gap to the car ahead as well as to the leader', () => {
     render(<BoardLiveTable rows={[row(1), row(2, { gapToAheadMs: 2_500, gapToLeaderMs: 6_000 })]} />);
-    expect(screen.getByRole('columnheader', { name: 'Ahead' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Interval' })).toBeInTheDocument();
     expect(screen.getByText('+6.000')).toBeInTheDocument();
     expect(screen.getByText('+2.500')).toBeInTheDocument();
   });
@@ -58,14 +58,14 @@ describe('BoardLiveTable', () => {
   it('adds a predicted laps column given a bar clock and the time left', () => {
     const clock: LapBarClock = { offsetMs: 100_000 - Date.now(), resumedAtMs: null };
     render(<BoardLiveTable rows={[row(1)]} barClock={clock} predicted={{ clock, remainingAt: () => 25_000 }} />);
-    expect(screen.getByRole('columnheader', { name: 'Pred' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Pred laps' })).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
   });
 
   it('shows a dash for predicted laps while the clock is not counting', () => {
     const clock: LapBarClock = { offsetMs: 100_000 - Date.now(), resumedAtMs: null };
     render(<BoardLiveTable rows={[row(1)]} predicted={{ clock, remainingAt: () => null }} />);
-    expect(screen.getByRole('columnheader', { name: 'Pred' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Pred laps' })).toBeInTheDocument();
     expect(screen.queryByText('7')).toBeNull();
   });
 
