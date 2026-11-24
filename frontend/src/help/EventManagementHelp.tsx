@@ -7,8 +7,9 @@ export function EventManagementHelp() {
         The Event Detail page manages a single event's lifecycle, classes, and entries. It
         has tabs for Overview (name, date, track), Classes (racing classes included in
         the event), Entries (entries imported from RaceHub and walk-ins) and Sponsors (the
-        names and logos shown in the streaming overlay's sponsor bar). Event details
-        can only be edited while the event is in Draft status.
+        names and logos shown in the streaming overlay's sponsor bar). The name and date
+        can only be edited while the event is in Draft status; the track can be chosen
+        or changed until the event is completed.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">

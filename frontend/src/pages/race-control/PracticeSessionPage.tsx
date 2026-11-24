@@ -17,6 +17,7 @@ import {
   startSession,
   stopSession,
   type PracticeSessionDto,
+  type PracticeTimingRowDto,
 } from '@/lib/practiceApi';
 import { toast } from 'sonner';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
@@ -44,7 +45,7 @@ export function PracticeSessionPage() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   // The transponder being named, or null when the dialog is closed
-  const [naming, setNaming] = useState<string | null>(null);
+  const [naming, setNaming] = useState<PracticeTimingRowDto | null>(null);
 
   const {
     data: session,
@@ -250,7 +251,8 @@ export function PracticeSessionPage() {
 
       <PracticeNameDialog
         sessionId={id}
-        transponderNumber={naming ?? ''}
+        transponderNumber={naming?.transponderNumber ?? ''}
+        currentName={naming && !naming.isUnknown ? naming.racerName : null}
         open={naming !== null}
         onOpenChange={open => {
           if (!open) setNaming(null);

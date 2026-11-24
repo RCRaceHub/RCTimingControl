@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.api.admin.dto.EventDto;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
 import dev.monkeypatch.rctiming.api.auth.LoginRequest;
 import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.track.Track;
 import dev.monkeypatch.rctiming.domain.track.TrackRepository;
@@ -27,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -158,6 +160,45 @@ class EventControllerIT extends AbstractIntegrationTest {
 
         assertThat(transitioned.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(transitioned.getBody().status().name()).isEqualTo("PUBLISHED");
+    }
+
+    @Test
+    void updateEvent_afterTheMeetingHasStarted_changesTheTrackButNotTheNameOrDate() {
+        Long trackId = createTrackInDb();
+        Event event = new Event();
+        event.setName("Started Meeting");
+        event.setEventDate(LocalDate.of(2026, 11, 1));
+        event.setStatus(EventStatus.IN_PROGRESS);
+        Long id = eventRepository.save(event).getId();
+
+        ResponseEntity<EventDto> sameDetails = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Started Meeting", "eventDate", "2026-11-01", "trackId", trackId),
+                        adminHeaders()), EventDto.class);
+        ResponseEntity<Map> renamed = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Other", "eventDate", "2026-11-01", "trackId", trackId),
+                        adminHeaders()), Map.class);
+
+        assertThat(sameDetails.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(sameDetails.getBody().trackId()).isEqualTo(trackId);
+        assertThat(renamed.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void updateEvent_onceCompleted_isRefused() {
+        Event event = new Event();
+        event.setName("Done Meeting");
+        event.setEventDate(LocalDate.of(2026, 11, 2));
+        event.setStatus(EventStatus.COMPLETED);
+        Long id = eventRepository.save(event).getId();
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "/api/v1/admin/events/" + id, HttpMethod.PUT,
+                new HttpEntity<>(Map.of("name", "Done Meeting", "eventDate", "2026-11-02",
+                        "trackId", createTrackInDb()), adminHeaders()), Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test

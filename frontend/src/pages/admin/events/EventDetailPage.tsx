@@ -212,6 +212,8 @@ export default function EventDetailPage() {
   const validNextStatuses = offeredTransitions(data);
   const confirmCopy = transitionTarget ? confirmCopyFor(transitionTarget) : null;
   const canEditDetails = data.status === 'DRAFT';
+  // The track can still be picked once the meeting has started: only a completed event is closed to it
+  const canEditTrack = data.status !== 'COMPLETED';
   const hasResults = data.status === 'IN_PROGRESS' || data.status === 'COMPLETED';
   const trackName = tracks.find(t => t.id === data.trackId)?.name ?? null;
 
@@ -309,7 +311,7 @@ export default function EventDetailPage() {
                 control={control}
                 render={({ field }) => (
                   <Select
-                    disabled={!canEditDetails || tracks.length === 0}
+                    disabled={!canEditTrack || tracks.length === 0}
                     value={field.value != null ? String(field.value) : 'none'}
                     onValueChange={val => field.onChange(val === 'none' ? null : Number(val))}
                   >
@@ -330,14 +332,21 @@ export default function EventDetailPage() {
             </div>
             {!isAdmin ? (
               <p className="text-xs text-muted-foreground">Only an admin can change event details.</p>
-            ) : canEditDetails ? (
-              <Button type="submit" disabled={!isDirty || isSubmitting || updateEvent.isPending}>
-                {updateEvent.isPending ? 'Saving…' : 'Save Event Details'}
-              </Button>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                Event details can only be edited while the event is in Draft status.
-              </p>
+              <>
+                {canEditTrack && (
+                  <Button type="submit" disabled={!isDirty || isSubmitting || updateEvent.isPending}>
+                    {updateEvent.isPending ? 'Saving…' : 'Save Event Details'}
+                  </Button>
+                )}
+                {!canEditDetails && (
+                  <p className="text-xs text-muted-foreground">
+                    {canEditTrack
+                      ? 'The meeting has started, so only the track can still be changed.'
+                      : 'A completed event can no longer be changed.'}
+                  </p>
+                )}
+              </>
             )}
             </fieldset>
           </form>

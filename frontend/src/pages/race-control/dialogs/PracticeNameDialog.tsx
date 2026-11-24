@@ -23,6 +23,8 @@ import { linkTransponder } from '@/lib/practiceApi';
 interface PracticeNameDialogProps {
   sessionId: number;
   transponderNumber: string;
+  /** The driver already named for the transponder, when this is a change rather than a first naming */
+  currentName?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -36,7 +38,7 @@ const sameNameKey = (name: string) => name.replace(/\s+/g, '').toLowerCase();
  * Name a transponder seen in practice (#151): pick a driver who has raced before, or type a new name. The name is
  * saved with the session, so it lasts, and a new driver is a full one who can be matched to an entry later.
  */
-export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenChange }: PracticeNameDialogProps) {
+export function PracticeNameDialog({ sessionId, transponderNumber, currentName, open, onOpenChange }: PracticeNameDialogProps) {
   const queryClient = useQueryClient();
   const [driverText, setDriverText] = useState('');
   const [selected, setSelected] = useState<CompetitorSummaryDto | null>(null);
@@ -106,9 +108,10 @@ export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenC
       <DialogContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>Name transponder {transponderNumber}</DialogTitle>
+            <DialogTitle>{currentName ? 'Change driver of' : 'Name'} transponder {transponderNumber}</DialogTitle>
             <DialogDescription>
-              Pick a driver who has raced before, or type a new name. Laps already counted take the name too.
+              {currentName ? `Now named ${currentName}. ` : ''}Pick a driver who has raced before, or type a new
+              name. Laps already counted take the name too, so a wrong name can be fixed here at any time.
             </DialogDescription>
           </DialogHeader>
 
@@ -194,7 +197,7 @@ export function PracticeNameDialog({ sessionId, transponderNumber, open, onOpenC
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? 'Saving…' : 'Name transponder'}
+              {mutation.isPending ? 'Saving…' : currentName ? 'Change driver' : 'Name transponder'}
             </Button>
           </DialogFooter>
         </form>
