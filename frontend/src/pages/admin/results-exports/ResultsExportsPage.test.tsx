@@ -192,7 +192,7 @@ describe('ResultsExportsPage', () => {
   const setup = (sendingEnabled: boolean) => ({
     sendingEnabled, resultsUrl: sendingEnabled ? 'https://racehub.example/r' : null, savedUrl: null,
     missingSettings: sendingEnabled ? [] : ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
-    publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+    publishTarget: 'RACEHUB' as const, chosenTarget: null, exports: [],
   });
 
   it('opens on the settings until sending is set up, then on what was sent', async () => {
