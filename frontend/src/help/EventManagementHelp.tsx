@@ -7,13 +7,14 @@ export function EventManagementHelp() {
         The Event Detail page manages a single event's lifecycle, classes, and entries. It
         has tabs for Overview (name, date, track), Classes (racing classes included in
         the event), Entries (entries imported from RaceHub and walk-ins) and Sponsors (the
-        names and logos shown in the streaming overlay's sponsor bar). Event details
-        can only be edited while the event is in Draft status.
+        names and logos shown in the streaming overlay's sponsor bar). The name and date
+        can only be edited while the event is in Draft status; the track can be chosen
+        or changed until the event is completed.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">
         <li><span className="font-semibold">Publish Event:</span> Click "Publish Event" to show the event on the public schedule.</li>
-        <li><span className="font-semibold">Import entries:</span> On the Entries tab, click "Import entries from RaceHub" and choose the Entry Export file. You see the changes before anything is saved, and importing a newer file later updates the same entries.</li>
+        <li><span className="font-semibold">Import entries:</span> On the Entries tab, click "Import entries from RaceHub" and choose the Entry Export file. You see the changes before anything is saved, and importing a newer file later updates the same entries. If RaceHub gave the meeting a race format and you linked it on the RaceHub classes page, new classes the import adds use that format.</li>
         <li><span className="font-semibold">Import from a CSV file:</span> On the Entries tab, click "Import from a CSV file" and choose an RC-Timing driver CSV. A preview sorts the rows into New (added when you confirm), Changed (tick the ones to update), Missing from this file (tick the ones to withdraw) and Unchanged. New rows have no tick box and are always added. Of the Changed and Missing rows, only the ones you tick are applied, and nothing is saved until you click "Import entries". Walk-ins and RaceHub entries are never listed as missing, and a withdrawn entry is kept, not deleted.</li>
         <li><span className="font-semibold">Entry feed:</span> If your booking system publishes an Entry Export file at a web address, put the address (and its access token, if it has one) in the Entry feed box on the Entries tab and click Save. "Fetch now" gets the latest file. A new file waits for you: click "Review and import" to see the changes first. Turn on the automatic option to fetch every few minutes and import changes that apply cleanly.</li>
         <li><span className="font-semibold">Car photo:</span> On the Entries tab, click "Car photo" on an entry to add or remove a picture of the car (PNG or JPEG, up to 2 MB). Tick Remove the background in the preview to save a see-through cut-out (made on your computer, no internet needed). To add many, click Import car photos… above the entries and choose files named after the drivers. It shows beside the driver on the live timing screens, and is not shown for a driver whose name is hidden publicly. The same dialog sets up to four car colours (for example red, yellow and white); a car with no photo shows them as a swatch on the live timing and referee screens, and with none set it shows its class colour.</li>

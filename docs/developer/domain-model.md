@@ -21,6 +21,10 @@ classDiagram
         racingClassId
         templateId
     }
+    class RaceHubFormatLink {
+        format_key
+        template_id
+    }
     class RaceHubClassLink {
         classKey : RaceHub club class id
         racingClassId : club-wide, one per key
@@ -92,6 +96,7 @@ classDiagram
 
     Event "1" --> "*" EventClass
     RaceHubClassLink "*" --> "1" RacingClass : an import finds the event class through it
+    RaceHubFormatLink "*" --> "1" RaceFormatTemplate : the meeting's RaceHub format picks the template for classes the import adds
     Event "1" --> "*" Round
     Event "1" --> "*" Entry
     Competitor "1" --> "*" Entry

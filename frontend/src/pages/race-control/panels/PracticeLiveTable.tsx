@@ -14,8 +14,8 @@ import { fmtMs } from '@/lib/format';
 interface PracticeLiveTableProps {
   rows: PracticeTimingRowDto[];
   bestLapN: number;
-  /** Offers a button to name an unknown transponder; left out, rows can't be named */
-  onName?: (transponderNumber: string) => void;
+  /** Offers a button to name a transponder, or to change a name given earlier; left out, rows can't be named */
+  onName?: (row: PracticeTimingRowDto) => void;
 }
 
 export function PracticeLiveTable({ rows, bestLapN, onName }: PracticeLiveTableProps) {
@@ -88,28 +88,25 @@ export function PracticeLiveTable({ rows, bestLapN, onName }: PracticeLiveTableP
               {fmtMs(row.lastLapMs)}
             </TableCell>
             <TableCell>
-              {row.isUnknown ? (
-                <>
-                  <Badge
-                    variant="outline"
-                    className="border-destructive text-destructive"
-                  >
+              <div className="flex items-center gap-2">
+                {row.isUnknown ? (
+                  <Badge variant="outline" className="border-destructive text-destructive">
                     Unknown
                   </Badge>
-                  {onName && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="ml-2"
-                      onClick={() => onName(row.transponderNumber)}
-                    >
-                      Name
-                    </Button>
-                  )}
-                </>
-              ) : (
-                <Badge variant="outline">Known</Badge>
-              )}
+                ) : (
+                  <Badge variant="outline">Known</Badge>
+                )}
+                {onName && (
+                  <Button
+                    size="sm"
+                    variant={row.isUnknown ? 'default' : 'outline'}
+                    onClick={() => onName(row)}
+                    aria-label={`${row.isUnknown ? 'Name' : 'Change the driver of'} transponder ${row.transponderNumber}`}
+                  >
+                    {row.isUnknown ? 'Name driver' : 'Change'}
+                  </Button>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

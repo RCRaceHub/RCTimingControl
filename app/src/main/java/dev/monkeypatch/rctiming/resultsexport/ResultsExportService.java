@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -134,6 +135,38 @@ public class ResultsExportService {
         Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
         return queue(event, reason);
+    }
+
+    /**
+     * Queues the event's results for RaceHub again, on an official's request (the Re-upload button on the events
+     * list), for an event that finished before RaceHub could take its results or whose send was lost.
+     *
+     * <p>Safe to repeat: the export carries the whole event, takes the next revision and supersedes any export
+     * still waiting, and RaceHub keeps the highest revision it has seen. It goes out with the reason
+     * {@code DAY_CLOSE}, the closest of the three reasons in Results Export v1 to "everything, final", so RaceHub
+     * needs no change. Runs in its own transaction on the write connection (not nested in the caller's) and
+     * records an audit entry. The send itself happens later, on the sender's next pass.
+     *
+     * @throws EntityNotFoundException 404 when there is no such event
+     * @throws StateConflictException  409 when the event did not come from RaceHub, or the club's publishing
+     *                                 choice leaves RaceHub out
+     */
+    @Transactional
+    public ResultsOutboxItem reupload(Actor actor, long eventId) {
+        Event event = eventRepository.findByIdForUpdate(eventId)
+                .orElseThrow(() -> new EntityNotFoundException("Event not found: " + eventId));
+        if (event.getRacehubEventId() == null) {
+            throw new StateConflictException("This event did not come from RaceHub, so its results have nowhere to go.");
+        }
+        if (!publishSettings.effective().includesRaceHub()) {
+            throw new StateConflictException("The club does not publish results to RaceHub. Change it under Results to RaceHub first.");
+        }
+        ResultsOutboxItem item = queue(event, ExportReason.DAY_CLOSE).orElseThrow();
+        audit.entry(actor, "RESULTS_EXPORT_REUPLOADED").entity("results_export", item.getId()).event(eventId)
+                .summary("Asked for the results of \"" + event.getName() + "\" to be sent to RaceHub again (revision "
+                        + item.getRevision() + ")")
+                .after("QUEUED").record();
+        return item;
     }
 
     private Optional<ResultsOutboxItem> queue(Event event, ExportReason reason) {

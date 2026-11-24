@@ -341,6 +341,37 @@ class RaceHubImportIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void theMeetingsRaceFormat_isOfferedWithTheTemplateTheClubLinkedToIt() {
+        long templateId = createTemplate();
+        String body = fixture("entries-v1-unmapped-class.json").replace("\"event\": {",
+                "\"event\": {\"race_format_id\": \"fmt-" + run + "\", \"race_format_name\": \"BRCA bump-up\", ");
+
+        ResponseEntity<JsonNode> unlinked = restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=true", HttpMethod.POST,
+                new HttpEntity<>(body, adminHeaders()), JsonNode.class);
+        JsonNode format = unlinked.getBody().get("raceFormat");
+        assertThat(format.get("id").asString()).isEqualTo("fmt-" + run);
+        assertThat(format.get("name").asString()).isEqualTo("BRCA bump-up");
+        assertThat(format.get("linkedTemplateId").isNull()).isTrue();
+
+        restTemplate.exchange("/api/v1/admin/racehub/format-links", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("formatId", "fmt-" + run, "templateId", templateId), adminHeaders()),
+                Void.class);
+
+        ResponseEntity<JsonNode> linked = restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/racehub-import?dryRun=true", HttpMethod.POST,
+                new HttpEntity<>(body, adminHeaders()), JsonNode.class);
+        assertThat(linked.getBody().get("raceFormat").get("linkedTemplateId").asLong()).isEqualTo(templateId);
+    }
+
+    @Test
+    void aFileWithNoRaceFormat_hasNoneInThePreview() {
+        ResponseEntity<JsonNode> preview = importFixture("entries-v1-unmapped-class.json", true);
+
+        assertThat(preview.getBody().path("raceFormat").isObject()).isFalse();
+    }
+
+    @Test
     void linkingAClubClassFromTheClassesScreen_letsTheHeldImportThrough() {
         var linked = restTemplate.exchange("/api/v1/admin/racehub/class-links", HttpMethod.POST,
                 new HttpEntity<>(List.of(Map.of("clubClassId", "club-class-electric-" + run,

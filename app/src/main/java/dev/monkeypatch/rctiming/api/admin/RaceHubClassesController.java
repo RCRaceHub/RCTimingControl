@@ -1,15 +1,20 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.api.admin.dto.LinkRaceHubClassRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.LinkRaceHubFormatRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubClassesDto;
+import dev.monkeypatch.rctiming.api.admin.dto.RaceHubFormatsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ResolvedRaceHubClassDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassLinkService;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubClassesService;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubFormatsService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,10 +33,13 @@ public class RaceHubClassesController {
 
     private final RaceHubClassesService classesService;
     private final RaceHubClassLinkService linkService;
+    private final RaceHubFormatsService formatsService;
 
-    public RaceHubClassesController(RaceHubClassesService classesService, RaceHubClassLinkService linkService) {
+    public RaceHubClassesController(RaceHubClassesService classesService, RaceHubClassLinkService linkService,
+                                    RaceHubFormatsService formatsService) {
         this.classesService = classesService;
         this.linkService = linkService;
+        this.formatsService = formatsService;
     }
 
     /**
@@ -54,5 +62,28 @@ public class RaceHubClassesController {
                         .map(r -> new RaceHubClassLinkService.Resolution(r.clubClassId(), r.racingClassId(),
                                 r.createName(), null)).toList())
                 .stream().map(ResolvedRaceHubClassDto::from).toList();
+    }
+
+    /**
+     * The club's race formats as RaceHub lists them, each with the format template it is linked to. Like
+     * {@link #classes()}, an unreachable RaceHub is a 200 with {@code error} set.
+     */
+    @GetMapping("/formats")
+    public RaceHubFormatsDto formats() {
+        return RaceHubFormatsDto.from(formatsService.list());
+    }
+
+    /**
+     * Links a RaceHub race format to a format template for the whole club, or removes the link when
+     * {@code templateId} is null. 404 for an unknown template. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/format-links")
+    public void linkFormat(@RequestBody @Valid LinkRaceHubFormatRequest request) {
+        if (request.templateId() == null) {
+            formatsService.unlink(CurrentOfficial.actor(), request.formatId());
+        } else {
+            formatsService.link(CurrentOfficial.actor(), request.formatId(), request.templateId());
+        }
     }
 }

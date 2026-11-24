@@ -186,10 +186,18 @@ public class RaceClockService {
      * @param staggerIntervalMs the time between one car's start and the next in grid order, 0 unless the race starts
      *                          staggered
      * @param lapTarget         the laps each car runs when the race ends on a lap count, else null
+     * @param maxLateStartMs    in a stagger start, the most a car's own time may start after its slot because it
+     *                          crossed the line late: the format's max race window less the race length; null for
+     *                          no limit
      */
-    public record RacePlan(Long durationMs, long staggerIntervalMs, Integer lapTarget) {
+    public record RacePlan(Long durationMs, long staggerIntervalMs, Integer lapTarget, Long maxLateStartMs) {
         /** For a race with no length and no stagger, or one that cannot be found. */
         public static final RacePlan NONE = new RacePlan(null, 0);
+
+        /** A plan with no limit on a late start. */
+        public RacePlan(Long durationMs, long staggerIntervalMs, Integer lapTarget) {
+            this(durationMs, staggerIntervalMs, lapTarget, null);
+        }
 
         /** A plan with no lap target: the race ends on its clock, or by hand. */
         public RacePlan(Long durationMs, long staggerIntervalMs) {
@@ -209,7 +217,13 @@ public class RaceClockService {
             StartType startType = startTypeOf(race);
             long intervalMs = startType == StartType.STAGGER
                     ? raceFormatService.staggerIntervalSeconds(eventClass) * 1000L : 0;
-            return new RacePlan(durationMs(race), intervalMs, raceFormatService.lapTarget(eventClass).orElse(null));
+            Long durationMs = durationMs(race);
+            Long maxLateMs = null;
+            if (intervalMs > 0 && durationMs != null && eventClass != null) {
+                maxLateMs = raceFormatService.maxRaceWindowMs(eventClass)
+                        .map(window -> Math.max(0, window - durationMs)).orElse(null);
+            }
+            return new RacePlan(durationMs, intervalMs, raceFormatService.lapTarget(eventClass).orElse(null), maxLateMs);
         });
     }
 

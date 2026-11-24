@@ -134,14 +134,22 @@ public class RaceHubClassesService {
 
     /** The class list lives beside the events list: same host and path, ending {@code classes}, and no query. */
     static URI classesUrl(URI eventsUrl) {
+        return siblingUrl(eventsUrl, "classes", "class list");
+    }
+
+    /**
+     * An address beside the events list ({@code classes}, {@code formats}): same host and path with the last segment
+     * {@code events} swapped for {@code name}, and no query, so the key only goes to the host the club named.
+     */
+    static URI siblingUrl(URI eventsUrl, String name, String what) {
         String path = eventsUrl.getPath() == null ? "" : eventsUrl.getPath();
         String trimmed = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (!trimmed.endsWith("/events")) {
-            throw new StateConflictException("The RaceHub events address should end in /events, so the class list "
-                    + "can be found beside it.");
+            throw new StateConflictException("The RaceHub events address should end in /events, so the " + what
+                    + " can be found beside it.");
         }
         return URI.create(eventsUrl.getScheme() + "://" + eventsUrl.getRawAuthority()
-                + trimmed.substring(0, trimmed.length() - "events".length()) + "classes");
+                + trimmed.substring(0, trimmed.length() - "events".length()) + name);
     }
 
     /** Reads either a bare array of classes or an object holding it under {@code classes}. */

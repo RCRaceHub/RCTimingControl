@@ -28,7 +28,8 @@ class FakeChannel {
 vi.stubGlobal('BroadcastChannel', FakeChannel);
 
 import { speakWithBrowser } from '@/lib/speech';
-import { listenForCues, resetPresence, routeCue, setThisDevice, setThisOutput, speechPieces } from './audioOutput';
+import { listenForCues, playCueHere, resetPresence, routeCue, setThisOutput, speakPreview, speechPieces } from './audioOutput';
+import { resetDeviceCache, saveOutputDevice } from './audioDevice';
 import { LOCAL_OUTPUT_ID, resetRoutingCache, saveRouting } from './audioRouting';
 
 /** An output page for this id says it is open. */
@@ -46,6 +47,7 @@ const routing = (routes: Record<string, string[]>) => saveRouting({
 describe('routeCue', () => {
   beforeEach(() => {
     localStorage.clear();
+    resetDeviceCache();
     resetRoutingCache();
     posted.length = 0;
     resetPresence();
@@ -100,8 +102,49 @@ describe('routeCue', () => {
   it('pans an output page by its side and picks up its sound card', () => {
     routing({});
     setThisOutput('rostrum');
-    setThisDevice('card-2');
+    saveOutputDevice('rostrum', { deviceId: 'card-2', label: 'Card 2' });
+    playCueHere({ kind: 'horn', horn: 'tick' }, 1);
     expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: 'card-2', pan: -1 });
+  });
+
+  it('keeps race control on its chosen sound card for every sound, including a preview', () => {
+    saveOutputDevice(LOCAL_OUTPUT_ID, { deviceId: 'usb', label: 'USB' });
+    routeCue('startHorn', 0.8, { kind: 'horn', horn: 'start' });
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: 'usb', pan: 0 });
+    saveOutputDevice(LOCAL_OUTPUT_ID, null);
+    speakPreview('Test', 1);
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: 0 });
+    expect(speakWithBrowser).toHaveBeenCalledWith('Test', 1);
+  });
+
+  it('says a line as audio, not with the browser voice, when race control has a sound card chosen', () => {
+    saveOutputDevice(LOCAL_OUTPUT_ID, { deviceId: 'usb', label: 'USB' });
+    speakPreview('Test', 1);
+    expect(speakWithBrowser).not.toHaveBeenCalled();
+  });
+
+  it('sends the default target again when a tab with no sound card follows one that had a card', () => {
+    saveOutputDevice(LOCAL_OUTPUT_ID, { deviceId: 'usb', label: 'USB' });
+    playCueHere({ kind: 'horn', horn: 'tick' }, 1);
+    setThisOutput('pits');
+    playCueHere({ kind: 'horn', horn: 'tick' }, 1);
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: 0 });
+  });
+
+  it('keeps the side of an output whose page is not open when race control plays for it', () => {
+    routing({ startHorn: ['rostrum'] });
+    routeCue('startHorn', 1, { kind: 'horn', horn: 'start' });
+    expect(sounds.playStartHorn).toHaveBeenCalledOnce();
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: -1 });
+    routeCue('lapBeep', 1, { kind: 'lapBeep', pace: 'onPace' });
+    expect(sounds.setOutputTarget).toHaveBeenLastCalledWith({ deviceId: null, pan: 0 });
+  });
+
+  it('puts a spoken line\'s side back before it plays, whatever sounded in between', async () => {
+    routing({ raceCalls: ['rostrum'] });
+    routeCue('raceCalls', 1, { kind: 'speech', text: 'Race started.' });
+    routeCue('lapBeep', 1, { kind: 'lapBeep', pace: 'onPace' });
+    await vi.waitFor(() => expect(sounds.setOutputTarget).toHaveBeenCalledWith({ deviceId: null, pan: -1 }));
   });
 
   it('splits a long spoken line into pieces the speech preview takes', () => {

@@ -43,6 +43,9 @@ sequenceDiagram
         end
     else a race is running
         LTS->>LRS: getRuntimeLink(transponder), else resolveEntryId
+        opt a stagger start and the car's first crossing is after its slot
+            LTS->>LRS: onStaggerCrossing(entryId, elapsedMs, maxLateMs), start offset moves to the crossing
+        end
         LTS->>LRS: applyLapPassing(event, entryId, now, windowEnded)
         opt no entry matches (or more than one), first sighting of that transponder
             LTS->>Hub: broadcastUnknownTransponder(raceId, transponder)
@@ -158,6 +161,10 @@ sequenceDiagram
         T->>ES: pendingEventIds()
         T->>ES: queuePending(eventId)
         ES->>DB: build Results Export v1, insert outbox row
+    end
+    opt official presses Re-upload on the events list
+        Note over ES,DB: reupload(): next revision, whole event, supersedes waiting rows
+        ES->>DB: insert outbox row directly (reason DAY_CLOSE) and audit it
     end
     loop every ~15 s (scheduler thread)
         S->>DB: due outbox rows
@@ -325,6 +332,28 @@ sequenceDiagram
     K->>L: link(actor, resolutions)
     L->>DB: racehub_class_links keyed by club_class_id, audit RACEHUB_CLASS_LINKED
     Note over O,DB: An import with a club_class_id that has no link is held,<br/>and fetching the list again offers the new class to link
+```
+
+### Linking the club's RaceHub race formats
+
+```mermaid
+sequenceDiagram
+    participant O as Official (browser)
+    participant K as RaceHubClassesController
+    participant F as RaceHubFormatsService
+    participant R as RaceHub (GET /api/rctc/v1/formats)
+    participant I as RaceHubImportService
+    participant DB as SQLite
+
+    O->>K: GET /admin/racehub/formats
+    K->>F: list() (no transaction open)
+    F->>R: fetch with the club's key
+    F->>DB: read racehub_format_links
+    F-->>O: formats with linked template (or error)
+    O->>K: PUT /admin/racehub/format-links
+    K->>F: link(actor, formatId, templateId)
+    F->>DB: racehub_format_links keyed by race_format_id, audit RACEHUB_FORMAT_LINKED
+    Note over O,I: An import preview reads event.race_format_id, looks up the link<br/>and answers raceFormat.linkedTemplateId. The held-classes panel defaults<br/>each class it adds to that template; no link means the last-used format as before.
 ```
 
 Entries are never created for a racer login: competitors have no account.

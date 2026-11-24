@@ -20,6 +20,8 @@ export interface AdminEventListDto {
   eventDate: string; // ISO date e.g. "2026-06-15"
   status: EventStatus;
   trackName: string | null;
+  /** Came from RaceHub, so its results can be sent back there */
+  fromRaceHub: boolean;
 }
 
 export type StartType = 'STAGGER' | 'GRID' | 'ROLLING';
@@ -231,6 +233,13 @@ export interface RaceHubImportResult {
   }[];
   /** Pictures the entries name; fetched afterwards (#699). Empty for a preview. */
   photoLinks: ImportedPhotoLink[];
+  /** The race format RaceHub gave the meeting, or null when it names none */
+  raceFormat?: {
+    id: string;
+    name: string | null;
+    /** The format template the club linked to it, or null when not linked yet */
+    linkedTemplateId: number | null;
+  } | null;
 }
 
 // RC-Timing CSV import (#39, #40)
@@ -372,6 +381,26 @@ export interface LinkRaceHubClassRequest {
   clubClassId: string;
   racingClassId?: number;
   createName?: string;
+}
+
+/** One race format of the club's as RaceHub lists it, with the format template it is linked to. */
+export interface RaceHubFormatDto {
+  id: string;
+  name: string | null;
+  active: boolean;
+  linkedTemplateId: number | null;
+}
+
+export interface RaceHubFormatsDto {
+  formats: RaceHubFormatDto[];
+  /** Why RaceHub could not be asked, or null */
+  error: string | null;
+}
+
+/** Links a RaceHub race format to a format template for the whole club; a null `templateId` removes the link. */
+export interface LinkRaceHubFormatRequest {
+  formatId: string;
+  templateId: number | null;
 }
 
 /** A per-meeting mapping, used by the RC-Timing CSV import only. */
@@ -1321,6 +1350,13 @@ export const adminApi = {
       api.post<ResolvedRaceHubClassDto[]>('/api/v1/admin/racehub/class-links', requests).then(r => r.data),
   },
 
+  // The club's race formats as RaceHub lists them, and the club-wide links to format templates
+  raceHubFormats: {
+    /** Asks RaceHub now, so calling it again re-fetches */
+    list: () => api.get<RaceHubFormatsDto>('/api/v1/admin/racehub/formats').then(r => r.data),
+    link: (request: LinkRaceHubFormatRequest) => api.put<void>('/api/v1/admin/racehub/format-links', request),
+  },
+
   // Results sent to RaceHub (#27)
   resultsExports: {
     list: () =>
@@ -1344,6 +1380,11 @@ export const adminApi = {
       api
         .get<Blob>('/api/v1/admin/results-site.zip', { responseType: 'blob' })
         .then(r => ({ blob: r.data, filename: filenameFrom(r.headers['content-disposition']) ?? 'results-site.zip' })),
+    /** Queues the event's results for RaceHub again; safe to repeat */
+    reupload: (eventId: number) =>
+      api
+        .post<{ exportId: number; revision: number }>(`/api/v1/admin/events/${eventId}/results-export/reupload`)
+        .then(r => r.data),
     /** The event's results as they stand now, as a Results Export v1 file */
     download: (eventId: number) =>
       api

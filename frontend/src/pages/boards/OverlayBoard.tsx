@@ -51,7 +51,7 @@ import { FeaturedLowerThird } from './FeaturedLowerThird';
 import { OverlayZones } from './OverlayZones';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { useBoardSponsorsQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
+import { useBoardSponsorsQuery, useForcedCloseQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 const THEMES = {
   dark: {
@@ -276,7 +276,7 @@ export default function OverlayBoard() {
   const settings = useBoardSettings();
   const {
     eventId, top, showClass, theme, showChart, tickerItems, showSponsors, layout, showQualifying, showBumpLine, showTqPace, showClassTags, showHeadshots, showCarColours, showSectors, gap,
-    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, rowIcons, placement,
+    gapEverySeconds, separatorImage, showPredicted, showBars, showArrows, closeMs, showBattles, battleStyle, lowerThird, showLegend, highContrast, rowIcons, placement, overrunColour,
   } = parseOverlayOptions(searchParams, settings.closeGapMs);
   useHighContrast(highContrast);
   const colours = THEMES[theme];
@@ -302,6 +302,8 @@ export default function OverlayBoard() {
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
   const now = useNow(!!clock?.running);
+  const runningOver = clock?.running === true && clock.remainingMs != null && clock.remainingMs - Math.max(0, now - clockReadAt) <= 0;
+  const { data: forcedClose, dataUpdatedAt: forcedCloseReadAt } = useForcedCloseQuery(raceId, { intervalMs: 3000, enabled: runningOver });
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
   const lapFlash = useLapFlash(allRows);
@@ -364,8 +366,17 @@ export default function OverlayBoard() {
   }
 
   const elapsed = clock ? clock.elapsedMs + (clock.running ? Math.max(0, now - clockReadAt) : 0) : null;
-  const clockText =
-    elapsed === null ? null : clock?.durationMs != null ? fmtClock(clock.durationMs - elapsed) : fmtClock(elapsed);
+  // Past the race time the clock counts down what is left to finish, in the overrun colour, instead of sitting at 0:00.
+  // It is the same test that switches the forced-close poll on, so the two never disagree.
+  const overrun = runningOver;
+  let clockText: string | null = null;
+  if (elapsed !== null) {
+    if (overrun) {
+      clockText = fmtClock(forcedClose?.closesInMs == null ? 0 : forcedClose.closesInMs - Math.max(0, now - forcedCloseReadAt));
+    } else {
+      clockText = clock?.durationMs != null ? fmtClock(clock.durationMs - elapsed) : fmtClock(elapsed);
+    }
+  }
 
   const towerBlock = (
     <section
@@ -380,7 +391,11 @@ export default function OverlayBoard() {
             <span className="rounded bg-red-600 px-2 py-0.5 text-sm font-bold uppercase text-white">Stopped</span>
           )}
           {clockText && (
-            <span className="text-3xl font-bold tabular-nums" aria-label="Race clock">
+            <span
+              className={cn('text-3xl font-bold tabular-nums', overrun && overrunColour === null && 'text-destructive')}
+              style={overrun && overrunColour !== null ? { color: overrunColour } : undefined}
+              aria-label={overrun ? 'Time left to finish' : 'Race clock'}
+            >
               {clockText}
             </span>
           )}

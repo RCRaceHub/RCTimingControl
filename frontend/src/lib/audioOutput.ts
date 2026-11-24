@@ -1,5 +1,13 @@
 import { adminApi } from '@/lib/adminApi';
-import { LOCAL_OUTPUT_ID, loadRouting, outputsFor, panValue, type SoundRoute } from '@/lib/audioRouting';
+import { readOutputDevice } from '@/lib/audioDevice';
+import {
+  LOCAL_OUTPUT_ID,
+  loadRouting,
+  outputsFor,
+  panValue,
+  type OutputPan,
+  type SoundRoute,
+} from '@/lib/audioRouting';
 import { speakWithBrowser } from '@/lib/speech';
 import {
   finishHornMs,
@@ -57,9 +65,13 @@ const presenceListeners = new Set<() => void>();
 
 /** The output this tab is: race control unless the tab is an audio output page. */
 let thisOutput = LOCAL_OUTPUT_ID;
-/** The sound card this tab plays on; null is the browser's default. */
-let currentDevice: string | null = null;
+/** The sound card and side last handed to the audio engine. */
+let lastDevice: string | null = null;
 let lastPan = NaN;
+/** Whether the audio engine has ever been given a target, so a later return to the default must be sent too. */
+let targetSet = false;
+/** The side to use instead of this tab's own while it stands in for an output page that is not open. */
+let standInPan: OutputPan | null = null;
 
 /** The channel to the other tabs of this browser, opened on first use; null where the browser has none. */
 function getChannel(): BroadcastChannel | null {
@@ -100,6 +112,7 @@ export function subscribePresence(listener: () => void): () => void {
 export function setThisOutput(id: string): () => void {
   thisOutput = id;
   lastPan = NaN;
+  lastDevice = null;
   if (id === LOCAL_OUTPUT_ID) return () => undefined;
   const announce = () => getChannel()?.postMessage({ presence: id } satisfies Presence);
   announce();
@@ -107,22 +120,20 @@ export function setThisOutput(id: string): () => void {
   return () => clearInterval(timer);
 }
 
-/** Sets the sound card this tab plays on (null for the browser's default). */
-export function setThisDevice(deviceId: string | null) {
-  currentDevice = deviceId;
-  lastPan = NaN;
-  applyPan(deviceId);
-}
-
-/** Applies the side the club gave this tab's output, together with the tab's sound card. */
-function applyPan(deviceId: string | null) {
+/**
+ * Hands the audio engine the sound card kept for this tab's output and the side the club gave it. Run before every
+ * sound, so a sound card chosen on any screen of this browser applies at once, to the next sound whatever played it.
+ */
+export function applyOutputTarget() {
+  const deviceId = readOutputDevice(thisOutput)?.deviceId ?? null;
   const def = loadRouting().outputs.find((o) => o.id === thisOutput);
-  const pan = panValue(def?.pan ?? 'both');
-  if (pan === lastPan) return;
-  const untouched = Number.isNaN(lastPan);
+  const pan = panValue(standInPan ?? def?.pan ?? 'both');
+  if (pan === lastPan && deviceId === lastDevice) return;
   lastPan = pan;
+  lastDevice = deviceId;
   // Nothing to set on a tab that has never been panned or given a sound card
-  if (untouched && pan === 0 && !deviceId) return;
+  if (!targetSet && pan === 0 && !deviceId) return;
+  targetSet = true;
   setOutputTarget({ deviceId, pan });
 }
 
@@ -156,27 +167,48 @@ async function playPiper(text: string, volume: number): Promise<void> {
 let speaking: Promise<void> = Promise.resolve();
 
 /**
- * Says text on this tab: the browser's voice on race control, the club's Piper voice on an output page, one line
- * after another. A line Piper cannot make plays with the browser's voice on the default sound card.
+ * Says text on this tab, one line after another. The browser's own voice always comes out of the default sound
+ * card and cannot be panned, so it is used only where nothing is chosen for this tab; otherwise the club's Piper
+ * voice is played as audio the tab can route. A line Piper cannot make plays with the browser's voice.
  */
 function speakHere(text: string, volume: number) {
-  if (thisOutput === LOCAL_OUTPUT_ID) {
+  const routed = thisOutput !== LOCAL_OUTPUT_ID || lastDevice !== null || lastPan !== 0;
+  if (!routed) {
     speakWithBrowser(text, volume);
     return;
   }
-  // The browser voice always uses the default sound card, so an output page asks Piper for audio it can route
+  // The line plays later, after other sounds may have changed the target: put this one's side back first
+  const side = { deviceId: lastDevice, pan: lastPan };
   speaking = speaking.then(async () => {
     try {
-      for (const piece of speechPieces(text)) await playPiper(piece, volume);
+      for (const piece of speechPieces(text)) {
+        setOutputTarget(side);
+        await playPiper(piece, volume);
+      }
     } catch {
       speakWithBrowser(text, volume);
     }
   });
 }
 
+/** Says a line on this tab's output, for a test button or a preview; the same route a race call takes. */
+export function speakPreview(text: string, volume: number) {
+  applyOutputTarget();
+  speakHere(text, volume);
+}
+
+/**
+ * Plays an audio element on this tab's output, for a preview that is not a race sound. {@code onFail} runs if it
+ * cannot play.
+ */
+export function playPreview(audio: HTMLAudioElement, volume: number, onFail: (e?: unknown) => void) {
+  applyOutputTarget();
+  playElement(audio, volume, onFail);
+}
+
 /** Plays a cue on this tab. Returns how long a horn plays, in milliseconds, 0 for anything else. */
 export function playCueHere(cue: Cue, volume: number): number {
-  applyPan(currentDevice);
+  applyOutputTarget();
   switch (cue.kind) {
     case 'horn':
       if (cue.horn === 'start') return playStartHorn(volume, cue.sounds);
@@ -212,12 +244,25 @@ function hornLength(cue: Cue): number {
  * the sound plays nowhere.
  */
 export function routeCue(sound: SoundRoute, volume: number, cue: Cue): number {
-  const outputs = outputsFor(loadRouting(), sound);
+  const routing = loadRouting();
+  const outputs = outputsFor(routing, sound);
   getChannel();
   const open = outputs.filter((id) => id !== thisOutput && isOutputOpen(id));
-  const missing = outputs.some((id) => id !== thisOutput && !open.includes(id));
+  const missing = outputs.filter((id) => id !== thisOutput && !open.includes(id));
   if (open.length > 0) getChannel()?.postMessage({ outputs: open, volume, cue } satisfies Envelope);
-  if (outputs.includes(thisOutput) || missing) return playCueHere(cue, volume) || hornLength(cue);
+  if (outputs.includes(thisOutput) || missing.length > 0) {
+    // Standing in only for an output page that is not open: keep that output's side, not race control's own
+    const sides = new Set(
+      outputs.includes(thisOutput) ? [] : missing.map((id) => routing.outputs.find((o) => o.id === id)?.pan ?? 'both'),
+    );
+    // Outputs on different sides: both speakers, so no side is left out
+    standInPan = sides.size === 0 ? null : sides.size === 1 ? [...sides][0] : 'both';
+    try {
+      return playCueHere(cue, volume) || hornLength(cue);
+    } finally {
+      standInPan = null;
+    }
+  }
   return open.length > 0 ? hornLength(cue) : 0;
 }
 

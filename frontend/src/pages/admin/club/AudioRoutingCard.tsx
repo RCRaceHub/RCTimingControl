@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Play, Trash2 } from 'lucide-react';
+import { SoundCardPicker } from '@/components/audio/SoundCardPicker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -159,6 +160,15 @@ export function AudioRoutingCard() {
           </div>
         </div>
 
+        <div className="space-y-1">
+          <h3 className="text-sm font-medium">Sound card for race control</h3>
+          <p className="text-xs text-muted-foreground">
+            Every sound race control plays, and every test button, comes out of this card in this browser. It is kept
+            across reloads. Other outputs choose theirs on their own page.
+          </p>
+          <SoundCardPicker outputId={LOCAL_OUTPUT_ID} />
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -196,7 +206,7 @@ export function AudioRoutingCard() {
         <p className="text-xs text-muted-foreground">
           Spoken lines on an output page use the club&apos;s Piper voice, because the browser&apos;s own voice
           always plays on the default sound card. If Piper is not running, that line plays on the default card. Race
-          control&apos;s own spoken lines always use the browser voice, so its side setting only affects its sounds.
+          control uses the browser voice only while it is on the default sound card and both speakers.
         </p>
       </CardContent>
     </Card>

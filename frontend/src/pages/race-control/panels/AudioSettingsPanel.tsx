@@ -5,12 +5,13 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SoundCardPicker } from '@/components/audio/SoundCardPicker';
+import { LOCAL_OUTPUT_ID } from '@/lib/audioRouting';
 import { AudioDetailFields } from '@/components/audio/AudioDetailFields';
 import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
-import { speakWithBrowser } from '@/lib/speech';
-import { playFinishHorn, playLapBeep, playStartHorn, playTick } from '@/lib/sounds';
+import { playCueHere, playPreview, speakPreview } from '@/lib/audioOutput';
 import {
   ANNOUNCEMENT_TOGGLES,
   getAudioSettings,
@@ -36,7 +37,7 @@ export function AudioSettingsPanel() {
   });
 
   // Test audio: speak a sample sentence through the browser voice (AUDIO-11)
-  const testAudio = () => speakWithBrowser(
+  const testAudio = () => speakPreview(
     'Testing audio. Race control online. First place, Car 12. Second place, Car 7.',
     volume / 100,
   );
@@ -49,10 +50,12 @@ export function AudioSettingsPanel() {
     try {
       url = URL.createObjectURL(await getPiperTestClip());
       const audio = new Audio(url);
-      audio.volume = volume / 100;
       const clip = url;
       audio.onended = () => URL.revokeObjectURL(clip);
-      await audio.play();
+      await new Promise<void>((resolve, reject) => {
+        audio.addEventListener('play', () => resolve());
+        playPreview(audio, volume / 100, reject);
+      });
     } catch {
       if (url) URL.revokeObjectURL(url);
       toast.error('Piper could not be reached or its clip would not play, so spoken calls will use the browser voice.');
@@ -259,19 +262,21 @@ export function AudioSettingsPanel() {
                 >
                   ▶ Test Audio
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playStartHorn(volume / 100, settings.hornSounds)}>
+                <Button variant="outline" size="sm" onClick={() => playCueHere({ kind: 'horn', horn: 'start', sounds: settings.hornSounds }, volume / 100)}>
                   ▶ Start horn
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playFinishHorn(volume / 100, settings.hornSounds)}>
+                <Button variant="outline" size="sm" onClick={() => playCueHere({ kind: 'horn', horn: 'finish', sounds: settings.hornSounds }, volume / 100)}>
                   ▶ Finish horn
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => playTick(volume / 100, false, settings.hornSounds)}>
+                <Button variant="outline" size="sm" onClick={() => playCueHere({ kind: 'horn', horn: 'tick', sounds: settings.hornSounds }, volume / 100)}>
                   ▶ Tick
                 </Button>
                 {([['faster', 'Faster lap'], ['onPace', 'On-pace lap'], ['slower', 'Slower lap']] as const).map(
                   ([pace, label]) => (
-                    <Button key={pace} variant="outline" size="sm" onClick={() => playLapBeep(volume / 100, pace, {
-                      hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs }, settings.hornSounds)}>
+                    <Button key={pace} variant="outline" size="sm" onClick={() => playCueHere({
+                      kind: 'lapBeep', pace, sounds: settings.hornSounds,
+                      tone: { hz: settings.tuning?.lapBeepHz, ms: settings.tuning?.lapBeepMs },
+                    }, volume / 100)}>
                       ▶ {label}
                     </Button>
                   ))}
@@ -279,9 +284,13 @@ export function AudioSettingsPanel() {
                   {piperTesting ? 'Asking Piper…' : '▶ Piper voice'}
                 </Button>
               </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">Sound card</p>
+                <SoundCardPicker outputId={LOCAL_OUTPUT_ID} />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Plays a sample announcement and each sound to verify speakers are working. They play in this
-                browser, which is where the race is announced.
+                Plays a sample announcement and each sound to verify speakers are working. They play on the
+                sound card chosen above for Race control, in this browser, which is where the race is announced.
               </p>
             </>
           ) : null}
