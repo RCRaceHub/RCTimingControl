@@ -7,6 +7,7 @@ describe('parseLiveRaceOptions', () => {
 
   it('shows the bars and tints cars within a second unless told otherwise', () => {
     expect(parse('')).toEqual({
+      overrunColour: null,
       showBars: true,
       showArrows: true,
       showPredicted: true,

@@ -10,7 +10,6 @@ import type { SponsorDto } from '@/lib/boardsApi';
 import { fmtMs } from '@/lib/format';
 import {
   BOARD_POLL_MS,
-  fmtClock,
   heatBestLap,
   overlayDesignFromTheme,
   overlayQuery,
@@ -49,9 +48,10 @@ import { useFeaturedDriver } from '@/hooks/useFeaturedDriver';
 import { useRaceMedia } from '@/hooks/useRaceMedia';
 import { FeaturedLowerThird } from './FeaturedLowerThird';
 import { OverlayZones } from './OverlayZones';
+import { useBoardRaceClock } from '@/hooks/useBoardRaceClock';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import type { LiveTimingRowDto } from '@/lib/raceControlApi';
-import { useBoardSponsorsQuery, useForcedCloseQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
+import { useBoardSponsorsQuery, useLiveQualifyingQuery, useDefaultOverlayThemeQuery, useOverlayThemeQuery, useRaceClockQuery, useRaceHighlightsQuery, useRoundFastestQuery, useTickerQuery } from '@/hooks/useBoardQueries';
 
 const THEMES = {
   dark: {
@@ -81,17 +81,6 @@ function useTransparentPage() {
       body.style.background = before[1];
     };
   }, []);
-}
-
-/** Ticks once a second so a running clock counts between updates from the app. */
-function useNow(active: boolean) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [active]);
-  return now;
 }
 
 /** How often the projected qualifying places are re-read, like the Live top screen. */
@@ -301,9 +290,7 @@ export default function OverlayBoard() {
   const media = useRaceMedia(lowerThird === 'off' && !showHeadshots && !showCarColours ? null : raceId);
   const barClock = useLapBarClock(allRows, race?.status, settings.lateMarginMs);
   const legendKinds: LegendKind[] = ['lap', ...(closeMs > 0 ? ['close' as const] : []), ...(showBars ? ['pace' as const] : []), ...(layout === 'tower' ? ['status' as const] : [])];
-  const now = useNow(!!clock?.running);
-  const runningOver = clock?.running === true && clock.remainingMs != null && clock.remainingMs - Math.max(0, now - clockReadAt) <= 0;
-  const { data: forcedClose, dataUpdatedAt: forcedCloseReadAt } = useForcedCloseQuery(raceId, { intervalMs: 3000, enabled: runningOver });
+  const { text: clockText, overrun } = useBoardRaceClock(raceId, clock, clockReadAt);
   const rows = allRows.slice(0, top);
   // Judged on the whole field, so a driver below the cut-off still keeps their lap history
   const lapFlash = useLapFlash(allRows);
@@ -363,19 +350,6 @@ export default function OverlayBoard() {
         }}
       />
     );
-  }
-
-  const elapsed = clock ? clock.elapsedMs + (clock.running ? Math.max(0, now - clockReadAt) : 0) : null;
-  // Past the race time the clock counts down what is left to finish, in the overrun colour, instead of sitting at 0:00.
-  // It is the same test that switches the forced-close poll on, so the two never disagree.
-  const overrun = runningOver;
-  let clockText: string | null = null;
-  if (elapsed !== null) {
-    if (overrun) {
-      clockText = fmtClock(forcedClose?.closesInMs == null ? 0 : forcedClose.closesInMs - Math.max(0, now - forcedCloseReadAt));
-    } else {
-      clockText = clock?.durationMs != null ? fmtClock(clock.durationMs - elapsed) : fmtClock(elapsed);
-    }
   }
 
   const towerBlock = (

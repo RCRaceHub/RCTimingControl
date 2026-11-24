@@ -10,6 +10,7 @@ import { useBoardSettings } from '@/hooks/useBoardSettings';
 import { useLapBarClock } from '@/hooks/race-control/useLapBarClock';
 import { BoardShell, BoardMessage, BoardUnreachable } from './BoardShell';
 import { BoardViewPanel } from './BoardViewPanels';
+import { BoardRaceClock } from './BoardRaceClock';
 import { useHighContrast } from '@/hooks/useHighContrast';
 import { BOARD_POLL_MS, parseEventParam, parseLiveRaceOptions } from './boardFormat';
 import { useBoardRace } from './useBoardRace';
@@ -20,7 +21,7 @@ export default function BoardViewPage() {
   const [searchParams] = useSearchParams();
   const eventId = parseEventParam(searchParams.get('event'));
   const settings = useBoardSettings();
-  const { showBars, showArrows, showPredicted, closeMs, showLegend, highContrast, rowIcons } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
+  const { showBars, showArrows, showPredicted, closeMs, showLegend, highContrast, rowIcons, overrunColour } = parseLiveRaceOptions(searchParams, settings.closeGapMs, rowIconsWithout(settings.hiddenRowIcons));
   useHighContrast(highContrast);
 
   const { data: view, isPending, isError, error } = useBoardViewQuery(slug);
@@ -59,6 +60,11 @@ export default function BoardViewPage() {
   return (
     <RowIconsProvider shown={rowIcons}>
     <BoardShell eventName={nowNext?.eventName}>
+      {raceId !== null && (
+        <div className="flex justify-end">
+          <BoardRaceClock raceId={raceId} overrunColour={overrunColour} className="text-4xl lg:text-6xl" />
+        </div>
+      )}
       <div className="grid gap-8" style={{ gridTemplateColumns: `repeat(${view.columns}, minmax(0, 1fr))` }}>
         {view.panels.map((panel, i) => (
           <section key={`${i}-${panel.type}`} style={{ gridColumn: `span ${panel.span}` }} className="min-w-0">
