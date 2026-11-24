@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Clock;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -26,7 +28,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -49,6 +50,7 @@ import java.util.Objects;
 @Transactional
 public class FinalsLineupService {
 
+    private final Clock clock;
     private final EventClassRepository eventClassRepository;
     private final RacingClassRepository racingClassRepository;
     private final RaceRepository raceRepository;
@@ -61,6 +63,7 @@ public class FinalsLineupService {
     private final EventRepository eventRepository;
     private final ApplicationEventPublisher events;
 
+    @Autowired
     public FinalsLineupService(EventClassRepository eventClassRepository,
                                RacingClassRepository racingClassRepository,
                                RaceRepository raceRepository,
@@ -72,6 +75,23 @@ public class FinalsLineupService {
                                AuditService audit,
                                EventRepository eventRepository,
                                ApplicationEventPublisher events) {
+        this(eventClassRepository, racingClassRepository, raceRepository, raceEntryRepository, entryRepository, competitorRepository, qualifyingStandingsService, autoFinalsSeedingService, audit, eventRepository, events, Clock.systemUTC());
+    }
+
+    /** For tests: the clock is injected so time can be fixed. */
+    FinalsLineupService(EventClassRepository eventClassRepository,
+                               RacingClassRepository racingClassRepository,
+                               RaceRepository raceRepository,
+                               RaceEntryRepository raceEntryRepository,
+                               EntryRepository entryRepository,
+                               CompetitorRepository competitorRepository,
+                               QualifyingStandingsService qualifyingStandingsService,
+                               AutoFinalsSeedingService autoFinalsSeedingService,
+                               AuditService audit,
+                               EventRepository eventRepository,
+                               ApplicationEventPublisher events,
+                         Clock clock) {
+        this.clock = clock;
         this.eventClassRepository = eventClassRepository;
         this.racingClassRepository = racingClassRepository;
         this.raceRepository = raceRepository;
@@ -156,7 +176,7 @@ public class FinalsLineupService {
             throw new StateConflictException(reason);
         }
         if (event.getFinalsLineupConfirmedAt() == null) {
-            event.setFinalsLineupConfirmedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+            event.setFinalsLineupConfirmedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
             eventRepository.save(event);
             audit.entry(actor, "FINALS_LINEUP_CONFIRMED").entity("event", eventId).event(eventId)
                     .summary("Confirmed the finals line-ups for " + event.getName()).record();

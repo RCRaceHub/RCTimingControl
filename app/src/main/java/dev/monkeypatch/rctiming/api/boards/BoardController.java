@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.boards;
 
+import dev.monkeypatch.rctiming.api.boards.dto.ForcedCloseDto;
 import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
@@ -402,27 +403,15 @@ public class BoardController {
         return new ForcedCloseDto(lastLapTimeout.closesInMs(raceId).orElse(null));
     }
 
-    /** See {@link #closesIn}. */
-    public record ForcedCloseDto(Long closesInMs) {}
-
     /**
      * The fastest lap in the other finished heats of this race's round and class, for the overlay's ticker (the
      * running heat's own best comes from its live timing).
      */
     @GetMapping("/races/{raceId}/round-fastest-lap")
     public RoundFastestLapDto roundFastestLap(@PathVariable long raceId) {
-        ResultSnapshotDto.ResultRow fastest = null;
-        for (long finishedId : boardQuery.finishedRaceIdsInRound(raceId)) {
-            for (ResultSnapshotDto.ResultRow row : resultRows(finishedId)) {
-                if (row.bestLapMs() != null && row.bestLapMs() > 0
-                        && (fastest == null || row.bestLapMs() < fastest.bestLapMs())) {
-                    fastest = row;
-                }
-            }
-        }
-        return fastest == null
-                ? new RoundFastestLapDto(null, null)
-                : new RoundFastestLapDto(fastest.bestLapMs(), fastest.driverName());
+        return raceHighlightsService.roundFastestLap(raceId)
+                .map(lap -> new RoundFastestLapDto(lap.lapMs(), lap.driverName()))
+                .orElseGet(() -> new RoundFastestLapDto(null, null));
     }
 
     /**

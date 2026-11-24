@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.domain.competitor;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Clock;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.monkeypatch.rctiming.domain.ExternalSources;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -48,6 +50,7 @@ public class CompetitorMergeService {
     private static final Logger log = LoggerFactory.getLogger(CompetitorMergeService.class);
     public static final String AUDIT_ACTION = "COMPETITOR_MERGED";
 
+    private final Clock clock;
     private final CompetitorRepository competitorRepository;
     private final EntryRepository entryRepository;
     private final EntryAuditLogRepository auditLogRepository;
@@ -59,6 +62,7 @@ public class CompetitorMergeService {
     private final AuditService audit;
     private final DriverMediaService driverMedia;
 
+    @Autowired
     public CompetitorMergeService(CompetitorRepository competitorRepository,
                                   EntryRepository entryRepository,
                                   EntryAuditLogRepository auditLogRepository,
@@ -69,6 +73,22 @@ public class CompetitorMergeService {
                                   ObjectMapper objectMapper,
                                   AuditService audit,
                                   DriverMediaService driverMedia) {
+        this(competitorRepository, entryRepository, auditLogRepository, competitorAuditLogRepository, exclusionRepository, eventClassRepository, practiceDriverRepository, objectMapper, audit, driverMedia, Clock.systemUTC());
+    }
+
+    /** For tests: the clock is injected so time can be fixed. */
+    CompetitorMergeService(CompetitorRepository competitorRepository,
+                                  EntryRepository entryRepository,
+                                  EntryAuditLogRepository auditLogRepository,
+                                  CompetitorAuditLogRepository competitorAuditLogRepository,
+                                  ChampionshipExclusionRepository exclusionRepository,
+                                  EventClassRepository eventClassRepository,
+                                  PracticeDriverRepository practiceDriverRepository,
+                                  ObjectMapper objectMapper,
+                                  AuditService audit,
+                                  DriverMediaService driverMedia,
+                            Clock clock) {
+        this.clock = clock;
         this.competitorRepository = competitorRepository;
         this.entryRepository = entryRepository;
         this.auditLogRepository = auditLogRepository;
@@ -132,7 +152,7 @@ public class CompetitorMergeService {
 
         Map<String, Object> keepBefore = details(keep);
         Map<String, Object> duplicateBefore = details(duplicate);
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         String reason = "Merged duplicate competitor " + duplicate.getDisplayName() + " (#" + duplicate.getId()
                 + ") into " + keep.getDisplayName() + " (#" + keep.getId() + ")";
         for (Entry entry : moving) {

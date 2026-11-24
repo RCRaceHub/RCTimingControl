@@ -55,7 +55,7 @@ Things worth trying:
 
 Once practice is right, run a short meeting with a few drivers:
 
-1. Create the event and add its classes ([user-manual.md](user-manual.md#5-create-the-event-and-bring-in-the-entries)). Bring in entries from a RaceHub export (**Find RaceHub events**, with each RaceHub class linked once under **Admin → RaceHub classes**), an RC-Timing CSV, or add walk-ins by hand.
+1. Create the event and add its classes ([user-manual.md](user-manual.md#5-create-the-event-and-bring-in-the-entries)). Bring in entries from a RaceHub export (**Find RaceHub events**, with each RaceHub class linked once under **Admin → RaceHub → Classes and formats**), an RC-Timing CSV, or add walk-ins by hand.
 2. Check transponders under **Race Control → Transponders**. A number shared by two entries in the same event is allowed with a warning; if both are in one race, the passing goes to the referee.
 3. Generate the rounds, then for each race call the grid, start and finish it. The **Warm-up** column on the grid shows which transponders the decoder has seen since the grid was called, so a flat transponder is found before the start.
 4. Try the things that go wrong on a real day: a marshal lap +1 and −1, a lap or time penalty, a stop and resume, an unknown transponder linked to an entry, and a restart.

@@ -1,16 +1,12 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioSettingsDto;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioSettingsPatch;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.club.ClubAudioSettings;
 import dev.monkeypatch.rctiming.domain.club.ClubProfile;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
 import dev.monkeypatch.rctiming.infrastructure.tts.PiperTtsClient;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
@@ -24,12 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Race control–facing audio settings endpoint (AUDIO-07), under {@code /api/v1/race-control/settings/audio}.
- * Needs the RACE_DIRECTOR or ADMIN role. Every change is recorded in the audit log.
- * <p>
- * Allows race directors to view and update audio toggle settings during a race day
- * without navigating to the admin panel. Settings are persisted to the club profile
- * so they survive page reloads.
+ * The club's announcer settings (AUDIO-07), under {@code /api/v1/race-control/settings/audio}: the one place they
+ * are read and changed, by race control's panel during a race day and by the admin audio page alike. Needs the
+ * RACE_DIRECTOR or ADMIN role. Every change is recorded in the audit log. The club's own sound files are uploaded
+ * under {@code /api/v1/admin/audio/horns} ({@code AdminAudioController}).
  */
 @RestController
 @RequestMapping("/api/v1/race-control/settings/audio")
@@ -45,97 +39,18 @@ public class AudioSettingsController {
     }
 
     /**
-     * The settings as they are now: the answer of both {@code GET} and {@code PATCH}. It mirrors
-     * {@link ClubAudioSettings}, which says what each switch does; the count of seconds is in
-     * {@code startCountdownSeconds} (0 for no lead-in) and {@code countdownIntervals} are in seconds.
-     * {@code hornSounds} is read only here: the club's own sound files are changed by uploading or removing them,
-     * not by this patch.
-     */
-    public record AudioSettingsDto(
-            boolean announceCountdown,
-            boolean announceStagger,
-            boolean announceLapBeep,
-            boolean announceFinish,
-            boolean announceRunningOrder,
-            int runningOrderPercent,
-            int runningOrderAllUpTo,
-            int[] countdownIntervals,
-            boolean startHorn,
-            boolean finishHorn,
-            boolean announceRaceCalls,
-            boolean announceNextRace,
-            int startCountdownSeconds,
-            ClubAudioSettings.HornSounds hornSounds,
-            boolean announceCarFinish,
-            String timeUpText,
-            boolean tickSound,
-            boolean finalBeeps,
-            ClubAudioSettings.Wording wording,
-            ClubAudioSettings.Tuning tuning,
-            boolean paceBeeps
-    ) {
-        public static AudioSettingsDto of(ClubAudioSettings s) {
-            return new AudioSettingsDto(s.announceCountdown(), s.announceStagger(), s.announceLapBeep(),
-                    s.announceFinish(), s.announceRunningOrder(), s.runningOrderPercent(), s.runningOrderAllUpTo(),
-                    s.countdownIntervals(),
-                    s.startHorn(), s.finishHorn(), s.announceRaceCalls(), s.announceNextRace(),
-                    s.startCountdownSeconds(), s.hornSounds(), s.announceCarFinish(), s.timeUpText(), s.tickSound(),
-                    s.finalBeeps(), s.wording(), s.tuning(), s.paceBeeps());
-        }
-    }
-
-    /**
-     * A change to the settings. A field left out (null) keeps its saved value, so a client can send just the
-     * toggle it changed. {@code paceBeeps} turns the faster/slower lap beeps on or off.
-     * {@code wording} and {@code tuning} are replaced as a whole when sent, so a client sends
-     * the full object (a line left empty has the standard wording).
-     *
-     * <p>The limits below are checked on the way in and a breach is a 400. {@code runningOrderPercent} is the share
-     * of the field the running order names (1 to 100) and {@code runningOrderAllUpTo} the field size up to which
-     * every driver is named; {@code startCountdownSeconds} is 0 to 60; {@code countdownIntervals} holds at most 10
-     * times, each 1 to 3600 seconds.
-     */
-    public record AudioSettingsPatch(
-            Boolean announceCountdown,
-            Boolean announceStagger,
-            Boolean announceLapBeep,
-            Boolean announceFinish,
-            Boolean announceRunningOrder,
-            @Min(1) @Max(100) Integer runningOrderPercent,
-            @Min(0) @Max(100) Integer runningOrderAllUpTo,
-            @Size(max = 10) int[] countdownIntervals,
-            Boolean startHorn,
-            Boolean finishHorn,
-            Boolean announceRaceCalls,
-            Boolean announceNextRace,
-            @Min(0) @Max(60) Integer startCountdownSeconds,
-            Boolean announceCarFinish,
-            @Size(max = 200) String timeUpText,
-            Boolean tickSound,
-            Boolean finalBeeps,
-            @Valid ClubAudioSettings.Wording wording,
-            @Valid ClubAudioSettings.Tuning tuning,
-            Boolean paceBeeps
-    ) {
-        /** Each interval is a clip the server makes, so each must be from a second up to an hour. */
-        @JsonIgnore
-        @AssertTrue(message = "countdownIntervals must each be from 1 to 3600 seconds")
-        public boolean isCountdownIntervalsInRange() {
-            return ClubAudioSettings.intervalsInRange(countdownIntervals);
-        }
-    }
-
-    /**
      * Returns the current audio settings from the club profile. {@code GET /api/v1/race-control/settings/audio}.
      */
     @GetMapping
     public ResponseEntity<AudioSettingsDto> getSettings() {
-        return ResponseEntity.ok(AudioSettingsDto.of(clubProfileService.audioSettings()));
+        return ResponseEntity.ok(AudioSettingsDto.of(
+                clubProfileService.audioSettings(), clubProfileService.defaultVoiceId().orElse("")));
     }
 
     /**
-     * Updates and persists audio settings to the club profile.
-     * Only fields included in the request body are applied; the answer is the settings as saved.
+     * Updates and persists audio settings to the club profile, for race control's panel and the admin audio page.
+     * Only fields included in the request body are applied (see {@link AudioSettingsPatch}); the answer is the
+     * settings as saved.
      * {@code PATCH /api/v1/race-control/settings/audio}; 400 if a value is out of range. Recorded in the audit log
      * with the values before and after; when a change alters what the pre-generated clips say, an
      * {@code AudioSettingsChangedEvent} is published after the commit.
@@ -143,37 +58,14 @@ public class AudioSettingsController {
     @Audited("audit_log")
     @PatchMapping
     public ResponseEntity<AudioSettingsDto> updateSettings(@RequestBody @Valid AudioSettingsPatch patch) {
-        ClubProfile saved = clubProfileService.changeAudioSettings(CurrentOfficial.actor(),
-                profile -> {
-                    ClubAudioSettings s = profile.getAudioSettings();
-                    profile.setAudioSettings(new ClubAudioSettings(
-                            patch.announceCountdown() != null ? patch.announceCountdown() : s.announceCountdown(),
-                            patch.announceStagger() != null ? patch.announceStagger() : s.announceStagger(),
-                            patch.announceLapBeep() != null ? patch.announceLapBeep() : s.announceLapBeep(),
-                            patch.announceFinish() != null ? patch.announceFinish() : s.announceFinish(),
-                            patch.announceRunningOrder() != null ? patch.announceRunningOrder() : s.announceRunningOrder(),
-                            s.runningOrderDepth(),  // no longer used, kept as saved
-                            patch.countdownIntervals() != null ? patch.countdownIntervals() : s.countdownIntervals(),
-                            patch.startHorn() != null ? patch.startHorn() : s.startHorn(),
-                            patch.finishHorn() != null ? patch.finishHorn() : s.finishHorn(),
-                            patch.announceRaceCalls() != null ? patch.announceRaceCalls() : s.announceRaceCalls(),
-                            patch.announceNextRace() != null ? patch.announceNextRace() : s.announceNextRace(),
-                            patch.startCountdownSeconds() != null
-                                    ? patch.startCountdownSeconds() : s.startCountdownSeconds(),
-                            s.hornSounds(),  // changed only by uploading or removing a sound
-                            patch.announceCarFinish() != null ? patch.announceCarFinish() : s.announceCarFinish(),
-                            // Blank goes back to the standard wording
-                            patch.timeUpText() != null ? patch.timeUpText() : s.timeUpText(),
-                            patch.tickSound() != null ? patch.tickSound() : s.tickSound(),
-                            patch.finalBeeps() != null ? patch.finalBeeps() : s.finalBeeps(),
-                            patch.wording() != null ? patch.wording() : s.wording(),
-                            patch.tuning() != null ? patch.tuning() : s.tuning(),
-                            patch.runningOrderPercent() != null ? patch.runningOrderPercent() : s.runningOrderPercent(),
-                            patch.runningOrderAllUpTo() != null ? patch.runningOrderAllUpTo() : s.runningOrderAllUpTo(),
-                            patch.paceBeeps() != null ? patch.paceBeeps() : s.paceBeeps()
-                    ));
-                });
-        return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings()));
+        ClubProfile saved = clubProfileService.changeAudioSettings(CurrentOfficial.actor(), profile -> {
+            profile.setAudioSettings(patch.applyTo(profile.getAudioSettings()));
+            // No voice named: keep the one stored (the column is NOT NULL)
+            if (patch.hasVoice()) {
+                profile.setDefaultVoiceId(patch.defaultVoiceId());
+            }
+        });
+        return ResponseEntity.ok(AudioSettingsDto.of(saved.getAudioSettings(), saved.getDefaultVoiceId()));
     }
 
     /**

@@ -379,7 +379,7 @@ export default function RaceHubImportDialog({
                 </Button>
                 <span className="text-muted-foreground">
                   or link them all at once on the{' '}
-                  <Link to="/admin/racehub-classes" className="underline">
+                  <Link to="/admin/racehub?tab=classes" className="underline">
                     RaceHub classes
                   </Link>{' '}
                   page.

@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { QueryError } from '@/components/QueryError';
+import { RaceHubClassesTab } from '@/pages/admin/racehub-classes/RaceHubClassesPage';
+import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
+import { useTabParam } from '@/hooks/useTabParam';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClearRaceHubKey, useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetRaceHubKey, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
@@ -221,6 +224,8 @@ function KeyForm({ source }: { source: 'SAVED' | 'SETTINGS_FILE' | 'NONE' }) {
   );
 }
 
+const TABS = ['sent', 'classes', 'settings'] as const;
+
 /**
  * Results sent to RaceHub (#27). Results for an event imported from RaceHub are queued when a race
  * finishes, when a finished race is corrected, and when the race day is closed. The app sends them
@@ -229,6 +234,11 @@ function KeyForm({ source }: { source: 'SAVED' | 'SETTINGS_FILE' | 'NONE' }) {
 export default function ResultsExportsPage() {
   useHelpContent(ResultsExportsHelp);
   const { data, isLoading, isError, refetch } = useResultsExports();
+  const { data: unlinked = 0 } = useUnlinkedRaceHubClassCount();
+  // Picked once, from the first answer, so a refetch never moves a tab nobody chose
+  const [firstTab, setFirstTab] = useState<(typeof TABS)[number] | null>(null);
+  if (data && firstTab === null) setFirstTab(data.sendingEnabled ? 'sent' : 'settings');
+  const [tab, setTab] = useTabParam(TABS, firstTab ?? 'settings');
   const retry = useRetryResultsExport();
   // Once sending is set up the list of what has gone is what people come for; until then the settings are
   function onRetry(id: number) {
@@ -241,7 +251,7 @@ export default function ResultsExportsPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Results to RaceHub</h1>
+        <h1 className="text-2xl font-semibold">RaceHub</h1>
         <p className="text-sm text-muted-foreground mt-1">
           For events whose entries came from RaceHub, the results are sent back when a race finishes, when a
           finished race is corrected, and when the event is completed. Each send carries the whole event, so a
@@ -271,10 +281,10 @@ export default function ResultsExportsPage() {
               {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
             </p>
             <p className="text-muted-foreground mt-1">
-              {!data.resultsUrl && 'Enter the address on the Settings tab. '}
+              {!data.resultsUrl && 'Enter the address on the Connection tab. '}
               {data.missingSettings.includes('rctiming.racehub.token') && (
                 <>
-                  Paste the key on the Settings tab, or set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
+                  Paste the key on the Connection tab, or set <code className="rounded bg-muted px-1 py-0.5 text-xs">rctiming.racehub.token</code> in{' '}
                   <code className="rounded bg-muted px-1 py-0.5 text-xs">application.properties</code> in the data
                   folder and restart the app.{' '}
                 </>
@@ -287,13 +297,19 @@ export default function ResultsExportsPage() {
       {/* Tabs mount once the first answer is in, so the starting tab is picked then and a refresh never moves it:
           the list once sending is set up, otherwise the settings */}
       {data && (
-        <Tabs defaultValue={data.sendingEnabled ? 'sent' : 'settings'} className="space-y-6">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="sent">Sent results</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="classes">
+              Classes and formats
+              {unlinked > 0 && <Badge variant="outline" className="ml-2">{unlinked} unlinked</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="settings">Connection</TabsTrigger>
           </TabsList>
 
-          {/* Both tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
+          <TabsContent value="classes"><RaceHubClassesTab /></TabsContent>
+
+          {/* The sent and connection tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
           <TabsContent value="sent" forceMount className="space-y-6 data-[state=inactive]:hidden">
             {data && data.exports.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">

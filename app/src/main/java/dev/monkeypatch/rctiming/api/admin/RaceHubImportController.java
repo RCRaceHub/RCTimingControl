@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.ClassMappingDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ResolveRaceHubClassRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.ResolvedRaceHubClassDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
@@ -95,10 +96,4 @@ public class RaceHubImportController {
                 .stream().map(ResolvedRaceHubClassDto::from).toList();
     }
 
-    /** One mapping, as sent and returned: a RaceHub event class id and the event class it lands in. */
-    public record ClassMappingDto(String racehubEventClassId, Long eventClassId) {
-        static ClassMappingDto of(RaceHubClassMapping m) {
-            return new ClassMappingDto(m.getRacehubEventClassId(), m.getEventClassId());
-        }
-    }
 }

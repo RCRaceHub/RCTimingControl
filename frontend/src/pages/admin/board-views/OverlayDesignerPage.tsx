@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useTabParam } from '@/hooks/useTabParam';
 import { Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -76,7 +77,10 @@ function ThemeSponsors({ themeId }: { themeId: number }) {
  * it. A theme holds everything but the event. One theme can be the club's default, which the plain overlay link opens.
  * Open to ADMIN and RACE_DIRECTOR.
  */
+const DESIGNER_TABS = ['theme','content','layout'] as const;
+
 export default function OverlayDesignerPage() {
+  const [tab, setTab] = useTabParam(DESIGNER_TABS, 'theme');
   const { confirm, dialog } = useConfirm();
   const [design, setDesign] = useState<OverlayDesign>(DEFAULT_OVERLAY_DESIGN);
   const set = <K extends keyof OverlayDesign>(key: K, value: OverlayDesign[K]) =>
@@ -225,7 +229,7 @@ export default function OverlayDesignerPage() {
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-5">
-          <Tabs defaultValue="theme" className="space-y-5">
+          <Tabs value={tab} onValueChange={setTab} className="space-y-5">
             <TabsList className="h-auto flex-wrap justify-start">
               <TabsTrigger value="theme">Theme</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>

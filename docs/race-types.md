@@ -153,7 +153,7 @@ result is ranked.
 
 ## 4. The formats
 
-A club that books through RaceHub can pick the meeting's race format there. RCTC runs it with the format template the club linked to it once (RaceHub classes page, Race formats); see the RaceHub expectations page in the source repository. Without a link, or without RaceHub, you choose each class's format yourself as before.
+A club that books through RaceHub can pick the meeting's race format there. RCTC runs it with the format template the club linked to it once (Admin → RaceHub → Classes and formats); see the RaceHub expectations page in the source repository. Without a link, or without RaceHub, you choose each class's format yourself as before.
 
 ### 4.1 Timed
 
@@ -247,7 +247,7 @@ off-road** (or a system an admin has added) to fill them in; see [Scoring](scori
 sharing a place, BRCA qualifying (flat points for a driver who did not run, and its tie-break), a 6:30 (390 second) race
 window, 10 cars per final filled from A down with a short last final, and an A final of 3 legs of which the best 2 count.
 The finals below A are single races. The format's own settings (4 qualifying rounds of 5 minutes, 3 finals) are still set
-in the form. Clone the system on the **Scoring Systems** page for a club's own variation. The rules are in
+in the form. Clone the system on the **Scoring systems** tab of **Racing setup** for a club's own variation. The rules are in
 [Scoring](scoring.md#brca-qualifying-points-finals).
 
 ### 4.4 Shikabane

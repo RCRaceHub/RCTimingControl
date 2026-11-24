@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { MemoryRouter } from 'react-router-dom';
 import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -32,9 +33,11 @@ function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <HelpProvider>
-        <ResultsExportsPage />
-      </HelpProvider>
+      <MemoryRouter>
+        <HelpProvider>
+          <ResultsExportsPage />
+        </HelpProvider>
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -108,7 +111,7 @@ describe('ResultsExportsPage', () => {
     renderPage();
 
     expect(await screen.findByText('No RaceHub address is set, so results wait here.')).toBeInTheDocument();
-    expect(screen.getByText(/Enter the address on the Settings tab/)).toBeInTheDocument();
+    expect(screen.getByText(/Enter the address on the Connection tab/)).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
     expect(screen.getByText('Waiting to send')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /now$/ })).not.toBeInTheDocument();
@@ -126,7 +129,7 @@ describe('ResultsExportsPage', () => {
 
     expect(await screen.findByText('No RaceHub key is set, so results wait here.')).toBeInTheDocument();
     expect(screen.getByText('rctiming.racehub.token')).toBeInTheDocument();
-    expect(screen.queryByText(/Enter the address on the Settings tab/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Enter the address on the Connection tab/)).not.toBeInTheDocument();
   });
 
   it('saves a RaceHub address typed in', async () => {
@@ -214,7 +217,7 @@ describe('ResultsExportsPage', () => {
     renderPage();
     fireEvent.change(await screen.findByLabelText('RaceHub address'), { target: { value: 'https://half' } });
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'Sent results' }), { button: 0 });
-    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Settings' }), { button: 0 });
+    fireEvent.mouseDown(screen.getByRole('tab', { name: 'Connection' }), { button: 0 });
     expect(screen.getByLabelText('RaceHub address')).toHaveValue('https://half');
   });
 
@@ -223,5 +226,22 @@ describe('ResultsExportsPage', () => {
     renderPage();
     expect(await screen.findByText('Could not load the results sent to RaceHub.')).toBeVisible();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('flags on the classes tab how many RaceHub classes are not linked yet', async () => {
+    api.resultsExports.list.mockResolvedValue({
+      sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', savedUrl: null, missingSettings: [],
+      keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+    } as never);
+    api.raceHubClasses.list.mockResolvedValue({
+      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      classes: [
+        { id: '1', name: 'A', active: true, linkedRacingClassId: 5 },
+        { id: '2', name: 'B', active: true, linkedRacingClassId: null },
+      ],
+    } as never);
+    renderPage();
+
+    expect(await screen.findByText('1 unlinked')).toBeInTheDocument();
   });
 });

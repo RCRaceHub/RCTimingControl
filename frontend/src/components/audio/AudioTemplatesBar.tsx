@@ -12,7 +12,6 @@ import {
   updateAudioTemplate,
 } from '@/lib/audioApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
-import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 /**
  * Edits on the page around the bar that are not saved yet, for a page that holds them (Admin → Audio). A template
@@ -64,7 +63,6 @@ export function AudioTemplatesBar({ unsaved }: { unsaved?: UnsavedEdits | null }
     onSuccess: () => {
       unsaved?.discard();
       queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
-      queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
       toast.success(`Applied "${selected?.name}".`);
     },
     onError: failed('apply the template'),

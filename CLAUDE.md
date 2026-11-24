@@ -66,7 +66,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 - Vendor-specific SQL in Java code (jOOQ DSL and the shared converters only; the vendor lives in `persistence/vendor/`)
 - gRPC, a separate forwarder process, or cloud sync for timing (the app reads the decoder directly)
 - Racer accounts, self-registration or a `RACER` role (RaceHub owns racer identity)
-- nginx, TLS or internet deployment (the app stays on the venue network; it installs natively, or runs from the Docker image in `docker/`, see `docs/docker.md`)
+- nginx or internet deployment (the app stays on the venue network; it installs natively, or runs from the Docker image in `docker/`, see `docs/docker.md`). The one TLS the app has is the optional local HTTPS signed by the club's own certificate authority (`infrastructure/tls`, INSTALL-03); it is never for the internet
 
 ## Architecture
 
@@ -83,6 +83,13 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 | **Boards** | Spectator "now and next" and results boards, and the streaming overlay for OBS (`/boards/overlay`), all anonymous (`/api/v1/boards`); the race clock comes from `timing/RaceClockService` |
 | **Backups** | Scheduled and on-demand SQLite backups, and the `restore` command |
 | **Live feed** | Live Feed v1 to a relay for remote viewers (`livefeed/`): one outbound WebSocket, on its own thread, per-event switch, display names only; see `docs/live-feed-v1.md` |
+| **Practice** | Open practice sessions outside any heat: one long session, laps grouped into runs by a pause, a day view across sessions (`practice/`, `docs/user-manual.md`) |
+| **Split timing** | Optional split-loop decoders giving sector times, shown on race control, the boards and the overlay (`timing/split/`, `docs/plans/split-timing`) |
+| **Screens manager** | Raspberry Pi display screens: discovery, tokens, messages and banners, playlists (`screens/`) |
+| **Overlay and custom views** | Overlay designer themes, sponsors and the club's own board views (`domain/overlaytheme`, `domain/sponsor`, `domain/boardview`) |
+| **Announcer audio** | Spoken race calls with Piper text-to-speech, the club's own horn sounds, audio outputs and templates (`infrastructure/tts`, `infrastructure/audio`) |
+| **Optional HTTPS** | A club certificate authority and server certificate for HTTPS beside HTTP (`infrastructure/tls`) |
+| **Retention** | Nightly clean-up of expired tokens, refused sign-ins and, if the club sets a limit, old audit rows; never race history (`retention/`) |
 | **Results export** | Results Export v1 to RaceHub (`resultsexport/`): an outbox queued on finish, correction and day close, sent in the background with retries; see `docs/results-export-v1.md` |
 | **Domain Core** | Business logic, aggregates, domain events |
 | **Race State Machine** | Enforces `PENDING → GRID → RUNNING → STOPPED/FINISHED` transitions |
@@ -90,6 +97,8 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 | **Live Timing Hub** | Broadcasts real-time updates to browsers via STOMP |
 | **Domain module** | Entities, jOOQ repositories, write-side business logic |
 | **Query module** | jOOQ read queries — scoring, standings, lap aggregates, results projections |
+
+Optional features cannot yet be switched off: the modules framework (an on/off switch per feature) is designed but not built.
 
 The domain and query modules are a seam: entities and their repositories stay in the domain module, and projections stay in the query module. This maps to a CQRS-lite split within the monolith — write-side logic loads and saves entities, the read side builds its views in SQL.
 

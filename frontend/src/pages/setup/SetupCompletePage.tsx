@@ -10,8 +10,8 @@ type Item = { key: keyof SetupProgressDto; label: string; editHref?: string };
 
 const items: Item[] = [
   { key: 'club',    label: 'Club Profile',   editHref: '/admin/club' },
-  { key: 'track',   label: 'Track',          editHref: '/admin/tracks' },
-  { key: 'format',  label: 'Race Format',    editHref: '/admin/formats' },
+  { key: 'track',   label: 'Track',          editHref: '/admin/racing-setup?tab=tracks' },
+  { key: 'format',  label: 'Race Format',    editHref: '/admin/racing-setup?tab=formats' },
   { key: 'staff',   label: 'Staff Account' },
   { key: 'decoder', label: 'Decoder Config', editHref: '/admin/decoder' },
 ];

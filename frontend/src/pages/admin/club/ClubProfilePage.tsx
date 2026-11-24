@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTabParam } from '@/hooks/useTabParam';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,7 +44,10 @@ function toRequest(values: FormValues): UpdateClubProfileRequest {
   };
 }
 
+const PROFILE_TABS = ['profile','live-timing','https','privacy','settings-file'] as const;
+
 export default function ClubProfilePage() {
+  const [tab, setTab] = useTabParam(PROFILE_TABS, 'profile');
   const { data, isLoading, isError, refetch } = useClubProfile();
   const updateMutation = useUpdateClubProfile();
   const uploadLogoMutation = useUploadClubLogo();
@@ -111,9 +115,9 @@ export default function ClubProfilePage() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <h1 className="text-2xl font-semibold">Club Profile</h1>
+      <h1 className="text-2xl font-semibold">Club profile</h1>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="live-timing">Live timing</TabsTrigger>

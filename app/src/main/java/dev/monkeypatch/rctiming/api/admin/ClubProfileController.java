@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin;
 
+import dev.monkeypatch.rctiming.api.admin.dto.PrivacyNoticeEditDto;
 import dev.monkeypatch.rctiming.api.admin.dto.ClubProfileDto;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateClubProfileRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CreateGoverningBodyRequest;
@@ -158,13 +159,4 @@ public class ClubProfileController {
         return new LogoUploadResponse(url);
     }
 
-    /**
-     * The privacy notice as the editor shows it. {@code customised}: whether {@code text} is the club's own, or the
-     * default.
-     */
-    public record PrivacyNoticeEditDto(String text, boolean customised) {
-        static PrivacyNoticeEditDto from(ClubProfileService.PrivacyNotice n) {
-            return new PrivacyNoticeEditDto(n.text(), n.customised());
-        }
-    }
 }

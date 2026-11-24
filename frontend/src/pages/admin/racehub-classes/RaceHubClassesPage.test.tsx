@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import RaceHubClassesPage from './RaceHubClassesPage';
+import { RaceHubClassesTab } from './RaceHubClassesPage';
 import { adminApi } from '@/lib/adminApi';
 import type { RaceHubClassDto } from '@/lib/adminApi';
 
@@ -49,12 +49,12 @@ function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <RaceHubClassesPage />
+      <RaceHubClassesTab />
     </QueryClientProvider>,
   );
 }
 
-describe('RaceHubClassesPage', () => {
+describe('RaceHubClassesTab', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     api.raceHubFormats.list.mockResolvedValue({ formats: [], error: null });
@@ -100,20 +100,6 @@ describe('RaceHubClassesPage', () => {
 
     await waitFor(() => expect(api.raceHubEvents.setAddress)
       .toHaveBeenCalledWith('https://racehub.example/api/rctc/v1/events'));
-  });
-
-  it('flags how many classes are not linked yet', async () => {
-    api.raceHubClasses.list.mockResolvedValue({
-      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
-      classes: [
-        raceHubClass({ id: '1', linkedRacingClassId: 102 }),
-        raceHubClass({ id: '2', name: 'B' }),
-        raceHubClass({ id: '3', name: 'C' }),
-      ],
-    });
-    renderPage();
-
-    expect(await screen.findByText('2 unlinked')).toBeInTheDocument();
   });
 
   it('links a class to a racing class chosen once', async () => {

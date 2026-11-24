@@ -75,7 +75,7 @@ describe('AdminPanelLayout Backups entry', () => {
   });
 });
 
-describe('AdminPanelLayout Results to RaceHub entry', () => {
+describe('AdminPanelLayout RaceHub entry', () => {
   beforeEach(() => {
     auth.roles = ['ADMIN'];
   });
@@ -83,19 +83,19 @@ describe('AdminPanelLayout Results to RaceHub entry', () => {
   it('is shown to ADMIN users', () => {
     renderLayout();
 
-    expect(screen.getAllByRole('link', { name: /Results to RaceHub/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /^RaceHub/ }).length).toBeGreaterThan(0);
   });
 
   it('is hidden from race directors', () => {
     auth.roles = ['RACE_DIRECTOR'];
     renderLayout();
 
-    expect(screen.queryByRole('link', { name: /Results to RaceHub/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^RaceHub/ })).not.toBeInTheDocument();
   });
 });
 
 describe('AdminPanelLayout config entries (#132)', () => {
-  const adminOnlyLinks = [/^Tracks$/, /^Formats$/, /^Club Profile$/];
+  const adminOnlyLinks = [/^Racing setup$/, /^Club profile$/];
 
   beforeEach(() => {
     auth.roles = ['ADMIN'];
@@ -120,6 +120,9 @@ describe('AdminPanelLayout config entries (#132)', () => {
     // Open to every official: a referee records a disqualification in a championship
     expect(screen.getAllByRole('link', { name: /^Championships$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^Competitors$/ }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /^Audio Settings$/ }).length).toBeGreaterThan(0);
+    // The audio settings are for an admin or a race director: the server refuses a referee
+    const audio = screen.queryAllByRole('link', { name: /^Audio settings$/ });
+    if (role === 'REFEREE') expect(audio).toHaveLength(0);
+    else expect(audio.length).toBeGreaterThan(0);
   });
 });

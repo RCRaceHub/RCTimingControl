@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.backup;
 
+import dev.monkeypatch.rctiming.api.admin.dto.BackupsDto;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.admin.BackupController;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -78,8 +79,8 @@ class BackupIT extends AbstractIntegrationTest {
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).get("actor_user_id")).isNotNull();
 
-        ResponseEntity<BackupController.BackupsDto> listed = restTemplate.exchange("/api/v1/admin/backups",
-                HttpMethod.GET, new HttpEntity<>(admin), BackupController.BackupsDto.class);
+        ResponseEntity<BackupsDto> listed = restTemplate.exchange("/api/v1/admin/backups",
+                HttpMethod.GET, new HttpEntity<>(admin), BackupsDto.class);
         assertThat(listed.getBody().backups()).extracting(BackupFile::name).contains(taken.getBody().name());
 
         Path file = backupService.directory().resolve(taken.getBody().name());

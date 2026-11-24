@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTabParam } from '@/hooks/useTabParam';
 import { Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,8 +18,8 @@ import {
 } from '@/components/ui/select';
 import {
   ANNOUNCEMENT_TOGGLES,
-  getAdminAudioSettings,
-  saveAdminAudioSettings,
+  getAudioSettings,
+  patchAudioSettings,
   listVoices,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
@@ -27,22 +28,26 @@ import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { HornSoundsCard } from './HornSoundsCard';
 import { AudioRoutingCard } from './AudioRoutingCard';
 import { QueryError } from '@/components/QueryError';
+import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
+const AUDIO_TABS = ['announcements','wording','timings','outputs','sounds'] as const;
+
 export default function AdminAudioSettingsPage() {
+  const [tab, setTab] = useTabParam(AUDIO_TABS, 'announcements');
   const queryClient = useQueryClient();
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
   const { data: settings, isLoading: settingsLoading, isError: settingsError, refetch: refetchSettings } = useQuery({
-    queryKey: adminQueryKeys.audioSettings(),
-    queryFn: () => getAdminAudioSettings(),
+    queryKey: raceControlQueryKeys.audioSettings(),
+    queryFn: () => getAudioSettings(),
   });
 
   const saveSettingsMutation = useMutation({
-    mutationFn: (s: AudioSettingsDto) => saveAdminAudioSettings(s),
+    mutationFn: (s: AudioSettingsDto) => patchAudioSettings(s),
     onSuccess: async () => {
       // Show the server's copy once it is read back, so a setting the server normalised is not left looking unsaved
-      await queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+      await queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
       setLocalSettings(null);
       toast.success('Audio settings saved.');
     },
@@ -82,7 +87,7 @@ export default function AdminAudioSettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-xl font-semibold">Audio Settings</h1>
+      <h1 className="text-xl font-semibold">Audio settings</h1>
 
       {settingsError ? (
         <QueryError message="Failed to load audio settings." onRetry={refetchSettings} />
@@ -101,7 +106,7 @@ export default function AdminAudioSettingsPage() {
             }
           />
 
-          <Tabs defaultValue="announcements" className="space-y-6">
+          <Tabs value={tab} onValueChange={setTab} className="space-y-6">
             {/* Every tab stays mounted (hidden when not shown) so a box typed into is not lost before it commits on blur */}
             <TabsList className="h-auto flex-wrap justify-start">
               <TabsTrigger value="announcements">Announcements</TabsTrigger>

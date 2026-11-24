@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import java.time.Clock;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustment;
 import dev.monkeypatch.rctiming.domain.race.MarshalAdjustmentRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -14,7 +16,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 
 /**
  * Marshal lap adjustments (CTRL-03): a lap added to or taken off a car by hand. Each one is kept as a
@@ -24,17 +25,30 @@ import java.time.Instant;
 @Transactional
 public class MarshalService {
 
+    private final Clock clock;
     private final RaceRepository raceRepository;
     private final MarshalAdjustmentRepository marshalAdjustmentRepository;
     private final UserRepository userRepository;
     private final LapTimingService lapTimingService;
     private final ApplicationEventPublisher eventPublisher;
 
+    @Autowired
     public MarshalService(RaceRepository raceRepository,
                           MarshalAdjustmentRepository marshalAdjustmentRepository,
                           UserRepository userRepository,
                           LapTimingService lapTimingService,
                           ApplicationEventPublisher eventPublisher) {
+        this(raceRepository, marshalAdjustmentRepository, userRepository, lapTimingService, eventPublisher, Clock.systemUTC());
+    }
+
+    /** For tests: the clock is injected so time can be fixed. */
+    MarshalService(RaceRepository raceRepository,
+                          MarshalAdjustmentRepository marshalAdjustmentRepository,
+                          UserRepository userRepository,
+                          LapTimingService lapTimingService,
+                          ApplicationEventPublisher eventPublisher,
+                    Clock clock) {
+        this.clock = clock;
         this.raceRepository = raceRepository;
         this.marshalAdjustmentRepository = marshalAdjustmentRepository;
         this.userRepository = userRepository;
@@ -67,7 +81,7 @@ public class MarshalService {
         adjustment.setRaceStateAtTime(race.getStatus().name());
         adjustment.setActingUserId(actingUserId);
         adjustment.setActingUserName(actingUserName);
-        adjustment.setAdjustedAt(Instant.now());
+        adjustment.setAdjustedAt(clock.instant());
         marshalAdjustmentRepository.save(adjustment);
 
         if (race.getStatus() == RaceStatus.FINISHED) {

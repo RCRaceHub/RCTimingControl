@@ -4,9 +4,6 @@ import {
   Calendar,
   Trophy,
   Building2,
-  MapPin,
-  Sliders,
-  Scale,
   LogOut,
   Menu,
   Flag,
@@ -22,7 +19,6 @@ import {
   Tv,
   MonitorPlay,
   Tag,
-  Link2,
   Timer,
   Cast,
 } from 'lucide-react';
@@ -54,31 +50,27 @@ const eventsGroup: NavEntry[] = [
 ];
 
 const operationsGroup: NavEntry[] = [
-  { to: '/admin/race-control', label: 'Race Control', Icon: Flag },
+  { to: '/admin/race-control', label: 'Race control', Icon: Flag },
   { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true },
   { to: '/admin/competitors', label: 'Competitors', Icon: Users },
-  { to: '/setup', label: 'Setup Wizard', Icon: Wand2 },
+  { to: '/setup', label: 'Setup wizard', Icon: Wand2 },
 ];
 
 // Decoder settings, backups and results sent to RaceHub are admin-only, so these items are shown only to ADMIN users.
 const adminOnlyOperations: NavEntry[] = [
   { to: '/admin/decoder', label: 'Decoder', Icon: Radio },
   { to: '/admin/backups', label: 'Backups', Icon: DatabaseBackup },
-  { to: '/admin/results-exports', label: 'Results to RaceHub', Icon: CloudUpload },
+  { to: '/admin/racehub', label: 'RaceHub', Icon: CloudUpload },
   { to: '/admin/officials', label: 'Officials', Icon: UserCog },
 ];
 
 const configGroup: NavEntry[] = [
-  { to: '/admin/tracks', label: 'Tracks', Icon: MapPin, adminOnly: true },
-  { to: '/admin/classes', label: 'Classes', Icon: Tag, adminOnly: true },
-  { to: '/admin/racehub-classes', label: 'RaceHub Classes', Icon: Link2, adminOnly: true },
-  { to: '/admin/formats', label: 'Formats', Icon: Sliders, adminOnly: true },
-  { to: '/admin/scoring-systems', label: 'Scoring Systems', Icon: Scale, adminOnly: true },
-  { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
-  { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
-  { to: '/admin/board-views', label: 'Custom Views', Icon: Tv, runEventOnly: true },
+  { to: '/admin/racing-setup', label: 'Racing setup', Icon: Tag, adminOnly: true },
+  { to: '/admin/club', label: 'Club profile', Icon: Building2, adminOnly: true },
+  { to: '/admin/audio', label: 'Audio settings', Icon: Volume2, runEventOnly: true },
+  { to: '/admin/board-views', label: 'Custom views', Icon: Tv, runEventOnly: true },
   { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
-  { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },
+  { to: '/admin/overlay-designer', label: 'Overlay designer', Icon: MonitorPlay, runEventOnly: true },
 ];
 
 /** The entries this official is allowed to open. */
@@ -163,7 +155,14 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         ))}
         {isAdmin &&
           adminOnlyOperations.map(({ to, label, Icon }) => (
-            <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
+            <NavItem
+              key={to}
+              to={to}
+              label={label}
+              Icon={Icon}
+              onClick={onNavClick}
+              badge={to === '/admin/racehub' ? <UnlinkedClassesBadge /> : undefined}
+            />
           ))}
 
         <div className="pt-4">
@@ -180,7 +179,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
             label={label}
             Icon={Icon}
             onClick={onNavClick}
-            badge={to === '/admin/racehub-classes' ? <UnlinkedClassesBadge /> : undefined}
           />
         ))}
       </nav>
