@@ -175,15 +175,7 @@ export const applyAudioTemplate = (id: number) =>
 
 export const deleteAudioTemplate = (id: number) => api.delete(`${TEMPLATES_URL}/${id}`).then(() => undefined);
 
-// ── Admin audio endpoints ──────────────────────────────────────────────────
-
-/** GET admin-level audio settings (same DTO, different auth). */
-export const getAdminAudioSettings = () =>
-  api.get<AudioSettingsDto>('/api/v1/admin/audio/settings').then(r => r.data);
-
-/** PUT admin-level audio settings. */
-export const saveAdminAudioSettings = (settings: AudioSettingsDto) =>
-  api.put<AudioSettingsDto>('/api/v1/admin/audio/settings', settings).then(r => r.data);
+// ── The club's own sound files ─────────────────────────────────────────────
 
 /** Replace a horn, the tick or a lap beep with the club's own sound file; `durationMs` is how long it plays. */
 export type SoundName = 'start' | 'finish' | 'tick' | 'lap-beep' | 'faster-beep' | 'slower-beep';

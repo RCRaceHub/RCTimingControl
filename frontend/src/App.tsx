@@ -126,7 +126,7 @@ const router = createBrowserRouter([
           { path: 'backups', element: <ProtectedRoute roles={['ADMIN']}><BackupsPage /></ProtectedRoute> },
           { path: 'racehub', element: <ProtectedRoute roles={['ADMIN']}><ResultsExportsPage /></ProtectedRoute> },
           { path: 'officials', element: <ProtectedRoute roles={['ADMIN']}><OfficialsPage /></ProtectedRoute> },
-          { path: 'audio', element: <AdminAudioSettingsPage /> },
+          { path: 'audio', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><AdminAudioSettingsPage /></ProtectedRoute> },
           { path: 'board-views', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><BoardViewsPage /></ProtectedRoute> },
           { path: 'screens', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><ScreensPage /></ProtectedRoute> },
           { path: 'overlay-designer', element: <ProtectedRoute roles={['ADMIN', 'RACE_DIRECTOR']}><OverlayDesignerPage /></ProtectedRoute> },

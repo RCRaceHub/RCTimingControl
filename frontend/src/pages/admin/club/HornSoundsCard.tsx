@@ -7,7 +7,7 @@ import { removeHornSound, uploadHornSound, type SoundName } from '@/lib/audioApi
 import { playCueHere, type Cue } from '@/lib/audioOutput';
 import type { HornSounds } from '@/lib/sounds';
 import { ON_PACE_TOLERANCE } from '@/hooks/race-control/raceAudioCues';
-import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
+import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 
 const beep = (pace: 'faster' | 'onPace' | 'slower') => (sounds?: HornSounds): Cue => ({ kind: 'lapBeep', pace, sounds });
 
@@ -49,7 +49,7 @@ function soundLengthMs(file: File): Promise<number> {
 export function HornSoundsCard({ sounds }: { sounds?: HornSounds }) {
   const queryClient = useQueryClient();
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
-  const refresh = () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
 
   const upload = useMutation({
     mutationFn: async ({ horn, file }: { horn: SoundName; file: File }) =>

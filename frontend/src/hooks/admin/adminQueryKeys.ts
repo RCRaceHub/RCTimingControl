@@ -77,6 +77,5 @@ export const adminQueryKeys = {
     all: () => ['admin', 'officials'] as const,
     changes: () => ['admin', 'officials', 'changes'] as const,
   },
-  audioSettings: () => ['admin', 'audio-settings'] as const,
   voices: () => ['admin', 'voices'] as const,
 };

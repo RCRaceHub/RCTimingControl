@@ -120,6 +120,7 @@ describe('AdminPanelLayout config entries (#132)', () => {
     // Open to every official: a referee records a disqualification in a championship
     expect(screen.getAllByRole('link', { name: /^Championships$/ }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: /^Competitors$/ }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: /^Audio Settings$/ }).length).toBeGreaterThan(0);
+    // The audio settings are for an admin or a race director: the server refuses a referee
+    expect(screen.queryByRole('link', { name: /^Audio Settings$/ })).not.toBeInTheDocument();
   });
 });

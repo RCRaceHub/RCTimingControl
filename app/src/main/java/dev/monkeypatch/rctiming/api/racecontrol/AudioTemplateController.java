@@ -1,6 +1,8 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioSettingsDto;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioTemplateCreateRequest;
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioTemplateDto;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.AudioTemplateRequest;
 import dev.monkeypatch.rctiming.domain.audiotemplate.AudioTemplate;
 import dev.monkeypatch.rctiming.domain.audiotemplate.AudioTemplateService;
@@ -37,13 +39,6 @@ public class AudioTemplateController {
         this.service = service;
     }
 
-    /** A template and the settings it holds (never the club's own sound files). */
-    public record AudioTemplateDto(Long id, String name, AudioSettingsController.AudioSettingsDto settings) {
-        static AudioTemplateDto of(AudioTemplate t) {
-            return new AudioTemplateDto(t.getId(), t.getName(), AudioSettingsController.AudioSettingsDto.of(t.getSettings()));
-        }
-    }
-
     /** Every template, by name. {@code GET}. */
     @GetMapping
     public List<AudioTemplateDto> list() {
@@ -73,8 +68,8 @@ public class AudioTemplateController {
      */
     @Audited("audit_log")
     @PostMapping("/{id}/apply")
-    public AudioSettingsController.AudioSettingsDto apply(@PathVariable Long id) {
-        return AudioSettingsController.AudioSettingsDto.of(service.apply(CurrentOfficial.actor(), id));
+    public AudioSettingsDto apply(@PathVariable Long id) {
+        return AudioSettingsDto.of(service.apply(CurrentOfficial.actor(), id));
     }
 
     /** Deletes a template. {@code DELETE /{id}}; 204; 404. Audited. */

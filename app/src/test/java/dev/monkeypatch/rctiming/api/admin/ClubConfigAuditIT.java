@@ -114,9 +114,9 @@ class ClubConfigAuditIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void announcerSettingsFromBothEndpointsAreRecorded() {
+    void announcerSettingsAreRecordedWithTheirVoiceAndBeforeAndAfter() {
         long before = mine("AUDIO_SETTINGS_CHANGED").size();
-        send("PUT", "/api/v1/admin/audio/settings", Map.of(
+        send("PATCH", "/api/v1/race-control/settings/audio", Map.of(
                 "announceCountdown", true, "announceStagger", true, "announceLapBeep", true, "announceFinish", true,
                 "announceRunningOrder", true, "runningOrderPercent", 40, "defaultVoiceId", "voice-" + run));
         send("PATCH", "/api/v1/race-control/settings/audio", Map.of("announceLapBeep", false));

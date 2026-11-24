@@ -882,11 +882,11 @@ Open practice is a timing session with no heats and no result that scores. `POST
 
 `link-transponder` takes `{ "transponderNumber", "competitorId", "newName", "confirmNewCompetitor" }` and names a transponder in a session: an existing competitor, or a new walk-in made from `newName`. A name that matches someone already there answers **409** with the matches unless `confirmNewCompetitor` is true. **400** for a missing or over-long number, **404** for an unknown session. `drivers` lists the transponders named in a session. Changes are audited. Live rows arrive on `/topic/practice/{sessionId}/timing` and unknown transponders on `/topic/practice/{sessionId}/unknown-transponder`.
 
-## Admin — Audio horns and settings
+## Admin — Audio horns
+
+The announcer settings themselves are `GET` and `PATCH /race-control/settings/audio` (`ADMIN` or `RACE_DIRECTOR`), used by race control's panel and the admin audio page alike. `PATCH` saves only the fields it is sent, including the default Piper voice `defaultVoiceId` (blank keeps the stored one), answers the settings as saved, and is **400** for a value out of range (for example `runningOrderPercent` 1 to 100, `startCountdownSeconds` 0 to 60, `timeUpText` at most 200 characters). `hornSounds` is ignored on a write. The change is audited with the values before and after.
 
 ```
-GET    /admin/audio/settings
-PUT    /admin/audio/settings
 PUT    /admin/audio/horns/{horn}        (multipart form data)
 DELETE /admin/audio/horns/{horn}
 ```

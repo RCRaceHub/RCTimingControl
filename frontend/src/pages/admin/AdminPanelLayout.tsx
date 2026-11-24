@@ -67,7 +67,7 @@ const adminOnlyOperations: NavEntry[] = [
 const configGroup: NavEntry[] = [
   { to: '/admin/racing-setup', label: 'Racing setup', Icon: Tag, adminOnly: true },
   { to: '/admin/club', label: 'Club Profile', Icon: Building2, adminOnly: true },
-  { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2 },
+  { to: '/admin/audio', label: 'Audio Settings', Icon: Volume2, runEventOnly: true },
   { to: '/admin/board-views', label: 'Custom Views', Icon: Tv, runEventOnly: true },
   { to: '/admin/screens', label: 'Screens', Icon: Cast, runEventOnly: true },
   { to: '/admin/overlay-designer', label: 'Overlay Designer', Icon: MonitorPlay, runEventOnly: true },

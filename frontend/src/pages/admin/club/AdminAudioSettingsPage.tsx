@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/select';
 import {
   ANNOUNCEMENT_TOGGLES,
-  getAdminAudioSettings,
-  saveAdminAudioSettings,
+  getAudioSettings,
+  patchAudioSettings,
   listVoices,
   type AudioSettingsDto,
 } from '@/lib/audioApi';
@@ -27,6 +27,7 @@ import { AudioTemplatesBar } from '@/components/audio/AudioTemplatesBar';
 import { HornSoundsCard } from './HornSoundsCard';
 import { AudioRoutingCard } from './AudioRoutingCard';
 import { QueryError } from '@/components/QueryError';
+import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 import { adminQueryKeys } from '@/hooks/admin/adminQueryKeys';
 
 export default function AdminAudioSettingsPage() {
@@ -34,15 +35,15 @@ export default function AdminAudioSettingsPage() {
   const [localSettings, setLocalSettings] = useState<AudioSettingsDto | null>(null);
 
   const { data: settings, isLoading: settingsLoading, isError: settingsError, refetch: refetchSettings } = useQuery({
-    queryKey: adminQueryKeys.audioSettings(),
-    queryFn: () => getAdminAudioSettings(),
+    queryKey: raceControlQueryKeys.audioSettings(),
+    queryFn: () => getAudioSettings(),
   });
 
   const saveSettingsMutation = useMutation({
-    mutationFn: (s: AudioSettingsDto) => saveAdminAudioSettings(s),
+    mutationFn: (s: AudioSettingsDto) => patchAudioSettings(s),
     onSuccess: async () => {
       // Show the server's copy once it is read back, so a setting the server normalised is not left looking unsaved
-      await queryClient.invalidateQueries({ queryKey: adminQueryKeys.audioSettings() });
+      await queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.audioSettings() });
       setLocalSettings(null);
       toast.success('Audio settings saved.');
     },
