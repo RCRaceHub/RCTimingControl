@@ -13,6 +13,12 @@ function renderDoc(source: string) {
 }
 
 describe('DocMarkdown', () => {
+  it('shows only bundled screenshots and falls back to the alt text for any other image', () => {
+    const { container } = renderDoc('![Missing shot](images/nope.png) ![Remote](https://example.com/x.png)');
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('Missing shot')).toBeInTheDocument();
+  });
+
   it('gives headings GitHub-style ids', () => {
     renderDoc('# Title\n\n## First run\n\n## First run\n');
     expect(screen.getByRole('heading', { name: 'Title' })).toHaveAttribute('id', 'title');

@@ -4,6 +4,19 @@ import { Link } from 'react-router-dom';
 import { slugger } from './markdown';
 import { resolveDocLink } from './links';
 
+// The manual's screenshots (docs/images/*.png), bundled with the app so they show offline. A doc refers to one as
+// `![alt](images/name.png)`, which also works when the file is read on GitHub.
+const DOC_IMAGES = import.meta.glob('../../../docs/images/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
+function docImageUrl(src: string | undefined): string | undefined {
+  if (!src) return undefined;
+  return DOC_IMAGES[`../../../docs/${src.replace(/^\.?\//, '')}`];
+}
+
 interface MdNode {
   type: string;
   value?: string;
@@ -48,8 +61,12 @@ export function DocMarkdown({ source, slug }: { source: string; slug: string }) 
             // Not a page of the site (a developer doc or a file), so there is nothing to open
             return <span>{children}</span>;
           },
-          // No external images: the site works offline
-          img: ({ alt }) => (alt ? <span>{alt}</span> : null),
+          // Only the bundled screenshots: no external images, so the site works offline
+          img({ src, alt }) {
+            const url = typeof src === 'string' ? docImageUrl(src) : undefined;
+            if (url) return <img src={url} alt={alt ?? ''} loading="lazy" className="docs-shot" />;
+            return alt ? <span>{alt}</span> : null;
+          },
           table: ({ children }) => <div className="docs-table"><table>{children}</table></div>,
         }}
       >

@@ -3,6 +3,7 @@
 export const DOC_SOURCES = import.meta.glob(
   [
     '../../../docs/user-manual.md',
+    '../../../docs/walkthroughs.md',
     '../../../docs/trial-quickstart.md',
     '../../../docs/installing.md',
     '../../../docs/docker.md',
