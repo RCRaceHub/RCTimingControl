@@ -136,8 +136,8 @@ describe('OverlayBoard', () => {
     renderOverlay();
 
     expect(await screen.findByText('No race on track')).toBeInTheDocument();
-    expect(document.body.style.background).toBe('transparent');
-    expect(document.documentElement.style.background).toBe('transparent');
+    expect(document.body.style.backgroundColor).toBe('transparent');
+    expect(document.documentElement.style.backgroundColor).toBe('transparent');
   });
 
   it('shows the race, its running order, laps, last lap and time to go', async () => {
@@ -346,8 +346,9 @@ describe('OverlayBoard timing tower', () => {
     renderOverlay();
 
     const rows = await screen.findAllByRole('row');
-    expect(rows[0]).toHaveStyle({ transform: 'translateY(0rem)' });
-    expect(rows[1]).toHaveStyle({ transform: `translateY(${TOWER_ROW_REM}rem)` });
+    // jsdom resolves rem to px at the default 16px root
+    expect(rows[0]).toHaveStyle({ transform: 'translateY(0px)' });
+    expect(rows[1]).toHaveStyle({ transform: `translateY(${TOWER_ROW_REM * 16}px)` });
     expect(rows[1]).toHaveTextContent('Ada Lovelace');
     expect(rows[1]).toHaveTextContent('+1.250');
   });
