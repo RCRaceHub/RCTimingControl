@@ -293,6 +293,14 @@ export async function moveEntryToHeat(
   await api.post(`/api/v1/race-control/race/${raceId}/move-entry`, req);
 }
 
+/** Adds an entry that is in no heat yet to the back of a pending heat (and, with allRounds, later pending rounds). */
+export async function addEntryToHeat(
+  raceId: number,
+  req: { entryId: number; allRounds: boolean },
+): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/add-entry`, req);
+}
+
 export async function linkUnknownTransponder(
   raceId: number,
   transponderNumber: string,

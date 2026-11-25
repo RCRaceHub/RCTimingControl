@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.api.racecontrol;
 
+import dev.monkeypatch.rctiming.api.racecontrol.dto.AddEntryToHeatRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.FeaturedDriverRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MarshalAdjustmentRequest;
 import dev.monkeypatch.rctiming.api.racecontrol.dto.MoveEntryRequest;
@@ -255,6 +256,20 @@ public class RaceControlController {
     public ResponseEntity<Void> moveEntry(@PathVariable long raceId, @Valid @RequestBody MoveEntryRequest request) {
         heatMoveService.moveEntry(CurrentOfficial.actor(), raceId, request.entryId(), request.targetRaceId(),
                 request.allRounds());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Adds an entry that is in no heat yet, such as a walk-in made after the run order was generated, to the back of a
+     * pending heat of its class and, with {@code allRounds}, to the same heat in every later round that still has it
+     * pending. {@code POST /race/{raceId}/add-entry}; 204 on success. 400 if the heat is a final or the entry is not
+     * a confirmed entry of the heat's class; 404 for an unknown heat or entry; 409 if the heat has been called or
+     * started, or the entry is already in a heat of the round. Admin or race director. Recorded in the audit log.
+     */
+    @Audited("audit_log")
+    @PostMapping("/race/{raceId}/add-entry")
+    public ResponseEntity<Void> addEntry(@PathVariable long raceId, @Valid @RequestBody AddEntryToHeatRequest request) {
+        heatMoveService.addEntry(CurrentOfficial.actor(), raceId, request.entryId(), request.allRounds());
         return ResponseEntity.noContent().build();
     }
 

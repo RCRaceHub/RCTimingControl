@@ -17,10 +17,12 @@ import dev.monkeypatch.rctiming.practice.dto.PracticeTimingRowDto;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * Runs on the single timing thread, like LapTimingService, so passings arrive in decoder order. Lap time
  * is the difference between a transponder's consecutive rtcTimeMicros (UTC epoch microseconds, as in
- * LiveRaceState). CrossingTime uses Instant.now() (the time the server handled the passing).
+ * LiveRaceState). CrossingTime uses the injected clock (the time the server handled the passing).
  */
 @Service
 public class PracticeTimingService {
@@ -58,12 +60,14 @@ public class PracticeTimingService {
     private final CompetitorRepository competitorRepository;
     private final UserRepository userRepository;
     private final PracticeTimingHub timingHub;
+    private final Clock clock;
 
     /** Active practice session states keyed by sessionId. */
     private final Map<Long, LivePracticeState> activeStates = new ConcurrentHashMap<>();
 
     private final ModuleSwitch moduleSwitch;
 
+    @Autowired
     public PracticeTimingService(PracticeSessionRepository sessionRepository,
                                  PracticeLapRepository lapRepository,
                                  PracticeDriverRepository driverRepository,
@@ -72,6 +76,20 @@ public class PracticeTimingService {
                                  UserRepository userRepository,
                                  PracticeTimingHub timingHub,
                                  ModuleSwitch moduleSwitch) {
+        this(sessionRepository, lapRepository, driverRepository, entryRepository, competitorRepository,
+                userRepository, timingHub, moduleSwitch, Clock.systemUTC());
+    }
+
+    PracticeTimingService(PracticeSessionRepository sessionRepository,
+                          PracticeLapRepository lapRepository,
+                          PracticeDriverRepository driverRepository,
+                          EntryRepository entryRepository,
+                          CompetitorRepository competitorRepository,
+                          UserRepository userRepository,
+                          PracticeTimingHub timingHub,
+                          ModuleSwitch moduleSwitch,
+                          Clock clock) {
+        this.clock = clock;
         this.moduleSwitch = moduleSwitch;
         this.sessionRepository = sessionRepository;
         this.lapRepository = lapRepository;
@@ -130,7 +148,7 @@ public class PracticeTimingService {
         }
 
         String transponderNumber = event.transponderNumber();
-        Instant crossingTime = Instant.now();
+        Instant crossingTime = clock.instant();
 
         LivePracticeState.Passing passing = state.notePassing(transponderNumber, event.rtcTimeMicros(),
                 () -> lapRepository.highestRunNumber(session.getId(), transponderNumber));

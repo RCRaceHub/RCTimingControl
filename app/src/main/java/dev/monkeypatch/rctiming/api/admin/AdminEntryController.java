@@ -83,7 +83,7 @@ public class AdminEntryController {
                 new EntryService.WalkIn(req.eventId(), req.eventClassId(), req.competitorId(), req.competitorName(),
                         req.primaryTransponder(), req.secondaryTransponder(), req.confirmNewCompetitor(),
                         req.thirdTransponder(), req.fourthTransponder()));
-        return new EntryResult(EntryDto.from(result.entry()), result.warnings());
+        return new EntryResult(EntryDto.from(result.entry()), result.entry().getCompetitorId(), result.warnings());
     }
 
     /**
