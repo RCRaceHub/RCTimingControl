@@ -21,7 +21,15 @@ To build an installer yourself, see [Building the installers](#building-the-inst
 
 **macOS.** The package is not signed yet, so double-clicking it shows a warning. Right-click the `.pkg` file, choose **Open**, then **Open** again. Or open **System Settings → Privacy & Security** and choose **Open Anyway**.
 
-**Linux.** On Ubuntu, Debian or another Debian-based system (64-bit Intel or AMD, or 64-bit ARM such as a Raspberry Pi 4 or 5), install from the club's apt repository, so later releases arrive with the laptop's normal updates:
+**Linux.** On Ubuntu, Debian or another Debian-based system (64-bit Intel or AMD, or 64-bit ARM such as a Raspberry Pi 4 or 5), download the `.deb` for your processor (`_amd64.deb`, or `_arm64.deb` on ARM) from the releases page and install it:
+
+```bash
+sudo apt install ./rctimingcontrol_<version>_amd64.deb
+```
+
+The service starts as soon as the install finishes. To update, download the newer `.deb` and run the same command; the service restarts and keeps its data. Alphas built after `v0.2.0-alpha.1` carry a build number, so apt treats each newer one as an upgrade.
+
+**An apt repository is planned but not published yet.** Until the first stable release, install and update from the `.deb` files as above. When it is live, the club's repository will let later releases arrive with the laptop's normal updates:
 
 ```bash
 sudo install -d -m 0755 /etc/apt/keyrings
@@ -32,14 +40,6 @@ sudo apt install rctimingcontrol
 ```
 
 The packages are signed, and apt checks the signature against that key. The service starts as soon as the install finishes. To update later, run `sudo apt update && sudo apt upgrade`; the service restarts and keeps its data. The repository has two channels. **stable**, which the commands above use, carries the newest final release. **testing** also carries alpha and other pre-releases, for trying a new version before race day; to follow it, download `rctimingcontrol-testing.sources` instead of `rctimingcontrol.sources` (use only one of the two, and delete the other file from `/etc/apt/sources.list.d/` to switch). Until the first final release (1.0), stable is empty, so use testing: download `rctimingcontrol-testing.sources` in the second command above. Each channel holds one release; older ones stay on the GitHub releases page. The laptop needs the internet only to install and update, not for racing.
-
-With no internet at the track, or to install one particular release, download its `.deb` from the releases page and run:
-
-```bash
-sudo apt install ./rctimingcontrol_<version>_amd64.deb
-```
-
-(Use the `_arm64.deb` on ARM.)
 
 ## First run
 
