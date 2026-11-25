@@ -10,6 +10,7 @@ export interface DocEntry {
 
 export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'user-manual', title: 'User manual', file: 'user-manual.md', section: 'Getting started' },
+  { slug: 'walkthroughs', title: 'Walkthroughs', file: 'walkthroughs.md', section: 'Getting started' },
   { slug: 'trial-quickstart', title: 'Trial quickstart', file: 'trial-quickstart.md', section: 'Getting started' },
   { slug: 'installing', title: 'Installing', file: 'installing.md', section: 'Setting up' },
   { slug: 'docker', title: 'Running with Docker', file: 'docker.md', section: 'Setting up' },

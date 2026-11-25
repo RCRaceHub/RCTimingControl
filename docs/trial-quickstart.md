@@ -62,6 +62,8 @@ Go to **[http://localhost:8080](http://localhost:8080)** and sign in as `admin@e
 
 ## Things to try
 
+[walkthroughs.md](walkthroughs.md) follows the same demo club through a whole race day, with a picture of every screen.
+
 ### Run a race with live timing
 
 The demo has seven open events named **Demo: ...**, one for each race type (listed in [Docker](docker.md#one-event-for-each-race-type)), and none has races yet. These steps use **Demo: Bump-up finals**. These steps take it through a race day.

@@ -277,6 +277,18 @@ To add a guide:
 
 `npm test` fails if a manifest entry has no file, if a file is bundled without an entry, or if a bundled doc links to a doc or heading that isn't in the site.
 
+### Screenshots in the docs and remaking them
+
+A doc shows a screen with `![what it shows](images/name.png)`. The pictures live in `docs/images/`, are bundled into the app with the docs, and also show when the file is read on GitHub. `npm test` fails if a doc refers to a picture that is not there.
+
+They are made by `frontend/scripts/manual-screenshots.mjs`, which drives the real app with Playwright. Remake them whenever a screen the manual shows has changed:
+
+1. Build the app with the UI (`./gradlew -PbundleFrontend :app:bootJar -x generateJooq`).
+2. Start it on an **empty** data folder with the demo club, plus the simulated decoder: `RCTIMING_DATA_DIR=/tmp/shots java -jar app/build/libs/app.jar --spring.profiles.active=demo --tts.enabled=false`, and `java -jar app/build/libs/app.jar simulate`. The script runs a real meeting on *Demo: Bump-up finals*, so a used database will not do.
+3. For the setup wizard pictures, start a second copy on a new, empty data folder with no profile and `--server.port=8081`.
+4. From `frontend/`, run `node scripts/manual-screenshots.mjs`. Name sections (`raceday`, `practice`, `tour`, `setup`) to run only those. It takes about seven minutes, because it lets real races run for a short while. `BASE_URL`, `SETUP_URL`, `SHOTS_DIR` and `PW_CHROMIUM` (a Chrome binary, if Playwright's own is not installed) change where it looks and writes.
+5. Look at the pictures that changed, and commit them with the doc change. A step that fails is listed at the end; set `FAIL_DIR` to a folder to get a screenshot of where it stopped.
+
 ## Makefile targets
 
 Run `make help` to see all targets. Quick reference:
