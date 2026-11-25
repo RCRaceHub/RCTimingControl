@@ -13,6 +13,7 @@ export const DOC_SOURCES = import.meta.glob(
     '../../../docs/walkthroughs/7-results-and-printing.md',
     '../../../docs/walkthroughs/8-championships.md',
     '../../../docs/walkthroughs/9-screens.md',
+    '../../../docs/walkthroughs/10-config-file.md',
     '../../../docs/trial-quickstart.md',
     '../../../docs/installing.md',
     '../../../docs/docker.md',

@@ -34,6 +34,8 @@ The settings are applied before the app starts accepting connections, so nobody 
 
 Everything is done in one step and recorded in the audit log as the system. Track, race formats, classes and more officials are still added in the app, or by an RaceHub import. The RaceHub key is set with `rctiming.racehub.token`.
 
+A step-by-step version with pictures is [walkthrough 10](walkthroughs/10-config-file.md).
+
 ## Environment variables and Docker
 
 Each setting is also an environment variable: upper-case it and replace the dots and dashes with underscores, so `rctiming.provisioning.admin.email` is `RCTIMING_PROVISIONING_ADMIN_EMAIL`. In Docker Compose:
@@ -52,3 +54,5 @@ services:
 ```
 
 The password is only used to create the account. After the first start, remove it from the file or environment; the admin can change it on their own page.
+
+To use a settings file in a container instead, mount it as `/data/application.properties` and add `SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/data/` to the environment: only the installed service looks in the data folder by itself. Running the jar by hand needs the same, as `--spring.config.additional-location=optional:file:/path/to/folder/`.

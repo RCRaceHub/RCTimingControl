@@ -13,3 +13,4 @@ The pictures are made by a script from the real app, so they match the current s
 7. [Finish the meeting: results and printing](walkthroughs/7-results-and-printing.md)
 8. [Championships](walkthroughs/8-championships.md)
 9. [Put it on screens](walkthroughs/9-screens.md)
+10. [Set up from a config file](walkthroughs/10-config-file.md) (skip the wizard on a new install)

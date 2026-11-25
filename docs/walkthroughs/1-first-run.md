@@ -40,7 +40,7 @@ Part of the [walkthroughs](../walkthroughs.md), which follow one imaginary club 
 
    ![RaceHub classes step of the setup wizard](../images/setup-racehub.png)
 
-Anything you skip can be done later from the sidebar. A club that rebuilds its laptop often can skip the wizard completely: [provisioning.md](../provisioning.md).
+Anything you skip can be done later from the sidebar. A club that rebuilds its laptop often can skip the wizard completely: [walkthrough 10](10-config-file.md) shows how, and [provisioning.md](../provisioning.md) lists the settings.
 
 **Next:** add the classes your club races under **Racing setup**, then create a meeting ([walkthrough 2](2-entries-and-walk-ins.md)).
 

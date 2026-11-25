@@ -44,4 +44,4 @@ The **Docs** link in the sidebar opens this guide and the others inside the app,
 
 ---
 
-[← 8. Championships](8-championships.md) · [All walkthroughs](../walkthroughs.md)
+[← 8. Championships](8-championships.md) · [All walkthroughs](../walkthroughs.md) · [10. Set up from a config file →](10-config-file.md)
