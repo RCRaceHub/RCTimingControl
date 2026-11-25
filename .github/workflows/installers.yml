@@ -216,7 +216,7 @@ jobs:
             |--------|------|
             | Windows 10 or 11 (64-bit) | the `.msi` |
             | macOS 12 or later | the `.pkg` |
-            | Ubuntu or another Debian-based Linux | the `.deb`, or install with `apt` from the repository in the install guide |
+            | Ubuntu or another Debian-based Linux | the `.deb`, installed with `sudo apt install ./<file>.deb` |
 
             It installs RC Timing Control as a service that starts with the computer. Then open http://localhost:8080 to set up the club. See the [install guide](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/installing.md) for each system, and [trying it out](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/trial-quickstart.md) to explore it with a demo club and a simulated decoder.
 
