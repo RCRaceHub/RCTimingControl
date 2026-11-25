@@ -162,7 +162,9 @@ public class LiveSectorService {
     public void onRaceRestarted(RaceRestartedEvent event) {
         long raceId = event.raceId();
         try {
-            lapSectors.deleteForRace(raceId);
+            if (moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+                lapSectors.deleteForRace(raceId);
+            }
         } catch (RuntimeException e) {
             log.error("Could not remove the saved sector times of race {}", raceId, e);
         }

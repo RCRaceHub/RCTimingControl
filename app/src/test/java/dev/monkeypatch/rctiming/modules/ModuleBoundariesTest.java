@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <li>An event listener, scheduled job or message handler in a module mentions {@code ModuleSwitch}, so it is idle
  * while the module is off. {@code @RequiresModule} covers controllers and is not enough for these.</li>
  * </ol>
- * No feature is a module yet, so these rules pass with nothing to check; the fixtures below show what they catch.
+ * The fixtures below show what the rules catch. Only imports are read, so a fully qualified name slips past rule 1 and 2.
  */
 class ModuleBoundariesTest {
 

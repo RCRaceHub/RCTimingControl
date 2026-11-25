@@ -59,6 +59,22 @@ class ModuleSwitchTest {
     }
 
     @Test
+    void switchingToTheStateItAlreadyHasPublishesNothing() {
+        moduleSwitch.setEnabled("screens", true, Actor.official(7));
+
+        org.mockito.Mockito.verify(publisher, org.mockito.Mockito.never()).publishEvent(any(ModuleSwitchedEvent.class));
+    }
+
+    @Test
+    void aListenerThatFailsDoesNotFailTheSwitch() {
+        org.mockito.Mockito.doThrow(new IllegalStateException("boom")).when(publisher).publishEvent(any(ModuleSwitchedEvent.class));
+
+        moduleSwitch.setEnabled("screens", false, Actor.official(7));
+
+        assertThat(moduleSwitch.isEnabled("screens")).isFalse();
+    }
+
+    @Test
     void switchingOffTakesEffectAtOnceSavesAndAudits() {
         moduleSwitch.setEnabled("screens", false, Actor.official(7));
 

@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.practice;
 
-import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -52,17 +52,13 @@ public class PracticeSessionService {
     private final RaceRepository raceRepository;
     private final PracticeDriverRepository driverRepository;
 
-    private final ModuleSwitch moduleSwitch;
-
     public PracticeSessionService(PracticeSessionRepository sessionRepository,
                                   EventRepository eventRepository,
                                   UserRepository userRepository,
                                   PracticeTimingService timingService,
                                   AuditService audit,
                                   RaceRepository raceRepository,
-                                  PracticeDriverRepository driverRepository,
-                                  ModuleSwitch moduleSwitch) {
-        this.moduleSwitch = moduleSwitch;
+                                  PracticeDriverRepository driverRepository) {
         this.sessionRepository = sessionRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -229,12 +225,29 @@ public class PracticeSessionService {
     @EventListener
     @Transactional
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
-        if (event.getNewStatus() != RaceStatus.RUNNING || !moduleSwitch.isEnabled(PracticeModule.ID)) {
+        if (event.getNewStatus() != RaceStatus.RUNNING) {
             return;
         }
         for (PracticeSession running : sessionRepository.findRunningSessions()) {
             stop(Actor.system("race-start"), running.getId(), event.getRaceId());
             log.info("Race {} started, so practice session {} was stopped", event.getRaceId(), running.getId());
+        }
+    }
+
+    /**
+     * Switching practice off stops any session still running, so it is not left RUNNING in the database and does not
+     * pick laps up again, with the track time a race used, when the module is switched back on. Runs after the
+     * switch committed, in its own transaction.
+     */
+    @EventListener
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void onModuleSwitched(ModuleSwitchedEvent event) {
+        if (!PracticeModule.ID.equals(event.moduleId()) || event.enabled()) {
+            return;
+        }
+        for (PracticeSession running : sessionRepository.findRunningSessions()) {
+            stop(Actor.system("module-switch"), running.getId(), null);
+            log.info("Practice was switched off, so practice session {} was stopped", running.getId());
         }
     }
 

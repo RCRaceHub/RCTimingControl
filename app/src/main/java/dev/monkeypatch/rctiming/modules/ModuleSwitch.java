@@ -33,6 +33,8 @@ import java.util.Set;
 @Service
 public class ModuleSwitch {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ModuleSwitch.class);
+
     private final ModuleRegistry registry;
     private final ModuleSwitchRepository repository;
     private final AuditService audit;
@@ -120,8 +122,9 @@ public class ModuleSwitch {
     public void setEnabled(String moduleId, boolean enabled, Actor actor) {
         ModuleDescriptor module = registry.find(moduleId)
                 .orElseThrow(() -> new EntityNotFoundException("No module called " + moduleId));
+        boolean before;
         synchronized (lock) {
-            boolean before = loadClub().getOrDefault(moduleId, true);
+            before = loadClub().getOrDefault(moduleId, true);
             repository.saveSwitch(moduleId, enabled, actor.userId(), clock.instant());
             if (before != enabled) {
                 audit.entry(actor, "MODULE_SWITCHED").entity("module", moduleId)
@@ -135,7 +138,14 @@ public class ModuleSwitch {
                 next.put(moduleId, enabled);
                 clubSwitches = Map.copyOf(next);
             }
-            publisher.publishEvent(new ModuleSwitchedEvent(moduleId, enabled));
+            if (before != enabled) {
+                // The change is committed and audited: a listener that fails must not turn it into a 500
+                try {
+                    publisher.publishEvent(new ModuleSwitchedEvent(moduleId, enabled));
+                } catch (RuntimeException e) {
+                    log.error("A listener failed after module {} was switched {}", moduleId, enabled ? "on" : "off", e);
+                }
+            }
         });
     }
 

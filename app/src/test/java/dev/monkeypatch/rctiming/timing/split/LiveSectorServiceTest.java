@@ -141,6 +141,15 @@ class LiveSectorServiceTest {
     }
 
     @Test
+    void aRestartWhileTheModuleIsOff_keepsTheSavedSectors() {
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(false);
+
+        service.onRaceRestarted(new RaceRestartedEvent(RACE));
+
+        org.mockito.Mockito.verify(lapSectors, org.mockito.Mockito.never()).deleteForRace(RACE);
+    }
+
+    @Test
     void aRestart_alsoRemovesTheSavedSectors() {
         service.onRaceRestarted(new RaceRestartedEvent(RACE));
 

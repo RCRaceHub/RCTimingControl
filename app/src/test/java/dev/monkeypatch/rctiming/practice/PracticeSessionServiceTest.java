@@ -25,20 +25,33 @@ import static org.mockito.Mockito.when;
 
 class PracticeSessionServiceTest {
 
-    private static dev.monkeypatch.rctiming.modules.ModuleSwitch moduleSwitch() {
-        var moduleSwitch = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class,
-                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
-        org.mockito.Mockito.when(moduleSwitch.isEnabled(PracticeModule.ID)).thenReturn(true);
-        return moduleSwitch;
-    }
-
     private final PracticeSessionRepository sessions = mock(PracticeSessionRepository.class);
     private final PracticeDriverRepository drivers = mock(PracticeDriverRepository.class);
     private final RaceRepository races = mock(RaceRepository.class);
     private final AuditService audit = mock(AuditService.class, Answers.RETURNS_DEEP_STUBS);
     private final PracticeSessionService service = new PracticeSessionService(sessions,
             mock(EventRepository.class), mock(UserRepository.class), mock(PracticeTimingService.class), audit, races,
-            drivers, moduleSwitch());
+            drivers);
+
+    @Test
+    void switchingPracticeOffStopsTheSessionsThatAreRunning() {
+        PracticeSession running = session(5L);
+        when(running.getStatus()).thenReturn(PracticeStatus.RUNNING);
+        when(sessions.findRunningSessions()).thenReturn(java.util.List.of(running));
+        when(sessions.getOrThrow(5L)).thenReturn(running);
+        when(sessions.save(running)).thenReturn(running);
+
+        service.onModuleSwitched(new dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent(PracticeModule.ID, false));
+
+        org.mockito.Mockito.verify(running).stop();
+    }
+
+    @Test
+    void switchingPracticeOnStopsNothing() {
+        service.onModuleSwitched(new dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent(PracticeModule.ID, true));
+
+        org.mockito.Mockito.verify(sessions, org.mockito.Mockito.never()).findRunningSessions();
+    }
 
     private static PracticeSession session(long id) {
         PracticeSession s = mock(PracticeSession.class);
