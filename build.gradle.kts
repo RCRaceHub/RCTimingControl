@@ -15,12 +15,14 @@ allprojects {
 }
 
 subprojects {
+    // Fail the build on any compiler warning, so a deprecated or removal-marked API cannot creep back in. The
+    // lint names each one in the output, instead of javac's one-line "Note". A warning that is truly needed goes
+    // behind @SuppressWarnings, with a comment saying why.
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Werror"))
+    }
     // Print a failed assertion's message, not just its class and line, so a failure seen only in CI can
     // be read from the build log (#117)
-    // Name each deprecated or removal-marked API a compile uses, instead of javac's one-line "Note"
-    tasks.withType<JavaCompile>().configureEach {
-        options.compilerArgs.add("-Xlint:deprecation")
-    }
     tasks.withType<Test>().configureEach {
         testLogging {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

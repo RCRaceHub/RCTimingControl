@@ -52,6 +52,11 @@ dependencies {
 
     // jOOQ for all reads and writes, with Spring JDBC transactions and the Hikari pools (#69)
     implementation("org.springframework.boot:spring-boot-starter-jooq")
+    // jOOQ's classes carry a JAXB annotation. Without its class on the compile path, javac warns "unknown enum
+    // constant XmlAccessType.FIELD", which fails the build now that warnings are errors. Compile only: nothing
+    // reads the annotation at run time.
+    compileOnly("jakarta.xml.bind:jakarta.xml.bind-api")
+    testCompileOnly("jakarta.xml.bind:jakarta.xml.bind-api")
 
     // L1: the app reads the decoder directly (DecoderListener) using the shared RC-4 parser
     implementation(project(":decoder-protocol"))
