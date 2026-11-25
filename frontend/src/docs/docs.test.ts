@@ -76,3 +76,13 @@ describe('heading anchors', () => {
     expect(ids).toEqual(['a', 'same', 'same-1']);
   });
 });
+
+describe('old walkthrough anchors', () => {
+  it('each lead to a page that is in the site', async () => {
+    const { LEGACY_WALKTHROUGH_ANCHORS } = await import('./manifest');
+    expect(Object.keys(LEGACY_WALKTHROUGH_ANCHORS)).toHaveLength(9);
+    for (const slug of Object.values(LEGACY_WALKTHROUGH_ANCHORS)) {
+      expect(DOC_MANIFEST.some(e => e.slug === slug), slug).toBe(true);
+    }
+  });
+});
