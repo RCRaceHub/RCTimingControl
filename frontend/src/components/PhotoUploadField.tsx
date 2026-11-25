@@ -27,44 +27,36 @@ const CHECKERBOARD = {
  * photo dialogs.
  */
 export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false }: PhotoUploadFieldProps) {
-  const [original, setOriginal] = useState<File | null>(null);
-  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  // Each picture keeps the object URL made for it, created when it arrives and revoked when it is replaced or dropped
+  const [original, setOriginal] = useState<{ file: File; url: string } | null>(null);
   const [remove, setRemove] = useState(false);
-  const [cutout, setCutout] = useState<Blob | null>(null);
-  const [cutoutUrl, setCutoutUrl] = useState<string | null>(null);
+  const [cutout, setCutout] = useState<{ blob: Blob; url: string } | null>(null);
   const [working, setWorking] = useState(false);
   // Bumped by every new pick or cancel, so a cut-out that finishes late is thrown away instead of attached to another file
   const request = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
+  // The URLs on screen now, so the ones still held are revoked when the field goes away
+  const held = useRef<string[]>([]);
   useEffect(() => {
-    if (!original) return;
-    const url = URL.createObjectURL(original);
-    setOriginalUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [original]);
-
-  useEffect(() => {
-    if (!cutout) return;
-    const url = URL.createObjectURL(cutout);
-    setCutoutUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [cutout]);
+    held.current = [original?.url, cutout?.url].filter((u): u is string => !!u);
+  });
+  useEffect(() => () => held.current.forEach(u => URL.revokeObjectURL(u)), []);
 
   const reset = () => {
     request.current += 1;
     setWorking(false);
+    if (original) URL.revokeObjectURL(original.url);
+    if (cutout) URL.revokeObjectURL(cutout.url);
     setOriginal(null);
-    setOriginalUrl(null);
     setCutout(null);
-    setCutoutUrl(null);
     setRemove(false);
     setError(null);
   };
 
   const choose = (file: File) => {
     reset();
-    setOriginal(file);
+    setOriginal({ file, url: URL.createObjectURL(file) });
   };
 
   const toggle = async (checked: boolean) => {
@@ -74,8 +66,8 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
     const mine = ++request.current;
     setWorking(true);
     try {
-      const result = await removeBackground(original);
-      if (mine === request.current) setCutout(result);
+      const result = await removeBackground(original.file);
+      if (mine === request.current) setCutout({ blob: result, url: URL.createObjectURL(result) });
     } catch (e) {
       if (mine !== request.current) return;
       setRemove(false);
@@ -88,8 +80,8 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
   const save = () => {
     if (!original) return;
     const file = remove && cutout
-      ? new File([cutout], original.name.replace(/\.[^.]+$/, '') + '.png', { type: 'image/png' })
-      : original;
+      ? new File([cutout.blob], original.file.name.replace(/\.[^.]+$/, '') + '.png', { type: 'image/png' })
+      : original.file;
     onSave(file);
     reset();
   };
@@ -116,15 +108,15 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
           <div className="grid grid-cols-2 gap-2">
             <figure className="space-y-1">
               <div className="flex h-32 items-center justify-center overflow-hidden rounded bg-muted">
-                {originalUrl && <img src={originalUrl} alt="Original" className="max-h-full max-w-full object-contain" />}
+                <img src={original.url} alt="Original" className="max-h-full max-w-full object-contain" />
               </div>
               <figcaption className="text-xs text-muted-foreground">Original</figcaption>
             </figure>
             <figure className="space-y-1">
               <div className="flex h-32 items-center justify-center overflow-hidden rounded" style={CHECKERBOARD}>
                 {working && <span className="text-xs text-muted-foreground">Removing the background…</span>}
-                {!working && remove && cutoutUrl && (
-                  <img src={cutoutUrl} alt="Without background" className="max-h-full max-w-full object-contain" />
+                {!working && remove && cutout && (
+                  <img src={cutout.url} alt="Without background" className="max-h-full max-w-full object-contain" />
                 )}
                 {!working && !remove && <span className="rounded bg-background/80 px-1 text-xs text-muted-foreground">Not changed</span>}
               </div>
