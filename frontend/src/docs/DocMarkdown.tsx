@@ -2,19 +2,21 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom';
 import { slugger } from './markdown';
-import { resolveDocLink } from './links';
+import { DOC_MANIFEST } from './manifest';
+import { resolveDocLink, resolveDocPath } from './links';
 
 // The manual's screenshots (docs/images/*.png), bundled with the app so they show offline. A doc refers to one as
-// `![alt](images/name.png)`, which also works when the file is read on GitHub.
+// `![alt](images/name.png)` (`../images/` from a doc in a subfolder), which also works when the file is read on GitHub.
 const DOC_IMAGES = import.meta.glob('../../../docs/images/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
 }) as Record<string, string>;
 
-function docImageUrl(src: string | undefined): string | undefined {
+function docImageUrl(src: string | undefined, slug: string): string | undefined {
   if (!src) return undefined;
-  return DOC_IMAGES[`../../../docs/${src.replace(/^\.?\//, '')}`];
+  const from = DOC_MANIFEST.find(e => e.slug === slug)?.file ?? '';
+  return DOC_IMAGES[`../../../docs/${resolveDocPath(src, from)}`];
 }
 
 interface MdNode {
@@ -63,7 +65,7 @@ export function DocMarkdown({ source, slug }: { source: string; slug: string }) 
           },
           // Only the bundled screenshots: no external images, so the site works offline
           img({ src, alt }) {
-            const url = typeof src === 'string' ? docImageUrl(src) : undefined;
+            const url = typeof src === 'string' ? docImageUrl(src, slug) : undefined;
             if (url) return <img src={url} alt={alt ?? ''} loading="lazy" className="docs-shot" />;
             return alt ? <span>{alt}</span> : null;
           },
