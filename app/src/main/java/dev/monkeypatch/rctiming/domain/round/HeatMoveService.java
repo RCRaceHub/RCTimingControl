@@ -159,7 +159,8 @@ public class HeatMoveService {
         raceIds.add(target.getId());
         if (allRounds) {
             for (Round round : roundRepository.findByEventIdOrderBySequenceInEvent(targetRound.getEventId())) {
-                if (round.getSequenceInEvent() <= targetRound.getSequenceInEvent()) {
+                if (round.getId().equals(target.getRoundId())
+                        || round.getSequenceInEvent() < targetRound.getSequenceInEvent()) {
                     continue;
                 }
                 Race to = heatOf(round, target);

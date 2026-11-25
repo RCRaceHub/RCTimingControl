@@ -56,6 +56,7 @@ class HeatMoveServiceTest {
         Round round = new Round();
         round.setId(9L);
         round.setEventId(3L);
+        round.setSequenceInEvent(1);
         lenient().when(raceRepository.getOrThrow(1L)).thenReturn(heat1);
         lenient().when(raceRepository.getOrThrow(2L)).thenReturn(heat2);
         lenient().when(roundRepository.getOrThrow(9L)).thenReturn(round);
