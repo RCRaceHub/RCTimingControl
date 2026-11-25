@@ -22,6 +22,12 @@ import static org.mockito.Mockito.when;
 /** The opt-in hooks from the event flow to the screens (#716): off by default, and only when the moment is right. */
 class ScreenMessageHooksTest {
 
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch moduleSwitch() {
+        var moduleSwitch = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class);
+        org.mockito.Mockito.when(moduleSwitch.isEnabled(ScreensModule.ID)).thenReturn(true);
+        return moduleSwitch;
+    }
+
     private static final ScreenMessage HOLD = new ScreenMessage("Finals being calculated", "Lists soon", "hold", "info", null);
     private static final ScreenMessage UP = new ScreenMessage("Finals lists are up", null, "announce", "info", 30);
 
@@ -31,7 +37,8 @@ class ScreenMessageHooksTest {
     private final RaceRepository races = mock(RaceRepository.class);
     private final EventClassRepository eventClasses = mock(EventClassRepository.class);
     private final FinalsLineupService lineups = mock(FinalsLineupService.class);
-    private final ScreenMessageHooks hooks = new ScreenMessageHooks(settings, messages, screens, races, eventClasses, lineups);
+    private final ScreenMessageHooks hooks = new ScreenMessageHooks(settings, messages, screens, races, eventClasses, lineups,
+            moduleSwitch());
 
     @BeforeEach
     void aRaceInAnEventWithTwoScreens() {

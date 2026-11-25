@@ -1,7 +1,9 @@
-package dev.monkeypatch.rctiming.api.admin;
+package dev.monkeypatch.rctiming.api.screens;
 
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenPlaylistDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenPlaylistRequest;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
+import dev.monkeypatch.rctiming.screens.ScreensModule;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenPlaylistDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenPlaylistRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.screens.ScreenPlaylist;
 import dev.monkeypatch.rctiming.screens.ScreenService;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/screen-playlists")
+@RequiresModule(ScreensModule.ID)
 @RaceControlStaff
 public class AdminScreenPlaylistController {
 

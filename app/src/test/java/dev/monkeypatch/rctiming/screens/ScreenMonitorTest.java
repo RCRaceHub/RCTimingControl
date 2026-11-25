@@ -23,12 +23,28 @@ import static org.mockito.Mockito.when;
 /** How the monitor turns polls into a state (#708): online, unreachable, offline, drift and warnings. */
 class ScreenMonitorTest {
 
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch moduleSwitch() {
+        var moduleSwitch = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class);
+        org.mockito.Mockito.when(moduleSwitch.isEnabled(ScreensModule.ID)).thenReturn(true);
+        return moduleSwitch;
+    }
+
     private static final Instant NOW = Instant.parse("2026-11-01T10:00:00Z");
 
     private final ScreenRepository repository = mock(ScreenRepository.class);
     private final ViewerClient client = mock(ViewerClient.class);
-    private final ScreenMonitor monitor = new ScreenMonitor(repository, client, Clock.fixed(NOW, ZoneOffset.UTC));
+    private final ScreenMonitor monitor = new ScreenMonitor(repository, client, moduleSwitch(), Clock.fixed(NOW, ZoneOffset.UTC));
     private Screen screen;
+
+    @Test
+    void pollsNothingWhileTheModuleIsOff() {
+        var off = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class);
+        var idle = new ScreenMonitor(repository, client, off, Clock.fixed(NOW, ZoneOffset.UTC));
+
+        idle.pollAll();
+
+        org.mockito.Mockito.verifyNoInteractions(repository, client);
+    }
 
     @BeforeEach
     void setUp() {

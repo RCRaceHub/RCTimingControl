@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.admin.dto;
+package dev.monkeypatch.rctiming.api.screens.dto;
 
 import dev.monkeypatch.rctiming.screens.ScreenMessage;
 import jakarta.validation.constraints.NotEmpty;

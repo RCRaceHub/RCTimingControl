@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.admin.dto;
+package dev.monkeypatch.rctiming.api.screens.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

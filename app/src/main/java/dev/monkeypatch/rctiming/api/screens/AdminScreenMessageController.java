@@ -1,12 +1,14 @@
-package dev.monkeypatch.rctiming.api.admin;
+package dev.monkeypatch.rctiming.api.screens;
 
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenActionResultDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenBannerRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenFinalsUpDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenFinalsUpRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenIdsRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenMessageRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenMessageSettingsDto;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
+import dev.monkeypatch.rctiming.screens.ScreensModule;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenActionResultDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenBannerRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenFinalsUpDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenFinalsUpRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenIdsRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenMessageRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenMessageSettingsDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.screens.MessageSettingsService;
 import dev.monkeypatch.rctiming.screens.ScreenActionResult;
@@ -33,6 +35,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/screens")
+@RequiresModule(ScreensModule.ID)
 @RaceControlStaff
 public class AdminScreenMessageController {
 

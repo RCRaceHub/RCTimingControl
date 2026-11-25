@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.screens;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerClient;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerException;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerInfo;
@@ -50,6 +51,7 @@ public class ScreenMonitor {
     private final ScreenRepository screens;
     private final ViewerClient client;
     private final Clock clock;
+    private final ModuleSwitch moduleSwitch;
     private final ExecutorService pollers = Executors.newVirtualThreadPerTaskExecutor();
     private final Map<String, Reading> readings = new ConcurrentHashMap<>();
     /** Whether each screen asks for a token and what it offers, from its {@code /info}; read again every {@link #INFO_REFRESH}. */
@@ -57,11 +59,12 @@ public class ScreenMonitor {
     private final Map<String, AuthKnown> auth = new ConcurrentHashMap<>();
 
     @Autowired
-    public ScreenMonitor(ScreenRepository screens, ViewerClient client) {
-        this(screens, client, Clock.systemUTC());
+    public ScreenMonitor(ScreenRepository screens, ViewerClient client, ModuleSwitch moduleSwitch) {
+        this(screens, client, moduleSwitch, Clock.systemUTC());
     }
 
-    ScreenMonitor(ScreenRepository screens, ViewerClient client, Clock clock) {
+    ScreenMonitor(ScreenRepository screens, ViewerClient client, ModuleSwitch moduleSwitch, Clock clock) {
+        this.moduleSwitch = moduleSwitch;
         this.screens = screens;
         this.client = client;
         this.clock = clock;
@@ -70,6 +73,9 @@ public class ScreenMonitor {
     /** One pass over every screen, in parallel; waits for all of them (each is bounded by the client's timeouts). */
     @Scheduled(initialDelay = 5_000, fixedDelayString = "${rctiming.screens.poll-interval-ms:5000}")
     public void pollAll() {
+        if (!moduleSwitch.isEnabled(ScreensModule.ID)) {
+            return;
+        }
         try {
             List<Screen> all = screens.findAllByName();
             readings.keySet().removeIf(id -> all.stream().noneMatch(s -> s.getScreenId().equals(id)));

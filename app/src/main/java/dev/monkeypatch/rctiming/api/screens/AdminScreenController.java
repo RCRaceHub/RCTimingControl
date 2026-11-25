@@ -1,15 +1,17 @@
-package dev.monkeypatch.rctiming.api.admin;
+package dev.monkeypatch.rctiming.api.screens;
 
-import dev.monkeypatch.rctiming.api.admin.dto.AddScreenRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.BoardPagesDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenActionResultDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenControlRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenDto;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenIdsRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenPushRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenShowRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreenTokenRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ScreensDto;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
+import dev.monkeypatch.rctiming.screens.ScreensModule;
+import dev.monkeypatch.rctiming.api.screens.dto.AddScreenRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.BoardPagesDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenActionResultDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenControlRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenDto;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenIdsRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenPushRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenShowRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreenTokenRequest;
+import dev.monkeypatch.rctiming.api.screens.dto.ScreensDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.screens.BoardPageCatalog;
 import dev.monkeypatch.rctiming.screens.ControlAction;
@@ -43,6 +45,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/admin/screens")
+@RequiresModule(ScreensModule.ID)
 @RaceControlStaff
 public class AdminScreenController {
 
