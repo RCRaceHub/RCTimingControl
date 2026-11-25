@@ -10,10 +10,12 @@ import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -59,7 +61,9 @@ public class EntryService {
     private final ObjectMapper objectMapper;
     private final CompetitorService competitorService;
     private final CompetitorRepository competitorRepository;
+    private final Clock clock;
 
+    @Autowired
     public EntryService(EntryRepository entryRepository,
                         EventRepository eventRepository,
                         EventClassRepository eventClassRepository,
@@ -67,6 +71,19 @@ public class EntryService {
                         ObjectMapper objectMapper,
                         CompetitorService competitorService,
                         CompetitorRepository competitorRepository) {
+        this(entryRepository, eventRepository, eventClassRepository, auditLogRepository, objectMapper,
+                competitorService, competitorRepository, Clock.systemUTC());
+    }
+
+    EntryService(EntryRepository entryRepository,
+                 EventRepository eventRepository,
+                 EventClassRepository eventClassRepository,
+                 EntryAuditLogRepository auditLogRepository,
+                 ObjectMapper objectMapper,
+                 CompetitorService competitorService,
+                 CompetitorRepository competitorRepository,
+                 Clock clock) {
+        this.clock = clock;
         this.entryRepository = entryRepository;
         this.eventRepository = eventRepository;
         this.eventClassRepository = eventClassRepository;
@@ -145,7 +162,7 @@ public class EntryService {
             throw new StateConflictException(competitor.getDisplayName() + " already has an entry in this class");
         }
 
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         Entry entry = new Entry();
         entry.setCompetitorId(competitor.getId());
         entry.setEventId(event.getId());
@@ -193,7 +210,7 @@ public class EntryService {
             throw new StateConflictException("Entry already withdrawn");
         }
         String beforeJson = EntryAuditLog.snapshot(objectMapper, Map.of("status", entry.getStatus().name()));
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         entry.setStatus(EntryStatus.WITHDRAWN);
         entry.setWithdrawnAt(now);
         entryRepository.save(entry);

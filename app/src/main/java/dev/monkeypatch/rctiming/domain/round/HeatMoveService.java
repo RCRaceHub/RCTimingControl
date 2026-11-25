@@ -4,6 +4,9 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
+import dev.monkeypatch.rctiming.domain.entry.Entry;
+import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
+import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
@@ -22,8 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Moves a driver from one heat to another before either has been called, such as when a late entry or a withdrawal
- * leaves the heats lopsided. The move runs in one transaction with its audit row.
+ * Changes who is in the heats that have not been called yet: moves a driver from one heat to another, such as when a
+ * withdrawal leaves the heats lopsided, and adds a late entry (a walk-in made after the run order was generated) to a
+ * heat. Each change runs in one transaction with its audit row, on a request thread.
  */
 @Service
 @Transactional
@@ -32,15 +36,18 @@ public class HeatMoveService {
     private final RaceRepository raceRepository;
     private final RaceEntryRepository raceEntryRepository;
     private final RoundRepository roundRepository;
+    private final EntryRepository entryRepository;
     private final AuditService audit;
 
     public HeatMoveService(RaceRepository raceRepository,
                            RaceEntryRepository raceEntryRepository,
                            RoundRepository roundRepository,
+                           EntryRepository entryRepository,
                            AuditService audit) {
         this.raceRepository = raceRepository;
         this.raceEntryRepository = raceEntryRepository;
         this.roundRepository = roundRepository;
+        this.entryRepository = entryRepository;
         this.audit = audit;
     }
 
@@ -110,6 +117,96 @@ public class HeatMoveService {
                 .summary("Moved entry " + entryId + " from heat " + source.getHeatNumber() + " to heat "
                         + target.getHeatNumber() + " in " + pairs.size() + (pairs.size() == 1 ? " round" : " rounds"))
                 .after(after).record();
+    }
+
+    /**
+     * Puts an entry that is in no heat yet, such as a walk-in added after the run order was generated, at the back
+     * of a heat that has not been called. With {@code allRounds} it is also added to the same heat number in every
+     * other practice and qualifying round of its class where that heat is still pending and the entry is not
+     * already in the class's heats; those rounds are skipped quietly, since they may have run already.
+     *
+     * <p>The entry goes last on the grid (when the heat has grid positions) and takes the next free car number in
+     * the heat, the same number in every round where that is free. Nobody else is renumbered. Records
+     * {@code ENTRY_ADDED_TO_HEAT} in the audit log.
+     *
+     * @throws EntityNotFoundException  if the race or entry does not exist
+     * @throws IllegalArgumentException if the race is a final, or the entry is not a confirmed entry of the race's
+     *                                  class and event
+     * @throws StateConflictException   if the heat has been called or started, or the entry is already in a heat
+     *                                  of this round
+     */
+    public void addEntry(Actor actor, Long raceId, Long entryId, boolean allRounds) {
+        Race target = raceRepository.getOrThrow(raceId);
+        Round targetRound = roundRepository.getOrThrow(target.getRoundId());
+        Entry entry = entryRepository.getOrThrow(entryId);
+        if (target.getFinalLetter() != null) {
+            throw new IllegalArgumentException("A driver is added to a heat, not to a final");
+        }
+        if (!Objects.equals(entry.getEventId(), targetRound.getEventId())
+                || !Objects.equals(entry.getEventClassId(), target.getEventClassId())) {
+            throw new IllegalArgumentException("A driver can only be added to a heat of their own class");
+        }
+        if (entry.getStatus() != EntryStatus.CONFIRMED) {
+            throw new IllegalArgumentException("Only a confirmed entry can be added to a heat");
+        }
+        requirePending(target);
+        if (inRoundAlready(target, entryId)) {
+            throw new StateConflictException("The driver is already in a heat of this round");
+        }
+
+        int car = add(entryId, target, null);
+        List<Long> raceIds = new ArrayList<>();
+        raceIds.add(target.getId());
+        if (allRounds) {
+            for (Round round : roundRepository.findByEventIdOrderBySequenceInEvent(targetRound.getEventId())) {
+                if (round.getId().equals(target.getRoundId())) {
+                    continue;
+                }
+                Race to = heatOf(round, target);
+                if (to != null && to.getStatus() == RaceStatus.PENDING && !inRoundAlready(to, entryId)) {
+                    add(entryId, to, car);
+                    raceIds.add(to.getId());
+                }
+            }
+        }
+
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("entryId", entryId);
+        after.put("heat", target.getHeatNumber());
+        after.put("carNumber", car);
+        after.put("raceIds", raceIds);
+        audit.entry(actor, "ENTRY_ADDED_TO_HEAT").entity("race", target.getId()).race(target.getId())
+                .event(targetRound.getEventId())
+                .summary("Added entry " + entryId + " to heat " + target.getHeatNumber() + " in " + raceIds.size()
+                        + (raceIds.size() == 1 ? " round" : " rounds"))
+                .after(after).record();
+    }
+
+    /** Whether the entry is already in one of the heats of the race's round that belong to the race's class. */
+    private boolean inRoundAlready(Race race, Long entryId) {
+        return raceRepository.findByRoundIdOrderBySequenceInRound(race.getRoundId()).stream()
+                .filter(r -> Objects.equals(r.getEventClassId(), race.getEventClassId()))
+                .anyMatch(r -> raceEntryRepository.findByRaceIdAndEntryId(r.getId(), entryId).isPresent());
+    }
+
+    /** Adds the entry at the back of the heat and returns its car number, the preferred one if the heat has not got it. */
+    private int add(Long entryId, Race to, Integer preferredCar) {
+        List<RaceEntry> inHeat = raceEntryRepository.findByRaceIdOrderByGridPosition(to.getId());
+        int car = preferredCar != null && inHeat.stream().noneMatch(e -> preferredCar.equals(e.getCarNumber()))
+                ? preferredCar
+                : inHeat.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
+                        .mapToInt(Integer::intValue).max().orElse(0) + 1;
+        boolean hasGrid = inHeat.stream().anyMatch(e -> e.getGridPosition() != null);
+        RaceEntry added = new RaceEntry();
+        added.setRaceId(to.getId());
+        added.setEntryId(entryId);
+        added.setCarNumber(car);
+        added.setGridPosition(hasGrid
+                ? inHeat.stream().map(RaceEntry::getGridPosition).filter(Objects::nonNull)
+                        .mapToInt(Integer::intValue).max().orElse(0) + 1
+                : null);
+        raceEntryRepository.save(added);
+        return car;
     }
 
     private static void requirePending(Race race) {

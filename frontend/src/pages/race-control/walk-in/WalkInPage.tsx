@@ -10,6 +10,7 @@ import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import { useRoles } from '@/hooks/useRoles';
 import { WalkInHelp } from '@/help/WalkInHelp';
 import AddWalkInEntryDialog from '@/pages/admin/events/AddWalkInEntryDialog';
+import { AddToHeatCard } from './AddToHeatCard';
 
 export default function WalkInPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -18,6 +19,8 @@ export default function WalkInPage() {
   const { data: event, isLoading } = useAdminEventDetail(id);
   const { data: racingClasses = [] } = useRacingClasses();
   const [classId, setClassId] = useState<number | null>(null);
+  // The walk-in just saved, waiting to be put in a heat
+  const [added, setAdded] = useState<{ entryId: number; classId: number } | null>(null);
 
   useHelpContent(WalkInHelp);
 
@@ -48,12 +51,23 @@ export default function WalkInPage() {
             </div>
           )}
         </Card>
+        {added && (
+          <div className="mt-4">
+            <AddToHeatCard
+              eventId={id}
+              eventClassId={added.classId}
+              entryId={added.entryId}
+              onDone={() => setAdded(null)}
+            />
+          </div>
+        )}
       </div>
       {classId !== null && (
         <AddWalkInEntryDialog
           eventId={id}
           classId={classId}
           open
+          onAdded={(entryId) => setAdded({ entryId, classId })}
           onOpenChange={(open) => {
             if (!open) setClassId(null);
           }}

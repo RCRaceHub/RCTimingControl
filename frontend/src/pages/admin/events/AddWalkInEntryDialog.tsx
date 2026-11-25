@@ -24,6 +24,8 @@ interface AddWalkInEntryDialogProps {
   classId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with the new entry's id once it is saved, so the caller can go on to place it in a heat. */
+  onAdded?: (entryId: number) => void;
 }
 
 const MAX_MATCHES = 8;
@@ -32,7 +34,7 @@ const MAX_MATCHES = 8;
 const sameNameKey = (name: string) => name.replace(/\s+/g, '').toLowerCase();
 
 /** Add a walk-in entry by hand: pick an existing driver or type a new name (L9, #17). */
-export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenChange }: AddWalkInEntryDialogProps) {
+export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenChange, onAdded }: AddWalkInEntryDialogProps) {
   const [driverText, setDriverText] = useState('');
   const [selected, setSelected] = useState<CompetitorSummaryDto | null>(null);
   const [primary, setPrimary] = useState('');
@@ -140,6 +142,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       toast.success(`Entry added for ${chosen?.displayName ?? driverText.trim()}.`);
       result.warnings.forEach(w => toast.warning(w));
       handleOpenChange(false);
+      onAdded?.(result.entry.id);
     } catch (err) {
       const data = getApiErrorData(err);
       const status = getApiErrorStatus(err);
