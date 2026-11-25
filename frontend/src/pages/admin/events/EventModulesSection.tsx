@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 
+import { QueryError } from '@/components/QueryError';
 import { Switch } from '@/components/ui/switch';
 import { useEventModules, useSetEventModule } from '@/hooks/admin/useModules';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -9,9 +10,10 @@ import { getApiErrorMessage } from '@/lib/errors';
  * event can never turn on a module the club has switched off, so those rows are shown off and locked.
  */
 export default function EventModulesSection({ eventId, canEdit }: { eventId: number; canEdit: boolean }) {
-  const { data = [], isLoading } = useEventModules(eventId);
+  const { data = [], isLoading, isError, refetch } = useEventModules(eventId);
   const setEventModule = useSetEventModule(eventId);
 
+  if (isError) return <QueryError variant="inline" message="Failed to load features." onRetry={refetch} />;
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading features…</p>;
 
   return (

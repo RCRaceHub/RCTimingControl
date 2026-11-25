@@ -5,7 +5,11 @@ import dev.monkeypatch.rctiming.modules.ModuleSwitch.ModuleStatus;
 /**
  * A module as the Modules page and the menu see it (#797).
  *
- * @param enabled    usable now: on for the club and, when the answer is for an event, not turned off by it
+ * @param id          the module's id
+ * @param name        what officials see
+ * @param description one sentence on what it does
+ * @param version     the module's version
+ * @param enabled     usable now: on for the club and, when the answer is for an event, not turned off by it
  * @param clubEnabled the club-wide switch
  * @param eventOff   the event turned it off (false when the answer is not about an event)
  */

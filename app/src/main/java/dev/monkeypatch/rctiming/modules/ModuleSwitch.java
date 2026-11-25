@@ -79,8 +79,8 @@ public class ModuleSwitch {
 
     /** Every module with its club switch, for the Modules page and the menu. */
     public List<ModuleStatus> status() {
-        return registry.all().stream()
-                .map(m -> new ModuleStatus(m, loadClub().getOrDefault(m.id(), true), false)).toList();
+        Map<String, Boolean> club = loadClub();
+        return registry.all().stream().map(m -> new ModuleStatus(m, club.getOrDefault(m.id(), true), false)).toList();
     }
 
     /**
@@ -92,8 +92,11 @@ public class ModuleSwitch {
         if (!repository.eventExists(eventId)) {
             throw new EntityNotFoundException("No event with id " + eventId);
         }
-        return registry.all().stream().map(m -> new ModuleStatus(m, loadClub().getOrDefault(m.id(), true),
-                loadEventOffs().contains(key(eventId, m.id())))).toList();
+        Map<String, Boolean> club = loadClub();
+        Set<String> offs = loadEventOffs();
+        return registry.all().stream()
+                .map(m -> new ModuleStatus(m, club.getOrDefault(m.id(), true), offs.contains(key(eventId, m.id()))))
+                .toList();
     }
 
     /** Throws {@link ModuleDisabledException} (HTTP 404) while the module is off. */

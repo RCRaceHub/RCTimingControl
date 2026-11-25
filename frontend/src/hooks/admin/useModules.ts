@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/adminApi';
 import { adminQueryKeys } from './adminQueryKeys';
@@ -7,7 +8,7 @@ export function useModules() {
   return useQuery({
     queryKey: adminQueryKeys.modules.all(),
     queryFn: adminApi.modules.list,
-    staleTime: 60_000,
+    staleTime: 15_000,
   });
 }
 
@@ -17,7 +18,7 @@ export function useModules() {
  */
 export function useDisabledModules(): ReadonlySet<string> {
   const { data } = useModules();
-  return new Set((data ?? []).filter(m => !m.clubEnabled).map(m => m.id));
+  return useMemo(() => new Set((data ?? []).filter(m => !m.clubEnabled).map(m => m.id)), [data]);
 }
 
 /** Switches a module on or off for the club (admin). Refreshes every module list. */
