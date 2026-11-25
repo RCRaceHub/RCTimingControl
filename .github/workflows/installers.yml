@@ -86,7 +86,7 @@ jobs:
 
       - name: Build the installer
         run: |
-          ./gradlew -PbundleFrontend :app:installer -x generateJooq --no-daemon
+          ./gradlew -PbundleFrontend -PbuildNumber=${{ github.run_number }} :app:installer -x generateJooq --no-daemon
           mkdir -p newer && mv app/build/installer/out/* newer/
           ls -l older newer
 

@@ -235,6 +235,15 @@ val installerVersion = providers.gradleProperty("installerVersion").getOrElse(
                 ?: error("VERSION must start with major.minor.patch, not '$version'"))
 val platformInstallerVersion =
         if (isMac && installerVersion.startsWith("0.")) "1." + installerVersion.removePrefix("0.") else installerVersion
+// A .deb keeps the pre-release part of VERSION, so apt sorts every alpha before the final release:
+// 0.2.0-alpha.1 becomes 0.2.0~alpha.1 ("~" sorts before even the end of the version). -PbuildNumber=N adds
+// "+build.N", so a rebuild of the same alpha is still an upgrade (CI passes its run number).
+// -PinstallerVersion wins and is used as given.
+val debInstallerVersion = providers.gradleProperty("installerVersion").getOrElse(run {
+    val preRelease = Regex("""^\d+\.\d+\.\d+-([0-9A-Za-z.]+)""").find(version.toString())?.groupValues?.get(1)
+    val build = providers.gradleProperty("buildNumber").orNull
+    installerVersion + (if (preRelease != null) "~$preRelease" else "") + (if (build != null) "+build.$build" else "")
+})
 val installerType = providers.gradleProperty("installerType").getOrElse(
         when {
             isWindows -> "msi"
@@ -300,7 +309,7 @@ val installer by tasks.registering(Exec::class) {
         addAll(listOf(
                 "--type", installerType,
                 "--name", "RCTimingControl",
-                "--app-version", platformInstallerVersion,
+                "--app-version", if (installerType == "deb") debInstallerVersion else platformInstallerVersion,
                 "--vendor", "RC Timing Control",
                 "--description", "RC club race timing and race control",
                 "--input", installerDir.get().dir("input").asFile.path,
