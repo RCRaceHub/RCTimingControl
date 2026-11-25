@@ -405,6 +405,15 @@ Moving to another database means:
 - **No `DSLContext` outside repositories and query classes.** A service or controller that needs SQL asks a repository for it. The one exception is `security/ResetAdminPasswordCommand`, which runs with the app stopped on its own connection.
 - **A repository for a table keyed by something other than an `id`** (`ChampionshipPointsScaleRepository`, keyed by championship and position) does not extend `JooqRepository`, and says so in its Javadoc.
 
+### Modules (feature switches, #795)
+
+A module is a built-in feature a club can switch off (design: the modules note in the project files). The framework is in `modules/`; no feature uses it yet.
+
+- **Declare it:** expose one `@Bean ModuleDescriptor` (id, name, description, version). The id is lower case with hyphens and is the key everywhere, so never rename it.
+- **Guard every entry point:** put `@RequiresModule("id")` on a controller (or method), which answers **404** while the module is off; a listener or scheduled job calls `ModuleSwitch.isEnabled("id")` first and does nothing when it is off; an event-scoped path calls `isEnabled("id", eventId)`.
+- **Rules:** a module is on until an admin switches it off. An event can turn a module off for itself, never on when the club has it off. An unknown id is off. Switches are cached in memory, so the timing thread can ask on every passing.
+- **Changing a switch** goes through `ModuleSwitch.setEnabled` / `setEventOff`, which saves, updates the cache and writes an audit row (`MODULE_SWITCHED`, `EVENT_MODULE_SWITCHED`). The Modules page and the architecture rule for module packages come in later steps.
+
 ### Frontend conventions
 
 - **Query keys** come from the factories in `hooks/publicQueryKeys.ts` (anything anonymous, and the boards) and `hooks/admin/adminQueryKeys.ts`. Never write a literal `queryKey: ['...']` in a page or hook; add a factory entry. Boards keys share the `'boards'` root so a race's state change refreshes them all.

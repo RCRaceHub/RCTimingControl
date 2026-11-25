@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.competitor.PossibleDuplicateCompetitorExc
 import dev.monkeypatch.rctiming.domain.event.IllegalStateTransitionException;
 import dev.monkeypatch.rctiming.domain.user.OfficialChangeRefusedException;
 import dev.monkeypatch.rctiming.infrastructure.tts.TtsUnavailableException;
+import dev.monkeypatch.rctiming.modules.ModuleDisabledException;
 import dev.monkeypatch.rctiming.screens.viewer.ViewerException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -45,6 +46,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ProblemDetail handleNotFound(EntityNotFoundException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    /** A feature switched off in the Modules settings answers as if it did not exist (#795). */
+    @ExceptionHandler(ModuleDisabledException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ProblemDetail handleModuleDisabled(ModuleDisabledException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 

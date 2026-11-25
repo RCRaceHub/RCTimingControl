@@ -23,6 +23,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventModulesOff;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
@@ -49,6 +50,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubFormatLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Modules;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
@@ -305,6 +307,16 @@ public class DefaultSchema extends SchemaImpl {
     public final RacehubFormatLinks RACEHUB_FORMAT_LINKS = RacehubFormatLinks.RACEHUB_FORMAT_LINKS;
 
     /**
+     * The table <code>event_modules_off</code>.
+     */
+    public final EventModulesOff EVENT_MODULES_OFF = EventModulesOff.EVENT_MODULES_OFF;
+
+    /**
+     * The table <code>modules</code>.
+     */
+    public final Modules MODULES = Modules.MODULES;
+
+    /**
      * The table <code>racehub_class_mappings</code>.
      */
     public final RacehubClassMappings RACEHUB_CLASS_MAPPINGS = RacehubClassMappings.RACEHUB_CLASS_MAPPINGS;
@@ -429,6 +441,8 @@ public class DefaultSchema extends SchemaImpl {
             RacePointPenalties.RACE_POINT_PENALTIES,
             RacehubClassLinks.RACEHUB_CLASS_LINKS,
             RacehubFormatLinks.RACEHUB_FORMAT_LINKS,
+            EventModulesOff.EVENT_MODULES_OFF,
+            Modules.MODULES,
             RacehubClassMappings.RACEHUB_CLASS_MAPPINGS,
             Races.RACES,
             RacingClasses.RACING_CLASSES,
