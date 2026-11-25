@@ -6,12 +6,14 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The one place that says whether a module is on (#795). Every entry point of a module asks it: a controller through
@@ -22,9 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * but can never turn on one the club has off, so the event check is {@code club on AND event not off}.
  *
  * <p>Reads are served from memory, because the timing thread asks for every lap passing and must not touch the
- * database. The cache is filled on first use and changed together with each write here, so a switch takes effect
- * at once on every thread. Writes run in a transaction on the write connection and are audited
- * ({@code MODULE_SWITCHED}, {@code EVENT_MODULE_SWITCHED}).
+ * database. The cache is filled on first use under a lock, and each write updates it once its transaction has
+ * committed, so a rolled-back change never shows and a committed one takes effect at once on every thread. Writes run
+ * in a transaction on the write connection and are audited ({@code MODULE_SWITCHED}, {@code EVENT_MODULE_SWITCHED}).
  */
 @Service
 public class ModuleSwitch {
@@ -34,9 +36,10 @@ public class ModuleSwitch {
     private final AuditService audit;
     private final Clock clock;
 
+    private final Object lock = new Object();
     /** Club-wide switches that were saved; a module missing from here is on. Replaced, never changed in place. */
     private volatile Map<String, Boolean> clubSwitches;
-    /** "eventId:moduleId" for each module an event turned off. */
+    /** "eventId:moduleId" for each module an event turned off. Replaced, never changed in place. */
     private volatile Set<String> eventOffs;
 
     @Autowired
@@ -80,16 +83,22 @@ public class ModuleSwitch {
     public void setEnabled(String moduleId, boolean enabled, Actor actor) {
         ModuleDescriptor module = registry.find(moduleId)
                 .orElseThrow(() -> new EntityNotFoundException("No module called " + moduleId));
-        boolean before = isEnabled(moduleId);
-        repository.saveSwitch(moduleId, enabled, actor.userId(), clock.instant());
-        Map<String, Boolean> next = new ConcurrentHashMap<>(loadClub());
-        next.put(moduleId, enabled);
-        clubSwitches = next;
-        if (before != enabled) {
-            audit.entry(actor, "MODULE_SWITCHED").entity("module", moduleId)
-                    .summary((enabled ? "Switched on " : "Switched off ") + module.name())
-                    .before(before).after(enabled).record();
+        synchronized (lock) {
+            boolean before = loadClub().getOrDefault(moduleId, true);
+            repository.saveSwitch(moduleId, enabled, actor.userId(), clock.instant());
+            if (before != enabled) {
+                audit.entry(actor, "MODULE_SWITCHED").entity("module", moduleId)
+                        .summary((enabled ? "Switched on " : "Switched off ") + module.name())
+                        .before(before).after(enabled).record();
+            }
         }
+        afterCommit(() -> {
+            synchronized (lock) {
+                Map<String, Boolean> next = new HashMap<>(loadClub());
+                next.put(moduleId, enabled);
+                clubSwitches = Map.copyOf(next);
+            }
+        });
     }
 
     /**
@@ -102,31 +111,56 @@ public class ModuleSwitch {
     public void setEventOff(long eventId, String moduleId, boolean off, Actor actor) {
         ModuleDescriptor module = registry.find(moduleId)
                 .orElseThrow(() -> new EntityNotFoundException("No module called " + moduleId));
-        boolean before = loadEventOffs().contains(key(eventId, moduleId));
-        if (off) {
-            repository.addEventOff(eventId, moduleId);
-        } else {
-            repository.removeEventOff(eventId, moduleId);
+        synchronized (lock) {
+            boolean before = loadEventOffs().contains(key(eventId, moduleId));
+            if (off) {
+                repository.addEventOff(eventId, moduleId);
+            } else {
+                repository.removeEventOff(eventId, moduleId);
+            }
+            if (before != off) {
+                audit.entry(actor, "EVENT_MODULE_SWITCHED").entity("module", moduleId).event(eventId)
+                        .summary((off ? "Turned off " : "Turned back on ") + module.name() + " for this event")
+                        .before(before).after(off).record();
+            }
         }
-        Set<String> next = new HashSet<>(loadEventOffs());
-        if (off) {
-            next.add(key(eventId, moduleId));
+        afterCommit(() -> {
+            synchronized (lock) {
+                Set<String> next = new HashSet<>(loadEventOffs());
+                if (off) {
+                    next.add(key(eventId, moduleId));
+                } else {
+                    next.remove(key(eventId, moduleId));
+                }
+                eventOffs = Set.copyOf(next);
+            }
+        });
+    }
+
+    /** Runs {@code action} once the current transaction commits, or at once when there is none (a direct call). */
+    private static void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
         } else {
-            next.remove(key(eventId, moduleId));
-        }
-        eventOffs = Set.copyOf(next);
-        if (before != off) {
-            audit.entry(actor, "EVENT_MODULE_SWITCHED").entity("module", moduleId).event(eventId)
-                    .summary((off ? "Turned off " : "Turned back on ") + module.name() + " for this event")
-                    .before(before).after(off).record();
+            action.run();
         }
     }
 
     private Map<String, Boolean> loadClub() {
         Map<String, Boolean> current = clubSwitches;
         if (current == null) {
-            current = new ConcurrentHashMap<>(repository.findAllSwitches());
-            clubSwitches = current;
+            synchronized (lock) {
+                current = clubSwitches;
+                if (current == null) {
+                    current = Map.copyOf(repository.findAllSwitches());
+                    clubSwitches = current;
+                }
+            }
         }
         return current;
     }
@@ -134,10 +168,15 @@ public class ModuleSwitch {
     private Set<String> loadEventOffs() {
         Set<String> current = eventOffs;
         if (current == null) {
-            Set<String> loaded = new HashSet<>();
-            repository.findAllEventOffs().forEach(e -> loaded.add(key(e.eventId(), e.moduleId())));
-            current = Set.copyOf(loaded);
-            eventOffs = current;
+            synchronized (lock) {
+                current = eventOffs;
+                if (current == null) {
+                    Set<String> loaded = new HashSet<>();
+                    repository.findAllEventOffs().forEach(e -> loaded.add(key(e.eventId(), e.moduleId())));
+                    current = Set.copyOf(loaded);
+                    eventOffs = current;
+                }
+            }
         }
         return current;
     }

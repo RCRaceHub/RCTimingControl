@@ -27,7 +27,7 @@ public class ModuleSwitchRepository {
     /** The saved switch of every module that has had one flipped, by module id. */
     public Map<String, Boolean> findAllSwitches() {
         return dsl.select(MODULES.ID, MODULES.ENABLED).from(MODULES).fetch().stream()
-                .collect(Collectors.toMap(r -> r.value1(), r -> r.value2() != null && r.value2() == 1));
+                .collect(Collectors.toMap(r -> r.get(MODULES.ID), r -> r.get(MODULES.ENABLED) != null && r.get(MODULES.ENABLED) == 1));
     }
 
     /** Saves a module's club-wide switch, adding its row the first time. */
