@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.api.admin.dto.ModuleDto;
 import dev.monkeypatch.rctiming.api.admin.dto.SetEventModuleRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.SetModuleRequest;
+import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
@@ -42,6 +43,7 @@ public class ModulesController {
 
     /** Switches a module on or off for the club. {@code PUT /modules/{id}}; ADMIN; 204; 404 for an unknown module. */
     @PutMapping("/modules/{id}")
+    @Audited("audit_log")
     @AdminOnly
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void set(@PathVariable String id, @Valid @RequestBody SetModuleRequest request) {
@@ -59,6 +61,7 @@ public class ModulesController {
      * RACE_DIRECTOR or ADMIN; 204; 404 for an unknown event or module. Never turns on a module the club has off.
      */
     @PutMapping("/events/{eventId}/modules/{id}")
+    @Audited("audit_log")
     @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void setForEvent(@PathVariable long eventId, @PathVariable String id,
