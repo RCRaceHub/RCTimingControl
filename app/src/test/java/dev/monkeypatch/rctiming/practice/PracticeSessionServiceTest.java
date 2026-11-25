@@ -25,13 +25,20 @@ import static org.mockito.Mockito.when;
 
 class PracticeSessionServiceTest {
 
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch moduleSwitch() {
+        var moduleSwitch = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class,
+                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
+        org.mockito.Mockito.when(moduleSwitch.isEnabled(PracticeModule.ID)).thenReturn(true);
+        return moduleSwitch;
+    }
+
     private final PracticeSessionRepository sessions = mock(PracticeSessionRepository.class);
     private final PracticeDriverRepository drivers = mock(PracticeDriverRepository.class);
     private final RaceRepository races = mock(RaceRepository.class);
     private final AuditService audit = mock(AuditService.class, Answers.RETURNS_DEEP_STUBS);
     private final PracticeSessionService service = new PracticeSessionService(sessions,
             mock(EventRepository.class), mock(UserRepository.class), mock(PracticeTimingService.class), audit, races,
-            drivers);
+            drivers, moduleSwitch());
 
     private static PracticeSession session(long id) {
         PracticeSession s = mock(PracticeSession.class);

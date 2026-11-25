@@ -1,3 +1,4 @@
+import { ModuleRoute } from '@/components/ModuleRoute';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { QueryProvider } from '@/providers/QueryProvider';
@@ -166,9 +167,11 @@ const router = createBrowserRouter([
         path: '/race-control/practice',
         element: (
           <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <ModuleRoute module="practice">
             <RaceControlErrorBoundary>
               <PracticeLandingPage />
             </RaceControlErrorBoundary>
+            </ModuleRoute>
           </ProtectedRoute>
         ),
       },
@@ -176,9 +179,11 @@ const router = createBrowserRouter([
         path: '/race-control/practice/day',
         element: (
           <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <ModuleRoute module="practice">
             <RaceControlErrorBoundary>
               <PracticeDayPage />
             </RaceControlErrorBoundary>
+            </ModuleRoute>
           </ProtectedRoute>
         ),
       },
@@ -186,9 +191,11 @@ const router = createBrowserRouter([
         path: '/race-control/practice/:sessionId',
         element: (
           <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <ModuleRoute module="practice">
             <RaceControlErrorBoundary>
               <PracticeSessionPage />
             </RaceControlErrorBoundary>
+            </ModuleRoute>
           </ProtectedRoute>
         ),
       },
@@ -196,7 +203,9 @@ const router = createBrowserRouter([
         path: '/race-control/practice/:sessionId/print',
         element: (
           <ProtectedRoute roles={['RACE_DIRECTOR', 'ADMIN']}>
+            <ModuleRoute module="practice">
             <PrintPracticeResultsPage />
+            </ModuleRoute>
           </ProtectedRoute>
         ),
       },

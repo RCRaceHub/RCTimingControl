@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.racecontrol.dto;
+package dev.monkeypatch.rctiming.api.practice.dto;
 
 import jakarta.validation.constraints.Size;
 

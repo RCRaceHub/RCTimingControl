@@ -1,8 +1,10 @@
-package dev.monkeypatch.rctiming.api.racecontrol;
+package dev.monkeypatch.rctiming.api.practice;
 
-import dev.monkeypatch.rctiming.api.racecontrol.dto.PracticeSessionCreateRequest;
+import dev.monkeypatch.rctiming.api.practice.dto.PracticeSessionCreateRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
 import dev.monkeypatch.rctiming.practice.PracticeDayService;
+import dev.monkeypatch.rctiming.practice.PracticeModule;
 import dev.monkeypatch.rctiming.practice.PracticeDriverService;
 import dev.monkeypatch.rctiming.practice.PracticeSessionService;
 import dev.monkeypatch.rctiming.practice.PracticeTimingService;
@@ -36,6 +38,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/practice-sessions")
+@RequiresModule(PracticeModule.ID)
 public class PracticeSessionController {
 
     private final PracticeSessionService sessionService;

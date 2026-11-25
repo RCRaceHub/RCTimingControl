@@ -2,6 +2,7 @@ import { Suspense, useState } from 'react';
 import { Outlet, Link, useParams, useMatches } from 'react-router-dom';
 import { Moon, Sun, BookOpen, Flag, Shield, LogOut, ChevronLeft, Dumbbell, HelpCircle, ArrowLeftRight, UserPlus, Printer } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -23,6 +24,7 @@ import { BoardsMenu } from '@/components/BoardsMenu';
 
 export default function RaceControlLayout() {
   const { eventId } = useParams<{ eventId: string }>();
+  const practiceOff = useDisabledModules().has('practice');
   const { user, logout } = useAuth();
   const { helpContent, isOpen, setIsOpen } = useHelp();
   const matches = useMatches();
@@ -63,10 +65,12 @@ export default function RaceControlLayout() {
             <Flag className="h-3.5 w-3.5" />
             Cockpit
           </Link>
-          <Link to={`${base}/practice`} className={navClass(isPractice)}>
-            <Dumbbell className="h-3.5 w-3.5" />
-            Practice
-          </Link>
+          {!practiceOff && (
+            <Link to={`${base}/practice`} className={navClass(isPractice)}>
+              <Dumbbell className="h-3.5 w-3.5" />
+              Practice
+            </Link>
+          )}
           <Link to={`${base}/walk-in`} className={navClass(isWalkIn)}>
             <UserPlus className="h-3.5 w-3.5" />
             Walk-in

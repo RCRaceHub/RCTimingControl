@@ -55,7 +55,7 @@ const eventsGroup: NavEntry[] = [
 
 const operationsGroup: NavEntry[] = [
   { to: '/admin/race-control', label: 'Race control', Icon: Flag },
-  { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true },
+  { to: '/race-control/practice', label: 'Practice', Icon: Timer, runEventOnly: true, module: 'practice' },
   { to: '/admin/competitors', label: 'Competitors', Icon: Users },
   { to: '/setup', label: 'Setup wizard', Icon: Wand2 },
 ];

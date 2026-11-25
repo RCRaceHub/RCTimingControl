@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Printer } from 'lucide-react';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { useEventResults } from '@/hooks/race-control/useEventResults';
 import { qualifyingRounds } from '@/lib/eventPrint';
 import type { EventResultsRace } from '@/lib/raceControlApi';
@@ -39,10 +40,12 @@ function groupByRound(races: EventResultsRace[]): { label: string; races: EventR
 
 export default function PrintCentrePage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const practiceOff = useDisabledModules().has('practice');
   const { data, isPending, isError } = useEventResults(Number(eventId) || null);
   const sessions = useQuery({
     queryKey: raceControlQueryKeys.practice.sessions(),
     queryFn: () => listSessions(20),
+    enabled: !practiceOff,
   });
   const [parts, setParts] = useState<Record<string, boolean>>({ standings: true, rounds: true, finals: true });
   const base = `/race-control/print/event/${eventId}`;
@@ -141,6 +144,7 @@ export default function PrintCentrePage() {
           </Button>
         </section>
 
+        {!practiceOff && (
         <section aria-label="Practice results" className="space-y-2">
           <h2 className="font-semibold">Practice results</h2>
           {practiceForEvent.length === 0 ? (
@@ -158,6 +162,7 @@ export default function PrintCentrePage() {
             </div>
           )}
         </section>
+        )}
       </div>
     </div>
   );

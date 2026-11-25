@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
@@ -51,13 +52,17 @@ public class PracticeSessionService {
     private final RaceRepository raceRepository;
     private final PracticeDriverRepository driverRepository;
 
+    private final ModuleSwitch moduleSwitch;
+
     public PracticeSessionService(PracticeSessionRepository sessionRepository,
                                   EventRepository eventRepository,
                                   UserRepository userRepository,
                                   PracticeTimingService timingService,
                                   AuditService audit,
                                   RaceRepository raceRepository,
-                                  PracticeDriverRepository driverRepository) {
+                                  PracticeDriverRepository driverRepository,
+                                  ModuleSwitch moduleSwitch) {
+        this.moduleSwitch = moduleSwitch;
         this.sessionRepository = sessionRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -224,7 +229,7 @@ public class PracticeSessionService {
     @EventListener
     @Transactional
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
-        if (event.getNewStatus() != RaceStatus.RUNNING) {
+        if (event.getNewStatus() != RaceStatus.RUNNING || !moduleSwitch.isEnabled(PracticeModule.ID)) {
             return;
         }
         for (PracticeSession running : sessionRepository.findRunningSessions()) {
