@@ -12,6 +12,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,6 +68,34 @@ public class ModuleSwitch {
         return isEnabled(moduleId) && !loadEventOffs().contains(key(eventId, moduleId));
     }
 
+    /** One module with the club's switch and, when asked about an event, whether that event turned it off. */
+    public record ModuleStatus(ModuleDescriptor module, boolean clubEnabled, boolean eventOff) {
+
+        /** Whether the module is usable: on for the club and not turned off by the event. */
+        public boolean enabled() {
+            return clubEnabled && !eventOff;
+        }
+    }
+
+    /** Every module with its club switch, for the Modules page and the menu. */
+    public List<ModuleStatus> status() {
+        return registry.all().stream()
+                .map(m -> new ModuleStatus(m, loadClub().getOrDefault(m.id(), true), false)).toList();
+    }
+
+    /**
+     * Every module as one event sees it.
+     *
+     * @throws EntityNotFoundException (404) if there is no such event
+     */
+    public List<ModuleStatus> status(long eventId) {
+        if (!repository.eventExists(eventId)) {
+            throw new EntityNotFoundException("No event with id " + eventId);
+        }
+        return registry.all().stream().map(m -> new ModuleStatus(m, loadClub().getOrDefault(m.id(), true),
+                loadEventOffs().contains(key(eventId, m.id())))).toList();
+    }
+
     /** Throws {@link ModuleDisabledException} (HTTP 404) while the module is off. */
     public void require(String moduleId) {
         if (!isEnabled(moduleId)) {
@@ -105,12 +134,15 @@ public class ModuleSwitch {
      * Turns a module off for one event, or lets the event use it again. Whether the club has it on is a separate
      * question: this never turns a module on for an event whose club has it off.
      *
-     * @throws EntityNotFoundException (404) if there is no such module
+     * @throws EntityNotFoundException (404) if there is no such module or event
      */
     @Transactional
     public void setEventOff(long eventId, String moduleId, boolean off, Actor actor) {
         ModuleDescriptor module = registry.find(moduleId)
                 .orElseThrow(() -> new EntityNotFoundException("No module called " + moduleId));
+        if (!repository.eventExists(eventId)) {
+            throw new EntityNotFoundException("No event with id " + eventId);
+        }
         synchronized (lock) {
             boolean before = loadEventOffs().contains(key(eventId, moduleId));
             if (off) {

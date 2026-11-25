@@ -43,6 +43,8 @@ import RaceHubImportDialog from './RaceHubImportDialog';
 import CsvImportDialog from './CsvImportDialog';
 import EntryFeedSection from './EntryFeedSection';
 import EventSponsorsSection from './EventSponsorsSection';
+import EventModulesSection from './EventModulesSection';
+import { useModules } from '@/hooks/admin/useModules';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { offeredTransitions, startNeedsEntriesWarning, transitionLabelFor } from './eventTransitions';
@@ -122,6 +124,7 @@ export default function EventDetailPage() {
   const transitionMutation = useTransitionEvent(id);
   const { data: tracks = [] } = useTracksList();
   const { isAdmin, canRunEvent } = useRoles();
+  const { data: modules = [] } = useModules();
 
   const [transitionTarget, setTransitionTarget] = useState<EventStatus | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -274,6 +277,7 @@ export default function EventDetailPage() {
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
           <TabsTrigger value="entries">Entries</TabsTrigger>
           <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+          {modules.length > 0 && <TabsTrigger value="features">Features</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="mt-4">
@@ -359,6 +363,12 @@ export default function EventDetailPage() {
         <TabsContent value="sponsors" className="mt-4">
           <EventSponsorsSection eventId={id} canEdit={canRunEvent} />
         </TabsContent>
+
+        {modules.length > 0 && (
+          <TabsContent value="features" className="mt-4">
+            <EventModulesSection eventId={id} canEdit={canRunEvent} />
+          </TabsContent>
+        )}
 
         <TabsContent value="entries" className="mt-4 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border px-4 py-3">

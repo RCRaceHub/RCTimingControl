@@ -407,12 +407,12 @@ Moving to another database means:
 
 ### Modules (feature switches, #795)
 
-A module is a built-in feature a club can switch off (design: the modules note in the project files). The framework is in `modules/`; no feature uses it yet.
+A module is a built-in feature a club can switch off (design: the modules note in the project files). The framework is in `modules/`; no feature uses it yet, so the Modules page is empty until #799 moves one over.
 
 - **Declare it:** expose one `@Bean ModuleDescriptor` (id, name, description, version). The id is lower case with hyphens and is the key everywhere, so never rename it.
 - **Guard every entry point:** put `@RequiresModule("id")` on a controller (or method), which answers **404** while the module is off; a listener or scheduled job calls `ModuleSwitch.isEnabled("id")` first and does nothing when it is off; an event-scoped path calls `isEnabled("id", eventId)`.
 - **Rules:** a module is on until an admin switches it off. An event can turn a module off for itself, never on when the club has it off. An unknown id is off. Switches are cached in memory, so the timing thread can ask on every passing.
-- **Changing a switch** goes through `ModuleSwitch.setEnabled` / `setEventOff`, which saves, updates the cache and writes an audit row (`MODULE_SWITCHED`, `EVENT_MODULE_SWITCHED`). The Modules page and the architecture rule for module packages come in later steps.
+- **Changing a switch** goes through `ModuleSwitch.setEnabled` / `setEventOff`, which saves, updates the cache and writes an audit row (`MODULE_SWITCHED`, `EVENT_MODULE_SWITCHED`). The admin API is `GET/PUT /admin/modules` and `GET/PUT /admin/events/{id}/modules/...`, the page is Admin → Modules, and an event's Features tab (shown once any module exists) turns a module off for that event. In the frontend, set `module` on a nav entry to hide it while the module is off and wrap a module's route in `ModuleRoute`. The architecture rule for module packages comes in a later step.
 
 ### Frontend conventions
 

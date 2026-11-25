@@ -876,6 +876,17 @@ export interface TlsStatusDto {
   restartNeeded: boolean;
 }
 
+/** A built-in feature a club can switch off (#797); `enabled` already counts the event's own switch when asked for an event. */
+export interface ModuleDto {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  enabled: boolean;
+  clubEnabled: boolean;
+  eventOff: boolean;
+}
+
 /** How long personal data is kept (#262): refused sign-ins, other audit rows (0 keeps them for ever). */
 export interface RetentionPolicyDto {
   failedSignInDays: number;
@@ -1332,6 +1343,14 @@ export const adminApi = {
   audit: {
     search: (filter: AuditFilterParams, page: number, size: number) =>
       api.get<AuditPageDto>('/api/v1/admin/audit', { params: { ...filter, page, size } }).then(r => r.data),
+  },
+  modules: {
+    list: () => api.get<ModuleDto[]>('/api/v1/admin/modules').then(r => r.data),
+    set: (id: string, enabled: boolean) => api.put<void>(`/api/v1/admin/modules/${id}`, { enabled }).then(() => undefined),
+    listForEvent: (eventId: number) =>
+      api.get<ModuleDto[]>(`/api/v1/admin/events/${eventId}/modules`).then(r => r.data),
+    setForEvent: (eventId: number, id: string, off: boolean) =>
+      api.put<void>(`/api/v1/admin/events/${eventId}/modules/${id}`, { off }).then(() => undefined),
   },
   retention: {
     policy: () => api.get<RetentionPolicyDto>('/api/v1/admin/retention').then(r => r.data),

@@ -38,6 +38,7 @@ class ModuleSwitchTest {
         audit = mock(AuditService.class, RETURNS_DEEP_STUBS);
         when(repository.findAllSwitches()).thenReturn(Map.of());
         when(repository.findAllEventOffs()).thenReturn(Set.of());
+        when(repository.eventExists(anyLong())).thenReturn(true);
         ModuleRegistry registry = new ModuleRegistry(List.of(
                 new ModuleDescriptor("screens", "Screens", "Display screens", "1")));
         moduleSwitch = new ModuleSwitch(registry, repository, audit, Clock.fixed(NOW, ZoneOffset.UTC));

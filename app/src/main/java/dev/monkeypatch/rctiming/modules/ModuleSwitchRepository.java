@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static dev.monkeypatch.rctiming.jooq.generated.tables.EventModulesOff.EVENT_MODULES_OFF;
+import static dev.monkeypatch.rctiming.jooq.generated.tables.Events.EVENTS;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Modules.MODULES;
 
 /** SQL for the {@code modules} and {@code event_modules_off} tables (#795). No entity: the rows are plain flags. */
@@ -69,6 +70,11 @@ public class ModuleSwitchRepository {
     public List<String> findEventOffs(long eventId) {
         return dsl.select(EVENT_MODULES_OFF.MODULE_ID).from(EVENT_MODULES_OFF)
                 .where(EVENT_MODULES_OFF.EVENT_ID.eq(eventId)).fetch(EVENT_MODULES_OFF.MODULE_ID);
+    }
+
+    /** Whether an event with this id exists. */
+    public boolean eventExists(long eventId) {
+        return dsl.fetchExists(dsl.selectOne().from(EVENTS).where(EVENTS.ID.eq(eventId)));
     }
 
     /** A module an event has turned off. */

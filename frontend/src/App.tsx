@@ -30,6 +30,7 @@ const AdminAudioSettingsPage = lazy(() => import('@/pages/admin/club/AdminAudioS
 const AudioOutputPage = lazy(() => import('@/pages/audio/AudioOutputPage'));
 const OfficialsPage = lazy(() => import('@/pages/admin/officials/OfficialsPage'));
 const AuditLogPage = lazy(() => import('@/pages/admin/audit/AuditLogPage'));
+const ModulesPage = lazy(() => import('@/pages/admin/modules/ModulesPage'));
 const DisplaysPage = lazy(() => import('@/pages/admin/displays/DisplaysPage'));
 const RacingSetupPage = lazy(() => import('@/pages/admin/racing-setup/RacingSetupPage'));
 const RaceControlSelectPage = lazy(() => import('@/pages/admin/race-control/RaceControlSelectPage'));
@@ -106,6 +107,7 @@ const router = createBrowserRouter([
           { path: 'championships', element: <ChampionshipListPage /> },
           { path: 'championships/:id', element: <ChampionshipDetailPage /> },
           { path: 'club', element: <ProtectedRoute roles={['ADMIN']}><ClubProfilePage /></ProtectedRoute> },
+          { path: 'modules', element: <ProtectedRoute roles={['ADMIN']}><ModulesPage /></ProtectedRoute> },
           { path: 'audit', element: <ProtectedRoute roles={['ADMIN']}><AuditLogPage /></ProtectedRoute> },
           { path: 'racing-setup', element: <ProtectedRoute roles={['ADMIN']}><RacingSetupPage /></ProtectedRoute> },
           { path: 'tracks', element: <Navigate to="/admin/racing-setup?tab=tracks" replace /> },

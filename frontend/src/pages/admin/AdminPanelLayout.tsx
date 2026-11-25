@@ -20,6 +20,7 @@ import {
   Tv,
   Tag,
   Timer,
+  Blocks,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,6 +32,7 @@ import { BoardsMenu } from '@/components/BoardsMenu';
 import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { useRaceHubConnected } from '@/hooks/admin/useResultsExports';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 
@@ -42,6 +44,8 @@ interface NavEntry {
   adminOnly?: boolean;
   /** Hidden from a referee, for pages only an admin or a race director can use. */
   runEventOnly?: boolean;
+  /** Hidden while this module is switched off (#797). */
+  module?: string;
 }
 
 const eventsGroup: NavEntry[] = [
@@ -70,11 +74,22 @@ const configGroup: NavEntry[] = [
   { to: '/admin/club', label: 'Club profile', Icon: Building2, adminOnly: true },
   { to: '/admin/audio', label: 'Audio settings', Icon: Volume2, runEventOnly: true },
   { to: '/admin/displays', label: 'Displays', Icon: Tv, runEventOnly: true },
+  { to: '/admin/modules', label: 'Modules', Icon: Blocks, adminOnly: true },
 ];
 
 /** The entries this official is allowed to open. */
-function visibleTo(entries: NavEntry[], isAdmin: boolean, canRunEvent = isAdmin): NavEntry[] {
-  return entries.filter(entry => (isAdmin || !entry.adminOnly) && (canRunEvent || !entry.runEventOnly));
+function visibleTo(
+  entries: NavEntry[],
+  isAdmin: boolean,
+  canRunEvent = isAdmin,
+  disabledModules: ReadonlySet<string> = new Set(),
+): NavEntry[] {
+  return entries.filter(
+    entry =>
+      (isAdmin || !entry.adminOnly) &&
+      (canRunEvent || !entry.runEventOnly) &&
+      !(entry.module && disabledModules.has(entry.module)),
+  );
 }
 
 function NavItem({
@@ -127,6 +142,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { isAdmin, canRunEvent } = useRoles();
   const eventId = useMatch('/admin/events/:id/*')?.params.id;
   const raceHubConnected = useRaceHubConnected(isAdmin);
+  const disabledModules = useDisabledModules();
   const onRaceHubPage = useMatch('/admin/racehub') != null;
 
   return (
@@ -140,7 +156,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <p className="px-3 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Events &amp; Competitions
         </p>
-        {visibleTo(eventsGroup, isAdmin).map(({ to, label, Icon }) => (
+        {visibleTo(eventsGroup, isAdmin, isAdmin, disabledModules).map(({ to, label, Icon }) => (
           <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
         ))}
 
@@ -151,7 +167,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Operations
         </p>
-        {visibleTo(operationsGroup, isAdmin, canRunEvent).map(({ to, label, Icon }) => (
+        {visibleTo(operationsGroup, isAdmin, canRunEvent, disabledModules).map(({ to, label, Icon }) => (
           <NavItem key={to} to={to} label={label} Icon={Icon} onClick={onNavClick} />
         ))}
         {isAdmin &&
@@ -176,7 +192,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <p className="px-3 pt-4 mb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Configuration
         </p>
-        {visibleTo(configGroup, isAdmin, canRunEvent).map(({ to, label, Icon }) => (
+        {visibleTo(configGroup, isAdmin, canRunEvent, disabledModules).map(({ to, label, Icon }) => (
           <NavItem
             key={to}
             to={to}
@@ -228,6 +244,7 @@ export default function AdminPanelLayout() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { helpContent, isOpen, setIsOpen } = useHelp();
   const { isAdmin, canRunEvent } = useRoles();
+  const disabledModules = useDisabledModules();
 
   return (
     <div className="min-h-screen bg-background">
@@ -292,7 +309,7 @@ export default function AdminPanelLayout() {
       </main>
 
       <nav className="fixed bottom-0 inset-x-0 flex md:hidden border-t bg-background z-10 h-14">
-        {visibleTo([...eventsGroup, ...operationsGroup, ...configGroup], isAdmin, canRunEvent).slice(0, 5).map(({ to, label, Icon }) => (
+        {visibleTo([...eventsGroup, ...operationsGroup, ...configGroup], isAdmin, canRunEvent, disabledModules).slice(0, 5).map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
