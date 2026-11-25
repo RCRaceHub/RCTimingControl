@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
-import { DOC_MANIFEST } from '@/docs/manifest';
+import { DOC_MANIFEST, LEGACY_WALKTHROUGH_ANCHORS } from '@/docs/manifest';
 import { loadDocSource } from '@/docs/sources';
 import { extractHeadings } from '@/docs/markdown';
 import { DocMarkdown } from '@/docs/DocMarkdown';
@@ -13,6 +13,7 @@ export default function DocPage() {
   const { slug } = useParams();
   const { hash, key } = useLocation();
   const entry = DOC_MANIFEST.find(e => e.slug === slug);
+  const legacy = slug === 'walkthroughs' ? LEGACY_WALKTHROUGH_ANCHORS[hash.slice(1)] : undefined;
   const [loaded, setLoaded] = useState<{ slug: string; source: string } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -55,6 +56,7 @@ export default function DocPage() {
     // key changes on every navigation, so choosing the section you are already on scrolls again
   }, [source, hash, key]);
 
+  if (legacy) return <Navigate to={`/docs/${legacy}`} replace />;
   if (!entry) {
     return (
       <div>
