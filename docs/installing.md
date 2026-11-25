@@ -43,7 +43,7 @@ sudo apt install ./rctimingcontrol_<version>_amd64.deb
 
 ## First run
 
-1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the first official's account, then the club, track and decoder details. To skip the wizard on a new install, give those answers in the settings file instead; see [provisioning.md](provisioning.md).
+1. On the laptop, open **http://localhost:8080** in a browser. The setup wizard asks for the club profile, a track, a race format, the first official's account and the decoder, then offers an optional network name and, for clubs that book through RaceHub, an optional step that links RaceHub's classes to yours. To skip the wizard on a new install, give the account, club and decoder answers in the settings file instead; see [provisioning.md](provisioning.md).
 2. Open **http://localhost:8080/about** to see the addresses other devices should use, for example `http://192.168.1.50:8080/`. The same addresses are written to the log each time the app starts.
 3. On a phone connected to the same Wi-Fi or network, open one of those addresses and sign in.
 
@@ -69,7 +69,10 @@ On Linux the service runs as its own unprivileged user, `rctiming`, so use `sudo
 - `backups/`, the automatic backups;
 - `uploads/`, the club logo and announcer clips;
 - `logs/rctiming.log`, the app's log;
-- `jwt-secret`, the key that signs officials' sign-ins, created on first start. Keep it private.
+- `jwt-secret`, the key that signs officials' sign-ins, created on first start. Keep it private;
+- `racehub-key`, only if an admin has pasted a RaceHub key into the app (see [Sending results to RaceHub](#sending-results-to-racehub)). It is encrypted and not part of backups, so keep it private too;
+- `tls/`, only if the secure connection is on (see [Secure connection](#secure-connection-https));
+- `application.properties`, only if you have created one (see [Changing settings](#changing-settings)).
 
 ## Changing settings
 
@@ -84,7 +87,7 @@ rctiming.backup.directory=E:/rctiming-backups
 rctiming.network.mdns-name=timing
 ```
 
-With `rctiming.network.mdns-name` set, the app announces itself by that name over mDNS, so devices can open `http://timing.local:8080/` without knowing the laptop's address. Windows 10 and later, macOS, iOS and Android look up `.local` names themselves; the About page lists the name first. The name is announced on IPv4 only, and the app looks at the laptop's network every 30 seconds, so a laptop that boots before its network is up, or moves to another network, is picked up without a restart. If another device already uses the name, the app logs the name it got instead. The setup wizard's last, optional step (**Network Name**) suggests `rctiming`, writes this setting for you, and after a restart checks that the device you are using can reach the name and shows its address as a QR code; the wizard can be reopened at `/setup`. It is off unless you set it, and it does not work from inside Docker, because multicast cannot cross Docker's network (use host networking, or leave it off and set `CLUB_ADDRESS`). Because `http://timing.local` is plain HTTP, browsers treat it as not secure, so the sound card list on the audio output page works only at `http://localhost:8080` on the laptop itself, unless you turn on the secure connection below.
+With `rctiming.network.mdns-name` set, the app announces itself by that name over mDNS, so devices can open `http://timing.local:8080/` without knowing the laptop's address. Windows 10 and later, macOS, iOS and Android look up `.local` names themselves; the About page lists the name first. The name is announced on IPv4 only, and the app looks at the laptop's network every 30 seconds, so a laptop that boots before its network is up, or moves to another network, is picked up without a restart. If another device already uses the name, the app logs the name it got instead. The setup wizard's optional **Network Name** step suggests `rctiming`, writes this setting for you, and after a restart checks that the device you are using can reach the name and shows its address as a QR code; the wizard can be reopened at `/setup`. It is off unless you set it, and it does not work from inside Docker, because multicast cannot cross Docker's network (use host networking, or leave it off and set `CLUB_ADDRESS`). Because `http://timing.local` is plain HTTP, browsers treat it as not secure, so the sound card list on the audio output page works only at `http://localhost:8080` on the laptop itself, unless you turn on the secure connection below.
 
 ## Secure connection (HTTPS)
 
@@ -131,7 +134,7 @@ rctiming.racehub.token=the-key-from-racehub
 
 The address must start with `https://`, since the key goes with every request.
 
-To change the key later without a restart, paste the new one into **RaceHub key** on the **RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both settings the results wait in the app, and are sent once they are set and the service restarted. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand, and each event's row in **Events** has a **Re-upload** button that queues its results for RaceHub again.
+To change the key later without a restart, paste the new one into **RaceHub key** on the **RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both an address and a key the results wait in the app, and are sent once both are set. Entering them in the admin panel applies at once; changes to `application.properties` need the service restarted. A club with no key and no results site runs standalone, so **RaceHub** is left out of the admin menu until one is set; **Club profile** has a link to the page. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand, and each event's row in **Events** has a **Re-upload** button that queues its results for RaceHub again.
 
 ### If RaceHub is behind Cloudflare Access
 
@@ -203,6 +206,10 @@ It asks for the new password twice (at least 8 characters). Run it with no email
 
 Anyone who can run commands as an administrator on the laptop can do this, so keep the laptop's own login safe.
 
+## Other ways to run it
+
+The installer is the way to run a real meeting. To try the app without installing it, or to run it from Docker on a laptop or small server on the club network, see [docker.md](docker.md). [race-day-docker.md](race-day-docker.md) sets up Docker for a live meeting, with a recorder that shares the decoder feed with another timing system and keeps a copy of everything the decoder sends.
+
 ## Upgrading
 
 Install the newer package over the old one, the same way as the first install. The service stops, the new version is put in place, and the service starts again. The new version updates the database to its format when it starts.
@@ -227,6 +234,6 @@ Then run:
 #   gradlew -PbundleFrontend -PwindowsServiceInstaller=C:\tools\nssm\win64\nssm.exe :app:installer
 ```
 
-The installer is written to `app/build/installer/out/`. The installer's version is the numeric part of `VERSION` (`0.1.0-alpha.1` builds `0.1.0`); pass `-PinstallerVersion=0.1.1` to set it. macOS does not accept versions starting with 0, so pre-1.0 macOS packages show a leading 1 (`0.1.0` shows as `1.1.0`). The About page always shows the real version.
+The installer is written to `app/build/installer/out/`. Add `-x generateJooq` to any of these Gradle commands: the generated database code is committed, and skipping it stops a local build rewriting tracked files (CI does the same). On a Windows laptop, build the Linux `.deb` from WSL and the `.msi` from Windows itself. The installer's version is the numeric part of `VERSION` (`0.1.0-alpha.1` builds `0.1.0`); pass `-PinstallerVersion=0.1.1` to set it. macOS does not accept versions starting with 0, so pre-1.0 macOS packages show a leading 1 (`0.1.0` shows as `1.1.0`). The About page always shows the real version.
 
 `-PbundleFrontend` on its own builds a jar with the UI inside: `./gradlew -PbundleFrontend :app:bootJar`, then `java -jar app/build/libs/app.jar` serves everything on port 8080.
