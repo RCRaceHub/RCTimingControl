@@ -1,10 +1,12 @@
-package dev.monkeypatch.rctiming.api.admin;
+package dev.monkeypatch.rctiming.api.sponsor;
 
-import dev.monkeypatch.rctiming.api.admin.dto.SponsorOrderRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.SponsorRequest;
-import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
+import dev.monkeypatch.rctiming.api.sponsor.dto.SponsorOrderRequest;
+import dev.monkeypatch.rctiming.api.sponsor.dto.SponsorRequest;
+import dev.monkeypatch.rctiming.api.sponsor.dto.SponsorDto;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
+import dev.monkeypatch.rctiming.domain.sponsor.OverlayThemeSponsorService;
+import dev.monkeypatch.rctiming.domain.sponsor.SponsorsModule;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
@@ -26,25 +28,26 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * An event's sponsors under {@code /api/v1/admin/events/{eventId}/sponsors} (#518). Reads are open to ADMIN,
+ * An overlay theme's sponsors under {@code /api/v1/admin/overlay-themes/{themeId}/sponsors} . Reads are open to ADMIN,
  * RACE_DIRECTOR and REFEREE; every change is ADMIN or RACE_DIRECTOR and audited. A bad name or logo answers 400 and a
- * missing event or sponsor 404.
+ * missing theme or sponsor 404.
  */
 @RestController
-@RequestMapping("/api/v1/admin/events/{eventId}/sponsors")
+@RequiresModule(SponsorsModule.ID)
+@RequestMapping("/api/v1/admin/overlay-themes/{themeId}/sponsors")
 @RaceControlStaff
-public class AdminEventSponsorController {
+public class AdminOverlayThemeSponsorController {
 
-    private final EventSponsorService service;
+    private final OverlayThemeSponsorService service;
 
-    public AdminEventSponsorController(EventSponsorService service) {
+    public AdminOverlayThemeSponsorController(OverlayThemeSponsorService service) {
         this.service = service;
     }
 
-    /** The event's sponsors in display order. {@code GET}; read only. */
+    /** The theme's sponsors in display order. {@code GET}; read only. */
     @GetMapping
-    public List<SponsorDto> list(@PathVariable long eventId) {
-        return service.list(eventId).stream().map(SponsorDto::from).toList();
+    public List<SponsorDto> list(@PathVariable long themeId) {
+        return service.list(themeId).stream().map(SponsorDto::from).toList();
     }
 
     /** Adds a sponsor at the end. {@code POST}; ADMIN or RACE_DIRECTOR; 201; 400. Audited. */
@@ -52,25 +55,25 @@ public class AdminEventSponsorController {
     @PostMapping
     @DirectorOrAdmin
     @ResponseStatus(HttpStatus.CREATED)
-    public SponsorDto create(@PathVariable long eventId, @RequestBody @Valid SponsorRequest request) {
-        return SponsorDto.from(service.create(CurrentOfficial.actor(), eventId, request.name()));
+    public SponsorDto create(@PathVariable long themeId, @RequestBody @Valid SponsorRequest request) {
+        return SponsorDto.from(service.create(CurrentOfficial.actor(), themeId, request.name()));
     }
 
     /** Renames a sponsor. {@code PUT /{id}}; ADMIN or RACE_DIRECTOR; 400; 404. Audited. */
     @Audited("audit_log")
     @PutMapping("/{id}")
     @DirectorOrAdmin
-    public SponsorDto rename(@PathVariable long eventId, @PathVariable long id,
+    public SponsorDto rename(@PathVariable long themeId, @PathVariable long id,
                              @RequestBody @Valid SponsorRequest request) {
-        return SponsorDto.from(service.rename(CurrentOfficial.actor(), eventId, id, request.name()));
+        return SponsorDto.from(service.rename(CurrentOfficial.actor(), themeId, id, request.name()));
     }
 
-    /** Sets the display order. {@code PUT /order}; ADMIN or RACE_DIRECTOR; 404 for an id of another event. Audited. */
+    /** Sets the display order. {@code PUT /order}; ADMIN or RACE_DIRECTOR; 404 for an id of another theme. Audited. */
     @Audited("audit_log")
     @PutMapping("/order")
     @DirectorOrAdmin
-    public List<SponsorDto> reorder(@PathVariable long eventId, @RequestBody SponsorOrderRequest request) {
-        return service.reorder(CurrentOfficial.actor(), eventId, request.ids() == null ? List.of() : request.ids())
+    public List<SponsorDto> reorder(@PathVariable long themeId, @RequestBody SponsorOrderRequest request) {
+        return service.reorder(CurrentOfficial.actor(), themeId, request.ids() == null ? List.of() : request.ids())
                 .stream().map(SponsorDto::from).toList();
     }
 
@@ -79,8 +82,8 @@ public class AdminEventSponsorController {
     @DeleteMapping("/{id}")
     @DirectorOrAdmin
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable long eventId, @PathVariable long id) {
-        service.delete(CurrentOfficial.actor(), eventId, id);
+    public void delete(@PathVariable long themeId, @PathVariable long id) {
+        service.delete(CurrentOfficial.actor(), themeId, id);
     }
 
     /**
@@ -90,8 +93,8 @@ public class AdminEventSponsorController {
     @Audited("audit_log")
     @PutMapping(value = "/{id}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @DirectorOrAdmin
-    public SponsorDto uploadLogo(@PathVariable long eventId, @PathVariable long id,
+    public SponsorDto uploadLogo(@PathVariable long themeId, @PathVariable long id,
                                  @RequestPart("file") MultipartFile file) {
-        return SponsorDto.from(service.uploadLogo(CurrentOfficial.actor(), eventId, id, file));
+        return SponsorDto.from(service.uploadLogo(CurrentOfficial.actor(), themeId, id, file));
     }
 }

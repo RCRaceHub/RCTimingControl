@@ -5,7 +5,6 @@ import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
-import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -14,8 +13,6 @@ import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
-import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
-import dev.monkeypatch.rctiming.domain.sponsor.OverlayThemeSponsorService;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
@@ -83,8 +80,6 @@ public class BoardController {
     private final LiveQualifyingService liveQualifyingService;
     private final LiveFinalService liveFinalService;
     private final ClubProfileService clubProfileService;
-    private final EventSponsorService eventSponsorService;
-    private final OverlayThemeSponsorService overlayThemeSponsorService;
     private final DriverMediaService driverMediaService;
     private final RaceHighlightsService raceHighlightsService;
 
@@ -105,15 +100,11 @@ public class BoardController {
                            LiveQualifyingService liveQualifyingService,
                            LiveFinalService liveFinalService,
                            ClubProfileService clubProfileService,
-                           EventSponsorService eventSponsorService,
-                           OverlayThemeSponsorService overlayThemeSponsorService,
                            DriverMediaService driverMediaService,
                            RaceHighlightsService raceHighlightsService) {
         this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
-        this.eventSponsorService = eventSponsorService;
-        this.overlayThemeSponsorService = overlayThemeSponsorService;
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
@@ -301,28 +292,6 @@ public class BoardController {
     @GetMapping("/races/{raceId}/media")
     public List<DriverMediaService.PublicMedia> raceMedia(@PathVariable long raceId) {
         return List.copyOf(driverMediaService.publicForRace(raceId).values());
-    }
-
-    /**
-     * The sponsors for the overlay's sponsor bar (#518), in display order. Names and logos only. The overlay theme's
-     * own sponsors when a {@code themeId} is given and that theme has any, otherwise the event's.
-     *
-     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
-     * @param themeId the overlay theme the overlay was opened with ({@code ?look=ID}), if any; a theme that is gone
-     *     or has no sponsors falls back to the event's
-     */
-    @GetMapping("/sponsors")
-    public List<SponsorDto> sponsors(@RequestParam(required = false) Long eventId,
-                                     @RequestParam(required = false) Long themeId) {
-        if (themeId != null) {
-            List<SponsorDto> own = overlayThemeSponsorService.listForOverlay(themeId).stream().map(SponsorDto::from).toList();
-            if (!own.isEmpty()) {
-                return own;
-            }
-        }
-        return boardQuery.resolveEvent(eventId)
-                .map(event -> eventSponsorService.list(event.id()).stream().map(SponsorDto::from).toList())
-                .orElse(List.of());
     }
 
     /**

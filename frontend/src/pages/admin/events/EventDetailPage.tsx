@@ -44,7 +44,7 @@ import CsvImportDialog from './CsvImportDialog';
 import EntryFeedSection from './EntryFeedSection';
 import EventSponsorsSection from './EventSponsorsSection';
 import EventModulesSection from './EventModulesSection';
-import { useModules } from '@/hooks/admin/useModules';
+import { useDisabledModules, useModules } from '@/hooks/admin/useModules';
 import DownloadResultsButton from './DownloadResultsButton';
 import { eventStatusColor, eventStatusLabel } from './eventStatus';
 import { offeredTransitions, startNeedsEntriesWarning, transitionLabelFor } from './eventTransitions';
@@ -125,6 +125,7 @@ export default function EventDetailPage() {
   const { data: tracks = [] } = useTracksList();
   const { isAdmin, canRunEvent } = useRoles();
   const { data: modules = [] } = useModules();
+  const disabledModules = useDisabledModules();
 
   const [transitionTarget, setTransitionTarget] = useState<EventStatus | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -276,7 +277,7 @@ export default function EventDetailPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="classes">Classes ({data.classes.length})</TabsTrigger>
           <TabsTrigger value="entries">Entries</TabsTrigger>
-          <TabsTrigger value="sponsors">Sponsors</TabsTrigger>
+          {!disabledModules.has('sponsors') && <TabsTrigger value="sponsors">Sponsors</TabsTrigger>}
           {modules.length > 0 && <TabsTrigger value="features">Features</TabsTrigger>}
         </TabsList>
 
@@ -360,9 +361,11 @@ export default function EventDetailPage() {
           <EventClassSection eventId={id} classes={data.classes} />
         </TabsContent>
 
-        <TabsContent value="sponsors" className="mt-4">
-          <EventSponsorsSection eventId={id} canEdit={canRunEvent} />
-        </TabsContent>
+        {!disabledModules.has('sponsors') && (
+          <TabsContent value="sponsors" className="mt-4">
+            <EventSponsorsSection eventId={id} canEdit={canRunEvent} />
+          </TabsContent>
+        )}
 
         {modules.length > 0 && (
           <TabsContent value="features" className="mt-4">

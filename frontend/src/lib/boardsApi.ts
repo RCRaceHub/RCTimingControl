@@ -1,4 +1,5 @@
 import api from './api';
+import { getApiErrorStatus } from './errors';
 import type { BattleGroup } from './battles';
 import type { SectorBoard, SectorResults } from './sectors';
 import type { LiveTimingRowDto, QualifyingRoundPlace, ResultRow } from './raceControlApi';
@@ -380,10 +381,16 @@ export type SponsorDto = { id: number; name: string; logoUrl: string | null };
  * given and that theme has any, otherwise the event's.
  */
 export async function getSponsors(eventId?: number | null, themeId?: number | null): Promise<SponsorDto[]> {
-  const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', {
-    params: { ...eventParams(eventId)?.params, ...(themeId != null ? { themeId } : {}) },
-  });
-  return data;
+  try {
+    const { data } = await api.get<SponsorDto[]>('/api/v1/boards/sponsors', {
+      params: { ...eventParams(eventId)?.params, ...(themeId != null ? { themeId } : {}) },
+    });
+    return data;
+  } catch (err) {
+    // The sponsors module is switched off (#799): no sponsor bar, not an error
+    if (getApiErrorStatus(err) === 404) return [];
+    throw err;
+  }
 }
 
 /** What the public may see of one car in a race: headshot, car photo and the driver's own sponsors (#520). */

@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.boards.dto;
+package dev.monkeypatch.rctiming.api.sponsor.dto;
 
 import dev.monkeypatch.rctiming.domain.sponsor.EventSponsor;
 import dev.monkeypatch.rctiming.domain.sponsor.OverlayThemeSponsor;
