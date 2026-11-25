@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.admin.dto;
+package dev.monkeypatch.rctiming.api.split.dto;
 
 import dev.monkeypatch.rctiming.timing.split.SplitDecoder;
 

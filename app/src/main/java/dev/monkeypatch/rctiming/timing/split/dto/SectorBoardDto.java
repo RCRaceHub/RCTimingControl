@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.timing.dto;
+package dev.monkeypatch.rctiming.timing.split.dto;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
-package dev.monkeypatch.rctiming.query.racecontrol;
+package dev.monkeypatch.rctiming.query.split;
 
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-import dev.monkeypatch.rctiming.timing.dto.SectorResultsDto;
+import dev.monkeypatch.rctiming.timing.split.dto.SectorResultsDto;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;
 

@@ -1,11 +1,13 @@
-package dev.monkeypatch.rctiming.api.admin;
+package dev.monkeypatch.rctiming.api.split;
 
-import dev.monkeypatch.rctiming.api.admin.dto.SplitDecoderDto;
-import dev.monkeypatch.rctiming.api.admin.dto.SplitDecoderRequest;
+import dev.monkeypatch.rctiming.api.split.dto.SplitDecoderDto;
+import dev.monkeypatch.rctiming.api.split.dto.SplitDecoderRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
+import dev.monkeypatch.rctiming.modules.RequiresModule;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.timing.split.SplitDecoder;
+import dev.monkeypatch.rctiming.timing.split.SplitTimingModule;
 import dev.monkeypatch.rctiming.timing.split.SplitDecoderService;
 import dev.monkeypatch.rctiming.timing.split.SplitLoopListener;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ import java.util.List;
  * already in use answers 409; an unknown id 404.
  */
 @RestController
+@RequiresModule(SplitTimingModule.ID)
 @RequestMapping("/api/v1/admin/split-decoders")
 @AdminOnly
 public class AdminSplitDecoderController {

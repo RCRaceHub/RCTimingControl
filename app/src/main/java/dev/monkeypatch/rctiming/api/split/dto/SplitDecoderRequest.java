@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.admin.dto;
+package dev.monkeypatch.rctiming.api.split.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

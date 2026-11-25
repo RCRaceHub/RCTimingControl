@@ -5,6 +5,7 @@ import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -30,18 +31,20 @@ class ModuleSwitchTest {
 
     private ModuleSwitchRepository repository;
     private AuditService audit;
+    private ApplicationEventPublisher publisher;
     private ModuleSwitch moduleSwitch;
 
     @BeforeEach
     void setUp() {
         repository = mock(ModuleSwitchRepository.class);
         audit = mock(AuditService.class, RETURNS_DEEP_STUBS);
+        publisher = mock(ApplicationEventPublisher.class);
         when(repository.findAllSwitches()).thenReturn(Map.of());
         when(repository.findAllEventOffs()).thenReturn(Set.of());
         when(repository.eventExists(anyLong())).thenReturn(true);
         ModuleRegistry registry = new ModuleRegistry(List.of(
                 new ModuleDescriptor("screens", "Screens", "Display screens", "1")));
-        moduleSwitch = new ModuleSwitch(registry, repository, audit, Clock.fixed(NOW, ZoneOffset.UTC));
+        moduleSwitch = new ModuleSwitch(registry, repository, audit, publisher, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -63,6 +66,7 @@ class ModuleSwitchTest {
         assertThatThrownBy(() -> moduleSwitch.require("screens")).isInstanceOf(ModuleDisabledException.class);
         verify(repository).saveSwitch("screens", false, 7L, NOW);
         verify(audit).entry(any(Actor.class), eq("MODULE_SWITCHED"));
+        verify(publisher).publishEvent(new ModuleSwitchedEvent("screens", false));
     }
 
     @Test

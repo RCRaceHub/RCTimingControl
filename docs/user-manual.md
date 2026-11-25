@@ -137,7 +137,7 @@ When all races are done, complete the event. Results are on the public pages, pr
 
 A club with no RaceHub key and no results website runs standalone: the **RaceHub** item is left out of the Admin menu, and **Club profile** has a link to the page when you want to connect.
 
-**Modules.** **Admin → Modules** (admin only) switches built-in features on or off for the whole club. A feature that is off disappears from the menu and stops working at once; its saved data is kept, so switching it on again brings it back. A race director can also turn a feature off for one event on the event's **Features** tab, for a fun day say, but cannot turn on one the club has off. The page lists features as they are moved onto modules; so far **Sponsors** (event and overlay-theme sponsors and the overlay's sponsor bar).
+**Modules.** **Admin → Modules** (admin only) switches built-in features on or off for the whole club. A feature that is off disappears from the menu and stops working at once; its saved data is kept, so switching it on again brings it back. A race director can also turn a feature off for one event on the event's **Features** tab, for a fun day say, but cannot turn on one the club has off. The page lists features as they are moved onto modules; so far **Sponsors** (event and overlay-theme sponsors and the overlay's sponsor bar) and **Split timing** (split-loop decoders, sector times and their columns). Switching split timing off disconnects the split decoders at once; switching it on connects them again.
 
 ### 11. Backups
 

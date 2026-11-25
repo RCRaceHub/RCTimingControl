@@ -1,12 +1,13 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.domain.race.RaceRestartedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
-import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
-import dev.monkeypatch.rctiming.timing.dto.SectorRowDto;
+import dev.monkeypatch.rctiming.timing.split.dto.SectorBoardDto;
+import dev.monkeypatch.rctiming.timing.split.dto.SectorRowDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -55,11 +56,14 @@ public class LiveSectorService {
     private final LiveTimingHub liveTimingHub;
     private final SplitDecoderRepository splitDecoders;
     private final LapSectorRepository lapSectors;
+    private final ModuleSwitch moduleSwitch;
 
     private RaceSectors current;
 
     public LiveSectorService(LapTimingService lapTimingService, LiveTimingHub liveTimingHub,
-                             SplitDecoderRepository splitDecoders, LapSectorRepository lapSectors) {
+                             SplitDecoderRepository splitDecoders, LapSectorRepository lapSectors,
+                             ModuleSwitch moduleSwitch) {
+        this.moduleSwitch = moduleSwitch;
         this.lapTimingService = lapTimingService;
         this.liveTimingHub = liveTimingHub;
         this.splitDecoders = splitDecoders;
@@ -69,6 +73,9 @@ public class LiveSectorService {
     /** Records one lap's sector times against the car's entry and broadcasts the race's board. Timing thread. */
     @EventListener
     public void onSectorTimes(SectorTimesEvent event) {
+        if (!moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+            return;
+        }
         Optional<Long> entryId;
         try {
             entryId = lapTimingService.entryOf(event.raceId(), event.transponderNumber());
@@ -120,6 +127,9 @@ public class LiveSectorService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (!moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+            return;
+        }
         if (event.getNewStatus() != RaceStatus.FINISHED) {
             return;
         }

@@ -407,7 +407,7 @@ Moving to another database means:
 
 ### Modules (feature switches, #795)
 
-A module is a built-in feature a club can switch off (design: the modules note in the project files). The framework is in `modules/`; features are moved onto it one at a time (#799). Moved so far: **sponsors** (`domain/sponsor` and `api/sponsor`, id `sponsors`).
+A module is a built-in feature a club can switch off (design: the modules note in the project files). The framework is in `modules/`; features are moved onto it one at a time (#799). Moved so far: **sponsors** (`domain/sponsor` and `api/sponsor`, id `sponsors`) and **split timing** (`timing/split`, `query/split` and `api/split`, id `split-timing`). A module that reads a device or runs in the background listens for `ModuleSwitchedEvent` to start and stop, as `SplitLoopListener` does.
 
 - **Declare it:** expose one `@Bean ModuleDescriptor` (id, name, description, version). The id is lower case with hyphens and is the key everywhere, so never rename it.
 - **Guard every entry point:** put `@RequiresModule("id")` on a controller (or method), which answers **404** while the module is off; a listener or scheduled job calls `ModuleSwitch.isEnabled("id")` first and does nothing when it is off; an event-scoped path calls `isEnabled("id", eventId)`.

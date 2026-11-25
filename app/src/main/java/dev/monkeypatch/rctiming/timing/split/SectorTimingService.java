@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing.split;
 
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.transaction.event.TransactionPhase;
@@ -42,6 +43,7 @@ public class SectorTimingService {
 
     private final SplitDecoderRepository repository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ModuleSwitch moduleSwitch;
 
     private final Map<String, CarLap> cars = new HashMap<>();
     private long currentRaceId = LapPassingEvent.NO_RACE;
@@ -50,7 +52,9 @@ public class SectorTimingService {
     private volatile int configVersion = 0;
     private int seenConfigVersion = 0;
 
-    public SectorTimingService(SplitDecoderRepository repository, ApplicationEventPublisher eventPublisher) {
+    public SectorTimingService(SplitDecoderRepository repository, ApplicationEventPublisher eventPublisher,
+                               ModuleSwitch moduleSwitch) {
+        this.moduleSwitch = moduleSwitch;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
     }
@@ -68,6 +72,9 @@ public class SectorTimingService {
     /** A finish-loop crossing: closes the car's lap if it has every split, and starts the next one. */
     @EventListener
     public void onFinishCrossing(LapPassingEvent event) {
+        if (!moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+            return;
+        }
         if (event.raceId() == LapPassingEvent.NO_RACE || splitsExpected().isEmpty()) {
             return;
         }
@@ -95,6 +102,9 @@ public class SectorTimingService {
     /** A split-loop crossing: noted against the car's current lap. Ignored before the car's first finish crossing. */
     @EventListener
     public void onSplitCrossing(SplitPassingEvent event) {
+        if (!moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+            return;
+        }
         if (event.raceId() == LapPassingEvent.NO_RACE) {
             return;
         }

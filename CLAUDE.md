@@ -98,7 +98,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 | **Domain module** | Entities, jOOQ repositories, write-side business logic |
 | **Query module** | jOOQ read queries — scoring, standings, lap aggregates, results projections |
 
-Optional features cannot yet be switched off: the modules framework (an on/off switch per feature) is designed but not built.
+Optional features are moved onto the modules framework one at a time (`modules/`, `docs/development.md` → "Modules"): a club switches a module off under Admin → Modules and an event can turn one off. Sponsors and split timing are on it so far (#795).
 
 The domain and query modules are a seam: entities and their repositories stay in the domain module, and projections stay in the query module. This maps to a CQRS-lite split within the monolith — write-side logic loads and saves entities, the read side builds its views in SQL.
 

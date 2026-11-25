@@ -8,11 +8,14 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -50,6 +53,7 @@ public class SplitLoopListener implements SmartLifecycle {
     private final RaceRepository raceRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final Executor timingExecutor;
+    private final ModuleSwitch moduleSwitch;
     private final SourceFactory sourceFactory;
 
     // Guarded by this. The lifecycle, the change event and the Netty callbacks' status updates all take the lock.
@@ -62,13 +66,14 @@ public class SplitLoopListener implements SmartLifecycle {
     @Autowired
     public SplitLoopListener(SplitDecoderRepository repository, RaceRepository raceRepository,
                              ApplicationEventPublisher eventPublisher,
-                             @Qualifier("timingExecutor") Executor timingExecutor) {
-        this(repository, raceRepository, eventPublisher, timingExecutor, AmbRc4TimingSource::new);
+                             @Qualifier("timingExecutor") Executor timingExecutor, ModuleSwitch moduleSwitch) {
+        this(repository, raceRepository, eventPublisher, timingExecutor, moduleSwitch, AmbRc4TimingSource::new);
     }
 
     SplitLoopListener(SplitDecoderRepository repository, RaceRepository raceRepository,
-                      ApplicationEventPublisher eventPublisher, Executor timingExecutor,
+                      ApplicationEventPublisher eventPublisher, Executor timingExecutor, ModuleSwitch moduleSwitch,
                       SourceFactory sourceFactory) {
+        this.moduleSwitch = moduleSwitch;
         this.repository = repository;
         this.raceRepository = raceRepository;
         this.eventPublisher = eventPublisher;
@@ -107,8 +112,20 @@ public class SplitLoopListener implements SmartLifecycle {
         return states.getOrDefault(splitDecoderId, "DISCONNECTED");
     }
 
+    /** Starts or stops the connections when the split-timing module is switched on or off (#799). */
+    @EventListener
+    public synchronized void onModuleSwitched(ModuleSwitchedEvent event) {
+        if (running && SplitTimingModule.ID.equals(event.moduleId())) {
+            reconnectAll(repository.findAll());
+        }
+    }
+
     private void reconnectAll(List<SplitDecoder> decoders) {
         stopSources();
+        if (!moduleSwitch.isEnabled(SplitTimingModule.ID)) {
+            log.info("Split timing is switched off - no split decoder is read");
+            return;
+        }
         for (SplitDecoder decoder : decoders) {
             if (!decoder.enabled()) {
                 continue;

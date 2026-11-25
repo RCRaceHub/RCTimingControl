@@ -4,6 +4,7 @@ import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -35,6 +36,7 @@ public class ModuleSwitch {
     private final ModuleRegistry registry;
     private final ModuleSwitchRepository repository;
     private final AuditService audit;
+    private final ApplicationEventPublisher publisher;
     private final Clock clock;
 
     private final Object lock = new Object();
@@ -44,14 +46,17 @@ public class ModuleSwitch {
     private volatile Set<String> eventOffs;
 
     @Autowired
-    public ModuleSwitch(ModuleRegistry registry, ModuleSwitchRepository repository, AuditService audit) {
-        this(registry, repository, audit, Clock.systemUTC());
+    public ModuleSwitch(ModuleRegistry registry, ModuleSwitchRepository repository, AuditService audit,
+                        ApplicationEventPublisher publisher) {
+        this(registry, repository, audit, publisher, Clock.systemUTC());
     }
 
-    ModuleSwitch(ModuleRegistry registry, ModuleSwitchRepository repository, AuditService audit, Clock clock) {
+    ModuleSwitch(ModuleRegistry registry, ModuleSwitchRepository repository, AuditService audit,
+                 ApplicationEventPublisher publisher, Clock clock) {
         this.registry = registry;
         this.repository = repository;
         this.audit = audit;
+        this.publisher = publisher;
         this.clock = clock;
     }
 
@@ -130,6 +135,7 @@ public class ModuleSwitch {
                 next.put(moduleId, enabled);
                 clubSwitches = Map.copyOf(next);
             }
+            publisher.publishEvent(new ModuleSwitchedEvent(moduleId, enabled));
         });
     }
 

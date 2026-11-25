@@ -1,7 +1,7 @@
 import api from './api';
 import { getApiErrorStatus } from './errors';
 import type { BattleGroup } from './battles';
-import type { SectorBoard, SectorResults } from './sectors';
+import { NO_SECTORS, NO_SECTOR_RESULTS, type SectorBoard, type SectorResults } from './sectors';
 import type { LiveTimingRowDto, QualifyingRoundPlace, ResultRow } from './raceControlApi';
 
 // Anonymous spectator board endpoints (L12). Every call here is public, so a board never
@@ -272,14 +272,26 @@ export async function getBoardBattles(raceId: number): Promise<BattleGroup[]> {
 
 /** A race's sector times (#676): sectorCount is 0 when the club has no split decoders. */
 export async function getBoardSectors(raceId: number): Promise<SectorBoard> {
-  const { data } = await api.get<SectorBoard>(`/api/v1/boards/races/${raceId}/sectors`);
-  return data;
+  try {
+    const { data } = await api.get<SectorBoard>(`/api/v1/boards/races/${raceId}/sectors`);
+    return data;
+  } catch (err) {
+    // The split timing module is switched off (#799): no sector columns, not an error
+    if (getApiErrorStatus(err) === 404) return NO_SECTORS;
+    throw err;
+  }
 }
 
 /** The saved sector times of a finished race (#676): sectorCount is 0 when it has none. */
 export async function getBoardSectorResults(raceId: number): Promise<SectorResults> {
-  const { data } = await api.get<SectorResults>(`/api/v1/boards/races/${raceId}/sector-results`);
-  return data;
+  try {
+    const { data } = await api.get<SectorResults>(`/api/v1/boards/races/${raceId}/sector-results`);
+    return data;
+  } catch (err) {
+    // The split timing module is switched off (#799): no sector section, not an error
+    if (getApiErrorStatus(err) === 404) return NO_SECTOR_RESULTS;
+    throw err;
+  }
 }
 
 /** A race's clock: race time so far without stoppages, its length from the format, and whether it is counting. */

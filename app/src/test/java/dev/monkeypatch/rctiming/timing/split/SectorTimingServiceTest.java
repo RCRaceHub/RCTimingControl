@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ class SectorTimingServiceTest {
 
     private SplitDecoderRepository repository;
     private ApplicationEventPublisher publisher;
+    private ModuleSwitch moduleSwitch;
     private SectorTimingService service;
 
     @BeforeEach
@@ -32,7 +34,9 @@ class SectorTimingServiceTest {
         when(repository.findAll()).thenReturn(List.of(
                 new SplitDecoder(1L, "Back straight", "10.0.0.2", 5100, 1, 0, true),
                 new SplitDecoder(2L, "Hairpin", "10.0.0.3", 5100, 2, 0, true)));
-        service = new SectorTimingService(repository, publisher);
+        moduleSwitch = mock(ModuleSwitch.class);
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(true);
+        service = new SectorTimingService(repository, publisher, moduleSwitch);
     }
 
     private void finish(String transponder, long seconds) {
@@ -168,5 +172,15 @@ class SectorTimingServiceTest {
         ArgumentCaptor<SectorTimesEvent> captor = ArgumentCaptor.forClass(SectorTimesEvent.class);
         verify(publisher).publishEvent(captor.capture());
         assertThat(captor.getValue().sectorMicros()).containsExactly(4 * SECOND, 11 * SECOND);
+    }
+
+    @Test
+    void doesNothingWhileTheModuleIsOff() {
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(false);
+
+        finish("101", 0);
+        finish("101", 60);
+
+        verify(publisher, never()).publishEvent(any(Object.class));
     }
 }
