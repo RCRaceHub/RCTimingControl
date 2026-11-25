@@ -16,8 +16,8 @@ import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,6 +31,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HeatMoveServiceTest {
@@ -177,7 +178,7 @@ class HeatMoveServiceTest {
     @Test
     void anEntryAlreadyInAHeatOfTheRoundIsNotAddedAgain() {
         lateEntry(11L, EntryStatus.CONFIRMED);
-        org.mockito.Mockito.when(raceRepository.findByRoundIdOrderBySequenceInRound(9L))
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(9L))
                 .thenReturn(List.of(heat1, heat2));
 
         assertThatThrownBy(() -> service.addEntry(Actor.system("test"), 2L, 11L, false))
@@ -186,21 +187,25 @@ class HeatMoveServiceTest {
     }
 
     @Test
-    void withAllRoundsALateEntryJoinsTheSameHeatOfLaterRoundsThatAreStillPendingAndSkipsRoundsAlreadyRun() {
+    void withAllRoundsALateEntryJoinsTheSameHeatOfLaterPendingRoundsOnly() {
         lateEntry(31L, EntryStatus.CONFIRMED);
         Round round2 = round(10L, 2);
         Round round3 = round(11L, 3);
         Round round1 = round(9L, 1);
+        Round earlier = round(8L, 0);
+        Race earlierHeat = race(4L, 1);
+        earlierHeat.setRoundId(8L);
+        lenient().when(raceRepository.findByRoundIdOrderBySequenceInRound(8L)).thenReturn(List.of(earlierHeat));
         Race r2heat1 = race(5L, 1);
         r2heat1.setRoundId(10L);
         Race r3heat1 = race(6L, 1);
         r3heat1.setRoundId(11L);
         r3heat1.setStatus(RaceStatus.FINISHED);
-        org.mockito.Mockito.when(roundRepository.findByEventIdOrderBySequenceInEvent(3L))
-                .thenReturn(List.of(round1, round2, round3));
+        when(roundRepository.findByEventIdOrderBySequenceInEvent(3L))
+                .thenReturn(List.of(earlier, round1, round2, round3));
         lenient().when(raceRepository.findByRoundIdOrderBySequenceInRound(9L)).thenReturn(List.of(heat1, heat2));
-        org.mockito.Mockito.when(raceRepository.findByRoundIdOrderBySequenceInRound(10L)).thenReturn(List.of(r2heat1));
-        org.mockito.Mockito.when(raceRepository.findByRoundIdOrderBySequenceInRound(11L)).thenReturn(List.of(r3heat1));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(10L)).thenReturn(List.of(r2heat1));
+        when(raceRepository.findByRoundIdOrderBySequenceInRound(11L)).thenReturn(List.of(r3heat1));
 
         service.addEntry(Actor.system("test"), 1L, 31L, true);
 

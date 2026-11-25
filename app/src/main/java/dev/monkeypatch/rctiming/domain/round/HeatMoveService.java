@@ -122,8 +122,8 @@ public class HeatMoveService {
     /**
      * Puts an entry that is in no heat yet, such as a walk-in added after the run order was generated, at the back
      * of a heat that has not been called. With {@code allRounds} it is also added to the same heat number in every
-     * other practice and qualifying round of its class where that heat is still pending and the entry is not
-     * already in the class's heats; those rounds are skipped quietly, since they may have run already.
+     * later practice and qualifying round of its class where that heat is still pending and the entry is not
+     * already in the class's heats; rounds that have run are skipped quietly, and so are earlier rounds.
      *
      * <p>The entry goes last on the grid (when the heat has grid positions) and takes the next free car number in
      * the heat, the same number in every round where that is free. Nobody else is renumbered. Records
@@ -159,7 +159,7 @@ public class HeatMoveService {
         raceIds.add(target.getId());
         if (allRounds) {
             for (Round round : roundRepository.findByEventIdOrderBySequenceInEvent(targetRound.getEventId())) {
-                if (round.getId().equals(target.getRoundId())) {
+                if (round.getSequenceInEvent() <= targetRound.getSequenceInEvent()) {
                     continue;
                 }
                 Race to = heatOf(round, target);

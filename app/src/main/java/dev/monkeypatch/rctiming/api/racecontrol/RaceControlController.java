@@ -261,7 +261,7 @@ public class RaceControlController {
 
     /**
      * Adds an entry that is in no heat yet, such as a walk-in made after the run order was generated, to the back of a
-     * pending heat of its class and, with {@code allRounds}, to the same heat in every other round that still has it
+     * pending heat of its class and, with {@code allRounds}, to the same heat in every later round that still has it
      * pending. {@code POST /race/{raceId}/add-entry}; 204 on success. 400 if the heat is a final or the entry is not
      * a confirmed entry of the heat's class; 404 for an unknown heat or entry; 409 if the heat has been called or
      * started, or the entry is already in a heat of the round. Admin or race director. Recorded in the audit log.
