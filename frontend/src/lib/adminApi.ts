@@ -636,7 +636,7 @@ export interface CreateWalkInEntryRequest {
 export interface CreateWalkInEntryResult {
   entry: { id: number; status: string; transponderNumberSnapshot: string };
   /** The driver the entry is for, to enter them in another class. */
-  competitorId: number | null;
+  competitorId: number;
   warnings: string[];
 }
 

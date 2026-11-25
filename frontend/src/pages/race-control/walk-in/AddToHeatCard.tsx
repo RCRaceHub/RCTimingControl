@@ -15,11 +15,11 @@ interface Props {
   eventClassId: number;
   entryId: number;
   /** The class's name, shown so it is clear which class this driver is being placed in. */
-  className?: string;
+  classLabel?: string;
   onDone: () => void;
 }
 
-export function AddToHeatCard({ eventId, eventClassId, entryId, className, onDone }: Props) {
+export function AddToHeatCard({ eventId, eventClassId, entryId, classLabel, onDone }: Props) {
   const { data: runOrder, isLoading, isError, refetch } = useRunOrder(eventId);
   const add = useAddEntryToHeat();
   const [allRounds, setAllRounds] = useState(true);
@@ -54,7 +54,7 @@ export function AddToHeatCard({ eventId, eventClassId, entryId, className, onDon
   const selected = chosen ?? pending[0].raceId;
   return (
     <Card className="space-y-3 p-4">
-      <h2 className="font-semibold">Put them in a heat{className ? ` (${className})` : ''}</h2>
+      <h2 className="font-semibold">Put them in a heat{classLabel ? ` (${classLabel})` : ''}</h2>
       <p className="text-sm text-muted-foreground">
         The run order is already set, so a new driver is not in any heat yet. They go at the back of the heat you pick
         {started ? '; heats that have already been called or run are not offered' : ''}.

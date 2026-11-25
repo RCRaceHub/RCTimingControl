@@ -44,6 +44,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   const [third, setThird] = useState('');
   const [fourth, setFourth] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // True for the whole submit, since the mutation is idle between the entries of several classes
+  const [submitting, setSubmitting] = useState(false);
   // Other classes the same driver is entered in as well
   const [extraClasses, setExtraClasses] = useState<number[]>([]);
   // Existing drivers the typed name matches, while the official decides if it is one of them (#123)
@@ -135,6 +137,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       return;
     }
     setError(null);
+    setSubmitting(true);
     try {
       const result = await createEntry.mutateAsync({
         ...(chosen ? { competitorId: chosen.id } : { competitorName: driverText.trim() }),
@@ -148,12 +151,13 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       toast.success(`Entry added for ${name}.`);
       result.warnings.forEach(w => toast.warning(w));
       const added = [{ entryId: result.entry.id, classId }];
+      const failed: string[] = [];
       // The same driver and numbers in each other ticked class; the driver now exists, so go by id
       for (const extraId of extraClasses) {
         const label = otherClasses.find(c => c.id === extraId)?.name ?? 'the other class';
         try {
           const extra = await createEntry.mutateAsync({
-            competitorId: result.competitorId ?? undefined,
+            competitorId: result.competitorId,
             eventClassId: extraId,
             primaryTransponder: primary.trim(),
             ...(secondary.trim() ? { secondaryTransponder: secondary.trim() } : {}),
@@ -162,9 +166,13 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
           });
           added.push({ entryId: extra.entry.id, classId: extraId });
           toast.success(`Entry added for ${name} in ${label}.`);
+          // Its transponder warnings repeat the first entry's, which were shown above
         } catch (err) {
-          toast.error(getApiErrorMessage(err, `Could not add ${name} to ${label}.`));
+          failed.push(`${label} (${getApiErrorMessage(err, 'failed')})`);
         }
+      }
+      if (failed.length > 0) {
+        toast.error(`${name} was not entered in: ${failed.join('; ')}. Add them to those classes from the entry list.`);
       }
       handleOpenChange(false);
       onAdded?.(added);
@@ -180,6 +188,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       } else {
         setError('Could not add the entry. Check your connection and try again.');
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -289,7 +299,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={createEntry.isPending}
+                      disabled={submitting}
                       onClick={() => {
                         setSelected(c);
                         setPossibleDuplicates([]);
@@ -306,7 +316,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                 type="button"
                 size="sm"
                 variant="ghost"
-                disabled={createEntry.isPending}
+                disabled={submitting}
                 onClick={() => {
                   setPossibleDuplicates([]);
                   void submit({ confirmNew: true });
@@ -323,8 +333,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createEntry.isPending}>
-              {createEntry.isPending ? 'Adding…' : 'Add entry'}
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Adding…' : 'Add entry'}
             </Button>
           </DialogFooter>
         </form>

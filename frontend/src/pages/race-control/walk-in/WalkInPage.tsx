@@ -19,8 +19,7 @@ export default function WalkInPage() {
   const { data: event, isLoading } = useAdminEventDetail(id);
   const { data: racingClasses = [] } = useRacingClasses();
   const [classId, setClassId] = useState<number | null>(null);
-  // The walk-in just saved, waiting to be put in a heat
-  // (one per class when a driver was entered in several), placed one at a time
+  // Walk-ins just saved and waiting to be put in a heat, one per class, placed one at a time
   const [added, setAdded] = useState<{ entryId: number; classId: number }[]>([]);
 
   useHelpContent(WalkInHelp);
@@ -63,7 +62,7 @@ export default function WalkInPage() {
               eventId={id}
               eventClassId={added[0].classId}
               entryId={added[0].entryId}
-              className={racingClassName(added[0].classId)}
+              classLabel={racingClassName(added[0].classId)}
               onDone={() => setAdded(added.slice(1))}
             />
           </div>
@@ -77,7 +76,7 @@ export default function WalkInPage() {
           otherClasses={classes
             .filter((c) => c.id !== classId)
             .map((c) => ({ id: c.id, name: racingClassName(c.id) }))}
-          onAdded={setAdded}
+          onAdded={(more) => setAdded((prev) => [...prev, ...more])}
           onOpenChange={(open) => {
             if (!open) setClassId(null);
           }}
