@@ -20,11 +20,16 @@ export default function WalkInPage() {
   const { data: racingClasses = [] } = useRacingClasses();
   const [classId, setClassId] = useState<number | null>(null);
   // The walk-in just saved, waiting to be put in a heat
-  const [added, setAdded] = useState<{ entryId: number; classId: number } | null>(null);
+  // (one per class when a driver was entered in several), placed one at a time
+  const [added, setAdded] = useState<{ entryId: number; classId: number }[]>([]);
 
   useHelpContent(WalkInHelp);
 
   const classes = event?.classes ?? [];
+  const racingClassName = (eventClassId: number) => {
+    const cls = classes.find((c) => c.id === eventClassId);
+    return racingClasses.find((rc) => rc.id === cls?.racingClassId)?.name ?? `Class ${eventClassId}`;
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -45,19 +50,21 @@ export default function WalkInPage() {
             <div className="flex flex-wrap gap-2">
               {classes.map((cls) => (
                 <Button key={cls.id} variant="outline" onClick={() => setClassId(cls.id)}>
-                  {racingClasses.find((rc) => rc.id === cls.racingClassId)?.name ?? `Class ${cls.id}`}
+                  {racingClassName(cls.id)}
                 </Button>
               ))}
             </div>
           )}
         </Card>
-        {added && (
+        {added.length > 0 && (
           <div className="mt-4">
             <AddToHeatCard
+              key={added[0].entryId}
               eventId={id}
-              eventClassId={added.classId}
-              entryId={added.entryId}
-              onDone={() => setAdded(null)}
+              eventClassId={added[0].classId}
+              entryId={added[0].entryId}
+              className={racingClassName(added[0].classId)}
+              onDone={() => setAdded(added.slice(1))}
             />
           </div>
         )}
@@ -67,7 +74,10 @@ export default function WalkInPage() {
           eventId={id}
           classId={classId}
           open
-          onAdded={(entryId) => setAdded({ entryId, classId })}
+          otherClasses={classes
+            .filter((c) => c.id !== classId)
+            .map((c) => ({ id: c.id, name: racingClassName(c.id) }))}
+          onAdded={setAdded}
           onOpenChange={(open) => {
             if (!open) setClassId(null);
           }}

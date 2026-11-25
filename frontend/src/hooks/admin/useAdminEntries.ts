@@ -38,10 +38,12 @@ export function useWithdrawEntry(eventId: number, classId: number) {
 export function useCreateWalkInEntry(eventId: number, classId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: Omit<CreateWalkInEntryRequest, 'eventId' | 'eventClassId'>) =>
-      adminApi.createWalkInEntry({ ...body, eventId, eventClassId: classId }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: adminQueryKeys.events.entriesForClass(eventId, classId) });
+    mutationFn: (body: Omit<CreateWalkInEntryRequest, 'eventId' | 'eventClassId'> & { eventClassId?: number }) =>
+      adminApi.createWalkInEntry({ ...body, eventId, eventClassId: body.eventClassId ?? classId }),
+    onSuccess: (_result, body) => {
+      qc.invalidateQueries({
+        queryKey: adminQueryKeys.events.entriesForClass(eventId, body.eventClassId ?? classId),
+      });
       qc.invalidateQueries({ queryKey: adminQueryKeys.competitors.all() });
     },
   });
