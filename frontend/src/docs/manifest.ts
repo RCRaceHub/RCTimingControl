@@ -21,6 +21,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'walkthrough-7-results-and-printing', title: '7. Results and printing', file: 'walkthroughs/7-results-and-printing.md', section: 'Walkthroughs' },
   { slug: 'walkthrough-8-championships', title: '8. Championships', file: 'walkthroughs/8-championships.md', section: 'Walkthroughs' },
   { slug: 'walkthrough-9-screens', title: '9. Put it on screens', file: 'walkthroughs/9-screens.md', section: 'Walkthroughs' },
+  { slug: 'walkthrough-10-config-file', title: '10. Set up from a config file', file: 'walkthroughs/10-config-file.md', section: 'Walkthroughs' },
   { slug: 'installing', title: 'Installing', file: 'installing.md', section: 'Setting up' },
   { slug: 'docker', title: 'Running with Docker', file: 'docker.md', section: 'Setting up' },
   { slug: 'provisioning', title: 'Skipping the setup wizard', file: 'provisioning.md', section: 'Setting up' },
