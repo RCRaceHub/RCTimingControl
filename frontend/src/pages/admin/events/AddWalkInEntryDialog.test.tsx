@@ -18,11 +18,11 @@ vi.mock('@/lib/adminApi', () => ({
 
 const api = vi.mocked(adminApi, true);
 
-function renderDialog(onOpenChange = vi.fn()) {
+function renderDialog(onOpenChange = vi.fn(), extra: { otherClasses?: { id: number; name: string }[]; onAdded?: () => void } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <AddWalkInEntryDialog eventId={5} classId={11} open onOpenChange={onOpenChange} />
+      <AddWalkInEntryDialog eventId={5} classId={11} open onOpenChange={onOpenChange} {...extra} />
     </QueryClientProvider>,
   );
   return onOpenChange;
@@ -63,7 +63,7 @@ describe('AddWalkInEntryDialog', () => {
 
   it('adds a walk-in for an existing driver picked from the search', async () => {
     api.createWalkInEntry.mockResolvedValue({
-      entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, warnings: [],
+      entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, competitorId: 7, warnings: [],
     });
     const onOpenChange = renderDialog();
 
@@ -98,6 +98,7 @@ describe('AddWalkInEntryDialog', () => {
   it('adds a new driver by name and shows transponder warnings', async () => {
     api.createWalkInEntry.mockResolvedValue({
       entry: { id: 100, status: 'CONFIRMED', transponderNumberSnapshot: '4321' },
+      competitorId: 7,
       warnings: ['Transponder 4321 is already used by another entry in this event.'],
     });
     renderDialog();
@@ -118,7 +119,7 @@ describe('AddWalkInEntryDialog', () => {
   it('asks before creating a driver whose typed name already exists, and reuses them on yes', async () => {
     api.createWalkInEntry
       .mockRejectedValueOnce(duplicateError([adaMatch]))
-      .mockResolvedValueOnce({ entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, warnings: [] });
+      .mockResolvedValueOnce({ entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, competitorId: 7, warnings: [] });
     const onOpenChange = renderDialog();
 
     type('Driver', 'ada  lovelace');
@@ -139,7 +140,7 @@ describe('AddWalkInEntryDialog', () => {
   it('creates the new driver when the official says it is a different person', async () => {
     api.createWalkInEntry
       .mockRejectedValueOnce(duplicateError([adaMatch]))
-      .mockResolvedValueOnce({ entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, warnings: [] });
+      .mockResolvedValueOnce({ entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, competitorId: 7, warnings: [] });
     const onOpenChange = renderDialog();
 
     type('Driver', 'Ada Lovelace');
@@ -217,5 +218,27 @@ describe('AddWalkInEntryDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add entry' }));
     expect(await screen.findByText('Enter the primary transponder number.')).toBeInTheDocument();
     expect(api.createWalkInEntry).not.toHaveBeenCalled();
+  });
+
+  it('enters the same driver in each other ticked class and reports every entry', async () => {
+    api.competitors.list.mockResolvedValue([adaMatch]);
+    api.createWalkInEntry
+      .mockResolvedValueOnce({ entry: { id: 99, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, competitorId: 7, warnings: [] })
+      .mockResolvedValueOnce({ entry: { id: 100, status: 'CONFIRMED', transponderNumberSnapshot: '1234' }, competitorId: 7, warnings: [] });
+    const onAdded = vi.fn();
+    renderDialog(vi.fn(), { otherClasses: [{ id: 12, name: '4WD' }], onAdded });
+
+    type('Driver', 'Grace Hopper');
+    type('Primary transponder', '1234');
+    fireEvent.click(screen.getByRole('checkbox', { name: '4WD' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add entry' }));
+
+    await waitFor(() => expect(onAdded).toHaveBeenCalledWith([
+      { entryId: 99, classId: 11 },
+      { entryId: 100, classId: 12 },
+    ]));
+    expect(api.createWalkInEntry).toHaveBeenLastCalledWith(
+      expect.objectContaining({ competitorId: 7, eventClassId: 12, primaryTransponder: '1234' }),
+    );
   });
 });

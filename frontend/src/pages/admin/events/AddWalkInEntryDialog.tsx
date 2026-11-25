@@ -24,6 +24,10 @@ interface AddWalkInEntryDialogProps {
   classId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The event's other classes, offered as tick boxes so one driver can be entered in several at once. */
+  otherClasses?: { id: number; name: string }[];
+  /** Called with each new entry (and its class) once saved, so the caller can go on to place them in heats. */
+  onAdded?: (added: { entryId: number; classId: number }[]) => void;
 }
 
 const MAX_MATCHES = 8;
@@ -32,7 +36,7 @@ const MAX_MATCHES = 8;
 const sameNameKey = (name: string) => name.replace(/\s+/g, '').toLowerCase();
 
 /** Add a walk-in entry by hand: pick an existing driver or type a new name (L9, #17). */
-export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenChange }: AddWalkInEntryDialogProps) {
+export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenChange, otherClasses = [], onAdded }: AddWalkInEntryDialogProps) {
   const [driverText, setDriverText] = useState('');
   const [selected, setSelected] = useState<CompetitorSummaryDto | null>(null);
   const [primary, setPrimary] = useState('');
@@ -40,6 +44,10 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
   const [third, setThird] = useState('');
   const [fourth, setFourth] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // True for the whole submit, since the mutation is idle between the entries of several classes
+  const [submitting, setSubmitting] = useState(false);
+  // Other classes the same driver is entered in as well
+  const [extraClasses, setExtraClasses] = useState<number[]>([]);
   // Existing drivers the typed name matches, while the official decides if it is one of them (#123)
   const [possibleDuplicates, setPossibleDuplicates] = useState<CompetitorSummaryDto[]>([]);
 
@@ -62,6 +70,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       setFourth('');
       setError(null);
       setPossibleDuplicates([]);
+      setExtraClasses([]);
     }
     onOpenChange(next);
   }
@@ -128,6 +137,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       return;
     }
     setError(null);
+    setSubmitting(true);
     try {
       const result = await createEntry.mutateAsync({
         ...(chosen ? { competitorId: chosen.id } : { competitorName: driverText.trim() }),
@@ -137,9 +147,35 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
         ...(third.trim() ? { thirdTransponder: third.trim() } : {}),
         ...(fourth.trim() ? { fourthTransponder: fourth.trim() } : {}),
       });
-      toast.success(`Entry added for ${chosen?.displayName ?? driverText.trim()}.`);
+      const name = chosen?.displayName ?? driverText.trim();
+      toast.success(`Entry added for ${name}.`);
       result.warnings.forEach(w => toast.warning(w));
+      const added = [{ entryId: result.entry.id, classId }];
+      const failed: string[] = [];
+      // The same driver and numbers in each other ticked class; the driver now exists, so go by id
+      for (const extraId of extraClasses) {
+        const label = otherClasses.find(c => c.id === extraId)?.name ?? 'the other class';
+        try {
+          const extra = await createEntry.mutateAsync({
+            competitorId: result.competitorId,
+            eventClassId: extraId,
+            primaryTransponder: primary.trim(),
+            ...(secondary.trim() ? { secondaryTransponder: secondary.trim() } : {}),
+            ...(third.trim() ? { thirdTransponder: third.trim() } : {}),
+            ...(fourth.trim() ? { fourthTransponder: fourth.trim() } : {}),
+          });
+          added.push({ entryId: extra.entry.id, classId: extraId });
+          toast.success(`Entry added for ${name} in ${label}.`);
+          // Its transponder warnings repeat the first entry's, which were shown above
+        } catch (err) {
+          failed.push(`${label} (${getApiErrorMessage(err, 'failed')})`);
+        }
+      }
+      if (failed.length > 0) {
+        toast.error(`${name} was not entered in: ${failed.join('; ')}. Add them to those classes from the entry list.`);
+      }
       handleOpenChange(false);
+      onAdded?.(added);
     } catch (err) {
       const data = getApiErrorData(err);
       const status = getApiErrorStatus(err);
@@ -152,6 +188,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
       } else {
         setError('Could not add the entry. Check your connection and try again.');
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -227,6 +265,26 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
             </div>
           </div>
 
+          {otherClasses.length > 0 && (
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium">Also enter in</legend>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {otherClasses.map(c => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={extraClasses.includes(c.id)}
+                      onChange={ev =>
+                        setExtraClasses(prev => (ev.target.checked ? [...prev, c.id] : prev.filter(x => x !== c.id)))
+                      }
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          )}
+
           {possibleDuplicates.length > 0 && (
             <div role="alert" className="space-y-2 rounded-md border border-warning p-3 text-sm">
               <p className="font-medium">
@@ -241,7 +299,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                       type="button"
                       size="sm"
                       variant="outline"
-                      disabled={createEntry.isPending}
+                      disabled={submitting}
                       onClick={() => {
                         setSelected(c);
                         setPossibleDuplicates([]);
@@ -258,7 +316,7 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
                 type="button"
                 size="sm"
                 variant="ghost"
-                disabled={createEntry.isPending}
+                disabled={submitting}
                 onClick={() => {
                   setPossibleDuplicates([]);
                   void submit({ confirmNew: true });
@@ -275,8 +333,8 @@ export default function AddWalkInEntryDialog({ eventId, classId, open, onOpenCha
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createEntry.isPending}>
-              {createEntry.isPending ? 'Adding…' : 'Add entry'}
+            <Button type="submit" disabled={submitting}>
+              {submitting ? 'Adding…' : 'Add entry'}
             </Button>
           </DialogFooter>
         </form>
