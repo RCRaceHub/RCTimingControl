@@ -6,7 +6,7 @@
 |------|---------|
 | Java | 21 (LTS) |
 | Docker | 24+ (optional: only for Piper announcer voices) |
-| Node.js | 20+ |
+| Node.js | 24+ (CI and the Docker image use 24) |
 | Gradle | via wrapper (`./gradlew`) |
 
 ## Quick start (Makefile)
