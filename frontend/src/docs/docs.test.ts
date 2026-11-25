@@ -33,6 +33,21 @@ describe('docs manifest', () => {
   });
 });
 
+describe('doc images', () => {
+  it('refers only to screenshots that exist in docs/images', async () => {
+    const { existsSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const missing: string[] = [];
+    for (const e of DOC_MANIFEST) {
+      const text = (await loadDocSource(e.file))!;
+      for (const m of text.matchAll(/!\[[^\]]*\]\((images\/[^)\s]+)\)/g)) {
+        if (!existsSync(resolve(__dirname, '../../../docs', m[1]))) missing.push(`${e.file}: ${m[1]}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+});
+
 describe('contents list', () => {
   it('uses the same ids as the rendered headings', async () => {
     const { render } = await import('@testing-library/react');

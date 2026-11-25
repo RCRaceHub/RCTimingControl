@@ -2,6 +2,8 @@
 
 This is the path for a club from nothing to a finished race day, in the order you will meet things. Each step is a few sentences and points to the guide with the detail. Two printable guides come with the app: the **Admin Configuration Guide** and the **Race Meeting Guide**. Open them from the help panel in the app (the **?** button) or at `/print/admin-guide` and `/print/meeting-guide` on the timing laptop, and print them to PDF if you want paper at the track. The full guides, with a menu and search, are also served by the app itself at `/docs` on the laptop's address (the **Docs** link in the sidebar and race control, and on the About page with a QR code). They work without the internet.
 
+**New to RCTC?** [walkthroughs.md](walkthroughs.md) shows the most common jobs step by step, with a picture of each screen: first-run setup, getting a meeting ready, running qualifying and the finals, penalties, practice, results and printing, championships and the display screens.
+
 RCTC (RC Timing Control) is one program on a laptop at the track. Only officials sign in: admins, race directors and referees. Racers never log in. Their entries come from a RaceHub export file or an RC-Timing CSV, or an official adds them as walk-ins.
 
 ---
@@ -24,7 +26,17 @@ The first time, a wizard asks for the club profile, a track, a race format, the 
 
 Under **Admin → Decoder**, enter the decoder's address, leave the protocol on RC4 for firmware below 4.5, and click **Test Connection**, then **Save**. Never connect RCTC and another timing program to the same decoder at once. Setup, hardware notes and troubleshooting are in [decoder.md](decoder.md). The first time you run on a real decoder, [live-testing.md](live-testing.md) is a step-by-step checklist, and [recording-the-decoder.md](recording-the-decoder.md) shows how to record what the decoder sends so you can check every lap afterwards.
 
+![The Decoder page](images/admin-decoder.png)
+
 ### 4. Set up the club, tracks, formats and officials
+
+![Club profile](images/admin-club-profile.png)
+
+![Racing setup: formats](images/admin-racing-setup-formats.png)
+
+![Officials](images/admin-officials.png)
+
+![Competitors](images/admin-competitors.png)
 
 - **Club Profile**, **Tracks** (name, length and venue notes) and **Formats** (how a race is run) are in the Admin Configuration Guide, sections 1 to 3. **Scoring Systems** (saved sets of scoring rules that formats and championships pick from) are in [Scoring](scoring.md#6-scoring-systems).
 - **Officials** (Admin → Officials) adds the people who sign in, with their roles, sets passwords and disables people who no longer help. Section 7 of the guide covers it, and [installing.md](installing.md#locked-out) covers a club with no admin who can sign in.
@@ -127,6 +139,8 @@ A club with no RaceHub key and no results website runs standalone: the **RaceHub
 
 ### 11. Backups
 
+![The Backups page](images/admin-backups.png)
+
 RCTC backs up its database when you complete the event (that closes the race day) and every night, and **Admin → Backups** lists the copies and takes one on demand. The Backups page shows when the last one was taken and how long refused sign-ins and audit rows are kept, and after you close a race day it reminds you for a few days to copy a backup off the laptop. Keep a copy off the laptop: [installing.md](installing.md#copying-backups-off-the-laptop) shows how to use a Dropbox or Drive folder. Restoring is done on the laptop with the service stopped: [installing.md](installing.md#restoring-a-backup).
 
 ### 12. Send results back to RaceHub
@@ -146,5 +160,7 @@ To let people away from the track follow a race, RCTC can send a live feed to a 
 - **No admin can sign in:** [installing.md](installing.md#locked-out).
 - **Need an old copy of the data back:** [installing.md](installing.md#restoring-a-backup).
 - **Upgrading:** [installing.md](installing.md#upgrading).
+
+![The Audit log](images/admin-audit-log.png)
 
 An administrator can see who changed what, and when, on **Admin → Audit log** (filter by what was changed, the action name and the event).
