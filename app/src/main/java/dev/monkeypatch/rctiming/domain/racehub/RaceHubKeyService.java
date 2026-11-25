@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.racehub;
 
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;

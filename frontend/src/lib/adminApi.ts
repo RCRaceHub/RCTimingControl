@@ -813,7 +813,8 @@ export interface ResultsExportRowDto {
   sentAt: string | null;
 }
 
-export interface ResultsExportsDto {
+/** The club's RaceHub address and key, shared by results sending and the RaceHub imports (always available) */
+export interface RaceHubConnectionDto {
   /** Whether the RaceHub address and key are both set; without them, exports wait in the queue */
   sendingEnabled: boolean;
   /** The address in use: the one set here, else the settings file's */
@@ -824,6 +825,10 @@ export interface ResultsExportsDto {
   missingSettings: string[];
   /** Where the RaceHub key comes from: pasted here, the settings file, or not set */
   keySource: 'SAVED' | 'SETTINGS_FILE' | 'NONE';
+}
+
+/** What the results export module sends and where it publishes (only while the module is on) */
+export interface ResultsExportsDto {
   /** Where results are published now: the club's choice, else the default */
   publishTarget: ResultsPublishTarget;
   /** The club's choice, or null when it has not made one */
@@ -1420,21 +1425,25 @@ export const adminApi = {
     link: (request: LinkRaceHubFormatRequest) => api.put<void>('/api/v1/admin/racehub/format-links', request),
   },
 
-  // Results sent to RaceHub (#27)
+  // The club's RaceHub address and key (core: results sending and the RaceHub imports share it)
+  raceHubConnection: {
+    get: () => api.get<RaceHubConnectionDto>('/api/v1/admin/racehub/connection').then(r => r.data),
+    /** Blank clears it, so the settings file's address applies */
+    setAddress: (resultsUrl: string) =>
+      api.put<RaceHubConnectionDto>('/api/v1/admin/racehub/connection/address', { resultsUrl }).then(r => r.data),
+    /** Saves a new RaceHub key, used straight away; it is never sent back */
+    setKey: (key: string) =>
+      api.put<RaceHubConnectionDto>('/api/v1/admin/racehub/connection/key', { key }).then(r => r.data),
+    /** Forgets the key saved here, so the settings file's applies again */
+    clearKey: () => api.delete<RaceHubConnectionDto>('/api/v1/admin/racehub/connection/key').then(r => r.data),
+  },
+
+  // Results sent to RaceHub (#27); the results export module, so 404 while it is off
   resultsExports: {
     list: () =>
       api.get<ResultsExportsDto>('/api/v1/admin/results-exports').then(r => r.data),
     retry: (id: number) =>
       api.post(`/api/v1/admin/results-exports/${id}/retry`).then(() => undefined),
-    /** Blank clears it, so the settings file's address applies */
-    setAddress: (resultsUrl: string) =>
-      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
-    /** Saves a new RaceHub key, used straight away; it is never sent back */
-    setKey: (key: string) =>
-      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/key', { key }).then(r => r.data),
-    /** Forgets the key saved here, so the settings file's applies again */
-    clearKey: () =>
-      api.delete<ResultsExportsDto>('/api/v1/admin/results-exports/key').then(r => r.data),
     /** Null clears the choice, so the default applies */
     setTarget: (target: ResultsPublishTarget | null) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/target', { target }).then(r => r.data),

@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.racehub;
 
 import dev.monkeypatch.rctiming.config.SecureEndpoint;
 import org.springframework.boot.context.properties.ConfigurationProperties;

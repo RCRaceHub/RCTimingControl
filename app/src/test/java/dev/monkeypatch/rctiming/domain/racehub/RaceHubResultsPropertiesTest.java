@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.racehub;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

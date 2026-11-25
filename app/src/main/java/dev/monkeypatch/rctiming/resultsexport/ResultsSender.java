@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import org.slf4j.Logger;
@@ -51,15 +53,18 @@ public class ResultsSender {
     private final RaceHubResultsEndpoint endpoint;
     private final RestClient restClient;
     private final Clock clock;
+    private final ModuleSwitch moduleSwitch;
 
     @Autowired
     public ResultsSender(ResultsOutboxRepository outboxRepository, EventRepository eventRepository,
-                         RaceHubResultsEndpoint endpoint, RestClient.Builder restClientBuilder) {
-        this(outboxRepository, eventRepository, endpoint, restClientBuilder, Clock.systemUTC());
+                         RaceHubResultsEndpoint endpoint, ModuleSwitch moduleSwitch, RestClient.Builder restClientBuilder) {
+        this(outboxRepository, eventRepository, endpoint, moduleSwitch, restClientBuilder, Clock.systemUTC());
     }
 
     ResultsSender(ResultsOutboxRepository outboxRepository, EventRepository eventRepository,
-                  RaceHubResultsEndpoint endpoint, RestClient.Builder restClientBuilder, Clock clock) {
+                  RaceHubResultsEndpoint endpoint, ModuleSwitch moduleSwitch, RestClient.Builder restClientBuilder,
+                  Clock clock) {
+        this.moduleSwitch = moduleSwitch;
         this.outboxRepository = outboxRepository;
         this.eventRepository = eventRepository;
         this.endpoint = endpoint;
@@ -77,7 +82,7 @@ public class ResultsSender {
      */
     @Scheduled(initialDelay = 15_000, fixedDelayString = "${rctiming.racehub.send-interval-ms:15000}")
     public void sendDue() {
-        if (!endpoint.snapshot().sendingEnabled()) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID) || !endpoint.snapshot().sendingEnabled()) {
             return;
         }
         List<ResultsOutboxItem> due = outboxRepository.findByStatusInAndNextAttemptAtLessThanEqualOrderByIdAsc(

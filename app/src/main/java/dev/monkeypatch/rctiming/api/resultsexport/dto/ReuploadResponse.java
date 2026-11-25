@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.api.admin.dto;
+package dev.monkeypatch.rctiming.api.resultsexport.dto;
 
 /**
  * Answer to a results re-upload: the queued export, which the sender takes to RaceHub on its next pass.

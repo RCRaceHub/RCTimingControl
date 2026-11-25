@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.club.ResultsPublishTarget;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import org.springframework.stereotype.Component;
 

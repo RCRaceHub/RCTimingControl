@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.domain.result.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.domain.event.EventCompleted;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
@@ -23,9 +25,11 @@ public class ResultsExportTriggers {
     private static final Logger log = LoggerFactory.getLogger(ResultsExportTriggers.class);
 
     private final ResultsExportService exportService;
+    private final ModuleSwitch moduleSwitch;
 
-    public ResultsExportTriggers(ResultsExportService exportService) {
+    public ResultsExportTriggers(ResultsExportService exportService, ModuleSwitch moduleSwitch) {
         this.exportService = exportService;
+        this.moduleSwitch = moduleSwitch;
     }
 
     /**
@@ -34,6 +38,9 @@ public class ResultsExportTriggers {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            return;
+        }
         if (event.getNewStatus() == RaceStatus.FINISHED) {
             run(() -> exportService.requestForRace(event.getRaceId(), ExportReason.RACE_FINISHED));
         }
@@ -42,12 +49,18 @@ public class ResultsExportTriggers {
     /** A correction to a finished race asks for a new export, in the correcting transaction. */
     @EventListener
     public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            return;
+        }
         run(() -> exportService.requestForRace(event.raceId(), ExportReason.CORRECTION));
     }
 
     /** Closing the race day (the event completed) asks for a final export, in the closing transaction. */
     @EventListener
     public void onDayClosed(EventCompleted event) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            return;
+        }
         run(() -> exportService.request(event.eventId(), ExportReason.DAY_CLOSE));
     }
 
@@ -57,6 +70,9 @@ public class ResultsExportTriggers {
      */
     @Scheduled(initialDelay = 2_000, fixedDelayString = "${rctiming.racehub.queue-interval-ms:2000}")
     public void queuePending() {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            return;
+        }
         for (long eventId : exportService.pendingEventIds()) {
             try {
                 exportService.queuePending(eventId);

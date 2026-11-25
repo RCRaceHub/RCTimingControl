@@ -9,6 +9,7 @@ import type { AuthContextValue, AuthUser } from '@/providers/AuthProvider';
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }));
 vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { download: vi.fn() } } }));
+vi.mock('@/hooks/admin/useModules', () => ({ useDisabledModules: () => new Set<string>() }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function signInAs(roles: AuthUser['roles']) {

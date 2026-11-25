@@ -1148,22 +1148,24 @@ Newest first. Every filter is optional and the ones given must all match: `entit
 ```http
 GET /api/v1/admin/results-exports
 ```
-**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "keySource": "SETTINGS_FILE", "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+**200 OK** — `{ "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). This, the target, retry, re-upload, the results site and the per-event download are the **results export module** (id `results-export`): while it is off they answer **404**. The RaceHub address and key are not part of it; they are under `/api/v1/admin/racehub/connection` below. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
+
+`GET /api/v1/admin/racehub/connection` (ADMIN, always available) returns `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "keySource": "SETTINGS_FILE" }`. `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. The RaceHub imports of classes, events and formats use the same address and key.
 
 ```http
-PUT /api/v1/admin/results-exports/address
+PUT /api/v1/admin/racehub/connection/address
 ```
-Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the same body as the list. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
+Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the connection, as above. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
 
 ```http
-PUT /api/v1/admin/results-exports/key
+PUT /api/v1/admin/racehub/connection/key
 ```
-Body `{ "key": "the-key-from-racehub" }`. **200 OK** — the same body as the list. Saves a new RaceHub key, encrypted in a `racehub-key` file in the data folder (not the database), and gives it to the entry feeds that point at RaceHub's host. It wins over `rctiming.racehub.token` and is used by the next request to RaceHub, with no restart, so a key can be rotated. **400** for a blank key or one with spaces. Audited as `RACEHUB_KEY_CHANGED`, never with the key.
+Body `{ "key": "the-key-from-racehub" }`. **200 OK** — the connection. Saves a new RaceHub key, encrypted in a `racehub-key` file in the data folder (not the database), and gives it to the entry feeds that point at RaceHub's host. It wins over `rctiming.racehub.token` and is used by the next request to RaceHub, with no restart, so a key can be rotated. **400** for a blank key or one with spaces. Audited as `RACEHUB_KEY_CHANGED`, never with the key.
 
 ```http
-DELETE /api/v1/admin/results-exports/key
+DELETE /api/v1/admin/racehub/connection/key
 ```
-**200 OK** — the same body as the list. Forgets the saved key so the settings file's applies again (the RaceHub entry feeds are given that key too). Audited as `RACEHUB_KEY_CLEARED`.
+**200 OK** — the connection. Forgets the saved key so the settings file's applies again (the RaceHub entry feeds are given that key too). Audited as `RACEHUB_KEY_CLEARED`.
 
 ```http
 PUT /api/v1/admin/results-exports/target

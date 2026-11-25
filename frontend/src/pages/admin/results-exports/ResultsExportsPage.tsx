@@ -233,12 +233,14 @@ const TABS = ['sent', 'classes', 'settings'] as const;
  */
 export default function ResultsExportsPage() {
   useHelpContent(ResultsExportsHelp);
-  const { data, isLoading, isError, refetch } = useResultsExports();
+  const { data, moduleOff, isLoading, isError, refetch } = useResultsExports();
   const { data: unlinked = 0 } = useUnlinkedRaceHubClassCount();
   // Picked once, from the first answer, so a refetch never moves a tab nobody chose
   const [firstTab, setFirstTab] = useState<(typeof TABS)[number] | null>(null);
-  if (data && firstTab === null) setFirstTab(data.sendingEnabled ? 'sent' : 'settings');
-  const [tab, setTab] = useTabParam(TABS, firstTab ?? 'settings');
+  if (data && firstTab === null) setFirstTab(data.sendingEnabled && !moduleOff ? 'sent' : 'settings');
+  const [requestedTab, setTab] = useTabParam(TABS, firstTab ?? 'settings');
+  // The results export module (#799) can be switched off: its tab goes and a stale address falls back to the settings
+  const tab = moduleOff && requestedTab === 'sent' ? 'settings' : requestedTab;
   const retry = useRetryResultsExport();
   // Once sending is set up the list of what has gone is what people come for; until then the settings are
   function onRetry(id: number) {
@@ -269,13 +271,13 @@ export default function ResultsExportsPage() {
         {isError && <QueryError message="Could not load the results sent to RaceHub." onRetry={refetch} />}
 
 
-        {data?.sendingEnabled && (
+        {data?.sendingEnabled && !moduleOff && (
           <p className="text-sm">
             Sending to <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">{data.resultsUrl}</code>
           </p>
         )}
 
-        {data && !data.sendingEnabled && (
+        {data && !data.sendingEnabled && !moduleOff && (
           <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 text-sm">
             <p className="font-medium">
               {data.resultsUrl ? 'No RaceHub key is set' : 'No RaceHub address is set'}, so results wait here.
@@ -299,7 +301,7 @@ export default function ResultsExportsPage() {
       {data && (
         <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList>
-            <TabsTrigger value="sent">Sent results</TabsTrigger>
+            {!moduleOff && <TabsTrigger value="sent">Sent results</TabsTrigger>}
             <TabsTrigger value="classes">
               Classes and formats
               {unlinked > 0 && <Badge variant="outline" className="ml-2">{unlinked} unlinked</Badge>}
@@ -310,6 +312,7 @@ export default function ResultsExportsPage() {
           <TabsContent value="classes"><RaceHubClassesTab /></TabsContent>
 
           {/* The sent and connection tabs stay mounted (hidden when not shown) so a half-typed address or key is not lost on a switch */}
+          {!moduleOff && (
           <TabsContent value="sent" forceMount className="space-y-6 data-[state=inactive]:hidden">
             {data && data.exports.length === 0 && (
               <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -351,11 +354,12 @@ export default function ResultsExportsPage() {
               </ul>
             )}
           </TabsContent>
+          )}
 
           <TabsContent value="settings" forceMount className="space-y-6 data-[state=inactive]:hidden">
-            {data && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
+            {data && !moduleOff && <TargetForm key={data.chosenTarget ?? 'default'} target={data.publishTarget} chosen={data.chosenTarget} />}
 
-            {data && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
+            {data && !moduleOff && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
 
             {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
 

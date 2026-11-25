@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.racehub;
 
 import dev.monkeypatch.rctiming.config.SecureEndpoint;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -148,7 +148,7 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
         }
     }
 
-    /** Whether {@link ResultsSender} will send: an address (either source) and the key are both set. */
+    /** Whether {@code ResultsSender} will send: an address (either source) and the key are both set. */
     public boolean sendingEnabled() {
         return snapshot().sendingEnabled();
     }

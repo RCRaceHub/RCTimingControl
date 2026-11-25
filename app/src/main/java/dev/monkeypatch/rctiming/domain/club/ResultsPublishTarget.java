@@ -1,8 +1,8 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.club;
 
 /**
  * Where a club publishes its results (#319). {@link #SITE} is the results site for clubs without RaceHub:
- * static pages from {@link ResultsSiteService}, written to a folder or downloaded as a zip. It queues nothing in the
+ * static pages from {@code ResultsSiteService}, written to a folder or downloaded as a zip. It queues nothing in the
  * outbox.
  */
 public enum ResultsPublishTarget {
