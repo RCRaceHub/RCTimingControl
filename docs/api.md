@@ -530,8 +530,8 @@ Requires `ADMIN`. Body `{ "address": "https://racehub.example" }`. The one place
 RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address below the one RaceHub address (set with `PUT /admin/racehub/address`). The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
 
 ```http
-GET  /admin/racehub/events
-POST /admin/racehub/events/{raceHubEventId}/take
+GET  /admin/racehub/events?state=ready|open|all&from=2026-12-01&to=2027-02-28
+POST /admin/racehub/events/{raceHubEventId}/take?state=ready|open|all
 ```
 
 `GET` answers **200** whatever RaceHub says, so the page can show why a list is empty:
@@ -539,8 +539,12 @@ POST /admin/racehub/events/{raceHubEventId}/take
 ```json
 { "raceHubUrl": "https://racehub.example", "tokenSet": true, "error": null,
   "events": [ { "raceHubEventId": "E-7", "name": "Club Champs", "eventDate": "2026-11-14", "venue": "Test Track",
-                "entryCount": 42, "linkedEventId": null } ] }
+                "entryCount": 42, "linkedEventId": null, "bookingOpenAt": "2026-10-01T09:00:00Z",
+                "bookingCloseAt": "2026-11-10T18:00:00Z", "bookingState": "closed",
+                "releasedAt": "2026-11-12T10:00:00Z" } ] }
 ```
+
+`state` chooses the view: `ready` (released to timing, the default), `open` (open for sign-up) or `all` (every upcoming event). `from` and `to` are ISO dates, inclusive, on the event's date; RCTC applies them itself as well, so a RaceHub that ignores them still gives the range asked for. **400** for an unknown `state`, a bad date, or `from` after `to`. `take` takes the same `state`, so an event that is open for sign-up but not yet released can be taken; it asks RaceHub for that view again, and answers **400** if RaceHub has not given the event an entries address. The booking fields are null when RaceHub does not send them.
 
 `error` is set (and `events` empty) when no address is saved, the key is not set, RaceHub can't be reached or refuses the key, or its answer isn't a list of events. The key is never sent back, only `tokenSet`. `linkedEventId` is the RCTC event whose RaceHub event id matches, so an event already taken is shown as taken.
 
