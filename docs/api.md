@@ -518,6 +518,8 @@ The token itself is never sent back. `tokenHint` is its last four characters, sh
 
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
 
+`GET /admin/entry-feeds` (ADMIN) lists every event's feed in short, for the Events list: `[ { "eventId": 7, "autoFetch": true, "lastFetchAt": "…", "lastStatus": "APPLIED", "lastMessage": "2 new, 1 withdrawn (revision 7)", "appliedRevision": 7, "waiting": false } ]`. It carries no address and no token. A feed that answers 404 or 410 (the event was cancelled or taken down at the source) is recorded as `FAILED` with that reason and its `autoFetch` is turned off; the entries already imported are kept.
+
 ### RaceHub address
 
 ```http

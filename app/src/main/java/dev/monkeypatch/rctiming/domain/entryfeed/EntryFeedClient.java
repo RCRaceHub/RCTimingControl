@@ -67,7 +67,15 @@ public class EntryFeedClient {
     public record AuthFailed(String message) implements Result {
     }
 
-    public record Failed(String message) implements Result {
+    /**
+     * Any other failure. {@code gone} is true when the feed answered 404 or 410: the address no longer serves
+     * anything, as when an event is cancelled or taken down at the source.
+     */
+    public record Failed(String message, boolean gone) implements Result {
+
+        public Failed(String message) {
+            this(message, false);
+        }
     }
 
     /**
@@ -109,8 +117,9 @@ public class EntryFeedClient {
                         }
                         if (!response.getStatusCode().is2xxSuccessful()) {
                             byte[] start = response.getBody().readNBytes(MAX_ERROR_LENGTH);
+                            boolean gone = status == HttpStatus.NOT_FOUND.value() || status == HttpStatus.GONE.value();
                             return new Failed(shorten("The feed answered " + status + ": "
-                                    + new String(start, StandardCharsets.UTF_8)));
+                                    + new String(start, StandardCharsets.UTF_8)), gone);
                         }
                         return read(response.getBody());
                     });

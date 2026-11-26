@@ -12,6 +12,15 @@ export function useEntryFeed(eventId: number) {
   });
 }
 
+/** Every event's feed in short, for the Events list. Refreshed every minute, as feeds are fetched in the background. */
+export function useEntryFeedSummaries() {
+  return useQuery({
+    queryKey: adminQueryKeys.events.entryFeeds(),
+    queryFn: () => adminApi.entryFeedSummaries(),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useSaveEntryFeed(eventId: number) {
   const qc = useQueryClient();
   return useMutation({

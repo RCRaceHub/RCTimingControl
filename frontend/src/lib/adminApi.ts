@@ -377,6 +377,17 @@ export interface RaceHubEventsDto {
   error: string | null;
 }
 
+/** One event's entry feed in short, for the Events list */
+export interface EntryFeedSummaryDto {
+  eventId: number;
+  autoFetch: boolean;
+  lastFetchAt: string | null;
+  lastStatus: EntryFeedDto['lastStatus'];
+  lastMessage: string | null;
+  appliedRevision: number | null;
+  waiting: boolean;
+}
+
 export interface SaveEntryFeedRequest {
   url: string;
   /** Leave out to keep the saved token; an empty string removes it */
@@ -1070,6 +1081,8 @@ export const adminApi = {
   /** "Update from RaceHub": fetches now with the automatic poll's rules (a clean revision is imported). */
   updateEntryFeed: (eventId: number) =>
     api.post<EntryFeedDto>(`/api/v1/admin/events/${eventId}/entry-feed/update`).then(r => r.data),
+
+  entryFeedSummaries: () => api.get<EntryFeedSummaryDto[]>('/api/v1/admin/entry-feeds').then(r => r.data),
 
   previewEntryFeed: (eventId: number) =>
     api.post<RaceHubImportResult>(`/api/v1/admin/events/${eventId}/entry-feed/preview`).then(r => r.data),

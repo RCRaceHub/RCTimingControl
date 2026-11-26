@@ -94,6 +94,11 @@ public class EntryFeedService {
         this.photoImport = photoImport;
     }
 
+    /** Every event's feed, for the Events list. Read-only; the feeds' secrets stay in the entity. */
+    public List<EntryFeed> findAllFeeds() {
+        return feedRepository.findAll();
+    }
+
     /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
     public Optional<EntryFeed> find(long eventId) {
         requireEvent(eventId);
@@ -364,7 +369,12 @@ public class EntryFeedService {
         }
     }
 
-    private record Problem(EntryFeedStatus status, String message) {
+    /** {@code gone}: the feed's address no longer serves the event, so automatic fetching should stop. */
+    private record Problem(EntryFeedStatus status, String message, boolean gone) {
+
+        Problem(EntryFeedStatus status, String message) {
+            this(status, message, false);
+        }
     }
 
     /** A fetch's outcome: the file, a problem, or neither when the feed said nothing is newer ({@code notModified}). */
@@ -406,7 +416,8 @@ public class EntryFeedService {
         return switch (result) {
             case EntryFeedClient.AuthFailed failed ->
                     new Download(null, new Problem(EntryFeedStatus.AUTH_FAILED, failed.message()));
-            case EntryFeedClient.Failed failed -> new Download(null, new Problem(EntryFeedStatus.FAILED, failed.message()));
+            case EntryFeedClient.Failed failed -> new Download(null,
+                    new Problem(EntryFeedStatus.FAILED, failed.message(), failed.gone()));
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.NotModified notModified -> new Download(null, null, true);
         };
@@ -524,9 +535,17 @@ public class EntryFeedService {
 
     private Optional<EntryFeed> recordFailure(EntryFeed feed, Problem problem) {
         String message = problem.message() == null ? "The fetch failed" : problem.message();
+        if (problem.gone()) {
+            message = "The feed no longer serves this event (" + message + "). Entries already imported are kept; "
+                    + "automatic fetching has stopped. Turn it back on if the event returns.";
+        }
+        String recorded = message;
         return update(feed, f -> {
             f.setLastStatus(problem.status());
-            f.setLastError(message.length() > MAX_ERROR_LENGTH ? message.substring(0, MAX_ERROR_LENGTH) : message);
+            f.setLastError(recorded.length() > MAX_ERROR_LENGTH ? recorded.substring(0, MAX_ERROR_LENGTH) : recorded);
+            if (problem.gone()) {
+                f.setAutoFetch(false);
+            }
         });
     }
 
