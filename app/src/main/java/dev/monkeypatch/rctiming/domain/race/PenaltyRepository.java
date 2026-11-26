@@ -21,7 +21,7 @@ public class PenaltyRepository extends JooqRepository<Penalty, PenaltiesRecord> 
     }
 
     public List<Penalty> findByRaceId(Long raceId) {
-        return findWhere(PENALTIES.RACE_ID.eq(raceId));
+        return findWhere(PENALTIES.RACE_ID.eq(raceId), PENALTIES.APPLIED_AT.asc(), PENALTIES.ID.asc());
     }
 
     /** Removes the race's lap and time penalties, such as when the race is restarted to run again. */
