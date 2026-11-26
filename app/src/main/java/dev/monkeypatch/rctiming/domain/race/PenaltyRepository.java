@@ -24,6 +24,11 @@ public class PenaltyRepository extends JooqRepository<Penalty, PenaltiesRecord> 
         return findWhere(PENALTIES.RACE_ID.eq(raceId));
     }
 
+    /** Removes the race's lap and time penalties, such as when the race is restarted to run again. */
+    public void deleteByRaceId(Long raceId) {
+        dsl.deleteFrom(PENALTIES).where(PENALTIES.RACE_ID.eq(raceId)).execute();
+    }
+
     @Override
     protected Penalty toEntity(PenaltiesRecord r) {
         return MAPPER.toEntity(r);

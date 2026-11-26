@@ -8,6 +8,8 @@ import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.MarshalAdjustmentRepository;
+import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStateMachineService;
@@ -52,6 +54,8 @@ public class RaceControlService {
     private final WarmUpCheckService warmUpCheckService;
     private final PreRaceReadinessQuery preRaceReadinessQuery;
     private final RaceEntryRepository raceEntryRepository;
+    private final MarshalAdjustmentRepository marshalAdjustmentRepository;
+    private final PenaltyRepository penaltyRepository;
     private final LiveTimingHub hub;
 
     public RaceControlService(RaceRepository raceRepository,
@@ -65,6 +69,8 @@ public class RaceControlService {
                               WarmUpCheckService warmUpCheckService,
                               PreRaceReadinessQuery preRaceReadinessQuery,
                               RaceEntryRepository raceEntryRepository,
+                              MarshalAdjustmentRepository marshalAdjustmentRepository,
+                              PenaltyRepository penaltyRepository,
                               LiveTimingHub hub) {
         this.raceRepository = raceRepository;
         this.roundRepository = roundRepository;
@@ -77,6 +83,8 @@ public class RaceControlService {
         this.warmUpCheckService = warmUpCheckService;
         this.preRaceReadinessQuery = preRaceReadinessQuery;
         this.raceEntryRepository = raceEntryRepository;
+        this.marshalAdjustmentRepository = marshalAdjustmentRepository;
+        this.penaltyRepository = penaltyRepository;
         this.hub = hub;
     }
 
@@ -135,7 +143,7 @@ public class RaceControlService {
         stateMachine.restart(race);
         audit.entry(actor, "RACE_RESTARTED")
                 .entity("race", race.getId()).race(race.getId()).event(eventIdOf(race))
-                .summary("Restarted " + describe(race) + ", discarding its timing and any result")
+                .summary("Restarted " + describe(race) + ", discarding its timing, result, marshal laps and penalties")
                 .before(lost).after(Map.of("status", RaceStatus.PENDING))
                 .record();
     }
@@ -241,7 +249,7 @@ public class RaceControlService {
                 .record();
     }
 
-    /** What a restart takes away: the race's times, its stored result, and the timing held in memory. */
+    /** What a restart takes away: the race's times, its stored result, its marshal laps and penalties, and the timing held in memory. */
     private Map<String, Object> whatARestartDiscards(Race race) {
         Map<String, Object> lost = new LinkedHashMap<>();
         lost.put("status", race.getStatus());
@@ -255,6 +263,14 @@ public class RaceControlService {
             result.put("positions", snapshot.getPositionsJson());
             lost.put("resultSnapshot", result);
         });
+        lost.put("marshalLaps", marshalAdjustmentRepository.findByRaceIdOrderByAdjustedAt(race.getId()).stream()
+                .map(m -> Map.of("entryId", m.getEntryId(), "lapDelta", m.getLapDelta(),
+                        "by", m.getActingUserName(), "at", m.getAdjustedAt()))
+                .toList());
+        lost.put("penalties", penaltyRepository.findByRaceId(race.getId()).stream()
+                .map(p -> Map.of("entryId", p.getEntryId(), "type", p.getPenaltyType(), "value", p.getValue(),
+                        "reason", String.valueOf(p.getReason()), "appliedBy", p.getAppliedBy()))
+                .toList());
         lapTimingService.peek(race.getId()).ifPresent(state -> lost.put("livePositions", state.calculatePositions()));
         return lost;
     }
