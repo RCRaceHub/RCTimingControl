@@ -7,6 +7,8 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
+import dev.monkeypatch.rctiming.domain.media.PhotoImportService;
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
@@ -23,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +43,11 @@ import java.util.function.Predicate;
  * <p>The network call never runs inside a database transaction, and no failure is thrown to the caller: it is
  * recorded on the feed and shown on the event. Recording an outcome reads the feed again and saves it in one
  * transaction ({@link #update}), so it cannot overwrite a change an official made during the fetch.
+ *
+ * <p>When the automatic fetch applies a revision it also fetches the headshots and car photos the revision names
+ * (#811), straight away, because a booking system's picture links may expire within hours. Only missing pictures are
+ * filled, so an official's own upload is never replaced; a failed picture is noted on the feed and never undoes
+ * the entries.
  */
 @Service
 public class EntryFeedService {
@@ -55,11 +63,12 @@ public class EntryFeedService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactions;
     private final AuditService audit;
+    private final PhotoImportService photoImport;
 
     public EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
                             EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
                             ObjectMapper objectMapper, TransactionTemplate transactions,
-                            AuditService audit) {
+                            AuditService audit, PhotoImportService photoImport) {
         this.feedRepository = feedRepository;
         this.eventRepository = eventRepository;
         this.client = client;
@@ -68,6 +77,7 @@ public class EntryFeedService {
         this.objectMapper = objectMapper;
         this.transactions = transactions;
         this.audit = audit;
+        this.photoImport = photoImport;
     }
 
     /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
@@ -247,6 +257,7 @@ public class EntryFeedService {
             if (result.applied()) {
                 recordApplied(feed, export.revision());
                 log.info("Entry feed for event {} applied revision {}", feed.getEventId(), export.revision());
+                fetchPictures(feed, export.revision(), result.photoLinks());
             } else {
                 hold(feed, export, "Revision " + export.revision() + " needs an official: " + blockReason(result));
             }
@@ -254,6 +265,33 @@ public class EntryFeedService {
             log.warn("Entry feed for event {} failed", feed.getEventId(), e);
             recordFailure(feed, new Problem(EntryFeedStatus.FAILED,
                     e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+        }
+    }
+
+    /**
+     * Downloads the pictures an applied revision named, with no transaction open (each is stored in its own short one).
+     * Pictures already held are kept. When some cannot be fetched the feed says how many, so an official can import
+     * the file by hand; a driver whose name is not shown in full is skipped by design and is not counted as a failure.
+     */
+    private void fetchPictures(EntryFeed feed, Long revision, List<PhotoLink> links) {
+        if (links == null || links.isEmpty()) {
+            return;
+        }
+        try {
+            List<PhotoImportService.Outcome> outcomes =
+                    photoImport.fetchAll(Actor.system("entry-feed"), feed.getEventId(), links, false);
+            long failed = outcomes.stream().filter(o -> o.status() == PhotoImportService.Status.FAILED).count();
+            long stored = outcomes.stream().filter(o -> o.status() == PhotoImportService.Status.STORED).count();
+            log.info("Entry feed for event {} revision {}: {} pictures saved, {} failed",
+                    feed.getEventId(), revision, stored, failed);
+            if (failed > 0) {
+                String note = "Revision " + revision + " applied, but " + failed + (failed == 1
+                        ? " picture couldn't be fetched" : " pictures couldn't be fetched")
+                        + ". Import the file by hand to try again.";
+                update(feed, f -> f.setLastError(note));
+            }
+        } catch (RuntimeException e) {
+            log.warn("Entry feed pictures for event {} failed", feed.getEventId(), e);
         }
     }
 
