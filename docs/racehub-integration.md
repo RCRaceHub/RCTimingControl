@@ -51,7 +51,7 @@ If RaceHub sits behind Cloudflare Access, the service token goes in the settings
 
 RaceHub has no ping route of its own, so RCTC uses what the key already does:
 
-- **Test connection** (**Admin → RaceHub → Connection**, ADMIN only) makes two calls. A read of the ready-meetings list shows that RaceHub is reachable, that the answer is RaceHub's, whether it accepts the key and that the key can read (`entries:read`), and how many meetings are released. A results call with an empty body shows that the key can send (`results:write`): RaceHub checks the ability first and then refuses the empty body (422), so nothing is stored. Each result says what to fix.
+- **Test connection** (**Admin → RaceHub → Connection**, ADMIN only) makes two calls. A read of the ready-meetings list shows that RaceHub is reachable, that the answer is RaceHub's, whether it accepts the key and that the key can read (`entries:read`), and how many meetings are released. A results call with an empty JSON object as the body shows that the key can send (`results:write`): RaceHub checks the ability first and then refuses the empty object (422), so nothing is stored. Each result says what to fix.
 - **The status on race control** shows **RACEHUB linked**, **unreachable**, **key refused** or **problem**, with the results waiting to send. RCTC repeats only the read once a minute (well inside RaceHub's 30 calls a minute per key) while an address and key are set, and answers the page from that last check, so the page never waits on the network. It is hidden for a club with no RaceHub address and key. The setting `rctiming.racehub.check-interval-ms` changes the interval.
 
 ## The path of a meeting

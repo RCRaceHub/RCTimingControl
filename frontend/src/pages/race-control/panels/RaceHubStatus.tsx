@@ -47,7 +47,7 @@ export function RaceHubStatus() {
       variant="outline"
       className={cn(
         'gap-2 h-6 px-3',
-        t === 'ok' && 'text-[var(--flag-green)]',
+        t === 'ok' && 'text-success',
         t === 'wait' && 'text-muted-foreground',
         t === 'bad' && 'text-destructive',
       )}
@@ -57,7 +57,7 @@ export function RaceHubStatus() {
       <span
         className={cn(
           'inline-block h-2 w-2 rounded-full',
-          t === 'ok' && 'bg-[var(--flag-green)]',
+          t === 'ok' && 'bg-success',
           t === 'wait' && 'bg-muted-foreground',
           t === 'bad' && 'bg-destructive',
         )}

@@ -18,7 +18,7 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,8 +33,8 @@ import java.util.Objects;
  *   <li>{@code GET /api/rctc/v1/events?state=ready}, a cheap authenticated read. It shows the host is reachable and
  *       the answer is RaceHub's, whether the key is accepted, and (the route needs {@code entries:read}) that the key
  *       can read.</li>
- *   <li>{@code POST /api/rctc/v1/results} with an empty body, which RaceHub's route guards with
- *       {@code results:write} before it checks the body. A {@code 422} (the empty body is refused) therefore proves
+ *   <li>{@code POST /api/rctc/v1/results} with an empty JSON object as the body, which RaceHub's route guards with
+ *       {@code results:write} before it checks the body. A {@code 422} (the empty object is refused) therefore proves
  *       the key may send results without storing anything; a {@code 403} says it may not. Only the admin's test makes
  *       this call, never the background check.</li>
  * </ol>
@@ -114,6 +114,8 @@ public class RaceHubConnectionService {
     }
 
     private static final int MAX_DETAIL = 300;
+    /** How a refused key is worded; {@link #healthOf} looks for it, so the two stay together. */
+    private static final String REFUSED = "RaceHub refused the key";
 
     private final RaceHubResultsEndpoint endpoint;
     private final ResultsOutboxQuery outbox;
@@ -148,8 +150,10 @@ public class RaceHubConnectionService {
      * green as soon as a fixed key passes. Never throws.
      */
     public TestResult test() {
-        TestResult result = run(true);
-        remember(result);
+        RaceHubResultsEndpoint.Snapshot settings = endpoint.snapshot();
+        String token = endpoint.token();
+        TestResult result = run(true, settings, token);
+        remember(result, settings, token);
         return result;
     }
 
@@ -157,8 +161,10 @@ public class RaceHubConnectionService {
     @Scheduled(initialDelay = 20_000, fixedDelayString = "${rctiming.racehub.check-interval-ms:60000}")
     public void refresh() {
         try {
-            if (endpoint.snapshot().sendingEnabled()) {
-                remember(run(false));
+            RaceHubResultsEndpoint.Snapshot settings = endpoint.snapshot();
+            if (settings.sendingEnabled()) {
+                String token = endpoint.token();
+                remember(run(false, settings, token), settings, token);
             }
         } catch (RuntimeException e) {
             log.warn("The RaceHub connection check failed unexpectedly", e);
@@ -181,9 +187,13 @@ public class RaceHubConnectionService {
                 out.lastSentAt(), out.lastError());
     }
 
-    private void remember(TestResult result) {
-        RaceHubResultsEndpoint.Snapshot settings = endpoint.snapshot();
-        cached = new Cached(result, String.valueOf(settings.resultsUrl()), Objects.hashCode(endpoint.token()));
+    /**
+     * Keeps a result, tied to the address and key it was made with (read before the calls, which can take many
+     * seconds, so a change made meanwhile leaves this result stale rather than mislabelled). The key is compared by
+     * its hash only so the key itself is not held a second time.
+     */
+    private void remember(TestResult result, RaceHubResultsEndpoint.Snapshot settings, String token) {
+        cached = new Cached(result, String.valueOf(settings.resultsUrl()), Objects.hashCode(token));
         if (healthOf(result) == Health.OK) {
             lastOkAt = result.checkedAt;
         }
@@ -195,11 +205,15 @@ public class RaceHubConnectionService {
         if (reach != null && reach.state == CheckState.FAIL) {
             return Health.UNREACHABLE;
         }
-        if (read != null && read.state == CheckState.FAIL && read.detail != null && read.detail.startsWith("RaceHub refused")) {
-            return Health.KEY_REFUSED;
+        if (read == null || read.state == CheckState.SKIPPED) {
+            return Health.ERROR;
         }
-        return result.checks.stream().anyMatch(c -> c.state == CheckState.FAIL)
-                || (read != null && read.state != CheckState.PASS) ? Health.ERROR : Health.OK;
+        if (read.state == CheckState.FAIL) {
+            return read.detail != null && read.detail.startsWith(REFUSED) ? Health.KEY_REFUSED : Health.ERROR;
+        }
+        // Only the read decides the indicator, so it reads the same whether the admin's test (which also tries
+        // results) or the background check ran last; a slow-down answer (429) still means RaceHub is there
+        return Health.OK;
     }
 
     private static String firstProblem(TestResult result) {
@@ -211,10 +225,8 @@ public class RaceHubConnectionService {
         return result.checks.stream().filter(c -> c.id.equals(id)).findFirst().orElse(null);
     }
 
-    private TestResult run(boolean withWriteProbe) {
+    private TestResult run(boolean withWriteProbe, RaceHubResultsEndpoint.Snapshot settings, String token) {
         Instant now = clock.instant();
-        RaceHubResultsEndpoint.Snapshot settings = endpoint.snapshot();
-        String token = endpoint.token();
         List<Check> checks = new ArrayList<>();
         URI events = settings.eventsUrl();
         URI results = settings.resultsUrl();
@@ -263,10 +275,10 @@ public class RaceHubConnectionService {
                 }
             }
             case 401 -> checks.add(new Check("read", "Key can read entries", CheckState.FAIL,
-                    "RaceHub refused the key (401): it was not recognised, or it has been revoked or has expired. "
+                    REFUSED + " (401): it was not recognised, or it has been revoked or has expired. "
                             + "Make a new key in RaceHub and paste it in."));
             case 403 -> checks.add(new Check("read", "Key can read entries", CheckState.FAIL,
-                    "RaceHub refused the key (403): it may not have the entries:read ability, or belong to another club. "
+                    REFUSED + " (403): it may not have the entries:read ability, or belong to another club. "
                             + "If RaceHub is behind Cloudflare Access, check the service token in the settings file."));
             case 404 -> checks.add(new Check("read", "Key can read entries", CheckState.FAIL,
                     "RaceHub answered 404: this address is not a RaceHub, or the path to it is wrong."));
@@ -286,8 +298,10 @@ public class RaceHubConnectionService {
                 checks.add(new Check("write", "Key can send results", CheckState.FAIL, write.failure));
             } else {
                 switch (write.status) {
-                    case 400, 422, 200, 201 -> checks.add(new Check("write", "Key can send results", CheckState.PASS,
+                    case 400, 422 -> checks.add(new Check("write", "Key can send results", CheckState.PASS,
                             "RaceHub accepts this key for results. Nothing was stored by the test."));
+                    case 200, 201 -> checks.add(new Check("write", "Key can send results", CheckState.PASS,
+                            "RaceHub accepts this key for results."));
                     case 401 -> checks.add(new Check("write", "Key can send results", CheckState.FAIL,
                             "RaceHub refused the key (401) when sending results."));
                     case 403 -> checks.add(new Check("write", "Key can send results", CheckState.FAIL,
@@ -331,7 +345,7 @@ public class RaceHubConnectionService {
                                 || type.getSubtype().endsWith("+json"));
                         String body = "";
                         if (response.getStatusCode().value() == 200 && postBody == null) {
-                            body = new String(response.getBody().readNBytes(1024 * 1024));
+                            body = new String(response.getBody().readNBytes(1024 * 1024), StandardCharsets.UTF_8);
                         }
                         return new Probe(response.getStatusCode().value(), json, body, null);
                     });
@@ -349,7 +363,7 @@ public class RaceHubConnectionService {
             if (t instanceof ConnectException) {
                 return "Could not connect to RaceHub. Check the address, and that this laptop is online.";
             }
-            if (t instanceof SocketTimeoutException || t instanceof HttpTimeoutException) {
+            if (t instanceof SocketTimeoutException) {
                 return "RaceHub did not answer in time. Check the internet connection and try again.";
             }
             if (t instanceof SSLException) {

@@ -29,7 +29,7 @@ Under the key, press **Test connection**. It checks the address and key you save
 
 - **RaceHub reachable**: the address answers like RaceHub. A typo, no internet or a certificate problem shows here.
 - **Key can read entries**: RaceHub accepts the key and lets it list meetings (`entries:read`). It also tells you how many meetings are released to timing. A revoked, expired or mistyped key shows as refused (401); a key for another club or without the ability shows as refused (403).
-- **Key can send results**: the key has `results:write`. The test sends an empty request that RaceHub refuses after it has checked the key, so nothing is stored in RaceHub.
+- **Key can send results**: the key has `results:write`. The test sends an empty JSON object that RaceHub refuses after it has checked the key, so nothing is stored in RaceHub.
 
 Each line says what to fix. Save the address or key first: the test uses what is saved, not what is typed in the box.
 

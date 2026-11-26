@@ -135,6 +135,49 @@ class RaceHubConnectionServiceTest {
         assertThat(requests).containsExactly("GET /api/rctc/v1/events");
     }
 
+    @Test
+    void aReadOnlyKeyReadsTheSameWhicheverCheckRanLast() throws IOException {
+        RaceHubConnectionService service = service("read-only", 200, "[]", 403);
+
+        service.test();
+        assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.OK);
+        service.refresh();
+        assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.OK);
+    }
+
+    @Test
+    void aSlowDownAnswerDoesNotTurnTheIndicatorRed() throws IOException {
+        RaceHubConnectionService service = service("club-key", 429, "{}", 429);
+
+        service.refresh();
+
+        assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.OK);
+    }
+
+    @Test
+    void aChangedKeyMakesTheLastCheckStale() throws IOException {
+        var props = new java.util.concurrent.atomic.AtomicReference<>("one");
+        raceHub = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        raceHub.createContext("/api/rctc/v1/events", exchange -> {
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, 2);
+            exchange.getResponseBody().write("[]".getBytes(StandardCharsets.UTF_8));
+            exchange.close();
+        });
+        raceHub.start();
+        String base = "http://127.0.0.1:" + raceHub.getAddress().getPort();
+        RaceHubKeyStore store = mock(RaceHubKeyStore.class);
+        when(store.saved()).thenAnswer(i -> java.util.Optional.of(props.get()));
+        var endpoint = new RaceHubResultsEndpoint(new RaceHubResultsProperties(null, null, null, null, URI.create(base)),
+                mock(ClubProfileService.class), store);
+        var service = new RaceHubConnectionService(endpoint, outbox, JsonMapper.builder().build(), RestClient.builder(), CLOCK);
+
+        service.refresh();
+        assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.OK);
+        props.set("two");
+        assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.CHECKING);
+    }
+
     private static RaceHubConnectionService.Check check(RaceHubConnectionService.TestResult result, String id) {
         return result.checks().stream().filter(c -> c.id().equals(id)).findFirst().orElseThrow();
     }
