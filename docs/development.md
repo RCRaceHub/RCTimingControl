@@ -287,6 +287,8 @@ They are made by `frontend/scripts/manual-screenshots.mjs`, which drives the rea
 2. Start it on an **empty** data folder with the demo club, plus the simulated decoder: `RCTIMING_DATA_DIR=/tmp/shots java -jar app/build/libs/app.jar --spring.profiles.active=demo --tts.enabled=false`, and `java -jar app/build/libs/app.jar simulate`. The script runs a real meeting on *Demo: Bump-up finals*, so a used database will not do.
 3. For the setup wizard pictures, start a second copy on a new, empty data folder with no profile and `--server.port=8081`.
 4. From `frontend/`, run `node scripts/manual-screenshots.mjs`. Name sections (`raceday`, `practice`, `tour`, `setup`) to run only those. It takes about seven minutes, because it lets real races run for a short while. `BASE_URL`, `SETUP_URL`, `SHOTS_DIR` and `PW_CHROMIUM` (a Chrome binary, if Playwright's own is not installed) change where it looks and writes.
+
+The RaceHub walkthrough's pictures (`racehub-*.png`) come from `frontend/scripts/racehub-screenshots.mjs` instead. It needs no backend: run `npm run dev -- --port 5199` and then `BASE_URL=http://localhost:5199 node scripts/racehub-screenshots.mjs`, and it answers the API calls itself with made-up Wyvern RC Club data.
 5. Look at the pictures that changed, and commit them with the doc change. A step that fails is listed at the end; set `FAIL_DIR` to a folder to get a screenshot of where it stopped.
 
 ## Makefile targets

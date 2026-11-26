@@ -89,14 +89,6 @@ export function useReuploadResults() {
   });
 }
 
-export function useSetResultsAddress() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: adminApi.raceHubConnection.setAddress,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminQueryKeys.raceHubConnection.all() }),
-  });
-}
-
 export function useSetRaceHubKey() {
   const queryClient = useQueryClient();
   return useMutation({

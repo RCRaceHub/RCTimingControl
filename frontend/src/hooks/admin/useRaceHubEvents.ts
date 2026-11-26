@@ -17,18 +17,6 @@ export function useRaceHubEvents(enabled: boolean) {
   });
 }
 
-export function useSetRaceHubEventsAddress() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (eventsUrl: string) => adminApi.raceHubEvents.setAddress(eventsUrl),
-    onSuccess: data => {
-      qc.setQueryData(adminQueryKeys.racehub.events(), data);
-      // The class list is fetched from beside the same address
-      qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.classes() });
-    },
-  });
-}
-
 /**
  * Takes an offered event, then fetches its entries straight away so the official is not left waiting for the
  * scheduled fetch (every few minutes). The fetch only holds a new revision for review; nothing is imported until the

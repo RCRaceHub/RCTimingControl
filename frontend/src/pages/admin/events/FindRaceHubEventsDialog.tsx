@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -14,10 +12,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { QueryError } from '@/components/QueryError';
+import { RaceHubAddressField } from '@/components/RaceHubAddressField';
 
 import {
   useRaceHubEvents,
-  useSetRaceHubEventsAddress,
   useTakeRaceHubEvent,
 } from '@/hooks/admin/useRaceHubEvents';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -36,29 +34,8 @@ interface FindRaceHubEventsDialogProps {
 export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRaceHubEventsDialogProps) {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useRaceHubEvents(open);
-  const setAddress = useSetRaceHubEventsAddress();
   const take = useTakeRaceHubEvent();
-  const [address, setAddressText] = useState('');
-  const [editingAddress, setEditingAddress] = useState(false);
   const [takingId, setTakingId] = useState<string | null>(null);
-
-  // Start from the saved address each time the answer arrives
-  useEffect(() => {
-    if (data) {
-      setAddressText(data.eventsUrl ?? '');
-      setEditingAddress(!data.eventsUrl);
-    }
-  }, [data]);
-
-  async function saveAddress() {
-    try {
-      await setAddress.mutateAsync(address.trim());
-      toast.success('RaceHub events address saved');
-      setEditingAddress(false);
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'The address could not be saved.'));
-    }
-  }
 
   async function takeEvent(raceHubEventId: string) {
     setTakingId(raceHubEventId);
@@ -111,31 +88,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
           </p>
         )}
 
-        {data && (
-          <div className="space-y-1.5">
-            <Label htmlFor="racehub-events-url">RaceHub events address</Label>
-            {editingAddress ? (
-              <div className="flex gap-2">
-                <Input
-                  id="racehub-events-url"
-                  value={address}
-                  onChange={e => setAddressText(e.target.value)}
-                  placeholder="https://racehub.example/api/rctc/v1/events?state=ready"
-                />
-                <Button onClick={saveAddress} disabled={setAddress.isPending}>
-                  {setAddress.isPending ? 'Saving…' : 'Save'}
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-2 text-sm">
-                <span className="truncate text-muted-foreground">{data.eventsUrl}</span>
-                <Button variant="outline" size="sm" onClick={() => setEditingAddress(true)}>
-                  Change
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
+        {data && <RaceHubAddressField id="racehub-events-address" address={data.raceHubUrl} />}
 
         {isLoading && (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
@@ -143,7 +96,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
           </div>
         )}
 
-        {data?.error && data.eventsUrl && <p className="text-sm text-destructive">{data.error}</p>}
+        {data?.error && data.raceHubUrl && <p className="text-sm text-destructive">{data.error}</p>}
 
         {data && !data.error && data.events.length === 0 && (
           <p className="py-4 text-sm text-muted-foreground">

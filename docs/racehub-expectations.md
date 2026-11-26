@@ -33,7 +33,7 @@ The organiser picks **one race format for the whole meeting** in RaceHub (every 
 
 ## Finding events ready for timing
 
-An official can ask RaceHub which events are ready (Events page, **Find RaceHub events**) instead of pasting each event's feed address. RCTC sends `GET <events address>` with `Authorization: Bearer <the club's key>` and expects JSON:
+An official can ask RaceHub which events are ready (Events page, **Find RaceHub events**) instead of pasting each event's feed address. RCTC sends `GET <RaceHub address>/api/rctc/v1/events?state=ready` with `Authorization: Bearer <the club's key>` and expects JSON:
 
 ```json
 { "events": [ { "id": "E-7", "name": "Club Champs", "event_local_date": "2026-11-14", "venue": "Test Track",

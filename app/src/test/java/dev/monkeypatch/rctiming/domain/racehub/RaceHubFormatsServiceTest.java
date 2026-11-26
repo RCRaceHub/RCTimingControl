@@ -45,13 +45,13 @@ class RaceHubFormatsServiceTest {
     private RaceHubFormatsService service(String token) {
         RaceHubResultsEndpoint endpoint = new RaceHubResultsEndpoint(
                 new RaceHubResultsProperties(null, token), clubProfileService);
-        return new RaceHubFormatsService(clubProfileService, endpoint, client, linkRepository, raceFormatService,
+        return new RaceHubFormatsService(endpoint, client, linkRepository, raceFormatService,
                 audit, JsonMapper.builder().build());
     }
 
     @BeforeEach
     void defaults() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.of(EVENTS_URL));
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.of("https://racehub.example"));
         when(linkRepository.findAllOrderByFormatKey()).thenReturn(List.of());
     }
 
@@ -72,7 +72,7 @@ class RaceHubFormatsServiceTest {
 
     @Test
     void saysWhichSettingIsMissingWithoutAskingRaceHub() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.empty());
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.empty());
 
         RaceHubFormatsService.Listing listing = service("key").list();
 

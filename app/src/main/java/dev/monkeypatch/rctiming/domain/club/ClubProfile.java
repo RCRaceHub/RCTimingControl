@@ -33,10 +33,17 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
     /** The club's own notice text, or null to show the default from {@code PrivacyNoticeDefaults} (#267). */
     private String privacyNotice;
     /**
-     * Where results are sent to RaceHub; may carry a secret in its query string, so keep it out of logs and audit rows.
+     * The one RaceHub address the club set here (its host, such as {@code https://racehub.example}); every RaceHub
+     * call finds its path from it. Null when the settings file's {@code rctiming.racehub.url} applies.
+     */
+    private String racehubUrl;
+    /**
+     * Where results are sent to RaceHub, as saved before there was one address; used only when {@link #racehubUrl}
+     * and the settings file's address are both unset. May carry a secret in its query string, so keep it out of logs
+     * and audit rows.
      */
     private String racehubResultsUrl;
-    /** Where RaceHub lists the events that are ready for timing; same care as {@link #racehubResultsUrl}. */
+    /** Where RaceHub lists the events that are ready for timing, as saved before there was one address; same care as {@link #racehubResultsUrl}. */
     private String racehubEventsUrl;
     private String resultsPublishTarget;
     /** The club's live timing thresholds (#505); stored as one column each, see {@link LiveTimingSettings}. */
@@ -94,6 +101,9 @@ public class ClubProfile implements CreatedAt, UpdatedAt {
 
     public String getDecoderProtocol() { return decoderProtocol; }
     public void setDecoderProtocol(String decoderProtocol) { this.decoderProtocol = decoderProtocol; }
+
+    public String getRacehubUrl() { return racehubUrl; }
+    public void setRacehubUrl(String racehubUrl) { this.racehubUrl = racehubUrl; }
 
     public String getRacehubResultsUrl() { return racehubResultsUrl; }
     public void setRacehubResultsUrl(String racehubResultsUrl) { this.racehubResultsUrl = racehubResultsUrl; }

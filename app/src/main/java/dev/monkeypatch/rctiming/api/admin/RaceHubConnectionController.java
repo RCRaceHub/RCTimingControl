@@ -2,9 +2,7 @@ package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubConnectionDto;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubKeyRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubKeyService;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.security.AdminOnly;
@@ -18,8 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * The club's RaceHub address and key under {@code /api/v1/admin/racehub/connection}. ADMIN only; changes are audited.
- * The connection is core, not part of the results export module: the RaceHub imports of classes, events and formats
+ * The club's RaceHub connection under {@code /api/v1/admin/racehub/connection}. ADMIN only; changes are audited.
+ * The address itself is set through {@code /api/v1/admin/racehub/address}. The connection is core, not part of the results export module: the RaceHub imports of classes, events and formats
  * use it too, so it works whether or not results are sent.
  */
 @RestController
@@ -28,13 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class RaceHubConnectionController {
 
     private final RaceHubResultsEndpoint endpoint;
-    private final ClubProfileService clubProfileService;
     private final RaceHubKeyService keyService;
 
-    public RaceHubConnectionController(RaceHubResultsEndpoint endpoint, ClubProfileService clubProfileService,
-                                       RaceHubKeyService keyService) {
+    public RaceHubConnectionController(RaceHubResultsEndpoint endpoint, RaceHubKeyService keyService) {
         this.endpoint = endpoint;
-        this.clubProfileService = clubProfileService;
         this.keyService = keyService;
     }
 
@@ -44,20 +39,10 @@ public class RaceHubConnectionController {
         var settings = endpoint.snapshot();
         return new RaceHubConnectionDto(settings.sendingEnabled(),
                 settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
-                settings.savedUrl(),
+                settings.baseUrl() == null ? null : settings.baseUrl().toString(),
+                settings.source().name(),
                 settings.missingSettings(),
                 endpoint.keySaved() ? "SAVED" : endpoint.settingsFileKeySet() ? "SETTINGS_FILE" : "NONE");
-    }
-
-    /** Saves the RaceHub results address, or clears it when blank. {@code PUT /address}; 400 for a bad address. */
-    @Audited("audit_log")
-    @PutMapping("/address")
-    public RaceHubConnectionDto setAddress(@RequestBody @Valid ResultsUrlRequest request) {
-        if (request.resultsUrl() != null && !request.resultsUrl().isBlank()) {
-            RaceHubResultsEndpoint.parse(request.resultsUrl());
-        }
-        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
-        return get();
     }
 
     /**

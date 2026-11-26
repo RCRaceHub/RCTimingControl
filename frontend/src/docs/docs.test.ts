@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DOC_MANIFEST } from './manifest';
 import { DOC_SOURCES, loadDocSource } from './sources';
+import { resolveDocPath } from './links';
 import { extractDocLinks, extractHeadings, headingSlug } from './markdown';
 
 describe('docs manifest', () => {
@@ -20,7 +21,7 @@ describe('docs manifest', () => {
     const problems: string[] = [];
     for (const [file, text] of docs) {
       for (const link of extractDocLinks(text)) {
-        const targetFile = link.file ?? file;
+        const targetFile = link.file === null ? file : resolveDocPath(link.file, file);
         const target = docs.get(targetFile);
         if (target === undefined) {
           problems.push(`${file} links to ${targetFile}, which is not in the site`);
@@ -40,8 +41,8 @@ describe('doc images', () => {
     const missing: string[] = [];
     for (const e of DOC_MANIFEST) {
       const text = (await loadDocSource(e.file))!;
-      for (const m of text.matchAll(/!\[[^\]]*\]\((images\/[^)\s]+)\)/g)) {
-        if (!existsSync(resolve(__dirname, '../../../docs', m[1]))) missing.push(`${e.file}: ${m[1]}`);
+      for (const m of text.matchAll(/!\[[^\]]*\]\(((?:\.\.\/)?images\/[^)\s]+)\)/g)) {
+        if (!existsSync(resolve(__dirname, '../../../docs', resolveDocPath(m[1], e.file)))) missing.push(`${e.file}: ${m[1]}`);
       }
     }
     expect(missing).toEqual([]);
@@ -74,5 +75,24 @@ describe('heading anchors', () => {
   it('numbers repeats and skips code fences', () => {
     const ids = extractHeadings('# A\n\n## Same\n\n```\n# not a heading\n```\n\n## Same\n').map(h => h.id);
     expect(ids).toEqual(['a', 'same', 'same-1']);
+  });
+});
+
+describe('old walkthrough anchors', () => {
+  it('each lead to a page that is in the site', async () => {
+    const { LEGACY_WALKTHROUGH_ANCHORS } = await import('./manifest');
+    expect(Object.keys(LEGACY_WALKTHROUGH_ANCHORS)).toHaveLength(9);
+    for (const slug of Object.values(LEGACY_WALKTHROUGH_ANCHORS)) {
+      expect(DOC_MANIFEST.some(e => e.slug === slug), slug).toBe(true);
+    }
+  });
+});
+
+describe('resolveDocPath', () => {
+  it('resolves against the folder of the doc', () => {
+    expect(resolveDocPath('installing.md', 'user-manual.md')).toBe('installing.md');
+    expect(resolveDocPath('../installing.md', 'walkthroughs/1-first-run.md')).toBe('installing.md');
+    expect(resolveDocPath('2-entries.md', 'walkthroughs/1-first-run.md')).toBe('walkthroughs/2-entries.md');
+    expect(resolveDocPath('../images/a.png', 'walkthroughs/1-first-run.md')).toBe('images/a.png');
   });
 });

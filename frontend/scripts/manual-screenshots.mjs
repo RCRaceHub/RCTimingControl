@@ -4,7 +4,7 @@
 //   java -jar app.jar --spring.profiles.active=demo --tts.enabled=false   (in an empty data folder)
 //   java -jar app.jar simulate
 // then, from frontend/:
-//   node scripts/manual-screenshots.mjs [section ...]      sections: tour, raceday, setup (all by default)
+//   node scripts/manual-screenshots.mjs [section ...]      sections: tour, raceday, setup, provisioned (all by default)
 //
 // The race-day section walks the "Demo: Bump-up finals" event through a real meeting (it changes the database), so rerun
 // it on a fresh demo database. Output goes to docs/images/ (override with SHOTS_DIR). BASE_URL defaults to
@@ -19,6 +19,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = process.env.SHOTS_DIR ?? path.resolve(here, '../../docs/images');
 const BASE = process.env.BASE_URL ?? 'http://localhost:8080';
 const SETUP = process.env.SETUP_URL ?? 'http://localhost:8081';
+const PROVISIONED = process.env.PROVISIONED_URL ?? 'http://localhost:8082';
 const EMAIL = 'admin@example.com';
 const PASSWORD = 'trial123';
 const EVENT = 5; // Demo: Bump-up finals
@@ -400,6 +401,78 @@ if (run('setup')) {
   await step('setup-racehub', async () => {
     await page.getByRole('heading', { name: /^RaceHub Classes$/i }).waitFor();
     await shot(page, 'setup-racehub');
+  });
+}
+
+if (run('provisioned')) {
+  // The config-file walkthrough (docs/walkthroughs/10-config-file.md). The two file pictures are drawn from the
+  // real example file and compose snippet; the app pictures need a third app at PROVISIONED_URL that was
+  // started on an empty data folder with docs/examples/provisioning.example.properties (club name Wyvern RC Club,
+  // admin ann@wyvern.example, decoder 192.168.1.20) and the admin password Trackside-2026!.
+  const page = await newPage(1100, 900);
+  current = page;
+  const card = (title, body) => `<html><body style="margin:0;background:#f1f5f9;font:14px ui-monospace,Menlo,Consolas,monospace">
+    <div style="margin:16px;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px #0004;background:#0f172a;color:#e2e8f0">
+    <div style="background:#1e293b;padding:8px 14px;color:#94a3b8;font:13px system-ui">${title}</div>
+    <pre style="margin:0;padding:14px;line-height:1.5;white-space:pre-wrap">${body}</pre></div></body></html>`;
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const paint = line => /^\s*#/.test(line) ? `<span style="color:#7dd3fc">${esc(line)}</span>`
+    : esc(line).replace(/^([^=:]+)([=:])/, '<span style="color:#fcd34d">$1</span>$2');
+  const filePicture = async (name, title, text) => {
+    await page.setViewportSize({ width: 1000, height: 400 });
+    await page.setContent(card(title, text.split('\n').map(paint).join('\n')));
+    const box = await page.locator('div').first().boundingBox();
+    await page.setViewportSize({ width: 1000, height: Math.ceil(box.height) + 40 });
+    await shot(page, name, { wait: 100 });
+  };
+  await step('provisioning-example-file', async () => {
+    let text = fs.readFileSync(path.resolve(here, '../../docs/examples/provisioning.example.properties'), 'utf8');
+    text = text.split('\n').filter(l => l.startsWith('rctiming.provisioning') || (l.startsWith('# ----') && !l.includes('Other settings')) || l.startsWith('#rctiming.provisioning'))
+      .join('\n').replace(/Example RC Club/, 'Wyvern RC Club').replace(/admin@example\.club/, 'ann@wyvern.example')
+      .replace(/info@example\.club/, 'info@wyvern.example').replace(/https:\/\/example\.club/, 'https://wyvern.example');
+    await filePicture('provisioning-example-file', 'application.properties (in the data folder)', text);
+  });
+  await step('provisioning-docker-compose', async () => {
+    const text = [
+      'services:', '  rctiming:', '    environment:',
+      '      RCTIMING_PROVISIONING_ADMIN_EMAIL: ann@wyvern.example',
+      '      RCTIMING_PROVISIONING_ADMIN_FIRST_NAME: Ann',
+      '      RCTIMING_PROVISIONING_ADMIN_LAST_NAME: Admin',
+      '      RCTIMING_PROVISIONING_ADMIN_PASSWORD: ${RCTIMING_ADMIN_PASSWORD}',
+      '      RCTIMING_PROVISIONING_CLUB_NAME: Wyvern RC Club',
+      '      RCTIMING_PROVISIONING_CLUB_TIMEZONE: Europe/London',
+      '      RCTIMING_PROVISIONING_DECODER_HOST: 192.168.1.20'].join('\n');
+    await page.setViewportSize({ width: 1000, height: 400 });
+    await page.setContent(card('docker-compose.yml', esc(text)));
+    const box = await page.locator('div').first().boundingBox();
+    await page.setViewportSize({ width: 1000, height: Math.ceil(box.height) + 40 });
+    await shot(page, 'provisioning-docker-compose', { wait: 100 });
+  });
+  await page.setViewportSize({ width: 1360, height: 960 });
+  await step('provisioning-login', async () => {
+    await page.goto(`${PROVISIONED}/setup`);
+    await page.waitForURL(/\/login/);
+    await shot(page, 'provisioning-login');
+  });
+  await step('provisioning-club-profile', async () => {
+    await page.goto(`${PROVISIONED}/login`);
+    await page.getByLabel(/email/i).fill('ann@wyvern.example');
+    await page.getByLabel(/password/i).fill('Trackside-2026!');
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.waitForURL(/\/admin\//);
+    await page.goto(`${PROVISIONED}/admin/club`);
+    await page.waitForLoadState('networkidle');
+    await shot(page, 'provisioning-club-profile');
+  });
+  await step('provisioning-decoder', async () => {
+    await page.goto(`${PROVISIONED}/admin/decoder`);
+    await page.waitForLoadState('networkidle');
+    await shot(page, 'provisioning-decoder');
+  });
+  await step('provisioning-officials', async () => {
+    await page.goto(`${PROVISIONED}/admin/officials`);
+    await page.waitForLoadState('networkidle');
+    await shot(page, 'provisioning-officials');
   });
 }
 
