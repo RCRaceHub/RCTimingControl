@@ -22,6 +22,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'walkthrough-8-championships', title: '8. Championships', file: 'walkthroughs/8-championships.md', section: 'Walkthroughs' },
   { slug: 'walkthrough-9-screens', title: '9. Put it on screens', file: 'walkthroughs/9-screens.md', section: 'Walkthroughs' },
   { slug: 'walkthrough-10-config-file', title: '10. Set up from a config file', file: 'walkthroughs/10-config-file.md', section: 'Walkthroughs' },
+  { slug: 'walkthrough-11-racehub', title: '11. Connect to RaceHub', file: 'walkthroughs/11-racehub.md', section: 'Walkthroughs' },
   { slug: 'installing', title: 'Installing', file: 'installing.md', section: 'Setting up' },
   { slug: 'docker', title: 'Running with Docker', file: 'docker.md', section: 'Setting up' },
   { slug: 'provisioning', title: 'Skipping the setup wizard', file: 'provisioning.md', section: 'Setting up' },
@@ -35,6 +36,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'scoring', title: 'Scoring', file: 'scoring.md', section: 'Using RCTC' },
   { slug: 'live-feed', title: 'Live feed', file: 'live-feed-v1.md', section: 'Sharing results' },
   { slug: 'results-export', title: 'Results export', file: 'results-export-v1.md', section: 'Sharing results' },
+  { slug: 'racehub-integration', title: 'RaceHub and RCTC together', file: 'racehub-integration.md', section: 'RaceHub' },
   { slug: 'data-protection', title: 'Data protection', file: 'data-protection.md', section: 'Reference' },
 ];
 

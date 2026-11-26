@@ -14,3 +14,4 @@ The pictures are made by a script from the real app, so they match the current s
 8. [Championships](walkthroughs/8-championships.md)
 9. [Put it on screens](walkthroughs/9-screens.md)
 10. [Set up from a config file](walkthroughs/10-config-file.md) (skip the wizard on a new install)
+11. [Connect to RaceHub](walkthroughs/11-racehub.md) (key, linking, entries and results; the whole picture is in [racehub-integration.md](racehub-integration.md))
