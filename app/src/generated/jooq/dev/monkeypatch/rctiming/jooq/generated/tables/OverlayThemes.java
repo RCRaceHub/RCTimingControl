@@ -20,8 +20,8 @@ import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
-import org.jooq.Identity;
 import org.jooq.Index;
+import org.jooq.Identity;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
 import org.jooq.Path;
@@ -196,6 +196,7 @@ public class OverlayThemes extends TableImpl<OverlayThemesRecord> {
     @Override
     public List<Check<OverlayThemesRecord>> getChecks() {
         return Arrays.asList(
+            Internal.createCheck(this, DSL.name(""), "case (design is json) when (1 = 1) then 1 when (1 = 0) then 0 end <> 0", true),
             Internal.createCheck(this, DSL.name(""), "is_default in (0, 1)", true)
         );
     }

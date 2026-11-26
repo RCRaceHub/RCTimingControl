@@ -177,8 +177,7 @@ public class RacehubFormatLinks extends TableImpl<RacehubFormatLinksRecord> {
     private transient RaceFormatTemplatesPath _raceFormatTemplates;
 
     /**
-     * Get the implicit join path to the <code>race_format_templates</code>
-     * table.
+     * Get the implicit join path to the <code>race_format_templates</code> table.
      */
     public RaceFormatTemplatesPath raceFormatTemplates() {
         if (_raceFormatTemplates == null)

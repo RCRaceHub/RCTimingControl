@@ -91,15 +91,15 @@ public class SplitDecodersRecord extends UpdatableRecordImpl<SplitDecodersRecord
     /**
      * Setter for <code>split_decoders.clock_offset_ms</code>.
      */
-    public void setClockOffsetMs(Integer value) {
+    public void setClockOffsetMs(Long value) {
         set(5, value);
     }
 
     /**
      * Getter for <code>split_decoders.clock_offset_ms</code>.
      */
-    public Integer getClockOffsetMs() {
-        return (Integer) get(5);
+    public Long getClockOffsetMs() {
+        return (Long) get(5);
     }
 
     /**
@@ -139,7 +139,7 @@ public class SplitDecodersRecord extends UpdatableRecordImpl<SplitDecodersRecord
     /**
      * Create a detached, initialised SplitDecodersRecord
      */
-    public SplitDecodersRecord(Long id, String name, String host, Integer port, Integer splitNumber, Integer clockOffsetMs, Boolean enabled) {
+    public SplitDecodersRecord(Long id, String name, String host, Integer port, Integer splitNumber, Long clockOffsetMs, Boolean enabled) {
         super(SplitDecoders.SPLIT_DECODERS);
 
         setId(id);
