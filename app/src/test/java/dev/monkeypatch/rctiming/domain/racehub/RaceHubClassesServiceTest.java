@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 /** The "RaceHub classes" screen's source: RaceHub's class list, beside the links the club has made. */
 class RaceHubClassesServiceTest {
 
-    private static final String EVENTS_URL = "https://racehub.example/api/rctc/v1/events?state=ready";
+    private static final String RACEHUB_URL = "https://racehub.example";
     private static final URI CLASSES_URL = URI.create("https://racehub.example/api/rctc/v1/classes");
 
     private final ClubProfileService clubProfileService = mock(ClubProfileService.class);
@@ -80,7 +80,7 @@ class RaceHubClassesServiceTest {
     void asksForTheClassListBesideTheEventsAddressWithTheClubKey() {
         when(client.fetch(CLASSES_URL, "key")).thenReturn(new EntryFeedClient.Fetched("[]"));
 
-        assertThat(service("key").list()).isEqualTo(new RaceHubClassesService.Listing(List.of(), null, EVENTS_URL, true));
+        assertThat(service("key").list()).isEqualTo(new RaceHubClassesService.Listing(List.of(), null, RACEHUB_URL, true));
         verify(client).fetch(CLASSES_URL, "key");
     }
 
