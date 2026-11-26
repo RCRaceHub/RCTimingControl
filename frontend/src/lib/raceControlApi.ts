@@ -375,6 +375,29 @@ export async function fetchDecoderStatus(): Promise<DecoderStatusDto> {
   return data;
 }
 
+// ── RaceHub link status ──────────────────────────────────────────────────────
+
+export type RaceHubHealth = 'NOT_CONFIGURED' | 'CHECKING' | 'OK' | 'UNREACHABLE' | 'KEY_REFUSED' | 'ERROR';
+
+export type RaceHubStatusDto = {
+  health: RaceHubHealth;
+  /** What is wrong; null when OK. */
+  detail: string | null;
+  checkedAt: string | null;
+  /** When the link last worked since the app started. */
+  lastOkAt: string | null;
+  /** Results exports not yet sent, and the part of them whose send failed. */
+  waiting: number;
+  failed: number;
+  lastSentAt: string | null;
+  lastSendError: string | null;
+};
+
+export async function fetchRaceHubStatus(): Promise<RaceHubStatusDto> {
+  const { data } = await api.get<RaceHubStatusDto>('/api/v1/race-control/racehub/status');
+  return data;
+}
+
 // ── Live feed for remote viewers (#28) ───────────────────────────────────────
 
 export type LiveFeedState = 'NOT_SET_UP' | 'IDLE' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING';

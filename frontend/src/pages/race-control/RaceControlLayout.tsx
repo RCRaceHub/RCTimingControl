@@ -15,6 +15,7 @@ import {
 import { useHelp } from '@/context/HelpContext';
 import { DecoderStatusBar } from './panels/DecoderStatusBar';
 import { LiveFeedStatus } from './panels/LiveFeedStatus';
+import { RaceHubStatus } from './panels/RaceHubStatus';
 import { FinalLegsScopeSelect } from './panels/FinalLegsScopeSelect';
 import { PracticeRankingSelect } from './panels/PracticeRankingSelect';
 import { RaceControlErrorBoundary } from '@/components/RaceControlErrorBoundary';
@@ -24,7 +25,8 @@ import { BoardsMenu } from '@/components/BoardsMenu';
 
 export default function RaceControlLayout() {
   const { eventId } = useParams<{ eventId: string }>();
-  const practiceOff = useDisabledModules().has('practice');
+  const disabledModules = useDisabledModules();
+  const practiceOff = disabledModules.has('practice');
   const { user, logout } = useAuth();
   const { helpContent, isOpen, setIsOpen } = useHelp();
   const matches = useMatches();
@@ -140,6 +142,7 @@ export default function RaceControlLayout() {
       <Separator />
 
       <DecoderStatusBar>
+        {!disabledModules.has('results-export') && <RaceHubStatus />}
         {eventId && <LiveFeedStatus eventId={Number(eventId)} />}
         {eventId && (
           <Button

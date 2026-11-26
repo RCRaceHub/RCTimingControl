@@ -1160,6 +1160,8 @@ GET /api/v1/admin/results-exports
 
 `GET /api/v1/admin/racehub/connection` (ADMIN, always available, not part of the module) returns `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/rctc/v1/results", "raceHubUrl": "https://racehub.example", "addressSource": "SETTINGS_FILE", "missingSettings": [], "keySource": "SETTINGS_FILE" }`. `resultsUrl` is where results are sent: RaceHub's address plus `/api/rctc/v1/results`. `raceHubUrl` is the address in use and `addressSource` where it comes from: `SAVED` (set with `PUT /api/v1/admin/racehub/address`, body `{ "address" }`), `SETTINGS_FILE` (`rctiming.racehub.url`), `SEPARATE` (the older results and events addresses, used only while neither is set) or `NONE`. `sendingEnabled` is false until both the address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. The RaceHub imports use the same address and key.
 
+`POST /api/v1/admin/racehub/test` (ADMIN) checks the RaceHub address and key against RaceHub and changes nothing; `GET /api/v1/race-control/racehub/status` (race control staff) reports the link's health from the background check and the results outbox. Both belong to the results export module and answer **404** while it is off.
+
 ```http
 PUT /api/v1/admin/racehub/connection/key
 ```

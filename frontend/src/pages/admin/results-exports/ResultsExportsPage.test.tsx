@@ -11,7 +11,7 @@ vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     resultsExports: { list: vi.fn(), retry: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() },
     raceHubAddress: { set: vi.fn() },
-    raceHubConnection: { get: vi.fn(), setKey: vi.fn(), clearKey: vi.fn() },
+    raceHubConnection: { get: vi.fn(), test: vi.fn(), setKey: vi.fn(), clearKey: vi.fn() },
     raceHubClasses: { list: vi.fn() },
   },
 }));

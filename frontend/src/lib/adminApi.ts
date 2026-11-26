@@ -322,6 +322,24 @@ export interface RaceHubEventOffer {
 
 export type RaceHubAddressSource = 'SAVED' | 'SETTINGS_FILE' | 'SEPARATE' | 'NONE';
 
+/** One line of the RaceHub "Test connection" result */
+export interface RaceHubConnectionCheckDto {
+  id: 'address' | 'key' | 'reach' | 'read' | 'write';
+  label: string;
+  state: 'PASS' | 'FAIL' | 'UNKNOWN' | 'SKIPPED';
+  detail: string;
+}
+
+/** The result of "Test connection": what works and, if not, what to fix */
+export interface RaceHubConnectionTestDto {
+  ok: boolean;
+  summary: string;
+  checkedAt: string;
+  /** Meetings RaceHub lists as released to timing, or null when not read */
+  readyEvents: number | null;
+  checks: RaceHubConnectionCheckDto[];
+}
+
 export interface RaceHubAddressDto {
   /** RaceHub's address in use, or null */
   address: string | null;
@@ -1448,6 +1466,8 @@ export const adminApi = {
   // The club's RaceHub address and key (core: results sending and the RaceHub imports share it)
   raceHubConnection: {
     get: () => api.get<RaceHubConnectionDto>('/api/v1/admin/racehub/connection').then(r => r.data),
+    /** Checks the address and key against RaceHub (changes nothing there); the results export module, so 404 while it is off */
+    test: () => api.post<RaceHubConnectionTestDto>('/api/v1/admin/racehub/test').then(r => r.data),
     /** Saves a new RaceHub key, used straight away; it is never sent back */
     setKey: (key: string) =>
       api.put<RaceHubConnectionDto>('/api/v1/admin/racehub/connection/key', { key }).then(r => r.data),

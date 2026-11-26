@@ -20,6 +20,7 @@ export const raceControlQueryKeys = {
   audioSettings: () => ['race-control', 'audio-settings'] as const,
   audioTemplates: () => ['race-control', 'audio-templates'] as const,
   decoderStatus: () => ['race-control', 'decoder-status'] as const,
+  raceHubStatus: () => ['race-control', 'racehub-status'] as const,
   liveFeedStatus: () => ['race-control', 'live-feed-status'] as const,
   autoRun: (eventId: number) => ['race-control', 'auto-run', eventId] as const,
   finalLegsScope: (eventId: number) => ['race-control', 'final-legs-scope', eventId] as const,
