@@ -21,7 +21,7 @@ import java.time.Duration;
  * when it is {@code https} and its host resolves to public addresses alone: loopback, link-local, private (including
  * IPv6 unique-local) and multicast addresses are refused. Redirects are not followed, as one could lead somewhere
  * private. The body is read up to a limit and never returned to a caller that is not checking it as an image. A host
- * that changes its answer between the check and the connection is not caught; the fetch is ADMIN-only and its answer is
+ * that changes its answer between the check and the connection is not caught; the fetch is started only by an ADMIN or the entry feed and its answer is
  * decoded as a PNG or JPEG or thrown away, so nothing the host sends is ever shown.
  */
 @Component

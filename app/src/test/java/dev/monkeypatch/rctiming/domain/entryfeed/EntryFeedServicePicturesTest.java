@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.security.TokenCipher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -59,7 +60,7 @@ class EntryFeedServicePicturesTest {
         when(feeds.findByEventId(EVENT_ID)).thenReturn(Optional.of(feed));
         when(feeds.save(any())).thenAnswer(i -> i.getArgument(0));
         when(transactions.execute(any())).thenAnswer(i ->
-                ((org.springframework.transaction.support.TransactionCallback<?>) i.getArgument(0)).doInTransaction(null));
+                ((TransactionCallback<?>) i.getArgument(0)).doInTransaction(null));
         when(client.fetch(any(), any())).thenReturn(new EntryFeedClient.Fetched(BODY));
         service = new EntryFeedService(feeds, events, client, importService, mock(TokenCipher.class),
                 JsonMapper.builder().build(), transactions, mock(AuditService.class), photoImport);
@@ -71,7 +72,7 @@ class EntryFeedServicePicturesTest {
     }
 
     @Test
-    void anAppliedRevisionFetchesItsPicturesKeepingThoseAlreadyHeld() {
+    void anAppliedRevisionFetchesItsPicturesAndNeverReplacesOnes() {
         when(importService.importEntries(any(), eq(EVENT_ID), any(RaceHubEntryExport.class), anyBoolean()))
                 .thenReturn(result(true, LINKS));
         when(photoImport.fetchAll(any(), eq(EVENT_ID), any(), anyBoolean())).thenReturn(List.of(
@@ -112,11 +113,51 @@ class EntryFeedServicePicturesTest {
     void aPictureFaultNeverFailsTheFeed() {
         when(importService.importEntries(any(), eq(EVENT_ID), any(RaceHubEntryExport.class), anyBoolean()))
                 .thenReturn(result(true, LINKS));
-        when(photoImport.fetchAll(any(), eq(EVENT_ID), any(), anyBoolean())).thenThrow(new IllegalStateException("disk"));
+        when(photoImport.fetchAll(any(), eq(EVENT_ID), any(), anyBoolean()))
+                .thenThrow(new IllegalStateException("disk"));
 
         service.autoFetch(feed);
 
         assertThat(feed.getAppliedRevision()).isEqualTo(3L);
         assertThat(feed.getLastStatus()).isEqualTo(EntryFeedStatus.APPLIED);
+        assertThat(feed.getLastError()).contains("1 picture couldn't be fetched");
+    }
+
+    @Test
+    void picturesSkippedOnPurposeAreNotAFailure() {
+        when(importService.importEntries(any(), eq(EVENT_ID), any(RaceHubEntryExport.class), anyBoolean()))
+                .thenReturn(result(true, LINKS));
+        when(photoImport.fetchAll(any(), eq(EVENT_ID), any(), anyBoolean())).thenReturn(List.of(
+                new PhotoImportService.Outcome(LINKS.get(0), PhotoImportService.Status.SKIPPED, "held", null)));
+
+        service.autoFetch(feed);
+
+        assertThat(feed.getLastError()).isNull();
+    }
+
+    @Test
+    void noLinksMeansNoPictureCall() {
+        when(importService.importEntries(any(), eq(EVENT_ID), any(RaceHubEntryExport.class), anyBoolean()))
+                .thenReturn(result(true, List.of()));
+
+        service.autoFetch(feed);
+
+        verify(photoImport, never()).fetchAll(any(), anyLong(), any(), anyBoolean());
+    }
+
+    @Test
+    void theFailureNoteSurvivesTheNextUnchangedPollAndCountsSeveral() {
+        List<PhotoLink> two = List.of(LINKS.get(0),
+                new PhotoLink(PhotoLink.Kind.CAR_PHOTO, null, 9L, "https://media.example.org/c.png"));
+        when(importService.importEntries(any(), eq(EVENT_ID), any(RaceHubEntryExport.class), anyBoolean()))
+                .thenReturn(result(true, two));
+        when(photoImport.fetchAll(any(), eq(EVENT_ID), any(), anyBoolean())).thenReturn(List.of(
+                new PhotoImportService.Outcome(two.get(0), PhotoImportService.Status.FAILED, "gone", null),
+                new PhotoImportService.Outcome(two.get(1), PhotoImportService.Status.FAILED, "gone", null)));
+
+        service.autoFetch(feed);
+        service.autoFetch(feed);
+
+        assertThat(feed.getLastError()).contains("2 pictures couldn't be fetched");
     }
 }
