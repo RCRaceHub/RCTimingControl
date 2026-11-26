@@ -171,6 +171,8 @@ public class RaceHubEventsService {
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.AuthFailed failed -> new Failure(failed.message());
             case EntryFeedClient.Failed failed -> new Failure(failed.message());
+            // Never asked conditionally, so RaceHub has no reason to answer 304
+            case EntryFeedClient.NotModified notModified -> new Failure("RaceHub sent no list of events.");
         };
     }
 

@@ -222,6 +222,22 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aNotModifiedAnswer_isAnUnchangedPollNotAFailure() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+
+        feedStatus = 304;
+        feedBody = null;
+        scheduler.fetchAll();
+
+        JsonNode feed = getFeed().getBody();
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("UNCHANGED");
+        assertThat(feed.get("appliedRevision").asLong()).isNotNull();
+    }
+
+    @Test
     void updateNow_isRefusedForACompletedMeeting() {
         jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
         feedBody = fixture("entries-v1-initial.json");

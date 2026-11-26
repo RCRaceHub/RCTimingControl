@@ -249,9 +249,13 @@ public class EntryFeedService {
                     .isPresent()) {
                 return;
             }
-            Download download = download(feed);
+            Download download = download(feed, true);
             if (download.problem != null) {
                 recordFailure(feed, download.problem);
+                return;
+            }
+            if (download.notModified) {
+                recordUnchanged(feed);
                 return;
             }
             RaceHubEntryExport export = download.export;
@@ -282,22 +286,48 @@ public class EntryFeedService {
     private record Problem(EntryFeedStatus status, String message) {
     }
 
-    private record Download(RaceHubEntryExport export, Problem problem) {
+    /** A fetch's outcome: the file, a problem, or neither when the feed said nothing is newer ({@code notModified}). */
+    private record Download(RaceHubEntryExport export, Problem problem, boolean notModified) {
+
+        Download(RaceHubEntryExport export, Problem problem) {
+            this(export, problem, false);
+        }
+    }
+
+    /** The newest revision this feed already holds, applied or waiting, to ask RaceHub only for something newer. */
+    private static Long knownRevision(EntryFeed feed) {
+        Long applied = feed.getAppliedRevision();
+        Long held = feed.getHeldRevision();
+        if (applied == null) {
+            return held;
+        }
+        return held == null ? applied : Math.max(applied, held);
     }
 
     private Download download(EntryFeed feed) {
+        return download(feed, false);
+    }
+
+    /**
+     * Downloads the feed's file. With {@code conditional} the newest revision already held is sent as
+     * {@code since_revision}, so an unchanged feed answers 304 and nothing is downloaded; only the automatic poll
+     * and "Update from RaceHub" ask this way, while "Fetch now" always gets the whole file.
+     */
+    private Download download(EntryFeed feed, boolean conditional) {
         String token;
         try {
             token = feed.getTokenEncrypted() == null ? null : tokenCipher.decrypt(feed.getTokenEncrypted());
         } catch (TokenCipher.UnreadableTokenException e) {
             return new Download(null, new Problem(EntryFeedStatus.AUTH_FAILED, e.getMessage()));
         }
-        EntryFeedClient.Result result = client.fetch(URI.create(feed.getUrl()), token);
+        EntryFeedClient.Result result = client.fetch(URI.create(feed.getUrl()), token,
+                conditional ? knownRevision(feed) : null);
         return switch (result) {
             case EntryFeedClient.AuthFailed failed ->
                     new Download(null, new Problem(EntryFeedStatus.AUTH_FAILED, failed.message()));
             case EntryFeedClient.Failed failed -> new Download(null, new Problem(EntryFeedStatus.FAILED, failed.message()));
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
+            case EntryFeedClient.NotModified notModified -> new Download(null, null, true);
         };
     }
 
