@@ -58,6 +58,8 @@ public class EntryFeedService {
 
     private static final Logger log = LoggerFactory.getLogger(EntryFeedService.class);
     private static final int MAX_ERROR_LENGTH = 500;
+    /** Ends the note left on a feed when some of an applied revision's pictures were not fetched. */
+    private static final String PICTURES_NOT_FETCHED = "couldn't be fetched";
     private static final Actor FEED_ACTOR = Actor.system("entry-feed");
     /** Pictures fetched per call to {@link PhotoImportService}, so the time budget is checked between chunks. */
     private static final int PICTURE_CHUNK = 10;
@@ -351,7 +353,7 @@ public class EntryFeedService {
                 feed.getEventId(), revision, stored, failed, notReached);
         int missed = failed + notReached;
         if (missed > 0) {
-            String what = missed == 1 ? "1 picture couldn't be fetched" : missed + " pictures couldn't be fetched";
+            String what = (missed == 1 ? "1 picture " : missed + " pictures ") + PICTURES_NOT_FETCHED;
             String note = "Revision " + revision + " applied, but " + what + ". Import the file by hand to try again.";
             // Only while this revision is still the one applied and nothing is waiting for an official
             update(feed, f -> {
@@ -511,7 +513,8 @@ public class EntryFeedService {
         return update(feed, f -> {
             // A file waiting for an official stays waiting; there's just nothing newer. A note about pictures that
             // could not be fetched stays too, or the next poll would wipe it before anyone read it.
-            boolean pictureNote = f.getLastStatus() == EntryFeedStatus.APPLIED && f.getLastError() != null;
+            boolean pictureNote = f.getLastStatus() == EntryFeedStatus.APPLIED && f.getLastError() != null
+                    && f.getLastError().contains(PICTURES_NOT_FETCHED);
             if (f.getHeldDocument() == null && !pictureNote) {
                 f.setLastStatus(EntryFeedStatus.UNCHANGED);
                 f.setLastError(null);
