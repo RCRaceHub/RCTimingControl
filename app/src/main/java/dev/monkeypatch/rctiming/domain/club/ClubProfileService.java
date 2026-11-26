@@ -309,6 +309,9 @@ public class ClubProfileService {
         String before = profile.getRacehubUrl() == null ? null : hostOf(profile.getRacehubUrl());
         String cleaned = url == null || url.isBlank() ? null : url.strip();
         profile.setRacehubUrl(cleaned);
+        // The one address replaces the older separate ones, so clearing it cannot bring them back
+        profile.setRacehubResultsUrl(null);
+        profile.setRacehubEventsUrl(null);
         ClubProfile saved = clubProfileRepository.save(profile);
         String after = cleaned == null ? null : hostOf(cleaned);
         audit.entry(actor, "RACEHUB_URL_CHANGED").entity("club_profile", saved.getId())

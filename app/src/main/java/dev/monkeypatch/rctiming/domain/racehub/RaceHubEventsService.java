@@ -175,6 +175,9 @@ public class RaceHubEventsService {
 
     private URI entriesUrl(RaceHubEventListing.ListedEvent chosen) {
         URI eventsUrl = endpoint.eventsUrl();
+        if (eventsUrl == null) {
+            throw new StateConflictException("Set the RaceHub address first.");
+        }
         URI entries;
         try {
             entries = URI.create(chosen.entriesUrl() == null ? "" : chosen.entriesUrl().strip());

@@ -146,7 +146,7 @@ public class RaceHubClassesService {
         String trimmed = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (!trimmed.endsWith("/events")) {
             throw new StateConflictException("The RaceHub events address should end in /events, so the " + what
-                    + " can be found beside it.");
+                    + " can be found beside it. Set the RaceHub address again.");
         }
         return URI.create(eventsUrl.getScheme() + "://" + eventsUrl.getRawAuthority()
                 + trimmed.substring(0, trimmed.length() - "events".length()) + name);
