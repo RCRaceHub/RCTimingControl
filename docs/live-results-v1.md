@@ -25,4 +25,4 @@ Nothing waits for it. A snapshot is the whole race as it stands, so nothing is q
 
 ## Settings
 
-See `rctiming.racehub.live.*` in [development.md](development.md): `enabled`, `min-interval-ms` and `resend-every-ms`.
+See `rctiming.racehub.live.*` in the developer guide (`docs/development.md`): `enabled`, `min-interval-ms` and `resend-every-ms`.
