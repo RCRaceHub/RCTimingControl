@@ -17,6 +17,7 @@ import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
 import dev.monkeypatch.rctiming.security.TokenCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -25,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -76,12 +78,23 @@ public class EntryFeedService {
     private final AuditService audit;
     private final RoundRepository roundRepository;
     private final PhotoImportService photoImport;
+    private final Clock clock;
 
+    @Autowired
     public EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
                             EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
                             ObjectMapper objectMapper, TransactionTemplate transactions,
                             AuditService audit, RoundRepository roundRepository,
                             PhotoImportService photoImport) {
+        this(feedRepository, eventRepository, client, importService, tokenCipher, objectMapper, transactions, audit,
+                roundRepository, photoImport, Clock.systemUTC());
+    }
+
+    EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
+                     EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
+                     ObjectMapper objectMapper, TransactionTemplate transactions,
+                     AuditService audit, RoundRepository roundRepository,
+                     PhotoImportService photoImport, Clock clock) {
         this.feedRepository = feedRepository;
         this.eventRepository = eventRepository;
         this.client = client;
@@ -92,6 +105,7 @@ public class EntryFeedService {
         this.audit = audit;
         this.roundRepository = roundRepository;
         this.photoImport = photoImport;
+        this.clock = clock;
     }
 
     /** Every event's feed, for the Events list. Read-only; the feeds' secrets stay in the entity. */
@@ -304,7 +318,7 @@ public class EntryFeedService {
                 return;
             }
             if (result.applied()) {
-                recordApplied(feed, export.revision(), changeSummary(result));
+                recordApplied(feed, export.revision(), withDateNote(changeSummary(result), feed.getEventId(), export));
                 log.info("Entry feed for event {} applied revision {}", feed.getEventId(), export.revision());
                 fetchPictures(feed, export.revision(), result.photoLinks());
             } else {
@@ -501,6 +515,25 @@ public class EntryFeedService {
                 + (arriving == 1 ? "it" : "they") + " should go");
     }
 
+    /**
+     * Adds a note when RaceHub now gives the meeting a different date from this event's. The event is not moved: its
+     * date is fixed once it leaves Draft and an official decides, so the note only says it.
+     */
+    private String withDateNote(String summary, long eventId, RaceHubEntryExport export) {
+        String raceHubDate = export.event() == null ? null : export.event().eventLocalDate();
+        if (raceHubDate == null) {
+            return summary;
+        }
+        Optional<Event> event = eventRepository.findById(eventId);
+        if (event.isEmpty() || event.get().getEventDate() == null
+                || event.get().getEventDate().toString().equals(raceHubDate)) {
+            return summary;
+        }
+        String note = "RaceHub now gives the date as " + raceHubDate + " (this event is on "
+                + event.get().getEventDate() + ")";
+        return summary == null ? note : summary + ". " + note;
+    }
+
     /** What an applied import changed in words, or null when it changed nothing worth saying. */
     private static String changeSummary(RaceHubImportResult result) {
         RaceHubImportResult.Summary s = result.summary();
@@ -566,7 +599,7 @@ public class EntryFeedService {
                 // The URL changed during the fetch, so the outcome belongs to the old address
                 return Optional.of(feed);
             }
-            Instant now = Instant.now();
+            Instant now = clock.instant();
             change.accept(feed);
             feed.setLastFetchAt(now);
             return Optional.of(feedRepository.save(feed));
