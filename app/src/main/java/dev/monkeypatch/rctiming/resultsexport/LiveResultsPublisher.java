@@ -1,10 +1,12 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.livefeed.LiveFeedRaceLookup;
 import dev.monkeypatch.rctiming.livefeed.LiveFeedV1;
 import dev.monkeypatch.rctiming.livefeed.LiveStandings;
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
@@ -81,6 +83,7 @@ public class LiveResultsPublisher implements SmartLifecycle {
     private final RaceClockService raceClocks;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
+    private final ModuleSwitch moduleSwitch;
     private final Clock clock;
 
     /** Races followed from the grid to the finish. */
@@ -98,16 +101,18 @@ public class LiveResultsPublisher implements SmartLifecycle {
     public LiveResultsPublisher(LiveResultsProperties properties, RaceHubResultsEndpoint endpoint,
                                 ResultsPublishSettings publishSettings, LiveFeedRaceLookup raceLookup,
                                 LapTimingService lapTimingService, RaceClockService raceClocks,
-                                ObjectMapper objectMapper, RestClient.Builder restClientBuilder) {
+                                ObjectMapper objectMapper, RestClient.Builder restClientBuilder,
+                                ModuleSwitch moduleSwitch) {
         this(properties, endpoint, publishSettings, raceLookup, lapTimingService, raceClocks, objectMapper,
-                restClientBuilder, Clock.systemUTC());
+                restClientBuilder, moduleSwitch, Clock.systemUTC());
     }
 
     LiveResultsPublisher(LiveResultsProperties properties, RaceHubResultsEndpoint endpoint,
                          ResultsPublishSettings publishSettings, LiveFeedRaceLookup raceLookup,
                          LapTimingService lapTimingService, RaceClockService raceClocks, ObjectMapper objectMapper,
-                         RestClient.Builder restClientBuilder, Clock clock) {
+                         RestClient.Builder restClientBuilder, ModuleSwitch moduleSwitch, Clock clock) {
         this.properties = properties;
+        this.moduleSwitch = moduleSwitch;
         this.endpoint = endpoint;
         this.publishSettings = publishSettings;
         this.raceLookup = raceLookup;
@@ -129,6 +134,9 @@ public class LiveResultsPublisher implements SmartLifecycle {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            return;
+        }
         long raceId = event.getRaceId();
         switch (event.getNewStatus()) {
             // Followed only once the change commits, so a pass never reads a race the command is still changing
@@ -148,6 +156,10 @@ public class LiveResultsPublisher implements SmartLifecycle {
     /** One pass; never throws. */
     void tick() {
         try {
+            if (!moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+                races.clear();
+                return;
+            }
             sendDue();
         } catch (RuntimeException e) {
             log.warn("Live results pass failed", e);
