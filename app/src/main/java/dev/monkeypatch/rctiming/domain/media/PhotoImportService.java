@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 /**
  * Fetches the headshots and car photos an entry import named (#699) and stores them as an upload is stored. An import
  * only reports the links ({@link PhotoLink}); the page then asks for them here, so no download ever holds the import's
- * write transaction. Called by {@code PhotoImportController}, ADMIN only.
+ * write transaction. Called by {@code PhotoImportController} (ADMIN only) and, with a system actor, by the entry feed's automatic fetch
+ * (#811).
  *
  * <p>This class has no transaction of its own: each picture is downloaded with none open and then stored by
  * {@link DriverMediaService} in its own short write transaction, so one failure never undoes the pictures already
