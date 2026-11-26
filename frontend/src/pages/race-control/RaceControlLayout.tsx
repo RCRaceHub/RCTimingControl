@@ -14,6 +14,7 @@ import {
 import { useHelp } from '@/context/HelpContext';
 import { DecoderStatusBar } from './panels/DecoderStatusBar';
 import { LiveFeedStatus } from './panels/LiveFeedStatus';
+import { RaceHubStatus } from './panels/RaceHubStatus';
 import { FinalLegsScopeSelect } from './panels/FinalLegsScopeSelect';
 import { PracticeRankingSelect } from './panels/PracticeRankingSelect';
 import { RaceControlErrorBoundary } from '@/components/RaceControlErrorBoundary';
@@ -136,6 +137,7 @@ export default function RaceControlLayout() {
       <Separator />
 
       <DecoderStatusBar>
+        <RaceHubStatus />
         {eventId && <LiveFeedStatus eventId={Number(eventId)} />}
         {eventId && (
           <Button
