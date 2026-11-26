@@ -3,7 +3,6 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.api.admin.dto.ResultsExportsDto;
 import dev.monkeypatch.rctiming.api.admin.dto.PublishTargetRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubKeyRequest;
-import dev.monkeypatch.rctiming.api.admin.dto.ResultsUrlRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.ReuploadResponse;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -68,22 +67,13 @@ public class ResultsExportController {
         var settings = endpoint.snapshot();
         return new ResultsExportsDto(settings.sendingEnabled(),
                 settings.resultsUrl() == null ? null : settings.resultsUrl().toString(),
-                settings.savedUrl(),
+                settings.baseUrl() == null ? null : settings.baseUrl().toString(),
+                settings.source().name(),
                 settings.missingSettings(),
                 keySource(),
                 publishSettings.effective(),
                 publishSettings.chosen(),
                 outboxQuery.latest(OUTBOX_ROWS));
-    }
-
-    @Audited("audit_log")
-    @PutMapping("/results-exports/address")
-    public ResultsExportsDto setAddress(@RequestBody @Valid ResultsUrlRequest request) {
-        if (request.resultsUrl() != null && !request.resultsUrl().isBlank()) {
-            RaceHubResultsEndpoint.parse(request.resultsUrl());
-        }
-        clubProfileService.updateRaceHubResultsUrl(CurrentOfficial.actor(), request.resultsUrl());
-        return list();
     }
 
     /**

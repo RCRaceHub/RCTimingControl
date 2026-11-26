@@ -69,7 +69,7 @@ An import must carry RaceHub's event id, and an event takes entries from only on
 ## How it is sent
 
 ```http
-POST <rctiming.racehub.results-url>
+POST <RaceHub address>/api/rctc/v1/results   (the address is rctiming.racehub.url, or the one saved on the RaceHub page)
 Authorization: Bearer <rctiming.racehub.token>
 Content-Type: application/json
 Idempotency-Key: rctc-results-<racehub_event_id>-r<revision>

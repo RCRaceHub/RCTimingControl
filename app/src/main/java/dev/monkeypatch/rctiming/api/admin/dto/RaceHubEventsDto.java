@@ -7,12 +7,12 @@ import java.util.List;
 /**
  * The "Find RaceHub events" picker's answer.
  *
- * @param eventsUrl the saved address RaceHub lists ready events at, or null
+ * @param raceHubUrl RaceHub's address in use, or null
  * @param tokenSet  whether the club has a key for RaceHub, saved in the app or in the settings file (the key itself is never sent)
  * @param events    the events RaceHub offers, empty when it could not be asked
  * @param error     why RaceHub could not be asked, or null
  */
-public record RaceHubEventsDto(String eventsUrl, boolean tokenSet, List<Offered> events, String error) {
+public record RaceHubEventsDto(String raceHubUrl, boolean tokenSet, List<Offered> events, String error) {
 
     /** One offered event; {@code linkedEventId} is the RCTC event it is already linked to, or null. */
     public record Offered(String raceHubEventId, String name, String eventDate, String venue, Integer entryCount,
@@ -26,9 +26,9 @@ public record RaceHubEventsDto(String eventsUrl, boolean tokenSet, List<Offered>
 
     public static RaceHubEventsDto of(RaceHubEventsService.Settings settings, RaceHubEventsService.Listing listing) {
         return switch (listing) {
-            case RaceHubEventsService.Offered offered -> new RaceHubEventsDto(settings.eventsUrl(),
+            case RaceHubEventsService.Offered offered -> new RaceHubEventsDto(settings.raceHubUrl(),
                     settings.tokenSet(), offered.events().stream().map(Offered::from).toList(), null);
-            case RaceHubEventsService.Failure failure -> new RaceHubEventsDto(settings.eventsUrl(),
+            case RaceHubEventsService.Failure failure -> new RaceHubEventsDto(settings.raceHubUrl(),
                     settings.tokenSet(), List.of(), failure.message());
         };
     }

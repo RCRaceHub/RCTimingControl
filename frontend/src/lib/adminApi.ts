@@ -320,9 +320,21 @@ export interface RaceHubEventOffer {
   linkedEventId: number | null;
 }
 
+export type RaceHubAddressSource = 'SAVED' | 'SETTINGS_FILE' | 'SEPARATE' | 'NONE';
+
+export interface RaceHubAddressDto {
+  /** RaceHub's address in use, or null */
+  address: string | null;
+  /** The address saved here, or null when the settings file's is in use */
+  savedAddress: string | null;
+  source: RaceHubAddressSource;
+  /** Where results are sent, or null */
+  resultsUrl: string | null;
+}
+
 export interface RaceHubEventsDto {
-  /** The saved address RaceHub lists ready events at, or null */
-  eventsUrl: string | null;
+  /** RaceHub's address in use (its host, such as https://racehub.example), or null */
+  raceHubUrl: string | null;
   /** Whether the club's key is set in the settings file; the key itself is never sent */
   tokenSet: boolean;
   events: RaceHubEventOffer[];
@@ -370,8 +382,8 @@ export interface RaceHubClassesDto {
   classes: RaceHubClassDto[];
   /** Why RaceHub could not be asked, or null */
   error: string | null;
-  /** The saved RaceHub events address, or null */
-  eventsUrl: string | null;
+  /** RaceHub's address in use, or null */
+  raceHubUrl: string | null;
   /** Whether the club's key is set in the settings file; the key itself is never sent */
   tokenSet: boolean;
 }
@@ -818,10 +830,12 @@ export interface ResultsExportRowDto {
 export interface ResultsExportsDto {
   /** Whether the RaceHub address and key are both set; without them, exports wait in the queue */
   sendingEnabled: boolean;
-  /** The address in use: the one set here, else the settings file's */
+  /** Where results are sent, below RaceHub's address; null when no address is set */
   resultsUrl: string | null;
-  /** The address set here, or null when the settings file's is in use */
-  savedUrl: string | null;
+  /** RaceHub's address in use, or null */
+  raceHubUrl: string | null;
+  /** Where it comes from: set on the RaceHub page, the settings file, the older separate addresses, or nowhere */
+  addressSource: RaceHubAddressSource;
   /** What is still needed before anything is sent */
   missingSettings: string[];
   /** Where the RaceHub key comes from: pasted here, the settings file, or not set */
@@ -1375,12 +1389,16 @@ export const adminApi = {
         .then(r => r.data),
   },
 
+  // RaceHub's address, set once for results, the event picker, the class and format lists and imports
+  raceHubAddress: {
+    /** Blank clears it, so the settings file's address applies; an old full address is cut back to its host */
+    set: (address: string) =>
+      api.put<RaceHubAddressDto>('/api/v1/admin/racehub/address', { address }).then(r => r.data),
+  },
+
   // Events RaceHub has released for timing
   raceHubEvents: {
     list: () => api.get<RaceHubEventsDto>('/api/v1/admin/racehub/events').then(r => r.data),
-    /** Blank clears it */
-    setAddress: (eventsUrl: string) =>
-      api.put<RaceHubEventsDto>('/api/v1/admin/racehub/events/address', { eventsUrl }).then(r => r.data),
     /** Creates the RCTC event if needed and points its entry feed at RaceHub; answers the RCTC event */
     take: (raceHubEventId: string) =>
       api
@@ -1409,9 +1427,6 @@ export const adminApi = {
       api.get<ResultsExportsDto>('/api/v1/admin/results-exports').then(r => r.data),
     retry: (id: number) =>
       api.post(`/api/v1/admin/results-exports/${id}/retry`).then(() => undefined),
-    /** Blank clears it, so the settings file's address applies */
-    setAddress: (resultsUrl: string) =>
-      api.put<ResultsExportsDto>('/api/v1/admin/results-exports/address', { resultsUrl }).then(r => r.data),
     /** Saves a new RaceHub key, used straight away; it is never sent back */
     setKey: (key: string) =>
       api.put<ResultsExportsDto>('/api/v1/admin/results-exports/key', { key }).then(r => r.data),

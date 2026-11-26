@@ -18,12 +18,12 @@ There are two places, and either works.
 
   ```properties
   rctiming.racehub.token=the-key-from-racehub
-  rctiming.racehub.results-url=https://racehub.example/api/rctc/v1/results
+  rctiming.racehub.url=https://racehub.example
   ```
 
-- **The admin page.** Open **Admin → RaceHub → Connection**. A standalone club does not see **RaceHub** in the menu until a key is set; **Club profile** has a link to the page. Enter the **RaceHub address**, paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
+- **The admin page.** Open **Admin → RaceHub → Connection**. A standalone club does not see **RaceHub** in the menu until a key is set; **Club profile** has a link to the page. Enter the **RaceHub address** (just the host, such as `https://racehub.example`; you set it once and results, **Find RaceHub events**, the class and format lists and imports all use it), paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
 
-  ![The Connection tab: results address and RaceHub key](../images/racehub-connection.png)
+  ![The Connection tab: RaceHub address and key](../images/racehub-connection.png)
 
 A key saved on this page is kept encrypted, is never shown again, and **overrides the settings file's key** until you press **Clear**. To rotate a key later, make the new one in RaceHub, paste it here, check **Find RaceHub events** (step 4) still lists your meetings, then revoke the old one in RaceHub.
 

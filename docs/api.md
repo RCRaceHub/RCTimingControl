@@ -455,7 +455,7 @@ PUT  /admin/racehub/format-links
   { "clubClassId": "13", "createName": "2WD Stock" } ]
 ```
 
-Requires `ADMIN`. `GET` asks RaceHub for the club's classes (`GET /api/rctc/v1/classes`, with the club's key, at the saved events address with `events` swapped for `classes`) and answers `{ "classes": [ { "id", "name", "rcClassName", "active", "linkedRacingClassId", "suggestedRacingClassId" } ], "error": null, "eventsUrl": "https://…/events?state=ready", "tokenSet": true }`. `eventsUrl` is the saved events address (null when none) and `tokenSet` says whether the club has a key, saved in the app or in the settings file (the key itself is never sent), so the screen and the setup wizard can say which one is missing; the address is saved with `PUT /admin/racehub/events/address`. RaceHub's list is read as either a bare array or an object holding it under `classes`. Inactive classes are included, so they can still be linked: old meetings refer to them. A RaceHub that cannot be reached is still **200** with `error` set and no classes, so the "RaceHub classes" screen can say why; asking again re-fetches. For a class with no link, `suggestedRacingClassId` is the one racing class with the same name as its `rc_class_name` (or `name`), offered only as a choice for an official to confirm.
+Requires `ADMIN`. `GET` asks RaceHub for the club's classes (`GET /api/rctc/v1/classes`, with the club's key, at the events address under RaceHub's address with `events` swapped for `classes`) and answers `{ "classes": [ { "id", "name", "rcClassName", "active", "linkedRacingClassId", "suggestedRacingClassId" } ], "error": null, "raceHubUrl": "https://racehub.example", "tokenSet": true }`. `raceHubUrl` is RaceHub's address in use (null when none) and `tokenSet` says whether the club has a key, saved in the app or in the settings file (the key itself is never sent), so the screen and the setup wizard can say which one is missing; the address is saved with `PUT /admin/racehub/address`. RaceHub's list is read as either a bare array or an object holding it under `classes`. Inactive classes are included, so they can still be linked: old meetings refer to them. A RaceHub that cannot be reached is still **200** with `error` set and no classes, so the "RaceHub classes" screen can say why; asking again re-fetches. For a class with no link, `suggestedRacingClassId` is the one racing class with the same name as its `rc_class_name` (or `name`), offered only as a choice for an official to confirm.
 
 `POST` links classes for the whole club, with no event involved. Each item gives either an existing `racingClassId` or a `createName` for a new racing class, never both (400); a class linked again moves to the racing class now given. Answers **200** with one `{ classKey, racingClassId, eventClassId: null, racingClassCreated }` per item; audited as `RACEHUB_CLASS_LINKED`. Deleting a racing class removes its links.
 
@@ -515,29 +515,35 @@ The token itself is never sent back. `tokenHint` is its last four characters, sh
 
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
 
+### RaceHub address
+
+```http
+PUT /api/v1/admin/racehub/address
+```
+Requires `ADMIN`. Body `{ "address": "https://racehub.example" }`. The one place RaceHub's address is set: results, **Find RaceHub events**, the class and format lists and imports all find their paths from it (`/api/rctc/v1/results`, `/events?state=ready`, `/classes`, `/formats`). Anything from `/api/` on is dropped, so an old full address can be pasted. **200 OK** — `{ "address": "https://racehub.example", "savedAddress": "https://racehub.example", "source": "SAVED", "resultsUrl": "https://racehub.example/api/rctc/v1/results" }`; a blank `address` clears the saved one, so `rctiming.racehub.url` from the settings file applies (`savedAddress` null). **400** unless it is `https://` (plain `http://` only to this machine), or if it carries a user name or password. Saving it replaces the older separate results and events addresses of a club that set those one by one. Audited as `RACEHUB_URL_CHANGED`, naming the host only.
+
 ### Find RaceHub events
 
-RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address saved here. The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
+RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address below the one RaceHub address (set with `PUT /admin/racehub/address`). The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
 
 ```http
 GET  /admin/racehub/events
-PUT  /admin/racehub/events/address        { "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready" }
 POST /admin/racehub/events/{raceHubEventId}/take
 ```
 
 `GET` answers **200** whatever RaceHub says, so the page can show why a list is empty:
 
 ```json
-{ "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready", "tokenSet": true, "error": null,
+{ "raceHubUrl": "https://racehub.example", "tokenSet": true, "error": null,
   "events": [ { "raceHubEventId": "E-7", "name": "Club Champs", "eventDate": "2026-11-14", "venue": "Test Track",
                 "entryCount": 42, "linkedEventId": null } ] }
 ```
 
 `error` is set (and `events` empty) when no address is saved, the key is not set, RaceHub can't be reached or refuses the key, or its answer isn't a list of events. The key is never sent back, only `tokenSet`. `linkedEventId` is the RCTC event whose RaceHub event id matches, so an event already taken is shown as taken.
 
-`PUT .../address` saves the address (blank clears it). It must be https, or http to this machine only, with no user name or password: **400** otherwise. Audited as `RACEHUB_EVENTS_URL_CHANGED`, naming the host only.
+`raceHubUrl` is RaceHub's address in use (null when none is set); it is saved with `PUT /admin/racehub/address`, see [RaceHub address](#racehub-address).
 
-`POST .../take` asks RaceHub again and takes that event: it creates an RCTC event in `DRAFT` (name and date from RaceHub, no track) if none has that RaceHub event id, remembers the id, then sets the event's [entry feed](#pull-from-a-url-entry-feed) to the `entries_url` RaceHub gave, with the club's key and `autoFetch` on. Answers the RCTC event. **404** if RaceHub no longer offers the event, **409** if RaceHub can't be asked (the reason is in the problem detail), **400** if the entries address is unusable or on a different host from the events address, since the club's key is only ever sent to that host. Taking an event already taken only refreshes its feed. Nothing is imported by taking: the feed's own preview, or its automatic fetch, brings the entries in.
+`POST .../take` asks RaceHub again and takes that event: it creates an RCTC event in `DRAFT` (name and date from RaceHub, no track) if none has that RaceHub event id, remembers the id, then sets the event's [entry feed](#pull-from-a-url-entry-feed) to the `entries_url` RaceHub gave, with the club's key and `autoFetch` on. Answers the RCTC event. **404** if RaceHub no longer offers the event, **409** if RaceHub can't be asked (the reason is in the problem detail), **400** if the entries address is unusable or on a different host from RaceHub's address, since the club's key is only ever sent to that host. Taking an event already taken only refreshes its feed. Nothing is imported by taking: the feed's own preview, or its automatic fetch, brings the entries in.
 
 ---
 
@@ -1146,12 +1152,7 @@ Newest first. Every filter is optional and the ones given must all match: `entit
 ```http
 GET /api/v1/admin/results-exports
 ```
-**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "keySource": "SETTINGS_FILE", "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
-
-```http
-PUT /api/v1/admin/results-exports/address
-```
-Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the same body as the list. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
+**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/rctc/v1/results", "raceHubUrl": "https://racehub.example", "addressSource": "SETTINGS_FILE", "missingSettings": [], "keySource": "SETTINGS_FILE", "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). `resultsUrl` is where results are sent: RaceHub's address plus `/api/rctc/v1/results`. `raceHubUrl` is that address in use and `addressSource` where it comes from: `SAVED` (set with `PUT /admin/racehub/address`), `SETTINGS_FILE` (`rctiming.racehub.url`), `SEPARATE` (the older results and events addresses, used only while neither is set) or `NONE`. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
 
 ```http
 PUT /api/v1/admin/results-exports/key

@@ -12,7 +12,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: v
 
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
-    raceHubEvents: { list: vi.fn(), setAddress: vi.fn(), take: vi.fn() },
+    raceHubEvents: { list: vi.fn(), take: vi.fn() },
+    raceHubAddress: { set: vi.fn() },
     fetchEntryFeed: vi.fn(),
   },
 }));
@@ -36,7 +37,7 @@ function feed(overrides: Partial<EntryFeedDto> = {}): EntryFeedDto {
 
 function answer(overrides: Partial<RaceHubEventsDto> = {}): RaceHubEventsDto {
   return {
-    eventsUrl: 'https://racehub.example/api/rctc/v1/events?state=ready',
+    raceHubUrl: 'https://racehub.example',
     tokenSet: true,
     error: null,
     events: [
@@ -135,16 +136,19 @@ describe('FindRaceHubEventsDialog', () => {
   });
 
   it('asks for the address first when none is saved, and saves it', async () => {
-    api.list.mockResolvedValue(answer({ eventsUrl: null, events: [], error: 'Set the RaceHub events address first.' }));
-    api.setAddress.mockResolvedValue(answer());
+    api.list
+      .mockResolvedValueOnce(answer({ raceHubUrl: null, events: [], error: 'Set the RaceHub address first.' }))
+      .mockResolvedValue(answer());
+    vi.mocked(adminApi.raceHubAddress.set).mockResolvedValue({
+      address: 'https://racehub.example', savedAddress: 'https://racehub.example', source: 'SAVED', resultsUrl: null,
+    });
     renderDialog();
 
-    const input = await screen.findByLabelText('RaceHub events address');
-    fireEvent.change(input, { target: { value: 'https://racehub.example/api/rctc/v1/events?state=ready' } });
+    const input = await screen.findByLabelText('RaceHub address');
+    fireEvent.change(input, { target: { value: 'https://racehub.example' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() =>
-      expect(api.setAddress).toHaveBeenCalledWith('https://racehub.example/api/rctc/v1/events?state=ready'));
+    await waitFor(() => expect(adminApi.raceHubAddress.set).toHaveBeenCalledWith('https://racehub.example'));
     expect(await screen.findByText('Club Champs')).toBeInTheDocument();
   });
 

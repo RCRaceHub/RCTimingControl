@@ -20,43 +20,96 @@ class RaceHubResultsEndpointTest {
                 new RaceHubResultsProperties(configUrl == null ? null : URI.create(configUrl), token), profile);
     }
 
-    @Test
-    void theAddressSetInTheAdminPanelWinsOverTheSettingsFile() {
-        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("https://panel.example/results"));
-        RaceHubResultsEndpoint endpoint = endpoint("https://file.example/results", "key");
+    private RaceHubResultsEndpoint endpointWithUrl(String fileUrl, String token) {
+        return new RaceHubResultsEndpoint(new RaceHubResultsProperties(null, token, null, null,
+                fileUrl == null ? null : URI.create(fileUrl)), profile);
+    }
 
-        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://panel.example/results"));
-        assertThat(endpoint.snapshot().savedUrl()).isEqualTo("https://panel.example/results");
+    @Test
+    void theAddressSavedInTheAdminPanelWinsOverTheSettingsFile() {
+        when(profile.getRaceHubUrl()).thenReturn(Optional.of("https://panel.example"));
+        RaceHubResultsEndpoint endpoint = endpointWithUrl("https://file.example", "key");
+
+        var snapshot = endpoint.snapshot();
+        assertThat(snapshot.baseUrl()).isEqualTo(URI.create("https://panel.example"));
+        assertThat(snapshot.savedBase()).isEqualTo("https://panel.example");
+        assertThat(snapshot.source()).isEqualTo(RaceHubResultsEndpoint.AddressSource.SAVED);
+        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://panel.example/api/rctc/v1/results"));
+        assertThat(endpoint.eventsUrl()).isEqualTo(URI.create("https://panel.example/api/rctc/v1/events?state=ready"));
     }
 
     @Test
     void anEmptyAdminSettingFallsBackToTheSettingsFile() {
-        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
-        RaceHubResultsEndpoint endpoint = endpoint("https://file.example/results", "key");
+        when(profile.getRaceHubUrl()).thenReturn(Optional.empty());
+        RaceHubResultsEndpoint endpoint = endpointWithUrl("https://file.example/", "key");
 
-        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://file.example/results"));
-        assertThat(endpoint.snapshot().savedUrl()).isNull();
+        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://file.example/api/rctc/v1/results"));
+        assertThat(endpoint.snapshot().savedBase()).isNull();
+        assertThat(endpoint.snapshot().source()).isEqualTo(RaceHubResultsEndpoint.AddressSource.SETTINGS_FILE);
         assertThat(endpoint.snapshot().sendingEnabled()).isTrue();
     }
 
     @Test
+    void oneAddressServesResultsEventsAndRaceHubsOwnHost() {
+        when(profile.getRaceHubUrl()).thenReturn(Optional.of("https://racehub.example"));
+        RaceHubResultsEndpoint endpoint = endpoint(null, "key");
+
+        assertThat(endpoint.isRaceHub(URI.create("https://racehub.example/api/rctc/v1/events/7/entries"))).isTrue();
+        assertThat(endpoint.isRaceHub(URI.create("https://elsewhere.example/entries"))).isFalse();
+    }
+
+    @Test
+    void theOlderSeparateAddressesApplyOnlyWhileNoRaceHubAddressIsSet() {
+        when(profile.getRaceHubUrl()).thenReturn(Optional.empty());
+        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("https://panel.example/results"));
+        when(profile.getRaceHubEventsUrl()).thenReturn(Optional.of("https://panel.example/api/rctc/v1/events"));
+        RaceHubResultsEndpoint endpoint = endpoint("https://file.example/results", "key");
+
+        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://panel.example/results"));
+        assertThat(endpoint.eventsUrl()).isEqualTo(URI.create("https://panel.example/api/rctc/v1/events"));
+        assertThat(endpoint.snapshot().source()).isEqualTo(RaceHubResultsEndpoint.AddressSource.SEPARATE);
+        assertThat(endpoint.snapshot().baseUrl()).isNull();
+
+        when(profile.getRaceHubUrl()).thenReturn(Optional.of("https://one.example"));
+        assertThat(endpoint.resultsUrl()).isEqualTo(URI.create("https://one.example/api/rctc/v1/results"));
+    }
+
+    @Test
     void sendingNeedsAnAddressFromEitherPlaceAndTheKey() {
+        when(profile.getRaceHubUrl()).thenReturn(Optional.empty());
         when(profile.getRaceHubResultsUrl()).thenReturn(Optional.empty());
         assertThat(endpoint(null, null).snapshot().missingSettings())
                 .containsExactly("the RaceHub address", "rctiming.racehub.token");
 
-        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("https://panel.example/results"));
+        when(profile.getRaceHubUrl()).thenReturn(Optional.of("https://panel.example"));
         assertThat(endpoint(null, "key").snapshot().sendingEnabled()).isTrue();
         assertThat(endpoint(null, null).snapshot().missingSettings()).containsExactly("rctiming.racehub.token");
     }
 
     @Test
     void aSavedAddressThatIsNoLongerValidFallsBackToTheSettingsFile() {
-        when(profile.getRaceHubResultsUrl()).thenReturn(Optional.of("http://racehub.example/results"));
-        var snapshot = endpoint("https://file.example/results", "key").snapshot();
+        when(profile.getRaceHubUrl()).thenReturn(Optional.of("http://racehub.example"));
+        var snapshot = endpointWithUrl("https://file.example", "key").snapshot();
 
-        assertThat(snapshot.resultsUrl()).isEqualTo(URI.create("https://file.example/results"));
-        assertThat(snapshot.savedUrl()).isNull();
+        assertThat(snapshot.resultsUrl()).isEqualTo(URI.create("https://file.example/api/rctc/v1/results"));
+        assertThat(snapshot.savedBase()).isNull();
+    }
+
+    @Test
+    void parseBaseReducesAnyAddressOnRaceHubToItsHost() {
+        assertThat(RaceHubResultsEndpoint.parseBase(" https://racehub.example/ "))
+                .isEqualTo(URI.create("https://racehub.example"));
+        assertThat(RaceHubResultsEndpoint.parseBase("https://racehub.example/api/rctc/v1/events?state=ready"))
+                .isEqualTo(URI.create("https://racehub.example"));
+        assertThat(RaceHubResultsEndpoint.parseBase("https://club.example:8443/racehub/api/rctc/v1/results"))
+                .isEqualTo(URI.create("https://club.example:8443/racehub"));
+        assertThat(RaceHubResultsEndpoint.parseBase("http://localhost:8099")).isNotNull();
+        assertThatThrownBy(() -> RaceHubResultsEndpoint.parseBase("http://racehub.example"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("https");
+        assertThatThrownBy(() -> RaceHubResultsEndpoint.parseBase("https://user:secret@racehub.example"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageNotContaining("secret");
+        assertThatThrownBy(() -> RaceHubResultsEndpoint.parseBase("racehub.example"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
