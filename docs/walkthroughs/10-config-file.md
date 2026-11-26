@@ -49,4 +49,4 @@ A club that rebuilds its laptop often, or runs the Docker image, can give the se
 
 ---
 
-[← 9. Put it on screens](9-screens.md) · [All walkthroughs](../walkthroughs.md)
+[← 9. Put it on screens](9-screens.md) · [All walkthroughs](../walkthroughs.md) · [11. Connect to RaceHub →](11-racehub.md)
