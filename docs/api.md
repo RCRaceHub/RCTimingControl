@@ -483,6 +483,7 @@ GET    /admin/events/{eventId}/entry-feed
 PUT    /admin/events/{eventId}/entry-feed
 DELETE /admin/events/{eventId}/entry-feed
 POST   /admin/events/{eventId}/entry-feed/fetch
+POST   /admin/events/{eventId}/entry-feed/update
 POST   /admin/events/{eventId}/entry-feed/preview
 POST   /admin/events/{eventId}/entry-feed/apply
 ```
@@ -512,6 +513,8 @@ The feed comes back as:
 The token itself is never sent back. `tokenHint` is its last four characters, shown only when the token is at least eight long. `lastStatus` is `APPLIED`, `UNCHANGED` (the file's `revision` was already applied), `WAITING` (a fetched file waits for an official), `AUTH_FAILED` (the feed answered 401 or 403) or `FAILED`, with `lastMessage` saying why.
 
 `fetch` fetches now and returns the feed. A failure is recorded in the feed rather than returned as an error. A new revision is checked with a dry run and held for an official (`WAITING`); nothing is imported until `apply`. `preview` and `apply` work like the [RaceHub import](#import-an-export) on the held file, including a **422** when something blocks it, and answer **404** when no file is waiting. Only the fields Entry Export v1 knows are kept in the held file.
+
+`update` is **Update from RaceHub**: it fetches now with the automatic poll's rules, whether or not `autoFetch` is on. A new revision that imports cleanly is applied (`APPLIED`), one that something would block is held for an official (`WAITING`), and an unchanged one answers `UNCHANGED`. It answers **404** when the event has no feed and **409** for a completed event, whose entries a late revision must not change (use `fetch` and `apply` by hand). Audited.
 
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
 

@@ -2,6 +2,7 @@ package dev.monkeypatch.rctiming.domain.entryfeed;
 
 import dev.monkeypatch.rctiming.config.LoopbackHosts;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -213,6 +214,27 @@ public class EntryFeedService {
             recordApplied(feed, export.revision());
         }
         return result;
+    }
+
+    /**
+     * "Update from RaceHub": does what the automatic poll does, now, for one event. A clean new revision is
+     * imported, one that needs a decision is held for an official, and an unchanged one is reported as such. It
+     * ignores the polling schedule and works whether or not auto-fetch is on. Runs on the request thread; blocks for
+     * the feed client's timeouts, so it holds no transaction while it waits.
+     *
+     * @return the feed with the outcome of this fetch in {@code lastStatus} and {@code lastMessage}
+     * @throws EntityNotFoundException if the event has no feed (HTTP 404)
+     * @throws StateConflictException  if the event is completed, whose entries a late revision must not change
+     *                                 (HTTP 409); an official can still fetch or import by hand
+     */
+    public EntryFeed updateNow(long eventId) {
+        EntryFeed feed = requireFeed(eventId);
+        if (eventRepository.findById(eventId).filter(e -> e.getStatus() == EventStatus.COMPLETED).isPresent()) {
+            throw new StateConflictException("This event is completed, so RaceHub changes no longer update it. "
+                    + "Fetch or import by hand if you need to.");
+        }
+        autoFetch(feed);
+        return requireFeed(eventId);
     }
 
     /**

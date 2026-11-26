@@ -38,6 +38,23 @@ export function useFetchEntryFeed(eventId: number) {
 }
 
 /**
+ * Updates now with the automatic poll's rules. An imported revision changes the event's entries, so the event's key
+ * is invalidated (by prefix, this also refreshes the feed).
+ */
+export function useUpdateEntryFeed(eventId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminApi.updateEntryFeed(eventId),
+    onSuccess: feed => {
+      qc.setQueryData(adminQueryKeys.events.entryFeed(eventId), feed);
+      if (feed.lastStatus === 'APPLIED') {
+        qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
+      }
+    },
+  });
+}
+
+/**
  * Previews or imports the file the feed is holding. An import that applies invalidates the event's key, which
  * by prefix also refreshes its entries and the feed.
  */

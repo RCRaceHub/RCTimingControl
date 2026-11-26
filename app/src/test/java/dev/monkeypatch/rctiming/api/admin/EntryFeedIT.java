@@ -210,6 +210,27 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateNow_importsACleanRevisionWithoutAutoFetchOrTheSchedule() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, false);
+
+        JsonNode updated = post("/update").getBody();
+
+        assertThat(updated.get("lastStatus").asString()).isEqualTo("APPLIED");
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+        assertThat(post("/update").getBody().get("lastStatus").asString()).isEqualTo("UNCHANGED");
+    }
+
+    @Test
+    void updateNow_isRefusedForACompletedMeeting() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        assertThat(post("/update").getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
     void automaticFetch_importsALateRevisionIntoAMeetingThatIsInProgress() {
         jdbc.update("update events set status = 'IN_PROGRESS' where id = ?", eventId);
         feedBody = fixture("entries-v1-initial.json");

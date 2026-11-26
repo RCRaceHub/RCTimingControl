@@ -1050,6 +1050,10 @@ export const adminApi = {
   fetchEntryFeed: (eventId: number) =>
     api.post<EntryFeedDto>(`/api/v1/admin/events/${eventId}/entry-feed/fetch`).then(r => r.data),
 
+  /** "Update from RaceHub": fetches now with the automatic poll's rules (a clean revision is imported). */
+  updateEntryFeed: (eventId: number) =>
+    api.post<EntryFeedDto>(`/api/v1/admin/events/${eventId}/entry-feed/update`).then(r => r.data),
+
   previewEntryFeed: (eventId: number) =>
     api.post<RaceHubImportResult>(`/api/v1/admin/events/${eventId}/entry-feed/preview`).then(r => r.data),
 
