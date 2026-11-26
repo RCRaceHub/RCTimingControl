@@ -39,13 +39,13 @@ class RaceHubClassesServiceTest {
     private RaceHubClassesService service(String token) {
         RaceHubResultsEndpoint endpoint = new RaceHubResultsEndpoint(
                 new RaceHubResultsProperties(null, token), clubProfileService);
-        return new RaceHubClassesService(clubProfileService, endpoint, client, linkRepository,
+        return new RaceHubClassesService(endpoint, client, linkRepository,
                 racingClassRepository, JsonMapper.builder().build());
     }
 
     @BeforeEach
     void defaults() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.of(EVENTS_URL));
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.of("https://racehub.example"));
         when(linkRepository.findAllOrderByClassKey()).thenReturn(List.of());
         when(racingClassRepository.findAll()).thenReturn(List.of());
     }
@@ -66,11 +66,11 @@ class RaceHubClassesServiceTest {
 
     @Test
     void saysWhichSettingIsMissingWithoutAskingRaceHub() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.empty());
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.empty());
 
         RaceHubClassesService.Listing listing = service(null).list();
 
-        assertThat(listing.eventsUrl()).isNull();
+        assertThat(listing.raceHubUrl()).isNull();
         assertThat(listing.tokenSet()).isFalse();
         assertThat(listing.error()).isNotBlank();
         verifyNoInteractions(client);
@@ -140,8 +140,8 @@ class RaceHubClassesServiceTest {
         when(client.fetch(any(), eq("key"))).thenReturn(new EntryFeedClient.Fetched("{\"nope\": 1}"));
         assertThat(service("key").list().error()).contains("not a list of classes");
 
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.empty());
-        assertThat(service("key").list().error()).contains("events address");
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.empty());
+        assertThat(service("key").list().error()).contains("RaceHub address");
     }
 
     @Test

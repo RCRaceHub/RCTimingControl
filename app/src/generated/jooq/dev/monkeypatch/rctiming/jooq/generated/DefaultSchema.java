@@ -18,8 +18,6 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.CompetitorMedia;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Competitors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DecoderLoops;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayMessageSettings;
-import dev.monkeypatch.rctiming.jooq.generated.tables.LapSectors;
-import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
@@ -32,6 +30,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.EventSponsors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Events;
 import dev.monkeypatch.rctiming.jooq.generated.tables.GoverningBodyAffiliations;
 import dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports;
+import dev.monkeypatch.rctiming.jooq.generated.tables.LapSectors;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalPenalties;
@@ -47,8 +46,8 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RaceFormatTemplates;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
-import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubFormatLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubFormatLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
@@ -56,6 +55,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.ResultSnapshots;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ResultsOutbox;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Rounds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.ScoringSystems;
+import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.TrackLapThresholds;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Tracks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.UnknownTransponderLink;
@@ -155,16 +155,6 @@ public class DefaultSchema extends SchemaImpl {
     public final DisplayMessageSettings DISPLAY_MESSAGE_SETTINGS = DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS;
 
     /**
-     * The table <code>split_decoders</code>.
-     */
-    public final SplitDecoders SPLIT_DECODERS = SplitDecoders.SPLIT_DECODERS;
-
-    /**
-     * The table <code>lap_sectors</code>.
-     */
-    public final LapSectors LAP_SECTORS = LapSectors.LAP_SECTORS;
-
-    /**
      * The table <code>display_playlists</code>.
      */
     public final DisplayPlaylists DISPLAY_PLAYLISTS = DisplayPlaylists.DISPLAY_PLAYLISTS;
@@ -223,6 +213,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>incident_reports</code>.
      */
     public final IncidentReports INCIDENT_REPORTS = IncidentReports.INCIDENT_REPORTS;
+
+    /**
+     * The table <code>lap_sectors</code>.
+     */
+    public final LapSectors LAP_SECTORS = LapSectors.LAP_SECTORS;
 
     /**
      * The table <code>marshal_absences</code>.
@@ -300,14 +295,14 @@ public class DefaultSchema extends SchemaImpl {
     public final RacehubClassLinks RACEHUB_CLASS_LINKS = RacehubClassLinks.RACEHUB_CLASS_LINKS;
 
     /**
-     * The table <code>racehub_format_links</code>.
-     */
-    public final RacehubFormatLinks RACEHUB_FORMAT_LINKS = RacehubFormatLinks.RACEHUB_FORMAT_LINKS;
-
-    /**
      * The table <code>racehub_class_mappings</code>.
      */
     public final RacehubClassMappings RACEHUB_CLASS_MAPPINGS = RacehubClassMappings.RACEHUB_CLASS_MAPPINGS;
+
+    /**
+     * The table <code>racehub_format_links</code>.
+     */
+    public final RacehubFormatLinks RACEHUB_FORMAT_LINKS = RacehubFormatLinks.RACEHUB_FORMAT_LINKS;
 
     /**
      * The table <code>races</code>.
@@ -343,6 +338,11 @@ public class DefaultSchema extends SchemaImpl {
      * The table <code>scoring_systems</code>.
      */
     public final ScoringSystems SCORING_SYSTEMS = ScoringSystems.SCORING_SYSTEMS;
+
+    /**
+     * The table <code>split_decoders</code>.
+     */
+    public final SplitDecoders SPLIT_DECODERS = SplitDecoders.SPLIT_DECODERS;
 
     /**
      * The table <code>track_lap_thresholds</code>.
@@ -399,8 +399,6 @@ public class DefaultSchema extends SchemaImpl {
             Competitors.COMPETITORS,
             DecoderLoops.DECODER_LOOPS,
             DisplayMessageSettings.DISPLAY_MESSAGE_SETTINGS,
-            SplitDecoders.SPLIT_DECODERS,
-            LapSectors.LAP_SECTORS,
             DisplayPlaylists.DISPLAY_PLAYLISTS,
             DisplayScreens.DISPLAY_SCREENS,
             Entries.ENTRIES,
@@ -413,6 +411,7 @@ public class DefaultSchema extends SchemaImpl {
             Events.EVENTS,
             GoverningBodyAffiliations.GOVERNING_BODY_AFFILIATIONS,
             IncidentReports.INCIDENT_REPORTS,
+            LapSectors.LAP_SECTORS,
             MarshalAbsences.MARSHAL_ABSENCES,
             MarshalAdjustments.MARSHAL_ADJUSTMENTS,
             MarshalPenalties.MARSHAL_PENALTIES,
@@ -428,8 +427,8 @@ public class DefaultSchema extends SchemaImpl {
             RaceFormatTemplates.RACE_FORMAT_TEMPLATES,
             RacePointPenalties.RACE_POINT_PENALTIES,
             RacehubClassLinks.RACEHUB_CLASS_LINKS,
-            RacehubFormatLinks.RACEHUB_FORMAT_LINKS,
             RacehubClassMappings.RACEHUB_CLASS_MAPPINGS,
+            RacehubFormatLinks.RACEHUB_FORMAT_LINKS,
             Races.RACES,
             RacingClasses.RACING_CLASSES,
             RefreshTokens.REFRESH_TOKENS,
@@ -437,6 +436,7 @@ public class DefaultSchema extends SchemaImpl {
             ResultsOutbox.RESULTS_OUTBOX,
             Rounds.ROUNDS,
             ScoringSystems.SCORING_SYSTEMS,
+            SplitDecoders.SPLIT_DECODERS,
             TrackLapThresholds.TRACK_LAP_THRESHOLDS,
             Tracks.TRACKS,
             UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK,

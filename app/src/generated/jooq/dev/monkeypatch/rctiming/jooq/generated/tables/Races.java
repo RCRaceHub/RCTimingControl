@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.jooq.generated.Indexes;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EventClasses.EventClassesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.IncidentReports.IncidentReportsPath;
+import dev.monkeypatch.rctiming.jooq.generated.tables.LapSectors.LapSectorsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAbsences.MarshalAbsencesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.MarshalAdjustments.MarshalAdjustmentsPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Penalties.PenaltiesPath;
@@ -256,6 +257,18 @@ public class Races extends TableImpl<RacesRecord> {
             _rounds = new RoundsPath(this, Keys.RACES__RACES_ROUND_ID_FKEY, null);
 
         return _rounds;
+    }
+
+    private transient LapSectorsPath _lapSectors;
+
+    /**
+     * Get the implicit to-many join path to the <code>lap_sectors</code> table
+     */
+    public LapSectorsPath lapSectors() {
+        if (_lapSectors == null)
+            _lapSectors = new LapSectorsPath(this, null, Keys.LAP_SECTORS__FK_LAP_SECTORS_PK_RACES.getInverseKey());
+
+        return _lapSectors;
     }
 
     private transient IncidentReportsPath _incidentReports;

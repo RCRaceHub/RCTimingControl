@@ -315,7 +315,8 @@ public class Entries extends TableImpl<EntriesRecord> {
     private transient EntryCarColoursPath _entryCarColours;
 
     /**
-     * Get the implicit to-many join path to the <code>entry_car_colours</code> table
+     * Get the implicit to-many join path to the <code>entry_car_colours</code>
+     * table
      */
     public EntryCarColoursPath entryCarColours() {
         if (_entryCarColours == null)

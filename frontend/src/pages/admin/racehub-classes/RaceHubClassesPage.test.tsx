@@ -16,7 +16,7 @@ vi.mock('@/lib/adminApi', () => ({
     raceHubClasses: { list: vi.fn(), link: vi.fn() },
     raceHubFormats: { list: vi.fn(), link: vi.fn() },
     formats: { list: vi.fn() },
-    raceHubEvents: { setAddress: vi.fn() },
+    raceHubAddress: { set: vi.fn() },
   },
 }));
 
@@ -70,7 +70,7 @@ describe('RaceHubClassesTab', () => {
 
   it('lists the club classes with their links, inactive ones marked', async () => {
     api.raceHubClasses.list.mockResolvedValue({
-      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      error: null, raceHubUrl: 'https://racehub.example', tokenSet: true,
       classes: [
         raceHubClass({ id: '1', linkedRacingClassId: 102, rcClassName: 'Truck', name: 'Truck' }),
         raceHubClass({ id: '2', name: 'Old Buggy', rcClassName: null, active: false }),
@@ -88,25 +88,24 @@ describe('RaceHubClassesTab', () => {
 
   it('asks for the key and the address when they are missing, and saves the address', async () => {
     api.raceHubClasses.list.mockResolvedValue({
-      classes: [], error: 'Set the RaceHub events address first.', eventsUrl: null, tokenSet: false,
+      classes: [], error: 'Set the RaceHub address first.', raceHubUrl: null, tokenSet: false,
     });
-    api.raceHubEvents.setAddress.mockResolvedValue({
-      eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: false, events: [], error: null,
+    api.raceHubAddress.set.mockResolvedValue({
+      address: 'https://racehub.example', savedAddress: 'https://racehub.example', source: 'SAVED', resultsUrl: null,
     });
     renderPage();
 
     expect(await screen.findByText(/rctiming\.racehub\.token/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('RaceHub events address'), {
-      target: { value: 'https://racehub.example/api/rctc/v1/events' },
+    fireEvent.change(screen.getByLabelText('RaceHub address'), {
+      target: { value: 'https://racehub.example' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(api.raceHubEvents.setAddress)
-      .toHaveBeenCalledWith('https://racehub.example/api/rctc/v1/events'));
+    await waitFor(() => expect(api.raceHubAddress.set).toHaveBeenCalledWith('https://racehub.example'));
   });
 
   it('links a class to a racing class chosen once', async () => {
-    api.raceHubClasses.list.mockResolvedValue({ error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true, classes: [raceHubClass({ id: '7' })] });
+    api.raceHubClasses.list.mockResolvedValue({ error: null, raceHubUrl: 'https://racehub.example', tokenSet: true, classes: [raceHubClass({ id: '7' })] });
     api.raceHubClasses.link.mockResolvedValue([
       { classKey: '7', racingClassId: 102, eventClassId: null, racingClassCreated: false },
     ]);
@@ -123,7 +122,7 @@ describe('RaceHubClassesTab', () => {
   });
 
   it('creates a racing class from the RaceHub name when asked', async () => {
-    api.raceHubClasses.list.mockResolvedValue({ error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true, classes: [raceHubClass({ id: '7', rcClassName: 'Pro Buggy' })] });
+    api.raceHubClasses.list.mockResolvedValue({ error: null, raceHubUrl: 'https://racehub.example', tokenSet: true, classes: [raceHubClass({ id: '7', rcClassName: 'Pro Buggy' })] });
     api.raceHubClasses.link.mockResolvedValue([]);
     renderPage();
     await screen.findByText('Pro Buggy', { selector: 'div' });
@@ -138,7 +137,7 @@ describe('RaceHubClassesTab', () => {
 
   it('links every class whose name matches one of the club\'s in one go', async () => {
     api.raceHubClasses.list.mockResolvedValue({
-      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      error: null, raceHubUrl: 'https://racehub.example', tokenSet: true,
       classes: [
         raceHubClass({ id: '1', suggestedRacingClassId: 101 }),
         raceHubClass({ id: '2', name: 'Other', rcClassName: 'Other' }),
@@ -156,11 +155,11 @@ describe('RaceHubClassesTab', () => {
 
   it('shows why RaceHub could not be asked, and asks again on request', async () => {
     api.raceHubClasses.list
-      .mockResolvedValueOnce({ classes: [], error: 'Set the RaceHub events address first.', eventsUrl: null, tokenSet: true })
-      .mockResolvedValueOnce({ classes: [raceHubClass({ id: '1' })], error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true });
+      .mockResolvedValueOnce({ classes: [], error: 'Set the RaceHub address first.', raceHubUrl: null, tokenSet: true })
+      .mockResolvedValueOnce({ classes: [raceHubClass({ id: '1' })], error: null, raceHubUrl: 'https://racehub.example', tokenSet: true });
     renderPage();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Set the RaceHub events address first.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Set the RaceHub address first.');
 
     fireEvent.click(screen.getByRole('button', { name: /Fetch again/ }));
 

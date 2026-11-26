@@ -456,13 +456,13 @@ sequenceDiagram
     participant FS as EntryFeedService
     UI->>C: GET /admin/racehub/events
     C->>S: list()
-    S->>RH: GET events address (club key as bearer)
+    S->>RH: GET events (below the RaceHub address, club key as bearer)
     RH-->>S: events ready for timing
     S-->>UI: events, each with the RCTC event already linked to it
     UI->>C: POST /admin/racehub/events/{id}/take
     C->>S: take()
-    S->>RH: GET events address again (outside any transaction)
-    Note over S: entries address must be on the events address's host
+    S->>RH: GET events again (outside any transaction)
+    Note over S: entries address must be on the RaceHub address's host
     Note over S,FS: one transaction
     S->>ES: create event (name, date) if none has this RaceHub id
     S->>FS: save feed (entries address, club key, auto-fetch on)

@@ -6,6 +6,7 @@ package dev.monkeypatch.rctiming.jooq.generated.tables;
 
 import dev.monkeypatch.rctiming.jooq.generated.DefaultSchema;
 import dev.monkeypatch.rctiming.jooq.generated.Keys;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Races.RacesPath;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.LapSectorsRecord;
 
 import java.util.Arrays;
@@ -14,9 +15,13 @@ import java.util.List;
 
 import org.jooq.Condition;
 import org.jooq.Field;
+import org.jooq.ForeignKey;
+import org.jooq.InverseForeignKey;
 import org.jooq.Name;
+import org.jooq.Path;
 import org.jooq.PlainSQL;
 import org.jooq.QueryPart;
+import org.jooq.Record;
 import org.jooq.SQL;
 import org.jooq.Schema;
 import org.jooq.Stringly;
@@ -106,6 +111,39 @@ public class LapSectors extends TableImpl<LapSectorsRecord> {
         this(DSL.name("lap_sectors"), null);
     }
 
+    public <O extends Record> LapSectors(Table<O> path, ForeignKey<O, LapSectorsRecord> childPath, InverseForeignKey<O, LapSectorsRecord> parentPath) {
+        super(path, childPath, parentPath, LAP_SECTORS);
+    }
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    public static class LapSectorsPath extends LapSectors implements Path<LapSectorsRecord> {
+
+        private static final long serialVersionUID = 1L;
+        public <O extends Record> LapSectorsPath(Table<O> path, ForeignKey<O, LapSectorsRecord> childPath, InverseForeignKey<O, LapSectorsRecord> parentPath) {
+            super(path, childPath, parentPath);
+        }
+        private LapSectorsPath(Name alias, Table<LapSectorsRecord> aliased) {
+            super(alias, aliased);
+        }
+
+        @Override
+        public LapSectorsPath as(String alias) {
+            return new LapSectorsPath(DSL.name(alias), this);
+        }
+
+        @Override
+        public LapSectorsPath as(Name alias) {
+            return new LapSectorsPath(alias, this);
+        }
+
+        @Override
+        public LapSectorsPath as(Table<?> alias) {
+            return new LapSectorsPath(alias.getQualifiedName(), this);
+        }
+    }
+
     @Override
     public Schema getSchema() {
         return aliased() ? null : DefaultSchema.DEFAULT_SCHEMA;
@@ -114,6 +152,23 @@ public class LapSectors extends TableImpl<LapSectorsRecord> {
     @Override
     public UniqueKey<LapSectorsRecord> getPrimaryKey() {
         return Keys.LAP_SECTORS__PK_LAP_SECTORS;
+    }
+
+    @Override
+    public List<ForeignKey<LapSectorsRecord, ?>> getReferences() {
+        return Arrays.asList(Keys.LAP_SECTORS__FK_LAP_SECTORS_PK_RACES);
+    }
+
+    private transient RacesPath _races;
+
+    /**
+     * Get the implicit join path to the <code>races</code> table.
+     */
+    public RacesPath races() {
+        if (_races == null)
+            _races = new RacesPath(this, Keys.LAP_SECTORS__FK_LAP_SECTORS_PK_RACES, null);
+
+        return _races;
     }
 
     @Override

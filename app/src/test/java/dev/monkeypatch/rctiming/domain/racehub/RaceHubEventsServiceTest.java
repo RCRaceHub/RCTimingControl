@@ -56,14 +56,14 @@ class RaceHubEventsServiceTest {
     private RaceHubEventsService service(String token) {
         RaceHubResultsEndpoint endpoint = new RaceHubResultsEndpoint(
                 new RaceHubResultsProperties(null, token), clubProfileService);
-        return new RaceHubEventsService(clubProfileService, endpoint, client, entryFeedService, eventService,
+        return new RaceHubEventsService(endpoint, client, entryFeedService, eventService,
                 eventRepository, objectMapper, transactions);
     }
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void runTransactionsInline() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.of(EVENTS_URL));
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.of("https://racehub.example"));
         when(transactions.execute(any())).thenAnswer(call ->
                 ((TransactionCallback<Object>) call.getArgument(0)).doInTransaction(null));
         when(eventRepository.findByRacehubEventId(anyString())).thenReturn(Optional.empty());
@@ -100,10 +100,10 @@ class RaceHubEventsServiceTest {
 
     @Test
     void listingSendsTheClubKeyAndNeedsAnAddress() {
-        when(clubProfileService.getRaceHubEventsUrl()).thenReturn(Optional.empty());
+        when(clubProfileService.getRaceHubUrl()).thenReturn(Optional.empty());
 
         assertThat(service("key").list()).isEqualTo(
-                new RaceHubEventsService.Failure("Set the RaceHub events address first."));
+                new RaceHubEventsService.Failure("Set the RaceHub address first."));
     }
 
     @Test

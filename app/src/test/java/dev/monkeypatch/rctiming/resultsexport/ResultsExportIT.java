@@ -476,28 +476,38 @@ class ResultsExportIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void adminsCanSetAndClearTheRaceHubAddress() {
-        String url = "https://racehub-" + run + ".example/api/results";
-        ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/results-exports/address", HttpMethod.PUT,
-                new HttpEntity<>(Map.of("resultsUrl", url), headers()), JsonNode.class);
+    void adminsCanSetAndClearTheOneRaceHubAddress() {
+        String host = "https://racehub-" + run + ".example";
+        // Pasting an old full address saves just RaceHub's own address
+        ResponseEntity<JsonNode> set = restTemplate.exchange("/api/v1/admin/racehub/address", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("address", host + "/api/rctc/v1/events?state=ready"), headers()),
+                JsonNode.class);
         assertThat(set.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(set.getBody().get("resultsUrl").asString()).isEqualTo(url);
-        assertThat(set.getBody().get("savedUrl").asString()).isEqualTo(url);
-        assertThat(jdbc.queryForList("select * from audit_log where action = 'RACEHUB_RESULTS_URL_CHANGED'"))
+        assertThat(set.getBody().get("address").asString()).isEqualTo(host);
+        assertThat(set.getBody().get("savedAddress").asString()).isEqualTo(host);
+        assertThat(set.getBody().get("source").asString()).isEqualTo("SAVED");
+        assertThat(set.getBody().get("resultsUrl").asString()).isEqualTo(host + "/api/rctc/v1/results");
+        assertThat(clubProfileService.getRaceHubUrl()).contains(host);
+        assertThat(jdbc.queryForList("select * from audit_log where action = 'RACEHUB_URL_CHANGED'"))
                 .isNotEmpty();
 
+        // The results page reads where results go from the same address
+        ResponseEntity<JsonNode> page = restTemplate.exchange("/api/v1/admin/results-exports", HttpMethod.GET,
+                new HttpEntity<>(headers()), JsonNode.class);
+        assertThat(page.getBody().get("resultsUrl").asString()).isEqualTo(host + "/api/rctc/v1/results");
+
         // Plain http to another machine would send the key in the clear
-        ResponseEntity<String> refused = restTemplate.exchange("/api/v1/admin/results-exports/address",
-                HttpMethod.PUT, new HttpEntity<>(Map.of("resultsUrl", "http://racehub.example/results"), headers()),
+        ResponseEntity<String> refused = restTemplate.exchange("/api/v1/admin/racehub/address",
+                HttpMethod.PUT, new HttpEntity<>(Map.of("address", "http://racehub.example"), headers()),
                 String.class);
         assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(clubProfileService.getRaceHubResultsUrl()).contains(url);
+        assertThat(clubProfileService.getRaceHubUrl()).contains(host);
 
-        ResponseEntity<JsonNode> cleared = restTemplate.exchange("/api/v1/admin/results-exports/address",
-                HttpMethod.PUT, new HttpEntity<>(Map.of("resultsUrl", " "), headers()), JsonNode.class);
+        ResponseEntity<JsonNode> cleared = restTemplate.exchange("/api/v1/admin/racehub/address",
+                HttpMethod.PUT, new HttpEntity<>(Map.of("address", " "), headers()), JsonNode.class);
         assertThat(cleared.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(cleared.getBody().get("savedUrl").isNull()).isTrue();
-        assertThat(clubProfileService.getRaceHubResultsUrl()).isEmpty();
+        assertThat(cleared.getBody().get("savedAddress").isNull()).isTrue();
+        assertThat(clubProfileService.getRaceHubUrl()).isEmpty();
     }
 
     @Test

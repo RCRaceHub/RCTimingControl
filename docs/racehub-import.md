@@ -8,7 +8,7 @@ RCTC only ever calls out to RaceHub. It never needs an address of its own on the
 
 | Step | RCTC | RaceHub call |
 |---|---|---|
-| Save the club's key and the events address | **RaceHub** page, setup wizard, or `rctiming.racehub.token` in the settings file. An admin-saved key overrides the file. The key is stored encrypted and never shown back. | none |
+| Save RaceHub's address and the club's key | **RaceHub** page (the same address field also shows in **Find RaceHub events** and on the classes screen and the setup wizard step), or `rctiming.racehub.url` and `rctiming.racehub.token` in the settings file. An admin-saved address or key overrides the file. The address is set once and used for results, events, classes, formats and imports. The key is stored encrypted and never shown back. | none |
 | Link classes once per club | **RaceHub → Classes and formats** tab, `GET /admin/racehub/classes` | `GET /api/rctc/v1/classes` |
 | Link race formats once per club | same page, `GET /admin/racehub/formats` | `GET /api/rctc/v1/formats` |
 | Find a meeting | **Find RaceHub events**, `GET /admin/racehub/events` | `GET /api/rctc/v1/events?state=ready` |

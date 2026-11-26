@@ -3,16 +3,14 @@ import { Link } from 'react-router-dom';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { QueryError } from '@/components/QueryError';
+import { RaceHubAddressField } from '@/components/RaceHubAddressField';
 import { useRacingClasses } from '@/hooks/admin/useAdminEventClasses';
 import { useLinkRaceHubClasses, useRaceHubClasses } from '@/hooks/admin/useRaceHubClasses';
-import { useSetRaceHubEventsAddress } from '@/hooks/admin/useRaceHubEvents';
 import type { LinkRaceHubClassRequest, RaceHubClassDto } from '@/lib/adminApi';
 import { getApiErrorMessage } from '@/lib/errors';
 
@@ -34,8 +32,6 @@ export function RaceHubClassesPanel({ keyOnRaceHubPage = true }: { keyOnRaceHubP
   const classesQuery = useRaceHubClasses();
   const { data: racingClasses = [] } = useRacingClasses();
   const link = useLinkRaceHubClasses();
-  const setAddress = useSetRaceHubEventsAddress();
-  const [address, setAddressText] = useState<string | null>(null);
   const [choices, setChoices] = useState<Record<string, string>>({});
 
   const classes = classesQuery.data?.classes ?? [];
@@ -68,21 +64,6 @@ export function RaceHubClassesPanel({ keyOnRaceHubPage = true }: { keyOnRaceHubP
       toast.success(requests.length === 1 ? 'Class linked.' : `${requests.length} classes linked.`);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Could not link the classes. Try again.'));
-    }
-  }
-
-  const savedAddress = classesQuery.data?.eventsUrl ?? '';
-  const addressText = address ?? savedAddress;
-  // Ask for the address when none is saved; a saved one can be changed by editing the field
-  const showAddress = classesQuery.data != null;
-
-  async function saveAddress() {
-    try {
-      await setAddress.mutateAsync(addressText.trim());
-      setAddressText(null);
-      toast.success('RaceHub events address saved');
-    } catch (err) {
-      toast.error(getApiErrorMessage(err, 'The address could not be saved.'));
     }
   }
 
@@ -125,28 +106,7 @@ export function RaceHubClassesPanel({ keyOnRaceHubPage = true }: { keyOnRaceHubP
         </p>
       )}
 
-      {showAddress && (
-        <div className="space-y-1.5">
-          <Label htmlFor="racehub-classes-events-url">RaceHub events address</Label>
-          <div className="flex gap-2">
-            <Input
-              id="racehub-classes-events-url"
-              value={addressText}
-              onChange={e => setAddressText(e.target.value)}
-              placeholder="https://racehub.example/api/rctc/v1/events?state=ready"
-            />
-            <Button
-              onClick={() => void saveAddress()}
-              disabled={setAddress.isPending || addressText.trim() === savedAddress}
-            >
-              {setAddress.isPending ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            The class list is read from beside this address. It is the same address the Find RaceHub events list uses.
-          </p>
-        </div>
-      )}
+      {classesQuery.data && <RaceHubAddressField id="racehub-classes-address" address={classesQuery.data.raceHubUrl} />}
 
       {classesQuery.data?.error && (
         <div className="rounded-md border border-destructive/50 p-3 text-sm text-destructive" role="alert">

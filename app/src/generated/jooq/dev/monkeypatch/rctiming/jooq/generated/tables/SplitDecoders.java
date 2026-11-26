@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.jooq.Check;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.Identity;
@@ -81,7 +82,7 @@ public class SplitDecoders extends TableImpl<SplitDecodersRecord> {
     /**
      * The column <code>split_decoders.clock_offset_ms</code>.
      */
-    public final TableField<SplitDecodersRecord, Long> CLOCK_OFFSET_MS = createField(DSL.name("clock_offset_ms"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "");
+    public final TableField<SplitDecodersRecord, Integer> CLOCK_OFFSET_MS = createField(DSL.name("clock_offset_ms"), SQLDataType.INTEGER.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "");
 
     /**
      * The column <code>split_decoders.enabled</code>.
@@ -130,6 +131,18 @@ public class SplitDecoders extends TableImpl<SplitDecodersRecord> {
     @Override
     public UniqueKey<SplitDecodersRecord> getPrimaryKey() {
         return Keys.SPLIT_DECODERS__PK_SPLIT_DECODERS;
+    }
+
+    @Override
+    public List<UniqueKey<SplitDecodersRecord>> getUniqueKeys() {
+        return Arrays.asList(Keys.SPLIT_DECODERS__UK_SPLIT_DECODERS_1_124053961);
+    }
+
+    @Override
+    public List<Check<SplitDecodersRecord>> getChecks() {
+        return Arrays.asList(
+            Internal.createCheck(this, DSL.name(""), "enabled in (0, 1)", true)
+        );
     }
 
     @Override
