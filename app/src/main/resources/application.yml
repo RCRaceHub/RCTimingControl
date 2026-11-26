@@ -27,6 +27,9 @@ rctiming:
   entry-feed:
     # How often events with automatic entry fetch turned on pull their entry file, in milliseconds.
     interval-ms: 300000
+    # ...and for an event more than near-days away, which needs fresh entries less often.
+    far-interval-ms: 3600000
+    near-days: 7
 
 app:
   jwt:
