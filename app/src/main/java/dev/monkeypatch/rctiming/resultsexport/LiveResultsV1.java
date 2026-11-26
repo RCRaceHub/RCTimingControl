@@ -1,6 +1,5 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import dev.monkeypatch.rctiming.livefeed.LiveFeedV1;
 import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
@@ -29,8 +28,6 @@ import java.util.List;
  * @param standings      the running order, then cars on the grid yet to cross the line
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@JsonPropertyOrder({"schemaVersion", "type", "sequence", "sentAt", "provisional", "racehubEventId", "event", "race",
-        "standings"})
 public record LiveResultsV1(
         int schemaVersion,
         String type,
