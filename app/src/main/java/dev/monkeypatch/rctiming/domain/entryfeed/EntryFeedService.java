@@ -7,6 +7,8 @@ import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
+import dev.monkeypatch.rctiming.domain.media.PhotoImportService;
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
@@ -21,8 +23,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,12 +44,22 @@ import java.util.function.Predicate;
  * <p>The network call never runs inside a database transaction, and no failure is thrown to the caller: it is
  * recorded on the feed and shown on the event. Recording an outcome reads the feed again and saves it in one
  * transaction ({@link #update}), so it cannot overwrite a change an official made during the fetch.
+ *
+ * <p>When the automatic fetch applies a revision it also fetches the headshots and car photos the revision names
+ * (#811), straight away, because a booking system's picture links may expire within hours. Only missing pictures are
+ * filled, so an official's own upload is never replaced; a failed picture is noted on the feed and never undoes
+ * the entries.
  */
 @Service
 public class EntryFeedService {
 
     private static final Logger log = LoggerFactory.getLogger(EntryFeedService.class);
     private static final int MAX_ERROR_LENGTH = 500;
+    private static final Actor FEED_ACTOR = Actor.system("entry-feed");
+    /** Pictures fetched per call to {@link PhotoImportService}, so the time budget is checked between chunks. */
+    private static final int PICTURE_CHUNK = 10;
+    /** The longest one revision's pictures may hold a scheduler thread; the rest are reported, not fetched. */
+    private static final Duration PICTURE_BUDGET = Duration.ofMinutes(2);
 
     private final EntryFeedRepository feedRepository;
     private final EventRepository eventRepository;
@@ -55,11 +69,12 @@ public class EntryFeedService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactions;
     private final AuditService audit;
+    private final PhotoImportService photoImport;
 
     public EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
                             EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
                             ObjectMapper objectMapper, TransactionTemplate transactions,
-                            AuditService audit) {
+                            AuditService audit, PhotoImportService photoImport) {
         this.feedRepository = feedRepository;
         this.eventRepository = eventRepository;
         this.client = client;
@@ -68,6 +83,7 @@ public class EntryFeedService {
         this.objectMapper = objectMapper;
         this.transactions = transactions;
         this.audit = audit;
+        this.photoImport = photoImport;
     }
 
     /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
@@ -239,7 +255,7 @@ public class EntryFeedService {
             }
             RaceHubImportResult result;
             try {
-                result = importService.importEntries(Actor.system("entry-feed"), feed.getEventId(), export, false);
+                result = importService.importEntries(FEED_ACTOR, feed.getEventId(), export, false);
             } catch (IllegalArgumentException e) {
                 recordFailure(feed, new Problem(EntryFeedStatus.FAILED, e.getMessage()));
                 return;
@@ -247,6 +263,7 @@ public class EntryFeedService {
             if (result.applied()) {
                 recordApplied(feed, export.revision());
                 log.info("Entry feed for event {} applied revision {}", feed.getEventId(), export.revision());
+                fetchPictures(feed, export.revision(), result.photoLinks());
             } else {
                 hold(feed, export, "Revision " + export.revision() + " needs an official: " + blockReason(result));
             }
@@ -254,6 +271,58 @@ public class EntryFeedService {
             log.warn("Entry feed for event {} failed", feed.getEventId(), e);
             recordFailure(feed, new Problem(EntryFeedStatus.FAILED,
                     e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
+        }
+    }
+
+    /**
+     * Downloads the pictures an applied revision named, with no transaction open (each is stored in its own short one).
+     * Pictures already held are kept. It runs on the shared scheduler pool, so it works in chunks of
+     * {@link #PICTURE_CHUNK} and stops after {@link #PICTURE_BUDGET}: a slow host can hold a thread for that long and
+     * no longer, and whatever was not reached is counted in the note on the feed. The note stays until the next
+     * revision (see {@link #recordUnchanged}); an official can import the file by hand to try again. A driver whose
+     * name is not shown in full is skipped by design and is not counted as a failure.
+     */
+    private void fetchPictures(EntryFeed feed, Long revision, List<PhotoLink> links) {
+        if (links == null || links.isEmpty()) {
+            return;
+        }
+        long deadline = System.nanoTime() + PICTURE_BUDGET.toNanos();
+        int stored = 0;
+        int failed = 0;
+        int notReached = 0;
+        try {
+            for (int from = 0; from < links.size(); from += PICTURE_CHUNK) {
+                List<PhotoLink> chunk = links.subList(from, Math.min(links.size(), from + PICTURE_CHUNK));
+                if (System.nanoTime() > deadline) {
+                    notReached += chunk.size();
+                    continue;
+                }
+                List<PhotoImportService.Outcome> outcomes =
+                        photoImport.fetchAll(FEED_ACTOR, feed.getEventId(), chunk, false);
+                for (PhotoImportService.Outcome outcome : outcomes) {
+                    switch (outcome.status()) {
+                        case STORED -> stored++;
+                        case FAILED -> failed++;
+                        default -> { }
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("Entry feed pictures for event {} failed", feed.getEventId(), e);
+            failed++;
+        }
+        log.info("Entry feed for event {} revision {}: {} pictures saved, {} failed, {} not reached",
+                feed.getEventId(), revision, stored, failed, notReached);
+        int missed = failed + notReached;
+        if (missed > 0) {
+            String what = missed == 1 ? "1 picture couldn't be fetched" : missed + " pictures couldn't be fetched";
+            String note = "Revision " + revision + " applied, but " + what + ". Import the file by hand to try again.";
+            // Only while this revision is still the one applied and nothing is waiting for an official
+            update(feed, f -> {
+                if (Objects.equals(f.getAppliedRevision(), revision) && f.getHeldDocument() == null) {
+                    f.setLastError(note);
+                }
+            });
         }
     }
 
@@ -329,8 +398,10 @@ public class EntryFeedService {
 
     private Optional<EntryFeed> recordUnchanged(EntryFeed feed) {
         return update(feed, f -> {
-            // A file waiting for an official stays waiting; there's just nothing newer
-            if (f.getHeldDocument() == null) {
+            // A file waiting for an official stays waiting; there's just nothing newer. A note about pictures that
+            // could not be fetched stays too, or the next poll would wipe it before anyone read it.
+            boolean pictureNote = f.getLastStatus() == EntryFeedStatus.APPLIED && f.getLastError() != null;
+            if (f.getHeldDocument() == null && !pictureNote) {
                 f.setLastStatus(EntryFeedStatus.UNCHANGED);
                 f.setLastError(null);
             }
