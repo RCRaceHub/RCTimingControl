@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
@@ -23,7 +24,9 @@ import tools.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,11 +59,12 @@ public class EntryFeedService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactions;
     private final AuditService audit;
+    private final RoundRepository roundRepository;
 
     public EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
                             EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
                             ObjectMapper objectMapper, TransactionTemplate transactions,
-                            AuditService audit) {
+                            AuditService audit, RoundRepository roundRepository) {
         this.feedRepository = feedRepository;
         this.eventRepository = eventRepository;
         this.client = client;
@@ -69,6 +73,7 @@ public class EntryFeedService {
         this.objectMapper = objectMapper;
         this.transactions = transactions;
         this.audit = audit;
+        this.roundRepository = roundRepository;
     }
 
     /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
@@ -265,13 +270,18 @@ public class EntryFeedService {
             }
             RaceHubImportResult result;
             try {
+                Optional<String> afterHeats = changesAfterHeatsExist(feed.getEventId(), export);
+                if (afterHeats.isPresent()) {
+                    hold(feed, export, "Revision " + export.revision() + " needs an official: " + afterHeats.get());
+                    return;
+                }
                 result = importService.importEntries(Actor.system("entry-feed"), feed.getEventId(), export, false);
             } catch (IllegalArgumentException e) {
                 recordFailure(feed, new Problem(EntryFeedStatus.FAILED, e.getMessage()));
                 return;
             }
             if (result.applied()) {
-                recordApplied(feed, export.revision());
+                recordApplied(feed, export.revision(), changeSummary(result));
                 log.info("Entry feed for event {} applied revision {}", feed.getEventId(), export.revision());
             } else {
                 hold(feed, export, "Revision " + export.revision() + " needs an official: " + blockReason(result));
@@ -370,13 +380,62 @@ public class EntryFeedService {
     }
 
     private void recordApplied(EntryFeed feed, Long revision) {
+        recordApplied(feed, revision, null);
+    }
+
+    /** {@code summary} says what the import changed ("2 new, 1 withdrawn"), shown beside the status; may be null. */
+    private void recordApplied(EntryFeed feed, Long revision, String summary) {
         update(feed, f -> {
             f.setAppliedRevision(revision);
             f.setHeldDocument(null);
             f.setHeldRevision(null);
             f.setLastStatus(EntryFeedStatus.APPLIED);
-            f.setLastError(null);
+            f.setLastError(summary);
         });
+    }
+
+    /**
+     * Once the run order has been built, new entries and changed ones wait for an official instead of arriving by
+     * themselves, so nobody is slipped into or moved between heats unseen. Withdrawals still apply straight away:
+     * the car just drops out. Before the run order exists everything that imports cleanly is applied.
+     *
+     * @return why the revision must be held, or empty when it can be applied now
+     */
+    private Optional<String> changesAfterHeatsExist(long eventId, RaceHubEntryExport export) {
+        if (!roundRepository.existsByEventId(eventId)) {
+            return Optional.empty();
+        }
+        RaceHubImportResult preview = importService.preview(eventId, export);
+        if (preview.blocked()) {
+            return Optional.empty();
+        }
+        RaceHubImportResult.Summary summary = preview.summary();
+        int arriving = summary.created() + summary.updated();
+        if (arriving == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(arriving + (arriving == 1 ? " entry is" : " entries are")
+                + " new or changed and the run order is already built, so check where "
+                + (arriving == 1 ? "it" : "they") + " should go");
+    }
+
+    /** What an applied import changed in words, or null when it changed nothing worth saying. */
+    private static String changeSummary(RaceHubImportResult result) {
+        RaceHubImportResult.Summary s = result.summary();
+        if (s == null) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (s.created() > 0) {
+            parts.add(s.created() + " new");
+        }
+        if (s.updated() > 0) {
+            parts.add(s.updated() + " changed");
+        }
+        if (s.withdrawn() > 0) {
+            parts.add(s.withdrawn() + " withdrawn");
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts) + " (revision " + result.revision() + ")";
     }
 
     private Optional<EntryFeed> recordUnchanged(EntryFeed feed) {

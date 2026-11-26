@@ -238,6 +238,33 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void onceTheRunOrderIsBuilt_aRevisionWithChangedEntriesIsHeldForAnOfficial() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+
+        jdbc.update("insert into rounds (event_id, type, round_number, sequence_in_event) values (?, 'QUALIFIER', 1, 1)",
+                eventId);
+        feedBody = fixture("entries-v1-update.json");
+        scheduler.fetchAll();
+
+        JsonNode feed = getFeed().getBody();
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("WAITING");
+        assertThat(feed.get("lastMessage").asString()).contains("run order is already built");
+        assertThat(feed.get("appliedRevision").asLong()).isNotEqualTo(7);
+    }
+
+    @Test
+    void anAppliedUpdate_saysWhatItChanged() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+
+        assertThat(getFeed().getBody().get("lastMessage").asString()).contains("new");
+    }
+
+    @Test
     void updateNow_isRefusedForACompletedMeeting() {
         jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
         feedBody = fixture("entries-v1-initial.json");
