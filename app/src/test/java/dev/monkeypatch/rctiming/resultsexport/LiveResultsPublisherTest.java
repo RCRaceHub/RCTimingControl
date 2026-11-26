@@ -64,7 +64,8 @@ class LiveResultsPublisherTest {
         var endpoint = new RaceHubResultsEndpoint(properties, mock(ClubProfileService.class));
         when(publishSettings.effective()).thenReturn(ResultsPublishTarget.RACEHUB);
         when(lookup.find(anyLong())).thenAnswer(inv -> Optional.of(race()));
-        when(clocks.clockOf(anyLong(), any(), any())).thenReturn(new RaceClockDto(7, "RUNNING", 1000, 300000L, 299000L, true));
+        when(clocks.clockOf(anyLong(), any(), any()))
+                .thenReturn(new RaceClockDto(7, "RUNNING", 1000, 300000L, 299000L, true));
         when(timing.peek(anyLong())).thenReturn(Optional.empty());
         publisher = new LiveResultsPublisher(new LiveResultsProperties(true, 3000, 15000), endpoint, publishSettings,
                 lookup, timing, clocks, TestJson.mapper(), RestClient.builder(), clock);

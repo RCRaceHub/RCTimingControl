@@ -160,6 +160,12 @@ public class LiveResultsPublisher implements SmartLifecycle {
         }
         boolean active = properties.enabled() && endpoint.liveUrl() != null && endpoint.token() != null
                 && publishSettings.effective().includesRaceHub();
+        if (!active) {
+            // Not publishing: leave the database alone. Races are followed again from their next status change
+            races.clear();
+            sent.clear();
+            return;
+        }
         Instant now = clock.instant();
         for (Map.Entry<Long, Followed> followed : races.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey()).toList()) {
@@ -172,7 +178,7 @@ public class LiveResultsPublisher implements SmartLifecycle {
             LiveFeedRaceLookup.RaceInfo race = found.get();
             boolean ended = RaceStatus.FINISHED.name().equals(race.status())
                     || RaceStatus.PENDING.name().equals(race.status());
-            if (!active || race.racehubEventId() == null) {
+            if (race.racehubEventId() == null) {
                 if (ended) {
                     drop(raceId);
                 }
@@ -217,7 +223,10 @@ public class LiveResultsPublisher implements SmartLifecycle {
     }
 
     private Content content(LiveFeedRaceLookup.RaceInfo race, Followed followed) {
-        List<LiveTimingRowDto> rows = followed.frozenRows() != null ? followed.frozenRows()
+        // The frozen order counts only while the race is finished: a restart does not publish a status change,
+        // so a race back at PENDING must not show the old result
+        boolean useFrozen = followed.frozenRows() != null && RaceStatus.FINISHED.name().equals(race.status());
+        List<LiveTimingRowDto> rows = useFrozen ? followed.frozenRows()
                 : lapTimingService.peek(race.raceId()).map(LiveRaceState::calculatePositions).orElse(List.of());
         RaceClockDto raceClock =
                 raceClocks.clockOf(race.raceId(), RaceStatus.valueOf(race.status()), race.durationMs());
@@ -245,6 +254,7 @@ public class LiveResultsPublisher implements SmartLifecycle {
                             race.heatNumber(), race.finalLetter(), content.status(), content.clock()),
                     content.standings()));
         } catch (JacksonException e) {
+            log.warn("Could not write a live results snapshot", e);
             failed("could not write the snapshot");
             return false;
         }
