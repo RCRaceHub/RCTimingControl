@@ -7,7 +7,7 @@ import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { raceHubAddress: { set: vi.fn() }, resultsExports: { list: vi.fn(), retry: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { raceHubAddress: { set: vi.fn() }, raceHubConnection: { test: vi.fn() }, resultsExports: { list: vi.fn(), retry: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);

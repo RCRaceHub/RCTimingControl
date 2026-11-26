@@ -25,6 +25,14 @@ There are two places, and either works.
 
   ![The Connection tab: RaceHub address and key](../images/racehub-connection.png)
 
+Under the key, press **Test connection**. It checks the address and key you saved and lists each result:
+
+- **RaceHub reachable**: the address answers like RaceHub. A typo, no internet or a certificate problem shows here.
+- **Key can read entries**: RaceHub accepts the key and lets it list meetings (`entries:read`). It also tells you how many meetings are released to timing. A revoked, expired or mistyped key shows as refused (401); a key for another club or without the ability shows as refused (403).
+- **Key can send results**: the key has `results:write`. The test sends an empty JSON object that RaceHub refuses after it has checked the key, so nothing is stored in RaceHub.
+
+Each line says what to fix. Save the address or key first: the test uses what is saved, not what is typed in the box.
+
 A key saved on this page is kept encrypted, is never shown again, and **overrides the settings file's key** until you press **Clear**. To rotate a key later, make the new one in RaceHub, paste it here, check **Find RaceHub events** (step 4) still lists your meetings, then revoke the old one in RaceHub.
 
 ## 3. Link the classes and formats once
@@ -73,6 +81,8 @@ Race, correct and finish as normal ([walkthrough 3](3-qualifying-and-finals.md))
 To send an event again, for example after fixing a result, press **Re-upload** on its row in **Events** (administrators only, for events that came from RaceHub). It sends the whole event; RaceHub keeps the newest copy, so it is safe to repeat.
 
 ![Re-upload on the Events list](../images/racehub-reupload.png)
+
+**Is the link alive?** When RaceHub is set up, race control's status bar (beside the decoder) shows **RACEHUB linked**. RCTC checks RaceHub once a minute with a light request, so the indicator also turns red, with **unreachable**, **key refused** or **problem**, if the internet drops or a key is revoked. Results still queue and the bar says how many are **waiting**; hover for the reason and when results last went. A club without a RaceHub address and key does not see it. Racing is never held up either way.
 
 **Good to know**
 

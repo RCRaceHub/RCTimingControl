@@ -322,6 +322,24 @@ export interface RaceHubEventOffer {
 
 export type RaceHubAddressSource = 'SAVED' | 'SETTINGS_FILE' | 'SEPARATE' | 'NONE';
 
+/** One line of the RaceHub "Test connection" result */
+export interface RaceHubConnectionCheckDto {
+  id: 'address' | 'key' | 'reach' | 'read' | 'write';
+  label: string;
+  state: 'PASS' | 'FAIL' | 'UNKNOWN' | 'SKIPPED';
+  detail: string;
+}
+
+/** The result of "Test connection": what works and, if not, what to fix */
+export interface RaceHubConnectionTestDto {
+  ok: boolean;
+  summary: string;
+  checkedAt: string;
+  /** Meetings RaceHub lists as released to timing, or null when not read */
+  readyEvents: number | null;
+  checks: RaceHubConnectionCheckDto[];
+}
+
 export interface RaceHubAddressDto {
   /** RaceHub's address in use, or null */
   address: string | null;
@@ -1394,6 +1412,11 @@ export const adminApi = {
     /** Blank clears it, so the settings file's address applies; an old full address is cut back to its host */
     set: (address: string) =>
       api.put<RaceHubAddressDto>('/api/v1/admin/racehub/address', { address }).then(r => r.data),
+  },
+
+  // Checks the address and key against RaceHub (changes nothing there)
+  raceHubConnection: {
+    test: () => api.post<RaceHubConnectionTestDto>('/api/v1/admin/racehub/test').then(r => r.data),
   },
 
   // Events RaceHub has released for timing

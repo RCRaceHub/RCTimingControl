@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RaceHubAddressField } from '@/components/RaceHubAddressField';
+import { RaceHubConnectionTest } from '@/components/RaceHubConnectionTest';
 import { QueryError } from '@/components/QueryError';
 import { RaceHubClassesTab } from '@/pages/admin/racehub-classes/RaceHubClassesPage';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
@@ -313,6 +314,8 @@ export default function ResultsExportsPage() {
             {data && <RaceHubAddressField id="racehub-address" address={data.raceHubUrl} source={data.addressSource} />}
 
             {data && <KeyForm source={data.keySource} />}
+
+            {data && <RaceHubConnectionTest />}
           </TabsContent>
         </Tabs>
       )}
