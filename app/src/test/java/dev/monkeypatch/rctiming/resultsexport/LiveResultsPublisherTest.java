@@ -47,7 +47,7 @@ class LiveResultsPublisherTest {
     private final MutableClock clock = new MutableClock(Instant.parse("2026-11-26T14:00:00Z"));
     private HttpServer raceHub;
     private LiveResultsPublisher publisher;
-    private int laps = 1;
+    private String raceStatus = "RUNNING";
     private String racehubEventId = "evt-1";
 
     @BeforeEach
@@ -99,10 +99,10 @@ class LiveResultsPublisherTest {
     }
 
     @Test
-    void aLapIsHeldBackUntilTheMinimumIntervalHasPassed() {
+    void aChangeIsHeldBackUntilTheMinimumIntervalHasPassed() {
         follow();
         publisher.tick();
-        laps = 2;
+        raceStatus = "STOPPED";
         clock.advance(Duration.ofSeconds(1));
         publisher.tick();
         assertThat(bodies).hasSize(1);
@@ -110,7 +110,7 @@ class LiveResultsPublisherTest {
         clock.advance(Duration.ofSeconds(2));
         publisher.tick();
         assertThat(bodies).hasSize(2);
-        assertThat(bodies.get(1)).contains("\"laps\":2");
+        assertThat(bodies.get(1)).contains("\"status\":\"STOPPED\"");
     }
 
     @Test
@@ -150,7 +150,7 @@ class LiveResultsPublisherTest {
     }
 
     private LiveFeedRaceLookup.RaceInfo race() {
-        return new LiveFeedRaceLookup.RaceInfo(7, "RUNNING", false, racehubEventId,
+        return new LiveFeedRaceLookup.RaceInfo(7, raceStatus, false, racehubEventId,
                 new LiveFeedV1.Event(1, "Club day", "2026-11-26"), "2WD", "QUALIFIER", 1, 1, null, 300000L,
                 List.of(new LiveFeedRaceLookup.GridCar(100, "Alex", 5)));
     }
