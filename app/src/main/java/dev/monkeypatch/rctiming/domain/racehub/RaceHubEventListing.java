@@ -23,10 +23,15 @@ public record RaceHubEventListing(List<ListedEvent> events) {
      * @param venue          the venue's name, for information
      * @param entryCount     how many entries RaceHub holds, for information
      * @param entriesUrl     where this event's Entry Export v1 is fetched from, with the club's key
+     * @param bookingOpenAt  when sign-up opens (ISO 8601), or null when RaceHub gave none
+     * @param bookingCloseAt when sign-up closes (ISO 8601), or null when RaceHub gave none
+     * @param bookingState   {@code not_open}, {@code open} or {@code closed}, or null when RaceHub does not say
+     * @param releasedAt     when the club released the event to timing (ISO 8601), or null when it has not
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record ListedEvent(String id, String name, String eventLocalDate, String venue, Integer entryCount,
-                              String entriesUrl) {
+                              String entriesUrl, String bookingOpenAt, String bookingCloseAt,
+                              String bookingState, String releasedAt) {
     }
 }

@@ -15,6 +15,7 @@ vi.mock('@/lib/adminApi', () => ({
     saveEntryFeed: vi.fn(),
     deleteEntryFeed: vi.fn(),
     fetchEntryFeed: vi.fn(),
+    updateEntryFeed: vi.fn(),
     previewEntryFeed: vi.fn(),
     applyEntryFeed: vi.fn(),
     listRacingClasses: vi.fn(),
@@ -126,6 +127,28 @@ describe('EntryFeedSection', () => {
     expect(await screen.findByText('Fetched revision 7. Check it and confirm the import.')).toBeInTheDocument();
     expect(toast.success).toHaveBeenCalledWith('Fetched. Review the file to import it.');
     expect(screen.getByRole('button', { name: 'Review and import' })).toBeInTheDocument();
+  });
+
+  it('updates from RaceHub and says when it imported', async () => {
+    api.getEntryFeed.mockResolvedValue(feed());
+    api.updateEntryFeed.mockResolvedValue(feed({ lastStatus: 'APPLIED', appliedRevision: 7 }));
+    renderSection();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update from RaceHub' }));
+
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Updated from RaceHub. The new entries are imported.'),
+    );
+  });
+
+  it('says so when an update has nothing new', async () => {
+    api.getEntryFeed.mockResolvedValue(feed());
+    api.updateEntryFeed.mockResolvedValue(feed({ lastStatus: 'UNCHANGED' }));
+    renderSection();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update from RaceHub' }));
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Already up to date.'));
   });
 
   it('reports a failed fetch', async () => {

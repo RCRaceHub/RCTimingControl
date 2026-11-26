@@ -210,6 +210,101 @@ class EntryFeedIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateNow_importsACleanRevisionWithoutAutoFetchOrTheSchedule() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, false);
+
+        JsonNode updated = post("/update").getBody();
+
+        assertThat(updated.get("lastStatus").asString()).isEqualTo("APPLIED");
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+        assertThat(post("/update").getBody().get("lastStatus").asString()).isEqualTo("UNCHANGED");
+    }
+
+    @Test
+    void aNotModifiedAnswer_isAnUnchangedPollNotAFailure() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+
+        feedStatus = 304;
+        feedBody = null;
+        scheduler.fetchAll();
+
+        JsonNode feed = getFeed().getBody();
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("UNCHANGED");
+        assertThat(feed.get("appliedRevision").asLong()).isNotNull();
+    }
+
+    @Test
+    void onceTheRunOrderIsBuilt_aRevisionWithChangedEntriesIsHeldForAnOfficial() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(getFeed().getBody().get("lastStatus").asString()).isEqualTo("APPLIED");
+
+        jdbc.update("insert into rounds (event_id, type, round_number, sequence_in_event) values (?, 'QUALIFIER', 1, 1)",
+                eventId);
+        feedBody = fixture("entries-v1-update.json");
+        scheduler.fetchAll();
+
+        JsonNode feed = getFeed().getBody();
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("WAITING");
+        assertThat(feed.get("lastMessage").asString()).contains("run order is already built");
+        assertThat(feed.get("appliedRevision").asLong()).isNotEqualTo(7);
+    }
+
+    @Test
+    void anAppliedUpdate_saysWhatItChanged() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+
+        assertThat(getFeed().getBody().get("lastMessage").asString()).contains("new");
+    }
+
+    @Test
+    void aFeedThatNoLongerServesTheEvent_stopsAutomaticFetchingAndKeepsTheEntries() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+        scheduler.fetchAll();
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+
+        feedStatus = 404;
+        feedBody = null;
+        scheduler.fetchAll();
+
+        JsonNode feed = getFeed().getBody();
+        assertThat(feed.get("lastStatus").asString()).isEqualTo("FAILED");
+        assertThat(feed.get("lastMessage").asString()).startsWith("The feed no longer serves this event");
+        assertThat(feed.get("autoFetch").asBoolean()).isFalse();
+        assertThat(entryRepository.findByEventId(eventId)).hasSize(2);
+    }
+
+    @Test
+    void theFeedSummaryList_carriesNoAddressOrToken() {
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        ResponseEntity<JsonNode> response = restTemplate.exchange("/api/v1/admin/entry-feeds", HttpMethod.GET,
+                new HttpEntity<>(headers()), JsonNode.class);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody().toString()).contains("\"eventId\":" + eventId)
+                .doesNotContain(TOKEN).doesNotContain("url");
+    }
+
+    @Test
+    void updateNow_isRefusedForACompletedMeeting() {
+        jdbc.update("update events set status = 'COMPLETED' where id = ?", eventId);
+        feedBody = fixture("entries-v1-initial.json");
+        saveFeed(feedUrl(), TOKEN, true);
+
+        assertThat(post("/update").getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
     void automaticFetch_importsALateRevisionIntoAMeetingThatIsInProgress() {
         jdbc.update("update events set status = 'IN_PROGRESS' where id = ?", eventId);
         feedBody = fixture("entries-v1-initial.json");

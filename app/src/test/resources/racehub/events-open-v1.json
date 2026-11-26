@@ -1,0 +1,47 @@
+{
+    "schema_version": 1,
+    "source": "RACEHUB",
+    "generated_at": "2026-11-26T19:00:00+00:00",
+    "events": [
+        {
+            "id": "21",
+            "name": "Spring Opener",
+            "event_local_date": "2027-03-06",
+            "timezone": "Europe/London",
+            "venue": "Test Track",
+            "entry_count": 3,
+            "revision": 4,
+            "booking_open_at": "2026-11-01T09:00:00+00:00",
+            "booking_close_at": "2027-03-01T18:00:00+00:00",
+            "booking_state": "open",
+            "released_at": null,
+            "entries_url": "https://racehub.example/api/rctc/v1/events/21/entries"
+        },
+        {
+            "id": "22",
+            "name": "Summer Series 1",
+            "event_local_date": "2027-05-15",
+            "venue": null,
+            "entry_count": 0,
+            "revision": 1,
+            "booking_open_at": "2027-02-01T09:00:00+00:00",
+            "booking_close_at": null,
+            "booking_state": "not_open",
+            "released_at": null,
+            "entries_url": "https://racehub.example/api/rctc/v1/events/22/entries"
+        },
+        {
+            "id": "7",
+            "name": "Club Champs",
+            "event_local_date": "2026-11-29",
+            "entry_count": 42,
+            "revision": 9,
+            "booking_open_at": "2026-10-01T09:00:00+00:00",
+            "booking_close_at": "2026-11-20T18:00:00+00:00",
+            "booking_state": "closed",
+            "released_at": "2026-11-22T10:00:00+00:00",
+            "entries_url": "https://racehub.example/api/rctc/v1/events/7/entries",
+            "something_new": "ignored"
+        }
+    ]
+}

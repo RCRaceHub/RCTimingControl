@@ -22,12 +22,14 @@ class EntryFeedClientTest {
     private volatile String body;
     private volatile int status = 200;
     private volatile com.sun.net.httpserver.Headers seen;
+    private volatile String seenQuery;
 
     @BeforeEach
     void startServer() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/entries", exchange -> {
             seen = exchange.getRequestHeaders();
+            seenQuery = exchange.getRequestURI().getQuery();
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(status, bytes.length);
             try (OutputStream out = exchange.getResponseBody()) {
@@ -74,6 +76,25 @@ class EntryFeedClientTest {
         String message = ((EntryFeedClient.Failed) result).message();
         assertThat(message).startsWith("The feed answered 500: boom");
         assertThat(message.length()).isLessThanOrEqualTo(300);
+    }
+
+    @Test
+    void aKnownRevision_isSentAsSinceRevisionAndANotModifiedAnswerIsNotAFailure() {
+        status = 304;
+        body = "";
+
+        assertThat(client(1024).fetch(url(), "key", 7L)).isInstanceOf(EntryFeedClient.NotModified.class);
+
+        assertThat(seenQuery).isEqualTo("since_revision=7");
+    }
+
+    @Test
+    void withoutAKnownRevision_nothingIsAddedToTheAddress() {
+        body = "{\"revision\":1}";
+
+        assertThat(client(1024).fetch(url(), "key", null)).isInstanceOf(EntryFeedClient.Fetched.class);
+
+        assertThat(seenQuery).isNull();
     }
 
     private EntryFeedClient client(int maxBytes) {
