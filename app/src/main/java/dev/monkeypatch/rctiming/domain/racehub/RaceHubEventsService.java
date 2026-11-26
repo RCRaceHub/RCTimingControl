@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The "Find RaceHub events" picker: asks RaceHub which of the club's events are ready for timing, and lets an
@@ -76,14 +78,14 @@ public class RaceHubEventsService {
         /** The view named {@code value} (any case); {@link IllegalArgumentException} (HTTP 400) for an unknown one. */
         public static View parse(String value) {
             try {
-                return valueOf(value == null ? "READY" : value.trim().toUpperCase(java.util.Locale.ROOT));
+                return valueOf(value == null ? "READY" : value.trim().toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("state must be ready, open or all");
             }
         }
 
         String queryValue() {
-            return name().toLowerCase(java.util.Locale.ROOT);
+            return name().toLowerCase(Locale.ROOT);
         }
     }
 
@@ -178,8 +180,8 @@ public class RaceHubEventsService {
 
     /** The events address with {@code state}, and {@code from}/{@code to} when given, replacing its own query. */
     private static URI withQuery(URI base, View view, LocalDate from, LocalDate to) {
-        org.springframework.web.util.UriComponentsBuilder builder =
-                org.springframework.web.util.UriComponentsBuilder.fromUri(base).replaceQuery(null)
+        UriComponentsBuilder builder =
+                UriComponentsBuilder.fromUri(base).replaceQuery(null)
                         .queryParam("state", view.queryValue());
         if (from != null) {
             builder.queryParam("from", from);

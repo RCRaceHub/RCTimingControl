@@ -47,7 +47,7 @@ export function useUpdateEntryFeed(eventId: number) {
     mutationFn: () => adminApi.updateEntryFeed(eventId),
     onSuccess: feed => {
       qc.setQueryData(adminQueryKeys.events.entryFeed(eventId), feed);
-      if (feed.lastStatus === 'APPLIED') {
+      if (feed.lastStatus === 'APPLIED' || feed.lastStatus === 'WAITING') {
         qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
       }
     },

@@ -89,7 +89,7 @@ public class EntryFeedClient {
         try {
             URI target = sinceRevision == null ? url
                     : UriComponentsBuilder.fromUri(url).replaceQueryParam("since_revision", sinceRevision)
-                            .build(true).toUri();
+                            .build().toUri();
             return restClient.get()
                     .uri(target)
                     .accept(MediaType.APPLICATION_JSON)

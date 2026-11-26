@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.domain.entryfeed;
 
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -10,7 +11,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 /**
  * Fetches the entry feeds with automatic fetch turned on (#42). Runs on the scheduler thread, so race control never
@@ -63,6 +63,10 @@ public class EntryFeedScheduler {
 
     /** Whether {@code feed} has waited out its interval; a feed never fetched, or with an unknown event date, is due. */
     boolean isDue(EntryFeed feed, Instant now) {
+        // A completed event is never fetched (and its fetch time never moves), so it must not be due every minute
+        if (eventRepository.findById(feed.getEventId()).filter(e -> e.getStatus() == EventStatus.COMPLETED).isPresent()) {
+            return false;
+        }
         Instant last = feed.getLastFetchAt();
         if (last == null) {
             return true;
@@ -71,7 +75,7 @@ public class EntryFeedScheduler {
     }
 
     private long intervalMs(EntryFeed feed, Instant now) {
-        LocalDate today = LocalDate.ofInstant(now, ZoneId.systemDefault());
+        LocalDate today = LocalDate.ofInstant(now, clock.getZone());
         return eventRepository.findById(feed.getEventId())
                 .map(event -> event.getEventDate() != null
                         && event.getEventDate().isAfter(today.plusDays(properties.nearDays()))

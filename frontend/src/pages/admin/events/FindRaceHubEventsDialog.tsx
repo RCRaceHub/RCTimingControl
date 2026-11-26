@@ -90,6 +90,8 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
     setView(next);
     // Looking ahead starts from today, so past meetings do not crowd the list
     if (next !== 'ready' && from === '') setFrom(isoToday());
+    // Events ready for timing may already be under way, so the default start date is for the other views only
+    if (next === 'ready' && from === isoToday()) setFrom('');
   }
 
   function chooseRange(days: number | null) {
@@ -199,13 +201,15 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
 
         {data && data.events.length > 0 && (
           <ul className="divide-y rounded-md border">
-            {data.events.map(event => (
+            {data.events.map(event => {
+              const badge = signUpBadge(event);
+              return (
               <li key={event.raceHubEventId} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{event.name ?? event.raceHubEventId}</p>
-                  {signUpBadge(event) && (
+                  {badge && (
                     <Badge variant="outline" className="mt-1">
-                      {signUpBadge(event)}
+                      {badge}
                     </Badge>
                   )}
                   <p className="text-xs text-muted-foreground">
@@ -231,7 +235,8 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
                   </Button>
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
 

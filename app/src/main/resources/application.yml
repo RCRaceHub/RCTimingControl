@@ -25,7 +25,8 @@ rctiming:
     # Folder holding the database file. Unset, it is the per-user app-data folder.
     data-directory: ${RCTIMING_DATA_DIR:}
   entry-feed:
-    # How often events with automatic entry fetch turned on pull their entry file, in milliseconds.
+    # How often events with automatic entry fetch turned on pull their entry file, in milliseconds, once the
+    # event is within near-days of its date (or past it)...
     interval-ms: 300000
     # ...and for an event more than near-days away, which needs fresh entries less often.
     far-interval-ms: 3600000

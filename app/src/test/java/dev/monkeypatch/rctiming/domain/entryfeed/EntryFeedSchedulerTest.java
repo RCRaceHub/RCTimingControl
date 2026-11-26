@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 class EntryFeedSchedulerTest {
 
     private static final Instant NOW = Instant.parse("2026-11-26T12:00:00Z");
-    private static final LocalDate TODAY = LocalDate.ofInstant(NOW, ZoneId.systemDefault());
+    private static final LocalDate TODAY = LocalDate.ofInstant(NOW, ZoneId.of("UTC"));
 
     private final EntryFeedRepository feeds = mock(EntryFeedRepository.class);
     private final EventRepository events = mock(EventRepository.class);
@@ -31,6 +31,7 @@ class EntryFeedSchedulerTest {
         feed.setLastFetchAt(minutes < 0 ? null : NOW.minusSeconds(minutes * 60));
         Event event = mock(Event.class);
         when(event.getEventDate()).thenReturn(eventDate);
+        when(event.getStatus()).thenReturn(dev.monkeypatch.rctiming.domain.event.EventStatus.OPEN);
         when(events.findById(1L)).thenReturn(Optional.of(event));
         return feed;
     }
@@ -50,6 +51,14 @@ class EntryFeedSchedulerTest {
     void anEventFurtherOff_isDueHourly() {
         assertThat(scheduler.isDue(feedFetchedAgo(30, TODAY.plusDays(30)), NOW)).isFalse();
         assertThat(scheduler.isDue(feedFetchedAgo(61, TODAY.plusDays(30)), NOW)).isTrue();
+    }
+
+    @Test
+    void aCompletedEvent_isNeverDue() {
+        EntryFeed feed = feedFetchedAgo(60 * 24, TODAY.plusDays(1));
+        when(events.findById(1L).get().getStatus()).thenReturn(dev.monkeypatch.rctiming.domain.event.EventStatus.COMPLETED);
+
+        assertThat(scheduler.isDue(feed, NOW)).isFalse();
     }
 
     @Test
