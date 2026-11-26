@@ -14,13 +14,18 @@ import java.util.List;
  */
 public record RaceHubEventsDto(String raceHubUrl, boolean tokenSet, List<Offered> events, String error) {
 
-    /** One offered event; {@code linkedEventId} is the RCTC event it is already linked to, or null. */
+    /**
+     * One offered event; {@code linkedEventId} is the RCTC event it is already linked to, or null. The booking
+     * fields say when sign-up opens and closes ({@code bookingState} is {@code not_open}, {@code open} or
+     * {@code closed}) and when the club released the event to timing; each is null when RaceHub did not say.
+     */
     public record Offered(String raceHubEventId, String name, String eventDate, String venue, Integer entryCount,
-                          Long linkedEventId) {
+                          Long linkedEventId, String bookingOpenAt, String bookingCloseAt, String bookingState,
+                          String releasedAt) {
 
         static Offered from(RaceHubEventsService.OfferedEvent e) {
             return new Offered(e.raceHubEventId(), e.name(), e.eventDate(), e.venue(), e.entryCount(),
-                    e.linkedEventId());
+                    e.linkedEventId(), e.bookingOpenAt(), e.bookingCloseAt(), e.bookingState(), e.releasedAt());
         }
     }
 

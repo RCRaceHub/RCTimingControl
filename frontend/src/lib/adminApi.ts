@@ -318,6 +318,23 @@ export interface RaceHubEventOffer {
   entryCount: number | null;
   /** The RCTC event it is already linked to, or null */
   linkedEventId: number | null;
+  /** When sign-up opens and closes (ISO 8601), each null when RaceHub did not say */
+  bookingOpenAt: string | null;
+  bookingCloseAt: string | null;
+  /** Whether sign-up is open now, as RaceHub says; null when it does not */
+  bookingState: 'not_open' | 'open' | 'closed' | null;
+  /** When the club released the event to timing, or null when it has not */
+  releasedAt: string | null;
+}
+
+/** Which RaceHub events to list: released to timing, open for sign-up, or every upcoming one */
+export type RaceHubEventsView = 'ready' | 'open' | 'all';
+
+export interface RaceHubEventsQuery {
+  state: RaceHubEventsView;
+  /** ISO dates, inclusive; either may be left out */
+  from?: string;
+  to?: string;
 }
 
 export type RaceHubAddressSource = 'SAVED' | 'SETTINGS_FILE' | 'SEPARATE' | 'NONE';
@@ -1425,11 +1442,18 @@ export const adminApi = {
 
   // Events RaceHub has released for timing
   raceHubEvents: {
-    list: () => api.get<RaceHubEventsDto>('/api/v1/admin/racehub/events').then(r => r.data),
-    /** Creates the RCTC event if needed and points its entry feed at RaceHub; answers the RCTC event */
-    take: (raceHubEventId: string) =>
+    list: (query: RaceHubEventsQuery = { state: 'ready' }) =>
       api
-        .post<{ id: number }>(`/api/v1/admin/racehub/events/${encodeURIComponent(raceHubEventId)}/take`)
+        .get<RaceHubEventsDto>('/api/v1/admin/racehub/events', {
+          params: { state: query.state, from: query.from || undefined, to: query.to || undefined },
+        })
+        .then(r => r.data),
+    /** Creates the RCTC event if needed and points its entry feed at RaceHub; answers the RCTC event */
+    take: (raceHubEventId: string, state: RaceHubEventsView = 'ready') =>
+      api
+        .post<{ id: number }>(`/api/v1/admin/racehub/events/${encodeURIComponent(raceHubEventId)}/take`, undefined, {
+          params: { state },
+        })
         .then(r => r.data),
   },
 

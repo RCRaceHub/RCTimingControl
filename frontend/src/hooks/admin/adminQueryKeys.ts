@@ -11,7 +11,8 @@ export const adminQueryKeys = {
     sponsors: (eventId: number) => ['admin', 'events', eventId, 'sponsors'] as const,
   },
   racehub: {
-    events: () => ['admin', 'racehub', 'events'] as const,
+    events: (query?: object) =>
+      (query ? ['admin', 'racehub', 'events', query] : ['admin', 'racehub', 'events']) as readonly unknown[],
     classes: () => ['admin', 'racehub', 'classes'] as const,
     formats: () => ['admin', 'racehub', 'formats'] as const,
   },
