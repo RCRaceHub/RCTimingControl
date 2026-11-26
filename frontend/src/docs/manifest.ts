@@ -36,6 +36,7 @@ export const DOC_MANIFEST: DocEntry[] = [
   { slug: 'scoring', title: 'Scoring', file: 'scoring.md', section: 'Using RCTC' },
   { slug: 'live-feed', title: 'Live feed', file: 'live-feed-v1.md', section: 'Sharing results' },
   { slug: 'results-export', title: 'Results export', file: 'results-export-v1.md', section: 'Sharing results' },
+  { slug: 'live-results', title: 'Live results to RaceHub', file: 'live-results-v1.md', section: 'Sharing results' },
   { slug: 'racehub-integration', title: 'RaceHub and RCTC together', file: 'racehub-integration.md', section: 'RaceHub' },
   { slug: 'data-protection', title: 'Data protection', file: 'data-protection.md', section: 'Reference' },
 ];
