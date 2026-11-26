@@ -26,3 +26,8 @@ Nothing waits for it. A snapshot is the whole race as it stands, so nothing is q
 ## Settings
 
 See `rctiming.racehub.live.*` in the developer guide (`docs/development.md`): `enabled`, `min-interval-ms` and `resend-every-ms`.
+
+## Notes for RaceHub
+
+- A snapshot is sent when the order changes (at most every 3 seconds) and otherwise every 15 seconds, so RaceHub should count the race clock on from `race.clock.elapsed_ms` using `sent_at` while `running` is true, not wait for the next snapshot.
+- Live results follow the club's results publishing choice, not the per-event live feed switch.

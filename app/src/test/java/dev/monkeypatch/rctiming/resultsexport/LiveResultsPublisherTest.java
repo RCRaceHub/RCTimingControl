@@ -1,8 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
 import com.sun.net.httpserver.HttpServer;
-import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.TestJson;
+import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.livefeed.LiveFeedRaceLookup;
@@ -124,6 +124,21 @@ class LiveResultsPublisherTest {
 
         status.set(202);
         clock.advance(Duration.ofSeconds(4));
+        publisher.tick();
+        assertThat(bodies).hasSize(2);
+    }
+
+    @Test
+    void aFinishedRaceSendsOneLastSnapshotAndIsThenLeftAlone() {
+        follow();
+        publisher.tick();
+        raceStatus = "FINISHED";
+        publisher.onRaceStatusChanged(new RaceStatusChangedEvent(this, 7L, RaceStatus.FINISHED));
+        publisher.tick();
+        assertThat(bodies).hasSize(2);
+        assertThat(bodies.get(1)).contains("\"status\":\"FINISHED\"");
+
+        clock.advance(Duration.ofSeconds(30));
         publisher.tick();
         assertThat(bodies).hasSize(2);
     }

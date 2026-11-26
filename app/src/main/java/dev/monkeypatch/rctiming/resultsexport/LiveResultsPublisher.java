@@ -131,8 +131,11 @@ public class LiveResultsPublisher implements SmartLifecycle {
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
         long raceId = event.getRaceId();
         switch (event.getNewStatus()) {
-            case GRID -> races.put(raceId, new Followed());
-            case RUNNING, STOPPED -> races.computeIfAbsent(raceId, id -> new Followed());
+            // Followed only once the change commits, so a pass never reads a race the command is still changing
+            case GRID -> AfterCommit.run(() -> races.put(raceId, new Followed()));
+            case RUNNING, STOPPED -> AfterCommit.run(() -> races.computeIfAbsent(raceId, id -> new Followed()));
+            // A restart clears the frozen order of a finished race, so its PENDING snapshot is not the old result
+            case PENDING -> AfterCommit.run(() -> races.computeIfPresent(raceId, (id, old) -> new Followed()));
             case FINISHED -> {
                 List<LiveTimingRowDto> finalRows =
                         lapTimingService.peek(raceId).map(LiveRaceState::calculatePositions).orElse(List.of());
@@ -152,6 +155,9 @@ public class LiveResultsPublisher implements SmartLifecycle {
     }
 
     private void sendDue() {
+        if (races.isEmpty()) {
+            return;
+        }
         boolean active = properties.enabled() && endpoint.liveUrl() != null && endpoint.token() != null
                 && publishSettings.effective().includesRaceHub();
         Instant now = clock.instant();
@@ -175,6 +181,11 @@ public class LiveResultsPublisher implements SmartLifecycle {
             if (now.isBefore(nextAttempt)) {
                 continue;
             }
+            if (RaceStatus.FINISHED.name().equals(race.status()) && followed.getValue().frozenRows() == null) {
+                // The finish has committed but its running order is not frozen yet; sending now would carry
+                // an empty order as the last word, so wait for the next pass
+                continue;
+            }
             Content content = content(race, followed.getValue());
             Sent last = sent.get(raceId);
             boolean changed = last == null || !last.content().sameAs(content);
@@ -185,7 +196,8 @@ public class LiveResultsPublisher implements SmartLifecycle {
             if (ended) {
                 // One last snapshot says the race is over, then it is dropped whether or not it got through: the
                 // finished race arrives through Results Export v1
-                if (changed || last == null) {
+                // Skipped only when RaceHub already holds exactly this (status included), never when it has not
+                if (changed) {
                     post(race, content, now);
                 }
                 drop(raceId);
@@ -194,7 +206,7 @@ public class LiveResultsPublisher implements SmartLifecycle {
                     // Wait out the backoff before any race tries again
                     return;
                 }
-                sent.put(raceId, new Sent(content, now));
+                sent.put(raceId, new Sent(content, clock.instant()));
             }
         }
     }
@@ -233,7 +245,7 @@ public class LiveResultsPublisher implements SmartLifecycle {
                             race.heatNumber(), race.finalLetter(), content.status(), content.clock()),
                     content.standings()));
         } catch (JacksonException e) {
-            log.warn("Could not write a live results snapshot", e);
+            failed("could not write the snapshot");
             return false;
         }
         try {
@@ -248,10 +260,10 @@ public class LiveResultsPublisher implements SmartLifecycle {
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException e) {
-            failed(now, "RaceHub answered " + e.getStatusCode().value());
+            failed("RaceHub answered " + e.getStatusCode().value());
             return false;
         } catch (RuntimeException e) {
-            failed(now, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+            failed(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
             return false;
         }
         if (failing) {
@@ -263,7 +275,10 @@ public class LiveResultsPublisher implements SmartLifecycle {
         return true;
     }
 
-    private void failed(Instant now, String reason) {
+    private void failed(String reason) {
+        // A hung RaceHub can hold the call for the whole timeout, so the wait runs from when it failed, not from
+        // the start of the pass
+        Instant now = clock.instant();
         if (!failing) {
             log.warn("Live results not reaching RaceHub ({}); timing carries on, trying again shortly", reason);
         }
