@@ -48,6 +48,8 @@ class RaceStateMachineServiceTest {
     private final RoundGeneratorService roundGeneratorService = mock(RoundGeneratorService.class);
     private final RaceFormatService raceFormatService = mock(RaceFormatService.class);
     private final EventClassRepository eventClassRepository = mock(EventClassRepository.class);
+    private final MarshalAdjustmentRepository marshalAdjustmentRepository = mock(MarshalAdjustmentRepository.class);
+    private final PenaltyRepository penaltyRepository = mock(PenaltyRepository.class);
     private RaceStateMachineService service;
 
     /** The race as each status event's listeners would read it from the database. */
@@ -60,6 +62,7 @@ class RaceStateMachineServiceTest {
                 lapTimingService, roundRepository, resultSnapshotService, eventPublisher,
                 mock(BumpUpSeedingService.class), raceFormatService,
                 eventClassRepository, mock(RaceEliminationRepository.class), mock(RacePointPenaltyRepository.class),
+                marshalAdjustmentRepository, penaltyRepository,
                 mock(dev.monkeypatch.rctiming.domain.round.ShikabaneGridService.class), Clock.fixed(NOW, ZoneOffset.UTC));
         when(raceRepository.save(any())).thenAnswer(inv -> {
             Race race = inv.getArgument(0);
@@ -309,6 +312,14 @@ class RaceStateMachineServiceTest {
         verify(raceRepository).save(race);
         verify(resultSnapshotService).deleteByRaceId(7L);
         verify(lapTimingService).releaseState(7L);
+    }
+
+    @Test
+    void restart_removesTheMarshalLapsAndPenaltiesOfTheRunItThrowsAway() {
+        service.restart(race(RaceStatus.RUNNING));
+
+        verify(marshalAdjustmentRepository).deleteByRaceId(7L);
+        verify(penaltyRepository).deleteByRaceId(7L);
     }
 
     @Test

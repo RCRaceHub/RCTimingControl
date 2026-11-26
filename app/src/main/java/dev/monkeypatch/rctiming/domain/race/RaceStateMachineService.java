@@ -74,6 +74,8 @@ public class RaceStateMachineService {
     private final EventClassRepository eventClassRepository;
     private final RaceEliminationRepository raceEliminationRepository;
     private final RacePointPenaltyRepository racePointPenaltyRepository;
+    private final MarshalAdjustmentRepository marshalAdjustmentRepository;
+    private final PenaltyRepository penaltyRepository;
     private final ShikabaneGridService shikabaneGridService;
     private final Clock clock;
 
@@ -86,10 +88,13 @@ public class RaceStateMachineService {
                                    EventClassRepository eventClassRepository,
                                    RaceEliminationRepository raceEliminationRepository,
                                    RacePointPenaltyRepository racePointPenaltyRepository,
+                                   MarshalAdjustmentRepository marshalAdjustmentRepository,
+                                   PenaltyRepository penaltyRepository,
                                    ShikabaneGridService shikabaneGridService) {
         this(liveTimingHub, roundGeneratorService, raceRepository, lapTimingService, roundRepository,
              resultSnapshotService, eventPublisher, bumpUpSeedingService, raceFormatService, eventClassRepository,
-             raceEliminationRepository, racePointPenaltyRepository, shikabaneGridService, Clock.systemUTC());
+             raceEliminationRepository, racePointPenaltyRepository, marshalAdjustmentRepository, penaltyRepository,
+             shikabaneGridService, Clock.systemUTC());
     }
 
     RaceStateMachineService(LiveTimingHub liveTimingHub, RoundGeneratorService roundGeneratorService,
@@ -99,6 +104,8 @@ public class RaceStateMachineService {
                             RaceFormatService raceFormatService, EventClassRepository eventClassRepository,
                             RaceEliminationRepository raceEliminationRepository,
                             RacePointPenaltyRepository racePointPenaltyRepository,
+                            MarshalAdjustmentRepository marshalAdjustmentRepository,
+                            PenaltyRepository penaltyRepository,
                             ShikabaneGridService shikabaneGridService, Clock clock) {
         this.liveTimingHub = liveTimingHub;
         this.roundGeneratorService = roundGeneratorService;
@@ -112,6 +119,8 @@ public class RaceStateMachineService {
         this.eventClassRepository = eventClassRepository;
         this.raceEliminationRepository = raceEliminationRepository;
         this.racePointPenaltyRepository = racePointPenaltyRepository;
+        this.marshalAdjustmentRepository = marshalAdjustmentRepository;
+        this.penaltyRepository = penaltyRepository;
         this.shikabaneGridService = shikabaneGridService;
         this.clock = clock;
     }
@@ -192,7 +201,9 @@ public class RaceStateMachineService {
 
     /**
      * Restart a race — resets it to PENDING regardless of current state, clears
-     * in-memory timing state, and deletes any persisted result snapshot and Shikabane eliminations and point penalties.
+     * in-memory timing state, and deletes any persisted result snapshot, Shikabane eliminations and point penalties,
+     * and the marshal laps and lap/time penalties given during the run being thrown away (they would otherwise be
+     * counted into the re-run's result). Incident reports and marshal absences are kept: they record what happened.
      * Intended for false starts or technical issues requiring a full re-run.
      *
      * <p>Unlike the commands above, this does not go through the transition table, so it works from any
@@ -210,6 +221,8 @@ public class RaceStateMachineService {
         resultSnapshotService.deleteByRaceId(race.getId());
         raceEliminationRepository.deleteByRaceId(race.getId());
         racePointPenaltyRepository.deleteByRaceId(race.getId());
+        marshalAdjustmentRepository.deleteByRaceId(race.getId());
+        penaltyRepository.deleteByRaceId(race.getId());
         eventPublisher.publishEvent(new RaceRestartedEvent(race.getId()));
         liveTimingHub.broadcastStateChange(race.getId(), RaceStatus.PENDING);
     }

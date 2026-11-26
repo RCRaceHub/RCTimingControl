@@ -24,12 +24,10 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -301,22 +299,7 @@ public class LiveFeedPublisher implements SmartLifecycle {
     private Content content(LiveFeedRaceLookup.RaceInfo race, Followed followed) {
         List<LiveTimingRowDto> rows = followed.frozenRows() != null ? followed.frozenRows()
                 : lapTimingService.peek(race.raceId()).map(LiveRaceState::calculatePositions).orElse(List.of());
-        List<LiveFeedV1.Standing> standings = new ArrayList<>();
-        Set<Long> timed = new HashSet<>();
-        for (LiveTimingRowDto r : rows) {
-            timed.add(r.entryId());
-            standings.add(new LiveFeedV1.Standing(r.position(), r.driverName(), race.carNumber(r.entryId()),
-                    r.lapsCompleted(), r.lastLapMs(), r.bestLapMs(), r.gapToLeaderMs(), r.gapToAheadMs(),
-                    r.lapsDown()));
-        }
-        // Cars on the grid that haven't crossed the line yet follow, in grid order
-        int leaderLaps = rows.isEmpty() ? 0 : rows.get(0).lapsCompleted();
-        for (LiveFeedRaceLookup.GridCar car : race.grid()) {
-            if (car.displayName() != null && !timed.contains(car.entryId())) {
-                standings.add(new LiveFeedV1.Standing(standings.size() + 1, car.displayName(), car.carNumber(),
-                        0, null, null, null, null, leaderLaps));
-            }
-        }
+        List<LiveFeedV1.Standing> standings = LiveStandings.of(rows, race);
         RaceClockDto raceClock =
                 raceClocks.clockOf(race.raceId(), RaceStatus.valueOf(race.status()), race.durationMs());
         LiveFeedV1.Clock raceTime = new LiveFeedV1.Clock(raceClock.elapsedMs(), raceClock.durationMs(),

@@ -56,13 +56,14 @@ public class LiveFeedRaceLookup {
     /**
      * A race as the feed describes it.
      *
-     * @param feedOn     whether its event has the live feed turned on
-     * @param durationMs its length from the class's format, or null
-     * @param grid       the cars in the race, in grid order
+     * @param feedOn         whether its event has the live feed turned on
+     * @param racehubEventId RaceHub's id for the event the entries came from, or null for a local event
+     * @param durationMs     its length from the class's format, or null
+     * @param grid           the cars in the race, in grid order
      */
-    public record RaceInfo(long raceId, String status, boolean feedOn, LiveFeedV1.Event event, String className,
-                           String roundType, int roundNumber, int heatNumber, String finalLetter, Long durationMs,
-                           List<GridCar> grid) {
+    public record RaceInfo(long raceId, String status, boolean feedOn, String racehubEventId, LiveFeedV1.Event event,
+                           String className, String roundType, int roundNumber, int heatNumber, String finalLetter,
+                           Long durationMs, List<GridCar> grid) {
 
         Integer carNumber(long entryId) {
             return grid.stream().filter(car -> car.entryId() == entryId).findFirst()
@@ -111,6 +112,7 @@ public class LiveFeedRaceLookup {
                 raceId,
                 race.getStatus().name(),
                 event.isLiveFeedEnabled(),
+                event.getRacehubEventId(),
                 new LiveFeedV1.Event(event.getId(), event.getName(), String.valueOf(event.getEventDate())),
                 className,
                 round.getType().name(),

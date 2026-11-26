@@ -33,6 +33,8 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
 
     /** Where results are POSTed, below RaceHub's address. */
     static final String RESULTS_PATH = "/api/rctc/v1/results";
+    /** Where live results are POSTed while a race runs, below RaceHub's address. */
+    static final String LIVE_PATH = "/api/rctc/v1/live";
     /** Where ready events are listed, below RaceHub's address; the class and format lists sit beside it. */
     static final String EVENTS_PATH = "/api/rctc/v1/events?state=ready";
 
@@ -148,6 +150,15 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
     /** The address to send results to, or null when no RaceHub address is set. */
     public URI resultsUrl() {
         return snapshot().resultsUrl();
+    }
+
+    /**
+     * The address live results are sent to, or null when no RaceHub address is set. Built only from the one RaceHub
+     * address; a club still on the older separate results address gets no live results until it sets the one.
+     */
+    public URI liveUrl() {
+        URI base = snapshot().baseUrl();
+        return base == null ? null : URI.create(base + LIVE_PATH);
     }
 
     /** The address ready events are listed at, or null when no RaceHub address is set. */

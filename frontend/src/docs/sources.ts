@@ -30,6 +30,7 @@ export const DOC_SOURCES = import.meta.glob(
     '../../../docs/scoring.md',
     '../../../docs/live-feed-v1.md',
     '../../../docs/results-export-v1.md',
+    '../../../docs/live-results-v1.md',
     '../../../docs/data-protection.md',
   ],
   { query: '?raw', import: 'default' },
