@@ -35,14 +35,14 @@ If the network is down, results wait in a queue on the laptop and go when it is 
 ## What it needs
 
 - **A club-level key.** RaceHub makes it for the club. One key belongs to one club, and one key holds both abilities RCTC needs: `entries:read` (to read entries, classes, formats and meetings) and `results:write` (to send results). RaceHub's own guide says where to make and revoke keys; RCTC only needs the key text.
-- **RaceHub's address.** The results address and the events address both live on RaceHub's `/api/rctc/v1` path. The setup wizard and the **RaceHub** page ask for them; the settings file can hold them too.
+- **RaceHub's address.** One address, RaceHub's host (such as `https://racehub.example`), set once. Results, the meetings list, the class and format lists and imports all find their paths under it, so there is nothing else to enter. The **RaceHub** page, **Find RaceHub events** and the classes step in the setup wizard all show the same field, and the settings file can hold it too.
 - **Links, made once.** Each of the club's RaceHub classes is linked to one of your racing classes, and each RaceHub race format to one of your format templates. After that every meeting finds its classes and format through the links. A class is never matched by its name when an entry arrives.
 
 ## Where the key goes
 
 Either place works, and the key is never shown again once saved:
 
-1. **The settings file.** `rctiming.racehub.token` in `application.properties` in the data folder (or `RCTIMING_RACEHUB_TOKEN` in Docker), and `rctiming.racehub.results-url` for the address. Changes need the app restarted. See [installing.md](installing.md#sending-results-to-racehub) and [provisioning.md](provisioning.md).
+1. **The settings file.** `rctiming.racehub.token` in `application.properties` in the data folder (or `RCTIMING_RACEHUB_TOKEN` in Docker), and `rctiming.racehub.url` for the address (an address saved on the admin page overrides it, like the key). Changes need the app restarted. See [installing.md](installing.md#sending-results-to-racehub) and [provisioning.md](provisioning.md).
 2. **The admin page.** Paste it into **RaceHub key** on the **Connection** tab of **Admin → RaceHub**. It applies at once, is stored encrypted in the data folder, and **overrides the settings file** until you press **Clear**. This is the way to rotate a key without a restart: make the new key in RaceHub, paste it, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub.
 
 If RaceHub sits behind Cloudflare Access, the service token goes in the settings file too ([installing.md](installing.md#if-racehub-is-behind-cloudflare-access)).
