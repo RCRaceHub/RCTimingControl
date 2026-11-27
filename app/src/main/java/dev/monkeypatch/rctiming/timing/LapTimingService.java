@@ -123,6 +123,7 @@ public class LapTimingService {
     public LiveRaceState stateFor(long raceId) {
         return states.computeIfAbsent(raceId, id -> {
             LiveRaceState state = new LiveRaceState(battleSettings());
+            state.setSharedPlacesOnTies(sharedPlacesOnTies());
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
@@ -141,6 +142,14 @@ public class LapTimingService {
         return Optional.ofNullable(linked != null ? linked : resolveEntryId(raceId, transponderNumber));
     }
 
+    /**
+     * Whether the club cuts times to hundredths, where cars with equal laps and time share a place. Read as a race's
+     * state is made and again when a result is stored with corrections, so both use the same rule.
+     */
+    public boolean sharedPlacesOnTies() {
+        return clubProfileService != null && clubProfileService.liveTimingSettings().truncateToHundredths();
+    }
+
     /** The club's battle thresholds, read once as a race's state is made so a passing never queries for them. */
     private BattleTracker.Settings battleSettings() {
         return clubProfileService == null ? BattleTracker.Settings.defaults()
@@ -156,7 +165,10 @@ public class LapTimingService {
     @EventListener
     public void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
         BattleTracker.Settings settings = battleSettings(event.settings());
-        states.values().forEach(state -> state.setBattleSettings(settings));
+        states.values().forEach(state -> {
+            state.setBattleSettings(settings);
+            state.setSharedPlacesOnTies(event.settings().truncateToHundredths());
+        });
     }
 
     /** A competitor's public name changed (#265): races in progress take the new names from the next row. */

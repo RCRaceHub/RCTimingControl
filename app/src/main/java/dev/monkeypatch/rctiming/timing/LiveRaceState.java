@@ -92,12 +92,23 @@ public class LiveRaceState {
         this(BattleTracker.Settings.defaults());
     }
 
+    private volatile boolean sharedPlacesOnTies;
+
     /** @param battleSettings the club's battle thresholds (#505) */
     public LiveRaceState(BattleTracker.Settings battleSettings) {
         this.battleTracker = new BattleTracker(battleSettings);
     }
 
     /** Applies changed battle thresholds from the next update. */
+    /**
+     * Whether cars on the same laps with the same last crossing share a place (1, 1, 3), as the rule books say for an
+     * equal time, rather than the earlier-sorted one taking the place. On when the club cuts times to hundredths,
+     * where a dead heat can really happen. Takes effect from the next order worked out.
+     */
+    public void setSharedPlacesOnTies(boolean shared) {
+        this.sharedPlacesOnTies = shared;
+    }
+
     public void setBattleSettings(BattleTracker.Settings battleSettings) {
         battleTracker.setSettings(battleSettings);
     }
@@ -428,6 +439,15 @@ public class LiveRaceState {
         for (int i = 0; i < sorted.size(); i++) {
             LiveRacePosition pos = sorted.get(i);
             int position = i + 1;
+            if (sharedPlacesOnTies && i > 0) {
+                LiveRacePosition ahead = sorted.get(i - 1);
+                long time = rankedPassingMs(pos, withPenalties);
+                // A dead heat: same laps, same time to the hundredth, and a car that has crossed at all
+                if (time > 0 && ahead.getLapsCompleted() == pos.getLapsCompleted()
+                        && rankedPassingMs(ahead, withPenalties) == time) {
+                    position = result.get(i - 1).position();
+                }
+            }
             int lapsDown = leaderLaps - pos.getLapsCompleted();
             int intervalLapsDown = prevLaps - pos.getLapsCompleted();
 
