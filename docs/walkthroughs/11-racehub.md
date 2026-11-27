@@ -54,7 +54,7 @@ Links are for the whole club and made once. Every meeting after that finds its c
 
 ## 4. Find the meeting and take it
 
-Open **Events** and press **Find RaceHub events**. The list shows the meetings the club has released to timing.
+Open **Events** and press **Find RaceHub events**. The list shows the meetings the club has released to timing. Switch to **Open for sign-up** or **All upcoming**, and pick dates, to take a meeting early; **Update from RaceHub** on its Entries tab fetches the latest entries at any time.
 
 ![Find RaceHub events](../images/racehub-find-events.png)
 

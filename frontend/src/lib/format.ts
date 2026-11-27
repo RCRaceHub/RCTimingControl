@@ -1,13 +1,32 @@
 import type { RunOrderItemDto } from './raceControlApi';
 
-/** A lap or race time: m:ss.mmm over a minute, else s.mmm; '—' when missing or zero. */
+// Whether the club cuts times to hundredths of a second. Set once from the club's settings by the root layout, so
+// every screen that formats a time agrees without each one asking for it.
+let hundredths = false;
+
+/** Whether times are shown to hundredths, for the few screens that format a time themselves. */
+export function timeInHundredths(): boolean {
+  return hundredths;
+}
+
+/** Sets whether times are shown to hundredths (truncated, never rounded) rather than thousandths. */
+export function setTimeInHundredths(on: boolean): void {
+  hundredths = on;
+}
+
+/**
+ * A lap or race time: m:ss.mmm over a minute, else s.mmm; '—' when missing or zero. When the club cuts times to
+ * hundredths it is m:ss.hh or s.hh, truncated, so a time never reads faster or slower than the rank it was given.
+ */
 export function fmtMs(ms: number | null | undefined): string {
   if (ms === null || ms === undefined || ms <= 0) return '—';
   const total = Math.floor(ms);
   const m = Math.floor(total / 60000);
   const secs = Math.floor((total % 60000) / 1000);
-  const millis = String(total % 1000).padStart(3, '0');
-  return m > 0 ? `${m}:${String(secs).padStart(2, '0')}.${millis}` : `${secs}.${millis}`;
+  const fraction = hundredths
+    ? String(Math.floor((total % 1000) / 10)).padStart(2, '0')
+    : String(total % 1000).padStart(3, '0');
+  return m > 0 ? `${m}:${String(secs).padStart(2, '0')}.${fraction}` : `${secs}.${fraction}`;
 }
 
 /**

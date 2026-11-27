@@ -12,6 +12,7 @@ import {
   useEntryFeed,
   useFetchEntryFeed,
   useSaveEntryFeed,
+  useUpdateEntryFeed,
 } from '@/hooks/admin/useEntryFeed';
 import type { EntryFeedDto, EventClassDto, SaveEntryFeedRequest } from '@/lib/adminApi';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -41,6 +42,7 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
   const saveFeed = useSaveEntryFeed(eventId);
   const deleteFeed = useDeleteEntryFeed(eventId);
   const fetchFeed = useFetchEntryFeed(eventId);
+  const updateFeed = useUpdateEntryFeed(eventId);
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   const [url, setUrl] = useState('');
@@ -63,7 +65,7 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
     return null;
   }
 
-  const busy = saveFeed.isPending || deleteFeed.isPending || fetchFeed.isPending;
+  const busy = saveFeed.isPending || deleteFeed.isPending || fetchFeed.isPending || updateFeed.isPending;
 
   function handleSave() {
     const request: SaveEntryFeedRequest = { url: url.trim(), autoFetch };
@@ -115,6 +117,23 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
         }
       },
       onError: error => toast.error(getApiErrorMessage(error, 'Could not fetch the entry feed')),
+    });
+  }
+
+  function handleUpdate() {
+    updateFeed.mutate(undefined, {
+      onSuccess: result => {
+        if (result.lastStatus === 'APPLIED') {
+          toast.success('Updated from RaceHub. The new entries are imported.');
+        } else if (result.lastStatus === 'UNCHANGED') {
+          toast.success('Already up to date.');
+        } else if (result.lastStatus === 'WAITING') {
+          toast.warning(result.lastMessage ?? 'The update needs you to review it.');
+        } else {
+          toast.error(result.lastMessage ?? 'The update failed');
+        }
+      },
+      onError: error => toast.error(getApiErrorMessage(error, 'Could not update from RaceHub')),
     });
   }
 
@@ -194,6 +213,10 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
         </Button>
         {feed && (
           <>
+            <Button size="sm" onClick={handleUpdate} disabled={busy}>
+              {updateFeed.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Update from RaceHub
+            </Button>
             <Button size="sm" variant="outline" onClick={handleFetch} disabled={busy}>
               {fetchFeed.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Fetch now

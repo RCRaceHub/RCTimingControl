@@ -81,6 +81,28 @@ class ResultCorrectionsTest {
         assertThat(corrected).extracting(ResultRow::dnf).containsExactly(false, true);
     }
 
+    @Test
+    void sharedPlacesGiveEqualLapsAndTimeTheSamePlaceWhenAskedFor() {
+        List<ResultRow> timed = List.of(row(1, 101L, 12, 300_100L, null), row(2, 102L, 12, 300_100L, null),
+                row(3, 103L, 12, 300_200L, null));
+
+        List<ResultRow> shared = ResultCorrections.apply(timed, Map.of(103L, 0), Map.of(104L, 5_000L), true);
+        List<ResultRow> separate = ResultCorrections.apply(timed, Map.of(), Map.of(101L, 0L), false);
+
+        assertThat(shared).extracting(ResultRow::position).containsExactly(1, 1, 3);
+        assertThat(separate).isSameAs(timed);
+    }
+
+    @Test
+    void sharedPlacesAreKeptAfterACorrectionMovesAnotherCar() {
+        List<ResultRow> timed = List.of(row(1, 101L, 12, 300_100L, null), row(2, 102L, 12, 300_100L, null),
+                row(3, 103L, 12, 300_200L, null));
+
+        List<ResultRow> corrected = ResultCorrections.apply(timed, Map.of(), Map.of(103L, 5_000L), true);
+
+        assertThat(corrected).extracting(ResultRow::position).containsExactly(1, 1, 3);
+    }
+
     private static ResultRow row(int position, long entryId, int laps, long totalTimeMs, Long gap) {
         return new ResultRow(position, entryId, null, "Driver " + entryId, String.valueOf(position), laps,
                 totalTimeMs, 24_000L, gap);

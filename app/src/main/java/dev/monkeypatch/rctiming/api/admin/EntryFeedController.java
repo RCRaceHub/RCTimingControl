@@ -73,6 +73,17 @@ public class EntryFeedController {
         return EntryFeedDto.of(feedService.fetchNow(eventId));
     }
 
+    /**
+     * "Update from RaceHub": fetches now with the same rules as the automatic poll, so a clean revision is imported
+     * and one needing a decision is held for review. {@code POST /update}. 404 without a feed, 409 for a completed
+     * event. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/update")
+    public EntryFeedDto update(@PathVariable long eventId) {
+        return EntryFeedDto.of(feedService.updateNow(eventId));
+    }
+
     /** What importing the held file would do. Saves nothing. {@code POST /preview}. */
     @PostMapping("/preview")
     public RaceHubImportResult preview(@PathVariable long eventId) {

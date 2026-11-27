@@ -121,6 +121,9 @@ The app copies its database into a backup folder when an event is marked complet
 | `rctiming.screens.discovery` | `true` | Browse the venue network for EventScreenDisplay screens by mDNS (`_eventscreen._tcp`) every 30 seconds; turn off where multicast is blocked and add screens by hand |
 | `rctiming.screens.auto-add` | `false` | Add screens found by mDNS without waiting for an official to press Add on the Screens page; off, they wait under "Found, not added" |
 | `rctiming.screens.restrict-pages` / `rctiming.screens.allowed-hosts` | `true` / empty | Screens may only be given pages on this server's own venue-network addresses; `allowed-hosts` adds others (comma-separated), `restrict-pages=false` lifts the check |
+| `rctiming.entry-feed.interval-ms` | `300000` | How often an automatic entry feed is fetched once its event is within `near-days` of its date (or past it) |
+| `rctiming.entry-feed.far-interval-ms` | `3600000` | How often it is fetched while the event is further away. A feed that is overdue (the laptop was off) is fetched shortly after start-up |
+| `rctiming.entry-feed.near-days` | `7` | How many days before its date an event counts as close |
 | `rctiming.screens.poll-interval-ms` | `5000` | How often the screen manager reads each screen's status |
 | `rctiming.https.enabled` / `rctiming.https.port` | `false` / `8443` | Optional local HTTPS connector using the club's own certificate |
 | `app.jwt.secret`, `app.jwt.access-token-ttl-ms`, `app.jwt.refresh-token-ttl-ms` | generated / 15 min / 7 days | Signing secret (a random `jwt-secret` file in the data folder when blank) and token lifetimes |

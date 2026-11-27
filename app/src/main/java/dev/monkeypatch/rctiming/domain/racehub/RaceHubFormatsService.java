@@ -129,6 +129,8 @@ public class RaceHubFormatsService {
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.AuthFailed failed -> throw new StateConflictException(failed.message());
             case EntryFeedClient.Failed failed -> throw new StateConflictException(failed.message());
+            // Never asked conditionally, so RaceHub has no reason to answer 304
+            case EntryFeedClient.NotModified notModified -> throw new StateConflictException("RaceHub sent no list");
         };
     }
 

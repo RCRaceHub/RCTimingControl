@@ -98,7 +98,7 @@ formats score as above. They follow the BRCA 1/10 off-road rules.
 | Setting | Effect |
 |---|---|
 | Best heats count | How many rounds count (0 counts them all), as for a bump-up format. BRCA counts the best 2 of 4 |
-| Tied cars do not share a place | The Nth car in order in a round scores N points even when it ties with another on laps and time. The order of two exactly tied cars falls to the entry id |
+| Tied cars do not share a place | The Nth car in order in a round scores N points even when it ties with another on laps and time. The order of two exactly tied cars falls to the entry id. With [time to hundredths](#time-precision) on, cars tied on laps and time always share a place |
 | BRCA qualifying | A driver with no laps in a round (a no show or a car that never started) scores **every registered entry in the class plus one**, rather than a place. A tie on points goes to the best single counting round, then the second best (so 1 + 3 beats 2 + 2), then the most laps over the counting rounds, then the least time over them |
 
 Example, best 2 of 4 counting: Ann scores 1, 3, 5, 6 and Bob 2, 2, 4, 7. Both total 4 from their best two. Ann's best
@@ -329,6 +329,22 @@ copies the rounds scoring (best X from Y), the TQ and A final bonuses, the overa
 onto the championship, in one step that is recorded in the audit log with the values before and after. Nothing is linked:
 the name, classes, rounds and exclusions stay as they are, every field can still be edited, and editing the system later
 does not change a championship it was applied to.
+
+## Time precision
+
+The AMB decoder gives each passing to the millisecond, and RCTC keeps it to the millisecond: a lap time is one decoder
+timestamp minus the car's previous one, so the server clock never enters a lap time. Some rule books (reported for EFRA;
+the wording is not confirmed here) and other timing systems work to hundredths of a second, cutting the extra digit off
+rather than rounding it. **Admin → Club → Live timing thresholds → Time to hundredths of a second** (off by default,
+one setting for the club) does that.
+
+With it on, the decoder's own time is cut to a hundredth before anything is worked out from it, so every lap time, total
+time, gap and best lap is a whole number of hundredths and they add up. Every screen and board then shows two decimals; the
+results site pages and exports still carry the milliseconds, which are already whole hundredths. Times cut this way are
+stored cut, so switching the option off later does not bring the thousandths back for races already run. Cars with the same laps and the same total time share a place (1, 1, 3), and in
+qualifying they score the same points, as the EFRA tie rules say; a tie on total points then goes to the usual
+countback. Change it between races, not during one: a change reaches the next passing and can move later times by
+less than a hundredth. Split (sector) times are not cut. With the setting off, nothing changes.
 
 ## Known gaps
 

@@ -61,9 +61,10 @@ class EntryFeedServicePicturesTest {
         when(feeds.save(any())).thenAnswer(i -> i.getArgument(0));
         when(transactions.execute(any())).thenAnswer(i ->
                 ((TransactionCallback<?>) i.getArgument(0)).doInTransaction(null));
-        when(client.fetch(any(), any())).thenReturn(new EntryFeedClient.Fetched(BODY));
+        when(client.fetch(any(), any(), any())).thenReturn(new EntryFeedClient.Fetched(BODY));
         service = new EntryFeedService(feeds, events, client, importService, mock(TokenCipher.class),
-                JsonMapper.builder().build(), transactions, mock(AuditService.class), photoImport);
+                JsonMapper.builder().build(), transactions, mock(AuditService.class),
+                mock(dev.monkeypatch.rctiming.domain.race.RoundRepository.class), photoImport);
     }
 
     private RaceHubImportResult result(boolean applied, List<PhotoLink> links) {

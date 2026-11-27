@@ -33,6 +33,8 @@ import {
   useTransitionEvent,
 } from '@/hooks/admin/useAdminEvents';
 import { useTracksList } from '@/hooks/admin/useAdminTracks';
+import { useEntryFeed } from '@/hooks/admin/useEntryFeed';
+import { EntryFeedNote } from '@/components/EntryFeedNote';
 import type { EventStatus } from '@/lib/adminApi';
 import { useRoles } from '@/hooks/useRoles';
 import { useHelpContent } from '@/context/HelpContext';
@@ -120,6 +122,7 @@ export default function EventDetailPage() {
   useHelpContent(EventManagementHelp);
 
   const { data, isLoading, isError, refetch } = useAdminEventDetail(id);
+  const { data: entryFeed } = useEntryFeed(id);
   const updateEvent = useUpdateAdminEvent(id);
   const transitionMutation = useTransitionEvent(id);
   const { data: tracks = [] } = useTracksList();
@@ -243,6 +246,9 @@ export default function EventDetailPage() {
             {formatEventDate(data.eventDate, 'long')}
             {trackName && <span> · {trackName}</span>}
           </p>
+          <div className="mt-1">
+            <EntryFeedNote eventId={data.id} feed={entryFeed} />
+          </div>
         </div>
 
         {((canRunEvent && validNextStatuses.length > 0) || hasResults) && (

@@ -13,6 +13,7 @@ vi.mock('@/context/HelpContext', () => ({ useHelpContent: vi.fn() }));
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
     listEvents: vi.fn(),
+    entryFeedSummaries: vi.fn().mockResolvedValue([]),
     resultsExports: { reupload: vi.fn() },
   },
 }));

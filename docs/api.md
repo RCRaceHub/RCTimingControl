@@ -483,6 +483,7 @@ GET    /admin/events/{eventId}/entry-feed
 PUT    /admin/events/{eventId}/entry-feed
 DELETE /admin/events/{eventId}/entry-feed
 POST   /admin/events/{eventId}/entry-feed/fetch
+POST   /admin/events/{eventId}/entry-feed/update
 POST   /admin/events/{eventId}/entry-feed/preview
 POST   /admin/events/{eventId}/entry-feed/apply
 ```
@@ -513,7 +514,11 @@ The token itself is never sent back. `tokenHint` is its last four characters, sh
 
 `fetch` fetches now and returns the feed. A failure is recorded in the feed rather than returned as an error. A new revision is checked with a dry run and held for an official (`WAITING`); nothing is imported until `apply`. `preview` and `apply` work like the [RaceHub import](#import-an-export) on the held file, including a **422** when something blocks it, and answer **404** when no file is waiting. Only the fields Entry Export v1 knows are kept in the held file.
 
+`update` is **Update from RaceHub**: it fetches now with the automatic poll's rules, whether or not `autoFetch` is on. A new revision that imports cleanly is applied (`APPLIED`), one that something would block is held for an official (`WAITING`), and an unchanged one answers `UNCHANGED`. It answers **404** when the event has no feed and **409** for a completed event, whose entries a late revision must not change (use `fetch` and `apply` by hand). Audited.
+
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
+
+`GET /admin/entry-feeds` (ADMIN) lists every event's feed in short, for the Events list: `[ { "eventId": 7, "autoFetch": true, "lastFetchAt": "…", "lastStatus": "APPLIED", "lastMessage": "2 new, 1 withdrawn (revision 7)", "appliedRevision": 7, "waiting": false } ]`. It carries no address and no token. A feed that answers 404 or 410 (the event was cancelled or taken down at the source) is recorded as `FAILED` with that reason and its `autoFetch` is turned off; the entries already imported are kept.
 
 ### RaceHub address
 
@@ -527,8 +532,8 @@ Requires `ADMIN`. Body `{ "address": "https://racehub.example" }`. The one place
 RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address below the one RaceHub address (set with `PUT /admin/racehub/address`). The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
 
 ```http
-GET  /admin/racehub/events
-POST /admin/racehub/events/{raceHubEventId}/take
+GET  /admin/racehub/events?state=ready|open|all&from=2026-12-01&to=2027-02-28
+POST /admin/racehub/events/{raceHubEventId}/take?state=ready|open|all
 ```
 
 `GET` answers **200** whatever RaceHub says, so the page can show why a list is empty:
@@ -536,8 +541,12 @@ POST /admin/racehub/events/{raceHubEventId}/take
 ```json
 { "raceHubUrl": "https://racehub.example", "tokenSet": true, "error": null,
   "events": [ { "raceHubEventId": "E-7", "name": "Club Champs", "eventDate": "2026-11-14", "venue": "Test Track",
-                "entryCount": 42, "linkedEventId": null } ] }
+                "entryCount": 42, "linkedEventId": null, "bookingOpenAt": "2026-10-01T09:00:00Z",
+                "bookingCloseAt": "2026-11-10T18:00:00Z", "bookingState": "closed",
+                "releasedAt": "2026-11-12T10:00:00Z" } ] }
 ```
+
+`state` chooses the view: `ready` (released to timing, the default), `open` (open for sign-up) or `all` (every upcoming event). `from` and `to` are ISO dates, inclusive, on the event's date; RCTC applies them itself as well, so a RaceHub that ignores them still gives the range asked for. **400** for an unknown `state`, a bad date, or `from` after `to`. `take` takes the same `state`, so an event that is open for sign-up but not yet released can be taken; it asks RaceHub for that view again, and answers **400** if RaceHub has not given the event an entries address. The booking fields are null when RaceHub does not send them.
 
 `error` is set (and `events` empty) when no address is saved, the key is not set, RaceHub can't be reached or refuses the key, or its answer isn't a list of events. The key is never sent back, only `tokenSet`. `linkedEventId` is the RCTC event whose RaceHub event id matches, so an event already taken is shown as taken.
 
@@ -933,7 +942,7 @@ GET /privacy-notice                 (anonymous)
 GET /admin/retention                (ADMIN)
 ```
 
-`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "hiddenRowIcons" }`, the club's thresholds (#505). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays", "runOnStartup" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever), and whether it also runs when the app starts; the Backups page shows it. The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
+`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "truncateToHundredths", "hiddenRowIcons" }`, the club's thresholds (#505). `truncateToHundredths` (default `false`, may be left out for off) cuts every time to hundredths of a second, truncated and never rounded; see [Time precision](scoring.md#time-precision). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays", "runOnStartup" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever), and whether it also runs when the app starts; the Backups page shows it. The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
 
 ## Admin — Modules
 
@@ -1031,7 +1040,7 @@ GET /boards/races/{raceId}/battles
 ```http
 GET /boards/settings
 ```
-**200 OK** — `{ "closeGapMs": 1000, "lateMarginMs": 1000 }`, the club's thresholds the boards draw with (#505): how near the car ahead is shown as close, and how far past its average lap a car is before its lap bar turns red. The address option `close=` on a board still wins over `closeGapMs`. The battle thresholds are applied by the timing laptop and are not here.
+**200 OK** — `{ "closeGapMs": 1000, "lateMarginMs": 1000, "truncateToHundredths": false, "hiddenRowIcons": [] }`, the club's thresholds the boards draw with (#505), and whether times are shown to hundredths: how near the car ahead is shown as close, and how far past its average lap a car is before its lap bar turns red. The address option `close=` on a board still wins over `closeGapMs`. The battle thresholds are applied by the timing laptop and are not here.
 
 ```http
 GET /boards/races/{raceId}/clock

@@ -44,6 +44,8 @@ import { formatEventDate } from '@/lib/dates';
 import { QueryError } from '@/components/QueryError';
 import FindRaceHubEventsDialog from './FindRaceHubEventsDialog';
 import { useRaceHubMeeting } from '@/hooks/admin/useRaceHubEvents';
+import { useEntryFeedSummaries } from '@/hooks/admin/useEntryFeed';
+import { EntryFeedNote } from '@/components/EntryFeedNote';
 import { getApiErrorMessage } from '@/lib/errors';
 import { useDisabledModules } from '@/hooks/admin/useModules';
 import { useReuploadResults } from '@/hooks/admin/useResultsExports';
@@ -71,6 +73,7 @@ export default function EventListPage() {
   useHelpContent(EntryManagementHelp);
 
   const { data: events, isLoading, isError, refetch } = useAdminEventsList();
+  const { data: feedSummaries } = useEntryFeedSummaries();
   const createEvent = useCreateAdminEvent();
   const { isAdmin } = useRoles();
 
@@ -87,12 +90,20 @@ export default function EventListPage() {
     columnHelper.accessor('name', {
       header: 'Name',
       cell: info => (
-        <button
-          className="text-left font-medium hover:underline text-primary"
-          onClick={() => navigate(`/admin/events/${info.row.original.id}`)}
-        >
-          {info.getValue()}
-        </button>
+        <div className="space-y-1">
+          <button
+            className="text-left font-medium hover:underline text-primary"
+            onClick={() => navigate(`/admin/events/${info.row.original.id}`)}
+          >
+            {info.getValue()}
+          </button>
+          <div>
+            <EntryFeedNote
+              eventId={info.row.original.id}
+              feed={feedSummaries?.find(f => f.eventId === info.row.original.id)}
+            />
+          </div>
+        </div>
       ),
     }),
     columnHelper.accessor('eventDate', {

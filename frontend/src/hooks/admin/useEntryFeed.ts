@@ -12,6 +12,15 @@ export function useEntryFeed(eventId: number) {
   });
 }
 
+/** Every event's feed in short, for the Events list. Refreshed every minute, as feeds are fetched in the background. */
+export function useEntryFeedSummaries() {
+  return useQuery({
+    queryKey: adminQueryKeys.events.entryFeeds(),
+    queryFn: () => adminApi.entryFeedSummaries(),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useSaveEntryFeed(eventId: number) {
   const qc = useQueryClient();
   return useMutation({
@@ -34,6 +43,23 @@ export function useFetchEntryFeed(eventId: number) {
   return useMutation({
     mutationFn: () => adminApi.fetchEntryFeed(eventId),
     onSuccess: feed => qc.setQueryData(adminQueryKeys.events.entryFeed(eventId), feed),
+  });
+}
+
+/**
+ * Updates now with the automatic poll's rules. An imported revision changes the event's entries, so the event's key
+ * is invalidated (by prefix, this also refreshes the feed).
+ */
+export function useUpdateEntryFeed(eventId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminApi.updateEntryFeed(eventId),
+    onSuccess: feed => {
+      qc.setQueryData(adminQueryKeys.events.entryFeed(eventId), feed);
+      if (feed.lastStatus === 'APPLIED' || feed.lastStatus === 'WAITING') {
+        qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) });
+      }
+    },
   });
 }
 

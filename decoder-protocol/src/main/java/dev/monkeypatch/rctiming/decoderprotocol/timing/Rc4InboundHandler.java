@@ -57,7 +57,7 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
             if (epochAnchor.detectsRestart(pp.timeSinceStartSeconds())) {
                 log.warn("Decoder restart detected (timeSinceStart regressed) — resetting epoch");
             }
-            long rtcMicros = epochAnchor.toRtcTimeMicros(pp.timeSinceStartSeconds());
+            long rtcMicros = epochAnchor.toRtcTimeMicrosExact(pp.timeSinceStartMicros());
             onPassing.accept(new EpochCorrectedPassing(
                 pp.transponderNumber(), rtcMicros, pp.seqNum(),
                 pp.decoderId(), pp.signalStrength(), pp.hitCount()));
