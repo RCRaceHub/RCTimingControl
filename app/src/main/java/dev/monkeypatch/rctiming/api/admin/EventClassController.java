@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.api.admin;
 
 import dev.monkeypatch.rctiming.api.admin.dto.AddEventClassRequest;
+import dev.monkeypatch.rctiming.api.admin.dto.ChangeEventClassFormatRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.CombineClassesRequest;
 import dev.monkeypatch.rctiming.api.admin.dto.EventClassDto;
 import dev.monkeypatch.rctiming.api.admin.dto.UpdateEventClassOverrideRequest;
@@ -80,6 +81,21 @@ public class EventClassController {
                                           @RequestBody @Valid UpdateEventClassOverrideRequest request) {
         return EventClassDto.from(eventClassService.updateOverrides(CurrentOfficial.actor(), eventId, classId,
                 request.override()));
+    }
+
+    /**
+     * Gives the event class another race format: a fresh snapshot of the template, with any override cleared.
+     * {@code PUT /{classId}/format}; ADMIN. 404 for an unknown class or template, 400 if the class belongs to another
+     * event, 409 once races have been generated for the class. Audited.
+     */
+    @Audited("audit_log")
+    @PutMapping("/{classId}/format")
+    @AdminOnly
+    public EventClassDto changeFormat(@PathVariable Long eventId,
+                                      @PathVariable Long classId,
+                                      @RequestBody @Valid ChangeEventClassFormatRequest request) {
+        return EventClassDto.from(eventClassService.changeFormat(CurrentOfficial.actor(), eventId, classId,
+                request.templateId()));
     }
 
     /**

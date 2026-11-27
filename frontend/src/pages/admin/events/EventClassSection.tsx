@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 
 import {
   useAddEventClass,
+  useChangeEventClassFormat,
   useCombineClasses,
   useRemoveEventClass,
   useUpdateEventClassOverrides,
@@ -36,6 +37,7 @@ import {
 } from '@/hooks/admin/useAdminEventClasses';
 import { useFormatsList } from '@/hooks/admin/useAdminFormats';
 import type { EventClassDto } from '@/lib/adminApi';
+import { QueryError } from '@/components/QueryError';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const addClassSchema = z.object({
@@ -337,6 +339,71 @@ function AddClassDialog({
   );
 }
 
+function ChangeFormatDialog({
+  eventId,
+  target,
+  onClose,
+}: {
+  eventId: number;
+  target: { id: number; name: string; templateId: number | null } | null;
+  onClose: () => void;
+}) {
+  const changeFormat = useChangeEventClassFormat(eventId);
+  const { data: templates = [], isLoading, isError, refetch } = useFormatsList();
+  const [picked, setPicked] = useState<string>('');
+  const value = picked || (target?.templateId ? String(target.templateId) : '');
+
+  const unchanged = target?.templateId != null && value === String(target.templateId);
+
+  async function handleSave() {
+    if (!target || !value || unchanged) return;
+    try {
+      await changeFormat.mutateAsync({ classId: target.id, templateId: Number(value) });
+      toast.success('Format changed');
+      setPicked('');
+      onClose();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not change the format'));
+    }
+  }
+
+  return (
+    <Dialog open={target !== null} onOpenChange={open => { if (!open) { setPicked(''); onClose(); } }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change format{target ? `: ${target.name}` : ''}</DialogTitle>
+          <DialogDescription>
+            The class takes a fresh copy of the chosen format and any overrides are cleared. This is only possible
+            before races have been generated for the class; delete the run order first if they have.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="changeFormatTemplate">Format Template</Label>
+          <Select disabled={isLoading} value={value} onValueChange={setPicked}>
+            <SelectTrigger id="changeFormatTemplate">
+              <SelectValue placeholder={isLoading ? 'Loading…' : 'Select a template'} />
+            </SelectTrigger>
+            <SelectContent>
+              {templates.map(t => (
+                <SelectItem key={t.id} value={String(t.id)}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isError && <QueryError message="Could not load the formats." onRetry={refetch} />}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setPicked(''); onClose(); }}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!value || unchanged || changeFormat.isPending}>
+            {changeFormat.isPending ? 'Saving…' : 'Change format'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface EventClassSectionProps {
   eventId: number;
   classes: EventClassDto[];
@@ -350,6 +417,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
   const [addOpen, setAddOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [combineOpen, setCombineOpen] = useState(false);
+  const [formatTarget, setFormatTarget] = useState<{ id: number; name: string; templateId: number | null } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string } | null>(null);
   const [overrideState, setOverrideState] = useState<{
     open: boolean;
@@ -450,7 +518,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         {classes.map(cls => (
           <div
             key={cls.id}
-            className="rounded-lg border bg-card p-4 flex items-start gap-3"
+            className="rounded-lg border bg-card p-4 flex flex-wrap items-start gap-3"
           >
             {isAdmin && (
             <Checkbox
@@ -461,7 +529,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
               className="mt-0.5"
             />
             )}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-[8rem]">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">
                   {resolveClassName(cls.racingClassId)}
@@ -482,28 +550,41 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
               </div>
             </div>
             {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setRemoveTarget({ id: cls.id, name: resolveClassName(cls.racingClassId) })}
-              >
-                Remove
-              </Button>
-            )}
-            {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setOverrideState({
-                    open: true,
-                    classId: cls.id,
-                    currentOverride: cls.configOverride,
-                  })
-                }
-              >
-                Edit Overrides
-              </Button>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRemoveTarget({ id: cls.id, name: resolveClassName(cls.racingClassId) })}
+                >
+                  Remove
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setFormatTarget({
+                      id: cls.id,
+                      name: resolveClassName(cls.racingClassId),
+                      templateId: cls.templateId,
+                    })
+                  }
+                >
+                  Change Format
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setOverrideState({
+                      open: true,
+                      classId: cls.id,
+                      currentOverride: cls.configOverride,
+                    })
+                  }
+                >
+                  Edit Overrides
+                </Button>
+              </div>
             )}
           </div>
         ))}
@@ -520,6 +601,8 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         open={overrideState.open}
         onOpenChange={open => setOverrideState(s => ({ ...s, open }))}
       />
+
+      <ChangeFormatDialog eventId={eventId} target={formatTarget} onClose={() => setFormatTarget(null)} />
 
       <RemoveClassDialog
         key={removeTarget?.id ?? 0}

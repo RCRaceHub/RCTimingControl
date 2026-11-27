@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import VersionFooter from '@/components/layout/VersionFooter';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -33,7 +34,6 @@ import { HelpSidebarButton } from '@/components/HelpSidebarButton';
 import PageLoading from '@/components/PageLoading';
 import { useRoles } from '@/hooks/useRoles';
 import { useDisabledModules } from '@/hooks/admin/useModules';
-import { useRaceHubConnected } from '@/hooks/admin/useResultsExports';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 
 interface NavEntry {
@@ -141,9 +141,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { user, logout } = useAuth();
   const { isAdmin, canRunEvent } = useRoles();
   const eventId = useMatch('/admin/events/:id/*')?.params.id;
-  const raceHubConnected = useRaceHubConnected(isAdmin);
   const disabledModules = useDisabledModules();
-  const onRaceHubPage = useMatch('/admin/racehub') != null;
 
   return (
     <div className="flex flex-col h-full">
@@ -172,8 +170,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         ))}
         {isAdmin &&
           adminOnlyOperations
-            // A standalone club has no RaceHub key, so its page is left out until one is saved (Club profile links to it)
-            .filter(({ to }) => to !== '/admin/racehub' || raceHubConnected !== false || onRaceHubPage)
+            // Always listed: a standalone club opens the page to see how to connect
             .map(({ to, label, Icon }) => (
               <NavItem
                 key={to}
@@ -305,6 +302,7 @@ export default function AdminPanelLayout() {
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
+          <VersionFooter />
         </div>
       </main>
 

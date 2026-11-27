@@ -61,15 +61,16 @@ export function AutoRunPanel({ autoRun, canControl }: { autoRun: AutoRun; canCon
     || wanted.holdBeforeFinals !== state.holdBeforeFinals || wanted.autoStart !== state.autoStart);
   // The unsent change, so it can still be sent when the panel goes away
   const pending = useRef<typeof wanted>(null);
-  pending.current = differs ? wanted : null;
-
-  // Once the server shows what was typed or ticked, go back to showing the server's value
   useEffect(() => {
-    if (!state) return;
+    pending.current = differs ? wanted : null;
+  });
+
+  // Once the server shows what was typed or ticked, go back to showing the server's value (set while rendering)
+  if (state) {
     if (gap !== null && Number(gap) === state.gapSeconds) setGap(null);
     if (hold === state.holdBeforeFinals) setHold(null);
     if (autoStart === state.autoStart) setAutoStart(null);
-  }, [state, gap, hold, autoStart]);
+  }
 
   // The settings live on the server, so a change is sent on its own: a tick straight away, the gap a moment
   // after the last keystroke. A browser closed mid-race then finds them as they were left.

@@ -6,7 +6,7 @@
 |------|---------|
 | Java | 21 (LTS) |
 | Docker | 24+ (optional: only for Piper announcer voices) |
-| Node.js | 20+ |
+| Node.js | 24+ (CI and the Docker image use 24) |
 | Gradle | via wrapper (`./gradlew`) |
 
 ## Quick start (Makefile)
@@ -292,7 +292,7 @@ They are made by `frontend/scripts/manual-screenshots.mjs`, which drives the rea
 3. For the setup wizard pictures, start a second copy on a new, empty data folder with no profile and `--server.port=8081`.
 4. From `frontend/`, run `node scripts/manual-screenshots.mjs`. Name sections (`raceday`, `practice`, `tour`, `setup`) to run only those. It takes about seven minutes, because it lets real races run for a short while. `BASE_URL`, `SETUP_URL`, `SHOTS_DIR` and `PW_CHROMIUM` (a Chrome binary, if Playwright's own is not installed) change where it looks and writes.
 
-The RaceHub walkthrough's pictures (`racehub-*.png`) come from `frontend/scripts/racehub-screenshots.mjs` instead. It needs no backend: run `npm run dev -- --port 5199` and then `BASE_URL=http://localhost:5199 node scripts/racehub-screenshots.mjs`, and it answers the API calls itself with made-up Wyvern RC Club data.
+The RaceHub walkthrough's pictures (`racehub-*.png`) come from `frontend/scripts/racehub-screenshots.mjs` instead. It needs no backend: run `npm run dev -- --port 5199` and then `BASE_URL=http://localhost:5199 node scripts/racehub-screenshots.mjs`, and it answers the API calls itself with made-up Wyvern RC Club data. The import part of that walkthrough (`racehub-entries-waiting`, `racehub-import-held`, `racehub-event-classes`, `racehub-change-format`) comes from `scripts/racehub-import-screenshots.mjs` the same way.
 5. Look at the pictures that changed, and commit them with the doc change. A step that fails is listed at the end; set `FAIL_DIR` to a folder to get a screenshot of where it stopped.
 
 ## Makefile targets

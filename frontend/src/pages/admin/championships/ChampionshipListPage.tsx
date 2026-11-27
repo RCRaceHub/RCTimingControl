@@ -112,7 +112,7 @@ export default function ChampionshipListPage() {
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Championship</DialogTitle>
           </DialogHeader>

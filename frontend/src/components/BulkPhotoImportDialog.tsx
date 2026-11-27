@@ -115,7 +115,7 @@ export function BulkPhotoImportDialog({ open, onOpenChange, title, description, 
 
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

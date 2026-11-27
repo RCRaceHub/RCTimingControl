@@ -160,7 +160,7 @@ function EntriesTable({
   return (
     <>
       <Table>
-        <TableHeader>
+        <TableHeader className="max-sm:hidden">
           <TableRow>
             <TableHead>Driver</TableHead>
             <TableHead>Transponder</TableHead>
@@ -171,11 +171,11 @@ function EntriesTable({
         </TableHeader>
         <TableBody>
           {entries.map(entry => (
-            <TableRow key={entry.id}>
-              <TableCell className="font-medium">
+            <TableRow key={entry.id} className="max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-4 max-sm:gap-y-1 max-sm:p-3">
+              <TableCell className="font-medium max-sm:w-full max-sm:p-0">
                 {entry.displayName ?? 'Unknown driver'}
               </TableCell>
-              <TableCell>
+              <TableCell className="max-sm:p-0">
                 {entry.transponderNumber ?? (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -189,15 +189,15 @@ function EntriesTable({
                   secondary={entry.importedSecondaryTransponderNumber}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="max-sm:p-0">
                 <Badge className={entryStatusColor[entry.status]}>
                   {entry.status.charAt(0) + entry.status.slice(1).toLowerCase()}
                 </Badge>
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
+              <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                 {formatDateTime(entry.submittedAt)}
               </TableCell>
-              <TableCell className="space-x-2">
+              <TableCell className="space-x-2 max-sm:w-full max-sm:p-0 max-sm:pt-1">
                 {canSeeHistory && (
                   <Button size="sm" variant="outline" onClick={() => setHistoryTarget(entry)}>
                     History

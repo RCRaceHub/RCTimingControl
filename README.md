@@ -44,7 +44,7 @@ Then open **http://localhost:8080** and sign in as `admin@example.com` / `trial1
 
 ### Quick start (dev)
 
-**Prerequisites:** Java 21, Node 22.12+, `make`; Docker only for the optional Piper voices
+**Prerequisites:** Java 21, Node 24+, `make`; Docker only for the optional Piper voices
 
 ```bash
 make dev-start

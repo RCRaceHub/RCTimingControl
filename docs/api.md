@@ -212,6 +212,12 @@ DELETE /admin/events/{eventId}/classes/{classId}?withdrawEntries=false    # 204
 
 Takes a class out of an event; `ADMIN`; audited as `EVENT_CLASS_REMOVED`. Answers **409** if races have been generated for the class (delete the run order first), or if it has active entries and `withdrawEntries` is not `true`. With `withdrawEntries=true` those entries are withdrawn first (kept, never deleted). 404 for an unknown class, 400 if it belongs to another event.
 
+```
+PUT /admin/events/{eventId}/classes/{classId}/format    # body {"templateId": 3}, 200
+```
+
+Gives the class another race format: a fresh snapshot of the template, with any override cleared; `ADMIN`; audited as `EVENT_CLASS_FORMAT_CHANGED`. Answers **409** if races have been generated for the class (delete the run order first), 404 for an unknown class or template, 400 if the class belongs to another event.
+
 ---
 
 ## Admin — Racing Classes

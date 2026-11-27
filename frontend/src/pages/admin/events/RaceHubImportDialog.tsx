@@ -124,36 +124,43 @@ export default function RaceHubImportDialog({
       : fileImport.mutateAsync({ exportDocument: document, dryRun });
   }
 
-  async function runPreview(document: unknown) {
+  function runPreview(document: unknown) {
     const requestGeneration = generation.current;
-    try {
-      const result = await runImport(document, true);
-      if (requestGeneration !== generation.current) return;
-      setPreview(result);
-      // A class the club linked earlier is offered again, so the official only confirms it
-      const inEventNow = new Set(classes.map(c => c.racingClassId));
-      const suggested: Record<string, string> = {};
-      result.unmappedClasses.forEach(u => {
-        if (u.suggestedRacingClassId != null && !inEventNow.has(u.suggestedRacingClassId)) {
-          suggested[u.classKey] = `rc:${u.suggestedRacingClassId}`;
-        }
+    // A promise chain, not an async function, so the effect that starts the first preview sets no state itself
+    return runImport(document, true)
+      .then(result => {
+        if (requestGeneration !== generation.current) return;
+        setPreview(result);
+        // A class the club linked earlier is offered again, so the official only confirms it
+        const inEventNow = new Set(classes.map(c => c.racingClassId));
+        const suggested: Record<string, string> = {};
+        result.unmappedClasses.forEach(u => {
+          if (u.suggestedRacingClassId != null && !inEventNow.has(u.suggestedRacingClassId)) {
+            suggested[u.classKey] = `rc:${u.suggestedRacingClassId}`;
+          }
+        });
+        setClassChoices(c => ({ ...suggested, ...c }));
+      })
+      .catch(() => {
+        if (requestGeneration !== generation.current) return;
+        setPreview(null);
+        setFileError(
+          feed
+            ? 'The fetched file could not be checked. Fetch it again.'
+            : 'RaceHub could not check this file. Make sure it is an Entry Export (schema version 1).',
+        );
       });
-      setClassChoices(c => ({ ...suggested, ...c }));
-    } catch {
-      if (requestGeneration !== generation.current) return;
-      setPreview(null);
-      setFileError(
-        feed
-          ? 'The fetched file could not be checked. Fetch it again.'
-          : 'RaceHub could not check this file. Make sure it is an Entry Export (schema version 1).',
-      );
-    }
   }
 
   // A file chosen on the Events page was already read, so its preview starts as soon as the dialog opens
+  const startingDocument = open && !feed ? initialDocument : undefined;
+  const [startedWith, setStartedWith] = useState<unknown>(undefined);
+  if (startingDocument !== startedWith) {
+    setStartedWith(startingDocument);
+    if (startingDocument !== undefined) setExportDocument(startingDocument);
+  }
   useEffect(() => {
     if (!open || feed || initialDocument === undefined) return;
-    setExportDocument(initialDocument);
     void runPreview(initialDocument);
     // runPreview only reads state through refs and setters, and the preview must run once per opening
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,7 +293,7 @@ export default function RaceHubImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{feed ? 'Import entries from the entry feed' : 'Import entries from RaceHub'}</DialogTitle>
           <DialogDescription>

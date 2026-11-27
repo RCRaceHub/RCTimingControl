@@ -366,8 +366,21 @@ export async function getEventSchedule(): Promise<EventScheduleDto[]> {
 
 export type ConnectionState = 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED';
 
+/** How the decoder's clock looks against the server's (detection only; no time is changed). Figures are milliseconds. */
+export type DecoderClockDto = {
+  status: 'LEARNING' | 'OK' | 'JITTERY' | 'DRIFTING' | 'RESTARTED';
+  passings: number;
+  jitterMs: number;
+  latencyMs: number;
+  /** Negative when the decoder's clock runs fast. */
+  driftMsPerMinute: number;
+  restarts: number;
+};
+
 export type DecoderStatusDto = {
   decoderState: ConnectionState;
+  /** Null until the decoder has sent a passing on the current settings. */
+  clock?: DecoderClockDto | null;
 };
 
 export async function fetchDecoderStatus(): Promise<DecoderStatusDto> {

@@ -126,7 +126,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Find RaceHub events</DialogTitle>
           <DialogDescription>
@@ -151,19 +151,21 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-w-[9rem]">
             <Label htmlFor="racehub-events-from">From</Label>
             <Input id="racehub-events-from" type="date" value={from} onChange={e => setFrom(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-w-[9rem]">
             <Label htmlFor="racehub-events-to">To</Label>
             <Input id="racehub-events-to" type="date" value={to} onChange={e => setTo(e.target.value)} />
           </div>
-          {QUICK_RANGES.map(r => (
-            <Button key={r.label} size="sm" variant="ghost" onClick={() => chooseRange(r.days)}>
-              {r.label}
-            </Button>
-          ))}
+          <div className="flex w-full flex-wrap gap-1">
+            {QUICK_RANGES.map(r => (
+              <Button key={r.label} size="sm" variant="ghost" onClick={() => chooseRange(r.days)}>
+                {r.label}
+              </Button>
+            ))}
+          </div>
         </div>
         {rangeInvalid && <p className="text-sm text-destructive">The start date is after the end date.</p>}
 
@@ -206,7 +208,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
               return (
               <li key={event.raceHubEventId} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{event.name ?? event.raceHubEventId}</p>
+                  <p className="break-words font-medium">{event.name ?? event.raceHubEventId}</p>
                   {badge && (
                     <Badge variant="outline" className="mt-1">
                       {badge}

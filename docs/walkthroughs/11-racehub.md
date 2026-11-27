@@ -21,7 +21,7 @@ There are two places, and either works.
   rctiming.racehub.url=https://racehub.example
   ```
 
-- **The admin page.** Open **Admin → RaceHub → Connection**. A standalone club does not see **RaceHub** in the menu until a key is set; **Club profile** has a link to the page. Enter the **RaceHub address** (just the host, such as `https://racehub.example`; you set it once and results, **Find RaceHub events**, the class and format lists and imports all use it), paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
+- **The admin page.** Open **Admin → RaceHub → Connection**. **RaceHub** is always in the admin menu, even for a standalone club; **Club profile** links to it too. Enter the **RaceHub address** (just the host, such as `https://racehub.example`; you set it once and results, **Find RaceHub events**, the class and format lists and imports all use it), paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
 
   ![The Connection tab: RaceHub address and key](../images/racehub-connection.png)
 
@@ -60,13 +60,46 @@ Open **Events** and press **Find RaceHub events**. The list shows the meetings t
 
 Press **Take** next to a meeting. RCTC creates the event (name and date from RaceHub), sets up its entry feed, fetches the entries straight away and opens the event's **Entries** tab. A meeting already taken shows **Taken, open**.
 
-## 5. Import the entries
+## 5. Import the entries and choose the formats
 
-The Entries tab holds the fetched file with a preview of what will change: new entries, changed ones and withdrawn ones. Check it and apply. From then on the feed fetches every few minutes (**Fetch now** does it at once), and changes that apply cleanly go in by themselves.
+After **Take**, the event's **Entries** tab shows the **Entry feed** and, when RaceHub has sent a file that needs you, a banner saying so. Press **Review and import**.
 
-- If an entry is in a class with no link, the whole import is **held**: nothing is saved, and nothing is placed by name. The preview lists the class and lets you link it, or add it to the event, in the same row, and pick its format. Save and the file is checked again.
+![The Entries tab with a fetched file waiting to be reviewed](../images/racehub-entries-waiting.png)
+
+The preview counts what will change: new entries, updated ones, withdrawn ones and ones already up to date. Nothing is saved until you press **Import entries**. From then on the feed fetches by itself (every hour until the last week before the meeting, then every five minutes), changes that apply cleanly go in without you, and **Update from RaceHub** or **Fetch now** gets the latest straight away. Entries you added by hand as walk-ins are never touched.
+
+### Choose a race format for each class
+
+An event class runs to one race format, copied into the event when the class is added (editing the format template later does not change the event). The format for a class comes from the first of these that applies:
+
+1. **Chosen in the import preview.** If an entry is in a class RCTC has no link for yet, the whole import is **held**: nothing is saved and nothing is placed by name. The preview lists the held class under **Classes to map**. Pick one of your classes for it (or add one of your classes to the event, or create a new class), and the same row shows its **race format**. It starts on the format that class last used, or on the format linked to RaceHub's format for the meeting (step 3); change it here if you want another. Then press **Save mappings and check again**.
+
+   ![The preview held on a class with no link: pick the class and its format in the same row](../images/racehub-import-held.png)
+
+2. **The meeting's linked format.** If RaceHub gives the meeting a race format and you linked it to one of yours on **Admin → RaceHub → Classes and formats**, every class the import adds starts on it.
+3. **Your first format.** A class that has never been in an event, with no format given, starts on your first format template. Check it.
+
+The class link is remembered for the whole club, so the next meeting needs no linking.
+
+### Change a class's format later
+
+Open the event's **Classes** tab. Each class shows its format (for example *TIMED, 5 min*).
+
+![The Classes tab: each class with Remove, Change Format and Edit Overrides](../images/racehub-event-classes.png)
+
+- **Change Format** swaps the class to another format template. It takes a fresh copy of the template and clears any overrides, because they may not fit the new format.
+
+  ![Pick the new format for the class](../images/racehub-change-format.png)
+
+- **Edit Overrides** changes a few settings of the current format for this event only, such as the race length, and keeps the format.
+- A format can only be changed before races have been generated for the class. If the run order is already built, delete it first, change the format and generate it again. The entries, the class's RaceHub link and any combined race group stay as they are.
+- This is all done in RCTC. It does not need RaceHub, and nothing is sent back to RaceHub when you change a format.
+
+### Other things the import tells you
+
 - A transponder number used twice in the event is accepted with a warning, because one competitor may race in two classes. A swap on the day refuses a number another competitor holds.
 - A driver who agreed on RaceHub may bring a headshot and car photo; press **Fetch the pictures** on the import result to save them.
+- Once the run order is built, new or changed entries wait for you to review them instead of arriving by themselves.
 
 Then choose the track, check the entries are all there, and press **Start meeting**. Walk-ins are added in RCTC as always ([walkthrough 2](2-entries-and-walk-ins.md)).
 
