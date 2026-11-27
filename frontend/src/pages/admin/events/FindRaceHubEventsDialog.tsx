@@ -126,7 +126,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Find RaceHub events</DialogTitle>
           <DialogDescription>
@@ -206,7 +206,7 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
               return (
               <li key={event.raceHubEventId} className="flex items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{event.name ?? event.raceHubEventId}</p>
+                  <p className="break-words font-medium">{event.name ?? event.raceHubEventId}</p>
                   {badge && (
                     <Badge variant="outline" className="mt-1">
                       {badge}

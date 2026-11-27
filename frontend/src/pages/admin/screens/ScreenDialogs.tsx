@@ -181,7 +181,7 @@ export function ShowDialog({ open, onOpenChange, count, boardPages, onSubmit }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Show a page</DialogTitle>
           <DialogDescription>
@@ -231,7 +231,7 @@ export function GotoDialog({ open, onOpenChange, onSubmit }: Shell & { onSubmit:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Go to page</DialogTitle>
         </DialogHeader>

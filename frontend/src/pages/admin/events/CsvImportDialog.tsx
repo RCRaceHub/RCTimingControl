@@ -173,7 +173,7 @@ export default function CsvImportDialog({ eventId, classes, open, onOpenChange }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Import entries from a CSV file</DialogTitle>
           <DialogDescription>

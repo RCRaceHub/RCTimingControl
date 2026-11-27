@@ -186,7 +186,7 @@ export function RoundGeneratorWizard({ open, onOpenChange, eventId, regenerate =
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (v) onOpenChange(true); else close(); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{regenerate ? 'Regenerate Rounds' : 'Generate Rounds'}</DialogTitle>
           <DialogDescription>

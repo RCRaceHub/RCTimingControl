@@ -74,7 +74,7 @@ export function PenaltyDialog({ open, onOpenChange, onSubmit, isPending, drivers
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Apply Penalty</DialogTitle>
         </DialogHeader>
