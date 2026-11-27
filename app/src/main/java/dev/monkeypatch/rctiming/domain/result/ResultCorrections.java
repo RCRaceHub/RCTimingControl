@@ -27,6 +27,16 @@ public final class ResultCorrections {
      */
     public static List<ResultRow> apply(List<ResultRow> timed, Map<Long, Integer> lapDeltas,
                                         Map<Long, Long> addedTimeMs) {
+        return apply(timed, lapDeltas, addedTimeMs, false);
+    }
+
+    /**
+     * As {@link #apply(List, Map, Map)}; with {@code shareTies}, cars with the same laps and the same total time
+     * share a place (1, 1, 3), as in live timing when the club cuts times to hundredths. A car with no recorded time
+     * never shares a place.
+     */
+    public static List<ResultRow> apply(List<ResultRow> timed, Map<Long, Integer> lapDeltas,
+                                        Map<Long, Long> addedTimeMs, boolean shareTies) {
         boolean anyLapChange = lapDeltas.values().stream().anyMatch(d -> d != 0);
         boolean anyAddedTime = addedTimeMs.values().stream().anyMatch(t -> t != 0);
         if (!anyLapChange && !anyAddedTime) {
@@ -55,7 +65,15 @@ public final class ResultCorrections {
             Long gapToLeaderMs = (i == 0 || row.lapsCompleted() != leader.lapsCompleted()
                     || row.totalTimeMs() <= 0 || leader.totalTimeMs() <= 0)
                     ? null : row.totalTimeMs() - leader.totalTimeMs();
-            ranked.add(new ResultRow(i + 1, row.entryId(), row.competitorId(), row.driverName(), row.carNumber(),
+            int position = i + 1;
+            if (shareTies && i > 0) {
+                ResultRow ahead = corrected.get(i - 1);
+                if (row.totalTimeMs() > 0 && row.lapsCompleted() == ahead.lapsCompleted()
+                        && row.totalTimeMs() == ahead.totalTimeMs()) {
+                    position = ranked.get(i - 1).position();
+                }
+            }
+            ranked.add(new ResultRow(position, row.entryId(), row.competitorId(), row.driverName(), row.carNumber(),
                     row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), gapToLeaderMs).withDnf(row.dnf()));
         }
         return ranked;

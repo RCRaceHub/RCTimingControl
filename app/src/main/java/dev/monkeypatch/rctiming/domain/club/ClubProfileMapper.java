@@ -27,12 +27,14 @@ interface ClubProfileMapper {
     @Mapping(target = "battleHoldLaps", source = "liveTimingSettings.battleHoldLaps")
     @Mapping(target = "closeGapMs", source = "liveTimingSettings.closeGapMs")
     @Mapping(target = "lateMarginMs", source = "liveTimingSettings.lateMarginMs")
+    @Mapping(target = "truncateToHundredths", source = "liveTimingSettings.truncateToHundredths")
     @Mapping(target = "hiddenRowIcons", expression = "java(rowIcons(profile.getLiveTimingSettings().hiddenRowIcons()))")
     void toRecord(ClubProfile profile, @MappingTarget ClubProfilesRecord record);
 
     default LiveTimingSettings liveTimingSettings(ClubProfilesRecord r) {
         return new LiveTimingSettings(r.getBattleGapMs(), r.getBattleTrendMs(), r.getBattleFastMs(),
-                r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs(), rowIcons(r.getHiddenRowIcons()));
+                r.getBattleHoldLaps(), r.getCloseGapMs(), r.getLateMarginMs(), Boolean.TRUE.equals(r.getTruncateToHundredths()),
+                rowIcons(r.getHiddenRowIcons()));
     }
 
     default String rowIcons(List<String> icons) {

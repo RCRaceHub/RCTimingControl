@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.decoderprotocol.timing.AmbRc4TimingSource;
+import dev.monkeypatch.rctiming.decoderprotocol.timing.ClockHealth;
 import dev.monkeypatch.rctiming.decoderprotocol.timing.EpochCorrectedPassing;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettings;
@@ -47,6 +48,7 @@ class DecoderListenerTest {
     /** Callbacks for each source the listener creates, in creation order. */
     private final List<Consumer<EpochCorrectedPassing>> passingCallbacks = new ArrayList<>();
     private final List<Consumer<AmbRc4TimingSource.ConnectionState>> statusCallbacks = new ArrayList<>();
+    private final List<AmbRc4TimingSource> sources = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -64,7 +66,9 @@ class DecoderListenerTest {
                 (host, port, onPassing, onStatus) -> {
                     passingCallbacks.add(onPassing);
                     statusCallbacks.add(onStatus);
-                    return mock(AmbRc4TimingSource.class);
+                    AmbRc4TimingSource source = mock(AmbRc4TimingSource.class);
+                    sources.add(source);
+                    return source;
                 });
     }
 
@@ -148,6 +152,37 @@ class DecoderListenerTest {
         statusCallbacks.get(0).accept(AmbRc4TimingSource.ConnectionState.RECONNECTING);
 
         verify(statusPublisher).onDecoderStatus("RECONNECTING");
+    }
+
+    @SuppressWarnings("unchecked")
+    private Consumer<ClockHealth> clockListenerOf(AmbRc4TimingSource source) {
+        ArgumentCaptor<Consumer<ClockHealth>> captor = ArgumentCaptor.forClass(Consumer.class);
+        verify(source).setClockHealthListener(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void currentSourceClockHealth_isPublishedToStatusPublisher() {
+        listener.start();
+        configure("localhost", 5100, "RC4");
+        ClockHealth drifting = new ClockHealth(ClockHealth.Status.DRIFTING, 40, 12, 3, 9, 0);
+
+        clockListenerOf(sources.get(0)).accept(drifting);
+
+        verify(statusPublisher).onClockHealth(drifting);
+    }
+
+    @Test
+    void clockHealthFromARetiredSource_isIgnored() {
+        listener.start();
+        configure("localhost", 5100, "RC4");
+        Consumer<ClockHealth> old = clockListenerOf(sources.get(0));
+        configure("localhost", 5101, "RC4");
+        ClockHealth drifting = new ClockHealth(ClockHealth.Status.DRIFTING, 40, 12, 3, 9, 0);
+
+        old.accept(drifting);
+
+        verify(statusPublisher, never()).onClockHealth(drifting);
     }
 
     @Test

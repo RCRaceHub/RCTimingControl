@@ -3,7 +3,6 @@ package dev.monkeypatch.rctiming.domain.racehub;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
-import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedClient;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatService;
 import dev.monkeypatch.rctiming.domain.format.RaceFormatTemplate;
@@ -26,8 +25,8 @@ import java.util.stream.Collectors;
  * The club's RaceHub race formats next to the RCTC format templates they are linked to, and the linking itself, so an
  * organiser picks a format in RaceHub for a meeting and RCTC runs it with the template the club linked once.
  *
- * <p>{@link #list} asks RaceHub's {@code GET /api/rctc/v1/formats} with the club's key, at the saved events address
- * with its last segment swapped (see {@link RaceHubClassesService}); it blocks for the feed client's timeouts, so the
+ * <p>{@link #list} asks RaceHub's {@code GET /api/rctc/v1/formats} with the club's key, at the events address under the
+ * club's one RaceHub address with its last segment swapped (see {@link RaceHubClassesService}); it blocks for the feed client's timeouts, so the
  * controller calls it with no transaction open. A failure comes back as {@link Listing#error}. {@link #link} and
  * {@link #unlink} are one write transaction each, ADMIN only at the controller. A format with no link changes nothing:
  * the import then asks the official for a format as it always did, so RCTC works without RaceHub.
@@ -35,7 +34,6 @@ import java.util.stream.Collectors;
 @Service
 public class RaceHubFormatsService {
 
-    private final ClubProfileService clubProfileService;
     private final RaceHubResultsEndpoint endpoint;
     private final EntryFeedClient client;
     private final RaceHubFormatLinkRepository linkRepository;
@@ -43,10 +41,9 @@ public class RaceHubFormatsService {
     private final AuditService audit;
     private final ObjectMapper objectMapper;
 
-    public RaceHubFormatsService(ClubProfileService clubProfileService, RaceHubResultsEndpoint endpoint,
+    public RaceHubFormatsService(RaceHubResultsEndpoint endpoint,
                                  EntryFeedClient client, RaceHubFormatLinkRepository linkRepository,
                                  RaceFormatService raceFormatService, AuditService audit, ObjectMapper objectMapper) {
-        this.clubProfileService = clubProfileService;
         this.endpoint = endpoint;
         this.client = client;
         this.linkRepository = linkRepository;
@@ -76,7 +73,7 @@ public class RaceHubFormatsService {
         } catch (StateConflictException e) {
             return new Listing(List.of(), e.getMessage());
         } catch (IllegalArgumentException e) {
-            return new Listing(List.of(), "The saved RaceHub events address cannot be used. Set it again.");
+            return new Listing(List.of(), "The RaceHub address cannot be used. Set it again.");
         }
     }
 
@@ -118,18 +115,22 @@ public class RaceHubFormatsService {
     }
 
     private List<RaceHubFormatList> fetch() {
-        String saved = clubProfileService.getRaceHubEventsUrl().orElseThrow(() ->
-                new StateConflictException("Set the RaceHub events address first."));
+        URI eventsUrl = endpoint.eventsUrl();
+        if (eventsUrl == null) {
+            throw new StateConflictException("Set the RaceHub address first.");
+        }
         String token = endpoint.token();
         if (token == null) {
             throw new StateConflictException("The club's key for RaceHub is not set (paste it on Results to RaceHub, "
                     + "or set rctiming.racehub.token in the settings file).");
         }
-        URI url = RaceHubClassesService.siblingUrl(RaceHubResultsEndpoint.parse(saved), "formats", "format list");
+        URI url = RaceHubClassesService.siblingUrl(eventsUrl, "formats", "format list");
         return switch (client.fetch(url, token)) {
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.AuthFailed failed -> throw new StateConflictException(failed.message());
             case EntryFeedClient.Failed failed -> throw new StateConflictException(failed.message());
+            // Never asked conditionally, so RaceHub has no reason to answer 304
+            case EntryFeedClient.NotModified notModified -> throw new StateConflictException("RaceHub sent no list");
         };
     }
 

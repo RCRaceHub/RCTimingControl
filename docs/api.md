@@ -455,7 +455,7 @@ PUT  /admin/racehub/format-links
   { "clubClassId": "13", "createName": "2WD Stock" } ]
 ```
 
-Requires `ADMIN`. `GET` asks RaceHub for the club's classes (`GET /api/rctc/v1/classes`, with the club's key, at the saved events address with `events` swapped for `classes`) and answers `{ "classes": [ { "id", "name", "rcClassName", "active", "linkedRacingClassId", "suggestedRacingClassId" } ], "error": null, "eventsUrl": "https://…/events?state=ready", "tokenSet": true }`. `eventsUrl` is the saved events address (null when none) and `tokenSet` says whether the club has a key, saved in the app or in the settings file (the key itself is never sent), so the screen and the setup wizard can say which one is missing; the address is saved with `PUT /admin/racehub/events/address`. RaceHub's list is read as either a bare array or an object holding it under `classes`. Inactive classes are included, so they can still be linked: old meetings refer to them. A RaceHub that cannot be reached is still **200** with `error` set and no classes, so the "RaceHub classes" screen can say why; asking again re-fetches. For a class with no link, `suggestedRacingClassId` is the one racing class with the same name as its `rc_class_name` (or `name`), offered only as a choice for an official to confirm.
+Requires `ADMIN`. `GET` asks RaceHub for the club's classes (`GET /api/rctc/v1/classes`, with the club's key, at the events address under RaceHub's address with `events` swapped for `classes`) and answers `{ "classes": [ { "id", "name", "rcClassName", "active", "linkedRacingClassId", "suggestedRacingClassId" } ], "error": null, "raceHubUrl": "https://racehub.example", "tokenSet": true }`. `raceHubUrl` is RaceHub's address in use (null when none) and `tokenSet` says whether the club has a key, saved in the app or in the settings file (the key itself is never sent), so the screen and the setup wizard can say which one is missing; the address is saved with `PUT /admin/racehub/address`. RaceHub's list is read as either a bare array or an object holding it under `classes`. Inactive classes are included, so they can still be linked: old meetings refer to them. A RaceHub that cannot be reached is still **200** with `error` set and no classes, so the "RaceHub classes" screen can say why; asking again re-fetches. For a class with no link, `suggestedRacingClassId` is the one racing class with the same name as its `rc_class_name` (or `name`), offered only as a choice for an official to confirm.
 
 `POST` links classes for the whole club, with no event involved. Each item gives either an existing `racingClassId` or a `createName` for a new racing class, never both (400); a class linked again moves to the racing class now given. Answers **200** with one `{ classKey, racingClassId, eventClassId: null, racingClassCreated }` per item; audited as `RACEHUB_CLASS_LINKED`. Deleting a racing class removes its links.
 
@@ -483,6 +483,7 @@ GET    /admin/events/{eventId}/entry-feed
 PUT    /admin/events/{eventId}/entry-feed
 DELETE /admin/events/{eventId}/entry-feed
 POST   /admin/events/{eventId}/entry-feed/fetch
+POST   /admin/events/{eventId}/entry-feed/update
 POST   /admin/events/{eventId}/entry-feed/preview
 POST   /admin/events/{eventId}/entry-feed/apply
 ```
@@ -513,31 +514,45 @@ The token itself is never sent back. `tokenHint` is its last four characters, sh
 
 `fetch` fetches now and returns the feed. A failure is recorded in the feed rather than returned as an error. A new revision is checked with a dry run and held for an official (`WAITING`); nothing is imported until `apply`. `preview` and `apply` work like the [RaceHub import](#import-an-export) on the held file, including a **422** when something blocks it, and answer **404** when no file is waiting. Only the fields Entry Export v1 knows are kept in the held file.
 
+`update` is **Update from RaceHub**: it fetches now with the automatic poll's rules, whether or not `autoFetch` is on. A new revision that imports cleanly is applied (`APPLIED`), one that something would block is held for an official (`WAITING`), and an unchanged one answers `UNCHANGED`. It answers **404** when the event has no feed and **409** for a completed event, whose entries a late revision must not change (use `fetch` and `apply` by hand). Audited.
+
 With `autoFetch` on, the feed is fetched every five minutes (`rctiming.entry-feed.interval-ms`). A new revision that imports cleanly is applied straight away. The import is all or nothing, so a file that something would block, such as an unmapped class, is held whole for an official to review, with the reason in `lastMessage`.
+
+`GET /admin/entry-feeds` (ADMIN) lists every event's feed in short, for the Events list: `[ { "eventId": 7, "autoFetch": true, "lastFetchAt": "…", "lastStatus": "APPLIED", "lastMessage": "2 new, 1 withdrawn (revision 7)", "appliedRevision": 7, "waiting": false } ]`. It carries no address and no token. A feed that answers 404 or 410 (the event was cancelled or taken down at the source) is recorded as `FAILED` with that reason and its `autoFetch` is turned off; the entries already imported are kept.
+
+### RaceHub address
+
+```http
+PUT /api/v1/admin/racehub/address
+```
+Requires `ADMIN`. Body `{ "address": "https://racehub.example" }`. The one place RaceHub's address is set: results, **Find RaceHub events**, the class and format lists and imports all find their paths from it (`/api/rctc/v1/results`, `/events?state=ready`, `/classes`, `/formats`). Anything from `/api/` on is dropped, so an old full address can be pasted. **200 OK** — `{ "address": "https://racehub.example", "savedAddress": "https://racehub.example", "source": "SAVED", "resultsUrl": "https://racehub.example/api/rctc/v1/results" }`; a blank `address` clears the saved one, so `rctiming.racehub.url` from the settings file applies (`savedAddress` null). **400** unless it is `https://` (plain `http://` only to this machine), or if it carries a user name or password. Saving it replaces the older separate results and events addresses of a club that set those one by one. Audited as `RACEHUB_URL_CHANGED`, naming the host only.
 
 ### Find RaceHub events
 
-RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address saved here. The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
+RaceHub can't call this laptop, so RCTC asks it which of the club's events are ready for timing and an official takes one. Under `/api/v1/admin/racehub/events`; all require `ADMIN`. The request to RaceHub carries the club's key (`rctiming.racehub.token`, the one results are sent with) as a bearer token, and goes to the events address below the one RaceHub address (set with `PUT /admin/racehub/address`). The expected answer is described in [racehub-expectations.md](racehub-expectations.md#finding-events-ready-for-timing).
 
 ```http
-GET  /admin/racehub/events
-PUT  /admin/racehub/events/address        { "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready" }
-POST /admin/racehub/events/{raceHubEventId}/take
+GET  /admin/racehub/events?state=ready|open|all&from=2026-12-01&to=2027-02-28
+POST /admin/racehub/events/{raceHubEventId}/take?state=ready|open|all
 ```
 
 `GET` answers **200** whatever RaceHub says, so the page can show why a list is empty:
 
 ```json
-{ "eventsUrl": "https://racehub.example/api/rctc/v1/events?state=ready", "tokenSet": true, "error": null,
+{ "raceHubUrl": "https://racehub.example", "tokenSet": true, "error": null,
   "events": [ { "raceHubEventId": "E-7", "name": "Club Champs", "eventDate": "2026-11-14", "venue": "Test Track",
-                "entryCount": 42, "linkedEventId": null } ] }
+                "entryCount": 42, "linkedEventId": null, "bookingOpenAt": "2026-10-01T09:00:00Z",
+                "bookingCloseAt": "2026-11-10T18:00:00Z", "bookingState": "closed",
+                "releasedAt": "2026-11-12T10:00:00Z" } ] }
 ```
+
+`state` chooses the view: `ready` (released to timing, the default), `open` (open for sign-up) or `all` (every upcoming event). `from` and `to` are ISO dates, inclusive, on the event's date; RCTC applies them itself as well, so a RaceHub that ignores them still gives the range asked for. **400** for an unknown `state`, a bad date, or `from` after `to`. `take` takes the same `state`, so an event that is open for sign-up but not yet released can be taken; it asks RaceHub for that view again, and answers **400** if RaceHub has not given the event an entries address. The booking fields are null when RaceHub does not send them.
 
 `error` is set (and `events` empty) when no address is saved, the key is not set, RaceHub can't be reached or refuses the key, or its answer isn't a list of events. The key is never sent back, only `tokenSet`. `linkedEventId` is the RCTC event whose RaceHub event id matches, so an event already taken is shown as taken.
 
-`PUT .../address` saves the address (blank clears it). It must be https, or http to this machine only, with no user name or password: **400** otherwise. Audited as `RACEHUB_EVENTS_URL_CHANGED`, naming the host only.
+`raceHubUrl` is RaceHub's address in use (null when none is set); it is saved with `PUT /admin/racehub/address`, see [RaceHub address](#racehub-address).
 
-`POST .../take` asks RaceHub again and takes that event: it creates an RCTC event in `DRAFT` (name and date from RaceHub, no track) if none has that RaceHub event id, remembers the id, then sets the event's [entry feed](#pull-from-a-url-entry-feed) to the `entries_url` RaceHub gave, with the club's key and `autoFetch` on. Answers the RCTC event. **404** if RaceHub no longer offers the event, **409** if RaceHub can't be asked (the reason is in the problem detail), **400** if the entries address is unusable or on a different host from the events address, since the club's key is only ever sent to that host. Taking an event already taken only refreshes its feed. Nothing is imported by taking: the feed's own preview, or its automatic fetch, brings the entries in.
+`POST .../take` asks RaceHub again and takes that event: it creates an RCTC event in `DRAFT` (name and date from RaceHub, no track) if none has that RaceHub event id, remembers the id, then sets the event's [entry feed](#pull-from-a-url-entry-feed) to the `entries_url` RaceHub gave, with the club's key and `autoFetch` on. Answers the RCTC event. **404** if RaceHub no longer offers the event, **409** if RaceHub can't be asked (the reason is in the problem detail), **400** if the entries address is unusable or on a different host from RaceHub's address, since the club's key is only ever sent to that host. Taking an event already taken only refreshes its feed. Nothing is imported by taking: the feed's own preview, or its automatic fetch, brings the entries in.
 
 ---
 
@@ -758,7 +773,7 @@ POST /race-control/race/{raceId}/abandon
 POST /race-control/race/{raceId}/restart
 ```
 
-Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`) and the live positions held in memory.
+Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`), the marshal laps (`marshalLaps`) and lap/time penalties (`penalties`) given during the run, and the live positions held in memory. A restart removes the marshal laps and penalties so the re-run starts clean; incident reports and marshal absences stay.
 
 ## Race control — Run order, heats and finals
 
@@ -927,7 +942,7 @@ GET /privacy-notice                 (anonymous)
 GET /admin/retention                (ADMIN)
 ```
 
-`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "hiddenRowIcons" }`, the club's thresholds (#505). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays", "runOnStartup" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever), and whether it also runs when the app starts; the Backups page shows it. The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
+`live-timing-settings` is `{ "battleGapMs", "battleTrendMsPerLap", "battleFastMsPerLap", "battleHoldLaps", "closeGapMs", "lateMarginMs", "truncateToHundredths", "hiddenRowIcons" }`, the club's thresholds (#505). `truncateToHundredths` (default `false`, may be left out for off) cuts every time to hundredths of a second, truncated and never rounded; see [Time precision](scoring.md#time-precision). `hiddenRowIcons` lists the row icons switched off on race control and the boards (#696), from `pace`, `flying`, `lap`, `close`, `lapped`, `penalty` and `signal`, and may be left out for none; an unknown name is **400**. `GET /boards/settings` answers it too. The defaults are 2000, 150, 300, 2, 1000 and 1000. `battleGapMs` is how near the car ahead makes an on-track battle (0 switches battles off, up to 10000); `battleTrendMsPerLap` is the change in the gap each lap beyond which it is closing or growing (up to 2000); `battleFastMsPerLap` is the closing rate that marks a car gaining fast (up to 5000, and not below the trend figure); `battleHoldLaps` is how many laps a pair stays a battle after it drops outside the gap (up to 10); `closeGapMs` is how near the car ahead is shown as close, the amber row (0 is off, up to 60000); `lateMarginMs` is how far past its average lap a car is before its lap bar turns red (up to 10000). **400** for a value out of range. A change reaches races in progress at their next update and is audited as `LIVE_TIMING_SETTINGS_CHANGED` with the values before and after. `logo` replaces the club logo with the uploaded image and answers the URL it is served from; **400** for a missing, oversized or unsupported file. `PUT /admin/club/privacy-notice` takes `{ "text" }`, where blank goes back to the default notice and more than 20000 characters is **400**. The public `GET /privacy-notice` answers `{ "clubName", "email", "phone", "text" }`: the club's own text, or the default if it has not written one. `GET /admin/retention` answers `{ "failedSignInDays", "auditDays", "runOnStartup" }`, how long the nightly clean-up keeps refused sign-ins and every other audit row (0 keeps those for ever), and whether it also runs when the app starts; the Backups page shows it. The periods are set with `rctiming.retention.failed-sign-in-days` and `rctiming.retention.audit-days`.
 
 ## Admin — Screens
 
@@ -1021,7 +1036,7 @@ GET /boards/races/{raceId}/battles
 ```http
 GET /boards/settings
 ```
-**200 OK** — `{ "closeGapMs": 1000, "lateMarginMs": 1000 }`, the club's thresholds the boards draw with (#505): how near the car ahead is shown as close, and how far past its average lap a car is before its lap bar turns red. The address option `close=` on a board still wins over `closeGapMs`. The battle thresholds are applied by the timing laptop and are not here.
+**200 OK** — `{ "closeGapMs": 1000, "lateMarginMs": 1000, "truncateToHundredths": false, "hiddenRowIcons": [] }`, the club's thresholds the boards draw with (#505), and whether times are shown to hundredths: how near the car ahead is shown as close, and how far past its average lap a car is before its lap bar turns red. The address option `close=` on a board still wins over `closeGapMs`. The battle thresholds are applied by the timing laptop and are not here.
 
 ```http
 GET /boards/races/{raceId}/clock
@@ -1146,12 +1161,7 @@ Newest first. Every filter is optional and the ones given must all match: `entit
 ```http
 GET /api/v1/admin/results-exports
 ```
-**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/results", "savedUrl": null, "missingSettings": [], "keySource": "SETTINGS_FILE", "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). `resultsUrl` is the address in use: `savedUrl`, the one set below, else `rctiming.racehub.results-url` from the settings file. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
-
-```http
-PUT /api/v1/admin/results-exports/address
-```
-Body `{ "resultsUrl": "https://racehub.example/api/results" }`. **200 OK** — the same body as the list. A blank `resultsUrl` clears the saved address, so the settings file's applies. **400** unless it is an `https://` address (plain `http://` is accepted only to this machine, for testing). Audited as `RACEHUB_RESULTS_URL_CHANGED`.
+**200 OK** — `{ "sendingEnabled": true, "resultsUrl": "https://racehub.example/api/rctc/v1/results", "raceHubUrl": "https://racehub.example", "addressSource": "SETTINGS_FILE", "missingSettings": [], "keySource": "SETTINGS_FILE", "publishTarget": "RACEHUB", "chosenTarget": null, "exports": [Export] }`, the newest 100 first. `publishTarget` is where results are published now and `chosenTarget` is the club's own choice, null when it has not made one (see below). `resultsUrl` is where results are sent: RaceHub's address plus `/api/rctc/v1/results`. `raceHubUrl` is that address in use and `addressSource` where it comes from: `SAVED` (set with `PUT /admin/racehub/address`), `SETTINGS_FILE` (`rctiming.racehub.url`), `SEPARATE` (the older results and events addresses, used only while neither is set) or `NONE`. `sendingEnabled` is false until both the RaceHub address and key are set, and exports wait until then; `missingSettings` names what is still needed. `keySource` is where the RaceHub key comes from: `SAVED` (set below), `SETTINGS_FILE` or `NONE`; the key itself is never returned. Each `Export` is `{ "id": 9, "eventId": 21, "eventName": "Club Round 3", "revision": 3, "reason": "CORRECTION", "status": "FAILED", "attempts": 2, "nextAttemptAt": "2026-10-18T15:50:00Z", "lastError": "RaceHub answered 503: ...", "createdAt": "2026-10-18T15:43:02Z", "sentAt": null }`. `reason` is `RACE_FINISHED`, `CORRECTION` or `DAY_CLOSE`; `status` is `QUEUED`, `FAILED`, `SENT` or `SUPERSEDED`.
 
 ```http
 PUT /api/v1/admin/results-exports/key

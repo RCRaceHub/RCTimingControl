@@ -117,9 +117,13 @@ The app copies its database into a backup folder when an event is marked complet
 | `RCTIMING_RETENTION_CRON` (`rctiming.retention.cron`) | `0 0 3 * * *` | When the retention clean-up runs (server time); `-` turns it off. It also runs once at start-up (`rctiming.retention.run-on-startup`, default `true`), as a laptop may be off at 03:00 |
 | `rctiming.provisioning.admin.*` / `.club.*` / `.decoder.*` | empty | First-start answers to the setup wizard (first admin, club details, decoder address); applied only while the database has no accounts. See [provisioning.md](provisioning.md) |
 | `rctiming.network.addresses` / `rctiming.network.mdns-name` | empty | Addresses the About page shows (needed in a container) and the `.local` name advertised on the network |
+| `rctiming.racehub.live.enabled` / `.min-interval-ms` / `.resend-every-ms` | `true` / `3000` / `15000` | Live results to RaceHub while a race runs: on or off, the shortest time between two snapshots of one race, and how often an unchanged race is sent again. See [live-results-v1.md](live-results-v1.md) |
 | `rctiming.screens.discovery` | `true` | Browse the venue network for EventScreenDisplay screens by mDNS (`_eventscreen._tcp`) every 30 seconds; turn off where multicast is blocked and add screens by hand |
 | `rctiming.screens.auto-add` | `false` | Add screens found by mDNS without waiting for an official to press Add on the Screens page; off, they wait under "Found, not added" |
 | `rctiming.screens.restrict-pages` / `rctiming.screens.allowed-hosts` | `true` / empty | Screens may only be given pages on this server's own venue-network addresses; `allowed-hosts` adds others (comma-separated), `restrict-pages=false` lifts the check |
+| `rctiming.entry-feed.interval-ms` | `300000` | How often an automatic entry feed is fetched once its event is within `near-days` of its date (or past it) |
+| `rctiming.entry-feed.far-interval-ms` | `3600000` | How often it is fetched while the event is further away. A feed that is overdue (the laptop was off) is fetched shortly after start-up |
+| `rctiming.entry-feed.near-days` | `7` | How many days before its date an event counts as close |
 | `rctiming.screens.poll-interval-ms` | `5000` | How often the screen manager reads each screen's status |
 | `rctiming.https.enabled` / `rctiming.https.port` | `false` / `8443` | Optional local HTTPS connector using the club's own certificate |
 | `app.jwt.secret`, `app.jwt.access-token-ttl-ms`, `app.jwt.refresh-token-ttl-ms` | generated / 15 min / 7 days | Signing secret (a random `jwt-secret` file in the data folder when blank) and token lifetimes |
@@ -287,6 +291,8 @@ They are made by `frontend/scripts/manual-screenshots.mjs`, which drives the rea
 2. Start it on an **empty** data folder with the demo club, plus the simulated decoder: `RCTIMING_DATA_DIR=/tmp/shots java -jar app/build/libs/app.jar --spring.profiles.active=demo --tts.enabled=false`, and `java -jar app/build/libs/app.jar simulate`. The script runs a real meeting on *Demo: Bump-up finals*, so a used database will not do.
 3. For the setup wizard pictures, start a second copy on a new, empty data folder with no profile and `--server.port=8081`.
 4. From `frontend/`, run `node scripts/manual-screenshots.mjs`. Name sections (`raceday`, `practice`, `tour`, `setup`) to run only those. It takes about seven minutes, because it lets real races run for a short while. `BASE_URL`, `SETUP_URL`, `SHOTS_DIR` and `PW_CHROMIUM` (a Chrome binary, if Playwright's own is not installed) change where it looks and writes.
+
+The RaceHub walkthrough's pictures (`racehub-*.png`) come from `frontend/scripts/racehub-screenshots.mjs` instead. It needs no backend: run `npm run dev -- --port 5199` and then `BASE_URL=http://localhost:5199 node scripts/racehub-screenshots.mjs`, and it answers the API calls itself with made-up Wyvern RC Club data.
 5. Look at the pictures that changed, and commit them with the doc change. A step that fails is listed at the end; set `FAIL_DIR` to a folder to get a screenshot of where it stopped.
 
 ## Makefile targets

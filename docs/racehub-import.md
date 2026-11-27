@@ -8,7 +8,7 @@ RCTC only ever calls out to RaceHub. It never needs an address of its own on the
 
 | Step | RCTC | RaceHub call |
 |---|---|---|
-| Save the club's key and the events address | **RaceHub** page, setup wizard, or `rctiming.racehub.token` in the settings file. An admin-saved key overrides the file. The key is stored encrypted and never shown back. | none |
+| Save RaceHub's address and the club's key | **RaceHub** page (the same address field also shows in **Find RaceHub events** and on the classes screen and the setup wizard step), or `rctiming.racehub.url` and `rctiming.racehub.token` in the settings file. An admin-saved address or key overrides the file. The address is set once and used for results, events, classes, formats and imports. The key is stored encrypted and never shown back. | none |
 | Link classes once per club | **RaceHub → Classes and formats** tab, `GET /admin/racehub/classes` | `GET /api/rctc/v1/classes` |
 | Link race formats once per club | same page, `GET /admin/racehub/formats` | `GET /api/rctc/v1/formats` |
 | Find a meeting | **Find RaceHub events**, `GET /admin/racehub/events` | `GET /api/rctc/v1/events?state=ready` |
@@ -45,7 +45,7 @@ RaceHub now fills `headshot_url` and `car_photo_url` (RaceHub PR #399, not yet m
 
 ### Remaining gaps
 
-1. **The automatic entry feed never fetches pictures.** A feed revision that applies by itself saves the car colours but leaves the picture links unfetched; an official has to import the file by hand to fetch them. Recorded as a follow-up on #699. Because RaceHub's links expire after 12 hours, this follow-up should fetch at the moment the feed applies.
+1. **The automatic feed only fills missing pictures.** When it applies a revision it now fetches the pictures that revision names straight away (#811), but never replaces a picture already held, so a headshot changed later in RaceHub does not refresh by itself, and a picture an official uploaded is safe. If some cannot be fetched, the feed says how many; import the file by hand to retry or to replace.
 2. **No colours from RaceHub** (above). Colours still come from the CSV import or an official.
 3. The pictures have not yet been tried with a real RaceHub export; the tests use fixture files (`entries-v1-media.json`).
 

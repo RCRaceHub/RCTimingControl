@@ -83,10 +83,11 @@ public class BattleTracker {
             return List.of();
         }
 
-        Map<Integer, LiveTimingRowDto> byPosition = new HashMap<>();
-        rows.forEach(row -> byPosition.put(row.position(), row));
-        for (LiveTimingRowDto chaser : rows) {
-            LiveTimingRowDto ahead = byPosition.get(chaser.position() - 1);
+        // The car ahead is the one before in the running order, not "position minus one": cars that share a place (a
+        // dead heat at hundredths) leave no car at that number
+        for (int i = 0; i < rows.size(); i++) {
+            LiveTimingRowDto chaser = rows.get(i);
+            LiveTimingRowDto ahead = i == 0 ? null : rows.get(i - 1);
             if (ahead == null || chaser.finished() || ahead.finished()) {
                 continue;
             }

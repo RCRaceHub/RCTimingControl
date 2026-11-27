@@ -24,6 +24,11 @@ public class MarshalAdjustmentRepository extends JooqRepository<MarshalAdjustmen
         return findWhere(MARSHAL_ADJUSTMENTS.RACE_ID.eq(raceId), MARSHAL_ADJUSTMENTS.ADJUSTED_AT.asc(), MARSHAL_ADJUSTMENTS.ID.asc());
     }
 
+    /** Removes the race's marshal laps, such as when the race is restarted to run again. */
+    public void deleteByRaceId(Long raceId) {
+        dsl.deleteFrom(MARSHAL_ADJUSTMENTS).where(MARSHAL_ADJUSTMENTS.RACE_ID.eq(raceId)).execute();
+    }
+
     @Override
     protected MarshalAdjustment toEntity(MarshalAdjustmentsRecord r) {
         return MAPPER.toEntity(r);

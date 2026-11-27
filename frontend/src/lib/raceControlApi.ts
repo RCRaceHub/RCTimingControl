@@ -366,12 +366,48 @@ export async function getEventSchedule(): Promise<EventScheduleDto[]> {
 
 export type ConnectionState = 'CONNECTED' | 'RECONNECTING' | 'DISCONNECTED';
 
+/** How the decoder's clock looks against the server's (detection only; no time is changed). Figures are milliseconds. */
+export type DecoderClockDto = {
+  status: 'LEARNING' | 'OK' | 'JITTERY' | 'DRIFTING' | 'RESTARTED';
+  passings: number;
+  jitterMs: number;
+  latencyMs: number;
+  /** Negative when the decoder's clock runs fast. */
+  driftMsPerMinute: number;
+  restarts: number;
+};
+
 export type DecoderStatusDto = {
   decoderState: ConnectionState;
+  /** Null until the decoder has sent a passing on the current settings. */
+  clock?: DecoderClockDto | null;
 };
 
 export async function fetchDecoderStatus(): Promise<DecoderStatusDto> {
   const { data } = await api.get<DecoderStatusDto>('/api/v1/race-control/decoder/status');
+  return data;
+}
+
+// ── RaceHub link status ──────────────────────────────────────────────────────
+
+export type RaceHubHealth = 'NOT_CONFIGURED' | 'CHECKING' | 'OK' | 'UNREACHABLE' | 'KEY_REFUSED' | 'ERROR';
+
+export type RaceHubStatusDto = {
+  health: RaceHubHealth;
+  /** What is wrong; null when OK. */
+  detail: string | null;
+  checkedAt: string | null;
+  /** When the link last worked since the app started. */
+  lastOkAt: string | null;
+  /** Results exports not yet sent, and the part of them whose send failed. */
+  waiting: number;
+  failed: number;
+  lastSentAt: string | null;
+  lastSendError: string | null;
+};
+
+export async function fetchRaceHubStatus(): Promise<RaceHubStatusDto> {
+  const { data } = await api.get<RaceHubStatusDto>('/api/v1/race-control/racehub/status');
   return data;
 }
 

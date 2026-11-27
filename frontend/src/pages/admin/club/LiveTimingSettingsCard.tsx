@@ -10,7 +10,7 @@ import type { LiveTimingSettingsDto } from '@/lib/adminApi';
 import { ROW_ICONS, ROW_ICON_LABELS, rowIconsWithout } from '@/lib/rowIcons';
 
 /** The settings that are a number; the row icons are chosen separately. */
-type NumberKey = Exclude<keyof LiveTimingSettingsDto, 'hiddenRowIcons'>;
+type NumberKey = Exclude<keyof LiveTimingSettingsDto, 'hiddenRowIcons' | 'truncateToHundredths'>;
 
 /** One threshold: how it is labelled, stored (milliseconds, or laps) and shown (seconds, or laps), and its range. */
 interface Field {
@@ -79,6 +79,8 @@ export default function LiveTimingSettingsCard() {
   const [draft, setDraft] = useState<Partial<Record<NumberKey, string>>>({});
   // The row icons ticked to show, once the admin has changed them; null while they have not
   const [iconsDraft, setIconsDraft] = useState<string[] | null>(null);
+  // The time precision once the admin has changed it; null while they have not
+  const [hundredthsDraft, setHundredthsDraft] = useState<boolean | null>(null);
 
   if (isLoading) return <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />;
   if (isError || !data) {
@@ -96,16 +98,19 @@ export default function LiveTimingSettingsCard() {
   const fastBelowTrend = trend.valid && fast.valid && fast.number < trend.number;
   const allValid = values.every((v) => v.valid) && !fastBelowTrend;
   const shownIcons: string[] = iconsDraft ?? rowIconsWithout(data.hiddenRowIcons);
-  const changed = Object.keys(draft).length > 0 || iconsDraft !== null;
+  const hundredths = hundredthsDraft ?? data.truncateToHundredths;
+  const changed = Object.keys(draft).length > 0 || iconsDraft !== null || hundredthsDraft !== null;
 
   async function onSave() {
     const settings = { ...data } as LiveTimingSettingsDto;
     for (const { field, number } of values) settings[field.key] = Math.round(number * field.unit);
+    settings.truncateToHundredths = hundredths;
     settings.hiddenRowIcons = ROW_ICONS.filter((icon) => !shownIcons.includes(icon));
     try {
       await save.mutateAsync(settings);
       setDraft({});
       setIconsDraft(null);
+      setHundredthsDraft(null);
       toast.success('Live timing settings saved');
     } catch {
       toast.error('Could not save the live timing settings. Try again.');
@@ -140,6 +145,21 @@ export default function LiveTimingSettingsCard() {
           {!valid && <p className="text-xs text-destructive">Enter a number from 0 to {field.max}.</p>}
         </div>
       ))}
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={hundredths}
+          onChange={(e) => setHundredthsDraft(e.target.checked)}
+        />
+        <span>
+          <span className="font-medium">Time to hundredths of a second</span>
+          <span className="block text-xs text-muted-foreground">
+            Cut every lap time, total and gap to hundredths (cut, never rounded), as some rule books ask, instead of the
+            decoder's thousandths. Cars with the same time then share a place. Change it between races, not during one. Times are saved cut, so switching it off later does not bring the thousandths back for races already run.
+          </span>
+        </span>
+      </label>
       <fieldset className="space-y-1.5">
         <legend className="text-sm font-medium">Icons beside driver names</legend>
         <p className="text-xs text-muted-foreground">

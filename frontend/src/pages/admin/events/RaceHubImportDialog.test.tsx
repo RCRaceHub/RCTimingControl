@@ -296,7 +296,7 @@ describe('RaceHubImportDialog', () => {
       unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: null, entryCount: 1 }],
     }));
     vi.mocked(adminApi.raceHubClasses.list).mockResolvedValue({
-      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      error: null, raceHubUrl: 'https://racehub.example', tokenSet: true,
       classes: [{
         id: 'club-buggy', name: 'Buggy 2WD', rcClassName: 'Buggy 2WD', active: true,
         linkedRacingClassId: null, suggestedRacingClassId: 102,
@@ -319,14 +319,14 @@ describe('RaceHubImportDialog', () => {
       blocked: true,
       unmappedClasses: [{ classKey: 'club-buggy', rcClassName: 'Buggy 2WD', className: null, entryCount: 1 }],
     }));
-    vi.mocked(adminApi.raceHubClasses.list).mockResolvedValue({ classes: [], error: 'Set the RaceHub events address first.', eventsUrl: null, tokenSet: true });
+    vi.mocked(adminApi.raceHubClasses.list).mockResolvedValue({ classes: [], error: 'Set the RaceHub address first.', raceHubUrl: null, tokenSet: true });
     renderDialog();
     chooseFile(exportFile());
     await screen.findByText('Buggy 2WD', { selector: 'span' });
 
     fireEvent.click(screen.getByRole('button', { name: /Fetch RaceHub's classes again/ }));
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Set the RaceHub events address first.'));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Set the RaceHub address first.'));
     expect(screen.getAllByRole('combobox')[0]).toHaveValue('');
   });
 

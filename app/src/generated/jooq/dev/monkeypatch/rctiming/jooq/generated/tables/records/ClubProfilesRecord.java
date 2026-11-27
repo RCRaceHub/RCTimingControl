@@ -398,6 +398,34 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         return (String) get(26);
     }
 
+    /**
+     * Setter for <code>club_profiles.racehub_url</code>.
+     */
+    public void setRacehubUrl(String value) {
+        set(27, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.racehub_url</code>.
+     */
+    public String getRacehubUrl() {
+        return (String) get(27);
+    }
+
+    /**
+     * Setter for <code>club_profiles.truncate_to_hundredths</code>.
+     */
+    public void setTruncateToHundredths(Boolean value) {
+        set(28, value);
+    }
+
+    /**
+     * Getter for <code>club_profiles.truncate_to_hundredths</code>.
+     */
+    public Boolean getTruncateToHundredths() {
+        return (Boolean) get(28);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -421,7 +449,7 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
     /**
      * Create a detached, initialised ClubProfilesRecord
      */
-    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs, String hiddenRowIcons, String racehubEventsUrl) {
+    public ClubProfilesRecord(Long id, String name, String email, String phone, String websiteUrl, Double latitude, Double longitude, String timezone, Instant createdAt, Instant updatedAt, String logoUrl, String audioSettings, String defaultVoiceId, String decoderHost, Integer decoderPort, String decoderProtocol, String privacyNotice, String racehubResultsUrl, String resultsPublishTarget, Integer battleGapMs, Integer battleTrendMs, Integer battleFastMs, Integer battleHoldLaps, Integer closeGapMs, Integer lateMarginMs, String hiddenRowIcons, String racehubEventsUrl, String racehubUrl, Boolean truncateToHundredths) {
         super(ClubProfiles.CLUB_PROFILES);
 
         setId(id);
@@ -451,6 +479,8 @@ public class ClubProfilesRecord extends UpdatableRecordImpl<ClubProfilesRecord> 
         setLateMarginMs(lateMarginMs);
         setHiddenRowIcons(hiddenRowIcons);
         setRacehubEventsUrl(racehubEventsUrl);
+        setRacehubUrl(racehubUrl);
+        setTruncateToHundredths(truncateToHundredths);
         resetTouchedOnNotNull();
     }
 }

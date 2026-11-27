@@ -51,4 +51,24 @@ class EpochAnchorTest {
         assertThat(newMicros).isGreaterThanOrEqualTo(beforeMs * 1000L);
         assertThat(newMicros).isLessThanOrEqualTo((afterMs + 1) * 1000L);
     }
+
+    @Test
+    void lapTimesAreExactDecoderDifferencesWhatEverTheAnchor() {
+        EpochAnchor anchor = new EpochAnchor();
+        long first = anchor.toRtcTimeMicrosExact(596_126_000L);
+        long second = anchor.toRtcTimeMicrosExact(608_471_000L);
+        assertThat(second - first).isEqualTo(12_345_000L);
+    }
+
+    @Test
+    void hundredthsTruncateTheDecoderTimeNotTheAnchoredClock() {
+        EpochAnchor anchor = new EpochAnchor();
+        anchor.setTruncationMicros(10_000L);
+        long first = anchor.toRtcTimeMicrosExact(596_126_000L);
+        long second = anchor.toRtcTimeMicrosExact(608_479_000L);
+        // 596.126 cuts to 596.12 and 608.479 to 608.47, so the lap is 12.35 s whatever the anchor
+        assertThat(second - first).isEqualTo(12_350_000L);
+        assertThat(first % 10_000L).isZero();
+        assertThat(second % 10_000L).isZero();
+    }
 }

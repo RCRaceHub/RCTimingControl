@@ -11,18 +11,24 @@ import java.util.List;
  * {@code rctiming.racehub.*}: where results exports are sent (#27). Sending needs both settings; with either
  * missing, exports wait in the outbox.
  *
- * @param resultsUrl the RaceHub address results exports are POSTed to. It must be https, since the club's
- *                   key goes with every request; plain http is allowed only to this machine, for testing.
+ * @param resultsUrl the full address results exports are POSTed to, from before there was one RaceHub address.
+ *                   Used only when {@code url} and the admin panel's address are both unset. It must be https,
+ *                   since the club's key goes with every request; plain http is allowed only to this machine, for
+ *                   testing.
  * @param token      the machine credential RaceHub issued for this club, sent as a bearer token
  * @param accessClientId     optional: a Cloudflare Access service token's client id, for a RaceHub that sits behind
  *                           Cloudflare Access. Sent, with the secret, as {@code CF-Access-Client-Id} to RaceHub's host
  *                           only (see {@link RaceHubResultsEndpoint#accessHeaders}). Unset for a RaceHub without it.
  * @param accessClientSecret optional: the matching {@code CF-Access-Client-Secret}. Never logged or returned.
+ * @param url        the one RaceHub address, its host such as {@code https://racehub.example}: results, the event
+ *                   picker, the class and format lists and the entry feeds all find their paths from it. The default
+ *                   when the admin panel has none saved; same https rule as {@code resultsUrl}.
  */
 @ConfigurationProperties(prefix = "rctiming.racehub")
 public record RaceHubResultsProperties(URI resultsUrl, String token, String accessClientId,
-                                       String accessClientSecret) {
+                                       String accessClientSecret, URI url) {
 
+    static final String BASE_SETTING = "rctiming.racehub.url";
     static final String URL_SETTING = "rctiming.racehub.results-url";
     static final String TOKEN_SETTING = "rctiming.racehub.token";
     static final String ACCESS_CLIENT_ID_SETTING = "rctiming.racehub.access-client-id";
@@ -36,6 +42,8 @@ public record RaceHubResultsProperties(URI resultsUrl, String token, String acce
     @ConstructorBinding
     public RaceHubResultsProperties {
         resultsUrl = SecureEndpoint.url(resultsUrl, URL_SETTING, "https", "http");
+        URI checked = SecureEndpoint.url(url, BASE_SETTING, "https", "http");
+        url = checked == null ? null : RaceHubResultsEndpoint.baseOf(checked);
         token = SecureEndpoint.token(token);
         accessClientId = SecureEndpoint.token(accessClientId);
         accessClientSecret = SecureEndpoint.token(accessClientSecret);
@@ -45,9 +53,14 @@ public record RaceHubResultsProperties(URI resultsUrl, String token, String acce
         }
     }
 
+    /** Without the one RaceHub address: the older results address, the key and the Cloudflare Access token. */
+    public RaceHubResultsProperties(URI resultsUrl, String token, String accessClientId, String accessClientSecret) {
+        this(resultsUrl, token, accessClientId, accessClientSecret, null);
+    }
+
     /** Without Cloudflare Access: the address and the key only. */
     public RaceHubResultsProperties(URI resultsUrl, String token) {
-        this(resultsUrl, token, null, null);
+        this(resultsUrl, token, null, null, null);
     }
 
     /** Whether a Cloudflare Access service token is configured. */

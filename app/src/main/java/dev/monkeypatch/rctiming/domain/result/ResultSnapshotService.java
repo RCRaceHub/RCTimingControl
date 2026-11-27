@@ -286,7 +286,7 @@ public class ResultSnapshotService {
                         info.driverName(), info.carNumber(), 0, 0L, null, null));
             }
         }
-        return ShikabaneOrdering.apply(ResultCorrections.apply(rows, lapDeltas, addedTimeMs), dead);
+        return ShikabaneOrdering.apply(ResultCorrections.apply(rows, lapDeltas, addedTimeMs, lapTimingService.sharedPlacesOnTies()), dead);
     }
 
     /**

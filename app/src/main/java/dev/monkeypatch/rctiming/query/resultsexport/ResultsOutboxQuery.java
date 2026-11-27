@@ -1,7 +1,9 @@
 package dev.monkeypatch.rctiming.query.resultsexport;
 
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import dev.monkeypatch.rctiming.resultsexport.OutboxStatus;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -68,5 +70,29 @@ public class ResultsOutboxQuery {
                         r.get(RESULTS_OUTBOX.LAST_ERROR),
                         r.get(RESULTS_OUTBOX.CREATED_AT),
                         r.get(RESULTS_OUTBOX.SENT_AT)));
+    }
+
+    /**
+     * How the outbox stands, for the race director's RaceHub indicator.
+     *
+     * @param waiting     exports not yet sent, queued or failed and waiting to retry
+     * @param failed      the part of {@code waiting} whose last send was refused or did not get through
+     * @param lastSentAt  when RaceHub last accepted an export, or null if none has been
+     * @param lastError   the newest failure message among the waiting exports, or null
+     */
+    public record Summary(int waiting, int failed, Instant lastSentAt, String lastError) {
+    }
+
+    /** Counts the exports waiting and failed, and finds the last accepted send and the newest failure message. */
+    public Summary summary() {
+        int waiting = dsl.fetchCount(RESULTS_OUTBOX, RESULTS_OUTBOX.STATUS.in(OutboxStatus.QUEUED.name(), OutboxStatus.FAILED.name()));
+        int failed = dsl.fetchCount(RESULTS_OUTBOX, RESULTS_OUTBOX.STATUS.eq(OutboxStatus.FAILED.name()));
+        var newestSent = DSL.max(RESULTS_OUTBOX.SENT_AT);
+        Instant lastSent = dsl.select(newestSent).from(RESULTS_OUTBOX).fetchOne(newestSent);
+        String lastError = dsl.select(RESULTS_OUTBOX.LAST_ERROR).from(RESULTS_OUTBOX)
+                .where(RESULTS_OUTBOX.STATUS.eq(OutboxStatus.FAILED.name()))
+                .orderBy(RESULTS_OUTBOX.ID.desc()).limit(1)
+                .fetchOne(RESULTS_OUTBOX.LAST_ERROR);
+        return new Summary(waiting, failed, lastSent, lastError);
     }
 }

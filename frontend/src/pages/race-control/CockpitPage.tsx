@@ -412,7 +412,7 @@ function CockpitView() {
   async function onRestart() {
     const confirmed = await confirm({
       title: `Restart ${raceTitle(selectedRace)} from scratch?`,
-      description: 'Its timing and any saved result will be cleared.',
+      description: 'Its timing, any saved result, and the marshal laps and penalties given in it will be cleared. A copy is kept in the audit log.',
       confirmLabel: 'Restart',
       destructive: true,
     });

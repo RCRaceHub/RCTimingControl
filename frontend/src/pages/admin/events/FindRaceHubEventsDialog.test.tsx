@@ -12,7 +12,8 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: v
 
 vi.mock('@/lib/adminApi', () => ({
   adminApi: {
-    raceHubEvents: { list: vi.fn(), setAddress: vi.fn(), take: vi.fn() },
+    raceHubEvents: { list: vi.fn(), take: vi.fn() },
+    raceHubAddress: { set: vi.fn() },
     fetchEntryFeed: vi.fn(),
   },
 }));
@@ -36,14 +37,16 @@ function feed(overrides: Partial<EntryFeedDto> = {}): EntryFeedDto {
 
 function answer(overrides: Partial<RaceHubEventsDto> = {}): RaceHubEventsDto {
   return {
-    eventsUrl: 'https://racehub.example/api/rctc/v1/events?state=ready',
+    raceHubUrl: 'https://racehub.example',
     tokenSet: true,
     error: null,
     events: [
       { raceHubEventId: 'E-7', name: 'Club Champs', eventDate: '2026-11-14', venue: 'Test Track',
-        entryCount: 42, linkedEventId: null },
+        entryCount: 42, linkedEventId: null, bookingOpenAt: null, bookingCloseAt: null, bookingState: null,
+        releasedAt: null },
       { raceHubEventId: 'E-8', name: 'Winter Series', eventDate: '2026-12-05', venue: null,
-        entryCount: null, linkedEventId: 9 },
+        entryCount: null, linkedEventId: 9, bookingOpenAt: null, bookingCloseAt: null, bookingState: null,
+        releasedAt: null },
     ],
     ...overrides,
   };
@@ -82,7 +85,7 @@ describe('FindRaceHubEventsDialog', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Take' }));
 
-    await waitFor(() => expect(api.take).toHaveBeenCalledWith('E-7'));
+    await waitFor(() => expect(api.take).toHaveBeenCalledWith('E-7', 'ready'));
     await waitFor(() => expect(fetchEntryFeed).toHaveBeenCalledWith(5));
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/admin/events/5', { state: { openTab: 'entries' } }));
     expect(toast.success).toHaveBeenCalledWith('Event taken. Its entries are ready to review and import.');
@@ -135,16 +138,19 @@ describe('FindRaceHubEventsDialog', () => {
   });
 
   it('asks for the address first when none is saved, and saves it', async () => {
-    api.list.mockResolvedValue(answer({ eventsUrl: null, events: [], error: 'Set the RaceHub events address first.' }));
-    api.setAddress.mockResolvedValue(answer());
+    api.list
+      .mockResolvedValueOnce(answer({ raceHubUrl: null, events: [], error: 'Set the RaceHub address first.' }))
+      .mockResolvedValue(answer());
+    vi.mocked(adminApi.raceHubAddress.set).mockResolvedValue({
+      address: 'https://racehub.example', savedAddress: 'https://racehub.example', source: 'SAVED', resultsUrl: null,
+    });
     renderDialog();
 
-    const input = await screen.findByLabelText('RaceHub events address');
-    fireEvent.change(input, { target: { value: 'https://racehub.example/api/rctc/v1/events?state=ready' } });
+    const input = await screen.findByLabelText('RaceHub address');
+    fireEvent.change(input, { target: { value: 'https://racehub.example' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() =>
-      expect(api.setAddress).toHaveBeenCalledWith('https://racehub.example/api/rctc/v1/events?state=ready'));
+    await waitFor(() => expect(adminApi.raceHubAddress.set).toHaveBeenCalledWith('https://racehub.example'));
     expect(await screen.findByText('Club Champs')).toBeInTheDocument();
   });
 
@@ -153,5 +159,40 @@ describe('FindRaceHubEventsDialog', () => {
     renderDialog();
 
     expect(await screen.findByText(/rctiming\.racehub\.token/)).toBeInTheDocument();
+  });
+
+  it('asks for the open-for-sign-up events from today and takes one from that view', async () => {
+    api.list.mockResolvedValue(
+      answer({
+        events: [
+          { raceHubEventId: 'E-9', name: 'Spring Opener', eventDate: '2027-03-06', venue: null, entryCount: 3,
+            linkedEventId: null, bookingOpenAt: '2026-11-01T09:00:00Z', bookingCloseAt: '2027-03-01T18:00:00Z',
+            bookingState: 'open', releasedAt: null },
+        ],
+      }),
+    );
+    api.take.mockResolvedValue({ id: 6 });
+    fetchEntryFeed.mockResolvedValue(feed());
+    renderDialog();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open for sign-up' }));
+
+    expect(await screen.findByText('Spring Opener')).toBeInTheDocument();
+    expect(screen.getByText(/Sign-up open until/)).toBeInTheDocument();
+    expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ state: 'open', from: expect.any(String) }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Take' }));
+    await waitFor(() => expect(api.take).toHaveBeenCalledWith('E-9', 'open'));
+  });
+
+  it('refuses a date range that ends before it starts', async () => {
+    api.list.mockResolvedValue(answer());
+    renderDialog();
+    await screen.findByText('Club Champs');
+
+    fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-12-10' } });
+    fireEvent.change(screen.getByLabelText('To'), { target: { value: '2026-12-01' } });
+
+    expect(await screen.findByText('The start date is after the end date.')).toBeInTheDocument();
   });
 });

@@ -17,8 +17,7 @@ function LapTimesPanel({ entryId, lapHistory }: { entryId: number; lapHistory: P
     return <p className="text-xs text-muted-foreground py-1">No lap data recorded.</p>;
   }
   const formatLapTime = (ms: number | null | undefined): string => {
-    if (ms === null || ms === undefined) return '—';
-    return (ms / 1000).toFixed(3) + 's';
+    return ms === null || ms === undefined ? '—' : `${fmtMs(ms)}s`;
   };
   return (
     <table className="text-xs font-mono w-full">

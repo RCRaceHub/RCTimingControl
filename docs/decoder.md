@@ -109,9 +109,25 @@ The decoder above is the **start/finish loop**: it is the only one that credits 
 
 A split decoder never credits a lap. When a car crosses the finish loop and has crossed every enabled split in order, RCTC works out the sector times: finish to split 1, split 1 to split 2, and so on to the finish. A lap with a missing or out-of-order split gets no sector times, never wrong ones. Nothing about lap counting or results changes. Race control's live timing table gets an **S1, S2, ...** column for each sector, showing each car's latest lap, with the fastest of anyone in purple and a car's own best in green. A car with no complete lap yet shows a dash. With no split decoders there are no sector columns at all, so a club with one decoder sees nothing change. While the race runs the sector times are held in memory. When it finishes they are saved with the result, and the printed results page gets a **Best sector times** table (each driver's best in every sector in finishing order, the quickest of anyone in bold). A race with no sector times, which is every race at a one-decoder club, prints exactly as before. Putting a race back to pending deletes its saved sectors. The spectator live timing board (and a custom view's live timing panel) shows the same **S1, S2, ...** columns, with the fastest of anyone in purple and a car's own best in green; a car with no complete lap yet shows a dash, and a club with no split decoders sees no sector columns. The OBS overlay's tower can show them too: tick **Sector times** in the Overlay Designer (`sectors=show` on the overlay address; off unless asked).
 
-RC-4 decoders send seconds since power-on, not a clock time, so RCTC lines each decoder up with the server clock when its first passing arrives. Two decoders can therefore disagree by some milliseconds. The **clock offset** (milliseconds, added to every passing from that decoder) lets you correct a known difference.
+RC-4 decoders send seconds since power-on, not a clock time, so RCTC lines each decoder up with the server clock when its first passing arrives. Two decoders can therefore disagree by some milliseconds. The **clock offset** (milliseconds, added to every passing from that decoder) lets you correct a known difference. A lap time is the difference between a car's two timestamps from the same decoder, so that anchoring never changes a lap time. See [Time precision](scoring.md#time-precision) for cutting times to hundredths.
 
 ---
+
+## Decoder clock health
+
+RCTC watches the decoder's clock against the computer's while passings come in, and warns race control beside the
+**DECODER** light. It is detection only: it changes no lap time, because a lap time is the difference between two of
+the decoder's own timestamps. Each passing is compared with when it arrived, which can only be done from passings (a
+status record has no time on it), so a warning needs a dozen or so passings first.
+
+| Warning | Meaning | What to do |
+|---|---|---|
+| **Decoder link jittery** | The delay between the decoder stamping a passing and this computer receiving it varies by 100 ms or more across recent passings | Check the network and the decoder's connection; lap times are not affected |
+| **Decoder clock drifting** | The decoder's clock is gaining or losing on the computer's by 5 ms a minute or more, and has moved 50 ms or more since the first passings | Lap times stay accurate, but absolute times, the race clock and split decoders drift apart; restart the decoder between races |
+| **Decoder restarted** | The decoder's clock started again (a power cut or reset), so times before and after cannot be compared | Check the race; restart or rerun the heat as needed |
+
+The same figures (status, jitter, latency, drift in ms a minute, restarts) are in the decoder status feed (`/topic/system/decoder-status`) and in
+`GET /api/v1/race-control/decoder/status`. Standalone: nothing here involves RaceHub.
 
 ## Status
 

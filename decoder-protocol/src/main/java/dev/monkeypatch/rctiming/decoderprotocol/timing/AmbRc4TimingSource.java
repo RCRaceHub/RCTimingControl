@@ -57,6 +57,7 @@ public class AmbRc4TimingSource implements TimingSource {
     private final Rc4TextParser   parser      = new Rc4TextParser();
     private final EpochAnchor     epochAnchor = new EpochAnchor();
     private final SeqGapDetector  gapDetector = new SeqGapDetector();
+    private final ClockMonitor    clockMonitor = new ClockMonitor();
 
     private final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
 
@@ -78,6 +79,24 @@ public class AmbRc4TimingSource implements TimingSource {
         this.port      = port;
         this.onPassing = onPassing;
         this.onStatus  = onStatus;
+    }
+
+    /**
+     * Sets who hears when the decoder's clock status changes (steady, jittery, drifting or restarted), see
+     * {@link ClockMonitor}. Called on the Netty event-loop thread.
+     */
+    public void setClockHealthListener(Consumer<ClockHealth> listener) {
+        clockMonitor.setListener(listener);
+    }
+
+    /**
+     * Sets how coarsely passing times are cut, see {@link EpochAnchor#setTruncationMicros(long)}. Safe to call from
+     * any thread while the source runs; takes effect from the next passing.
+     *
+     * @param micros 1000 for whole milliseconds (the default), 10000 for hundredths of a second
+     */
+    public void setTimeTruncationMicros(long micros) {
+        epochAnchor.setTruncationMicros(micros);
     }
 
     /** {@inheritDoc} Start the Netty TCP client. Non-blocking. */
@@ -110,7 +129,7 @@ public class AmbRc4TimingSource implements TimingSource {
                         new IdleStateHandler(8, 0, 0, TimeUnit.SECONDS),
                         new LineBasedFrameDecoder(1024),
                         new StringDecoder(StandardCharsets.US_ASCII),
-                        new Rc4InboundHandler(parser, epochAnchor, gapDetector, onPassing)
+                        new Rc4InboundHandler(parser, epochAnchor, gapDetector, onPassing, clockMonitor)
                     );
                 }
             });
@@ -119,6 +138,8 @@ public class AmbRc4TimingSource implements TimingSource {
             if (future.isSuccess()) {
                 log.info("Connected to RC-4 decoder at {}:{}", host, port);
                 backoffIdx = 0;
+                // Passings the decoder held back while we were away arrive in a burst; do not read that as a fault
+                clockMonitor.reset();
                 onStatus.accept(ConnectionState.CONNECTED);
                 // When the channel closes, trigger a reconnect
                 future.channel().closeFuture().addListener(closeFuture -> {

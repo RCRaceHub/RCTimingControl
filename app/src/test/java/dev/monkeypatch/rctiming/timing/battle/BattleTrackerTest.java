@@ -45,6 +45,18 @@ class BattleTrackerTest {
     }
 
     @Test
+    void pairsACarWithTheOneBeforeItWhenTheCarsAheadShareAPlace() {
+        BattleTracker tracker = new BattleTracker(settings(2000));
+
+        // Cars 1 and 2 are in a dead heat for first (both place 1), car 3 is third and 500 ms behind car 2
+        List<BattleGroupDto> groups = tracker.advance(
+                List.of(row(1, 1, 3, null), row(2, 1, 3, 0L), row(3, 3, 3, 500L)));
+
+        assertThat(groups).hasSize(1);
+        assertThat(groups.get(0).cars()).extracting(BattleCarDto::entryId).containsExactly(1L, 2L, 3L);
+    }
+
+    @Test
     void reportsClosingAndGainingFastFromTheAverageChangePerLap() {
         BattleLinkDto link = lapsOfPair(new BattleTracker(settings(2000)), 1800, 1500, 1200, 900).get(0).links().get(0);
 

@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,10 +60,22 @@ public class EntryFeedClient {
     public record Fetched(String body) implements Result {
     }
 
+    /** The feed answered 304: nothing is newer than the revision asked about, so no file came back. */
+    public record NotModified() implements Result {
+    }
+
     public record AuthFailed(String message) implements Result {
     }
 
-    public record Failed(String message) implements Result {
+    /**
+     * Any other failure. {@code gone} is true when the feed answered 404 or 410: the address no longer serves
+     * anything, as when an event is cancelled or taken down at the source.
+     */
+    public record Failed(String message, boolean gone) implements Result {
+
+        public Failed(String message) {
+            this(message, false);
+        }
     }
 
     /**
@@ -72,9 +85,21 @@ public class EntryFeedClient {
      * (5 MB by default), and a longer answer is a {@link Failed}.
      */
     public Result fetch(URI url, String token) {
+        return fetch(url, token, null);
+    }
+
+    /**
+     * As {@link #fetch(URI, String)}, but when {@code sinceRevision} is given it is sent as {@code ?since_revision=},
+     * so a feed that knows the parameter (RaceHub does) answers 304 ({@link NotModified}) and an unchanged poll costs
+     * almost nothing. A feed that does not know it ignores it and sends the whole file, so this is always safe.
+     */
+    public Result fetch(URI url, String token, Long sinceRevision) {
         try {
+            URI target = sinceRevision == null ? url
+                    : UriComponentsBuilder.fromUri(url).replaceQueryParam("since_revision", sinceRevision)
+                            .build().toUri();
             return restClient.get()
-                    .uri(url)
+                    .uri(target)
                     .accept(MediaType.APPLICATION_JSON)
                     .headers(h -> {
                         if (token != null) {
@@ -87,10 +112,14 @@ public class EntryFeedClient {
                         if (status == HttpStatus.UNAUTHORIZED.value() || status == HttpStatus.FORBIDDEN.value()) {
                             return new AuthFailed("The feed refused the token (" + status + "). Check the token and save it again.");
                         }
+                        if (status == HttpStatus.NOT_MODIFIED.value()) {
+                            return new NotModified();
+                        }
                         if (!response.getStatusCode().is2xxSuccessful()) {
                             byte[] start = response.getBody().readNBytes(MAX_ERROR_LENGTH);
+                            boolean gone = status == HttpStatus.NOT_FOUND.value() || status == HttpStatus.GONE.value();
                             return new Failed(shorten("The feed answered " + status + ": "
-                                    + new String(start, StandardCharsets.UTF_8)));
+                                    + new String(start, StandardCharsets.UTF_8)), gone);
                         }
                         return read(response.getBody());
                     });

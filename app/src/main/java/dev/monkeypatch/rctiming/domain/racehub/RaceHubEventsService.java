@@ -4,7 +4,6 @@ import dev.monkeypatch.rctiming.config.SecureEndpoint;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
-import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedClient;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedService;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -13,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.event.EventService;
 import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,7 +20,7 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Optional;
+import java.util.Locale;
 
 /**
  * The "Find RaceHub events" picker: asks RaceHub which of the club's events are ready for timing, and lets an
@@ -28,7 +28,7 @@ import java.util.Optional;
  * calls it.
  *
  * <p>Asking uses the club's key from the settings file ({@code rctiming.racehub.token}, the one results are sent
- * with) and the events address saved in the admin panel. Taking an event creates it in RCTC when it is not there
+ * with) and the one RaceHub address, the same one results are sent to (see {@link RaceHubResultsEndpoint}). Taking an event creates it in RCTC when it is not there
  * yet (matched by RaceHub's event id) and points its entry feed at the address RaceHub gave, with auto-fetch on, so
  * the entries arrive like any other feed. Taking imports nothing itself: the feed's own rules apply, so a clean
  * revision is applied automatically by {@link EntryFeedService} and anything needing a decision waits for an
@@ -40,7 +40,6 @@ import java.util.Optional;
 @Service
 public class RaceHubEventsService {
 
-    private final ClubProfileService clubProfileService;
     private final RaceHubResultsEndpoint endpoint;
     private final EntryFeedClient client;
     private final EntryFeedService entryFeedService;
@@ -49,11 +48,10 @@ public class RaceHubEventsService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactions;
 
-    public RaceHubEventsService(ClubProfileService clubProfileService, RaceHubResultsEndpoint endpoint,
+    public RaceHubEventsService(RaceHubResultsEndpoint endpoint,
                                 EntryFeedClient client, EntryFeedService entryFeedService,
                                 EventService eventService, EventRepository eventRepository,
                                 ObjectMapper objectMapper, TransactionTemplate transactions) {
-        this.clubProfileService = clubProfileService;
         this.endpoint = endpoint;
         this.client = client;
         this.entryFeedService = entryFeedService;
@@ -63,13 +61,32 @@ public class RaceHubEventsService {
         this.transactions = transactions;
     }
 
-    /** The picker's settings: the saved events address and whether the club's key is set. Never includes the key. */
-    public record Settings(String eventsUrl, boolean tokenSet) {
+    /** The picker's settings: RaceHub's address in use and whether the club's key is set. Never includes the key. */
+    public record Settings(String raceHubUrl, boolean tokenSet) {
     }
 
     /** One event RaceHub offers, with the RCTC event it is already linked to, if any. */
     public record OfferedEvent(String raceHubEventId, String name, String eventDate, String venue,
-                               Integer entryCount, Long linkedEventId) {
+                               Integer entryCount, Long linkedEventId, String bookingOpenAt,
+                               String bookingCloseAt, String bookingState, String releasedAt) {
+    }
+
+    /** Which events to ask RaceHub for: those released to timing, those open for sign-up, or every upcoming one. */
+    public enum View {
+        READY, OPEN, ALL;
+
+        /** The view named {@code value} (any case); {@link IllegalArgumentException} (HTTP 400) for an unknown one. */
+        public static View parse(String value) {
+            try {
+                return valueOf(value == null ? "READY" : value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("state must be ready, open or all");
+            }
+        }
+
+        String queryValue() {
+            return name().toLowerCase(Locale.ROOT);
+        }
     }
 
     /** The outcome of asking RaceHub: the events on offer, or why they could not be listed. */
@@ -83,19 +100,8 @@ public class RaceHubEventsService {
     }
 
     public Settings settings() {
-        return new Settings(clubProfileService.getRaceHubEventsUrl().orElse(null), endpoint.token() != null);
-    }
-
-    /**
-     * Saves the address RaceHub lists ready events at; blank clears it.
-     *
-     * @throws IllegalArgumentException if it is not https (or http to this machine), or carries a user name (HTTP 400)
-     */
-    public void saveEventsUrl(Actor actor, String url) {
-        if (url != null && !url.isBlank()) {
-            RaceHubResultsEndpoint.parse(url);
-        }
-        clubProfileService.updateRaceHubEventsUrl(actor, url);
+        URI base = endpoint.snapshot().baseUrl();
+        return new Settings(base == null ? null : base.toString(), endpoint.token() != null);
     }
 
     /** What asking RaceHub produced: its events as listed, or why not ({@link Failure}). */
@@ -110,35 +116,80 @@ public class RaceHubEventsService {
      * connect, 20 to read), so call it outside a transaction.
      */
     public Listing list() {
-        return switch (ask()) {
+        return list(View.READY, null, null);
+    }
+
+    /**
+     * Asks RaceHub for the events in {@code view}, optionally only those dated from {@code from} to {@code to}
+     * inclusive. The date range is also applied here, so a RaceHub that ignores the parameters still gives the
+     * official the range asked for. Blocks like {@link #list()}.
+     *
+     * @throws IllegalArgumentException if {@code from} is after {@code to} (HTTP 400)
+     */
+    public Listing list(View view, LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("The start date is after the end date");
+        }
+        return switch (ask(view, from, to)) {
             case Failure failure -> failure;
             case AskedEvents asked -> new Offered(asked.events().stream()
+                    .filter(e -> inRange(e, from, to))
                     .map(e -> new OfferedEvent(e.id(), e.name(), e.eventLocalDate(), e.venue(), e.entryCount(),
-                            eventRepository.findByRacehubEventId(e.id()).map(Event::getId).orElse(null)))
+                            eventRepository.findByRacehubEventId(e.id()).map(Event::getId).orElse(null),
+                            e.bookingOpenAt(), e.bookingCloseAt(), e.bookingState(), e.releasedAt()))
                     .toList());
         };
     }
 
-    private Asked ask() {
-        Optional<String> saved = clubProfileService.getRaceHubEventsUrl();
-        if (saved.isEmpty()) {
-            return new Failure("Set the RaceHub events address first.");
+    /** True when the event's date is inside the range; an event with no usable date is kept so it is not hidden. */
+    private static boolean inRange(RaceHubEventListing.ListedEvent event, LocalDate from, LocalDate to) {
+        if (from == null && to == null) {
+            return true;
         }
+        LocalDate date;
+        try {
+            date = LocalDate.parse(event.eventLocalDate());
+        } catch (DateTimeParseException | NullPointerException e) {
+            return true;
+        }
+        return (from == null || !date.isBefore(from)) && (to == null || !date.isAfter(to));
+    }
+
+    private Asked ask() {
+        return ask(View.READY, null, null);
+    }
+
+    private Asked ask(View view, LocalDate from, LocalDate to) {
+        URI base = endpoint.eventsUrl();
+        if (base == null) {
+            return new Failure("Set the RaceHub address first.");
+        }
+        URI url = withQuery(base, view, from, to);
         String token = endpoint.token();
         if (token == null) {
             return new Failure("The club's key for RaceHub is not set (paste it on Results to RaceHub, or set rctiming.racehub.token in the settings file).");
-        }
-        URI url;
-        try {
-            url = RaceHubResultsEndpoint.parse(saved.get());
-        } catch (IllegalArgumentException e) {
-            return new Failure(e.getMessage());
         }
         return switch (client.fetch(url, token)) {
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.AuthFailed failed -> new Failure(failed.message());
             case EntryFeedClient.Failed failed -> new Failure(failed.message());
+            // Never asked conditionally, so RaceHub has no reason to answer 304
+            case EntryFeedClient.NotModified notModified -> new Failure("RaceHub sent no list of events.");
         };
+    }
+
+    /** The events address with {@code state}, and {@code from}/{@code to} when given, replacing its own query. */
+    private static URI withQuery(URI base, View view, LocalDate from, LocalDate to) {
+        UriComponentsBuilder builder =
+                UriComponentsBuilder.fromUri(base).replaceQuery(null)
+                        .queryParam("state", view.queryValue());
+        if (from != null) {
+            builder.queryParam("from", from);
+        }
+        if (to != null) {
+            builder.queryParam("to", to);
+        }
+        return builder.build().toUri();
     }
 
     private Asked parse(String body) {
@@ -156,7 +207,7 @@ public class RaceHubEventsService {
      * Takes one of the events RaceHub offers: creates the RCTC event if it is not there yet, then sets its entry
      * feed to the address RaceHub gave, with the club's key and auto-fetch on. Asks RaceHub again first, so only an
      * event it still offers can be taken and the address is never one the browser supplied. The club's key goes
-     * only to the host the events address names, so an entries address on another host is refused.
+     * only to the host RaceHub's address names, so an entries address on another host is refused.
      *
      * @return the RCTC event, new or existing
      * @throws EntityNotFoundException  if RaceHub does not offer that event any more (HTTP 404)
@@ -164,13 +215,21 @@ public class RaceHubEventsService {
      * @throws IllegalArgumentException if the entries address is not usable or is on another host (HTTP 400)
      */
     public Event take(Actor actor, String raceHubEventId) {
-        List<RaceHubEventListing.ListedEvent> events = switch (ask()) {
+        return take(actor, raceHubEventId, View.READY);
+    }
+
+    /**
+     * Takes an event from the given {@code view}: the same as {@link #take(Actor, String)}, but RaceHub is asked
+     * for that view, so an event that is open for sign-up (and not yet released) can be taken.
+     */
+    public Event take(Actor actor, String raceHubEventId, View view) {
+        List<RaceHubEventListing.ListedEvent> events = switch (ask(view, null, null)) {
             case Failure failure -> throw new StateConflictException(failure.message());
             case AskedEvents asked -> asked.events();
         };
         RaceHubEventListing.ListedEvent chosen = events.stream().filter(e -> e.id().equals(raceHubEventId))
                 .findFirst().orElseThrow(() -> new EntityNotFoundException(
-                        "RaceHub does not list the event " + raceHubEventId + " as ready for timing"));
+                        "RaceHub does not list the event " + raceHubEventId));
         URI entriesUrl = entriesUrl(chosen);
         return transactions.execute(status -> {
             Event event = eventRepository.findByRacehubEventId(chosen.id())
@@ -195,7 +254,14 @@ public class RaceHubEventsService {
     }
 
     private URI entriesUrl(RaceHubEventListing.ListedEvent chosen) {
-        URI eventsUrl = RaceHubResultsEndpoint.parse(clubProfileService.getRaceHubEventsUrl().orElseThrow());
+        URI eventsUrl = endpoint.eventsUrl();
+        if (eventsUrl == null) {
+            throw new StateConflictException("Set the RaceHub address first.");
+        }
+        if (chosen.entriesUrl() == null || chosen.entriesUrl().isBlank()) {
+            throw new IllegalArgumentException("RaceHub has not given an entries address for " + chosen.name()
+                    + " yet, so it cannot be taken");
+        }
         URI entries;
         try {
             entries = URI.create(chosen.entriesUrl() == null ? "" : chosen.entriesUrl().strip());
@@ -210,7 +276,7 @@ public class RaceHubEventsService {
                 && entries.getHost().equalsIgnoreCase(eventsUrl.getHost())
                 && portOf(entries) == portOf(eventsUrl);
         if (!sameHost) {
-            throw new IllegalArgumentException("The entries address is on a different host from the events "
+            throw new IllegalArgumentException("The entries address is on a different host from the RaceHub "
                     + "address, so the club's key is not sent to it");
         }
         return entries;

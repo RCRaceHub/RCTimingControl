@@ -454,19 +454,47 @@ sequenceDiagram
     participant RH as RaceHub (cloud)
     participant ES as EventService
     participant FS as EntryFeedService
-    UI->>C: GET /admin/racehub/events
-    C->>S: list()
-    S->>RH: GET events address (club key as bearer)
-    RH-->>S: events ready for timing
+    UI->>C: GET /admin/racehub/events?state=ready|open|all&from=&to=
+    C->>S: list(view, from, to)
+    S->>RH: GET events?state=...&from=&to= (below the RaceHub address, club key as bearer)
+    RH-->>S: events for that view, with booking and release fields
+    Note over S: dates also filtered here, so a RaceHub that ignores them still works
     S-->>UI: events, each with the RCTC event already linked to it
-    UI->>C: POST /admin/racehub/events/{id}/take
-    C->>S: take()
-    S->>RH: GET events address again (outside any transaction)
-    Note over S: entries address must be on the events address's host
+    UI->>C: POST /admin/racehub/events/{id}/take?state=...
+    C->>S: take(view)
+    S->>RH: GET events again, same view (outside any transaction)
+    Note over S: entries address must be on the RaceHub address's host
     Note over S,FS: one transaction
     S->>ES: create event (name, date) if none has this RaceHub id
     S->>FS: save feed (entries address, club key, auto-fetch on)
     Note over FS: entry feed scheduler then pulls the entries
+```
+
+An event taken early keeps being fetched. The scheduler (`EntryFeedScheduler.fetchDue`, a minute after the last run) fetches the feeds that are due: hourly until a week before the event, every five minutes after, and any overdue feed shortly after start-up. A fetch sends `?since_revision=` and a 304 means nothing is newer. A clean revision is applied; once a run order exists, new or changed entries are held for an official; a 404 or 410 stops automatic fetching. **Update from RaceHub** (`POST .../entry-feed/update`) runs the same fetch at once.
+
+```mermaid
+sequenceDiagram
+    participant Sch as EntryFeedScheduler
+    participant FS as EntryFeedService
+    participant RH as RaceHub (cloud)
+    participant IS as RaceHubImportService
+    Sch->>FS: autoFetch(feed) for each due feed
+    FS->>RH: GET entries?since_revision=N
+    alt 304 Not Modified
+        RH-->>FS: nothing newer
+        FS->>FS: record UNCHANGED
+    else 404 or 410
+        RH-->>FS: not served
+        FS->>FS: record FAILED, auto-fetch off, entries kept
+    else new revision
+        RH-->>FS: Entry Export v1
+        opt a run order exists
+            FS->>IS: preview
+            Note over FS: new or changed entries: hold for an official
+        end
+        FS->>IS: import (clean revision)
+        FS->>FS: record APPLIED with what changed
+    end
 ```
 
 RaceHub is only ever asked, never called. See [racehub-expectations.md](../racehub-expectations.md#finding-events-ready-for-timing).

@@ -125,14 +125,14 @@ Uploading straight from the app to Dropbox or Google Drive, with encryption, is 
 
 ## Sending results to RaceHub
 
-For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. Both can be entered on the **Connection** tab of **RaceHub** in the admin panel; or the key can go in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
+For events whose entries were imported from RaceHub, the app sends the results back as each race finishes, when a finished race is corrected, and when the event is completed, which closes the race day (see [results-export-v1.md](results-export-v1.md)). Give it RaceHub's address and the club's key. You set RaceHub's address once, and results, **Find RaceHub events**, the class and format lists and imports all use it. Both can be entered on the **Connection** tab of **RaceHub** in the admin panel; or the key can go in `application.properties`, and so can the address, which is then the default used while the admin panel's is empty:
 
 ```properties
-rctiming.racehub.results-url=https://racehub.example/api/results
+rctiming.racehub.url=https://racehub.example
 rctiming.racehub.token=the-key-from-racehub
 ```
 
-The address must start with `https://`, since the key goes with every request.
+The address is RaceHub's own, with no path after it (`https://racehub.example`); the app adds the paths it needs. If you paste a full address such as `https://racehub.example/api/rctc/v1/events`, only the part before `/api/` is kept. It must start with `https://`, since the key goes with every request. A club that set a results address (`rctiming.racehub.results-url`) and an events address separately before this keeps working: those are used only while no RaceHub address is set, and saving the one address on the **RaceHub** page replaces them.
 
 To change the key later without a restart, paste the new one into **RaceHub key** on the **RaceHub** page. It applies at once, is kept encrypted in the data folder, is never shown again, and also goes to the entry feeds of events taken from RaceHub. **Clear** puts the key in the settings file back in use. A safe rotation is: make the new key in RaceHub, paste it here, check **Find RaceHub events** still lists your meetings, then revoke the old key in RaceHub. Without both an address and a key the results wait in the app, and are sent once both are set. Entering them in the admin panel applies at once; changes to `application.properties` need the service restarted. A club with no key and no results site runs standalone, so **RaceHub** is left out of the admin menu until one is set; **Club profile** has a link to the page. The laptop doesn't need to be online while racing: results queue while the network is down and go when it is back. **RaceHub** in the admin panel shows what has been sent, and each event's page has a **Download results** button for taking the file across by hand, and each event's row in **Events** has a **Re-upload** button that queues its results for RaceHub again.
 
@@ -145,7 +145,7 @@ rctiming.racehub.access-client-id=the-client-id.access
 rctiming.racehub.access-client-secret=the-client-secret
 ```
 
-They are sent as the `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers, **only to RaceHub's own address** (the results address and the events address saved under **Find RaceHub events**), never to any other feed address. The club's key is still sent as well. Set both or neither: the app refuses to start with only one. A club whose RaceHub isn't behind Cloudflare Access leaves them out and nothing changes. The secret lives only in this file; the admin panel never shows it and the settings file download leaves it out. If RaceHub answers `403` with a Cloudflare page rather than its own message, the service token is missing, wrong or expired.
+They are sent as the `CF-Access-Client-Id` and `CF-Access-Client-Secret` headers, **only to RaceHub's own address** (the RaceHub address), never to any other feed address. The club's key is still sent as well. Set both or neither: the app refuses to start with only one. A club whose RaceHub isn't behind Cloudflare Access leaves them out and nothing changes. The secret lives only in this file; the admin panel never shows it and the settings file download leaves it out. If RaceHub answers `403` with a Cloudflare page rather than its own message, the service token is missing, wrong or expired.
 
 ## Publishing a results site
 

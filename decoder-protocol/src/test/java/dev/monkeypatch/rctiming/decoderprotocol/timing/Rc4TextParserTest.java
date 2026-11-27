@@ -70,4 +70,13 @@ class Rc4TextParserTest {
         assertThat(parser.extractSeqNum("@\t20")).isEmpty();
         assertThat(parser.extractSeqNum("@\t20\tnot_a_number")).isEmpty();
     }
+
+    @Test
+    void readsTimeSinceStartExactlyInMicroseconds() {
+        // 596.126 and 1175.823 are not exact as doubles; the digits must come through unchanged
+        assertThat(parser.parse("@\t20\t1\t12345\t596.126\t300\t130\t2\txDEAD").get().timeSinceStartMicros())
+                .isEqualTo(596_126_000L);
+        assertThat(parser.parse("@\t20\t1\t12345\t1175.823\t300\t130\t2\txDEAD").get().timeSinceStartMicros())
+                .isEqualTo(1_175_823_000L);
+    }
 }

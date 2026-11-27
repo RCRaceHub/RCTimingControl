@@ -13,11 +13,16 @@ import java.util.List;
  * @param battleHoldLaps      laps a pair stays a battle after it drops outside the gap
  * @param closeGapMs          how near the car ahead is shown as close (the amber row); 0 switches the tint off
  * @param lateMarginMs        how far past its average lap a car is before its lap bar turns red
+ * @param truncateToHundredths whether times are cut to hundredths of a second (truncated, never rounded) instead of the
+ *                            decoder's milliseconds, as some rule books ask. The decoder's own time is cut, so every lap
+ *                            time, total, gap and best lap is then a whole number of hundredths, and results, boards and
+ *                            exports agree. The default is off.
  * @param hiddenRowIcons      the row icons the referee screen, the live race board and the board views leave out; each is
  *                            one of {@link #ROW_ICONS}. The streaming overlay chooses its own in its theme.
  */
 public record LiveTimingSettings(int battleGapMs, int battleTrendMsPerLap, int battleFastMsPerLap, int battleHoldLaps,
-                                 int closeGapMs, int lateMarginMs, List<String> hiddenRowIcons) {
+                                 int closeGapMs, int lateMarginMs, boolean truncateToHundredths,
+                                 List<String> hiddenRowIcons) {
 
     /** The icons that can be switched off beside a driver's name: pace thumbs, flying-lap flame, lap flash, close, lapped, penalty and no-signal. */
     public static final List<String> ROW_ICONS = List.of("pace", "flying", "lap", "close", "lapped", "penalty", "signal");
@@ -28,9 +33,14 @@ public record LiveTimingSettings(int battleGapMs, int battleTrendMsPerLap, int b
                 : hiddenRowIcons.stream().filter(java.util.Objects::nonNull).distinct().toList();
     }
 
+    /** The step the decoder's time is cut to, in microseconds: 10 000 for hundredths, else 1 000 (milliseconds). */
+    public long truncationMicros() {
+        return truncateToHundredths ? 10_000L : 1_000L;
+    }
+
     /** The settings until the club changes them. */
     public static LiveTimingSettings defaults() {
-        return new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, List.of());
+        return new LiveTimingSettings(2000, 150, 300, 2, 1000, 1000, false, List.of());
     }
 
     /**

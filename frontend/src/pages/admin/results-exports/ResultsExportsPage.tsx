@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RaceHubAddressField } from '@/components/RaceHubAddressField';
+import { RaceHubConnectionTest } from '@/components/RaceHubConnectionTest';
 import { QueryError } from '@/components/QueryError';
 import { RaceHubClassesTab } from '@/pages/admin/racehub-classes/RaceHubClassesPage';
 import { useUnlinkedRaceHubClassCount } from '@/hooks/admin/useRaceHubClasses';
 import { useTabParam } from '@/hooks/useTabParam';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useClearRaceHubKey, useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetRaceHubKey, useSetResultsAddress, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
+import { useClearRaceHubKey, useDownloadResultsSite, useResultsExports, useRetryResultsExport, useSetRaceHubKey, useSetResultsTarget } from '@/hooks/admin/useResultsExports';
 import { useHelpContent } from '@/context/HelpContext';
 import { ResultsExportsHelp } from '@/help/ResultsExportsHelp';
 import type { ResultsExportReason, ResultsExportRowDto, ResultsExportStatus, ResultsPublishTarget } from '@/lib/adminApi';
@@ -111,54 +113,6 @@ function detail(row: ResultsExportRowDto) {
   if (row.status === 'FAILED') parts.push(`next try ${formatDateTime(row.nextAttemptAt)}`);
   if (row.attempts > 0 && row.status !== 'SENT') parts.push(row.attempts === 1 ? '1 attempt' : `${row.attempts} attempts`);
   return parts.join(' · ');
-}
-
-function AddressForm({ savedUrl, inUse }: { savedUrl: string | null; inUse: string | null }) {
-  const setAddress = useSetResultsAddress();
-  const [value, setValue] = useState(savedUrl ?? '');
-
-  function save(address: string) {
-    setAddress.mutate(address, {
-      onSuccess: () => toast.success(address.trim() ? 'RaceHub address saved.' : 'RaceHub address cleared.'),
-      onError: err => {
-        toast.error(getApiErrorMessage(err, 'Could not save the RaceHub address.'));
-      },
-    });
-  }
-
-  return (
-    <form
-      className="space-y-2"
-      onSubmit={e => {
-        e.preventDefault();
-        save(value);
-      }}
-    >
-      <Label htmlFor="racehub-address">RaceHub address</Label>
-      <div className="flex gap-2">
-        <Input
-          id="racehub-address"
-          type="url"
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          placeholder="https://racehub.example/api/results"
-        />
-        <Button type="submit" disabled={setAddress.isPending || value.trim() === (savedUrl ?? '')}>
-          Save
-        </Button>
-        {savedUrl && (
-          <Button type="button" variant="outline" disabled={setAddress.isPending} onClick={() => save('')}>
-            Clear
-          </Button>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Where results are sent. It must start with https://, since the club&apos;s key goes with every request.
-        {!savedUrl && inUse && ' This is using the address in the settings file; saving one here replaces it.'}
-        {!savedUrl && !inUse && ' Left empty, the address in the settings file is used, if there is one.'}
-      </p>
-    </form>
-  );
 }
 
 /**
@@ -357,9 +311,11 @@ export default function ResultsExportsPage() {
 
             {data && (data.publishTarget === 'SITE' || data.publishTarget === 'BOTH') && <SiteDownload />}
 
-            {data && <AddressForm key={data.savedUrl ?? ''} savedUrl={data.savedUrl} inUse={data.resultsUrl} />}
+            {data && <RaceHubAddressField id="racehub-address" address={data.raceHubUrl} source={data.addressSource} />}
 
             {data && <KeyForm source={data.keySource} />}
+
+            {data && <RaceHubConnectionTest />}
           </TabsContent>
         </Tabs>
       )}

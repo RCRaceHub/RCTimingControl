@@ -7,7 +7,7 @@ import ResultsExportsPage from './ResultsExportsPage';
 import { adminApi, type ResultsExportRowDto } from '@/lib/adminApi';
 import { HelpProvider } from '@/context/HelpContext';
 
-vi.mock('@/lib/adminApi', () => ({ adminApi: { resultsExports: { list: vi.fn(), retry: vi.fn(), setAddress: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
+vi.mock('@/lib/adminApi', () => ({ adminApi: { raceHubAddress: { set: vi.fn() }, raceHubConnection: { test: vi.fn() }, resultsExports: { list: vi.fn(), retry: vi.fn(), setKey: vi.fn(), clearKey: vi.fn(), setTarget: vi.fn(), downloadSite: vi.fn() }, raceHubClasses: { list: vi.fn() } } }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const api = vi.mocked(adminApi, true);
@@ -49,7 +49,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: true,
       resultsUrl: 'https://racehub.example/api/results',
-      savedUrl: null,
+      raceHubUrl: null, addressSource: 'NONE' as const,
       missingSettings: [], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null,
       exports: [
         row({ id: 3, revision: 3, reason: 'CORRECTION', status: 'FAILED', attempts: 2, lastError: 'RaceHub answered 503', sentAt: null }),
@@ -68,7 +68,7 @@ describe('ResultsExportsPage', () => {
   });
 
   it('offers the results site download only when results are published to a site', async () => {
-    const base = { sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [] };
+    const base = { sendingEnabled: false, resultsUrl: null, raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [] };
     api.resultsExports.list.mockResolvedValue({ ...base, publishTarget: 'SITE' });
     renderPage();
     expect(await screen.findByRole('button', { name: 'Download results site (zip)' })).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe('ResultsExportsPage', () => {
 
   it('hides the results site download when results go to RaceHub only', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [], publishTarget: 'RACEHUB',
+      sendingEnabled: false, resultsUrl: null, raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [], publishTarget: 'RACEHUB',
     });
     renderPage();
     await screen.findByLabelText('Publish results to');
@@ -87,7 +87,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: true,
       resultsUrl: 'https://racehub.example/api/results',
-      savedUrl: null,
+      raceHubUrl: null, addressSource: 'NONE' as const,
       missingSettings: [], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null,
       exports: [row({ id: 7, revision: 4, status: 'FAILED', lastError: 'Connection refused', sentAt: null })],
     });
@@ -104,7 +104,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: false,
       resultsUrl: null,
-      savedUrl: null,
+      raceHubUrl: null, addressSource: 'NONE' as const,
       missingSettings: ['the RaceHub address', 'rctiming.racehub.token'], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null,
       exports: [row({ status: 'QUEUED', attempts: 0, sentAt: null })],
     });
@@ -121,7 +121,7 @@ describe('ResultsExportsPage', () => {
     api.resultsExports.list.mockResolvedValue({
       sendingEnabled: false,
       resultsUrl: 'https://racehub.example/api/results',
-      savedUrl: null,
+      raceHubUrl: null, addressSource: 'NONE' as const,
       missingSettings: ['rctiming.racehub.token'], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null,
       exports: [],
     });
@@ -134,28 +134,28 @@ describe('ResultsExportsPage', () => {
 
   it('saves a RaceHub address typed in', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+      sendingEnabled: false, resultsUrl: null, raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
     });
-    api.resultsExports.setAddress.mockResolvedValue({
-      sendingEnabled: false, resultsUrl: 'https://racehub.example/r', savedUrl: 'https://racehub.example/r',
-      missingSettings: ['rctiming.racehub.token'], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+    api.raceHubAddress.set.mockResolvedValue({
+      address: 'https://racehub.example', savedAddress: 'https://racehub.example', source: 'SAVED',
+      resultsUrl: 'https://racehub.example/api/rctc/v1/results',
     });
     renderPage();
 
-    fireEvent.change(await screen.findByLabelText('RaceHub address'), { target: { value: 'https://racehub.example/r' } });
+    fireEvent.change(await screen.findByLabelText('RaceHub address'), { target: { value: 'https://racehub.example' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(api.resultsExports.setAddress).toHaveBeenCalledWith('https://racehub.example/r', expect.anything()));
+    await waitFor(() => expect(api.raceHubAddress.set).toHaveBeenCalledWith('https://racehub.example'));
     await waitFor(() => expect(api.resultsExports.list).toHaveBeenCalledTimes(2));
   });
 
   it('lets the club choose where results are published', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
+      sendingEnabled: false, resultsUrl: null, raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
       publishTarget: 'NONE', chosenTarget: null, exports: [],
     });
     api.resultsExports.setTarget.mockResolvedValue({
-      sendingEnabled: false, resultsUrl: null, savedUrl: null, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
+      sendingEnabled: false, resultsUrl: null, raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
       publishTarget: 'RACEHUB', chosenTarget: 'RACEHUB', exports: [],
     });
     renderPage();
@@ -168,7 +168,7 @@ describe('ResultsExportsPage', () => {
 
   it('shows an empty state before anything is sent', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: true, resultsUrl: 'https://racehub.example/r', savedUrl: null, missingSettings: [], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
+      sendingEnabled: true, resultsUrl: 'https://racehub.example/r', raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: [], keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
     });
     renderPage();
 
@@ -176,7 +176,7 @@ describe('ResultsExportsPage', () => {
   });
 
   it('saves a pasted key and never shows it back', async () => {
-    const base = { sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', savedUrl: null, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [], publishTarget: 'RACEHUB' as const };
+    const base = { sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: [], keySource: 'SETTINGS_FILE' as const, chosenTarget: null, exports: [], publishTarget: 'RACEHUB' as const };
     api.resultsExports.list.mockResolvedValue(base);
     api.resultsExports.setKey.mockResolvedValue({ ...base, keySource: 'SAVED' });
     renderPage();
@@ -193,7 +193,7 @@ describe('ResultsExportsPage', () => {
 
   const panelState = (label: string) => screen.getByLabelText(label).closest('[role="tabpanel"]')?.getAttribute('data-state');
   const setup = (sendingEnabled: boolean) => ({
-    sendingEnabled, resultsUrl: sendingEnabled ? 'https://racehub.example/r' : null, savedUrl: null,
+    sendingEnabled, resultsUrl: sendingEnabled ? 'https://racehub.example/r' : null, raceHubUrl: null, addressSource: 'NONE' as const,
     missingSettings: sendingEnabled ? [] : ['the RaceHub address'], keySource: 'SETTINGS_FILE' as const,
     publishTarget: 'RACEHUB' as const, chosenTarget: null, exports: [],
   });
@@ -230,11 +230,11 @@ describe('ResultsExportsPage', () => {
 
   it('flags on the classes tab how many RaceHub classes are not linked yet', async () => {
     api.resultsExports.list.mockResolvedValue({
-      sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', savedUrl: null, missingSettings: [],
+      sendingEnabled: true, resultsUrl: 'https://racehub.example/api/results', raceHubUrl: null, addressSource: 'NONE' as const, missingSettings: [],
       keySource: 'SETTINGS_FILE' as const, publishTarget: 'RACEHUB', chosenTarget: null, exports: [],
     } as never);
     api.raceHubClasses.list.mockResolvedValue({
-      error: null, eventsUrl: 'https://racehub.example/api/rctc/v1/events', tokenSet: true,
+      error: null, raceHubUrl: 'https://racehub.example', tokenSet: true,
       classes: [
         { id: '1', name: 'A', active: true, linkedRacingClassId: 5 },
         { id: '2', name: 'B', active: true, linkedRacingClassId: null },

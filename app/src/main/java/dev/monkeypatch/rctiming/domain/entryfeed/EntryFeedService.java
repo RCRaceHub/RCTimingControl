@@ -2,17 +2,22 @@ package dev.monkeypatch.rctiming.domain.entryfeed;
 
 import dev.monkeypatch.rctiming.config.LoopbackHosts;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
+import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.event.EventStatus;
+import dev.monkeypatch.rctiming.domain.media.PhotoImportService;
+import dev.monkeypatch.rctiming.domain.media.PhotoLink;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubEntryExport;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportResult;
 import dev.monkeypatch.rctiming.domain.racehub.RaceHubImportService;
 import dev.monkeypatch.rctiming.security.TokenCipher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -21,8 +26,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,12 +49,24 @@ import java.util.function.Predicate;
  * <p>The network call never runs inside a database transaction, and no failure is thrown to the caller: it is
  * recorded on the feed and shown on the event. Recording an outcome reads the feed again and saves it in one
  * transaction ({@link #update}), so it cannot overwrite a change an official made during the fetch.
+ *
+ * <p>When the automatic fetch applies a revision it also fetches the headshots and car photos the revision names
+ * (#811), straight away, because a booking system's picture links may expire within hours. Only missing pictures are
+ * filled, so an official's own upload is never replaced; a failed picture is noted on the feed and never undoes
+ * the entries.
  */
 @Service
 public class EntryFeedService {
 
     private static final Logger log = LoggerFactory.getLogger(EntryFeedService.class);
     private static final int MAX_ERROR_LENGTH = 500;
+    /** Ends the note left on a feed when some of an applied revision's pictures were not fetched. */
+    private static final String PICTURES_NOT_FETCHED = "couldn't be fetched";
+    private static final Actor FEED_ACTOR = Actor.system("entry-feed");
+    /** Pictures fetched per call to {@link PhotoImportService}, so the time budget is checked between chunks. */
+    private static final int PICTURE_CHUNK = 10;
+    /** The longest one revision's pictures may hold a scheduler thread; the rest are reported, not fetched. */
+    private static final Duration PICTURE_BUDGET = Duration.ofMinutes(2);
 
     private final EntryFeedRepository feedRepository;
     private final EventRepository eventRepository;
@@ -55,11 +76,25 @@ public class EntryFeedService {
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactions;
     private final AuditService audit;
+    private final RoundRepository roundRepository;
+    private final PhotoImportService photoImport;
+    private final Clock clock;
 
+    @Autowired
     public EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
                             EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
                             ObjectMapper objectMapper, TransactionTemplate transactions,
-                            AuditService audit) {
+                            AuditService audit, RoundRepository roundRepository,
+                            PhotoImportService photoImport) {
+        this(feedRepository, eventRepository, client, importService, tokenCipher, objectMapper, transactions, audit,
+                roundRepository, photoImport, Clock.systemUTC());
+    }
+
+    EntryFeedService(EntryFeedRepository feedRepository, EventRepository eventRepository,
+                     EntryFeedClient client, RaceHubImportService importService, TokenCipher tokenCipher,
+                     ObjectMapper objectMapper, TransactionTemplate transactions,
+                     AuditService audit, RoundRepository roundRepository,
+                     PhotoImportService photoImport, Clock clock) {
         this.feedRepository = feedRepository;
         this.eventRepository = eventRepository;
         this.client = client;
@@ -68,6 +103,14 @@ public class EntryFeedService {
         this.objectMapper = objectMapper;
         this.transactions = transactions;
         this.audit = audit;
+        this.roundRepository = roundRepository;
+        this.photoImport = photoImport;
+        this.clock = clock;
+    }
+
+    /** Every event's feed, for the Events list. Read-only; the feeds' secrets stay in the entity. */
+    public List<EntryFeed> findAllFeeds() {
+        return feedRepository.findAll();
     }
 
     /** The event's feed, or empty when none is set up. Throws a 404 if there is no such event. */
@@ -216,6 +259,27 @@ public class EntryFeedService {
     }
 
     /**
+     * "Update from RaceHub": does what the automatic poll does, now, for one event. A clean new revision is
+     * imported, one that needs a decision is held for an official, and an unchanged one is reported as such. It
+     * ignores the polling schedule and works whether or not auto-fetch is on. Runs on the request thread; blocks for
+     * the feed client's timeouts, so it holds no transaction while it waits.
+     *
+     * @return the feed with the outcome of this fetch in {@code lastStatus} and {@code lastMessage}
+     * @throws EntityNotFoundException if the event has no feed (HTTP 404)
+     * @throws StateConflictException  if the event is completed, whose entries a late revision must not change
+     *                                 (HTTP 409); an official can still fetch or import by hand
+     */
+    public EntryFeed updateNow(long eventId) {
+        EntryFeed feed = requireFeed(eventId);
+        if (eventRepository.findById(eventId).filter(e -> e.getStatus() == EventStatus.COMPLETED).isPresent()) {
+            throw new StateConflictException("This event is completed, so RaceHub changes no longer update it. "
+                    + "Fetch or import by hand if you need to.");
+        }
+        autoFetch(feed);
+        return requireFeed(eventId);
+    }
+
+    /**
      * The automatic fetch: imports a new revision when it applies cleanly, and holds it for an official when
      * something would block it. Does nothing for a completed event: its results have been exported and its
      * championships count them, so a late revision from the booking system must not change its entries (an
@@ -227,9 +291,13 @@ public class EntryFeedService {
                     .isPresent()) {
                 return;
             }
-            Download download = download(feed);
+            Download download = download(feed, true);
             if (download.problem != null) {
                 recordFailure(feed, download.problem);
+                return;
+            }
+            if (download.notModified) {
+                recordUnchanged(feed);
                 return;
             }
             RaceHubEntryExport export = download.export;
@@ -239,14 +307,20 @@ public class EntryFeedService {
             }
             RaceHubImportResult result;
             try {
-                result = importService.importEntries(Actor.system("entry-feed"), feed.getEventId(), export, false);
+                Optional<String> afterHeats = changesAfterHeatsExist(feed.getEventId(), export);
+                if (afterHeats.isPresent()) {
+                    hold(feed, export, "Revision " + export.revision() + " needs an official: " + afterHeats.get());
+                    return;
+                }
+                result = importService.importEntries(FEED_ACTOR, feed.getEventId(), export, false);
             } catch (IllegalArgumentException e) {
                 recordFailure(feed, new Problem(EntryFeedStatus.FAILED, e.getMessage()));
                 return;
             }
             if (result.applied()) {
-                recordApplied(feed, export.revision());
+                recordApplied(feed, export.revision(), withDateNote(changeSummary(result), feed.getEventId(), export));
                 log.info("Entry feed for event {} applied revision {}", feed.getEventId(), export.revision());
+                fetchPictures(feed, export.revision(), result.photoLinks());
             } else {
                 hold(feed, export, "Revision " + export.revision() + " needs an official: " + blockReason(result));
             }
@@ -257,25 +331,109 @@ public class EntryFeedService {
         }
     }
 
-    private record Problem(EntryFeedStatus status, String message) {
+    /**
+     * Downloads the pictures an applied revision named, with no transaction open (each is stored in its own short one).
+     * Pictures already held are kept. It runs on the shared scheduler pool, so it works in chunks of
+     * {@link #PICTURE_CHUNK} and stops after {@link #PICTURE_BUDGET}: a slow host can hold a thread for that long and
+     * no longer, and whatever was not reached is counted in the note on the feed. The note stays until the next
+     * revision (see {@link #recordUnchanged}); an official can import the file by hand to try again. A driver whose
+     * name is not shown in full is skipped by design and is not counted as a failure.
+     */
+    private void fetchPictures(EntryFeed feed, Long revision, List<PhotoLink> links) {
+        if (links == null || links.isEmpty()) {
+            return;
+        }
+        long deadline = System.nanoTime() + PICTURE_BUDGET.toNanos();
+        int stored = 0;
+        int failed = 0;
+        int notReached = 0;
+        try {
+            for (int from = 0; from < links.size(); from += PICTURE_CHUNK) {
+                List<PhotoLink> chunk = links.subList(from, Math.min(links.size(), from + PICTURE_CHUNK));
+                if (System.nanoTime() > deadline) {
+                    notReached += chunk.size();
+                    continue;
+                }
+                List<PhotoImportService.Outcome> outcomes =
+                        photoImport.fetchAll(FEED_ACTOR, feed.getEventId(), chunk, false);
+                for (PhotoImportService.Outcome outcome : outcomes) {
+                    switch (outcome.status()) {
+                        case STORED -> stored++;
+                        case FAILED -> failed++;
+                        default -> { }
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("Entry feed pictures for event {} failed", feed.getEventId(), e);
+            failed++;
+        }
+        log.info("Entry feed for event {} revision {}: {} pictures saved, {} failed, {} not reached",
+                feed.getEventId(), revision, stored, failed, notReached);
+        int missed = failed + notReached;
+        if (missed > 0) {
+            String what = (missed == 1 ? "1 picture " : missed + " pictures ") + PICTURES_NOT_FETCHED;
+            String note = "Revision " + revision + " applied, but " + what + ". Import the file by hand to try again.";
+            // Only while this revision is still the one applied and nothing is waiting for an official
+            update(feed, f -> {
+                if (Objects.equals(f.getAppliedRevision(), revision) && f.getHeldDocument() == null) {
+                    f.setLastError(note);
+                }
+            });
+        }
     }
 
-    private record Download(RaceHubEntryExport export, Problem problem) {
+    /** {@code gone}: the feed's address no longer serves the event, so automatic fetching should stop. */
+    private record Problem(EntryFeedStatus status, String message, boolean gone) {
+
+        Problem(EntryFeedStatus status, String message) {
+            this(status, message, false);
+        }
+    }
+
+    /** A fetch's outcome: the file, a problem, or neither when the feed said nothing is newer ({@code notModified}). */
+    private record Download(RaceHubEntryExport export, Problem problem, boolean notModified) {
+
+        Download(RaceHubEntryExport export, Problem problem) {
+            this(export, problem, false);
+        }
+    }
+
+    /** The newest revision this feed already holds, applied or waiting, to ask RaceHub only for something newer. */
+    private static Long knownRevision(EntryFeed feed) {
+        Long applied = feed.getAppliedRevision();
+        Long held = feed.getHeldRevision();
+        if (applied == null) {
+            return held;
+        }
+        return held == null ? applied : Math.max(applied, held);
     }
 
     private Download download(EntryFeed feed) {
+        return download(feed, false);
+    }
+
+    /**
+     * Downloads the feed's file. With {@code conditional} the newest revision already held is sent as
+     * {@code since_revision}, so an unchanged feed answers 304 and nothing is downloaded; only the automatic poll
+     * and "Update from RaceHub" ask this way, while "Fetch now" always gets the whole file.
+     */
+    private Download download(EntryFeed feed, boolean conditional) {
         String token;
         try {
             token = feed.getTokenEncrypted() == null ? null : tokenCipher.decrypt(feed.getTokenEncrypted());
         } catch (TokenCipher.UnreadableTokenException e) {
             return new Download(null, new Problem(EntryFeedStatus.AUTH_FAILED, e.getMessage()));
         }
-        EntryFeedClient.Result result = client.fetch(URI.create(feed.getUrl()), token);
+        EntryFeedClient.Result result = client.fetch(URI.create(feed.getUrl()), token,
+                conditional ? knownRevision(feed) : null);
         return switch (result) {
             case EntryFeedClient.AuthFailed failed ->
                     new Download(null, new Problem(EntryFeedStatus.AUTH_FAILED, failed.message()));
-            case EntryFeedClient.Failed failed -> new Download(null, new Problem(EntryFeedStatus.FAILED, failed.message()));
+            case EntryFeedClient.Failed failed -> new Download(null,
+                    new Problem(EntryFeedStatus.FAILED, failed.message(), failed.gone()));
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
+            case EntryFeedClient.NotModified notModified -> new Download(null, null, true);
         };
     }
 
@@ -318,19 +476,90 @@ public class EntryFeedService {
     }
 
     private void recordApplied(EntryFeed feed, Long revision) {
+        recordApplied(feed, revision, null);
+    }
+
+    /** {@code summary} says what the import changed ("2 new, 1 withdrawn"), shown beside the status; may be null. */
+    private void recordApplied(EntryFeed feed, Long revision, String summary) {
         update(feed, f -> {
             f.setAppliedRevision(revision);
             f.setHeldDocument(null);
             f.setHeldRevision(null);
             f.setLastStatus(EntryFeedStatus.APPLIED);
-            f.setLastError(null);
+            f.setLastError(summary);
         });
+    }
+
+    /**
+     * Once the run order has been built, new entries and changed ones wait for an official instead of arriving by
+     * themselves, so nobody is slipped into or moved between heats unseen. Withdrawals still apply straight away:
+     * the car just drops out. Before the run order exists everything that imports cleanly is applied.
+     *
+     * @return why the revision must be held, or empty when it can be applied now
+     */
+    private Optional<String> changesAfterHeatsExist(long eventId, RaceHubEntryExport export) {
+        if (!roundRepository.existsByEventId(eventId)) {
+            return Optional.empty();
+        }
+        RaceHubImportResult preview = importService.preview(eventId, export);
+        if (preview.blocked()) {
+            return Optional.empty();
+        }
+        RaceHubImportResult.Summary summary = preview.summary();
+        int arriving = summary.created() + summary.updated();
+        if (arriving == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(arriving + (arriving == 1 ? " entry is" : " entries are")
+                + " new or changed and the run order is already built, so check where "
+                + (arriving == 1 ? "it" : "they") + " should go");
+    }
+
+    /**
+     * Adds a note when RaceHub now gives the meeting a different date from this event's. The event is not moved: its
+     * date is fixed once it leaves Draft and an official decides, so the note only says it.
+     */
+    private String withDateNote(String summary, long eventId, RaceHubEntryExport export) {
+        String raceHubDate = export.event() == null ? null : export.event().eventLocalDate();
+        if (raceHubDate == null) {
+            return summary;
+        }
+        Optional<Event> event = eventRepository.findById(eventId);
+        if (event.isEmpty() || event.get().getEventDate() == null
+                || event.get().getEventDate().toString().equals(raceHubDate)) {
+            return summary;
+        }
+        String note = "RaceHub now gives the date as " + raceHubDate + " (this event is on "
+                + event.get().getEventDate() + ")";
+        return summary == null ? note : summary + ". " + note;
+    }
+
+    /** What an applied import changed in words, or null when it changed nothing worth saying. */
+    private static String changeSummary(RaceHubImportResult result) {
+        RaceHubImportResult.Summary s = result.summary();
+        if (s == null) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (s.created() > 0) {
+            parts.add(s.created() + " new");
+        }
+        if (s.updated() > 0) {
+            parts.add(s.updated() + " changed");
+        }
+        if (s.withdrawn() > 0) {
+            parts.add(s.withdrawn() + " withdrawn");
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts) + " (revision " + result.revision() + ")";
     }
 
     private Optional<EntryFeed> recordUnchanged(EntryFeed feed) {
         return update(feed, f -> {
-            // A file waiting for an official stays waiting; there's just nothing newer
-            if (f.getHeldDocument() == null) {
+            // A file waiting for an official stays waiting; there's just nothing newer. A note about pictures that
+            // could not be fetched stays too, or the next poll would wipe it before anyone read it.
+            boolean pictureNote = f.getLastStatus() == EntryFeedStatus.APPLIED && f.getLastError() != null
+                    && f.getLastError().contains(PICTURES_NOT_FETCHED);
+            if (f.getHeldDocument() == null && !pictureNote) {
                 f.setLastStatus(EntryFeedStatus.UNCHANGED);
                 f.setLastError(null);
             }
@@ -339,9 +568,17 @@ public class EntryFeedService {
 
     private Optional<EntryFeed> recordFailure(EntryFeed feed, Problem problem) {
         String message = problem.message() == null ? "The fetch failed" : problem.message();
+        if (problem.gone()) {
+            message = "The feed no longer serves this event (" + message + "). Entries already imported are kept; "
+                    + "automatic fetching has stopped. Turn it back on if the event returns.";
+        }
+        String recorded = message;
         return update(feed, f -> {
             f.setLastStatus(problem.status());
-            f.setLastError(message.length() > MAX_ERROR_LENGTH ? message.substring(0, MAX_ERROR_LENGTH) : message);
+            f.setLastError(recorded.length() > MAX_ERROR_LENGTH ? recorded.substring(0, MAX_ERROR_LENGTH) : recorded);
+            if (problem.gone()) {
+                f.setAutoFetch(false);
+            }
         });
     }
 
@@ -362,7 +599,7 @@ public class EntryFeedService {
                 // The URL changed during the fetch, so the outcome belongs to the old address
                 return Optional.of(feed);
             }
-            Instant now = Instant.now();
+            Instant now = clock.instant();
             change.accept(feed);
             feed.setLastFetchAt(now);
             return Optional.of(feedRepository.save(feed));

@@ -2,7 +2,6 @@ package dev.monkeypatch.rctiming.domain.racehub;
 
 import dev.monkeypatch.rctiming.domain.Names;
 import dev.monkeypatch.rctiming.domain.StateConflictException;
-import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedClient;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
@@ -23,9 +22,9 @@ import java.util.stream.Collectors;
  * Shows the club's RaceHub classes next to the racing classes they are linked to, so an official can link each once
  * (the "RaceHub classes" screen), also on a newly attached instance with no history.
  *
- * <p>It asks RaceHub's class list ({@code GET /api/rctc/v1/classes}) with the club's key. The address is the saved
- * events address with its last segment {@code events} swapped for {@code classes}, so the key goes only to the host
- * the club already named. Listing blocks for the feed client's timeouts (5 seconds to connect, 20 to read), so the
+ * <p>It asks RaceHub's class list ({@code GET /api/rctc/v1/classes}) with the club's key. The address is the events
+ * address under the club's one RaceHub address with its last segment {@code events} swapped for {@code classes}, so
+ * the key goes only to the host the club already named. Listing blocks for the feed client's timeouts (5 seconds to connect, 20 to read), so the
  * controller calls it with no transaction open. A failure comes back as {@link Listing#error}, a message an
  * official can read.
  *
@@ -36,17 +35,15 @@ import java.util.stream.Collectors;
 @Service
 public class RaceHubClassesService {
 
-    private final ClubProfileService clubProfileService;
     private final RaceHubResultsEndpoint endpoint;
     private final EntryFeedClient client;
     private final RaceHubClassLinkRepository linkRepository;
     private final RacingClassRepository racingClassRepository;
     private final ObjectMapper objectMapper;
 
-    public RaceHubClassesService(ClubProfileService clubProfileService, RaceHubResultsEndpoint endpoint,
+    public RaceHubClassesService(RaceHubResultsEndpoint endpoint,
                                  EntryFeedClient client, RaceHubClassLinkRepository linkRepository,
                                  RacingClassRepository racingClassRepository, ObjectMapper objectMapper) {
-        this.clubProfileService = clubProfileService;
         this.endpoint = endpoint;
         this.client = client;
         this.linkRepository = linkRepository;
@@ -67,11 +64,11 @@ public class RaceHubClassesService {
 
     /**
      * What asking RaceHub produced: the classes, or {@code error} saying why not (then {@code classes} is empty).
-     * {@code eventsUrl} (the saved events address, null when none) and {@code tokenSet} (whether the club has a key,
+     * {@code raceHubUrl} (RaceHub's address in use, null when none) and {@code tokenSet} (whether the club has a key,
      * saved in the app or in the settings file; the key itself is never sent) let the screen and the setup wizard say
      * what is missing.
      */
-    public record Listing(List<ClubClass> classes, String error, String eventsUrl, boolean tokenSet) {
+    public record Listing(List<ClubClass> classes, String error, String raceHubUrl, boolean tokenSet) {
     }
 
     /**
@@ -79,16 +76,16 @@ public class RaceHubClassesService {
      * the key comes back as {@code error}, not an exception, so the screen can show why and offer a retry.
      */
     public Listing list() {
-        String url = clubProfileService.getRaceHubEventsUrl().orElse(null);
+        URI base = endpoint.snapshot().baseUrl();
+        String url = base == null ? null : base.toString();
         boolean tokenSet = endpoint.token() != null;
         try {
             return new Listing(load(), null, url, tokenSet);
         } catch (StateConflictException e) {
             return new Listing(List.of(), e.getMessage(), url, tokenSet);
         } catch (IllegalArgumentException e) {
-            // The saved address failed the endpoint's rules; the message never echoes it, as it may hold credentials
-            return new Listing(List.of(), "The saved RaceHub events address cannot be used. Set it again.",
-                    url, tokenSet);
+            // The address failed a rule; the message never echoes it, as it may hold credentials
+            return new Listing(List.of(), "The RaceHub address cannot be used. Set it again.", url, tokenSet);
         }
     }
 
@@ -118,18 +115,22 @@ public class RaceHubClassesService {
     }
 
     private List<RaceHubClassList> fetch() {
-        String saved = clubProfileService.getRaceHubEventsUrl().orElseThrow(() ->
-                new StateConflictException("Set the RaceHub events address first."));
+        URI eventsUrl = endpoint.eventsUrl();
+        if (eventsUrl == null) {
+            throw new StateConflictException("Set the RaceHub address first.");
+        }
         String token = endpoint.token();
         if (token == null) {
             throw new StateConflictException(
                     "The club's key for RaceHub is not set (paste it on Results to RaceHub, or set rctiming.racehub.token in the settings file).");
         }
-        URI url = classesUrl(RaceHubResultsEndpoint.parse(saved));
+        URI url = classesUrl(eventsUrl);
         return switch (client.fetch(url, token)) {
             case EntryFeedClient.Fetched fetched -> parse(fetched.body());
             case EntryFeedClient.AuthFailed failed -> throw new StateConflictException(failed.message());
             case EntryFeedClient.Failed failed -> throw new StateConflictException(failed.message());
+            // Never asked conditionally, so RaceHub has no reason to answer 304
+            case EntryFeedClient.NotModified notModified -> throw new StateConflictException("RaceHub sent no list");
         };
     }
 
@@ -147,7 +148,7 @@ public class RaceHubClassesService {
         String trimmed = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
         if (!trimmed.endsWith("/events")) {
             throw new StateConflictException("The RaceHub events address should end in /events, so the " + what
-                    + " can be found beside it.");
+                    + " can be found beside it. Set the RaceHub address again.");
         }
         return URI.create(eventsUrl.getScheme() + "://" + eventsUrl.getRawAuthority()
                 + trimmed.substring(0, trimmed.length() - "events".length()) + name);
