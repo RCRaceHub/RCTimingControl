@@ -85,13 +85,8 @@ public class AmbRc4TimingSource implements TimingSource {
      * Sets who hears when the decoder's clock status changes (steady, jittery, drifting or restarted), see
      * {@link ClockMonitor}. Called on the Netty event-loop thread.
      */
-    public void setClockHealthListener(java.util.function.Consumer<ClockHealth> listener) {
+    public void setClockHealthListener(Consumer<ClockHealth> listener) {
         clockMonitor.setListener(listener);
-    }
-
-    /** The latest reading of the decoder's clock against the server's. */
-    public ClockHealth clockHealth() {
-        return clockMonitor.health();
     }
 
     /**
@@ -143,6 +138,8 @@ public class AmbRc4TimingSource implements TimingSource {
             if (future.isSuccess()) {
                 log.info("Connected to RC-4 decoder at {}:{}", host, port);
                 backoffIdx = 0;
+                // Passings the decoder held back while we were away arrive in a burst; do not read that as a fault
+                clockMonitor.reset();
                 onStatus.accept(ConnectionState.CONNECTED);
                 // When the channel closes, trigger a reconnect
                 future.channel().closeFuture().addListener(closeFuture -> {

@@ -35,6 +35,10 @@ public class DecoderStatusPublisher {
      */
     public void onDecoderStatus(String state) {
         decoderState = state;
+        // A reading of the clock is only worth showing while the decoder is connected; the next one comes with a passing
+        if (!"CONNECTED".equals(state)) {
+            clock = null;
+        }
         liveTimingHub.broadcastDecoderStatus(new DecoderStatusDto(state, clock));
     }
 

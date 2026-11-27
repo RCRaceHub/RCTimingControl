@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.decoderprotocol.timing;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
@@ -36,12 +38,17 @@ public class ClockMonitor {
     static final int MIN_PASSINGS = 10;
     /** A spread of delays wider than this is JITTERY (milliseconds). */
     static final double JITTER_WARN_MS = 100;
-    /** A move of the quickest residual by at least this much (milliseconds) ... */
+    /**
+     * A move of the quickest residual by at least this much (milliseconds), and by at least twice the jitter, so a noisy
+     * link cannot fake a drift from two chance extremes ...
+     */
     static final double DRIFT_WARN_MS = 50;
     /** ... at a rate of at least this (milliseconds per minute) is DRIFTING. */
     static final double DRIFT_WARN_MS_PER_MINUTE = 5;
     /** Decoder time that must pass before a drift rate is worked out (microseconds). */
-    static final long DRIFT_MIN_ELAPSED_MICROS = 120_000_000L;
+    static final long DRIFT_MIN_ELAPSED_MICROS = 300_000_000L;
+    /** While a warning stands, the listener is told again after this many passings so its figures stay current. */
+    static final int REFRESH_EVERY = 10;
 
     private final Deque<Long> recent = new ArrayDeque<>();
     private final long[] firstResiduals = new long[EDGE];
@@ -51,8 +58,22 @@ public class ClockMonitor {
     private int restarts;
     // Passings left that still read as a restart; counts down once learning starts again
     private int restartedFor;
+    private int sinceNotified;
     private ClockHealth health = ClockHealth.initial();
+    private final java.util.function.LongSupplier arrivalClock;
     private volatile Consumer<ClockHealth> listener = h -> { };
+
+    /** A monitor that stamps arrivals itself from a monotonic clock, so a step in the server's wall clock is not mistaken for drift. */
+    public ClockMonitor() {
+        long epochMicros = ChronoUnit.MICROS.between(Instant.EPOCH, Instant.now());
+        long nanoBase = System.nanoTime();
+        this.arrivalClock = () -> epochMicros + (System.nanoTime() - nanoBase) / 1000L;
+    }
+
+    /** A monitor that takes arrival times from {@code arrivalClock} (UTC microseconds), for tests. */
+    ClockMonitor(java.util.function.LongSupplier arrivalClock) {
+        this.arrivalClock = arrivalClock;
+    }
 
     /** Sets who is told when the status changes; replaces any earlier listener. */
     public void setListener(Consumer<ClockHealth> listener) {
@@ -62,6 +83,11 @@ public class ClockMonitor {
     /** The latest reading. */
     public synchronized ClockHealth health() {
         return health;
+    }
+
+    /** Takes one passing in, stamping its arrival now; see {@link #observe(long, long)}. */
+    public ClockHealth observeNow(long decoderMicros) {
+        return observe(decoderMicros, arrivalClock.getAsLong());
     }
 
     /**
@@ -95,10 +121,36 @@ public class ClockMonitor {
             after = judge();
             health = after;
         }
-        if (after.status() != before.status()) {
+        if (after.status() != before.status() || stale(after)) {
+            synchronized (this) {
+                sinceNotified = 0;
+            }
             listener.accept(after);
         }
         return after;
+    }
+
+    /** Whether a standing warning has gone long enough without being told again for its figures to be out of date. */
+    private synchronized boolean stale(ClockHealth reading) {
+        boolean warning = reading.status() != ClockHealth.Status.OK && reading.status() != ClockHealth.Status.LEARNING;
+        return warning && ++sinceNotified >= REFRESH_EVERY;
+    }
+
+    /**
+     * Forgets what was learnt without counting a restart, for when the connection to the decoder is made again: a
+     * burst of passings the decoder held back would otherwise read as a fault.
+     */
+    public void reset() {
+        ClockHealth after;
+        synchronized (this) {
+            passings = 0;
+            recent.clear();
+            restartedFor = 0;
+            sinceNotified = 0;
+            after = new ClockHealth(ClockHealth.Status.LEARNING, 0, 0, 0, 0, restarts);
+            health = after;
+        }
+        listener.accept(after);
     }
 
     /**
@@ -107,7 +159,9 @@ public class ClockMonitor {
      */
     public void restarted() {
         ClockHealth after;
+        boolean already;
         synchronized (this) {
+            already = health.status() == ClockHealth.Status.RESTARTED;
             restarts++;
             passings = 0;
             recent.clear();
@@ -115,7 +169,9 @@ public class ClockMonitor {
             after = new ClockHealth(ClockHealth.Status.RESTARTED, 0, 0, 0, 0, restarts);
             health = after;
         }
-        listener.accept(after);
+        if (!already) {
+            listener.accept(after);
+        }
     }
 
     private ClockHealth judge() {
@@ -135,10 +191,13 @@ public class ClockMonitor {
         }
         double jitterMs = (max - min) / 1000.0;
         double latencyMs = (sum / recent.size() - min) / 1000.0;
-        double driftPerMinute = driftMsPerMinute();
+        double change = offsetChangeMs();
+        double minutes = (lastDecoderMicros - firstDecoderMicros) / 60_000_000.0;
+        double driftPerMinute = change == 0 || minutes <= 0 ? 0 : change / minutes;
 
         ClockHealth.Status status = ClockHealth.Status.OK;
-        if (Math.abs(driftPerMinute) >= DRIFT_WARN_MS_PER_MINUTE && Math.abs(offsetChangeMs()) >= DRIFT_WARN_MS) {
+        if (Math.abs(driftPerMinute) >= DRIFT_WARN_MS_PER_MINUTE
+                && Math.abs(change) >= Math.max(DRIFT_WARN_MS, 2 * jitterMs)) {
             status = ClockHealth.Status.DRIFTING;
         } else if (jitterMs >= JITTER_WARN_MS) {
             status = ClockHealth.Status.JITTERY;
@@ -164,14 +223,5 @@ public class ClockMonitor {
             }
         }
         return (latest - first) / 1000.0;
-    }
-
-    private double driftMsPerMinute() {
-        double change = offsetChangeMs();
-        if (change == 0) {
-            return 0;
-        }
-        double minutes = (lastDecoderMicros - firstDecoderMicros) / 60_000_000.0;
-        return change / minutes;
     }
 }

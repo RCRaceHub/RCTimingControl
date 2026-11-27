@@ -27,7 +27,10 @@ public record ClockHealth(Status status, int passings, double jitterMs, double l
         JITTERY,
         /** The decoder's clock is gaining or losing on the server's. */
         DRIFTING,
-        /** The decoder's clock started again (a power cycle), so times before and after cannot be compared. */
+        /**
+         * The decoder's clock started again (a power cycle), so times before and after cannot be compared. Shown until
+         * ten passings from the new run have come in.
+         */
         RESTARTED
     }
 

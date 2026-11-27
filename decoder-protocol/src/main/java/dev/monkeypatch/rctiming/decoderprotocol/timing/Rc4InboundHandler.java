@@ -6,8 +6,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 
 /**
@@ -71,7 +69,7 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
                 log.warn("Decoder restart detected (timeSinceStart regressed) — resetting epoch");
                 clockMonitor.restarted();
             }
-            clockMonitor.observe(pp.timeSinceStartMicros(), ChronoUnit.MICROS.between(Instant.EPOCH, Instant.now()));
+            clockMonitor.observeNow(pp.timeSinceStartMicros());
             long rtcMicros = epochAnchor.toRtcTimeMicrosExact(pp.timeSinceStartMicros());
             onPassing.accept(new EpochCorrectedPassing(
                 pp.transponderNumber(), rtcMicros, pp.seqNum(),

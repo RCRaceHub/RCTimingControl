@@ -118,6 +118,7 @@ export function DecoderStatusBar({ children }: { children?: ReactNode }) {
       {warning && (
         <Badge variant="outline" className="h-6 px-3 text-warning border-warning/40 bg-warning/10" title={warning.detail}>
           <span className="text-xs font-normal">{warning.label}</span>
+          <span className="sr-only">{warning.detail}</span>
         </Badge>
       )}
       {children && <div className="ml-auto flex items-center gap-4">{children}</div>}

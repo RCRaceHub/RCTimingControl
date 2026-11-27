@@ -102,4 +102,51 @@ class ClockMonitorTest {
 
         assertThat(heard).containsExactly(ClockHealth.Status.OK, ClockHealth.Status.RESTARTED);
     }
+
+    @Test
+    void aStandingWarningIsToldAgainSoItsFiguresStayCurrent() {
+        ClockMonitor monitor = new ClockMonitor();
+        List<ClockHealth> heard = new ArrayList<>();
+        monitor.setListener(heard::add);
+
+        feed(monitor, 60, 10, 1.0, i -> i % 2 == 0 ? 1_000 : 400_000);
+
+        assertThat(heard).hasSizeGreaterThan(2);
+        assertThat(heard).allMatch(h -> h.status() == ClockHealth.Status.JITTERY || h.status() == ClockHealth.Status.OK);
+    }
+
+    @Test
+    void aNoisyLinkEarlyOnIsNotMistakenForDrift() {
+        ClockMonitor monitor = new ClockMonitor();
+        Random random = new Random(7);
+
+        // A passing every 6 s for four minutes with 0-90 ms of random delay on a healthy decoder
+        ClockHealth health = feed(monitor, 40, 6, 1.0, i -> random.nextInt(90_000));
+
+        assertThat(health.status()).isNotEqualTo(ClockHealth.Status.DRIFTING);
+    }
+
+    @Test
+    void resettingOnReconnectStartsLearningAgainWithoutCountingARestart() {
+        ClockMonitor monitor = new ClockMonitor();
+        feed(monitor, 30, 10, 1.0, i -> 2_000);
+
+        monitor.reset();
+
+        assertThat(monitor.health().status()).isEqualTo(ClockHealth.Status.LEARNING);
+        assertThat(monitor.health().restarts()).isZero();
+    }
+
+    @Test
+    void aSecondRestartWhileStillRestartedDoesNotTellTheListenerAgain() {
+        ClockMonitor monitor = new ClockMonitor();
+        List<ClockHealth.Status> heard = new ArrayList<>();
+        monitor.setListener(h -> heard.add(h.status()));
+
+        monitor.restarted();
+        monitor.restarted();
+
+        assertThat(heard).containsExactly(ClockHealth.Status.RESTARTED);
+        assertThat(monitor.health().restarts()).isEqualTo(2);
+    }
 }
