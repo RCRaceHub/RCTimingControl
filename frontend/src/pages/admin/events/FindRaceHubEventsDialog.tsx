@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -42,13 +42,15 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
   const [editingAddress, setEditingAddress] = useState(false);
   const [takingId, setTakingId] = useState<string | null>(null);
 
-  // Start from the saved address each time the answer arrives
-  useEffect(() => {
+  // Start from the saved address each time the answer arrives (state set while rendering, not in an effect)
+  const [shownData, setShownData] = useState(data);
+  if (data !== shownData) {
+    setShownData(data);
     if (data) {
       setAddressText(data.eventsUrl ?? '');
       setEditingAddress(!data.eventsUrl);
     }
-  }, [data]);
+  }
 
   async function saveAddress() {
     try {
