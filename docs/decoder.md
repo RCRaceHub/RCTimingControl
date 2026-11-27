@@ -129,6 +129,19 @@ status record has no time on it), so a warning needs a dozen or so passings firs
 The same figures (status, jitter, latency, drift in ms a minute, restarts) are in the decoder status feed (`/topic/system/decoder-status`) and in
 `GET /api/v1/race-control/decoder/status`. Standalone: nothing here involves RaceHub.
 
+### What a healthy decoder looks like
+
+These figures come from a recording of a real club decoder (an AMB RC3 on RC-4 text) taken at a proxy across one 4.7 hour meeting, 1,916 passings. They are why the warning limits are as loose as they are.
+
+- **The clock held.** The decoder's clock and the computer's did not drift against each other over the whole meeting; the quickest passings stayed within about 200 ms of each other from hour to hour. Quartz-grade drift would show as a steady creep, so the 5 ms a minute limit is well clear of a healthy decoder.
+- **Passings reach the computer 0 to about 1.8 s after the quickest one.** The spread over any 20 passings reached about 1.4 s. The extra delay is not related to the transponder's hit count or signal strength.
+- **The link is not the cause.** The decoder's status records, sent on a fixed 5 second timer over the same route, arrived 5,055 ms apart with a standard deviation of 0.5 ms. The delay is added inside the decoder before it sends a passing, so there is nothing on the computer's side to tune.
+- **Some passings arrive out of order.** In the recording 21 passings carried an earlier decoder timestamp than the one before. That fits the decoder holding passings and sending them in a different order from when it stamped them.
+- **What it costs.** A lap time is the difference between two of the decoder's own timestamps, so none of this changes a lap time. The live boards can show a car up to about 1.5 s after it crossed the loop.
+- **Delay can step.** After a 14 minute break in passings the delay floor dropped by about 700 ms and stayed there. RCTC does not warn about this; it affects only when a passing is seen, not what its time is.
+
+The recording is in the test suite (`decoder-protocol/src/test/resources/clock/`) and the monitor is checked to raise no warning on it. It was taken between the decoder and the proxy, so it does not measure the hop from the proxy to RCTC.
+
 ## Status
 
 The race-control bar shows **DECODER** in one of three states:
