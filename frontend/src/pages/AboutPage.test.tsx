@@ -41,6 +41,15 @@ describe('AboutPage', () => {
     expect(screen.getByText('v0.1.0')).toBeInTheDocument();
   });
 
+  it('lists what the app contains', async () => {
+    about.mockResolvedValue({ version: '0.1.0', buildTime: '2026-10-04T12:00:00Z', addresses: [] });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: "What's inside" })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Timing and race control' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Boards, screens and audio' })).toBeInTheDocument();
+  });
+
   it('lists the docs address with a QR code to it', async () => {
     about.mockResolvedValue({
       version: '0.1.0',
