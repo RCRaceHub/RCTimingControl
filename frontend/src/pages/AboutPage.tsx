@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { getAboutInfo } from '@/lib/api';
+import { useAboutInfo } from '@/hooks/useAppVersion';
 import { Link } from 'react-router-dom';
 import { formatDate } from '@/lib/dates';
 import PrivacyLink from '@/components/layout/PrivacyLink';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
 import { CertificateSteps } from '@/components/CertificateSteps';
 
@@ -58,11 +56,7 @@ const ABOUT_FEATURE_GROUPS: { title: string; items: string[] }[] = [
 ];
 
 export default function AboutPage() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: publicQueryKeys.about(),
-    queryFn: getAboutInfo,
-    staleTime: Infinity,
-  });
+  const { data, isLoading, isError } = useAboutInfo();
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
@@ -200,7 +194,7 @@ export default function AboutPage() {
             Back to login
           </Link>
         </div>
-        <PrivacyLink className="py-0" />
+        <PrivacyLink className="py-0" showVersion={false} />
       </div>
     </div>
   );

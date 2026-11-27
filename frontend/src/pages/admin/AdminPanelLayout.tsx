@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import VersionFooter from '@/components/layout/VersionFooter';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -288,6 +289,7 @@ export default function AdminPanelLayout() {
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
+          <VersionFooter />
         </div>
       </main>
 

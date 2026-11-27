@@ -1,7 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
-import { getAboutInfo } from '@/lib/api';
-import { publicQueryKeys } from '@/hooks/publicQueryKeys';
+import { useAboutInfo } from '@/hooks/useAppVersion';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
@@ -38,11 +36,7 @@ type Props = {
 
 /** A QR code to a page on this server, for a screen or a printout that people scan with a phone. */
 export function QrLink({ path, caption, size = 128, onDark = false }: Props) {
-  const { data } = useQuery({
-    queryKey: publicQueryKeys.about(),
-    queryFn: getAboutInfo,
-    staleTime: Infinity,
-  });
+  const { data } = useAboutInfo();
   const url = shareableUrl(path, data?.addresses, data?.stableAddress);
 
   return (
