@@ -151,19 +151,21 @@ export default function FindRaceHubEventsDialog({ open, onOpenChange }: FindRace
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-w-[9rem]">
             <Label htmlFor="racehub-events-from">From</Label>
             <Input id="racehub-events-from" type="date" value={from} onChange={e => setFrom(e.target.value)} />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-w-[9rem]">
             <Label htmlFor="racehub-events-to">To</Label>
             <Input id="racehub-events-to" type="date" value={to} onChange={e => setTo(e.target.value)} />
           </div>
-          {QUICK_RANGES.map(r => (
-            <Button key={r.label} size="sm" variant="ghost" onClick={() => chooseRange(r.days)}>
-              {r.label}
-            </Button>
-          ))}
+          <div className="flex w-full flex-wrap gap-1">
+            {QUICK_RANGES.map(r => (
+              <Button key={r.label} size="sm" variant="ghost" onClick={() => chooseRange(r.days)}>
+                {r.label}
+              </Button>
+            ))}
+          </div>
         </div>
         {rangeInvalid && <p className="text-sm text-destructive">The start date is after the end date.</p>}
 
