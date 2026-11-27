@@ -168,6 +168,45 @@ public class EventClassService {
     }
 
     /**
+     * Gives the class another race format and records {@code EVENT_CLASS_FORMAT_CHANGED}. The new template is copied
+     * as a fresh snapshot, as when the class was added, and any override of the old format is cleared because it may
+     * not fit the new one. Refused once a race has been generated for the class, since the run order is built from
+     * the format; the official deletes the run order first. Entries, combined race groups and RaceHub links are not
+     * touched. Choosing the format the class already has re-takes the template's current values.
+     *
+     * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the class or template does not exist
+     * @throws IllegalArgumentException if the class belongs to another event
+     * @throws StateConflictException if races exist for the class (HTTP 409)
+     */
+    public EventClass changeFormat(Actor actor, Long eventId, Long classId, Long templateId) {
+        EventClass ec = getEventClassOrThrow(classId);
+        if (!eventId.equals(ec.getEventId())) {
+            throw new IllegalArgumentException("EventClass " + classId + " does not belong to event " + eventId);
+        }
+        String name = describe(ec);
+        if (raceRepository.existsByEventClassId(classId)) {
+            throw new StateConflictException("Races have been generated for " + name
+                    + ". Delete the event's run order before changing its format.");
+        }
+        RaceFormatTemplate template = templateRepository.getOrThrow(templateId);
+        Map<String, Object> before = new LinkedHashMap<>();
+        before.put("templateId", ec.getTemplateId());
+        before.put("hadOverride", ec.getConfigOverride() != null && !ec.getConfigOverride().isEmpty());
+        EventClass fresh = raceFormatService.assignTemplateToEventClass(template);
+        ec.setConfigSnapshot(fresh.getConfigSnapshot());
+        ec.setTemplateId(template.getId());
+        ec.setConfigOverride(null);
+        EventClass saved = eventClassRepository.save(ec);
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("templateId", template.getId());
+        after.put("templateName", template.getName());
+        audit.entry(actor, "EVENT_CLASS_FORMAT_CHANGED").entity("event_class", classId).event(eventId)
+                .summary("Changed the format of " + name + " to " + template.getName())
+                .before(before).after(after).record();
+        return saved;
+    }
+
+    /**
      * EVENT-06: Assigns the same non-null combined_race_group to every supplied event class
      * so they race together but score separately.
      *

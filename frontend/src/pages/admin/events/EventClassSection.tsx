@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 
 import {
   useAddEventClass,
+  useChangeEventClassFormat,
   useCombineClasses,
   useRemoveEventClass,
   useUpdateEventClassOverrides,
@@ -337,6 +338,68 @@ function AddClassDialog({
   );
 }
 
+function ChangeFormatDialog({
+  eventId,
+  target,
+  onClose,
+}: {
+  eventId: number;
+  target: { id: number; name: string; templateId: number | null } | null;
+  onClose: () => void;
+}) {
+  const changeFormat = useChangeEventClassFormat(eventId);
+  const { data: templates = [], isLoading } = useFormatsList();
+  const [picked, setPicked] = useState<string>('');
+  const value = picked || (target?.templateId ? String(target.templateId) : '');
+
+  async function handleSave() {
+    if (!target || !value) return;
+    try {
+      await changeFormat.mutateAsync({ classId: target.id, templateId: Number(value) });
+      toast.success('Format changed');
+      setPicked('');
+      onClose();
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not change the format'));
+    }
+  }
+
+  return (
+    <Dialog open={target !== null} onOpenChange={open => { if (!open) { setPicked(''); onClose(); } }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Change format{target ? `: ${target.name}` : ''}</DialogTitle>
+          <DialogDescription>
+            The class takes a fresh copy of the chosen format and any overrides are cleared. This is only possible
+            before races have been generated for the class; delete the run order first if they have.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label htmlFor="changeFormatTemplate">Format Template</Label>
+          <Select disabled={isLoading} value={value} onValueChange={setPicked}>
+            <SelectTrigger id="changeFormatTemplate">
+              <SelectValue placeholder={isLoading ? 'Loading…' : 'Select a template'} />
+            </SelectTrigger>
+            <SelectContent>
+              {templates.map(t => (
+                <SelectItem key={t.id} value={String(t.id)}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setPicked(''); onClose(); }}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!value || changeFormat.isPending}>
+            {changeFormat.isPending ? 'Saving…' : 'Change format'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 interface EventClassSectionProps {
   eventId: number;
   classes: EventClassDto[];
@@ -350,6 +413,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
   const [addOpen, setAddOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [combineOpen, setCombineOpen] = useState(false);
+  const [formatTarget, setFormatTarget] = useState<{ id: number; name: string; templateId: number | null } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: number; name: string } | null>(null);
   const [overrideState, setOverrideState] = useState<{
     open: boolean;
@@ -495,6 +559,21 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
                 size="sm"
                 variant="outline"
                 onClick={() =>
+                  setFormatTarget({
+                    id: cls.id,
+                    name: resolveClassName(cls.racingClassId),
+                    templateId: cls.templateId,
+                  })
+                }
+              >
+                Change Format
+              </Button>
+            )}
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
                   setOverrideState({
                     open: true,
                     classId: cls.id,
@@ -520,6 +599,8 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         open={overrideState.open}
         onOpenChange={open => setOverrideState(s => ({ ...s, open }))}
       />
+
+      <ChangeFormatDialog eventId={eventId} target={formatTarget} onClose={() => setFormatTarget(null)} />
 
       <RemoveClassDialog
         key={removeTarget?.id ?? 0}

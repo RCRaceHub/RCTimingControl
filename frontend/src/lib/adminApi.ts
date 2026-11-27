@@ -528,6 +528,10 @@ export interface AddEventClassRequest {
   templateId: number;
 }
 
+export interface ChangeEventClassFormatRequest {
+  templateId: number;
+}
+
 export interface UpdateEventClassOverrideRequest {
   override: Record<string, unknown>;
 }
@@ -1152,6 +1156,11 @@ export const adminApi = {
     api
       .delete(`/api/v1/admin/events/${eventId}/classes/${classId}`, { params: { withdrawEntries } })
       .then(() => undefined),
+
+  changeEventClassFormat: (eventId: number, classId: number, body: ChangeEventClassFormatRequest) =>
+    api
+      .put<EventClassDto>(`/api/v1/admin/events/${eventId}/classes/${classId}/format`, body)
+      .then(r => r.data),
 
   updateOverrides: (eventId: number, classId: number, override: Record<string, unknown>) =>
     api

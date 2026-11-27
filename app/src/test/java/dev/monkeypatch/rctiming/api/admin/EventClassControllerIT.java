@@ -212,6 +212,57 @@ class EventClassControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void changeFormat_takesAFreshSnapshotAndClearsTheOverride() {
+        Long eventId = createEventInDb();
+        Long classId = addClassToEvent(eventId, createTemplateInDb(10), createRacingClassInDb());
+        restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/classes/" + classId + "/overrides", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("override", Map.of("durationMinutes", 15)), adminHeaders()),
+                EventClassDto.class);
+        Long newTemplateId = createTemplateInDb(20);
+
+        ResponseEntity<EventClassDto> resp = restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/classes/" + classId + "/format", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("templateId", newTemplateId), adminHeaders()),
+                EventClassDto.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(resp.getBody().templateId()).isEqualTo(newTemplateId);
+        assertThat(resp.getBody().configOverride()).isNull();
+        assertThat(((TimedRaceConfig) eventClassRepository.getOrThrow(classId).getConfigSnapshot())
+                .durationMinutes()).isEqualTo(20);
+    }
+
+    @Test
+    void changeFormat_throughAnotherEventsUrl_isRefusedAndChangesNothing() {
+        Long eventId = createEventInDb();
+        Long otherEventId = createEventInDb();
+        Long templateId = createTemplateInDb(10);
+        Long classId = addClassToEvent(eventId, templateId, createRacingClassInDb());
+
+        ResponseEntity<String> refused = restTemplate.exchange(
+                "/api/v1/admin/events/" + otherEventId + "/classes/" + classId + "/format", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("templateId", createTemplateInDb(20)), adminHeaders()),
+                String.class);
+
+        assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(eventClassRepository.getOrThrow(classId).getTemplateId()).isEqualTo(templateId);
+    }
+
+    @Test
+    void changeFormat_toAnUnknownTemplate_isNotFound() {
+        Long eventId = createEventInDb();
+        Long classId = addClassToEvent(eventId, createTemplateInDb(10), createRacingClassInDb());
+
+        ResponseEntity<String> resp = restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/classes/" + classId + "/format", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("templateId", 999999), adminHeaders()),
+                String.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
     void combineClasses_assignsSameGroupId() {
         Long eventId = createEventInDb();
         Long templateId = createTemplateInDb(10);

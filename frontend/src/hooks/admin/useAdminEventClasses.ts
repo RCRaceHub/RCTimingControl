@@ -46,3 +46,12 @@ export function useCombineClasses(eventId: number) {
     onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) }),
   });
 }
+
+export function useChangeEventClassFormat(eventId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { classId: number; templateId: number }) =>
+      adminApi.changeEventClassFormat(eventId, args.classId, { templateId: args.templateId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminQueryKeys.events.detail(eventId) }),
+  });
+}
