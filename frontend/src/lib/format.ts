@@ -1,8 +1,13 @@
 import type { RunOrderItemDto } from './raceControlApi';
 
-// Whether the club cuts times to hundredths of a second. Set once from the club's settings by TimePrecisionSync, so
+// Whether the club cuts times to hundredths of a second. Set once from the club's settings by the root layout, so
 // every screen that formats a time agrees without each one asking for it.
 let hundredths = false;
+
+/** Whether times are shown to hundredths, for the few screens that format a time themselves. */
+export function timeInHundredths(): boolean {
+  return hundredths;
+}
 
 /** Sets whether times are shown to hundredths (truncated, never rounded) rather than thousandths. */
 export function setTimeInHundredths(on: boolean): void {

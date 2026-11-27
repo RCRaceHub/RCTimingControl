@@ -156,7 +156,7 @@ export default function LiveTimingSettingsCard() {
           <span className="font-medium">Time to hundredths of a second</span>
           <span className="block text-xs text-muted-foreground">
             Cut every lap time, total and gap to hundredths (cut, never rounded), as some rule books ask, instead of the
-            decoder's thousandths. Cars with the same time then share a place. Change it between races, not during one.
+            decoder's thousandths. Cars with the same time then share a place. Change it between races, not during one. Times are saved cut, so switching it off later does not bring the thousandths back for races already run.
           </span>
         </span>
       </label>

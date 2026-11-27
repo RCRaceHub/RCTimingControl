@@ -1,3 +1,4 @@
+import { timeInHundredths } from '@/lib/format';
 import { OVERLAY_DEFAULT_ROW_ICONS, ROW_ICONS, parseRowIconsParam, rowIconsParam } from '@/lib/rowIcons';
 import type { RowIcon } from '@/lib/rowIcons';
 import { fmtMs, gapLabel } from '@/lib/format';
@@ -476,7 +477,11 @@ export function overlayQuery(design: OverlayDesign): string {
 
 /** Milliseconds as a signed number of seconds to three places, such as +0.123 or -0.045. */
 function signedSeconds(ms: number): string {
-  return `${ms > 0 ? '+' : ms < 0 ? '-' : ''}${(Math.abs(ms) / 1000).toFixed(3)}`;
+  // Cut, not rounded, and to hundredths when the club works that way
+  const step = timeInHundredths() ? 10 : 1;
+  const places = timeInHundredths() ? 2 : 3;
+  const cut = Math.floor(Math.abs(ms) / step) * step;
+  return `${ms > 0 ? '+' : ms < 0 ? '-' : ''}${(cut / 1000).toFixed(places)}`;
 }
 
 /**

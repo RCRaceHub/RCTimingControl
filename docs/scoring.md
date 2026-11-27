@@ -339,8 +339,9 @@ rather than rounding it. **Admin → Club → Live timing thresholds → Time to
 one setting for the club) does that.
 
 With it on, the decoder's own time is cut to a hundredth before anything is worked out from it, so every lap time, total
-time, gap and best lap is a whole number of hundredths and they add up. Every screen, board, printout, export and the
-live feed then shows two decimals. Cars with the same laps and the same total time share a place (1, 1, 3), and in
+time, gap and best lap is a whole number of hundredths and they add up. Every screen and board then shows two decimals; the
+results site pages and exports still carry the milliseconds, which are already whole hundredths. Times cut this way are
+stored cut, so switching the option off later does not bring the thousandths back for races already run. Cars with the same laps and the same total time share a place (1, 1, 3), and in
 qualifying they score the same points, as the EFRA tie rules say; a tie on total points then goes to the usual
 countback. Change it between races, not during one: a change reaches the next passing and can move later times by
 less than a hundredth. Split (sector) times are not cut. With the setting off, nothing changes.

@@ -70,7 +70,7 @@ public class DecoderListener implements SmartLifecycle {
     private final Executor timingExecutor;
 
     // Guarded by this. Settings changes and lifecycle calls both take the lock.
-    private AmbRc4TimingSource source;
+    private volatile AmbRc4TimingSource source;
     private DecoderSettings currentSettings;
     private boolean running = false;
     // Written only while holding this lock. Read without it by the Netty callbacks.
@@ -180,9 +180,11 @@ public class DecoderListener implements SmartLifecycle {
      * after the settings commit; takes effect from the next passing, so change it between races.
      */
     @EventListener
-    public synchronized void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
-        if (source != null) {
-            source.setTimeTruncationMicros(truncationMicros(event.settings()));
+    public void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
+        // No lock: the setter is a volatile write, and a save must not wait behind a decoder reconnect
+        AmbRc4TimingSource current = source;
+        if (current != null) {
+            current.setTimeTruncationMicros(truncationMicros(event.settings()));
         }
     }
 

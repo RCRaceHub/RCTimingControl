@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -11,7 +11,7 @@ import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { Toaster } from '@/components/ui/sonner';
 import { HelpProvider } from '@/context/HelpContext';
 import PageLoading from '@/components/PageLoading';
-import { useBoardSettings } from '@/hooks/useBoardSettings';
+import { useTimePrecision } from '@/hooks/useBoardSettings';
 import { setTimeInHundredths } from '@/lib/format';
 // The overlay sits over a live stream, so it loads with the app: a loading spinner would show on air
 import OverlayBoard from '@/pages/boards/OverlayBoard';
@@ -72,15 +72,20 @@ const LiveTopBoard = lazy(() => import('@/pages/boards/LiveTopBoard'));
 const BoardViewPage = lazy(() => import('@/pages/boards/BoardViewPage'));
 
 function RootLayout() {
-  // Times are shown to hundredths or thousandths of a second as the club chooses. The page is keyed on the choice so
-  // every screen draws its times again when it arrives or changes, which is rare.
-  const { truncateToHundredths } = useBoardSettings();
-  setTimeInHundredths(truncateToHundredths);
+  // Times are shown to hundredths or thousandths of a second as the club chooses. The page waits for the answer
+  // (a failed read counts as thousandths) so no screen draws its times twice. The choice read first keys the page; a
+  // later change by another admin applies to times drawn from then on, and to every page on its next load, rather
+  // than remounting race control mid-race.
+  const { ready, hundredths } = useTimePrecision();
+  setTimeInHundredths(hundredths);
+  const [firstChoice, setFirstChoice] = useState<boolean | null>(null);
+  if (ready && firstChoice === null) setFirstChoice(hundredths);
+  if (!ready) return <PageLoading />;
   return (
     <AuthProvider>
       <HelpProvider>
         <SetupGuard>
-          <Suspense key={String(truncateToHundredths)} fallback={<PageLoading />}>
+          <Suspense key={String(firstChoice)} fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
         </SetupGuard>
