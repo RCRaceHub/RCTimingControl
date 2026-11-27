@@ -36,13 +36,18 @@ public class ClockMonitor {
     static final int EDGE = 10;
     /** Passings needed before any judgement. */
     static final int MIN_PASSINGS = 10;
-    /** A spread of delays wider than this is JITTERY (milliseconds). */
-    static final double JITTER_WARN_MS = 100;
     /**
-     * A move of the quickest residual by at least this much (milliseconds), and by at least twice the jitter, so a noisy
-     * link cannot fake a drift from two chance extremes ...
+     * A spread of delays wider than this is JITTERY (milliseconds). Set from a real club decoder over a whole meeting,
+     * where passings reach the computer between 0 and about 1.4 s after the quickest one and the spread over 20
+     * passings never passed 1.5 s; a lower figure would warn all day on healthy hardware.
      */
-    static final double DRIFT_WARN_MS = 50;
+    static final double JITTER_WARN_MS = 3000;
+    /**
+     * A move of the quickest residual by at least this much (milliseconds), and by at least a third of the jitter, so a
+     * noisy link cannot fake a drift from two chance extremes ... (the same decoder's quickest residual wandered by
+     * about 200 ms over a day with no drift)
+     */
+    static final double DRIFT_WARN_MS = 300;
     /** ... at a rate of at least this (milliseconds per minute) is DRIFTING. */
     static final double DRIFT_WARN_MS_PER_MINUTE = 5;
     /** Decoder time that must pass before a drift rate is worked out (microseconds). */
@@ -197,7 +202,7 @@ public class ClockMonitor {
 
         ClockHealth.Status status = ClockHealth.Status.OK;
         if (Math.abs(driftPerMinute) >= DRIFT_WARN_MS_PER_MINUTE
-                && Math.abs(change) >= Math.max(DRIFT_WARN_MS, 2 * jitterMs)) {
+                && Math.abs(change) >= Math.max(DRIFT_WARN_MS, jitterMs / 3)) {
             status = ClockHealth.Status.DRIFTING;
         } else if (jitterMs >= JITTER_WARN_MS) {
             status = ClockHealth.Status.JITTERY;

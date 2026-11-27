@@ -122,8 +122,8 @@ status record has no time on it), so a warning needs a dozen or so passings firs
 
 | Warning | Meaning | What to do |
 |---|---|---|
-| **Decoder link jittery** | The delay between the decoder stamping a passing and this computer receiving it varies by 100 ms or more across recent passings | Check the network and the decoder's connection; lap times are not affected |
-| **Decoder clock drifting** | The decoder's clock is gaining or losing on the computer's by 5 ms a minute or more, and has moved 50 ms or more since the first passings | Lap times stay accurate, but absolute times, the race clock and split decoders drift apart; restart the decoder between races |
+| **Decoder link jittery** | The delay between the decoder stamping a passing and this computer receiving it varies by 3 seconds or more across recent passings (a healthy club decoder on a laptop varies by up to about 1.5 s, because passings are queued on the way) | Check the network and the decoder's connection; lap times are not affected |
+| **Decoder clock drifting** | The decoder's clock is gaining or losing on the computer's by 5 ms a minute or more, and has moved 300 ms or more since the first passings | Lap times stay accurate, but absolute times, the race clock and split decoders drift apart; restart the decoder between races |
 | **Decoder restarted** | The decoder's clock started again (a power cut or reset), so times before and after cannot be compared | Check the race; restart or rerun the heat as needed |
 
 The same figures (status, jitter, latency, drift in ms a minute, restarts) are in the decoder status feed (`/topic/system/decoder-status`) and in

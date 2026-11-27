@@ -82,6 +82,8 @@ RCTimingControl record --host=192.168.1.50 --listen-port=5101 --out=capture.dump
 
 Then point RCTimingControl, RCResults or another recorder at the **recorder's computer, port 5101**, instead of at the decoder.
 
+Some programs only accept the decoder's own port. Use `--listen-port=5100` and give them the recorder's computer on port 5100; it does not clash with the decoder because the decoder is a different device. It needs 5100 to be free on the recorder's computer (stop the simulator or another recorder there) and, on Windows, inbound 5100 allowed through the firewall.
+
 - Each program gets every record from the moment it connects. There is no history to replay, so a program that connects mid-race sees laps from then on.
 - A slow or stuck program is dropped without affecting the recording or the others.
 - The port has no password, like the decoder. Keep it on the venue network.

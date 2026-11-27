@@ -50,10 +50,10 @@ class ClockMonitorTest {
     void widelyVaryingDelayIsJittery() {
         ClockMonitor monitor = new ClockMonitor();
 
-        ClockHealth health = feed(monitor, 40, 10, 1.0, i -> i % 2 == 0 ? 1_000 : 400_000);
+        ClockHealth health = feed(monitor, 40, 10, 1.0, i -> i % 2 == 0 ? 1_000 : 4_000_000);
 
         assertThat(health.status()).isEqualTo(ClockHealth.Status.JITTERY);
-        assertThat(health.jitterMs()).isGreaterThan(300);
+        assertThat(health.jitterMs()).isGreaterThan(3000);
     }
 
     @Test
@@ -109,7 +109,7 @@ class ClockMonitorTest {
         List<ClockHealth> heard = new ArrayList<>();
         monitor.setListener(heard::add);
 
-        feed(monitor, 60, 10, 1.0, i -> i % 2 == 0 ? 1_000 : 400_000);
+        feed(monitor, 60, 10, 1.0, i -> i % 2 == 0 ? 1_000 : 4_000_000);
 
         assertThat(heard).hasSizeGreaterThan(2);
         assertThat(heard).allMatch(h -> h.status() == ClockHealth.Status.JITTERY || h.status() == ClockHealth.Status.OK);
@@ -148,5 +148,30 @@ class ClockMonitorTest {
 
         assertThat(heard).containsExactly(ClockHealth.Status.RESTARTED);
         assertThat(monitor.health().restarts()).isEqualTo(2);
+    }
+
+    /**
+     * A recording of a real club decoder across a 4.7 hour meeting. Its passings arrive up to a second after the quickest
+     * ones, and its clock does not drift against the computer's, so a healthy link must never be flagged for either.
+     */
+    @Test
+    void aRealMeetingRecordingNeverRaisesAFalseWarning() throws Exception {
+        ClockMonitor monitor = new ClockMonitor();
+        List<ClockHealth.Status> seen = new ArrayList<>();
+        try (var in = getClass().getResourceAsStream("/clock/meeting-passings.txt")) {
+            assertThat(in).isNotNull();
+            for (String line : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).split("\n")) {
+                if (line.isBlank() || line.startsWith("#")) {
+                    continue;
+                }
+                String[] f = line.trim().split(" ");
+                long arrivalMicros = Long.parseLong(f[0]) * 1000L;
+                long decoderMicros = new java.math.BigDecimal(f[1]).movePointRight(6).longValue();
+                seen.add(monitor.observe(decoderMicros, arrivalMicros).status());
+            }
+        }
+
+        assertThat(seen).hasSizeGreaterThan(1900);
+        assertThat(seen).doesNotContain(ClockHealth.Status.JITTERY, ClockHealth.Status.DRIFTING, ClockHealth.Status.RESTARTED);
     }
 }
