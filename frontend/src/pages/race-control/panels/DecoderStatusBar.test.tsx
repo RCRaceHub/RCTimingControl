@@ -89,4 +89,43 @@ describe('DecoderStatusBar', () => {
     rerender(<DecoderStatusBar />);
     expect(screen.getByText('DECODER disconnected')).toBeInTheDocument();
   });
+
+  it('warns when the decoder clock is drifting', () => {
+    mockUseStomp.mockReturnValue({
+      data: {
+        decoderState: 'CONNECTED',
+        clock: { status: 'DRIFTING', passings: 80, jitterMs: 4, latencyMs: 2, driftMsPerMinute: 12.4, restarts: 0 },
+      },
+      status: 'connected',
+    });
+    render(<DecoderStatusBar />, { wrapper });
+
+    expect(screen.getByText('Decoder clock drifting 12 ms/min')).toBeInTheDocument();
+  });
+
+  it('warns loudly when the decoder restarted', () => {
+    mockUseStomp.mockReturnValue({
+      data: {
+        decoderState: 'CONNECTED',
+        clock: { status: 'RESTARTED', passings: 0, jitterMs: 0, latencyMs: 0, driftMsPerMinute: 0, restarts: 1 },
+      },
+      status: 'connected',
+    });
+    render(<DecoderStatusBar />, { wrapper });
+
+    expect(screen.getByText('Decoder restarted')).toBeInTheDocument();
+  });
+
+  it('shows no clock warning while the clock is steady', () => {
+    mockUseStomp.mockReturnValue({
+      data: {
+        decoderState: 'CONNECTED',
+        clock: { status: 'OK', passings: 80, jitterMs: 4, latencyMs: 2, driftMsPerMinute: 0, restarts: 0 },
+      },
+      status: 'connected',
+    });
+    render(<DecoderStatusBar />, { wrapper });
+
+    expect(screen.queryByText(/Decoder clock|Decoder restarted|jittery/)).not.toBeInTheDocument();
+  });
 });

@@ -113,6 +113,22 @@ RC-4 decoders send seconds since power-on, not a clock time, so RCTC lines each 
 
 ---
 
+## Decoder clock health
+
+RCTC watches the decoder's clock against the computer's while passings come in, and warns race control beside the
+**DECODER** light. It is detection only: it changes no lap time, because a lap time is the difference between two of
+the decoder's own timestamps. Each passing is compared with when it arrived, which can only be done from passings (a
+status record has no time on it), so a warning needs a dozen or so passings first.
+
+| Warning | Meaning | What to do |
+|---|---|---|
+| **Decoder link jittery** | The delay between the decoder stamping a passing and this computer receiving it varies by 100 ms or more across recent passings | Check the network and the decoder's connection; lap times are not affected |
+| **Decoder clock drifting** | The decoder's clock is gaining or losing on the computer's by 5 ms a minute or more, and has moved 50 ms or more since the first passings | Lap times stay accurate, but absolute times, the race clock and split decoders drift apart; restart the decoder between races |
+| **Decoder restarted** | The decoder's clock started again (a power cut or reset), so times before and after cannot be compared | Check the race; restart or rerun the heat as needed |
+
+The same figures (status, jitter, latency, drift in ms a minute, restarts) are in the decoder status feed (`/topic/system/decoder-status`) and in
+`GET /api/v1/race-control/decoder/status`. Standalone: nothing here involves RaceHub.
+
 ## Status
 
 The race-control bar shows **DECODER** in one of three states:

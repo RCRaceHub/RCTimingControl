@@ -6,6 +6,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.function.Consumer;
 
 /**
@@ -26,6 +28,7 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
     private final EpochAnchor                     epochAnchor;
     private final SeqGapDetector                  gapDetector;
     private final Consumer<EpochCorrectedPassing> onPassing;
+    private final ClockMonitor                    clockMonitor;
 
     /**
      * The handler shares the parser, anchor and gap detector with the source that built it, so they keep their
@@ -35,6 +38,16 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
                              EpochAnchor epochAnchor,
                              SeqGapDetector gapDetector,
                              Consumer<EpochCorrectedPassing> onPassing) {
+        this(parser, epochAnchor, gapDetector, onPassing, new ClockMonitor());
+    }
+
+    /** As above, also feeding each passing to {@code clockMonitor}, which the source keeps across reconnects. */
+    public Rc4InboundHandler(Rc4TextParser parser,
+                             EpochAnchor epochAnchor,
+                             SeqGapDetector gapDetector,
+                             Consumer<EpochCorrectedPassing> onPassing,
+                             ClockMonitor clockMonitor) {
+        this.clockMonitor = clockMonitor;
         this.parser      = parser;
         this.epochAnchor = epochAnchor;
         this.gapDetector = gapDetector;
@@ -56,7 +69,9 @@ public class Rc4InboundHandler extends SimpleChannelInboundHandler<String> {
         parser.parse(stripped).ifPresent(pp -> {
             if (epochAnchor.detectsRestart(pp.timeSinceStartSeconds())) {
                 log.warn("Decoder restart detected (timeSinceStart regressed) — resetting epoch");
+                clockMonitor.restarted();
             }
+            clockMonitor.observe(pp.timeSinceStartMicros(), ChronoUnit.MICROS.between(Instant.EPOCH, Instant.now()));
             long rtcMicros = epochAnchor.toRtcTimeMicrosExact(pp.timeSinceStartMicros());
             onPassing.accept(new EpochCorrectedPassing(
                 pp.transponderNumber(), rtcMicros, pp.seqNum(),

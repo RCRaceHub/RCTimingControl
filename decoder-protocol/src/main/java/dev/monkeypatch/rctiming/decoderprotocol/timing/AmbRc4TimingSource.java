@@ -57,6 +57,7 @@ public class AmbRc4TimingSource implements TimingSource {
     private final Rc4TextParser   parser      = new Rc4TextParser();
     private final EpochAnchor     epochAnchor = new EpochAnchor();
     private final SeqGapDetector  gapDetector = new SeqGapDetector();
+    private final ClockMonitor    clockMonitor = new ClockMonitor();
 
     private final EventLoopGroup group = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
 
@@ -78,6 +79,19 @@ public class AmbRc4TimingSource implements TimingSource {
         this.port      = port;
         this.onPassing = onPassing;
         this.onStatus  = onStatus;
+    }
+
+    /**
+     * Sets who hears when the decoder's clock status changes (steady, jittery, drifting or restarted), see
+     * {@link ClockMonitor}. Called on the Netty event-loop thread.
+     */
+    public void setClockHealthListener(java.util.function.Consumer<ClockHealth> listener) {
+        clockMonitor.setListener(listener);
+    }
+
+    /** The latest reading of the decoder's clock against the server's. */
+    public ClockHealth clockHealth() {
+        return clockMonitor.health();
     }
 
     /**
@@ -120,7 +134,7 @@ public class AmbRc4TimingSource implements TimingSource {
                         new IdleStateHandler(8, 0, 0, TimeUnit.SECONDS),
                         new LineBasedFrameDecoder(1024),
                         new StringDecoder(StandardCharsets.US_ASCII),
-                        new Rc4InboundHandler(parser, epochAnchor, gapDetector, onPassing)
+                        new Rc4InboundHandler(parser, epochAnchor, gapDetector, onPassing, clockMonitor)
                     );
                 }
             });
