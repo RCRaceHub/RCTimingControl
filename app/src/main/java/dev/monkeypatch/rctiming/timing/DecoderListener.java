@@ -5,6 +5,8 @@ import dev.monkeypatch.rctiming.decoderprotocol.timing.EpochCorrectedPassing;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettings;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettingsChangedEvent;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettingsChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -168,7 +171,24 @@ public class DecoderListener implements SmartLifecycle {
         source = sourceFactory.create(settings.host(), settings.port(),
                 passing -> onPassing(current, passing),
                 state -> onStatus(current, state));
+        source.setTimeTruncationMicros(truncationMicros(clubProfileService.liveTimingSettings()));
         source.start();
+    }
+
+    /**
+     * Applies a change to the club's time precision (hundredths or milliseconds) to the running source. Published
+     * after the settings commit; takes effect from the next passing, so change it between races.
+     */
+    @EventListener
+    public synchronized void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
+        if (source != null) {
+            source.setTimeTruncationMicros(truncationMicros(event.settings()));
+        }
+    }
+
+    /** The truncation step for the club's settings; milliseconds when there are none to read. */
+    private static long truncationMicros(LiveTimingSettings settings) {
+        return settings == null ? 1_000L : settings.truncationMicros();
     }
 
     /** Retires the current source. Must be called while holding the lock. */

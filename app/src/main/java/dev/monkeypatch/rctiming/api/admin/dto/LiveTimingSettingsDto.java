@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * The club's live timing thresholds (#505), the body and answer of {@code GET} and {@code PUT
  * /api/v1/admin/club/live-timing-settings}. Times are in milliseconds; see {@link LiveTimingSettings} for what each
- * one does; {@code hiddenRowIcons} may be omitted for none. The service checks the ranges again, and that the gaining-fast limit is not below the trend limit.
+ * one does; {@code hiddenRowIcons} may be omitted for none and {@code truncateToHundredths} for off. The service checks the ranges again, and that the gaining-fast limit is not below the trend limit.
  */
 public record LiveTimingSettingsDto(
         @NotNull @Min(0) @Max(10_000) Integer battleGapMs,
@@ -20,15 +20,17 @@ public record LiveTimingSettingsDto(
         @NotNull @Min(0) @Max(10) Integer battleHoldLaps,
         @NotNull @Min(0) @Max(60_000) Integer closeGapMs,
         @NotNull @Min(0) @Max(10_000) Integer lateMarginMs,
+        Boolean truncateToHundredths,
         @Size(max = 20) List<String> hiddenRowIcons) {
 
     public static LiveTimingSettingsDto from(LiveTimingSettings s) {
         return new LiveTimingSettingsDto(s.battleGapMs(), s.battleTrendMsPerLap(), s.battleFastMsPerLap(),
-                s.battleHoldLaps(), s.closeGapMs(), s.lateMarginMs(), s.hiddenRowIcons());
+                s.battleHoldLaps(), s.closeGapMs(), s.lateMarginMs(), s.truncateToHundredths(),
+                s.hiddenRowIcons());
     }
 
     public LiveTimingSettings toSettings() {
         return new LiveTimingSettings(battleGapMs, battleTrendMsPerLap, battleFastMsPerLap, battleHoldLaps,
-                closeGapMs, lateMarginMs, hiddenRowIcons);
+                closeGapMs, lateMarginMs, Boolean.TRUE.equals(truncateToHundredths), hiddenRowIcons);
     }
 }
