@@ -41,7 +41,14 @@ export function PhotoUploadField({ pickLabel, inputLabel, onSave, saving = false
   useEffect(() => {
     held.current = [original?.url, cutout?.url].filter((u): u is string => !!u);
   });
-  useEffect(() => () => held.current.forEach(u => URL.revokeObjectURL(u)), []);
+  useEffect(
+    () => () => {
+      // A background removal still running when the field goes away must not create a URL nobody revokes
+      request.current += 1;
+      held.current.forEach(u => URL.revokeObjectURL(u));
+    },
+    [],
+  );
 
   const reset = () => {
     request.current += 1;
