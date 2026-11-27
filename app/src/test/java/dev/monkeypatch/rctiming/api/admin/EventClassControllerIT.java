@@ -14,6 +14,12 @@ import dev.monkeypatch.rctiming.domain.format.RaceFormatTemplateRepository;
 import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.format.TimedRaceConfig;
 import dev.monkeypatch.rctiming.domain.format.QualifyingType;
+import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.Round;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.domain.user.Role;
@@ -30,6 +36,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -63,6 +70,15 @@ class EventClassControllerIT extends AbstractIntegrationTest {
 
     @Autowired
     EventClassRepository eventClassRepository;
+
+    @Autowired
+    RoundRepository roundRepository;
+
+    @Autowired
+    RaceRepository raceRepository;
+
+    @Autowired
+    JdbcTemplate jdbc;
 
     private String adminToken;
 
@@ -229,6 +245,8 @@ class EventClassControllerIT extends AbstractIntegrationTest {
         assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resp.getBody().templateId()).isEqualTo(newTemplateId);
         assertThat(resp.getBody().configOverride()).isNull();
+        assertThat(jdbc.queryForObject("SELECT before_json FROM audit_log WHERE action = 'EVENT_CLASS_FORMAT_CHANGED'"
+                + " AND entity_id = ?", String.class, String.valueOf(classId))).contains("durationMinutes");
         assertThat(((TimedRaceConfig) eventClassRepository.getOrThrow(classId).getConfigSnapshot())
                 .durationMinutes()).isEqualTo(20);
     }
@@ -246,6 +264,39 @@ class EventClassControllerIT extends AbstractIntegrationTest {
                 String.class);
 
         assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(eventClassRepository.getOrThrow(classId).getTemplateId()).isEqualTo(templateId);
+    }
+
+    @Test
+    void changeFormat_afterRacesAreGenerated_isRefusedWithConflict() {
+        Long eventId = createEventInDb();
+        Long templateId = createTemplateInDb(10);
+        Long classId = addClassToEvent(eventId, templateId, createRacingClassInDb());
+        Round round = new Round();
+        round.setEventId(eventId);
+        round.setType(RoundType.QUALIFIER);
+        round.setRoundNumber(1);
+        round.setSequenceInEvent(1);
+        round.setCreatedAt(Instant.now());
+        round.setUpdatedAt(Instant.now());
+        Long roundId = roundRepository.save(round).getId();
+        Race race = new Race();
+        race.setRoundId(roundId);
+        race.setEventClassId(classId);
+        race.setHeatNumber(1);
+        race.setSequenceInRound(1);
+        race.setStartType(StartType.GRID);
+        race.setStatus(RaceStatus.PENDING);
+        race.setCreatedAt(Instant.now());
+        race.setUpdatedAt(Instant.now());
+        raceRepository.save(race);
+
+        ResponseEntity<String> resp = restTemplate.exchange(
+                "/api/v1/admin/events/" + eventId + "/classes/" + classId + "/format", HttpMethod.PUT,
+                new HttpEntity<>(Map.of("templateId", createTemplateInDb(20)), adminHeaders()),
+                String.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(eventClassRepository.getOrThrow(classId).getTemplateId()).isEqualTo(templateId);
     }
 

@@ -66,20 +66,24 @@ function DialogContent({
         )}
         {...props}
       >
-        {children}
         {showCloseButton && (
-          <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-4 right-4 bg-secondary"
-              size="icon-sm"
-            >
-              <XIcon
-              />
-              <span className="sr-only">Close</span>
-            </Button>
-          </DialogPrimitive.Close>
+          // A zero-height row that sticks to the top while the dialog scrolls, so the close button stays in reach on
+          // a tall dialog on a phone. The next sibling is pulled up to cancel the grid gap this row adds.
+          <div data-slot="dialog-close-row" className="sticky top-6 z-10 h-0 [&+*]:-mt-6">
+            <DialogPrimitive.Close data-slot="dialog-close" asChild>
+              <Button
+                variant="ghost"
+                className="absolute -top-2 -right-2 bg-secondary"
+                size="icon-sm"
+              >
+                <XIcon
+                />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogPrimitive.Close>
+          </div>
         )}
+        {children}
       </DialogPrimitive.Content>
     </DialogPortal>
   )

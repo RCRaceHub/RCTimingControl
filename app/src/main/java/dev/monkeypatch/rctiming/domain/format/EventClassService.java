@@ -171,7 +171,7 @@ public class EventClassService {
      * Gives the class another race format and records {@code EVENT_CLASS_FORMAT_CHANGED}. The new template is copied
      * as a fresh snapshot, as when the class was added, and any override of the old format is cleared because it may
      * not fit the new one. Refused once a race has been generated for the class, since the run order is built from
-     * the format; the official deletes the run order first. Entries, combined race groups and RaceHub links are not
+     * the format; the official deletes the run order first. The event's status is not checked, as in {@link #removeClassFromEvent}. The cleared override is kept in the audit row's before-state. Entries, combined race groups and RaceHub links are not
      * touched. Choosing the format the class already has re-takes the template's current values.
      *
      * @throws dev.monkeypatch.rctiming.domain.EntityNotFoundException if the class or template does not exist
@@ -191,7 +191,7 @@ public class EventClassService {
         RaceFormatTemplate template = templateRepository.getOrThrow(templateId);
         Map<String, Object> before = new LinkedHashMap<>();
         before.put("templateId", ec.getTemplateId());
-        before.put("hadOverride", ec.getConfigOverride() != null && !ec.getConfigOverride().isEmpty());
+        before.put("override", ec.getConfigOverride());
         EventClass fresh = raceFormatService.assignTemplateToEventClass(template);
         ec.setConfigSnapshot(fresh.getConfigSnapshot());
         ec.setTemplateId(template.getId());

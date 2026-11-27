@@ -75,7 +75,7 @@ function FormatDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(values => onSubmit(values.name, values.config))} className="space-y-4">

@@ -37,6 +37,7 @@ import {
 } from '@/hooks/admin/useAdminEventClasses';
 import { useFormatsList } from '@/hooks/admin/useAdminFormats';
 import type { EventClassDto } from '@/lib/adminApi';
+import { QueryError } from '@/components/QueryError';
 import { getApiErrorMessage, getApiErrorStatus } from '@/lib/errors';
 
 const addClassSchema = z.object({
@@ -348,12 +349,14 @@ function ChangeFormatDialog({
   onClose: () => void;
 }) {
   const changeFormat = useChangeEventClassFormat(eventId);
-  const { data: templates = [], isLoading } = useFormatsList();
+  const { data: templates = [], isLoading, isError, refetch } = useFormatsList();
   const [picked, setPicked] = useState<string>('');
   const value = picked || (target?.templateId ? String(target.templateId) : '');
 
+  const unchanged = target?.templateId != null && value === String(target.templateId);
+
   async function handleSave() {
-    if (!target || !value) return;
+    if (!target || !value || unchanged) return;
     try {
       await changeFormat.mutateAsync({ classId: target.id, templateId: Number(value) });
       toast.success('Format changed');
@@ -388,10 +391,11 @@ function ChangeFormatDialog({
               ))}
             </SelectContent>
           </Select>
+          {isError && <QueryError message="Could not load the formats." onRetry={refetch} />}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => { setPicked(''); onClose(); }}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!value || changeFormat.isPending}>
+          <Button onClick={handleSave} disabled={!value || unchanged || changeFormat.isPending}>
             {changeFormat.isPending ? 'Saving…' : 'Change format'}
           </Button>
         </DialogFooter>
