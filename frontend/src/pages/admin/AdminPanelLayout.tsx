@@ -1,5 +1,6 @@
 import { Suspense, useState } from 'react';
 import { Outlet, NavLink, useMatch } from 'react-router-dom';
+import VersionFooter from '@/components/layout/VersionFooter';
 import {
   Calendar,
   Trophy,
@@ -288,6 +289,7 @@ export default function AdminPanelLayout() {
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
+          <VersionFooter />
         </div>
       </main>
 

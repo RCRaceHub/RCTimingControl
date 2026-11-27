@@ -38,7 +38,7 @@ describe('AboutPage', () => {
       'http://192.168.1.50:8080/',
       'http://timing-laptop:8080/',
     ]);
-    expect(screen.getByText('v0.1.0')).toBeInTheDocument();
+    expect(screen.getAllByText('v0.1.0').length).toBeGreaterThan(0);
   });
 
   it('lists what the app contains', async () => {
@@ -70,7 +70,7 @@ describe('AboutPage', () => {
     about.mockResolvedValue({ version: '0.1.0', buildTime: '2026-10-04T12:00:00Z', addresses: [] });
     renderPage();
 
-    expect(await screen.findByText('v0.1.0')).toBeInTheDocument();
+    expect((await screen.findAllByText('v0.1.0')).length).toBeGreaterThan(0);
     expect(screen.queryByText('Open on other devices')).not.toBeInTheDocument();
   });
 });
