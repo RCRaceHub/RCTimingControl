@@ -7,6 +7,56 @@ import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { QrLink } from '@/components/QrLink';
 import { CertificateSteps } from '@/components/CertificateSteps';
 
+/** What the app contains, grouped for the About page. Plain text only, so it never needs the server. */
+const ABOUT_FEATURE_GROUPS: { title: string; items: string[] }[] = [
+  {
+    title: 'Timing and race control',
+    items: [
+      'Reads the AMB/MyLaps decoder directly over TCP (RC-4 text)',
+      'Race lifecycle: grid, start, stop, finish, abandon, restart',
+      'Marshal laps, penalties, incidents and referee tools',
+      'Unknown transponder handling and on-the-day transponder swaps',
+      'Optional split-loop decoders for sector times',
+      'Open practice sessions outside any heat',
+    ],
+  },
+  {
+    title: 'Events and entries',
+    items: [
+      'Events, rounds, heats, finals and bump-ups',
+      'Race formats and classes, including Shikabane (marshal-less) races',
+      'Entries from a RaceHub export or an RC-Timing CSV, or added as walk-ins',
+      'Competitors with a primary and secondary transponder per event',
+    ],
+  },
+  {
+    title: 'Results and championships',
+    items: [
+      'Results kept for every race, with printable sheets and PDF export',
+      'Championships with configurable scoring systems',
+      'Results sent back to RaceHub, and an optional live feed to a relay',
+    ],
+  },
+  {
+    title: 'Boards, screens and audio',
+    items: [
+      'Spectator boards: now and next, live race and results',
+      'Streaming overlay for OBS, with themes and sponsors',
+      'Raspberry Pi display screens, messages and banners',
+      'Spoken race calls with text-to-speech and the club’s own horn sounds',
+    ],
+  },
+  {
+    title: 'Running the club',
+    items: [
+      'Officials sign in with stackable roles: admin, race director, referee',
+      'Scheduled and on-demand backups, with a restore command',
+      'Optional HTTPS from the club’s own certificate authority',
+      'Works fully on its own, with or without RaceHub',
+    ],
+  },
+];
+
 export default function AboutPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: publicQueryKeys.about(),
@@ -16,7 +66,7 @@ export default function AboutPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
+      <div className="w-full max-w-xl space-y-8 py-8">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">RC Timing Control</h1>
           <p className="text-sm text-muted-foreground">
@@ -46,6 +96,22 @@ export default function AboutPage() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Release</span>
             <span className="text-warning font-medium">Early pre-release</span>
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-card p-6 space-y-4 text-sm">
+          <h2 className="font-medium">What's inside</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {ABOUT_FEATURE_GROUPS.map((group) => (
+              <section key={group.title} aria-label={group.title} className="space-y-1">
+                <h3 className="font-medium">{group.title}</h3>
+                <ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
+                  {group.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         </div>
 
