@@ -237,10 +237,10 @@ export default function EventListPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-semibold">Events</h1>
         {isAdmin && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRaceHubOpen(true)}>
               <Search className="h-4 w-4 mr-1" />
               Find RaceHub events

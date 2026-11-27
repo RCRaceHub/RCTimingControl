@@ -514,7 +514,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
         {classes.map(cls => (
           <div
             key={cls.id}
-            className="rounded-lg border bg-card p-4 flex items-start gap-3"
+            className="rounded-lg border bg-card p-4 flex flex-wrap items-start gap-3"
           >
             {isAdmin && (
             <Checkbox
@@ -525,7 +525,7 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
               className="mt-0.5"
             />
             )}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-[8rem]">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium text-sm">
                   {resolveClassName(cls.racingClassId)}
@@ -546,43 +546,41 @@ export default function EventClassSection({ eventId, classes }: EventClassSectio
               </div>
             </div>
             {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setRemoveTarget({ id: cls.id, name: resolveClassName(cls.racingClassId) })}
-              >
-                Remove
-              </Button>
-            )}
-            {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setFormatTarget({
-                    id: cls.id,
-                    name: resolveClassName(cls.racingClassId),
-                    templateId: cls.templateId,
-                  })
-                }
-              >
-                Change Format
-              </Button>
-            )}
-            {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  setOverrideState({
-                    open: true,
-                    classId: cls.id,
-                    currentOverride: cls.configOverride,
-                  })
-                }
-              >
-                Edit Overrides
-              </Button>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRemoveTarget({ id: cls.id, name: resolveClassName(cls.racingClassId) })}
+                >
+                  Remove
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setFormatTarget({
+                      id: cls.id,
+                      name: resolveClassName(cls.racingClassId),
+                      templateId: cls.templateId,
+                    })
+                  }
+                >
+                  Change Format
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setOverrideState({
+                      open: true,
+                      classId: cls.id,
+                      currentOverride: cls.configOverride,
+                    })
+                  }
+                >
+                  Edit Overrides
+                </Button>
+              </div>
             )}
           </div>
         ))}
