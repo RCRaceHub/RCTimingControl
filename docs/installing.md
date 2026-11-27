@@ -220,7 +220,7 @@ Uninstall it the usual way for the system: **Settings → Apps** on Windows, or 
 
 ## Building the installers
 
-Each installer is built on the system it is for. You need JDK 21 and Node 22.12 or newer, and:
+Each installer is built on the system it is for. You need JDK 21 and Node 24 or newer, and:
 
 - **Windows:** the WiX Toolset 3, and the 64-bit `nssm.exe` from [NSSM 2.24](https://nssm.cc/download), which registers the service.
 - **macOS:** the Xcode command line tools.

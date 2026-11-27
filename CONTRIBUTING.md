@@ -81,7 +81,7 @@ Three jobs run on every pull request and on every push to `main` (a branch with 
 ```mermaid
 flowchart LR
     Push([Push / PR]) --> B[test-backend\nGradle · Java 21\napp + decoder-simulator + decoder-protocol]
-    Push --> C[test-frontend\nNode 22\nVitest]
+    Push --> C[test-frontend\nNode 24\nVitest]
     Push --> D[test-e2e\napp jar + demo club + simulator\nPlaywright · Chromium]
 
     B --> E{All green?}
