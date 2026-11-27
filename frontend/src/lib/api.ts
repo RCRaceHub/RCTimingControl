@@ -41,6 +41,8 @@ export default api;
 export interface AboutDto {
   version: string;
   buildTime: string;
+  /** The short git commit the build came from, or "unknown"; tells a build of main from a release */
+  commit?: string | null;
   /** URLs other devices on the venue network can open */
   addresses: string[];
   /** The mDNS URL (such as http://timing.local:8080/) once announced, which survives address changes; null if not */

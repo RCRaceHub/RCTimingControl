@@ -13,8 +13,23 @@ java {
     }
 }
 
+// The commit this build came from, shown on the About page: a build from main reports the same VERSION as a
+// release, so the version alone cannot tell them apart. "unknown" when there is no git checkout (Docker builds).
+val gitCommit: String = try {
+    providers.exec {
+        commandLine("git", "rev-parse", "--short=8", "HEAD")
+        isIgnoreExitValue = true
+    }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+} catch (e: Exception) {
+    "unknown"
+}
+
 springBoot {
-    buildInfo()
+    buildInfo {
+        properties {
+            additional.set(mapOf("commit" to gitCommit))
+        }
+    }
 }
 
 // Pin all jOOQ artifacts in jooqGenerator to the same version as version.set() below (3.21.9).
