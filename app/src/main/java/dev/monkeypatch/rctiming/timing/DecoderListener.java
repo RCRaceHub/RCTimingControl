@@ -1,6 +1,7 @@
 package dev.monkeypatch.rctiming.timing;
 
 import dev.monkeypatch.rctiming.decoderprotocol.timing.AmbRc4TimingSource;
+import dev.monkeypatch.rctiming.decoderprotocol.timing.ClockHealth;
 import dev.monkeypatch.rctiming.decoderprotocol.timing.EpochCorrectedPassing;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettings;
@@ -153,6 +154,7 @@ public class DecoderListener implements SmartLifecycle {
     private void applySettings(DecoderSettings settings) {
         stopSource();
         currentSettings = settings;
+        statusPublisher.onClockHealth(null);
 
         if (!settings.isConfigured()) {
             log.info("Decoder not configured — direct decoder listener idle");
@@ -172,6 +174,7 @@ public class DecoderListener implements SmartLifecycle {
                 passing -> onPassing(current, passing),
                 state -> onStatus(current, state));
         source.setTimeTruncationMicros(truncationMicros(clubProfileService.liveTimingSettings()));
+        source.setClockHealthListener(health -> onClockHealth(current, health));
         source.start();
     }
 
@@ -202,6 +205,23 @@ public class DecoderListener implements SmartLifecycle {
             source.stop();
             source = null;
         }
+    }
+
+    /**
+     * Runs on the Netty event-loop thread when the decoder's clock status changes. Ignored unless it comes from the
+     * current source; a warning is logged for anything but a steady clock.
+     */
+    void onClockHealth(int sourceGeneration, ClockHealth health) {
+        if (sourceGeneration != generation) {
+            return;
+        }
+        if (health.status() == ClockHealth.Status.OK || health.status() == ClockHealth.Status.LEARNING) {
+            log.info("Decoder clock {}", health.status());
+        } else {
+            log.warn("Decoder clock {}: jitter {} ms, drift {} ms a minute, {} restart(s)", health.status(),
+                    Math.round(health.jitterMs()), Math.round(health.driftMsPerMinute()), health.restarts());
+        }
+        statusPublisher.onClockHealth(health);
     }
 
     /** Runs on the Netty event-loop thread. Ignored unless it comes from the current source. */
