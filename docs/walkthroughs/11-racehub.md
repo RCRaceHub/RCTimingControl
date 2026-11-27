@@ -21,7 +21,7 @@ There are two places, and either works.
   rctiming.racehub.url=https://racehub.example
   ```
 
-- **The admin page.** Open **Admin → RaceHub → Connection**. A standalone club does not see **RaceHub** in the menu until a key is set; **Club profile** has a link to the page. Enter the **RaceHub address** (just the host, such as `https://racehub.example`; you set it once and results, **Find RaceHub events**, the class and format lists and imports all use it), paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
+- **The admin page.** Open **Admin → RaceHub → Connection**. **RaceHub** is always in the admin menu, even for a standalone club; **Club profile** links to it too. Enter the **RaceHub address** (just the host, such as `https://racehub.example`; you set it once and results, **Find RaceHub events**, the class and format lists and imports all use it), paste the key into **RaceHub key** and press **Save key**. It applies at once, no restart.
 
   ![The Connection tab: RaceHub address and key](../images/racehub-connection.png)
 

@@ -83,11 +83,11 @@ describe('AdminPanelLayout RaceHub entry', () => {
     auth.raceHub = true;
   });
 
-  it('is hidden while the club runs standalone, with no RaceHub key', () => {
+  it('is still shown while the club runs standalone, with no RaceHub key', () => {
     auth.raceHub = false;
     renderLayout();
 
-    expect(screen.queryByRole('link', { name: /^RaceHub/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /^RaceHub/ }).length).toBeGreaterThan(0);
   });
 
   it('is shown to ADMIN users', () => {

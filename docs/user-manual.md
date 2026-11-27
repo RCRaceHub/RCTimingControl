@@ -135,7 +135,7 @@ Photos look best on the boards and the streaming overlay with a transparent back
 
 When all races are done, complete the event. Results are on the public pages, printable, and downloadable from the event's page. If a result needs correcting after the finish, the stored result is worked out again and championship points follow. Sections 6 and 8 of the Race Meeting Guide cover finishing, corrections and publishing results. Championship standings update from the saved results and are on the championship's Standings tab and its public page. To give Junior, Vet or F-Grade drivers their own tables as well, set each driver's categories on the Competitors page, then list the categories on the championship's Config tab under Category splits; each split repeats the class tables for those drivers, ranked among themselves.
 
-A club with no RaceHub key and no results website runs standalone: the **RaceHub** item is left out of the Admin menu, and **Club profile** has a link to the page when you want to connect.
+A club with no RaceHub key and no results website runs standalone: the **RaceHub** item is still in the Admin menu, and its Connection tab is where you connect when you want to.
 
 ### 11. Backups
 

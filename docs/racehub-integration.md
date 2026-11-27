@@ -64,7 +64,7 @@ RaceHub has no ping route of its own, so RCTC uses what the key already does:
 
 ## Using RCTC without RaceHub
 
-Nothing here is needed to run a club. With no key and no results site, RCTC is standalone: the **RaceHub** page is left out of the admin menu (**Club profile** has a link to it if you later want it), entries come from an RC-Timing CSV or are added by hand, and results are printed, downloaded or published as a results site. A club can also be connected and still run a local meeting that has nothing to do with RaceHub, and open practice is always local. See [user-manual.md](user-manual.md) for those paths.
+Nothing here is needed to run a club. With no key and no results site, RCTC is standalone: the **RaceHub** page stays in the admin menu, with **Connection** ready for when you want to connect (**Club profile** links to it too), entries come from an RC-Timing CSV or are added by hand, and results are printed, downloaded or published as a results site. A club can also be connected and still run a local meeting that has nothing to do with RaceHub, and open practice is always local. See [user-manual.md](user-manual.md) for those paths.
 
 ## Where to read more
 
