@@ -77,6 +77,12 @@ export default function AboutPage() {
               <span className="font-mono font-medium">v{data.version}</span>
             )}
           </div>
+          {data?.commit && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Commit</span>
+              <span className="font-mono">{data.commit}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Built</span>
             {isLoading && <span className="text-muted-foreground">Loading…</span>}

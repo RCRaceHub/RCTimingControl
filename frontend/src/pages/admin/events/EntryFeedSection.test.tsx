@@ -176,6 +176,32 @@ describe('EntryFeedSection', () => {
     expect(api.previewEntryFeed).toHaveBeenCalledWith(5);
   });
 
+  it('keeps the review dialog open after the import so the pictures can be fetched', async () => {
+    const preview = {
+      dryRun: true, blocked: false, applied: false, racehubEventName: 'Club Round 3', revision: 7,
+      summary: { created: 1, updated: 0, withdrawn: 0, unchanged: 0, stale: 0, skipped: 0 },
+      unmappedClasses: [], errors: [], warnings: [], rows: [], photoLinks: [],
+    };
+    api.getEntryFeed
+      .mockResolvedValueOnce(feed({ lastStatus: 'WAITING', waiting: true, waitingRevision: 7 }))
+      .mockResolvedValue(feed({ lastStatus: 'APPLIED', waiting: false, appliedRevision: 7 }));
+    api.previewEntryFeed.mockResolvedValue(preview);
+    api.applyEntryFeed.mockResolvedValue({
+      ...preview, dryRun: false, applied: true,
+      photoLinks: [{ kind: 'HEADSHOT', competitorId: 3, entryId: null, url: 'https://media.example.org/a.png' }],
+    });
+    renderSection();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Review and import' }));
+    await screen.findByTestId('racehub-preview');
+    fireEvent.click(screen.getByRole('button', { name: 'Import entries' }));
+
+    // The feed is no longer waiting once the file is applied, but the dialog stays to offer the pictures
+    expect(await screen.findByRole('button', { name: /Fetch the pictures/ })).toBeInTheDocument();
+    await waitFor(() => expect(api.getEntryFeed.mock.calls.length).toBeGreaterThan(1));
+    expect(screen.getByRole('button', { name: /Fetch the pictures/ })).toBeInTheDocument();
+  });
+
   it('removes the token and the feed', async () => {
     api.getEntryFeed.mockResolvedValue(feed());
     api.saveEntryFeed.mockResolvedValue(feed({ tokenSaved: false, tokenHint: null }));

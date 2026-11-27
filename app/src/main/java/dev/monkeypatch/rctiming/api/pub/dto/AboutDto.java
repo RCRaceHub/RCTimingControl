@@ -9,7 +9,9 @@ import java.util.List;
  * {@code stableAddress}: the mDNS URL such as {@code http://timing.local:8080/} once it is really announced, else
  * null. QR codes use it so printed codes survive an address change, and fall back to {@code addresses};
  * {@code httpsAddresses}: the HTTPS addresses, empty when HTTPS is off; {@code httpsEnabled}: whether the club
- * certificate authority can be downloaded from {@code /api/v1/about/ca.crt} (#503).
+ * certificate authority can be downloaded from {@code /api/v1/about/ca.crt} (#503);
+ * {@code commit}: the short git commit the build came from, or "unknown" when it was built outside a checkout. The
+ * version alone cannot tell a build of main from a release, as {@code VERSION} only changes at a release.
  */
 public record AboutDto(String version, Instant buildTime, List<String> addresses, String stableAddress,
-                       List<String> httpsAddresses, boolean httpsEnabled) {}
+                       List<String> httpsAddresses, boolean httpsEnabled, String commit) {}
