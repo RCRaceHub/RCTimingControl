@@ -221,14 +221,16 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
               {fetchFeed.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Fetch now
             </Button>
-            {feed.tokenSaved && (
-              <Button size="sm" variant="ghost" onClick={handleRemoveToken} disabled={busy}>
-                Remove token
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:ml-auto">
+              {feed.tokenSaved && (
+                <Button size="sm" variant="ghost" onClick={handleRemoveToken} disabled={busy}>
+                  Remove token
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={handleDelete} disabled={busy}>
+                Remove feed
               </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={handleDelete} disabled={busy}>
-              Remove feed
-            </Button>
+            </div>
           </>
         )}
       </div>
