@@ -244,7 +244,8 @@ export default function EntryFeedSection({ eventId, classes }: EntryFeedSectionP
         </p>
       )}
 
-      {feed?.waiting && (
+      {/* Kept mounted while open: applying the file clears `waiting`, and the dialog still has the pictures to offer */}
+      {(feed?.waiting || reviewOpen) && (
         <RaceHubImportDialog
           eventId={eventId}
           classes={classes}
