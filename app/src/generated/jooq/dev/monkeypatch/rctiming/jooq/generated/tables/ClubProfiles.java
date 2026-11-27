@@ -196,6 +196,11 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
      */
     public final TableField<ClubProfilesRecord, String> RACEHUB_URL = createField(DSL.name("racehub_url"), SQLDataType.CLOB, this, "");
 
+    /**
+     * The column <code>club_profiles.truncate_to_hundredths</code>.
+     */
+    public final TableField<ClubProfilesRecord, Boolean> TRUNCATE_TO_HUNDREDTHS = createField(DSL.name("truncate_to_hundredths"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
+
     private ClubProfiles(Name alias, Table<ClubProfilesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }
@@ -243,7 +248,8 @@ public class ClubProfiles extends TableImpl<ClubProfilesRecord> {
     @Override
     public List<Check<ClubProfilesRecord>> getChecks() {
         return Arrays.asList(
-            Internal.createCheck(this, DSL.name(""), "(results_publish_target is null or results_publish_target in ('NONE', 'RACEHUB', 'SITE', 'BOTH'))", true)
+            Internal.createCheck(this, DSL.name(""), "(results_publish_target is null or results_publish_target in ('NONE', 'RACEHUB', 'SITE', 'BOTH'))", true),
+            Internal.createCheck(this, DSL.name(""), "truncate_to_hundredths in (0, 1)", true)
         );
     }
 

@@ -80,6 +80,16 @@ public class AmbRc4TimingSource implements TimingSource {
         this.onStatus  = onStatus;
     }
 
+    /**
+     * Sets how coarsely passing times are cut, see {@link EpochAnchor#setTruncationMicros(long)}. Safe to call from
+     * any thread while the source runs; takes effect from the next passing.
+     *
+     * @param micros 1000 for whole milliseconds (the default), 10000 for hundredths of a second
+     */
+    public void setTimeTruncationMicros(long micros) {
+        epochAnchor.setTruncationMicros(micros);
+    }
+
     /** {@inheritDoc} Start the Netty TCP client. Non-blocking. */
     @Override
     public void start() {

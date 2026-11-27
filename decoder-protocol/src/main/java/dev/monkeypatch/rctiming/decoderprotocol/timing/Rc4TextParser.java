@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.decoderprotocol.timing;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -65,7 +66,10 @@ public class Rc4TextParser {
             int hitCount    = Integer.parseInt(f[5]);
             int strength    = Integer.parseInt(f[6]);
             // f[7] = passingStatus, f[8] = crc — not stored in ParsedPassing
-            return Optional.of(new ParsedPassing(transponder, timeSinceStart, seqNum, decoderId, strength, hitCount));
+            // Read the digits exactly: 596.126 is 596126000 microseconds, never 596125999 from double rounding
+            long timeSinceStartMicros = new BigDecimal(f[4].trim()).movePointRight(6).longValue();
+            return Optional.of(new ParsedPassing(transponder, timeSinceStart, seqNum, decoderId, strength, hitCount,
+                    timeSinceStartMicros));
         } catch (NumberFormatException e) {
             return Optional.empty();
         }

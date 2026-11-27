@@ -5,6 +5,8 @@ import dev.monkeypatch.rctiming.decoderprotocol.timing.EpochCorrectedPassing;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettings;
 import dev.monkeypatch.rctiming.domain.club.DecoderSettingsChangedEvent;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettings;
+import dev.monkeypatch.rctiming.domain.club.LiveTimingSettingsChangedEvent;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -67,7 +70,7 @@ public class DecoderListener implements SmartLifecycle {
     private final Executor timingExecutor;
 
     // Guarded by this. Settings changes and lifecycle calls both take the lock.
-    private AmbRc4TimingSource source;
+    private volatile AmbRc4TimingSource source;
     private DecoderSettings currentSettings;
     private boolean running = false;
     // Written only while holding this lock. Read without it by the Netty callbacks.
@@ -168,7 +171,26 @@ public class DecoderListener implements SmartLifecycle {
         source = sourceFactory.create(settings.host(), settings.port(),
                 passing -> onPassing(current, passing),
                 state -> onStatus(current, state));
+        source.setTimeTruncationMicros(truncationMicros(clubProfileService.liveTimingSettings()));
         source.start();
+    }
+
+    /**
+     * Applies a change to the club's time precision (hundredths or milliseconds) to the running source. Published
+     * after the settings commit; takes effect from the next passing, so change it between races.
+     */
+    @EventListener
+    public void onLiveTimingSettingsChanged(LiveTimingSettingsChangedEvent event) {
+        // No lock: the setter is a volatile write, and a save must not wait behind a decoder reconnect
+        AmbRc4TimingSource current = source;
+        if (current != null) {
+            current.setTimeTruncationMicros(truncationMicros(event.settings()));
+        }
+    }
+
+    /** The truncation step for the club's settings; milliseconds when there are none to read. */
+    private static long truncationMicros(LiveTimingSettings settings) {
+        return settings == null ? 1_000L : settings.truncationMicros();
     }
 
     /** Retires the current source. Must be called while holding the lock. */
