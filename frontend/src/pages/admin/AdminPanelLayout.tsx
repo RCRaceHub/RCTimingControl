@@ -1,6 +1,5 @@
 import { Suspense, useState } from 'react';
 import { Outlet, NavLink, useMatch } from 'react-router-dom';
-import VersionFooter from '@/components/layout/VersionFooter';
 import {
   Calendar,
   Trophy,
@@ -24,6 +23,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import VersionFooter from '@/components/layout/VersionFooter';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
