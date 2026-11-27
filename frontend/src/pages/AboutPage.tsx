@@ -43,7 +43,7 @@ const ABOUT_FEATURE_GROUPS: { title: string; items: string[] }[] = [
       'Spectator boards: now and next, live race and results',
       'Streaming overlay for OBS, with themes and sponsors',
       'Raspberry Pi display screens, messages and banners',
-      'Spoken race calls with text-to-speech and the club\'s own horn sounds',
+      'Spoken race calls with text-to-speech and the club’s own horn sounds',
     ],
   },
   {
@@ -51,7 +51,7 @@ const ABOUT_FEATURE_GROUPS: { title: string; items: string[] }[] = [
     items: [
       'Officials sign in with stackable roles: admin, race director, referee',
       'Scheduled and on-demand backups, with a restore command',
-      'Optional HTTPS from the club\'s own certificate authority',
+      'Optional HTTPS from the club’s own certificate authority',
       'Works fully on its own, with or without RaceHub',
     ],
   },
