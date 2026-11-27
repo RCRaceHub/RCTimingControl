@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { fmtMs, gapLabel, resultGapLabel, roundName } from './format';
+import { afterEach, describe, it, expect } from 'vitest';
+import { fmtMs, gapLabel, resultGapLabel, roundName, setTimeInHundredths } from './format';
 
 describe('fmtMs', () => {
   it('shows a dash for missing or zero times', () => {
@@ -15,6 +15,17 @@ describe('fmtMs', () => {
   it('shows minutes over a minute', () => {
     expect(fmtMs(65_007)).toBe('1:05.007');
     expect(fmtMs(300_000)).toBe('5:00.000');
+  });
+
+  describe('in hundredths', () => {
+    afterEach(() => setTimeInHundredths(false));
+
+    it('cuts to hundredths without rounding up', () => {
+      setTimeInHundredths(true);
+      expect(fmtMs(9059)).toBe('9.05');
+      expect(fmtMs(65_999)).toBe('1:05.99');
+      expect(fmtMs(300_000)).toBe('5:00.00');
+    });
   });
 });
 

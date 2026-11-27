@@ -910,6 +910,8 @@ export interface LiveTimingSettingsDto {
   battleHoldLaps: number;
   closeGapMs: number;
   lateMarginMs: number;
+  /** Cut times to hundredths of a second (truncated, never rounded) instead of showing the decoder's thousandths. */
+  truncateToHundredths: boolean;
   /** Row icons switched off on race control and the boards (#696): pace, flying, lap, close, lapped, penalty, signal. */
   hiddenRowIcons: string[];
 }

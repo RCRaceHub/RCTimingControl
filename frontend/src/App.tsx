@@ -11,6 +11,8 @@ import UnauthorizedPage from '@/pages/UnauthorizedPage';
 import { Toaster } from '@/components/ui/sonner';
 import { HelpProvider } from '@/context/HelpContext';
 import PageLoading from '@/components/PageLoading';
+import { useBoardSettings } from '@/hooks/useBoardSettings';
+import { setTimeInHundredths } from '@/lib/format';
 // The overlay sits over a live stream, so it loads with the app: a loading spinner would show on air
 import OverlayBoard from '@/pages/boards/OverlayBoard';
 
@@ -70,11 +72,15 @@ const LiveTopBoard = lazy(() => import('@/pages/boards/LiveTopBoard'));
 const BoardViewPage = lazy(() => import('@/pages/boards/BoardViewPage'));
 
 function RootLayout() {
+  // Times are shown to hundredths or thousandths of a second as the club chooses. The page is keyed on the choice so
+  // every screen draws its times again when it arrives or changes, which is rare.
+  const { truncateToHundredths } = useBoardSettings();
+  setTimeInHundredths(truncateToHundredths);
   return (
     <AuthProvider>
       <HelpProvider>
         <SetupGuard>
-          <Suspense fallback={<PageLoading />}>
+          <Suspense key={String(truncateToHundredths)} fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
         </SetupGuard>

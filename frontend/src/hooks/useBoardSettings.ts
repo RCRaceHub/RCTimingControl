@@ -14,5 +14,6 @@ export function useBoardSettings(): BoardSettingsDto {
     queryFn: () => getBoardSettings(),
     staleTime: 60_000,
   });
-  return data ?? { closeGapMs: DEFAULT_CLOSE_MS, lateMarginMs: LATE_AFTER_AVERAGE_MS, hiddenRowIcons: [] };
+  return data ?? { closeGapMs: DEFAULT_CLOSE_MS, lateMarginMs: LATE_AFTER_AVERAGE_MS,
+    truncateToHundredths: false, hiddenRowIcons: [] };
 }

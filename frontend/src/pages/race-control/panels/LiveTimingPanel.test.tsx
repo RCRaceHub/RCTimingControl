@@ -40,7 +40,7 @@ vi.mock('@/hooks/race-control/useEliminations', () => ({ useEliminations: () => 
 vi.mock('@/hooks/race-control/useLapBarClock', () => ({ useLapBarClock: () => 0 }));
 vi.mock('@/hooks/useRaceMedia', () => ({ useRaceMedia: () => new Map() }));
 vi.mock('@/hooks/useBoardSettings', () => ({
-  useBoardSettings: () => ({ closeGapMs: 0, lateMarginMs: 5000, hiddenRowIcons: [] }),
+  useBoardSettings: () => ({ closeGapMs: 0, lateMarginMs: 5000, truncateToHundredths: false, hiddenRowIcons: [] }),
 }));
 
 function renderPanel() {
