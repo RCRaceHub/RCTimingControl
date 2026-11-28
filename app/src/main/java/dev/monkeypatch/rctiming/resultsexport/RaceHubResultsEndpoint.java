@@ -185,6 +185,14 @@ public class RaceHubResultsEndpoint implements EntryFeedHeaders {
         return properties.token() != null;
     }
 
+    /**
+     * The settings file's key, or null: what {@link #token()} answers once the saved key is cleared. For handing it
+     * to the entry feeds before the saved key is removed. Never log or return it.
+     */
+    String settingsFileToken() {
+        return properties.token();
+    }
+
     /** Whether {@code target} is RaceHub's own host: the one RaceHub address in use, or the older separate ones. */
     public boolean isRaceHub(URI target) {
         if (target == null || target.getHost() == null) {
