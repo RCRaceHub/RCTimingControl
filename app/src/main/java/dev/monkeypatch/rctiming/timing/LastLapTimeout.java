@@ -203,6 +203,11 @@ public class LastLapTimeout {
         if (firstFlaggedAtMs.isEmpty()) {
             return;
         }
+        if (state.map(LiveRaceState::allFlagged).orElse(false)) {
+            // Every car still running has taken the flag: the rest have stopped
+            autoFinish.finish(race.getId(), "flag-finish", "Finished the race automatically: every car still running took the flag");
+            return;
+        }
         Optional<Long> maxLastLapMs = lapThresholdQuery.maxLastLapMsForRace(race.getId());
         if (maxLastLapMs.isEmpty()) {
             return;

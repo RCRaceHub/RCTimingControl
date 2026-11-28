@@ -36,6 +36,9 @@ import java.util.Set;
  */
 public class LiveRaceState {
 
+    /** The default for {@link #setStalledAfterLaps}. */
+    public static final int DEFAULT_STALLED_AFTER_LAPS = 4;
+
     final Map<Long, LiveRacePosition> positions = new HashMap<>();
     final List<LapPassingEvent> lapHistory = new ArrayList<>();
     final Set<String> seenUnknownTransponders = new HashSet<>();
@@ -70,6 +73,12 @@ public class LiveRaceState {
     private boolean rollingStart;
     /** Server time, in epoch milliseconds, when the first car took the flag; null until one has. */
     Long firstFlaggedAtMs = null;
+    /** Server time, in epoch milliseconds, of each entry's last passing that counted a lap, for {@link #isStalled}. */
+    private final Map<Long, Long> lastCountedAtMs = new HashMap<>();
+    /** How many of its own average laps a car may go without a counted lap before it is judged stopped; 0 for never. */
+    /** The server time of the latest passing handled, which {@link #takeFinishRequest} judges the cars against. */
+    private long lastPassingNowMs;
+    private volatile int stalledAfterLaps = DEFAULT_STALLED_AFTER_LAPS;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
     /**
@@ -269,6 +278,7 @@ public class LiveRaceState {
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
                                                 boolean windowEnded) {
         lapHistory.add(event);
+        lastPassingNowMs = nowMs;
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
         if (entryId == null) {
@@ -290,6 +300,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
+            lastCountedAtMs.put(entryId, nowMs);
             if (windowEnded && pos.getLapsCompleted() > 0) {
                 flagged.add(entryId);
                 if (firstFlaggedAtMs == null) {
@@ -307,7 +318,7 @@ public class LiveRaceState {
      * Returns true once only, so the caller finishes the race once.
      */
     public synchronized boolean takeFinishRequest() {
-        if (finishRequested || !allFlagged()) {
+        if (finishRequested || !allFlagged(lastPassingNowMs)) {
             return false;
         }
         finishRequested = true;
@@ -340,15 +351,66 @@ public class LiveRaceState {
         return pos == null ? 0 : pos.getLapsCompleted();
     }
 
-    /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */
+    /**
+     * How many of its own average laps a car may go without a counted lap before it is judged stopped (a car that
+     * broke down or left the track). A stopped car is not waited for when the race ends, and is a DNF in the result.
+     * 0 turns the check off.
+     */
+    public void setStalledAfterLaps(int laps) {
+        this.stalledAfterLaps = Math.max(0, laps);
+    }
+
+    /** Counts every car as having just crossed, so a stop of the race is not held against it when it resumes. */
+    public synchronized void restartStallClocks(long nowMs) {
+        lastCountedAtMs.replaceAll((id, at) -> nowMs);
+    }
+
+    /**
+     * Whether the car has stopped: it has crossed the line, has not taken the flag, and no lap has counted for
+     * {@code stalledAfterLaps} times its average lap. A car with no lap yet is judged by the average of the cars that
+     * have one; with none to go by, it is not judged. Takes the lock.
+     */
+    public synchronized boolean isStalled(long entryId, long nowMs) {
+        int laps = stalledAfterLaps;
+        Long lastAt = lastCountedAtMs.get(entryId);
+        if (laps <= 0 || lastAt == null || flagged.contains(entryId)) {
+            return false;
+        }
+        LiveRacePosition pos = positions.get(entryId);
+        Long avgMs = pos == null ? null : pos.getAvgLapMs();
+        if (avgMs == null) {
+            avgMs = positions.values().stream().map(LiveRacePosition::getAvgLapMs).filter(java.util.Objects::nonNull)
+                    .mapToLong(Long::longValue).average().stream().mapToLong(d -> (long) d).boxed().findFirst().orElse(null);
+        }
+        return avgMs != null && avgMs > 0 && nowMs - lastAt > laps * avgMs;
+    }
+
+    /**
+     * Whether the car is a DNF in the result: the maximum race window cut the race off before it took the flag, or
+     * the race has reached its end (a car has taken the flag) and this car had stopped.
+     */
+    public synchronized boolean isDnf(long entryId, long nowMs) {
+        return cutOff || (firstFlaggedAtMs != null && isStalled(entryId, nowMs));
+    }
+
+    /** {@link #allFlagged(long)} at the server's current time. */
     public synchronized boolean allFlagged() {
+        return allFlagged(System.currentTimeMillis());
+    }
+
+    /**
+     * Whether every car that has passed the line has taken the flag or stopped (see {@link #isStalled}), and at least
+     * one has taken the flag, so the race is over. A car that never crossed is not waited for.
+     */
+    public synchronized boolean allFlagged(long nowMs) {
         boolean any = false;
         for (LiveRacePosition pos : positions.values()) {
             if (pos.getLastPassingTimeMs() == 0) {
                 continue;
             }
-            any = true;
-            if (!flagged.contains(pos.getEntryId())) {
+            if (flagged.contains(pos.getEntryId())) {
+                any = true;
+            } else if (!isStalled(pos.getEntryId(), nowMs)) {
                 return false;
             }
         }
