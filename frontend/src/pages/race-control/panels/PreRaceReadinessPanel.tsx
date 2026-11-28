@@ -2,6 +2,9 @@ import { toast } from 'sonner';
 import { usePreRaceReadiness } from '@/hooks/race-control/usePreRaceReadiness';
 import { useWarmUp } from '@/hooks/race-control/useWarmUp';
 import { useRaceStateMutations } from '@/hooks/race-control/useRaceStateMutations';
+import { useDidNotStart } from '@/hooks/race-control/useDidNotStart';
+import { useRoles } from '@/hooks/useRoles';
+import { DidNotStartButton } from './DidNotStartButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,6 +27,8 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
   const seen = useWarmUp(raceId, data?.seenEntryIds);
   const mutations = useRaceStateMutations(raceId, data?.eventId ?? 0);
   const { confirm, dialog: confirmDialog } = useConfirm();
+  const dns = useDidNotStart(raceId);
+  const { canRunEvent } = useRoles();
 
   const failed = (what: string) => (err: unknown) =>
     toast.error(`${what} failed: ${getApiErrorMessage(err, 'try again, and check the connection if it keeps failing.')}`);
@@ -109,6 +114,7 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                 <TableHead>Class</TableHead>
                 <TableHead>RaceHub</TableHead>
                 <TableHead>Warm-up</TableHead>
+                {canRunEvent && <TableHead className="text-right">Did not start</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,10 +130,17 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {seen.has(row.entryId)
-                      ? <span className="text-xs text-success">seen</span>
-                      : <span className="text-xs text-warning">not seen yet</span>}
+                    {dns.marked.has(row.entryId)
+                      ? <span className="text-xs font-semibold text-warning">DNS</span>
+                      : seen.has(row.entryId)
+                        ? <span className="text-xs text-success">seen</span>
+                        : <span className="text-xs text-warning">not seen yet</span>}
                   </TableCell>
+                  {canRunEvent && (
+                    <TableCell className="text-right">
+                      <DidNotStartButton entryId={row.entryId} dns={dns} />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

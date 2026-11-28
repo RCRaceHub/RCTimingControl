@@ -69,6 +69,8 @@ export type ResultRow = {
   championshipPoints?: number | null;
   /** Still on the track when the race hit its maximum race window, so it did not take the flag. */
   dnf?: boolean;
+  /** An official recorded that the car did not start: listed last with no laps. */
+  dns?: boolean;
 };
 
 export type PositionAtLap = {
@@ -805,4 +807,22 @@ export async function falseStartEntry(raceId: number, entryId: number): Promise<
 
 export async function undoFalseStartEntry(raceId: number, entryId: number): Promise<void> {
   await api.post(`/api/v1/race-control/race/${raceId}/eliminations/false-start/undo`, { entryId });
+}
+
+export type DidNotStartDto = {
+  /** Entry ids of the cars marked as not started in the race. */
+  entryIds: number[];
+};
+
+export async function getDidNotStart(raceId: number): Promise<DidNotStartDto> {
+  const { data } = await api.get<DidNotStartDto>(`/api/v1/race-control/race/${raceId}/dns`);
+  return data;
+}
+
+export async function markDidNotStart(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/dns`, { entryId });
+}
+
+export async function undoDidNotStart(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/dns/undo`, { entryId });
 }

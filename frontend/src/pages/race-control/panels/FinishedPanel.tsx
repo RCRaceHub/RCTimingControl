@@ -19,6 +19,10 @@ import { fmtMs, resultGapLabel } from '@/lib/format';
 import { formatTime } from '@/lib/dates';
 import { FinishedFlag } from '@/components/FinishedFlag';
 import { DnfBadge } from '@/components/DnfBadge';
+import { DnsBadge } from '@/components/DnsBadge';
+import { useDidNotStart } from '@/hooks/race-control/useDidNotStart';
+import { useRoles } from '@/hooks/useRoles';
+import { DidNotStartButton } from './DidNotStartButton';
 
 type Props = {
   raceId: number;
@@ -30,6 +34,8 @@ type Props = {
 export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Props) {
   const { data, isLoading, error } = useResultSnapshot(raceId);
   const elim = useEliminations(raceId);
+  const dns = useDidNotStart(raceId);
+  const { canRunEvent } = useRoles();
   const { user } = useAuth();
   // Marking is for the race director and admins; a referee can look
   const canMark = elim.shikabane && !!user?.roles?.some((r: string) => r === 'RACE_DIRECTOR' || r === 'ADMIN');
@@ -97,6 +103,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
             {hasPoints && <TableHead className="text-right">Points</TableHead>}
             {hasChampionshipPoints && <TableHead className="text-right">Champ. pts</TableHead>}
             {elim.shikabane && <TableHead className="text-right">Shikabane</TableHead>}
+            {canRunEvent && <TableHead className="text-right">Did not start</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -104,7 +111,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
             <TableRow key={row.entryId}>
               <TableCell className="font-semibold">{row.position}</TableCell>
               <TableCell>
-                {row.driverName}<FinishedFlag />
+                {row.driverName}{!row.dns && <FinishedFlag />}
                 {elim.deadOrder.has(row.entryId) && (
                   <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-destructive text-destructive">
                     DEAD #{elim.deadOrder.get(row.entryId)}
@@ -112,7 +119,7 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
                 )}
               </TableCell>
               <TableCell>{row.carNumber ?? '—'}</TableCell>
-              <TableCell className="text-right font-mono">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /></TableCell>
+              <TableCell className="text-right font-mono">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /><DnsBadge dns={row.dns} /></TableCell>
               <TableCell className="text-right font-mono">{fmtMs(row.totalTimeMs)}</TableCell>
               <TableCell className="text-right font-mono">{fmtMs(row.bestLapMs)}</TableCell>
               <TableCell className="text-right font-mono text-muted-foreground">
@@ -125,6 +132,13 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
               {elim.shikabane && (
                 <TableCell className="text-right">
                   {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}
+                </TableCell>
+              )}
+              {canRunEvent && (
+                <TableCell className="text-right">
+                  {(row.lapsCompleted === 0 || dns.marked.has(row.entryId)) && (
+                    <DidNotStartButton entryId={row.entryId} dns={dns} />
+                  )}
                 </TableCell>
               )}
             </TableRow>

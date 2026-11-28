@@ -8,6 +8,18 @@ vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
   useRaceStateMutations: () => ({ marshalAbsent: { mutate: marshalAbsent }, marshalPenalty: { mutate: marshalPenalty } }),
 }));
 
+const dnsState = vi.hoisted(() => ({ marked: new Set<number>(), canRun: true, mark: vi.fn(), undo: vi.fn() }));
+vi.mock('@/hooks/race-control/useDidNotStart', () => ({
+  useDidNotStart: () => ({
+    marked: dnsState.marked,
+    mark: { mutate: dnsState.mark, isPending: false },
+    undo: { mutate: dnsState.undo, isPending: false },
+  }),
+}));
+vi.mock('@/hooks/useRoles', () => ({
+  useRoles: () => ({ isAdmin: false, canRunEvent: dnsState.canRun, isOfficial: true }),
+}));
+
 const seenEntries = vi.hoisted(() => ({ ids: [11] as number[] }));
 vi.mock('@/hooks/race-control/useWarmUp', () => ({
   useWarmUp: () => new Set(seenEntries.ids),
@@ -90,5 +102,26 @@ describe('PreRaceReadinessPanel', () => {
         expect.anything(),
       ),
     );
+  });
+
+  it('marks a car as did not start from the grid call, and takes the mark back', () => {
+    dnsState.marked = new Set([11]);
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'DNS' })[0]);
+    expect(dnsState.mark).toHaveBeenCalledWith(10, expect.anything());
+    expect(screen.queryByText('seen')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo DNS' }));
+    expect(dnsState.undo).toHaveBeenCalledWith(11, expect.anything());
+    dnsState.marked = new Set();
+  });
+
+  it('hides the did not start buttons from someone who cannot run the event', () => {
+    dnsState.canRun = false;
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    expect(screen.queryByRole('button', { name: 'DNS' })).toBeNull();
+    dnsState.canRun = true;
   });
 });

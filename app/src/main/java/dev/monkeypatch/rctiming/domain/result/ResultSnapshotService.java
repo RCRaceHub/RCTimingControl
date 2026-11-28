@@ -235,7 +235,8 @@ public class ResultSnapshotService {
      * the race, but the timed result it is built from leaves them out. Lap penalties and marshal lap adjustments
      * count only when given after the finish, since those given during the race changed the live laps the timed
      * result came from. Corrections from before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
-     * finals takes its lap here whenever it was given, since nothing applies it during the race.
+     * finals takes its lap here whenever it was given, since nothing applies it during the race. Cars marked as not
+     * started are put last with no laps once everything else is applied.
      */
     private List<ResultSnapshotDto.ResultRow> corrected(Race race, Instant finishedAt,
                                                         List<ResultSnapshotDto.ResultRow> timed) {
@@ -274,7 +275,11 @@ public class ResultSnapshotService {
         // and a car can die before it ever crossed the line
         List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(timed);
         Map<Long, EntryInfo> entryInfo = null;
+        // Cars an official marked as not started go last, with no laps (see DnsOrdering)
+        Set<Long> notStarted = raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId()).stream()
+                .filter(RaceEntry::isDns).map(RaceEntry::getEntryId).collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Long> needsRow = new LinkedHashSet<>(dead);
+        needsRow.addAll(notStarted);
         lapDeltas.forEach((entryId, delta) -> {
             if (delta > 0) needsRow.add(entryId);
         });
@@ -286,7 +291,9 @@ public class ResultSnapshotService {
                         info.driverName(), info.carNumber(), 0, 0L, null, null));
             }
         }
-        return ShikabaneOrdering.apply(ResultCorrections.apply(rows, lapDeltas, addedTimeMs, lapTimingService.sharedPlacesOnTies()), dead);
+        List<ResultSnapshotDto.ResultRow> ordered = ShikabaneOrdering.apply(
+                ResultCorrections.apply(rows, lapDeltas, addedTimeMs, lapTimingService.sharedPlacesOnTies()), dead);
+        return DnsOrdering.apply(ordered, notStarted);
     }
 
     /**

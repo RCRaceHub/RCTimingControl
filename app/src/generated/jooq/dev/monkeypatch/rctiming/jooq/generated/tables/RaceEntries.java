@@ -91,6 +91,11 @@ public class RaceEntries extends TableImpl<RaceEntriesRecord> {
      */
     public final TableField<RaceEntriesRecord, Integer> CAR_NUMBER = createField(DSL.name("car_number"), SQLDataType.INTEGER, this, "");
 
+    /**
+     * The column <code>race_entries.dns</code>.
+     */
+    public final TableField<RaceEntriesRecord, Boolean> DNS = createField(DSL.name("dns"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BOOLEAN)), this, "");
+
     private RaceEntries(Name alias, Table<RaceEntriesRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
     }

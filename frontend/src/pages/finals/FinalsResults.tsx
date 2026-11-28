@@ -5,6 +5,7 @@ import { fmtMs } from '@/lib/format';
 import { BOARD_POLL_MS } from '@/pages/boards/boardFormat';
 import { publicQueryKeys } from '@/hooks/publicQueryKeys';
 import { DnfBadge } from '@/components/DnfBadge';
+import { DnsBadge } from '@/components/DnsBadge';
 
 const TH = 'px-3 py-2';
 
@@ -72,7 +73,7 @@ function ResultsTable({ final }: { final: FinalsBoardFinal }) {
             <td className="px-3 py-2 font-semibold tabular-nums">{row.position}</td>
             <td className="px-3 py-2 tabular-nums">{row.carNumber ?? '—'}</td>
             <td className="px-3 py-2">{row.driverName}</td>
-            <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /></td>
+            <td className="px-3 py-2 text-right tabular-nums">{row.lapsCompleted}<DnfBadge dnf={row.dnf} /><DnsBadge dns={row.dns} /></td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.totalTimeMs)}</td>
             <td className="px-3 py-2 text-right font-mono tabular-nums">{fmtMs(row.bestLapMs)}</td>
             {hasPoints && <td className="px-3 py-2 text-right tabular-nums">{row.championshipPoints ?? '—'}</td>}
