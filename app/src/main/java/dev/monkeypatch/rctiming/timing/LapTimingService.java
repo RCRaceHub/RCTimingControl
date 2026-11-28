@@ -22,6 +22,7 @@ import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,6 +118,14 @@ public class LapTimingService {
         this.lapThresholdQuery = lapThresholdQuery;
         this.raceClockService = raceClockService;
         this.publisher = publisher;
+    }
+
+    /** Tells a wrong-heat driver from an unknown transponder; null in tests that do not need it. */
+    private WrongHeatFinder wrongHeatFinder;
+
+    @Autowired(required = false)
+    void setWrongHeatFinder(WrongHeatFinder wrongHeatFinder) {
+        this.wrongHeatFinder = wrongHeatFinder;
     }
 
     /** Applies {@code rctiming.timing.stalled-after-laps} from the next race state made. */
@@ -273,7 +282,15 @@ public class LapTimingService {
                 windowEnded(raceId, state, entryId));
 
         if (entryId == null && firstUnknown) {
-            liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
+            Optional<WrongHeatDto> wrongHeat = wrongHeatFinder == null
+                    ? Optional.empty() : wrongHeatFinder.find(raceId, transponderNumber);
+            if (wrongHeat.isPresent() && state.recordWrongHeat(wrongHeat.get())) {
+                log.warn("Race {}: transponder {} belongs to entry {}, who is not in this race; passings held back",
+                        raceId, transponderNumber, wrongHeat.get().entryId());
+                liveTimingHub.broadcastWrongHeat(raceId, state.wrongHeats());
+            } else {
+                liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
+            }
         }
 
         broadcastTiming(raceId, state);
@@ -488,6 +505,40 @@ public class LapTimingService {
         }
     }
 
+    /** The drivers seen in this race who are not in it, with what has been decided; empty once the race is released. */
+    public List<WrongHeatDto> wrongHeatsOf(long raceId) {
+        return peek(raceId).map(LiveRaceState::wrongHeats).orElse(List.of());
+    }
+
+    /** The wrong-heat flag for a number in a race in progress, if one was raised. */
+    public Optional<WrongHeatDto> wrongHeatOf(long raceId, String transponderNumber) {
+        return peek(raceId).flatMap(state -> state.wrongHeatOf(transponderNumber));
+    }
+
+    /**
+     * Records an official's decision on a wrong-heat flag and tells the screens. Called from a request thread by
+     * {@code TransponderLinkService} once the decision's transaction has committed.
+     */
+    public void decideWrongHeat(long raceId, String transponderNumber, WrongHeatDto.Status status) {
+        peek(raceId).ifPresent(state -> {
+            if (state.setWrongHeatStatus(transponderNumber, status)) {
+                liveTimingHub.broadcastWrongHeat(raceId, state.wrongHeats());
+            }
+        });
+    }
+
+    /**
+     * Makes a driver added to a race in progress known to its live timing: name, car number and grid place, so they
+     * are ranked and shown like the others once their laps are credited. Called from a request thread after the
+     * entry has been saved on the race.
+     */
+    public void addLateEntry(long raceId, long entryId) {
+        LiveRaceState state = stateFor(raceId);
+        PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
+        raceEntryRepository.findByRaceIdAndEntryId(raceId, entryId)
+                .ifPresent(raceEntry -> loadEntry(state, names, raceEntry));
+    }
+
     /**
      * Links an unknown transponder to an entry for the given race.
      * Retroactively credits all passings from that transponder since race start and
@@ -524,17 +575,22 @@ public class LapTimingService {
     private void loadEntryNames(long raceId, LiveRaceState state) {
         PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
-            state.putEntryCarNumber(raceEntry.getEntryId(),
-                    raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
-            state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
-            Optional<Entry> entry = entryRepository.findById(raceEntry.getEntryId());
-            state.setNotRacing(raceEntry.getEntryId(), raceEntry.isDns()
-                    || entry.map(e -> e.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
-            entry.map(Entry::getCompetitorId)
-                    .flatMap(competitorRepository::findById)
-                    .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
-                            names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
+            loadEntry(state, names, raceEntry);
         }
+    }
+
+    /** Puts one race entry's car number, grid place, name and not-racing mark into the state. */
+    private void loadEntry(LiveRaceState state, PublicNames.Snapshot names, RaceEntry raceEntry) {
+        state.putEntryCarNumber(raceEntry.getEntryId(),
+                raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
+        state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
+        Optional<Entry> entry = entryRepository.findById(raceEntry.getEntryId());
+        state.setNotRacing(raceEntry.getEntryId(), raceEntry.isDns()
+                || entry.map(e -> e.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
+        entry.map(Entry::getCompetitorId)
+                .flatMap(competitorRepository::findById)
+                .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
+                        names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
     }
 
     /**

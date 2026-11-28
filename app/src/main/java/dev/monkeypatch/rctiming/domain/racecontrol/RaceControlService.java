@@ -24,6 +24,7 @@ import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
 import dev.monkeypatch.rctiming.timing.WarmUpCheckService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -239,6 +240,18 @@ public class RaceControlService {
     public List<JumpStartDto> jumpStarts(long raceId) {
         raceRepository.requireExists(raceId);
         return lapTimingService.jumpStartsOf(raceId);
+    }
+
+    /**
+     * The drivers whose transponders were seen in this race although they are in another heat, with what has been
+     * decided on each; empty when none, or when the race is not in progress (kept in memory with the live timing).
+     *
+     * @throws EntityNotFoundException if there is no such race (HTTP 404)
+     */
+    @ReadTransaction
+    public List<WrongHeatDto> wrongHeats(long raceId) {
+        raceRepository.requireExists(raceId);
+        return lapTimingService.wrongHeatsOf(raceId);
     }
 
     /** Writes the audit row for a state change, in the transaction of the change. */

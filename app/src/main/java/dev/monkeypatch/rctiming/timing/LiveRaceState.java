@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
 import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
@@ -44,6 +45,8 @@ public class LiveRaceState {
     final Map<Long, LiveRacePosition> positions = new HashMap<>();
     final List<LapPassingEvent> lapHistory = new ArrayList<>();
     final Set<String> seenUnknownTransponders = new HashSet<>();
+    /** Transponders of drivers who are in another heat, by number, in the order they were first seen. */
+    final Map<String, WrongHeatDto> wrongHeat = new LinkedHashMap<>();
     /** Runtime links: transponderNumber → entryId, populated by retroactiveLinkTransponder. */
     final Map<String, Long> runtimeLinks = new HashMap<>();
     /** Entry display names: entryId → "First Last", populated by LapTimingService on state creation. */
@@ -229,6 +232,42 @@ public class LiveRaceState {
                 entryNames.getOrDefault(entryId, "Entry " + entryId), entryCarNumbers.get(entryId), earlyMs,
                 jumpStartDismissed.contains(entryId))));
         return result;
+    }
+
+    /**
+     * Notes a transponder seen in a race its driver is not in. Only the first sighting is kept, so the officials are
+     * told once; a later decision on the flag is not undone by the number passing again.
+     *
+     * @return true if the number had no flag until now
+     */
+    public synchronized boolean recordWrongHeat(WrongHeatDto flag) {
+        return wrongHeat.putIfAbsent(flag.transponderNumber(), flag) == null;
+    }
+
+    /** The wrong-heat flag for the number, if one was raised in this race. */
+    public synchronized Optional<WrongHeatDto> wrongHeatOf(String transponderNumber) {
+        return Optional.ofNullable(wrongHeat.get(transponderNumber));
+    }
+
+    /**
+     * Records an official's decision on a flag.
+     *
+     * @return true if the number has a flag whose status changed
+     */
+    public synchronized boolean setWrongHeatStatus(String transponderNumber, WrongHeatDto.Status status) {
+        WrongHeatDto flag = wrongHeat.get(transponderNumber);
+        if (flag == null || flag.status() == status) {
+            return false;
+        }
+        wrongHeat.put(transponderNumber, flag.withStatus(status));
+        return true;
+    }
+
+    /** The wrong-heat flags raised so far, in the order they were, with how many passings each number has made. */
+    public synchronized List<WrongHeatDto> wrongHeats() {
+        return wrongHeat.values().stream()
+                .map(f -> f.withPassings(countPassingsForTransponder(f.transponderNumber())))
+                .toList();
     }
 
     /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */
