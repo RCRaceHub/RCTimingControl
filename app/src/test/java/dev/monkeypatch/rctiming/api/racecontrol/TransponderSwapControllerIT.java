@@ -11,7 +11,16 @@ import dev.monkeypatch.rctiming.domain.event.EventStatus;
 import dev.monkeypatch.rctiming.domain.format.EventClass;
 import dev.monkeypatch.rctiming.domain.format.EventClassRepository;
 import dev.monkeypatch.rctiming.domain.format.QualifyingType;
+import dev.monkeypatch.rctiming.domain.format.StartType;
 import dev.monkeypatch.rctiming.domain.format.TimedRaceConfig;
+import dev.monkeypatch.rctiming.domain.race.Race;
+import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.Round;
+import dev.monkeypatch.rctiming.domain.race.RoundRepository;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
 import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
@@ -25,6 +34,8 @@ import dev.monkeypatch.rctiming.security.JwtTokenService;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import dev.monkeypatch.rctiming.TestHttp;
 import org.springframework.http.HttpEntity;
@@ -60,6 +71,9 @@ class TransponderSwapControllerIT extends AbstractIntegrationTest {
     @Autowired RacingClassRepository racingClassRepository;
     @Autowired EventClassRepository eventClassRepository;
     @Autowired EntryRepository entryRepository;
+    @Autowired RoundRepository roundRepository;
+    @Autowired RaceRepository raceRepository;
+    @Autowired RaceEntryRepository raceEntryRepository;
     @Autowired DSLContext dsl;
     @Autowired CompetitorService competitorService;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
@@ -139,6 +153,24 @@ class TransponderSwapControllerIT extends AbstractIntegrationTest {
         assertThat(entryRepository.findById(entry.getId()).orElseThrow().getSecondaryTransponderNumber()).isNull();
     }
 
+    @ParameterizedTest
+    @EnumSource(RaceStatus.class)
+    void swap_isRefusedOnlyWhileTheEntrysRaceIsRunningOrStopped(RaceStatus status) {
+        Entry entry = saveEntry("Jane Doe", "P" + suffix, null, EntryStatus.CONFIRMED);
+        putInRace(entry, status);
+        boolean underWay = status == RaceStatus.RUNNING || status == RaceStatus.STOPPED;
+
+        ResponseEntity<Map> resp = post(refereeToken, swapUrl(entry),
+                Map.of("slot", "PRIMARY", "newTransponderNumber", "Q" + suffix), Map.class);
+
+        assertThat(resp.getStatusCode()).isEqualTo(underWay ? HttpStatus.CONFLICT : HttpStatus.OK);
+        if (underWay) {
+            assertThat(resp.getBody()).containsEntry("error", "race_under_way");
+        }
+        assertThat(entryRepository.findById(entry.getId()).orElseThrow().getTransponderNumberSnapshot())
+                .isEqualTo((underWay ? "P" : "Q") + suffix);
+    }
+
     @Test
     void swap_removingThePrimary_is400() {
         Entry entry = saveEntry("Jane Doe", "J" + suffix, null, EntryStatus.CONFIRMED);
@@ -177,6 +209,26 @@ class TransponderSwapControllerIT extends AbstractIntegrationTest {
     }
 
     // --- helpers ---
+
+    private void putInRace(Entry entry, RaceStatus status) {
+        Round round = new Round();
+        round.setEventId(event.getId());
+        round.setType(RoundType.QUALIFIER);
+        round.setRoundNumber(1);
+        round.setSequenceInEvent(1);
+        round = roundRepository.save(round);
+        Race race = new Race();
+        race.setRoundId(round.getId());
+        race.setEventClassId(eventClass.getId());
+        race.setHeatNumber(1);
+        race.setStartType(StartType.GRID);
+        race.setStatus(status);
+        race = raceRepository.save(race);
+        RaceEntry raceEntry = new RaceEntry();
+        raceEntry.setRaceId(race.getId());
+        raceEntry.setEntryId(entry.getId());
+        raceEntryRepository.save(raceEntry);
+    }
 
     /** Starts the tasks together and waits for all of them. */
     private <T> List<T> runConcurrently(int count, java.util.function.IntFunction<Callable<T>> task)

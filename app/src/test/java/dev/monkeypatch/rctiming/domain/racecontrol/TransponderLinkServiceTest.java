@@ -213,7 +213,7 @@ class TransponderLinkServiceTest {
 
         service().link(7L, "1234567", 11L, 3L);
 
-        verify(swapService).swap(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
+        verify(swapService).saveLinkedNumber(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
     }
 
     @Test
@@ -224,7 +224,7 @@ class TransponderLinkServiceTest {
 
         service().link(7L, "1234567", 11L, 3L);
 
-        verify(swapService).swap(5L, 11L, TransponderSlot.SECONDARY, "1234567", 3L);
+        verify(swapService).saveLinkedNumber(5L, 11L, TransponderSlot.SECONDARY, "1234567", 3L);
     }
 
     @Test
@@ -236,7 +236,7 @@ class TransponderLinkServiceTest {
 
         service().link(7L, "1234567", 11L, 3L);
 
-        verify(swapService).swap(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
+        verify(swapService).saveLinkedNumber(5L, 11L, TransponderSlot.PRIMARY, "1234567", 3L);
     }
 
     @Test
@@ -253,7 +253,7 @@ class TransponderLinkServiceTest {
     void link_whenTheEntryCannotTakeTheNumber_stillLinksForTheRace() {
         runningRaceWithEntry11(new LiveRaceState());
         entry11("1111111", null);
-        when(swapService.swap(anyLong(), anyLong(), any(), any(), anyLong()))
+        when(swapService.saveLinkedNumber(anyLong(), anyLong(), any(), any(), anyLong()))
                 .thenReturn(new SwapResult.TransponderAlreadyAssigned());
 
         service().link(7L, "1234567", 11L, 3L);
@@ -270,7 +270,7 @@ class TransponderLinkServiceTest {
 
         service().link(7L, "1234567", 11L, 3L);
 
-        verify(swapService).swap(5L, 11L, TransponderSlot.THIRD, "1234567", 3L);
+        verify(swapService).saveLinkedNumber(5L, 11L, TransponderSlot.THIRD, "1234567", 3L);
         verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
     }
 
@@ -363,7 +363,7 @@ class TransponderLinkServiceTest {
         entry.setTransponderNumberSnapshot(primary);
         entry.setSecondaryTransponderNumber(secondary);
         when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
-        lenient().when(swapService.swap(anyLong(), anyLong(), any(), any(), anyLong()))
+        lenient().when(swapService.saveLinkedNumber(anyLong(), anyLong(), any(), any(), anyLong()))
                 .thenReturn(new SwapResult.Success(entry, TransponderSlot.PRIMARY, primary, "1234567"));
         return entry;
     }

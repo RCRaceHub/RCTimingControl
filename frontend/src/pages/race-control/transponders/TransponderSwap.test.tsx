@@ -109,6 +109,18 @@ describe('TransponderSwap', () => {
     expect(screen.queryByText('Entry not found.')).toBeNull();
   });
 
+  it('says the race is under way when the swap is refused for that', async () => {
+    vi.mocked(swapTransponder).mockRejectedValue({
+      response: { status: 409, data: { error: 'race_under_way' } },
+    });
+
+    renderSwap();
+    await selectSampleEntry();
+    submit('7654321');
+
+    await screen.findByText(/never changed during a race/i);
+  });
+
   it('shows "Entry not found." on a 404, distinct from the 409 message', async () => {
     vi.mocked(swapTransponder).mockRejectedValue({
       response: { status: 404, data: { error: 'entry_not_found' } },

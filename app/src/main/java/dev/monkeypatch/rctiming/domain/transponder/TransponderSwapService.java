@@ -6,11 +6,14 @@ import dev.monkeypatch.rctiming.domain.entry.EntryAuditLogRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -21,9 +24,10 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Swaps an entry's primary or secondary transponder on the day (L11). Every change is written to the entry audit log as
+ * Swaps one of an entry's transponders on the day (L11). Every change is written to the entry audit log as
  * TRANSPONDER_SWAP. Lap timing looks transponders up on each passing, so the new number
- * counts from the next passing.
+ * counts from the next passing; for the same reason an official cannot change one while the entry's race is under
+ * way (#860).
  */
 @Service
 public class TransponderSwapService {
@@ -33,16 +37,31 @@ public class TransponderSwapService {
     private final EventRepository eventRepository;
     private final EntryRepository entryRepository;
     private final EntryAuditLogRepository auditLogRepository;
+    private final RaceRepository raceRepository;
     private final ObjectMapper objectMapper;
+    private final Clock clock;
 
+    @Autowired
     public TransponderSwapService(EventRepository eventRepository,
                                   EntryRepository entryRepository,
                                   EntryAuditLogRepository auditLogRepository,
+                                  RaceRepository raceRepository,
                                   ObjectMapper objectMapper) {
+        this(eventRepository, entryRepository, auditLogRepository, raceRepository, objectMapper, Clock.systemUTC());
+    }
+
+    TransponderSwapService(EventRepository eventRepository,
+                           EntryRepository entryRepository,
+                           EntryAuditLogRepository auditLogRepository,
+                           RaceRepository raceRepository,
+                           ObjectMapper objectMapper,
+                           Clock clock) {
         this.eventRepository = eventRepository;
         this.entryRepository = entryRepository;
         this.auditLogRepository = auditLogRepository;
+        this.raceRepository = raceRepository;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     /**
@@ -52,11 +71,29 @@ public class TransponderSwapService {
      * <p>Refusals come back as a {@link SwapResult} rather than an exception, and nothing is saved for them. The
      * number is refused if another competitor's active entry in the event holds it; one competitor may share a number
      * between their own entries. Swapping to the number the entry already has succeeds without changing anything.
+     * Any other change is refused while the entry is in a running or stopped race.
      *
      * @param newNumber the new number; blank removes a secondary, third or fourth transponder
      */
     @Transactional
     public SwapResult swap(long eventId, long entryId, TransponderSlot slot, String newNumber, long actingUserId) {
+        return change(eventId, entryId, slot, newNumber, actingUserId, false);
+    }
+
+    /**
+     * Saves a number just linked to an entry during its race, otherwise as {@link #swap}. Only for
+     * {@code TransponderLinkService}, which links a number only to an entry that live timing has not seen pass in
+     * that race. It does not check for a race under way, so it also would not see passings in another stopped race,
+     * or ones from before a restart of the app.
+     */
+    @Transactional
+    public SwapResult saveLinkedNumber(long eventId, long entryId, TransponderSlot slot, String number,
+                                       long actingUserId) {
+        return change(eventId, entryId, slot, number, actingUserId, true);
+    }
+
+    private SwapResult change(long eventId, long entryId, TransponderSlot slot, String newNumber, long actingUserId,
+                              boolean duringRace) {
         if (eventRepository.findByIdForUpdate(eventId).isEmpty()) {
             return new SwapResult.EntryNotFound();
         }
@@ -76,6 +113,9 @@ public class TransponderSwapService {
         String oldNumber = numberIn(entry, slot);
         if (Objects.equals(oldNumber, normalized)) {
             return new SwapResult.Success(entry, slot, oldNumber, normalized);
+        }
+        if (!duringRace && raceRepository.isEntryInRaceUnderWay(entryId)) {
+            return new SwapResult.RaceUnderWay();
         }
 
         if (normalized != null) {
@@ -105,7 +145,7 @@ public class TransponderSwapService {
         } else {
             entry.setFourthTransponderNumber(normalized);
         }
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         entryRepository.save(entry);
         writeAudit(entry.getId(), actingUserId, slot, oldNumber, normalized, now);
         return new SwapResult.Success(entry, slot, oldNumber, normalized);

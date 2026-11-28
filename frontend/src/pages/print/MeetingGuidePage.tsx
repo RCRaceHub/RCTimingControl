@@ -47,7 +47,7 @@ export default function MeetingGuidePage() {
             enter them. If a driver changes their
             transponder on the day, open <span className="font-semibold">Transponders</span> in race
             control, find the entry and enter the new number, before their race starts or after it
-            has finished, never during a race. The swap is logged, and a later import
+            has finished, never during a race (RCTC refuses it then). The swap is logged, and a later import
             of the booking file keeps the swapped number (the entry list notes the number the booking
             has).
           </li>

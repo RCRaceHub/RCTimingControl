@@ -39,7 +39,8 @@ public class TransponderSwapController {
             "entry_withdrawn", "The entry has been withdrawn",
             "transponder_already_assigned", "Another competitor already has that transponder in this event",
             "same_as_other_transponder", "The transponder is already this entry's other transponder",
-            "primary_required", "An entry must keep a primary transponder");
+            "primary_required", "An entry must keep a primary transponder",
+            "race_under_way", "This driver's race is under way. A transponder is never changed during a race");
 
     private final EntrySearchQuery entrySearchQuery;
     private final TransponderSwapService transponderSwapService;
@@ -65,6 +66,7 @@ public class TransponderSwapController {
      * {@code POST /entries/{entryId}/transponder-swap}. Answers 200 with a {@link TransponderSwapResponse}, or a
      * problem with an {@code error} code: {@code entry_not_found} (404), {@code entry_withdrawn} and
      * {@code transponder_already_assigned} (409, another competitor holds the number in the event),
+     * {@code race_under_way} (409, the entry is in a running or stopped race),
      * {@code same_as_other_transponder} and {@code primary_required} (400). Recorded in the entry audit log.
      */
     @Audited("entry_audit_log")
@@ -81,6 +83,7 @@ public class TransponderSwapController {
             case SwapResult.EntryWithdrawn ignored -> error(HttpStatus.CONFLICT, "entry_withdrawn");
             case SwapResult.TransponderAlreadyAssigned ignored ->
                     error(HttpStatus.CONFLICT, "transponder_already_assigned");
+            case SwapResult.RaceUnderWay ignored -> error(HttpStatus.CONFLICT, "race_under_way");
             case SwapResult.SameAsOtherSlot ignored ->
                     error(HttpStatus.BAD_REQUEST, "same_as_other_transponder");
             case SwapResult.PrimaryRequired ignored -> error(HttpStatus.BAD_REQUEST, "primary_required");

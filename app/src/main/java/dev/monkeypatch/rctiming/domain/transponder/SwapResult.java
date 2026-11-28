@@ -23,6 +23,9 @@ public sealed interface SwapResult {
     /** The number is already this entry's other transponder. */
     record SameAsOtherSlot() implements SwapResult {}
 
+    /** The entry is in a running or stopped race, and a transponder is never changed during a race. */
+    record RaceUnderWay() implements SwapResult {}
+
     /** The primary transponder cannot be removed, only replaced. */
     record PrimaryRequired() implements SwapResult {}
 }
