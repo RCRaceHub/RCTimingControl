@@ -25,6 +25,7 @@ import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * truth, and the stored result comes from the state itself, not from a broadcast, so this is harmless.
  */
 @Service
+@EnableConfigurationProperties(TimingProperties.class)
 public class LapTimingService {
 
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
@@ -81,6 +83,8 @@ public class LapTimingService {
     private final ApplicationEventPublisher publisher;
     /** Where the club's battle gap is read from; null in tests that do not need it. */
     private final ClubProfileService clubProfileService;
+    /** How long a car may stand still before it is judged stopped; set by Spring, the default in tests. */
+    private int stalledAfterLaps = LiveRaceState.DEFAULT_STALLED_AFTER_LAPS;
     /** Each running race's length and stagger, read once so a passing never queries for them. */
     private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
 
@@ -115,6 +119,12 @@ public class LapTimingService {
         this.publisher = publisher;
     }
 
+    /** Applies {@code rctiming.timing.stalled-after-laps} from the next race state made. */
+    @Autowired(required = false)
+    void setTimingProperties(TimingProperties properties) {
+        this.stalledAfterLaps = properties.stalledAfterLaps();
+    }
+
     /**
      * Returns existing LiveRaceState for this raceId, or creates a new one and pre-loads
      * entry display names so calculatePositions() can include driver names, and each entry's
@@ -124,6 +134,7 @@ public class LapTimingService {
         return states.computeIfAbsent(raceId, id -> {
             LiveRaceState state = new LiveRaceState(battleSettings());
             state.setSharedPlacesOnTies(sharedPlacesOnTies());
+            state.setStalledAfterLaps(stalledAfterLaps);
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
@@ -447,11 +458,16 @@ public class LapTimingService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.STOPPED) {
+            peek(event.getRaceId()).ifPresent(st -> st.pauseStallClocks(System.currentTimeMillis()));
+        }
         if (event.getNewStatus() == RaceStatus.GRID) {
             plans.remove(event.getRaceId());
         }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
+            // A resume after a stop must not count the pause against the cars
+            peek(event.getRaceId()).ifPresent(st -> st.restartStallClocks(System.currentTimeMillis()));
             // Swaps and bump-ups edit the grid after a board may already have built the state; the start is final
             LiveRaceState state = states.get(event.getRaceId());
             if (state != null) {
