@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   dismissJumpStart,
+  approveWrongHeat,
+  disapproveWrongHeat,
   callGrid,
   startRace,
   stopRace,
@@ -37,6 +39,10 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
 
   const invalidateQualifying = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.qualifying(eventId) });
+
+  // Approving puts the driver on the race, so the race's entry list is stale
+  const invalidateEntries = () =>
+    queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.raceEntries(raceId) });
 
   const invalidateSnapshot = () =>
     queryClient.invalidateQueries({ queryKey: raceControlQueryKeys.resultSnapshot(raceId) });
@@ -82,6 +88,15 @@ export function useRaceStateMutations(raceId: number, eventId: number) {
     // Live timing is told by the server, which pushes the new jump start list; the history gains the audit row
     dismissJumpStart: useMutation({
       mutationFn: (entryId: number) => dismissJumpStart(raceId, entryId),
+      onSuccess: invalidateHistory,
+    }),
+    // The server pushes the new flag list; approving also changes the live positions and the race's history
+    approveWrongHeat: useMutation({
+      mutationFn: (transponderNumber: string) => approveWrongHeat(raceId, transponderNumber),
+      onSuccess: () => { invalidateHistory(); invalidateEntries(); },
+    }),
+    disapproveWrongHeat: useMutation({
+      mutationFn: (transponderNumber: string) => disapproveWrongHeat(raceId, transponderNumber),
       onSuccess: invalidateHistory,
     }),
     marshalAbsent: useMutation({

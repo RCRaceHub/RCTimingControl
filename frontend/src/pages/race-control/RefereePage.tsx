@@ -21,6 +21,8 @@ import { useBattles } from '@/hooks/race-control/useBattles';
 import { BattlesPanel } from './panels/BattlesPanel';
 import { gainingFastEntryIds } from '@/lib/battles';
 import { JumpStartAlert } from './referee/JumpStartAlert';
+import { WrongHeatAlert } from './panels/WrongHeatAlert';
+import { useWrongHeat } from '@/hooks/race-control/useWrongHeat';
 import { getRaceEntries } from '@/lib/raceControlApi';
 import type { IncidentReportRequest, PenaltyRequest } from '@/lib/raceControlApi';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -84,6 +86,9 @@ export default function RefereePage() {
   const jumpStarts = useJumpStarts(selectedRaceId);
   const jumpStartEntryIds = useMemo(() => new Set(jumpStarts.map((j) => j.entryId)), [jumpStarts]);
 
+  // Drivers seen in a heat they are not in
+  const wrongHeat = useWrongHeat(selectedRaceId);
+
   const selectedRace = runOrder.find((r) => r.raceId === selectedRaceId);
   const mutations = useRaceStateMutations(selectedRaceId ?? 0, eventId);
   const { clock: raceClock, readAt: raceClockReadAt } = useRaceClock(selectedRaceId, selectedRace?.status);
@@ -92,6 +97,16 @@ export default function RefereePage() {
     mutations.dismissJumpStart.mutate(entryId, {
       onSuccess: () => toast.success('Jump start dismissed; no action taken'),
       onError: (e) => toast.error(getApiErrorMessage(e, 'The jump start could not be dismissed. Try again.')),
+    });
+  }
+
+  function onWrongHeatDecision(decision: 'approve' | 'disapprove', transponderNumber: string) {
+    const mutation = decision === 'approve' ? mutations.approveWrongHeat : mutations.disapproveWrongHeat;
+    mutation.mutate(transponderNumber, {
+      onSuccess: () => toast.success(decision === 'approve'
+        ? 'Driver added to this race and their laps counted'
+        : 'Driver kept out of this race'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'The decision could not be saved. Try again.')),
     });
   }
 
@@ -183,6 +198,12 @@ export default function RefereePage() {
               jumpStarts={jumpStarts}
               onPenalty={(entryId) => { setPenaltyEntryId(entryId); setPenaltyOpen(true); }}
               onDismiss={onDismissJumpStart}
+            />
+            <WrongHeatAlert
+              flags={wrongHeat}
+              onApprove={(n) => onWrongHeatDecision('approve', n)}
+              onDisapprove={(n) => onWrongHeatDecision('disapprove', n)}
+              busy={mutations.approveWrongHeat.isPending || mutations.disapproveWrongHeat.isPending}
             />
             <BattlesPanel groups={battleGroups} />
             <LiveTimingPanel
