@@ -12,6 +12,7 @@ import dev.monkeypatch.rctiming.domain.race.PenaltyType;
 import dev.monkeypatch.rctiming.domain.race.PenaltyRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
+import dev.monkeypatch.rctiming.domain.race.RoundType;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceElimination;
 import dev.monkeypatch.rctiming.domain.race.RaceEliminationRepository;
@@ -27,6 +28,7 @@ import dev.monkeypatch.rctiming.domain.competitor.Competitor;
 import dev.monkeypatch.rctiming.domain.competitor.CompetitorRepository;
 import dev.monkeypatch.rctiming.domain.entry.Entry;
 import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
+import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapOrder;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
@@ -236,7 +238,7 @@ public class ResultSnapshotService {
      * count only when given after the finish, since those given during the race changed the live laps the timed
      * result came from. Corrections from before the race last started belong to a run that was restarted, and are left out. A marshal penalty for the
      * finals takes its lap here whenever it was given, since nothing applies it during the race. Cars marked as not
-     * started are put last with no laps once everything else is applied.
+     * started, by an official or automatically (see {@link #neverCrossedTheLine}), are put last with no laps once everything else is applied.
      */
     private List<ResultSnapshotDto.ResultRow> corrected(Race race, Instant finishedAt,
                                                         List<ResultSnapshotDto.ResultRow> timed) {
@@ -275,10 +277,11 @@ public class ResultSnapshotService {
         // and a car can die before it ever crossed the line
         List<ResultSnapshotDto.ResultRow> rows = new ArrayList<>(timed);
         Map<Long, EntryInfo> entryInfo = null;
-        // Cars an official marked as not started go last, with no laps (see DnsOrdering)
+        // Cars marked as not started, by an official or automatically, go last with no laps (see DnsOrdering)
         Set<Long> notStarted = raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId()).stream()
                 .filter(RaceEntry::isDns).map(RaceEntry::getEntryId)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        notStarted.addAll(neverCrossedTheLine(race, timed, new java.util.HashSet<>(dead), lapDeltas));
         Set<Long> needsRow = new LinkedHashSet<>(dead);
         needsRow.addAll(notStarted);
         lapDeltas.forEach((entryId, delta) -> {
@@ -304,6 +307,47 @@ public class ResultSnapshotService {
         List<ResultSnapshotDto.ResultRow> ordered = ShikabaneOrdering.apply(
                 ResultCorrections.apply(rows, lapDeltas, addedTimeMs, lapTimingService.sharedPlacesOnTies()), dead);
         return DnsOrdering.apply(ordered, notStarted);
+    }
+
+    /**
+     * The cars of a qualifying heat that count as not started without an official marking them: on the grid, in the
+     * race, never seen by the decoder (no row in the timed result), with no lap credited by a marshal and not
+     * confirmed as having raced. A car that crossed the line at all keeps its row, so a car that started and broke
+     * down after its first crossing is not one of these, though one that never reached the line at all is. Empty
+     * for an abandoned heat, when no timed car completed a lap (a decoder that was off or lost says nothing about who
+     * started), and for any round but qualifying: a final's grid holds drivers who bumped up to the final above and
+     * never raced this one. An official can undo one ({@code DidNotStartService}).
+     *
+     * @param race      the heat
+     * @param timed     the timed rows, which hold every car the decoder saw
+     * @param dead      Shikabane cars eliminated, which are not DNS even with no passing
+     * @param lapDeltas laps credited or taken off per entry; a car credited laps did start
+     * @return the entry ids to treat as not started, in grid order
+     */
+    private Set<Long> neverCrossedTheLine(Race race, List<ResultSnapshotDto.ResultRow> timed, Set<Long> dead,
+                                          Map<Long, Integer> lapDeltas) {
+        // A heat that was abandoned, or where no car completed a lap, says nothing about who started
+        if (race.getAbandonedAt() != null || timed.stream().noneMatch(r -> r.lapsCompleted() > 0)) {
+            return Set.of();
+        }
+        Set<Long> seen = timed.stream().map(ResultSnapshotDto.ResultRow::entryId).collect(Collectors.toSet());
+        List<RaceEntry> unseen = raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId()).stream()
+                .filter(e -> !seen.contains(e.getEntryId()) && !e.isConfirmedStarted() && !e.isDns()
+                        && !dead.contains(e.getEntryId()) && lapDeltas.getOrDefault(e.getEntryId(), 0) <= 0)
+                .toList();
+        if (unseen.isEmpty()
+                || !roundRepository.findById(race.getRoundId()).map(r -> r.getType() == RoundType.QUALIFIER).orElse(false)) {
+            return Set.of();
+        }
+        Set<Long> out = new LinkedHashSet<>();
+        for (RaceEntry onGrid : unseen) {
+            boolean withdrawn = entryRepository.findById(onGrid.getEntryId())
+                    .map(e -> e.getStatus() == EntryStatus.WITHDRAWN).orElse(false);
+            if (!withdrawn) {
+                out.add(onGrid.getEntryId());
+            }
+        }
+        return out;
     }
 
     /**
