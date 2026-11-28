@@ -276,19 +276,19 @@ public class LiveRaceState {
     }
 
     /** Stores a display name for an entry. Called by LapTimingService at state creation time. */
-    public void putEntryName(long entryId, String displayName) {
+    public synchronized void putEntryName(long entryId, String displayName) {
         entryNames.put(entryId, displayName);
     }
 
     /** Stores an entry's car number for this race, shown beside its position. A null number is ignored. */
-    public void putEntryCarNumber(long entryId, String carNumber) {
+    public synchronized void putEntryCarNumber(long entryId, String carNumber) {
         if (carNumber != null) {
             entryCarNumbers.put(entryId, carNumber);
         }
     }
 
     /** Stores an entry's 1-based grid position for this race, which the boards compare with its place. Null is ignored. */
-    public void putEntryStartPosition(long entryId, Integer startPosition) {
+    public synchronized void putEntryStartPosition(long entryId, Integer startPosition) {
         if (startPosition != null) {
             entryStartPositions.put(entryId, startPosition);
         }

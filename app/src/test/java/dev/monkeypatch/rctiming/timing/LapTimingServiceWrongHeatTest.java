@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +77,25 @@ class LapTimingServiceWrongHeatTest {
     }
 
     @Test
+    void aFailedLookup_stillSendsTheNumberToTheRefereeAsUnknown() {
+        when(finder.find(7L, "2002")).thenThrow(new IllegalStateException("db"));
+
+        service.onLapPassing(new LapPassingEvent(7L, "2002", 1_000_000L));
+
+        verify(hub).broadcastUnknownTransponder(7L, "2002");
+    }
+
+    @Test
+    void releasingTheRace_clearsTheFlagsOnTheScreens() {
+        when(finder.find(7L, "2002")).thenReturn(Optional.of(flag()));
+        service.onLapPassing(new LapPassingEvent(7L, "2002", 1_000_000L));
+
+        service.releaseState(7L);
+
+        verify(hub).broadcastWrongHeat(7L, List.of());
+    }
+
+    @Test
     void theWrongHeatPassingsAreNotCounted() {
         when(finder.find(7L, "2002")).thenReturn(Optional.of(flag()));
 
@@ -94,7 +114,7 @@ class LapTimingServiceWrongHeatTest {
         service.onLapPassing(new LapPassingEvent(7L, "2002", 2_000_000L));
 
         assertThat(service.wrongHeatOf(7L, "2002").orElseThrow().status()).isEqualTo(WrongHeatDto.Status.DISAPPROVED);
-        verify(hub, org.mockito.Mockito.times(2)).broadcastWrongHeat(eq(7L), any());
+        verify(hub, times(2)).broadcastWrongHeat(eq(7L), any());
     }
 
     private static WrongHeatDto flag() {

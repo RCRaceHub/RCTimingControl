@@ -282,8 +282,7 @@ public class LapTimingService {
                 windowEnded(raceId, state, entryId));
 
         if (entryId == null && firstUnknown) {
-            Optional<WrongHeatDto> wrongHeat = wrongHeatFinder == null
-                    ? Optional.empty() : wrongHeatFinder.find(raceId, transponderNumber);
+            Optional<WrongHeatDto> wrongHeat = findWrongHeat(raceId, transponderNumber);
             if (wrongHeat.isPresent() && state.recordWrongHeat(wrongHeat.get())) {
                 log.warn("Race {}: transponder {} belongs to entry {}, who is not in this race; passings held back",
                         raceId, transponderNumber, wrongHeat.get().entryId());
@@ -297,6 +296,23 @@ public class LapTimingService {
 
         if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
+        }
+    }
+
+    /**
+     * Asks whether an unmatched number belongs to a driver in another heat. A failed lookup is logged and read as
+     * "no": the number is already marked as seen, so an error here must not stop it reaching the referee as unknown.
+     */
+    private Optional<WrongHeatDto> findWrongHeat(long raceId, String transponderNumber) {
+        if (wrongHeatFinder == null) {
+            return Optional.empty();
+        }
+        try {
+            return wrongHeatFinder.find(raceId, transponderNumber);
+        } catch (RuntimeException e) {
+            log.warn("Race {}: could not tell whether transponder {} is a driver in the wrong heat",
+                    raceId, transponderNumber, e);
+            return Optional.empty();
         }
     }
 
@@ -474,6 +490,9 @@ public class LapTimingService {
         if (removed != null && !removed.jumpStarts().isEmpty()) {
             // Tells open referee screens to drop the alerts: they belong to the run that has ended
             liveTimingHub.broadcastJumpStarts(raceId, List.of());
+        }
+        if (removed != null && !removed.wrongHeats().isEmpty()) {
+            liveTimingHub.broadcastWrongHeat(raceId, List.of());
         }
     }
 
