@@ -781,6 +781,16 @@ POST /race-control/race/{raceId}/restart
 
 Require `RACE_DIRECTOR` or `ADMIN`. Each answers **200** with no body, **404** for an unknown race, and **409** for a command the race's state does not allow (`restart` works from any state). Each writes one row to the audit log (`GET /admin/audit`) in the same transaction as the change, so a refused command leaves no row: `RACE_GRID_CALLED`, `RACE_STARTED`, `RACE_RESUMED`, `RACE_STOPPED`, `RACE_FINISHED`, `RACE_ABANDONED`, `RACE_RESTARTED`. The row names the official, the race and the event, and holds the status before and after. A restart also keeps what it throws away in the row's `before`: the race's times, its stored result (`resultSnapshot`), the marshal laps (`marshalLaps`) and lap/time penalties (`penalties`) given during the run, and the live positions held in memory. A restart removes the marshal laps and penalties so the re-run starts clean; incident reports and marshal absences stay.
 
+## Race control — Did not start
+
+```
+GET  /race-control/race/{raceId}/dns          -> { "entryIds": [..] }
+POST /race-control/race/{raceId}/dns          { "entryId" }
+POST /race-control/race/{raceId}/dns/undo     { "entryId" }
+```
+
+Reading is open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; marking and undoing need `RACE_DIRECTOR` or `ADMIN`. A marked car is listed last in the race's result with no laps and `dns: true`. Allowed in any race status, and on a finished race the result is rebuilt and sent again. **404** for an unknown race, **400** for a bad body, **409** if the entry is not in the race, is already marked (or, for undo, is not), or has completed a lap. Audited as `ENTRY_DID_NOT_START` and `ENTRY_DID_NOT_START_UNDONE`.
+
 ## Race control — Run order, heats and finals
 
 Read endpoints are open to `RACE_DIRECTOR`, `REFEREE` and `ADMIN`; the commands need `RACE_DIRECTOR` or `ADMIN`. Every command answers **204** with no body unless stated, and writes a row to the audit log unless stated.

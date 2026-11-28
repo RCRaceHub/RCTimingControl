@@ -37,6 +37,8 @@ vi.mock('@/hooks/race-control/useLiveTiming', () => ({
 }));
 vi.mock('@/hooks/race-control/useSectors', () => ({ useSectors: () => sectors }));
 vi.mock('@/hooks/race-control/useEliminations', () => ({ useEliminations: () => ({ shikabane: false, deadOrder: new Map(), revivals: new Map() }) }));
+vi.mock('@/hooks/race-control/useDidNotStart', () => ({ useDidNotStart: () => ({ marked: new Set(), mark: {}, undo: {} }) }));
+vi.mock('@/hooks/useRoles', () => ({ useRoles: () => ({ isAdmin: false, canRunEvent: false, isOfficial: true }) }));
 vi.mock('@/hooks/race-control/useLapBarClock', () => ({ useLapBarClock: () => 0 }));
 vi.mock('@/hooks/useRaceMedia', () => ({ useRaceMedia: () => new Map() }));
 vi.mock('@/hooks/useBoardSettings', () => ({

@@ -3,8 +3,8 @@ package dev.monkeypatch.rctiming.domain.race;
 
 /**
  * An entry's place on a race's grid (table {@code race_entries}): one row per entry per race. {@code gridPosition} is
- * the starting order, {@code carNumber} the car number, and {@code bumped} marks a driver moved up into this final from
- * the final below (#45).
+ * the starting order, {@code carNumber} the car number, {@code bumped} marks a driver moved up into this final from
+ * the final below (#45), and {@code dns} a car an official marked as not started.
  */
 public class RaceEntry {
 
@@ -20,6 +20,8 @@ public class RaceEntry {
 
     private Integer carNumber;
 
+    private boolean dns = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -34,6 +36,10 @@ public class RaceEntry {
 
     public boolean isBumped() { return bumped; }
     public void setBumped(boolean bumped) { this.bumped = bumped; }
+
+    /** Whether an official marked the car as not having started this race (DNS). */
+    public boolean isDns() { return dns; }
+    public void setDns(boolean dns) { this.dns = dns; }
 
     public Integer getCarNumber() { return carNumber; }
     public void setCarNumber(Integer carNumber) { this.carNumber = carNumber; }

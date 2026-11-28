@@ -443,7 +443,9 @@ public class QualifyingStandingsService {
                 resultSnapshotRepository.findByRaceId(heat.getId()).ifPresent(snapshot -> {
                     for (ResultSnapshotDto.ResultRow row : snapshotJson.positions(heat.getId(),
                             snapshot.getPositionsJson())) {
-                        inRound.put(row.entryId(), new RoundScore(0, row.lapsCompleted(), row.totalTimeMs(),
+                        // A car marked as not started has no time, so it ranks behind a car that ran without a lap
+                        inRound.put(row.entryId(), new RoundScore(0, row.lapsCompleted(),
+                                row.dns() ? Long.MAX_VALUE : row.totalTimeMs(),
                                 row.bestLapMs() == null ? NO_LAP : row.bestLapMs()));
                     }
                 });

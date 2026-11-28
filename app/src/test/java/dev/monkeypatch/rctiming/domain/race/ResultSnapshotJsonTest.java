@@ -31,6 +31,15 @@ class ResultSnapshotJsonTest {
     }
 
     @Test
+    void keepsTheDnsMarkAndReadsARowStoredWithoutOneAsStarted() {
+        var dns = new ResultSnapshotDto.ResultRow(3, 9L, 5L, "Kit Driver", null, 0, 0L, null, null).withDns(true);
+        String stored = "[{\"position\":1,\"entryId\":7,\"lapsCompleted\":12,\"totalTimeMs\":31500}]";
+
+        assertThat(json.positions(5L, json.write(5L, List.of(dns)))).containsExactly(dns);
+        assertThat(json.positions(5L, stored).get(0).dns()).isFalse();
+    }
+
+    @Test
     void readsARowStoredBeforeRowsHadPointsAsOneWithNoPoints() {
         String stored = "[{\"position\":1,\"entryId\":7,\"competitorId\":3,\"driverName\":\"Sam Driver\","
                 + "\"carNumber\":\"4\",\"lapsCompleted\":12,\"totalTimeMs\":31500,\"bestLapMs\":2400,"

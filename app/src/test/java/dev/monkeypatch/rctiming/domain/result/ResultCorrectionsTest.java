@@ -103,6 +103,15 @@ class ResultCorrectionsTest {
         assertThat(corrected).extracting(ResultRow::position).containsExactly(1, 1, 3);
     }
 
+    @Test
+    void aDnsMarkSurvivesReRanking() {
+        List<ResultRow> corrected = ResultCorrections.apply(
+                List.of(row(1, 101L, 12, 300_100L, null), row(2, 102L, 0, 0L, null).withDns(true)),
+                Map.of(101L, -1), Map.of());
+
+        assertThat(corrected).filteredOn(ResultRow::dns).extracting(ResultRow::entryId).containsExactly(102L);
+    }
+
     private static ResultRow row(int position, long entryId, int laps, long totalTimeMs, Long gap) {
         return new ResultRow(position, entryId, null, "Driver " + entryId, String.valueOf(position), laps,
                 totalTimeMs, 24_000L, gap);
