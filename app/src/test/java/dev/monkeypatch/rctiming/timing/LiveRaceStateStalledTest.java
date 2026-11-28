@@ -93,4 +93,52 @@ class LiveRaceStateStalledTest {
         assertThat(state.isStalled(2, 400_000)).isFalse();
         assertThat(state.isStalled(2, 480_000)).isTrue();
     }
+
+    @Test
+    void aCarMarkedDidNotStartThatCrossedOnceIsNotWaitedFor() {
+        // Car 3 rolled over the line once at the start, was then marked DNS, and never moved again
+        pass(3, 1, false);
+        for (long t = 0; t <= 50; t += 10) {
+            pass(1, t, false);
+        }
+        pass(1, 60, true);
+        pass(1, 70, true);
+        state.setNotRacing(3, true);
+
+        // Judged on its clock alone it has not stopped yet (19 s), but it is out of the race
+        assertThat(state.allFlagged(20_000)).isTrue();
+    }
+
+    @Test
+    void aCarThatRacesAgainIsWaitedForAgain() {
+        pass(3, 1, false);
+        for (long t = 0; t <= 50; t += 10) {
+            pass(1, t, false);
+        }
+        pass(1, 60, true);
+        state.setNotRacing(3, true);
+        state.setNotRacing(3, false);
+
+        assertThat(state.allFlagged(20_000)).isFalse();
+    }
+
+    @Test
+    void aLinkedCarThatThenStopsIsNotWaitedForUntilTheTimeout() {
+        // Car 1 runs 10 s laps; transponder T9 is unknown until car 2 is linked to it, after its last lap
+        for (long t = 0; t <= 50; t += 10) {
+            pass(1, t, false);
+        }
+        state.applyLapPassing(new LapPassingEvent(1L, "T9", 5_000_000L), null, 5_000L, false);
+        state.applyLapPassing(new LapPassingEvent(1L, "T9", 15_000_000L), null, 15_000L, false);
+        state.applyLapPassing(new LapPassingEvent(1L, "T9", 25_000_000L), null, 25_000L, false);
+        for (long t = 60; t <= 100; t += 10) {
+            pass(1, t, false);
+        }
+        state.retroactiveLinkTransponder("T9", 2L);
+        pass(1, 110, true);
+
+        // 40 s after the linked car's latest lap it is judged stopped, as any other car would be
+        assertThat(state.takeFinishRequest()).isFalse();
+        assertThat(state.allFlagged(160_000)).isTrue();
+    }
 }

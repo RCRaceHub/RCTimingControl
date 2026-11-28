@@ -82,6 +82,8 @@ public class DidNotStartService {
         raceEntry.setDns(true);
         raceEntry.setConfirmedStarted(false);
         raceEntryRepository.save(raceEntry);
+        // A car that crossed the line once and was then marked must not hold up the end of the race
+        lapTimingService.setNotRacing(raceId, entryId, true);
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))
                 .summary("Marked " + labels.driver(entryId) + " as did not start in " + labels.race(raceId))
@@ -108,6 +110,7 @@ public class DidNotStartService {
         raceEntry.setDns(false);
         raceEntry.setConfirmedStarted(true);
         raceEntryRepository.save(raceEntry);
+        lapTimingService.setNotRacing(raceId, entryId, false);
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START_UNDONE").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))
                 .summary("Took back did not start for " + labels.driver(entryId) + " in " + labels.race(raceId))

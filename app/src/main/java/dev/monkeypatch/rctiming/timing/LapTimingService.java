@@ -207,6 +207,15 @@ public class LapTimingService {
     }
 
     /**
+     * A car was marked as not started, or the mark was taken back: the end of a race in progress stops waiting for it,
+     * or waits again. Does nothing when the race has no live state yet, which reads the mark as it is made. Called
+     * on a request thread; the state is synchronised.
+     */
+    public void setNotRacing(long raceId, long entryId, boolean out) {
+        peek(raceId).ifPresent(state -> state.setNotRacing(entryId, out));
+    }
+
+    /**
      * Read-only access — returns the state if present, empty if race has had no lap events yet.
      */
     public Optional<LiveRaceState> peek(long raceId) {
@@ -518,6 +527,9 @@ public class LapTimingService {
             state.putEntryCarNumber(raceEntry.getEntryId(),
                     raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
             state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
+            state.setNotRacing(raceEntry.getEntryId(), raceEntry.isDns()
+                    || entryRepository.findById(raceEntry.getEntryId())
+                            .map(entry -> entry.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
             entryRepository.findById(raceEntry.getEntryId())
                     .map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)
