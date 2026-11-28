@@ -19,6 +19,7 @@ import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAuditRepository;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -286,6 +287,71 @@ class TransponderLinkServiceTest {
 
         verifyNoInteractions(swapService);
         verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
+    }
+
+    @Test
+    void approveWrongHeat_putsTheDriverOnTheRaceAndLinksTheNumber() {
+        when(raceRepository.getOrThrow(7L)).thenReturn(race(RaceStatus.RUNNING));
+        when(lapTimingService.stateFor(7L)).thenReturn(new LiveRaceState());
+        when(lapTimingService.wrongHeatOf(7L, "2002")).thenReturn(Optional.of(flag(WrongHeatDto.Status.OPEN)));
+        when(entryRepository.findById(12L)).thenReturn(Optional.of(entryWith(12L, "2002")));
+        // First read, before the driver is added; then link() reads the race again and finds them
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(7L))
+                .thenReturn(List.of(raceEntry(11L)), List.of(raceEntry(11L), raceEntry(12L)));
+
+        service().approveWrongHeat(7L, "2002", 3L);
+
+        ArgumentCaptor<RaceEntry> saved = ArgumentCaptor.forClass(RaceEntry.class);
+        verify(raceEntryRepository).save(saved.capture());
+        assertThat(saved.getValue().getEntryId()).isEqualTo(12L);
+        assertThat(saved.getValue().getCarNumber()).isEqualTo(4);
+        verify(audit).entry(Actor.official(3L), "WRONG_HEAT_APPROVED");
+    }
+
+    @Test
+    void disapproveWrongHeat_ofAnApprovedDriver_isRefused() {
+        when(raceRepository.getOrThrow(7L)).thenReturn(race(RaceStatus.RUNNING));
+        when(lapTimingService.wrongHeatOf(7L, "2002")).thenReturn(Optional.of(flag(WrongHeatDto.Status.APPROVED)));
+
+        assertThatThrownBy(() -> service().disapproveWrongHeat(7L, "2002", 3L))
+                .isInstanceOf(StateConflictException.class);
+    }
+
+    @Test
+    void disapproveWrongHeat_recordsItAndTellsTheScreensOnceItCommits() {
+        when(raceRepository.getOrThrow(7L)).thenReturn(race(RaceStatus.RUNNING));
+        when(lapTimingService.wrongHeatOf(7L, "2002")).thenReturn(Optional.of(flag(WrongHeatDto.Status.OPEN)));
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service().disapproveWrongHeat(7L, "2002", 3L);
+            verify(lapTimingService, never()).decideWrongHeat(anyLong(), any(), any());
+
+            TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+            verify(lapTimingService).decideWrongHeat(7L, "2002", WrongHeatDto.Status.DISAPPROVED);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+        verify(audit).entry(Actor.official(3L), "WRONG_HEAT_DISAPPROVED");
+    }
+
+    @Test
+    void approveWrongHeat_withNoFlag_isRefused() {
+        when(raceRepository.getOrThrow(7L)).thenReturn(race(RaceStatus.RUNNING));
+        when(lapTimingService.wrongHeatOf(7L, "2002")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service().approveWrongHeat(7L, "2002", 3L))
+                .isInstanceOf(StateConflictException.class);
+    }
+
+    private static WrongHeatDto flag(WrongHeatDto.Status status) {
+        return new WrongHeatDto("2002", 12L, "Sam Ito", 4, "Heat 2", 3, status);
+    }
+
+    private static Entry entryWith(long id, String transponder) {
+        Entry entry = new Entry();
+        entry.setId(id);
+        entry.setTransponderNumberSnapshot(transponder);
+        return entry;
     }
 
     private Entry entry11(String primary, String secondary) {

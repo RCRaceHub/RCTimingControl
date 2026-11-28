@@ -288,6 +288,33 @@ export async function dismissJumpStart(raceId: number, entryId: number): Promise
   await api.post(`/api/v1/race-control/referee/race/${raceId}/jump-start/${entryId}/dismiss`);
 }
 
+/** A transponder of a driver who is in another heat, seen in this race. Its passings do not count until approved. */
+export type WrongHeatDto = {
+  transponderNumber: string;
+  entryId: number;
+  driverName: string;
+  carNumber: number | null;
+  /** Where the driver should be, such as "Heat 2" or "B final"; null if unknown. */
+  heat: string | null;
+  passings: number;
+  status: 'OPEN' | 'APPROVED' | 'DISAPPROVED';
+};
+
+export async function getWrongHeat(raceId: number): Promise<WrongHeatDto[]> {
+  const { data } = await api.get<WrongHeatDto[]>(`/api/v1/race-control/race/${raceId}/wrong-heat`);
+  return data;
+}
+
+/** Counts the driver in this race: adds them and credits their laps. */
+export async function approveWrongHeat(raceId: number, transponderNumber: string): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/wrong-heat/approve`, { transponderNumber });
+}
+
+/** Keeps the driver's passings out of this race's results. */
+export async function disapproveWrongHeat(raceId: number, transponderNumber: string): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/wrong-heat/disapprove`, { transponderNumber });
+}
+
 export async function moveEntryToHeat(
   raceId: number,
   req: { entryId: number; targetRaceId: number; allRounds: boolean },

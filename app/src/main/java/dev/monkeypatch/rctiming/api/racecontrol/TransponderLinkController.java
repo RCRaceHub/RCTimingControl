@@ -7,7 +7,10 @@ import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import dev.monkeypatch.rctiming.security.DirectorOrAdmin;
 import dev.monkeypatch.rctiming.security.RaceControlStaff;
 import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
+import dev.monkeypatch.rctiming.domain.racecontrol.RaceControlService;
 import dev.monkeypatch.rctiming.timing.dto.LinkTransponderRequestDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDecisionRequestDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +35,12 @@ public class TransponderLinkController {
 
     private final RaceEntriesQuery raceEntriesQuery;
     private final TransponderLinkService transponderLinkService;
+    private final RaceControlService raceControlService;
 
     public TransponderLinkController(RaceEntriesQuery raceEntriesQuery,
-                                     TransponderLinkService transponderLinkService) {
+                                     TransponderLinkService transponderLinkService,
+                                     RaceControlService raceControlService) {
+        this.raceControlService = raceControlService;
         this.raceEntriesQuery = raceEntriesQuery;
         this.transponderLinkService = transponderLinkService;
     }
@@ -66,5 +72,45 @@ public class TransponderLinkController {
         int lapsCredited = transponderLinkService.link(
                 raceId, request.transponderNumber(), request.entryId(), CurrentOfficial.id());
         return ResponseEntity.ok(Map.of("lapsCredited", lapsCredited));
+    }
+
+    /**
+     * The drivers seen in this race who are in another heat, for a screen that opens mid-race; changes arrive on
+     * {@code /topic/race/{raceId}/wrong-heat}. {@code GET /wrong-heat}; RACE_DIRECTOR, REFEREE or ADMIN. 404 if the
+     * race does not exist.
+     */
+    @GetMapping("/wrong-heat")
+    @RaceControlStaff
+    public List<WrongHeatDto> getWrongHeat(@PathVariable Long raceId) {
+        return raceControlService.wrongHeats(raceId);
+    }
+
+    /**
+     * Counts a driver seen in the wrong heat: adds them to the race and credits their laps, answering with
+     * {@code lapsCredited}; see {@link TransponderLinkService#approveWrongHeat}. {@code POST /wrong-heat/approve};
+     * RACE_DIRECTOR, REFEREE or ADMIN. 409 unless the race is running or stopped and the number is flagged. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/wrong-heat/approve")
+    @RaceControlStaff
+    public ResponseEntity<Map<String, Integer>> approveWrongHeat(
+            @PathVariable Long raceId, @Valid @RequestBody WrongHeatDecisionRequestDto request) {
+        int lapsCredited = transponderLinkService.approveWrongHeat(
+                raceId, request.transponderNumber(), CurrentOfficial.id());
+        return ResponseEntity.ok(Map.of("lapsCredited", lapsCredited));
+    }
+
+    /**
+     * Keeps a driver seen in the wrong heat out of the results; see {@link TransponderLinkService#disapproveWrongHeat}.
+     * {@code POST /wrong-heat/disapprove}; RACE_DIRECTOR, REFEREE or ADMIN. 409 unless the race is running or stopped
+     * and the number is flagged and not approved. Audited.
+     */
+    @Audited("audit_log")
+    @PostMapping("/wrong-heat/disapprove")
+    @RaceControlStaff
+    public ResponseEntity<Void> disapproveWrongHeat(
+            @PathVariable Long raceId, @Valid @RequestBody WrongHeatDecisionRequestDto request) {
+        transponderLinkService.disapproveWrongHeat(raceId, request.transponderNumber(), CurrentOfficial.id());
+        return ResponseEntity.noContent().build();
     }
 }
