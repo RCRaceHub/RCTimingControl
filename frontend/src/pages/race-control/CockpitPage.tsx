@@ -485,7 +485,7 @@ function CockpitView() {
       case 'PENDING':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
             </div>
@@ -569,7 +569,7 @@ function CockpitView() {
       case 'RUNNING':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
@@ -618,7 +618,7 @@ function CockpitView() {
       case 'STOPPED':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />

@@ -26,17 +26,29 @@ export function OperatorTimingControls({ allowed, shown, onToggle, onReset, cust
   const toggleOpen = (which: 'icons' | 'key') => setOpen((cur) => (cur === which ? null : which));
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" aria-expanded={open === 'icons'} onClick={() => toggleOpen('icons')}>
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex items-center" role="group" aria-label="Timing table display">
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-r-none pointer-coarse:min-h-11"
+          aria-expanded={open === 'icons'}
+          onClick={() => toggleOpen('icons')}
+        >
           Icons
         </Button>
-        <Button type="button" variant="outline" size="sm" aria-expanded={open === 'key'} onClick={() => toggleOpen('key')}>
+        <Button
+          type="button"
+          variant="outline"
+          className="-ml-px rounded-l-none pointer-coarse:min-h-11"
+          aria-expanded={open === 'key'}
+          onClick={() => toggleOpen('key')}
+        >
           Key
         </Button>
       </div>
       {open === 'icons' && (
-        <div className="rounded-md border bg-card p-3" role="group" aria-label="Icons beside driver names">
+        <div className="w-full rounded-md border bg-card p-3" role="group" aria-label="Icons beside driver names">
           <p className="mb-2 text-xs text-muted-foreground">Shown beside driver names on this device.</p>
           <div className="flex flex-col gap-2">
             {allowed.map((icon) => (

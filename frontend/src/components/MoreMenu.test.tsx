@@ -28,4 +28,14 @@ describe('MoreMenu', () => {
 
     expect(screen.queryByRole('button', { name: 'Abandon' })).not.toBeInTheDocument();
   });
+
+  it('draws its panel outside the page flow so it cannot add a scrollbar', () => {
+    const { container } = render(<MoreMenu>{() => <button>Abandon</button>}</MoreMenu>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+
+    const panel = screen.getByRole('group', { name: 'More' });
+    expect(container.contains(panel)).toBe(false);
+    expect(panel).toHaveClass('fixed');
+  });
 });
