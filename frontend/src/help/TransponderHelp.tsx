@@ -6,8 +6,7 @@ export function TransponderHelp() {
       <p className="text-sm text-muted-foreground">
         The Transponders page changes a driver&apos;s transponder on the day, for example when they
         borrow or replace one. Change it before their race starts or after it has finished, never during a race (a stopped race is still
-        under way, and the swap is refused).
-        The swap is logged with who made it.
+        under way, and the swap is refused). The swap is logged with who made it.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">

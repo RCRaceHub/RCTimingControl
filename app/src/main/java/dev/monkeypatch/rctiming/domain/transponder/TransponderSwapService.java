@@ -37,9 +37,8 @@ public class TransponderSwapService {
     private final EventRepository eventRepository;
     private final EntryRepository entryRepository;
     private final EntryAuditLogRepository auditLogRepository;
-    private final ObjectMapper objectMapper;
-
     private final RaceRepository raceRepository;
+    private final ObjectMapper objectMapper;
     private final Clock clock;
 
     @Autowired
@@ -57,12 +56,12 @@ public class TransponderSwapService {
                            RaceRepository raceRepository,
                            ObjectMapper objectMapper,
                            Clock clock) {
-        this.raceRepository = raceRepository;
-        this.clock = clock;
         this.eventRepository = eventRepository;
         this.entryRepository = entryRepository;
         this.auditLogRepository = auditLogRepository;
+        this.raceRepository = raceRepository;
         this.objectMapper = objectMapper;
+        this.clock = clock;
     }
 
     /**
@@ -83,8 +82,9 @@ public class TransponderSwapService {
 
     /**
      * Saves a number just linked to an entry during its race, otherwise as {@link #swap}. Only for
-     * {@code TransponderLinkService}, which links a number only to an entry that has not been timed in the race, so
-     * nothing it has been timed on changes.
+     * {@code TransponderLinkService}, which links a number only to an entry that live timing has not seen pass in
+     * that race. It does not check for a race under way, so it also would not see passings in another stopped race,
+     * or ones from before a restart of the app.
      */
     @Transactional
     public SwapResult saveLinkedNumber(long eventId, long entryId, TransponderSlot slot, String number,

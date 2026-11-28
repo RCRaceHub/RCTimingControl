@@ -119,6 +119,15 @@ class TransponderSwapServiceTest {
     }
 
     @Test
+    void swap_toTheCurrentNumberWhileTheRaceIsUnderWay_isStillANoOp() {
+        entry(5L, 50L, "1234567", null);
+        Mockito.when(raceRepository.isEntryInRaceUnderWay(5L)).thenReturn(true);
+
+        assertThat(service.swap(EVENT_ID, 5L, TransponderSlot.PRIMARY, "1234567", 42L))
+                .isInstanceOf(SwapResult.Success.class);
+    }
+
+    @Test
     void saveLinkedNumber_whileTheEntrysRaceIsUnderWay_isSaved() {
         Entry e = entry(5L, 50L, "1234567", null);
         Mockito.when(raceRepository.isEntryInRaceUnderWay(5L)).thenReturn(true);
