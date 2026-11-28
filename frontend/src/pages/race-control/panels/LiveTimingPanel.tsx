@@ -70,8 +70,8 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);
-  const dns = useDidNotStart(raceId);
   const { canRunEvent } = useRoles();
+  const dns = useDidNotStart(raceId, { enabled: canRunEvent });
   const settings = useBoardSettings();
   const media = useRaceMedia(raceId);
   const sectors = useSectors(raceId);

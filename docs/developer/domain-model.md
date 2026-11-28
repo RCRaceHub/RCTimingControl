@@ -249,7 +249,7 @@ erDiagram
     event_classes ||--o{ entries : ""
     rounds ||--o{ races : ""
     event_classes ||--o{ races : ""
-    races ||--o{ race_entries : ""
+    races ||--o{ race_entries : "dns flag"
     entries ||--o{ race_entries : ""
     races ||--o| result_snapshots : ""
     races ||--o{ marshal_adjustments : ""

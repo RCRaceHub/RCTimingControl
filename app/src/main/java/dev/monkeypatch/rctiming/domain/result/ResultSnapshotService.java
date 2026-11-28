@@ -277,7 +277,8 @@ public class ResultSnapshotService {
         Map<Long, EntryInfo> entryInfo = null;
         // Cars an official marked as not started go last, with no laps (see DnsOrdering)
         Set<Long> notStarted = raceEntryRepository.findByRaceIdOrderByGridPosition(race.getId()).stream()
-                .filter(RaceEntry::isDns).map(RaceEntry::getEntryId).collect(Collectors.toCollection(LinkedHashSet::new));
+                .filter(RaceEntry::isDns).map(RaceEntry::getEntryId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Long> needsRow = new LinkedHashSet<>(dead);
         needsRow.addAll(notStarted);
         lapDeltas.forEach((entryId, delta) -> {
@@ -290,6 +291,15 @@ public class ResultSnapshotService {
                 rows.add(new ResultSnapshotDto.ResultRow(rows.size() + 1, entryId, info.competitorId(),
                         info.driverName(), info.carNumber(), 0, 0L, null, null));
             }
+        }
+        // A car marked as not started never ran, whatever the decoder or a marshal credited it: take its laps out
+        // before ranking so it cannot lead and skew the other cars' gaps
+        if (!notStarted.isEmpty()) {
+            rows.replaceAll(r -> notStarted.contains(r.entryId())
+                    ? new ResultSnapshotDto.ResultRow(r.position(), r.entryId(), r.competitorId(), r.driverName(),
+                            r.carNumber(), 0, 0L, null, null).withDns(true)
+                    : r);
+            notStarted.forEach(lapDeltas::remove);
         }
         List<ResultSnapshotDto.ResultRow> ordered = ShikabaneOrdering.apply(
                 ResultCorrections.apply(rows, lapDeltas, addedTimeMs, lapTimingService.sharedPlacesOnTies()), dead);

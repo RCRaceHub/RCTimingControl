@@ -6,12 +6,13 @@ import { raceControlQueryKeys } from './raceControlQueryKeys';
  * The cars marked as not started (DNS) in a race, and the actions that mark or unmark one. `marked` is the set of
  * entry ids. A mark changes the result of a finished race and the history, so both are refetched.
  */
-export function useDidNotStart(raceId: number) {
+export function useDidNotStart(raceId: number, options: { enabled?: boolean } = {}) {
   const queryClient = useQueryClient();
   const key = raceControlQueryKeys.didNotStart(raceId);
   const query = useQuery({
     queryKey: key,
     queryFn: () => getDidNotStart(raceId),
+    enabled: options.enabled ?? true,
     // Another official may mark a car; this is not pushed over the race topics
     refetchInterval: 5000,
   });

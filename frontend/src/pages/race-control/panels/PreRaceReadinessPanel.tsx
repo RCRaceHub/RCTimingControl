@@ -27,8 +27,8 @@ export function PreRaceReadinessPanel({ raceId }: Props) {
   const seen = useWarmUp(raceId, data?.seenEntryIds);
   const mutations = useRaceStateMutations(raceId, data?.eventId ?? 0);
   const { confirm, dialog: confirmDialog } = useConfirm();
-  const dns = useDidNotStart(raceId);
   const { canRunEvent } = useRoles();
+  const dns = useDidNotStart(raceId, { enabled: canRunEvent });
 
   const failed = (what: string) => (err: unknown) =>
     toast.error(`${what} failed: ${getApiErrorMessage(err, 'try again, and check the connection if it keeps failing.')}`);

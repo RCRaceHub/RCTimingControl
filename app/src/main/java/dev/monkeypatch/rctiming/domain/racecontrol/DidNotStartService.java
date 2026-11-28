@@ -9,12 +9,13 @@ import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
-import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
+import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
 import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,9 @@ import java.util.Map;
  *
  * <p>This is for a car that never ran. A car that went missing after it had run keeps its laps and is flagged DNF,
  * which is {@code LiveRaceState}'s job, so a car that has completed a lap is refused here. Each action runs in one
- * request transaction with an audit row. On a finished race the stored result is worked out again and its results
+ * request transaction with an audit row. The check for laps is made on the request thread while the timing thread
+ * may still credit a passing, so the result ignores the laps of a marked car whatever it was credited. A restart
+ * keeps the mark, since it is a fact about the grid and not about a run. On a finished race the stored result is worked out again and its results
  * are sent again, through {@link FinishedRaceCorrected}.
  */
 @Service
@@ -126,7 +129,7 @@ public class DidNotStartService {
         if (race.getStatus() == RaceStatus.RUNNING || race.getStatus() == RaceStatus.STOPPED) {
             return lapTimingService.peek(race.getId())
                     .map(state -> state.calculateTimedPositions().stream()
-                            .filter(r -> r.entryId() == entryId).mapToInt(r -> r.lapsCompleted()).max().orElse(0))
+                            .filter(r -> r.entryId() == entryId).mapToInt(LiveTimingRowDto::lapsCompleted).max().orElse(0))
                     .orElse(0);
         }
         return resultSnapshotRepository.findByRaceId(race.getId())

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreRaceReadinessPanel } from './PreRaceReadinessPanel';
 
@@ -62,6 +62,13 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
 }));
 
 describe('PreRaceReadinessPanel', () => {
+  afterEach(() => {
+    dnsState.marked = new Set();
+    dnsState.canRun = true;
+    dnsState.mark.mockClear();
+    dnsState.undo.mockClear();
+  });
+
   it('shows which cars the decoder has seen on the warm-up lap', () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
@@ -114,7 +121,6 @@ describe('PreRaceReadinessPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo DNS' }));
     expect(dnsState.undo).toHaveBeenCalledWith(11, expect.anything());
-    dnsState.marked = new Set();
   });
 
   it('hides the did not start buttons from someone who cannot run the event', () => {
@@ -122,6 +128,5 @@ describe('PreRaceReadinessPanel', () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
     expect(screen.queryByRole('button', { name: 'DNS' })).toBeNull();
-    dnsState.canRun = true;
   });
 });

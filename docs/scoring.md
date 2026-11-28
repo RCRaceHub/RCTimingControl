@@ -108,7 +108,7 @@ round (1) beats Bob's (2), so Ann is ahead, whatever their laps.
 
 A race director or admin can mark a car **DNS** in a heat from race control: the Grid Called panel's **Did not start** column, live timing for a car with no laps, or the finished result. The car is listed last in the heat with no laps, no time and a **DNS** label (race control, the public results page, the boards, the finals page and the heat printout), and a driver can only be marked while they have completed no lap, so a car that ran and then went missing is a DNF and keeps its laps instead. Marking works on a finished heat as well: the result is worked out again and sent to RaceHub again. **Undo DNS** takes the mark back.
 
-In a low-points qualifying class the DNS car scores as a driver who did not run: under the BRCA rules every registered entry in the class plus one, otherwise last place in the round. In a points-for-place class it takes last place. In a championship a DNS in a round that the driver was on the grid for scores 0 and counts towards Y, as above. Each mark and each undo is written to the audit log.
+In a low-points qualifying class the DNS car scores as a driver who did not run: under the BRCA rules every registered entry in the class plus one, otherwise last place in the round. In a points-for-place class it takes last place. In a championship a DNS in a round that the driver was on the grid for scores 0 and counts towards Y, as above. The mark stays on a car when the heat is restarted. Results sent to RaceHub carry a DNS car as a row with no laps and no time (the export has no separate DNS marker), and live timing shows the car's laps until the result is stored. Each mark and each undo is written to the audit log.
 
 ### Maximum race window
 
