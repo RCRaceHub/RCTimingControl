@@ -104,7 +104,8 @@ public class TransponderLinkService {
         }
         if (state.isBeingTimed(entryId)) {
             throw new StateConflictException(labels.driver(entryId) + " is already being timed in this race, so"
-                    + " transponder " + transponderNumber + " can't be theirs. Check which car is carrying it.");
+                    + " transponder " + transponderNumber + " can't be added to them. Check which car is carrying it."
+                    + " If the number counting for them is the wrong one, correct it after the race.");
         }
 
         // Counted before linking, since linking credits them. The first passing only starts timing a lap
@@ -129,7 +130,9 @@ public class TransponderLinkService {
     }
 
     /**
-     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. It goes in
+     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. The entry has
+     * not been timed (see {@link #link}), so a number of its own counts as passed here only when it was not credited
+     * to it, such as one another entry in the race also holds. It goes in
      * the primary slot when the primary has not passed in this race (and there is no secondary, or the secondary
      * has passed), otherwise in the secondary slot when that is empty or has not passed. If both have passed it
      * goes in the first empty third or fourth slot (#482); if none is free nothing is saved, since replacing a

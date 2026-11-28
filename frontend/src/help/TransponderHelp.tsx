@@ -5,7 +5,8 @@ export function TransponderHelp() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         The Transponders page changes a driver&apos;s transponder on the day, for example when they
-        borrow or replace one. Change it before their race is called or after it has finished, never during a race.
+        borrow or replace one. Change it before their race starts or after it has finished, never during a race (a stopped race is still
+        under way).
         The swap is logged with who made it.
       </p>
 

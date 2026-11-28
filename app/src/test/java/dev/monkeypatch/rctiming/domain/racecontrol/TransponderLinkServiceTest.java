@@ -181,6 +181,19 @@ class TransponderLinkServiceTest {
     }
 
     @Test
+    void link_ofASecondNumberAfterAnEarlierLinkCredited_isRefused() {
+        LiveRaceState state = new LiveRaceState();
+        state.applyLapPassing(new LapPassingEvent(7L, "2222222", 1_000_000L), null, 1_000L);
+        state.retroactiveLinkTransponder("2222222", 11L);
+        runningRaceWithEntry11(state);
+
+        assertThatThrownBy(() -> service().link(7L, "1234567", 11L, 3L))
+                .isInstanceOf(StateConflictException.class);
+
+        verifyNoInteractions(linkAuditRepository);
+    }
+
+    @Test
     void link_toAnEntryWithOnlyAMarshalLap_isAllowed() {
         LiveRaceState state = new LiveRaceState();
         state.applyLapDelta(11L, 1);

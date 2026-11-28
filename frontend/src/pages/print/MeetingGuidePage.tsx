@@ -46,7 +46,8 @@ export default function MeetingGuidePage() {
             <span className="font-semibold"> Walk-in</span> in race control, pick their class and
             enter them. If a driver changes their
             transponder on the day, open <span className="font-semibold">Transponders</span> in race
-            control, find the entry and enter the new number. The swap is logged, and a later import
+            control, find the entry and enter the new number, before their race starts or after it
+            has finished, never during a race. The swap is logged, and a later import
             of the booking file keeps the swapped number (the entry list notes the number the booking
             has).
           </li>

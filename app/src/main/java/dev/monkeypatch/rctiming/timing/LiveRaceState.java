@@ -656,8 +656,9 @@ public class LiveRaceState {
      *
      * <p>It assumes the target entry has no passings of its own: the replayed laps are credited on top of
      * whatever it already has, and lap times are worked out from the replay's own order, so linking a
-     * transponder to an entry that is already being timed on another number double-counts. The caller must refuse
-     * that first (see {@link #isBeingTimed}).
+     * transponder to an entry that is already being timed on another number double-counts.
+     * {@code TransponderLinkService} refuses that (see {@link #isBeingTimed}), but checks before its transaction
+     * commits, so an entry whose first passing lands in between is not caught.
      *
      * @return recalculated position list; empty list if no matching lapHistory entries.
      */
