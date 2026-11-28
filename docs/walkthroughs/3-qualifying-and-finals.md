@@ -26,7 +26,7 @@ Part of the [walkthroughs](../walkthroughs.md), which follow one imaginary club 
 
    **Auto run.** Starting a race by hand switches **Auto run** on for the event, so the next heat is called and started for you after the gap you set. Press **Stop** in the Auto run panel if you would rather start each race yourself.
 
-6. **A transponder the system does not know** appears under **Unknown Transponders**. Press **Link to entry**, choose the driver it belongs to and press **Link Entry**. **Keep monitoring** leaves it for later.
+6. **A transponder the system does not know** appears under **Unknown Transponders**. Press **Link to entry**, choose the driver it belongs to and press **Link Entry**. **Keep monitoring** leaves it for later. A driver who has already crossed the line in the race is refused, because a transponder is never changed during a race and both numbers would count. If that happens, check which car is really carrying the number.
 
    ![Linking an unknown transponder](../images/link-unknown-transponder.png)
 

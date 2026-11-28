@@ -166,7 +166,7 @@ The connection dropped, or the decoder is not accepting connections. RCTC retrie
 
 ### Unknown transponder alerts appear in race control
 
-A PASSING record arrived for a transponder number not assigned to any entry in the current race. Use **Link to entry** in race control to assign it. Laps already counted are credited to the entry automatically, and the number is kept on the entry, so it counts in the event's later races without linking again.
+A PASSING record arrived for a transponder number not assigned to any entry in the current race. Use **Link to entry** in race control to assign it. Laps already counted are credited to the entry automatically, and the number is kept on the entry, so it counts in the event's later races without linking again. A driver who has already crossed the line in that race can't be linked to a second number: a transponder isn't changed during a race, so check which car is carrying it, or choose **Keep monitoring**.
 
 ### Driver in the wrong heat
 

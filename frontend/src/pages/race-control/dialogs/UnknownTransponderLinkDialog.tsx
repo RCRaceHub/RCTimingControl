@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getApiErrorMessage } from '@/lib/errors';
 import { getRaceEntries, linkUnknownTransponder } from '@/lib/raceControlApi';
 import { raceControlQueryKeys } from '@/hooks/race-control/raceControlQueryKeys';
 
@@ -62,7 +63,7 @@ export function UnknownTransponderLinkDialog({
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(`Failed to link transponder. ${error.message}`);
+      toast.error(getApiErrorMessage(error, 'Failed to link transponder. Check your connection and try again.'));
     },
   });
 

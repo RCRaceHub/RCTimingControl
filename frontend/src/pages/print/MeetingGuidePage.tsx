@@ -46,7 +46,8 @@ export default function MeetingGuidePage() {
             <span className="font-semibold"> Walk-in</span> in race control, pick their class and
             enter them. If a driver changes their
             transponder on the day, open <span className="font-semibold">Transponders</span> in race
-            control, find the entry and enter the new number. The swap is logged, and a later import
+            control, find the entry and enter the new number, before their race starts or after it
+            has finished, never during a race. The swap is logged, and a later import
             of the booking file keeps the swapped number (the entry list notes the number the booking
             has).
           </li>
@@ -163,8 +164,9 @@ export default function MeetingGuidePage() {
           <li>
             <span className="font-semibold">Pre-race readiness check:</span> Confirm all
             drivers are on the grid and transponders are responding. Unknown transponders
-            (not linked to any entry) will appear as alerts during the race — link them
-            before starting if possible.
+            (not linked to any entry) will appear as alerts during the race. Check the Warm-up
+            column and correct any wrong number on the Transponders page before starting, because a
+            transponder is never changed during a race.
           </li>
         </ol>
       </section>
@@ -226,7 +228,9 @@ export default function MeetingGuidePage() {
             decoder picks up a transponder not linked to any entry, it appears as an
             "Unknown Transponders" alert in the Live Timing panel. Click
             <span className="font-semibold"> Link to entry</span> beside the transponder
-            number to open the Link Transponder dialog and assign it to the correct driver.
+            number to open the Link Transponder dialog and assign it to the correct driver. A driver
+            who has already crossed the line in that race is refused, so check which car is carrying
+            the number.
           </li>
           <li>
             <span className="font-semibold">Taking laps off:</span> To take whole laps off a
@@ -320,7 +324,8 @@ export default function MeetingGuidePage() {
             transponder matches no entry in the race (or more than one), its laps are held
             back and the Race Director can link it during the race. Select the transponder from the Unknown
             Transponders alert in the Cockpit and assign it to the correct entry via
-            the Link Transponder dialog.
+            the Link Transponder dialog. Only a driver who has not yet crossed the line in that race
+            can be linked.
           </li>
           <li>
             <span className="font-semibold">Jump starts:</span> In a stagger start, a red{' '}

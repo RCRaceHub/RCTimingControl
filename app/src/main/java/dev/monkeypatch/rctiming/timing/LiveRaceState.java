@@ -153,6 +153,16 @@ public class LiveRaceState {
         return runtimeLinks.get(transponderNumber);
     }
 
+    /**
+     * Whether the entry has passed the line in this race, on any number. {@code TransponderLinkService} asks before
+     * linking: a transponder is never changed during a race, so a second number for such a car is another car's or a
+     * spare, and crediting it would count the entry twice.
+     */
+    public synchronized boolean isBeingTimed(long entryId) {
+        LiveRacePosition pos = positions.get(entryId);
+        return pos != null && pos.getLastPassingTimeMs() > 0;
+    }
+
     /** Sets when each entry starts, in milliseconds after the race clock starts. Called at state creation time. */
     public synchronized void putStartOffsets(Map<Long, Long> offsets) {
         startOffsetMs.putAll(offsets);
@@ -686,6 +696,8 @@ public class LiveRaceState {
      * <p>It assumes the target entry has no passings of its own: the replayed laps are credited on top of
      * whatever it already has, and lap times are worked out from the replay's own order, so linking a
      * transponder to an entry that is already being timed on another number double-counts.
+     * {@code TransponderLinkService} refuses that (see {@link #isBeingTimed}), but checks before its transaction
+     * commits, so an entry whose first passing lands in between is not caught.
      *
      * @return recalculated position list; empty list if no matching lapHistory entries.
      */

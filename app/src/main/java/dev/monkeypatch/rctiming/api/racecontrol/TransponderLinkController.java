@@ -59,8 +59,9 @@ public class TransponderLinkController {
     /**
      * Links the transponder and answers with how many laps it credited ({@code lapsCredited}); see
      * {@link TransponderLinkService#link}. {@code POST /transponders/link}; RACE_DIRECTOR or ADMIN. 409 unless the
-     * race is running or stopped, or if the number is already linked to another entry; 400 if the entry is not in
-     * the race. Recorded in the audit log, and the number is saved on the entry too.
+     * race is running or stopped, if the number is already linked to another entry, or if the entry has already
+     * passed in this race; 400 if the entry is not in the race. Recorded in the audit log, and the number is saved
+     * on the entry too.
      */
     @Audited("audit_log")
     @PostMapping("/transponders/link")
