@@ -168,6 +168,10 @@ The connection dropped, or the decoder is not accepting connections. RCTC retrie
 
 A PASSING record arrived for a transponder number not assigned to any entry in the current race. Use **Link to entry** in race control to assign it. Laps already counted are credited to the entry automatically, and the number is kept on the entry, so it counts in the event's later races without linking again.
 
+### Driver in the wrong heat
+
+A transponder that belongs to a driver who is in the event but not in the running race is flagged as a **driver in the wrong heat**, with their name, car number and the heat they belong in. Its passings do not count. The race director and the referee both see the alert, with two buttons. **Approve** adds the driver to this race at the back of the grid and credits every passing so far, and they are ranked by laps like the rest. **Disapprove** keeps them out of the results and the alert does not come back, though the line stays on screen with **Approve after all** in case it was a mistake. Each decision is recorded in the audit log. If two different competitors hold the same number, it goes to the referee as an unknown transponder as before.
+
 ---
 
 ## Decoder Makefile targets

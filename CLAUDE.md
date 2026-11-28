@@ -34,6 +34,7 @@ See `docs/PROJECT.md` for the requirements summary, `docs/REQUIREMENTS.md` for t
 - `/topic/race/{raceId}/sectors` — each car's latest and best sector times, only where the club has split decoders (`timing/split/LiveSectorService`)
 - `/topic/race/{raceId}/featured` — the race director's featured-driver prompt for the OBS overlay's lower third (entry id only)
 - `/topic/race/{raceId}/marshal` — marshal lap adjustments
+- `/topic/race/{raceId}/wrong-heat` — drivers whose transponder is seen in a heat they are not in, held back until approved or disapproved
 - `/topic/race/{raceId}/unknown-transponder`, `/audio`, `/bump-up-alert` — race director, announcer and bump-up prompts
 - `/topic/race/{raceId}/warmup` — which cars of a race on the grid the decoder has seen on the warm-up lap
 - `/topic/event/{eventId}/auto-run` — an event's auto run state
