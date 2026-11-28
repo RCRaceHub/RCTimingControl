@@ -20,7 +20,8 @@ import java.util.Map;
  *
  * <p>Each change runs in one transaction on the write connection: the feeds and the audit row first, the key file
  * last. The file cannot be rolled back, so writing it last means a failure before it, or in writing it, leaves the
- * old key in place everywhere.
+ * old key in place everywhere. A commit that fails after the file was written still splits the two: the key
+ * changes while the feeds and the audit log do not, and saving or clearing again puts that right.
  */
 @Service
 public class RaceHubKeyService {
@@ -51,17 +52,17 @@ public class RaceHubKeyService {
         if (cleaned.isEmpty() || cleaned.length() > MAX_LENGTH || cleaned.chars().anyMatch(c -> c <= ' ' || c == 127)) {
             throw new IllegalArgumentException("Paste the key exactly as RaceHub shows it, with no spaces");
         }
-        record(actor, "RACEHUB_KEY_CHANGED", "Saved a new RaceHub key", "SAVED",
-                feeds.replaceTokenWhere(endpoint::isRaceHub, cleaned));
+        int changed = feeds.replaceTokenWhere(endpoint::isRaceHub, cleaned);
+        record(actor, "RACEHUB_KEY_CHANGED", "Saved a new RaceHub key", "SAVED", changed);
         store.save(cleaned);
     }
 
     /** Forgets the saved key; the settings file's key, if there is one, applies again, including on the feeds. */
     @Transactional
     public void clear(Actor actor) {
+        int changed = feeds.replaceTokenWhere(endpoint::isRaceHub, endpoint.settingsFileToken());
         record(actor, "RACEHUB_KEY_CLEARED", "Removed the saved RaceHub key",
-                endpoint.settingsFileKeySet() ? "SETTINGS_FILE" : "NONE",
-                feeds.replaceTokenWhere(endpoint::isRaceHub, endpoint.settingsFileToken()));
+                endpoint.settingsFileKeySet() ? "SETTINGS_FILE" : "NONE", changed);
         store.clear();
     }
 

@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.user.Role;
 import dev.monkeypatch.rctiming.domain.user.User;
 import dev.monkeypatch.rctiming.domain.user.UserRepository;
+import dev.monkeypatch.rctiming.persistence.DatabaseProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import tools.jackson.databind.JsonNode;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +48,7 @@ class RaceHubKeyIT extends AbstractIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired RaceHubKeyStore keyStore;
     @Autowired ClubProfileService clubProfileService;
+    @Autowired DatabaseProperties database;
 
     private HttpHeaders headers;
     private long feedId;
@@ -83,6 +88,26 @@ class RaceHubKeyIT extends AbstractIntegrationTest {
         assertThat(auditSince(before, "RACEHUB_KEY_CHANGED"))
                 .contains("\"keySource\":\"SAVED\"", "\"feedsChanged\":")
                 .doesNotContain("new-club-key");
+    }
+
+    @Test
+    void aKeyThatCannotBeWrittenLeavesTheFeedsAndTheAuditLogAsTheyWere() throws IOException {
+        long before = lastAuditId();
+        // A folder where the temporary key file goes makes writing it fail
+        Path blocker = database.effectiveDataDirectory().resolve(RaceHubKeyStore.FILE_NAME + ".tmp");
+        Files.createDirectory(blocker);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(KEY_PATH, HttpMethod.PUT,
+                    new HttpEntity<>(Map.of("key", "new-club-key-2222"), headers), String.class);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        } finally {
+            Files.delete(blocker);
+        }
+        assertThat(keyStore.saved()).isEmpty();
+        assertThat(tokenHint()).isEqualTo("1111");
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where id > ? and action = ?", Integer.class,
+                before, "RACEHUB_KEY_CHANGED")).isZero();
     }
 
     @Test
