@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * Two small buttons for the head of a live timing table on race control and the referee screen (#766): **Icons**
+ * Two joined buttons for the head of a live timing table on race control and the referee screen (#766): **Icons**
  * picks what shows beside driver names on this device, and **Key** shows what the colours and icons mean on demand,
  * so the table is not shared with a permanent legend.
  */
@@ -48,7 +48,7 @@ export function OperatorTimingControls({ allowed, shown, onToggle, onReset, cust
         </Button>
       </div>
       {open === 'icons' && (
-        <div className="w-full rounded-md border bg-card p-3" role="group" aria-label="Icons beside driver names">
+        <div className="rounded-md border bg-card p-3" role="group" aria-label="Icons beside driver names">
           <p className="mb-2 text-xs text-muted-foreground">Shown beside driver names on this device.</p>
           <div className="flex flex-col gap-2">
             {allowed.map((icon) => (

@@ -17,14 +17,23 @@ export function MoreMenu({ children, label = 'More' }: { children: (close: () =>
   const [pos, setPos] = useState<CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const toggle = () => {
     if (!open && ref.current) {
       const r = ref.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, right: Math.max(8, window.innerWidth - r.right) });
+      const right = Math.max(8, document.documentElement.clientWidth - r.right);
+      // Flip above the button when a panel of about 120px would run off the bottom of a short screen.
+      const flip = r.bottom + 120 > window.innerHeight && r.top > 120;
+      setPos(flip ? { bottom: window.innerHeight - r.top + 4, right } : { top: r.bottom + 4, right });
     }
     setOpen((o) => !o);
   };
+
+  // The panel is portalled to the end of the page, so Tab would skip it: move focus in when it opens.
+  useEffect(() => {
+    if (open) panelRef.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -33,17 +42,24 @@ export function MoreMenu({ children, label = 'More' }: { children: (close: () =>
       if (ref.current?.contains(t) || panelRef.current?.contains(t)) return;
       setOpen(false);
     };
-    const onAway = () => setOpen(false);
+    const onResize = () => setOpen(false);
+    const onScroll = (e: Event) => {
+      if (panelRef.current && e.target instanceof Node && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    window.addEventListener('resize', onAway);
-    window.addEventListener('scroll', onAway, true);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
-      window.removeEventListener('resize', onAway);
-      window.removeEventListener('scroll', onAway, true);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onScroll, true);
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
@@ -51,7 +67,7 @@ export function MoreMenu({ children, label = 'More' }: { children: (close: () =>
 
   return (
     <div ref={ref} className="relative">
-      <Button type="button" variant="outline" className="pointer-coarse:min-h-11" aria-expanded={open} onClick={toggle}>
+      <Button ref={triggerRef} type="button" variant="outline" aria-haspopup="true" className="pointer-coarse:min-h-11" aria-expanded={open} onClick={toggle}>
         {label}
       </Button>
       {open &&
