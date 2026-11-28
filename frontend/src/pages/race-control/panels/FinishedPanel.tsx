@@ -134,8 +134,8 @@ export function FinishedPanel({ raceId, eventId, onRestart, isRestarting }: Prop
               )}
               {canRunEvent && (
                 <TableCell className="text-right">
-                  {(row.lapsCompleted === 0 || dns.marked.has(row.entryId)) && (
-                    <DidNotStartButton entryId={row.entryId} dns={dns} />
+                  {(row.lapsCompleted === 0 || row.dns || dns.marked.has(row.entryId)) && (
+                    <DidNotStartButton entryId={row.entryId} dns={dns} resultSaysDns={row.dns} />
                   )}
                 </TableCell>
               )}

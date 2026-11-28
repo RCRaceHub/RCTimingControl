@@ -22,6 +22,8 @@ public class RaceEntry {
 
     private boolean dns = false;
 
+    private boolean confirmedStarted = false;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -40,6 +42,13 @@ public class RaceEntry {
     /** Whether an official marked the car as not having started this race (DNS). */
     public boolean isDns() { return dns; }
     public void setDns(boolean dns) { this.dns = dns; }
+
+    /**
+     * Whether an official confirmed the car raced although the decoder never saw it cross the line, which keeps a
+     * finished qualifying heat from marking it DNS automatically.
+     */
+    public boolean isConfirmedStarted() { return confirmedStarted; }
+    public void setConfirmedStarted(boolean confirmedStarted) { this.confirmedStarted = confirmedStarted; }
 
     public Integer getCarNumber() { return carNumber; }
     public void setCarNumber(Integer carNumber) { this.carNumber = carNumber; }

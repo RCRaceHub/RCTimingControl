@@ -30,12 +30,15 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -94,7 +97,7 @@ class ResultSnapshotServiceTest {
     }
 
     private void gridOf(long... entryIds) {
-        List<RaceEntry> grid = new java.util.ArrayList<>();
+        List<RaceEntry> grid = new ArrayList<>();
         for (long id : entryIds) {
             RaceEntry re = new RaceEntry();
             re.setEntryId(id);
@@ -115,7 +118,7 @@ class ResultSnapshotServiceTest {
         service.applyCorrections(7L);
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ResultRow>> written = ArgumentCaptor.forClass(List.class);
-        verify(snapshotJson, org.mockito.Mockito.atLeastOnce()).write(org.mockito.ArgumentMatchers.eq(7L), written.capture());
+        verify(snapshotJson, atLeastOnce()).write(eq(7L), written.capture());
         return written.getAllValues().get(written.getAllValues().size() - 1);
     }
 
@@ -155,5 +158,39 @@ class ResultSnapshotServiceTest {
         List<ResultRow> rows = correctedRowsFor(RoundType.QUALIFIER, List.of());
 
         assertThat(rows).isEmpty();
+    }
+
+    @Test
+    void aCarAnOfficialConfirmedStartedIsNotMarkedAutomatically() {
+        RaceEntry confirmed = new RaceEntry();
+        confirmed.setEntryId(2L);
+        confirmed.setConfirmedStarted(true);
+        RaceEntry ran = new RaceEntry();
+        ran.setEntryId(1L);
+        when(raceEntryRepository.findByRaceIdOrderByGridPosition(7L)).thenReturn(List.of(ran, confirmed));
+
+        List<ResultRow> rows = correctedRowsFor(RoundType.QUALIFIER, List.of(ran(1L)));
+
+        assertThat(rows).extracting(ResultRow::entryId).containsExactly(1L);
+    }
+
+    @Test
+    void anAbandonedHeatMarksNobodyAutomatically() {
+        gridOf(1L, 2L);
+        raceRepository.getOrThrow(7L).setAbandonedAt(Instant.parse("2026-10-18T14:04:00Z"));
+
+        List<ResultRow> rows = correctedRowsFor(RoundType.QUALIFIER, List.of(ran(1L)));
+
+        assertThat(rows).extracting(ResultRow::entryId).containsExactly(1L);
+    }
+
+    @Test
+    void aHeatWhereNoTimedCarCompletedALapMarksNobodyAutomatically() {
+        gridOf(1L, 2L);
+
+        List<ResultRow> rows = correctedRowsFor(RoundType.QUALIFIER, List.of(
+                new ResultRow(1, 1L, null, "Driver 1", null, 0, 0L, null, null)));
+
+        assertThat(rows).extracting(ResultRow::entryId).containsExactly(1L);
     }
 }

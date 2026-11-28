@@ -80,6 +80,7 @@ public class DidNotStartService {
             throw new StateConflictException("That car has completed laps, so it started");
         }
         raceEntry.setDns(true);
+        raceEntry.setConfirmedStarted(false);
         raceEntryRepository.save(raceEntry);
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))
@@ -89,7 +90,9 @@ public class DidNotStartService {
     }
 
     /**
-     * Takes the mark back, for a car marked by mistake or one that turned up after all.
+     * Takes the mark back, for a car marked by mistake or one that turned up after all. On a finished qualifying heat
+     * it also works for a car that was marked automatically (never seen by the decoder): the car is then recorded as
+     * having started, and is not marked again.
      *
      * @throws StateConflictException (409) if the entry is not on the grid or is not marked
      */
@@ -97,9 +100,13 @@ public class DidNotStartService {
         Race race = raceRepository.getOrThrow(raceId);
         RaceEntry raceEntry = requireOnGrid(raceId, entryId);
         if (!raceEntry.isDns()) {
-            throw new StateConflictException("That car is not marked did not start");
+            // A finished qualifying heat marks an unseen car DNS by itself; "undo" then says the car did race
+            if (race.getStatus() != RaceStatus.FINISHED || raceEntry.isConfirmedStarted()) {
+                throw new StateConflictException("That car is not marked did not start");
+            }
         }
         raceEntry.setDns(false);
+        raceEntry.setConfirmedStarted(true);
         raceEntryRepository.save(raceEntry);
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START_UNDONE").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))

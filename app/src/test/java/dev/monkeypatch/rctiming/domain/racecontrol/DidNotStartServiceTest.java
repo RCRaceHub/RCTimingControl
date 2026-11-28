@@ -120,4 +120,25 @@ class DidNotStartServiceTest {
     void refusesToTakeBackAMarkThatIsNotThere() {
         assertThatThrownBy(() -> service.undoDidNotStart(RACE, ENTRY, USER)).isInstanceOf(StateConflictException.class);
     }
+
+    @Test
+    void undoOnAFinishedRaceRecordsThatAnAutomaticallyMarkedCarStarted() {
+        race.setStatus(RaceStatus.FINISHED);
+
+        service.undoDidNotStart(RACE, ENTRY, USER);
+
+        assertThat(onGrid.isDns()).isFalse();
+        assertThat(onGrid.isConfirmedStarted()).isTrue();
+        verify(publisher).publishEvent(new FinishedRaceCorrected(RACE));
+    }
+
+    @Test
+    void markingACarAgainClearsTheConfirmationItStarted() {
+        onGrid.setConfirmedStarted(true);
+
+        service.markDidNotStart(RACE, ENTRY, USER);
+
+        assertThat(onGrid.isDns()).isTrue();
+        assertThat(onGrid.isConfirmedStarted()).isFalse();
+    }
 }
