@@ -6,7 +6,7 @@
 |------|---------|
 | Java | 21 (LTS) |
 | Docker | 24+ (optional: only for Piper announcer voices) |
-| Node.js | 24+ (CI and the Docker image use 24) |
+| Node.js | 26+ (the current LTS, with npm 11; CI and the Docker image use 26; `frontend/.nvmrc` pins it for nvm) |
 | Gradle | via wrapper (`./gradlew`) |
 
 ## Quick start (Makefile)

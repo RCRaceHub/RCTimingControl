@@ -3,13 +3,17 @@
 # It holds the app with the UI built in; `simulate` runs the fake decoder from the same image.
 # See docs/docker.md.
 
-FROM node:24-bookworm-slim AS node
+FROM node:26-bookworm-slim AS node
 
 FROM eclipse-temurin:21-jdk AS builder
+# Node 26's binary links libatomic, which the Temurin (Ubuntu) image does not ship.
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 && rm -rf /var/lib/apt/lists/*
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+# The npm that ships with the Node LTS is the one we want; hide the "new npm major available" notice.
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /build
 COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties VERSION ./
 COPY gradle/ gradle/
