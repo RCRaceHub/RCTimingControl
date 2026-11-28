@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** A car that stops counting laps is not waited for when the race ends, and is a DNF (#stalled car). */
+/** A car that stops counting laps is not waited for when the race ends, and is a DNF. */
 class LiveRaceStateStalledTest {
 
     private LiveRaceState state;
@@ -85,8 +85,12 @@ class LiveRaceStateStalledTest {
     @Test
     void aPauseIsNotHeldAgainstTheCars() {
         carTwoStopsAfterFifty();
-        state.restartStallClocks(100_000);
+        state.pauseStallClocks(70_000);
+        // Stopped at 70 s, finished at 400 s: the cars are judged as of the stop
+        assertThat(state.isStalled(2, 400_000)).isFalse();
 
-        assertThat(state.isStalled(2, 100_000)).isFalse();
+        state.restartStallClocks(400_000);
+        assertThat(state.isStalled(2, 400_000)).isFalse();
+        assertThat(state.isStalled(2, 480_000)).isTrue();
     }
 }

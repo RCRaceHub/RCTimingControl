@@ -25,6 +25,7 @@ import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * truth, and the stored result comes from the state itself, not from a broadcast, so this is harmless.
  */
 @Service
-@org.springframework.boot.context.properties.EnableConfigurationProperties(TimingProperties.class)
+@EnableConfigurationProperties(TimingProperties.class)
 public class LapTimingService {
 
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
@@ -457,6 +458,9 @@ public class LapTimingService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.STOPPED) {
+            peek(event.getRaceId()).ifPresent(st -> st.pauseStallClocks(System.currentTimeMillis()));
+        }
         if (event.getNewStatus() == RaceStatus.GRID) {
             plans.remove(event.getRaceId());
         }

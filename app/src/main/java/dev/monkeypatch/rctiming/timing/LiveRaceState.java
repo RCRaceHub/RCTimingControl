@@ -38,6 +38,8 @@ public class LiveRaceState {
 
     /** The default for {@link #setStalledAfterLaps}. */
     public static final int DEFAULT_STALLED_AFTER_LAPS = 4;
+    /** The shortest a car is left before it is judged stopped, whatever its lap time. */
+    static final long MIN_STALLED_MS = 20_000L;
 
     final Map<Long, LiveRacePosition> positions = new HashMap<>();
     final List<LapPassingEvent> lapHistory = new ArrayList<>();
@@ -78,7 +80,10 @@ public class LiveRaceState {
     /** How many of its own average laps a car may go without a counted lap before it is judged stopped; 0 for never. */
     /** The server time of the latest passing handled, which {@link #takeFinishRequest} judges the cars against. */
     private long lastPassingNowMs;
-    private volatile int stalledAfterLaps = DEFAULT_STALLED_AFTER_LAPS;
+    /** Server time the race was stopped, or null while it runs: the cars are judged as of then, not by the pause. */
+    private Long pausedAtMs;
+    /** How many of its own average laps a car may go without a counted lap before it is judged stopped; 0 for never. */
+    private int stalledAfterLaps = DEFAULT_STALLED_AFTER_LAPS;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
     /**
@@ -360,18 +365,32 @@ public class LiveRaceState {
         this.stalledAfterLaps = Math.max(0, laps);
     }
 
-    /** Counts every car as having just crossed, so a stop of the race is not held against it when it resumes. */
+    /** The race was stopped: the cars are judged as of now until it resumes, so a pause is not held against them. */
+    public synchronized void pauseStallClocks(long nowMs) {
+        if (pausedAtMs == null) {
+            pausedAtMs = nowMs;
+        }
+    }
+
+    /** The race resumed: every car's last counted lap moves on by the length of the pause. Does nothing if not paused. */
     public synchronized void restartStallClocks(long nowMs) {
-        lastCountedAtMs.replaceAll((id, at) -> nowMs);
+        if (pausedAtMs != null) {
+            long pauseMs = Math.max(0, nowMs - pausedAtMs);
+            lastCountedAtMs.replaceAll((id, at) -> at + pauseMs);
+            pausedAtMs = null;
+        }
     }
 
     /**
      * Whether the car has stopped: it has crossed the line, has not taken the flag, and no lap has counted for
      * {@code stalledAfterLaps} times its average lap. A car with no lap yet is judged by the average of the cars that
-     * have one; with none to go by, it is not judged. Takes the lock.
+     * have one; with none to go by, it is not judged. Never sooner than {@link #MIN_STALLED_MS}. Takes the lock.
      */
     public synchronized boolean isStalled(long entryId, long nowMs) {
         int laps = stalledAfterLaps;
+        if (pausedAtMs != null) {
+            nowMs = Math.min(nowMs, pausedAtMs);
+        }
         Long lastAt = lastCountedAtMs.get(entryId);
         if (laps <= 0 || lastAt == null || flagged.contains(entryId)) {
             return false;
@@ -379,10 +398,18 @@ public class LiveRaceState {
         LiveRacePosition pos = positions.get(entryId);
         Long avgMs = pos == null ? null : pos.getAvgLapMs();
         if (avgMs == null) {
-            avgMs = positions.values().stream().map(LiveRacePosition::getAvgLapMs).filter(java.util.Objects::nonNull)
-                    .mapToLong(Long::longValue).average().stream().mapToLong(d -> (long) d).boxed().findFirst().orElse(null);
+            double sum = 0;
+            int n = 0;
+            for (LiveRacePosition other : positions.values()) {
+                if (other.getAvgLapMs() != null) {
+                    sum += other.getAvgLapMs();
+                    n++;
+                }
+            }
+            avgMs = n == 0 ? null : (long) (sum / n);
         }
-        return avgMs != null && avgMs > 0 && nowMs - lastAt > laps * avgMs;
+        // A floor, so a tight track or a first short lap cannot make the wait shorter than a marshal needs
+        return avgMs != null && avgMs > 0 && nowMs - lastAt > Math.max(laps * avgMs, MIN_STALLED_MS);
     }
 
     /**

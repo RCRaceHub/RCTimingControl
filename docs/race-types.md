@@ -140,7 +140,7 @@ For a race with a length:
 3. When every car that has crossed the line has taken the flag, and the last car to start has had its full time, RCTC
    finishes the race by itself. The result, the next heat's grid and any bump-up follow as if the director had pressed
    Finish. It is audited as a system action.
-4. A car that has counted no lap for 4 of its own average laps (`rctiming.timing.stalled-after-laps`, 0 turns it off) is judged stopped. The race stops waiting for it, so it finishes once every car still running has taken the flag, and the result marks the stopped car DNF with the laps it completed. Pausing the race does not count against the cars.
+4. A car that has counted no lap for 4 of its own average laps (`rctiming.timing.stalled-after-laps`, 0 turns it off) is judged stopped. The race stops waiting for it, so it finishes once every car still running has taken the flag, and the result marks the stopped car DNF with the laps it completed (a car that never completed a lap is not waited for but is not marked). A car is never judged stopped sooner than 20 seconds. Pausing the race does not count against the cars.
 5. If a car never takes the flag in any other way, the **max last lap** is the backstop. Once the clock has run out,
    the race is finished when no lap has counted for that long, counted from the moment the clock ran out if none has
    counted since. A track with no max last lap leaves it to the director.
