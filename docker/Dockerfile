@@ -3,7 +3,7 @@
 # It holds the app with the UI built in; `simulate` runs the fake decoder from the same image.
 # See docs/docker.md.
 
-FROM node:24-bookworm-slim AS node
+FROM node:26-bookworm-slim AS node
 
 FROM eclipse-temurin:21-jdk AS builder
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
