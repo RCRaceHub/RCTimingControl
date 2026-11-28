@@ -5,7 +5,7 @@ import dev.monkeypatch.rctiming.domain.StateConflictException;
 import dev.monkeypatch.rctiming.domain.entryfeed.EntryFeedClient;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClass;
 import dev.monkeypatch.rctiming.domain.raceclass.RacingClassRepository;
-import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;

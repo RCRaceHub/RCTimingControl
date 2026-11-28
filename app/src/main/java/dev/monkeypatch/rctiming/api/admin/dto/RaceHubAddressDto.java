@@ -1,6 +1,6 @@
 package dev.monkeypatch.rctiming.api.admin.dto;
 
-import dev.monkeypatch.rctiming.resultsexport.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 
 /**
  * The one RaceHub address, as the RaceHub page and the pickers show it.

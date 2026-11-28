@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.practice;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.domain.practice.PracticeDriver;
 import dev.monkeypatch.rctiming.domain.practice.PracticeDriverRepository;
 import dev.monkeypatch.rctiming.domain.practice.PracticeLap;
@@ -64,6 +65,8 @@ public class PracticeTimingService {
     /** Active practice session states keyed by sessionId. */
     private final Map<Long, LivePracticeState> activeStates = new ConcurrentHashMap<>();
 
+    private final ModuleSwitch moduleSwitch;
+
     @Autowired
     public PracticeTimingService(PracticeSessionRepository sessionRepository,
                                  PracticeLapRepository lapRepository,
@@ -71,9 +74,10 @@ public class PracticeTimingService {
                                  EntryRepository entryRepository,
                                  CompetitorRepository competitorRepository,
                                  UserRepository userRepository,
-                                 PracticeTimingHub timingHub) {
+                                 PracticeTimingHub timingHub,
+                                 ModuleSwitch moduleSwitch) {
         this(sessionRepository, lapRepository, driverRepository, entryRepository, competitorRepository,
-                userRepository, timingHub, Clock.systemUTC());
+                userRepository, timingHub, moduleSwitch, Clock.systemUTC());
     }
 
     PracticeTimingService(PracticeSessionRepository sessionRepository,
@@ -83,8 +87,10 @@ public class PracticeTimingService {
                           CompetitorRepository competitorRepository,
                           UserRepository userRepository,
                           PracticeTimingHub timingHub,
+                          ModuleSwitch moduleSwitch,
                           Clock clock) {
         this.clock = clock;
+        this.moduleSwitch = moduleSwitch;
         this.sessionRepository = sessionRepository;
         this.lapRepository = lapRepository;
         this.driverRepository = driverRepository;
@@ -124,7 +130,7 @@ public class PracticeTimingService {
     @EventListener
     @Transactional
     public void onLapPassing(LapPassingEvent event) {
-        if (event.raceId() != LapPassingEvent.NO_RACE) {
+        if (event.raceId() != LapPassingEvent.NO_RACE || !moduleSwitch.isEnabled(PracticeModule.ID)) {
             return;
         }
         // Check for a running practice session

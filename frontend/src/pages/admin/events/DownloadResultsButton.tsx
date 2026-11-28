@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { useDownloadResultsExport } from '@/hooks/admin/useResultsExports';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { useRoles } from '@/hooks/useRoles';
 
 /**
@@ -12,8 +13,9 @@ import { useRoles } from '@/hooks/useRoles';
 export default function DownloadResultsButton({ eventId }: { eventId: number }) {
   const { isAdmin } = useRoles();
   const download = useDownloadResultsExport();
+  const moduleOff = useDisabledModules().has('results-export');
 
-  if (!isAdmin) return null;
+  if (!isAdmin || moduleOff) return null;
 
   return (
     <Button

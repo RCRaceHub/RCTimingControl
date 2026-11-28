@@ -47,6 +47,7 @@ import { useRaceHubMeeting } from '@/hooks/admin/useRaceHubEvents';
 import { useEntryFeedSummaries } from '@/hooks/admin/useEntryFeed';
 import { EntryFeedNote } from '@/components/EntryFeedNote';
 import { getApiErrorMessage } from '@/lib/errors';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { useReuploadResults } from '@/hooks/admin/useResultsExports';
 import { useConfirm } from '@/components/ConfirmDialog';
 
@@ -65,6 +66,7 @@ export default function EventListPage() {
   const [raceHubOpen, setRaceHubOpen] = useState(false);
   const raceHubMeeting = useRaceHubMeeting();
   const reupload = useReuploadResults();
+  const resultsExportOff = useDisabledModules().has('results-export');
   const { confirm, dialog: confirmDialog } = useConfirm();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -137,7 +139,7 @@ export default function EventListPage() {
       id: 'actions',
       cell: info => {
         const event = info.row.original;
-        const canReupload = isAdmin && event.fromRaceHub && (event.status === 'IN_PROGRESS' || event.status === 'COMPLETED');
+        const canReupload = isAdmin && !resultsExportOff && event.fromRaceHub && (event.status === 'IN_PROGRESS' || event.status === 'COMPLETED');
         return (
           <div className="flex justify-end gap-2">
             {canReupload && (

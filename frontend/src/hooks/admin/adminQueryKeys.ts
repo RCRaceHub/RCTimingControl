@@ -72,6 +72,10 @@ export const adminQueryKeys = {
   audit: {
     page: (filter: object, page: number) => ['admin', 'audit', filter, page] as const,
   },
+  modules: {
+    all: () => ['admin', 'modules'] as const,
+    event: (eventId: number) => ['admin', 'modules', 'event', eventId] as const,
+  },
   retention: {
     policy: () => ['admin', 'retention'] as const,
   },
@@ -80,6 +84,9 @@ export const adminQueryKeys = {
   },
   resultsExports: {
     all: () => ['admin', 'results-exports'] as const,
+  },
+  raceHubConnection: {
+    all: () => ['admin', 'racehub-connection'] as const,
   },
   officials: {
     all: () => ['admin', 'officials'] as const,

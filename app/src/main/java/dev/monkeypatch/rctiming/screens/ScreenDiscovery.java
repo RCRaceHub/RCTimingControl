@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.screens;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.infrastructure.network.LanAddresses;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
@@ -51,13 +52,16 @@ public class ScreenDiscovery {
     private final boolean enabled;
     private final LanAddresses lan;
     private final ScreenControlService control;
+    private final ModuleSwitch moduleSwitch;
     /** One browser per interface address; touched only under {@code this}. */
     private final Map<String, JmDNS> browsers = new HashMap<>();
     private final ExecutorService handler = Executors.newSingleThreadExecutor(r -> daemon(r, "screen-discovery-handle"));
     private ScheduledExecutorService scheduler;
     private boolean stopped;
 
-    public ScreenDiscovery(ScreensProperties properties, LanAddresses lan, ScreenControlService control) {
+    public ScreenDiscovery(ScreensProperties properties, LanAddresses lan, ScreenControlService control,
+                           ModuleSwitch moduleSwitch) {
+        this.moduleSwitch = moduleSwitch;
         this.enabled = properties.discovery();
         this.lan = lan;
         this.control = control;
@@ -86,6 +90,10 @@ public class ScreenDiscovery {
     }
 
     private void rescan() {
+        if (!moduleSwitch.isEnabled(ScreensModule.ID)) {
+            closeExcept(List.of());
+            return;
+        }
         try {
             List<String> wanted = lan.announceAddresses();
             for (String address : wanted) {

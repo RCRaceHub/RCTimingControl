@@ -3,6 +3,7 @@ import OverlayDesignerPage from '@/pages/admin/board-views/OverlayDesignerPage';
 import ScreensPage from '@/pages/admin/screens/ScreensPage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTabParam } from '@/hooks/useTabParam';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 
 const TABS = ['views', 'screens', 'overlay'] as const;
 
@@ -13,16 +14,19 @@ const TABS = ['views', 'screens', 'overlay'] as const;
  * a race director, like each of them was.
  */
 export default function DisplaysPage() {
-  const [tab, setTab] = useTabParam(TABS, 'views');
+  const [requested, setTab] = useTabParam(TABS, 'views');
+  const screensOff = useDisabledModules().has('screens');
+  // The screens manager module (#799) can be switched off: its tab goes and a stale address falls back to the first tab
+  const tab = screensOff && requested === 'screens' ? 'views' : requested;
   return (
     <Tabs value={tab} onValueChange={setTab} className="space-y-6">
       <TabsList>
         <TabsTrigger value="views">Custom views</TabsTrigger>
-        <TabsTrigger value="screens">Screens</TabsTrigger>
+        {!screensOff && <TabsTrigger value="screens">Screens</TabsTrigger>}
         <TabsTrigger value="overlay">Overlay designer</TabsTrigger>
       </TabsList>
       <TabsContent value="views"><BoardViewsPage /></TabsContent>
-      <TabsContent value="screens"><ScreensPage /></TabsContent>
+      {!screensOff && <TabsContent value="screens"><ScreensPage /></TabsContent>}
       <TabsContent value="overlay"><OverlayDesignerPage /></TabsContent>
     </Tabs>
   );

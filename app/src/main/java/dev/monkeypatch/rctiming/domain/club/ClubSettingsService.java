@@ -3,7 +3,7 @@ package dev.monkeypatch.rctiming.domain.club;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.audit.AuditService;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-import dev.monkeypatch.rctiming.resultsexport.ResultsPublishTarget;
+import dev.monkeypatch.rctiming.domain.club.ResultsPublishTarget;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;

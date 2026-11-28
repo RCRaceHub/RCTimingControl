@@ -3,7 +3,7 @@ package dev.monkeypatch.rctiming.api.admin;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubAddressDto;
 import dev.monkeypatch.rctiming.api.admin.dto.RaceHubAddressRequest;
 import dev.monkeypatch.rctiming.domain.audit.Audited;
-import dev.monkeypatch.rctiming.resultsexport.RaceHubAddressService;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubAddressService;
 import dev.monkeypatch.rctiming.security.AdminOnly;
 import dev.monkeypatch.rctiming.security.CurrentOfficial;
 import jakarta.validation.Valid;

@@ -5,7 +5,6 @@ import dev.monkeypatch.rctiming.api.boards.dto.BoardSettingsDto;
 import dev.monkeypatch.rctiming.api.boards.dto.NowNextDto;
 import dev.monkeypatch.rctiming.api.boards.dto.QualifyingBoardDto;
 import dev.monkeypatch.rctiming.api.boards.dto.ResultsBoardDto;
-import dev.monkeypatch.rctiming.api.boards.dto.SponsorDto;
 import dev.monkeypatch.rctiming.api.boards.dto.RoundFastestLapDto;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -14,8 +13,6 @@ import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.event.PracticeRanking;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.media.DriverMediaService;
-import dev.monkeypatch.rctiming.domain.sponsor.EventSponsorService;
-import dev.monkeypatch.rctiming.domain.sponsor.OverlayThemeSponsorService;
 import dev.monkeypatch.rctiming.query.boards.BoardQuery;
 import dev.monkeypatch.rctiming.query.boards.BoardRaceDto;
 import dev.monkeypatch.rctiming.query.boards.FinalsBoardDto;
@@ -24,7 +21,6 @@ import dev.monkeypatch.rctiming.query.boards.LiveQualifyingDto;
 import dev.monkeypatch.rctiming.query.boards.RaceHighlightsDto;
 import dev.monkeypatch.rctiming.query.boards.TickerDto;
 import dev.monkeypatch.rctiming.query.racecontrol.FinalLegsDto;
-import dev.monkeypatch.rctiming.query.racecontrol.LapSectorQuery;
 import dev.monkeypatch.rctiming.query.racecontrol.ResultSnapshotQuery;
 import dev.monkeypatch.rctiming.domain.round.AutoRunService;
 import dev.monkeypatch.rctiming.domain.result.BoardTickerService;
@@ -43,9 +39,6 @@ import dev.monkeypatch.rctiming.timing.RaceClockService;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceClockDto;
-import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
-import dev.monkeypatch.rctiming.timing.dto.SectorResultsDto;
-import dev.monkeypatch.rctiming.timing.split.LiveSectorService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,8 +62,6 @@ public class BoardController {
     private final BoardQuery boardQuery;
     private final ResultSnapshotQuery resultSnapshotQuery;
     private final LapTimingService lapTimingService;
-    private final LiveSectorService liveSectorService;
-    private final LapSectorQuery lapSectorQuery;
     private final RaceClockService raceClockService;
     private final PublicNames publicNames;
     private final QualifyingTableService qualifyingTableService;
@@ -83,16 +74,12 @@ public class BoardController {
     private final LiveQualifyingService liveQualifyingService;
     private final LiveFinalService liveFinalService;
     private final ClubProfileService clubProfileService;
-    private final EventSponsorService eventSponsorService;
-    private final OverlayThemeSponsorService overlayThemeSponsorService;
     private final DriverMediaService driverMediaService;
     private final RaceHighlightsService raceHighlightsService;
 
     public BoardController(BoardQuery boardQuery,
                            ResultSnapshotQuery resultSnapshotQuery,
                            LapTimingService lapTimingService,
-                           LiveSectorService liveSectorService,
-                           LapSectorQuery lapSectorQuery,
                            RaceClockService raceClockService,
                            PublicNames publicNames,
                            QualifyingTableService qualifyingTableService,
@@ -105,20 +92,14 @@ public class BoardController {
                            LiveQualifyingService liveQualifyingService,
                            LiveFinalService liveFinalService,
                            ClubProfileService clubProfileService,
-                           EventSponsorService eventSponsorService,
-                           OverlayThemeSponsorService overlayThemeSponsorService,
                            DriverMediaService driverMediaService,
                            RaceHighlightsService raceHighlightsService) {
         this.raceHighlightsService = raceHighlightsService;
         this.driverMediaService = driverMediaService;
         this.clubProfileService = clubProfileService;
-        this.eventSponsorService = eventSponsorService;
-        this.overlayThemeSponsorService = overlayThemeSponsorService;
         this.boardQuery = boardQuery;
         this.resultSnapshotQuery = resultSnapshotQuery;
         this.lapTimingService = lapTimingService;
-        this.liveSectorService = liveSectorService;
-        this.lapSectorQuery = lapSectorQuery;
         this.raceClockService = raceClockService;
         this.publicNames = publicNames;
         this.qualifyingTableService = qualifyingTableService;
@@ -304,28 +285,6 @@ public class BoardController {
     }
 
     /**
-     * The sponsors for the overlay's sponsor bar (#518), in display order. Names and logos only. The overlay theme's
-     * own sponsors when a {@code themeId} is given and that theme has any, otherwise the event's.
-     *
-     * @param eventId the event to show; defaults to the event racing now, else the latest in progress
-     * @param themeId the overlay theme the overlay was opened with ({@code ?look=ID}), if any; a theme that is gone
-     *     or has no sponsors falls back to the event's
-     */
-    @GetMapping("/sponsors")
-    public List<SponsorDto> sponsors(@RequestParam(required = false) Long eventId,
-                                     @RequestParam(required = false) Long themeId) {
-        if (themeId != null) {
-            List<SponsorDto> own = overlayThemeSponsorService.listForOverlay(themeId).stream().map(SponsorDto::from).toList();
-            if (!own.isEmpty()) {
-                return own;
-            }
-        }
-        return boardQuery.resolveEvent(eventId)
-                .map(event -> eventSponsorService.list(event.id()).stream().map(SponsorDto::from).toList())
-                .orElse(List.of());
-    }
-
-    /**
      * The club's thresholds the boards draw with (#505): how near the car ahead is shown as close, and how far past its
      * average lap a car is before its lap bar turns red. The battle thresholds are applied on the server, so they are
      * not here. The address options such as {@code close=} still override these on a board.
@@ -353,27 +312,6 @@ public class BoardController {
     @GetMapping("/races/{raceId}/battles")
     public List<BattleGroupDto> battles(@PathVariable long raceId) {
         return lapTimingService.battlesOf(raceId);
-    }
-
-    /**
-     * The sector times of a race on a track with split decoders (#676): the same board the race's
-     * {@code /topic/race/{raceId}/sectors} frames carry, for a page that opens mid-race. {@code sectorCount} is 0 when
-     * the club has no split decoders, so a page shows no sector columns; rows are empty until a car has a lap with
-     * every split.
-     */
-    @GetMapping("/races/{raceId}/sectors")
-    public SectorBoardDto sectors(@PathVariable long raceId) {
-        return liveSectorService.boardOf(raceId);
-    }
-
-    /**
-     * The sector times saved when a race finished (#676): each car's best in every sector and every lap's sectors, for
-     * the results page. {@code sectorCount} is 0 for a race with none, which is every race at a club with a single
-     * decoder.
-     */
-    @GetMapping("/races/{raceId}/sector-results")
-    public SectorResultsDto sectorResults(@PathVariable long raceId) {
-        return lapSectorQuery.resultsOf(raceId);
     }
 
     /**

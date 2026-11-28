@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent;
 import dev.monkeypatch.rctiming.decoderprotocol.timing.AmbRc4TimingSource;
 import dev.monkeypatch.rctiming.decoderprotocol.timing.EpochCorrectedPassing;
 import dev.monkeypatch.rctiming.domain.race.Race;
@@ -38,13 +40,16 @@ class SplitLoopListenerTest {
     private final List<Consumer<EpochCorrectedPassing>> passingCallbacks = new ArrayList<>();
     private final List<Consumer<AmbRc4TimingSource.ConnectionState>> statusCallbacks = new ArrayList<>();
     private final List<AmbRc4TimingSource> sources = new ArrayList<>();
+    private ModuleSwitch moduleSwitch;
 
     @BeforeEach
     void setUp() {
         repository = mock(SplitDecoderRepository.class);
         raceRepository = mock(RaceRepository.class);
         publisher = mock(ApplicationEventPublisher.class);
-        listener = new SplitLoopListener(repository, raceRepository, publisher, Runnable::run,
+        moduleSwitch = mock(ModuleSwitch.class);
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(true);
+        listener = new SplitLoopListener(repository, raceRepository, publisher, Runnable::run, moduleSwitch,
                 (host, port, onPassing, onStatus) -> {
                     created.add(host + ":" + port);
                     passingCallbacks.add(onPassing);
@@ -122,5 +127,21 @@ class SplitLoopListenerTest {
 
         assertThat(listener.stateOf(7L)).isEqualTo("CONNECTED");
         assertThat(listener.stateOf(99L)).isEqualTo("DISCONNECTED");
+    }
+
+    @Test
+    void readsNoSplitDecoderWhileTheModuleIsOffAndConnectsWhenItIsSwitchedOn() {
+        when(repository.findAll()).thenReturn(List.of(new SplitDecoder(1L, "A", "10.0.0.2", 5100, 1, 0, true)));
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(false);
+        listener.start();
+        assertThat(created).isEmpty();
+
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(true);
+        listener.onModuleSwitched(new ModuleSwitchedEvent(SplitTimingModule.ID, true));
+        assertThat(created).containsExactly("10.0.0.2:5100");
+
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(false);
+        listener.onModuleSwitched(new ModuleSwitchedEvent(SplitTimingModule.ID, false));
+        verify(sources.get(0)).stop();
     }
 }

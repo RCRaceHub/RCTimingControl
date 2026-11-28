@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.query.split.LapSectorQuery;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.LapSectorsRecord;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

@@ -23,6 +23,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.SplitDecoders;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayPlaylists;
 import dev.monkeypatch.rctiming.jooq.generated.tables.DisplayScreens;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Entries;
+import dev.monkeypatch.rctiming.jooq.generated.tables.EventModulesOff;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryAuditLog;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryCarColours;
 import dev.monkeypatch.rctiming.jooq.generated.tables.EntryFeeds;
@@ -49,6 +50,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.RacePointPenalties;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubFormatLinks;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacehubClassMappings;
+import dev.monkeypatch.rctiming.jooq.generated.tables.Modules;
 import dev.monkeypatch.rctiming.jooq.generated.tables.Races;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RacingClasses;
 import dev.monkeypatch.rctiming.jooq.generated.tables.RefreshTokens;
@@ -80,6 +82,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.SplitDecodersRecor
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DisplayPlaylistsRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.DisplayScreensRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntriesRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.EventModulesOffRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryAuditLogRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryCarColoursRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.EntryFeedsRecord;
@@ -106,6 +109,7 @@ import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacePointPenalties
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassLinksRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubFormatLinksRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacehubClassMappingsRecord;
+import dev.monkeypatch.rctiming.jooq.generated.tables.records.ModulesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RacingClassesRecord;
 import dev.monkeypatch.rctiming.jooq.generated.tables.records.RefreshTokensRecord;
@@ -203,6 +207,8 @@ public class Keys {
     public static final UniqueKey<UserRolesRecord> USER_ROLES__PK_USER_ROLES = Internal.createUniqueKey(UserRoles.USER_ROLES, DSL.name("pk_user_roles"), new TableField[] { UserRoles.USER_ROLES.USER_ID, UserRoles.USER_ROLES.ROLE }, true);
     public static final UniqueKey<UsersRecord> USERS__PK_USERS = Internal.createUniqueKey(Users.USERS, DSL.name("pk_users"), new TableField[] { Users.USERS.ID }, true);
     public static final UniqueKey<UsersRecord> USERS__USERS_EMAIL_KEY = Internal.createUniqueKey(Users.USERS, DSL.name("users_email_key"), new TableField[] { Users.USERS.EMAIL }, true);
+    public static final UniqueKey<EventModulesOffRecord> EVENT_MODULES_OFF__PK_EVENT_MODULES_OFF = Internal.createUniqueKey(EventModulesOff.EVENT_MODULES_OFF, DSL.name("pk_event_modules_off"), new TableField[] { EventModulesOff.EVENT_MODULES_OFF.EVENT_ID, EventModulesOff.EVENT_MODULES_OFF.MODULE_ID }, true);
+    public static final UniqueKey<ModulesRecord> MODULES__PK_MODULES = Internal.createUniqueKey(Modules.MODULES, DSL.name("pk_modules"), new TableField[] { Modules.MODULES.ID }, true);
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
@@ -278,4 +284,5 @@ public class Keys {
     public static final ForeignKey<UnknownTransponderLinkRecord, UsersRecord> UNKNOWN_TRANSPONDER_LINK__UNKNOWN_TRANSPONDER_LINK_LINKED_BY_USER_ID_FKEY = Internal.createForeignKey(UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK, DSL.name("unknown_transponder_link_linked_by_user_id_fkey"), new TableField[] { UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK.LINKED_BY_USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true, ForeignKeyRule.NO_ACTION, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<UnknownTransponderLinkRecord, RacesRecord> UNKNOWN_TRANSPONDER_LINK__UNKNOWN_TRANSPONDER_LINK_RACE_ID_FKEY = Internal.createForeignKey(UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK, DSL.name("unknown_transponder_link_race_id_fkey"), new TableField[] { UnknownTransponderLink.UNKNOWN_TRANSPONDER_LINK.RACE_ID }, Keys.RACES__PK_RACES, new TableField[] { Races.RACES.ID }, true, ForeignKeyRule.NO_ACTION, ForeignKeyRule.NO_ACTION);
     public static final ForeignKey<UserRolesRecord, UsersRecord> USER_ROLES__USER_ROLES_USER_ID_FKEY = Internal.createForeignKey(UserRoles.USER_ROLES, DSL.name("user_roles_user_id_fkey"), new TableField[] { UserRoles.USER_ROLES.USER_ID }, Keys.USERS__PK_USERS, new TableField[] { Users.USERS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
+    public static final ForeignKey<EventModulesOffRecord, EventsRecord> EVENT_MODULES_OFF__EVENT_MODULES_OFF_EVENT_ID_FKEY = Internal.createForeignKey(EventModulesOff.EVENT_MODULES_OFF, DSL.name("event_modules_off_event_id_fkey"), new TableField[] { EventModulesOff.EVENT_MODULES_OFF.EVENT_ID }, Keys.EVENTS__PK_EVENTS, new TableField[] { Events.EVENTS.ID }, true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION);
 }

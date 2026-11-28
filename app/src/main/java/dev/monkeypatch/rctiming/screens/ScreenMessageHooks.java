@@ -1,5 +1,6 @@
 package dev.monkeypatch.rctiming.screens;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.audit.Actor;
 import dev.monkeypatch.rctiming.domain.event.FinalsPublished;
@@ -45,13 +46,15 @@ public class ScreenMessageHooks {
     private final RaceRepository races;
     private final EventClassRepository eventClasses;
     private final FinalsLineupService lineups;
+    private final ModuleSwitch moduleSwitch;
     /** Events whose hold is up, so one finished race after another does not put it back after an official cleared it. */
     private final Set<Long> held = ConcurrentHashMap.newKeySet();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(
             r -> Thread.ofPlatform().daemon().name("screen-message-hooks").unstarted(r));
 
     public ScreenMessageHooks(MessageSettingsService settings, ScreenMessageService messages, ScreenService screens,
-                              RaceRepository races, EventClassRepository eventClasses, FinalsLineupService lineups) {
+                              RaceRepository races, EventClassRepository eventClasses, FinalsLineupService lineups, ModuleSwitch moduleSwitch) {
+        this.moduleSwitch = moduleSwitch;
         this.settings = settings;
         this.messages = messages;
         this.screens = screens;
@@ -63,7 +66,7 @@ public class ScreenMessageHooks {
     /** A race finishing may be the last qualifying heat; checked on the worker thread, after the commit. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
-        if (event.getNewStatus() == RaceStatus.FINISHED) {
+        if (event.getNewStatus() == RaceStatus.FINISHED && moduleSwitch.isEnabled(ScreensModule.ID)) {
             queue("qualifying hold", () -> holdAfterQualifying(event.getRaceId()));
         }
     }
@@ -71,6 +74,9 @@ public class ScreenMessageHooks {
     /** The finals line-ups being confirmed; handled on the worker thread, after the commit. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onFinalsPublished(FinalsPublished event) {
+        if (!moduleSwitch.isEnabled(ScreensModule.ID)) {
+            return;
+        }
         queue("finals announcement", () -> announceFinals(event.eventId()));
     }
 

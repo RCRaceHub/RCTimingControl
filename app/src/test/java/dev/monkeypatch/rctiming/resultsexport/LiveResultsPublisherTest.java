@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.club.ResultsPublishTarget;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsProperties;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.TestJson;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
@@ -68,7 +71,14 @@ class LiveResultsPublisherTest {
                 .thenReturn(new RaceClockDto(7, "RUNNING", 1000, 300000L, 299000L, true));
         when(timing.peek(anyLong())).thenReturn(Optional.empty());
         publisher = new LiveResultsPublisher(new LiveResultsProperties(true, 3000, 15000), endpoint, publishSettings,
-                lookup, timing, clocks, TestJson.mapper(), RestClient.builder(), clock);
+                lookup, timing, clocks, TestJson.mapper(), RestClient.builder(), on(), clock);
+    }
+
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch on() {
+        var moduleSwitch = mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class,
+                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
+        when(moduleSwitch.isEnabled(ResultsExportModule.ID)).thenReturn(true);
+        return moduleSwitch;
     }
 
     @AfterEach

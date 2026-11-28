@@ -13,7 +13,7 @@ import dev.monkeypatch.rctiming.domain.race.ResultSnapshotDto;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
 import dev.monkeypatch.rctiming.persistence.ReadTransaction;
-import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
+import dev.monkeypatch.rctiming.domain.result.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.springframework.context.ApplicationEventPublisher;

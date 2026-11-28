@@ -47,3 +47,6 @@ export type SectorResults = {
   overallBestMs: (number | null)[];
   drivers: DriverSectorResults[];
 };
+
+/** No saved sector times. */
+export const NO_SECTOR_RESULTS: SectorResults = { sectorCount: 0, overallBestMs: [], drivers: [] };

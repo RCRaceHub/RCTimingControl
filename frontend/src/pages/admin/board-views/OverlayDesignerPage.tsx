@@ -21,6 +21,7 @@ import { OverlayLayoutEditor } from './OverlayLayoutEditor';
 import type { OverlayComponent } from '@/pages/boards/overlayLayout';
 import { SponsorListEditor } from '@/components/SponsorListEditor';
 import { useThemeSponsorMutations, useThemeSponsors } from '@/hooks/admin/useThemeSponsors';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 import { getApiErrorMessage } from '@/lib/errors';
 import { ROW_ICONS, ROW_ICON_LABELS } from '@/lib/rowIcons';
 
@@ -81,6 +82,7 @@ const DESIGNER_TABS = ['theme','content','layout'] as const;
 
 export default function OverlayDesignerPage() {
   const [tab, setTab] = useTabParam(DESIGNER_TABS, 'theme', 'designer');
+  const disabledModules = useDisabledModules();
   const { confirm, dialog } = useConfirm();
   const [design, setDesign] = useState<OverlayDesign>(DEFAULT_OVERLAY_DESIGN);
   const set = <K extends keyof OverlayDesign>(key: K, value: OverlayDesign[K]) =>
@@ -326,20 +328,24 @@ export default function OverlayDesignerPage() {
                 </div>
               </fieldset>
 
-              <fieldset className="space-y-2" data-testid="theme-sponsors">
-                <legend className="text-sm font-medium">Theme sponsors</legend>
-                {theme ? (
-                  <ThemeSponsors key={theme.id} themeId={theme.id} />
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.
-                  </p>
-                )}
-              </fieldset>
+              {!disabledModules.has('sponsors') && (
+                <fieldset className="space-y-2" data-testid="theme-sponsors">
+                  <legend className="text-sm font-medium">Theme sponsors</legend>
+                  {theme ? (
+                    <ThemeSponsors key={theme.id} themeId={theme.id} />
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Pick a saved theme to give it sponsors of its own. Without any, the overlay shows the event's sponsors.
+                    </p>
+                  )}
+                </fieldset>
+              )}
 
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium">Look</legend>
-                <Check label="Sponsor bar" checked={design.showSponsors} onChange={(v) => set('showSponsors', v)} />
+                {!disabledModules.has('sponsors') && (
+                  <Check label="Sponsor bar" checked={design.showSponsors} onChange={(v) => set('showSponsors', v)} />
+                )}
                 <Check label="Light theme" checked={design.theme === 'light'} onChange={(v) => set('theme', v ? 'light' : 'dark')} />
                 <div className="space-y-1.5">
                   <Label htmlFor="ov-separator">Ticker separator image (blank keeps the diamond)</Label>

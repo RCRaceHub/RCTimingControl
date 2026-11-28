@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsProperties;
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +124,7 @@ public class RaceHubConnectionService {
     private final ResultsOutboxQuery outbox;
     private final ObjectMapper objectMapper;
     private final RestClient restClient;
+    private final ModuleSwitch moduleSwitch;
     private final Clock clock;
 
     private volatile Cached cached;
@@ -128,13 +132,15 @@ public class RaceHubConnectionService {
 
     @Autowired
     public RaceHubConnectionService(RaceHubResultsEndpoint endpoint, ResultsOutboxQuery outbox,
-                                    ObjectMapper objectMapper, RestClient.Builder restClientBuilder) {
-        this(endpoint, outbox, objectMapper, restClientBuilder, Clock.systemUTC());
+                                    ObjectMapper objectMapper, RestClient.Builder restClientBuilder,
+                                    ModuleSwitch moduleSwitch) {
+        this(endpoint, outbox, objectMapper, restClientBuilder, moduleSwitch, Clock.systemUTC());
     }
 
     RaceHubConnectionService(RaceHubResultsEndpoint endpoint, ResultsOutboxQuery outbox, ObjectMapper objectMapper,
-                             RestClient.Builder restClientBuilder, Clock clock) {
+                             RestClient.Builder restClientBuilder, ModuleSwitch moduleSwitch, Clock clock) {
         this.endpoint = endpoint;
+        this.moduleSwitch = moduleSwitch;
         this.outbox = outbox;
         this.objectMapper = objectMapper;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -157,12 +163,12 @@ public class RaceHubConnectionService {
         return result;
     }
 
-    /** The background check, once a minute while RaceHub is configured. Never throws. */
+    /** The background check, once a minute while RaceHub is configured and the results export module is on. Never throws. */
     @Scheduled(initialDelay = 20_000, fixedDelayString = "${rctiming.racehub.check-interval-ms:60000}")
     public void refresh() {
         try {
             RaceHubResultsEndpoint.Snapshot settings = endpoint.snapshot();
-            if (settings.sendingEnabled()) {
+            if (moduleSwitch.isEnabled(ResultsExportModule.ID) && settings.sendingEnabled()) {
                 String token = endpoint.token();
                 remember(run(false, settings, token), settings, token);
             }

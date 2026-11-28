@@ -17,6 +17,7 @@ vi.mock('@/lib/adminApi', () => ({
     resultsExports: { reupload: vi.fn() },
   },
 }));
+vi.mock('@/hooks/admin/useModules', () => ({ useDisabledModules: () => new Set<string>() }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 function signInAs(roles: AuthUser['roles']) {

@@ -1,5 +1,7 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.domain.result.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.domain.EntityNotFoundException;
 import dev.monkeypatch.rctiming.domain.competitor.PublicNames;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -67,18 +69,20 @@ public class ResultsSiteService {
     private final Duration refreshEvery;
     private volatile Instant lastWrite = Instant.EPOCH;
     private final Clock clock;
+    private final ModuleSwitch moduleSwitch;
 
     @Autowired
     public ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
                               ResultsPublishSettings publishSettings, PublicNames publicNames,
-                              ResultsSiteProperties site) {
+                              ResultsSiteProperties site, ModuleSwitch moduleSwitch) {
         this(eventRepository, exportQuery, publishSettings, publicNames, site.directory(), site.refreshMinutes(),
-                Clock.systemUTC());
+                moduleSwitch, Clock.systemUTC());
     }
 
     ResultsSiteService(EventRepository eventRepository, ResultsExportQuery exportQuery,
                        ResultsPublishSettings publishSettings, PublicNames publicNames, String directory,
-                       long refreshMinutes, Clock clock) {
+                       long refreshMinutes, ModuleSwitch moduleSwitch, Clock clock) {
+        this.moduleSwitch = moduleSwitch;
         this.clock = clock;
         this.refreshEvery = Duration.ofMinutes(Math.max(1, refreshMinutes));
         this.eventRepository = eventRepository;
@@ -91,7 +95,7 @@ public class ResultsSiteService {
     /** A race finished or was abandoned, once its transaction has committed. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
-        if (event.getNewStatus() == RaceStatus.FINISHED) {
+        if (event.getNewStatus() == RaceStatus.FINISHED && moduleSwitch.isEnabled(ResultsExportModule.ID)) {
             dirty.set(true);
         }
     }
@@ -99,13 +103,17 @@ public class ResultsSiteService {
     /** A finished race was corrected, once its transaction has committed. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onFinishedRaceCorrected(FinishedRaceCorrected event) {
-        dirty.set(true);
+        if (moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            dirty.set(true);
+        }
     }
 
     /** The race day closed, once its transaction has committed. */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onDayClosed(EventCompleted event) {
-        dirty.set(true);
+        if (moduleSwitch.isEnabled(ResultsExportModule.ID)) {
+            dirty.set(true);
+        }
     }
 
     /**
@@ -187,7 +195,8 @@ public class ResultsSiteService {
      */
     @Scheduled(initialDelay = 20_000, fixedDelayString = "${rctiming.results-site.interval-ms:5000}")
     public void writeIfChanged() {
-        if (directory == null || !publishSettings.effective().includesSite()) {
+        if (!moduleSwitch.isEnabled(ResultsExportModule.ID) || directory == null
+                || !publishSettings.effective().includesSite()) {
             return;
         }
         boolean stale = lastWrite.plus(refreshEvery).isBefore(clock.instant());

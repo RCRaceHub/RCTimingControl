@@ -1,11 +1,12 @@
 package dev.monkeypatch.rctiming.timing.split;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
 import dev.monkeypatch.rctiming.domain.race.RaceRestartedEvent;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.RaceStatusChangedEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveTimingHub;
-import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
+import dev.monkeypatch.rctiming.timing.split.dto.SectorBoardDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +36,7 @@ class LiveSectorServiceTest {
     private LiveTimingHub hub;
     private SplitDecoderRepository splitDecoders;
     private LapSectorRepository lapSectors;
+    private ModuleSwitch moduleSwitch;
     private LiveSectorService service;
 
     @BeforeEach
@@ -48,7 +50,9 @@ class LiveSectorServiceTest {
                 new SplitDecoder(2L, "B", "h", 5100, 2, 0, true)));
         when(lapTimingService.entryOf(RACE, "101")).thenReturn(Optional.of(11L));
         when(lapTimingService.entryOf(RACE, "202")).thenReturn(Optional.of(22L));
-        service = new LiveSectorService(lapTimingService, hub, splitDecoders, lapSectors);
+        moduleSwitch = mock(ModuleSwitch.class);
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(true);
+        service = new LiveSectorService(lapTimingService, hub, splitDecoders, lapSectors, moduleSwitch);
     }
 
     private void lap(String transponder, int lapNumber, long... sectorMs) {
@@ -134,6 +138,15 @@ class LiveSectorServiceTest {
         assertThat(empty.rows()).isEmpty();
         assertThat(empty.sectorCount()).isEqualTo(3);
         assertThat(service.boardOf(RACE).rows()).isEmpty();
+    }
+
+    @Test
+    void aRestartWhileTheModuleIsOff_keepsTheSavedSectors() {
+        when(moduleSwitch.isEnabled(SplitTimingModule.ID)).thenReturn(false);
+
+        service.onRaceRestarted(new RaceRestartedEvent(RACE));
+
+        org.mockito.Mockito.verify(lapSectors, org.mockito.Mockito.never()).deleteForRace(RACE);
     }
 
     @Test

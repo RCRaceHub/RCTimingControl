@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsProperties;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.api.auth.AuthResponse;
@@ -454,8 +457,10 @@ class ResultsExportIT extends AbstractIntegrationTest {
         ResponseEntity<JsonNode> list = restTemplate.exchange("/api/v1/admin/results-exports", HttpMethod.GET,
                 new HttpEntity<>(headers()), JsonNode.class);
         assertThat(list.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(list.getBody().get("sendingEnabled").asBoolean()).isFalse();
-        assertThat(list.getBody().get("missingSettings").toString())
+        ResponseEntity<JsonNode> connection = restTemplate.exchange("/api/v1/admin/racehub/connection",
+                HttpMethod.GET, new HttpEntity<>(headers()), JsonNode.class);
+        assertThat(connection.getBody().get("sendingEnabled").asBoolean()).isFalse();
+        assertThat(connection.getBody().get("missingSettings").toString())
                 .contains("the RaceHub address").contains("rctiming.racehub.token");
         assertThat(list.getBody().get("exports").findValuesAsString("eventName")).contains("Results export " + run);
 
@@ -492,7 +497,7 @@ class ResultsExportIT extends AbstractIntegrationTest {
                 .isNotEmpty();
 
         // The results page reads where results go from the same address
-        ResponseEntity<JsonNode> page = restTemplate.exchange("/api/v1/admin/results-exports", HttpMethod.GET,
+        ResponseEntity<JsonNode> page = restTemplate.exchange("/api/v1/admin/racehub/connection", HttpMethod.GET,
                 new HttpEntity<>(headers()), JsonNode.class);
         assertThat(page.getBody().get("resultsUrl").asString()).isEqualTo(host + "/api/rctc/v1/results");
 
@@ -634,10 +639,13 @@ class ResultsExportIT extends AbstractIntegrationTest {
         return received;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    ModuleSwitch moduleSwitch;
+
     private ResultsSender sender(int port) {
         var properties = new RaceHubResultsProperties(URI.create("http://127.0.0.1:" + port + "/api/results"), "club-token");
         return new ResultsSender(outboxRepository, eventRepository,
-                new RaceHubResultsEndpoint(properties, clubProfileService), restClientBuilder);
+                new RaceHubResultsEndpoint(properties, clubProfileService), moduleSwitch, restClientBuilder);
     }
 
     private static int freePort() throws IOException {

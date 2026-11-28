@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubKeyStore;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsProperties;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.query.resultsexport.ResultsOutboxQuery;
@@ -26,6 +29,7 @@ import static org.mockito.Mockito.when;
 /** The RaceHub connection test and the director's status, against a stand-in RaceHub on this machine. */
 class RaceHubConnectionServiceTest {
 
+    private static final dev.monkeypatch.rctiming.modules.ModuleSwitch MODULES_ON = on();
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-26T12:00:00Z"), ZoneOffset.UTC);
 
     private final ResultsOutboxQuery outbox = mock(ResultsOutboxQuery.class);
@@ -97,7 +101,7 @@ class RaceHubConnectionServiceTest {
     @Test
     void anAddressNobodyAnswersAtIsUnreachable() {
         RaceHubConnectionService service = new RaceHubConnectionService(
-                endpoint("http://127.0.0.1:1", "club-key"), outbox, JsonMapper.builder().build(), RestClient.builder(), CLOCK);
+                endpoint("http://127.0.0.1:1", "club-key"), outbox, JsonMapper.builder().build(), RestClient.builder(), MODULES_ON, CLOCK);
 
         var result = service.test();
 
@@ -110,7 +114,7 @@ class RaceHubConnectionServiceTest {
     @Test
     void withNoKeyNothingIsSentAndTheStatusIsHidden() {
         RaceHubConnectionService service = new RaceHubConnectionService(
-                endpoint("https://racehub.example", null), outbox, JsonMapper.builder().build(), RestClient.builder(), CLOCK);
+                endpoint("https://racehub.example", null), outbox, JsonMapper.builder().build(), RestClient.builder(), MODULES_ON, CLOCK);
 
         var result = service.test();
 
@@ -170,7 +174,7 @@ class RaceHubConnectionServiceTest {
         when(store.saved()).thenAnswer(i -> java.util.Optional.of(props.get()));
         var endpoint = new RaceHubResultsEndpoint(new RaceHubResultsProperties(null, null, null, null, URI.create(base)),
                 mock(ClubProfileService.class), store);
-        var service = new RaceHubConnectionService(endpoint, outbox, JsonMapper.builder().build(), RestClient.builder(), CLOCK);
+        var service = new RaceHubConnectionService(endpoint, outbox, JsonMapper.builder().build(), RestClient.builder(), MODULES_ON, CLOCK);
 
         service.refresh();
         assertThat(service.status().health()).isEqualTo(RaceHubConnectionService.Health.OK);
@@ -207,7 +211,14 @@ class RaceHubConnectionServiceTest {
         });
         raceHub.start();
         return new RaceHubConnectionService(endpoint("http://127.0.0.1:" + raceHub.getAddress().getPort(), key),
-                outbox, JsonMapper.builder().build(), RestClient.builder(), CLOCK);
+                outbox, JsonMapper.builder().build(), RestClient.builder(), MODULES_ON, CLOCK);
+    }
+
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch on() {
+        var moduleSwitch = mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class,
+                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
+        when(moduleSwitch.isEnabled(ResultsExportModule.ID)).thenReturn(true);
+        return moduleSwitch;
     }
 
     private static RaceHubResultsEndpoint endpoint(String base, String key) {

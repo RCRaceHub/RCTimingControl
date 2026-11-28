@@ -1,5 +1,8 @@
 package dev.monkeypatch.rctiming.resultsexport;
 
+import dev.monkeypatch.rctiming.modules.ModuleSwitch;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsEndpoint;
+import dev.monkeypatch.rctiming.domain.racehub.RaceHubResultsProperties;
 import com.sun.net.httpserver.HttpServer;
 import dev.monkeypatch.rctiming.domain.club.ClubProfileService;
 import dev.monkeypatch.rctiming.domain.event.Event;
@@ -30,6 +33,13 @@ import static org.mockito.Mockito.when;
 
 /** One send pass over several events' exports (#136): a refused event does not hold up the others. */
 class ResultsSenderPassTest {
+
+    private static ModuleSwitch moduleSwitch() {
+        ModuleSwitch moduleSwitch = org.mockito.Mockito.mock(ModuleSwitch.class,
+                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
+        org.mockito.Mockito.when(moduleSwitch.isEnabled(ResultsExportModule.ID)).thenReturn(true);
+        return moduleSwitch;
+    }
 
     private final ResultsOutboxRepository outbox = mock(ResultsOutboxRepository.class);
     private final EventRepository events = mock(EventRepository.class);
@@ -104,7 +114,7 @@ class ResultsSenderPassTest {
         var properties = new RaceHubResultsProperties(
                 URI.create("http://127.0.0.1:" + raceHub.getAddress().getPort() + "/api/results"), "club-token");
         return new ResultsSender(outbox, events,
-                new RaceHubResultsEndpoint(properties, mock(ClubProfileService.class)), RestClient.builder());
+                new RaceHubResultsEndpoint(properties, mock(ClubProfileService.class)), moduleSwitch(), RestClient.builder());
     }
 
     private static ResultsOutboxItem item(long id, long eventId, long revision) {

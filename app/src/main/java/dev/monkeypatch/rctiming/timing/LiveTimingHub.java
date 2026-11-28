@@ -11,7 +11,6 @@ import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
 import dev.monkeypatch.rctiming.timing.dto.RaceStateChangeDto;
-import dev.monkeypatch.rctiming.timing.dto.SectorBoardDto;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
@@ -62,11 +61,11 @@ public class LiveTimingHub {
     }
 
     /**
-     * Sends the race's sector times (#676): the whole board each time, so a client that misses a message is right again
+     * Sends the race's sector times (#676), a {@code SectorBoardDto} from the split-timing module: the whole board each time, so a client that misses a message is right again
      * at the next. Only sent where the club has split decoders. Anonymous clients may subscribe, like the timing topic.
      * Sent at once, from the timing thread.
      */
-    public void broadcastSectors(long raceId, SectorBoardDto board) {
+    public void broadcastSectors(long raceId, Object board) {
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/sectors", board);
     }
 

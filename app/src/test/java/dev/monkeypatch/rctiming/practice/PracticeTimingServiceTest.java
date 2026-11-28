@@ -41,6 +41,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PracticeTimingServiceTest {
 
+    private static dev.monkeypatch.rctiming.modules.ModuleSwitch moduleSwitch() {
+        var moduleSwitch = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class,
+                org.mockito.Mockito.withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
+        org.mockito.Mockito.when(moduleSwitch.isEnabled(PracticeModule.ID)).thenReturn(true);
+        return moduleSwitch;
+    }
+
     @Mock
     PracticeSessionRepository sessionRepository;
     @Mock
@@ -63,7 +70,7 @@ class PracticeTimingServiceTest {
     void setUp() {
         service = new PracticeTimingService(
                 sessionRepository, lapRepository, driverRepository,
-                entryRepository, competitorRepository, userRepository, timingHub);
+                entryRepository, competitorRepository, userRepository, timingHub, moduleSwitch());
 
         runningSession = new PracticeSession();
         runningSession.setName("Test Session");
@@ -78,6 +85,17 @@ class PracticeTimingServiceTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    void onLapPassingEvent_moduleOff_recordsNothing() {
+        var off = org.mockito.Mockito.mock(dev.monkeypatch.rctiming.modules.ModuleSwitch.class);
+        var idle = new PracticeTimingService(sessionRepository, lapRepository, driverRepository,
+                entryRepository, competitorRepository, userRepository, timingHub, off);
+
+        idle.onLapPassing(new LapPassingEvent(0L, "T1", 1_000_000_000L));
+
+        org.mockito.Mockito.verifyNoInteractions(sessionRepository, lapRepository);
     }
 
     @Test

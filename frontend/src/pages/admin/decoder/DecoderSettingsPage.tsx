@@ -3,8 +3,10 @@ import { SplitDecodersCard } from '@/components/decoder/SplitDecodersCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useHelpContent } from '@/context/HelpContext';
 import { DecoderHelp } from '@/help/DecoderHelp';
+import { useDisabledModules } from '@/hooks/admin/useModules';
 
 export default function DecoderSettingsPage() {
+  const disabledModules = useDisabledModules();
   useHelpContent(DecoderHelp);
 
   return (
@@ -24,7 +26,7 @@ export default function DecoderSettingsPage() {
         </CardContent>
       </Card>
 
-      <SplitDecodersCard />
+      {!disabledModules.has('split-timing') && <SplitDecodersCard />}
     </div>
   );
 }

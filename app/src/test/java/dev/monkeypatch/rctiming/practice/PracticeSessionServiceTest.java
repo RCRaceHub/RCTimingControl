@@ -33,6 +33,26 @@ class PracticeSessionServiceTest {
             mock(EventRepository.class), mock(UserRepository.class), mock(PracticeTimingService.class), audit, races,
             drivers);
 
+    @Test
+    void switchingPracticeOffStopsTheSessionsThatAreRunning() {
+        PracticeSession running = session(5L);
+        when(running.getStatus()).thenReturn(PracticeStatus.RUNNING);
+        when(sessions.findRunningSessions()).thenReturn(java.util.List.of(running));
+        when(sessions.getOrThrow(5L)).thenReturn(running);
+        when(sessions.save(running)).thenReturn(running);
+
+        service.onModuleSwitched(new dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent(PracticeModule.ID, false));
+
+        org.mockito.Mockito.verify(running).stop();
+    }
+
+    @Test
+    void switchingPracticeOnStopsNothing() {
+        service.onModuleSwitched(new dev.monkeypatch.rctiming.modules.ModuleSwitchedEvent(PracticeModule.ID, true));
+
+        org.mockito.Mockito.verify(sessions, org.mockito.Mockito.never()).findRunningSessions();
+    }
+
     private static PracticeSession session(long id) {
         PracticeSession s = mock(PracticeSession.class);
         when(s.getId()).thenReturn(id);

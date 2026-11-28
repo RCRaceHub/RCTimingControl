@@ -15,6 +15,7 @@ export function useSetRaceHubAddress() {
       qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.classes() });
       qc.invalidateQueries({ queryKey: adminQueryKeys.racehub.formats() });
       qc.invalidateQueries({ queryKey: adminQueryKeys.resultsExports.all() });
+      qc.invalidateQueries({ queryKey: adminQueryKeys.raceHubConnection.all() });
     },
   });
 }
