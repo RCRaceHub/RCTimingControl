@@ -1,4 +1,4 @@
-package dev.monkeypatch.rctiming.resultsexport;
+package dev.monkeypatch.rctiming.domain.racehub;
 
 import dev.monkeypatch.rctiming.AbstractIntegrationTest;
 import dev.monkeypatch.rctiming.TestHttp;
@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RaceHubKeyIT extends AbstractIntegrationTest {
 
-    private static final String KEY_PATH = "/api/v1/admin/results-exports/key";
+    private static final String KEY_PATH = "/api/v1/admin/racehub/connection/key";
 
     @Autowired TestHttp restTemplate;
     @Autowired UserRepository userRepository;

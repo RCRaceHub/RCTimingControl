@@ -11,7 +11,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshot;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotJson;
 import dev.monkeypatch.rctiming.domain.race.ResultSnapshotRepository;
-import dev.monkeypatch.rctiming.resultsexport.FinishedRaceCorrected;
+import dev.monkeypatch.rctiming.domain.result.FinishedRaceCorrected;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
