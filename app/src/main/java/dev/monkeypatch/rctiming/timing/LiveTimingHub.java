@@ -6,6 +6,7 @@ import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.dto.DecoderStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.FeaturedDriverDto;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveFeedStatusDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
@@ -100,6 +101,15 @@ public class LiveTimingHub {
         // convertAndSend(payload, headers), which a Map argument would match too.
         messagingTemplate.convertAndSend("/topic/race/" + raceId + "/unknown-transponder",
                 (Object) Map.of("raceId", raceId, "transponderNumber", transponderNumber));
+    }
+
+    /**
+     * Tells the race director's and referee's screens which drivers have been seen in a race they are not in, and what
+     * has been decided on each. Sends the whole list, so a screen that misses one message is right at the next. Sent at
+     * once, from the timing thread or a request thread.
+     */
+    public void broadcastWrongHeat(long raceId, List<WrongHeatDto> flags) {
+        messagingTemplate.convertAndSend("/topic/race/" + raceId + "/wrong-heat", flags);
     }
 
     /**

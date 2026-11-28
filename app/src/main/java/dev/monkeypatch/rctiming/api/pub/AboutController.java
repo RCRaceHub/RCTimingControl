@@ -27,6 +27,7 @@ public class AboutController {
 
     private final String version;
     private final Instant buildTime;
+    private final String commit;
     private final LanAddresses lanAddresses;
     private final MdnsAdvertiser mdns;
     private final TlsService tls;
@@ -35,6 +36,7 @@ public class AboutController {
                            TlsService tls) {
         this.version = buildProperties.getVersion();
         this.buildTime = buildProperties.getTime();
+        this.commit = buildProperties.get("commit");
         this.lanAddresses = lanAddresses;
         this.mdns = mdns;
         this.tls = tls;
@@ -45,7 +47,7 @@ public class AboutController {
     public AboutDto get() {
         return new AboutDto(version, buildTime, lanAddresses.urls(),
                 mdns.announcedHost().map(lanAddresses::urlFor).orElse(null),
-                tls.active() ? lanAddresses.httpsUrls(tls.port()) : List.of(), tls.active());
+                tls.active() ? lanAddresses.httpsUrls(tls.port()) : List.of(), tls.active(), commit);
     }
 
     /**

@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * Two small buttons for the head of a live timing table on race control and the referee screen (#766): **Icons**
+ * Two joined buttons for the head of a live timing table on race control and the referee screen (#766): **Icons**
  * picks what shows beside driver names on this device, and **Key** shows what the colours and icons mean on demand,
  * so the table is not shared with a permanent legend.
  */
@@ -26,12 +26,24 @@ export function OperatorTimingControls({ allowed, shown, onToggle, onReset, cust
   const toggleOpen = (which: 'icons' | 'key') => setOpen((cur) => (cur === which ? null : which));
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Button type="button" variant="outline" size="sm" aria-expanded={open === 'icons'} onClick={() => toggleOpen('icons')}>
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex items-center" role="group" aria-label="Timing table display">
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-r-none pointer-coarse:min-h-11"
+          aria-expanded={open === 'icons'}
+          onClick={() => toggleOpen('icons')}
+        >
           Icons
         </Button>
-        <Button type="button" variant="outline" size="sm" aria-expanded={open === 'key'} onClick={() => toggleOpen('key')}>
+        <Button
+          type="button"
+          variant="outline"
+          className="-ml-px rounded-l-none pointer-coarse:min-h-11"
+          aria-expanded={open === 'key'}
+          onClick={() => toggleOpen('key')}
+        >
           Key
         </Button>
       </div>

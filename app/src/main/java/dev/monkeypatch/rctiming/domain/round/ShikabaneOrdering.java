@@ -52,7 +52,7 @@ public final class ShikabaneOrdering {
             ResultRow row = ordered.get(i);
             renumbered.add(new ResultRow(i + 1, row.entryId(), row.competitorId(), row.driverName(), row.carNumber(),
                     row.lapsCompleted(), row.totalTimeMs(), row.bestLapMs(), row.gapToLeaderMs())
-                    .withDnf(row.dnf()));
+                    .withDnf(row.dnf()).withDns(row.dns()));
         }
         return renumbered;
     }

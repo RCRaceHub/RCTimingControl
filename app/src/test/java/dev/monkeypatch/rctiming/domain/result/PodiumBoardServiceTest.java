@@ -85,4 +85,15 @@ class PodiumBoardServiceTest {
         assertThat(out.get(1).categoryLeaders()).extracting(PodiumBoardDto.CategoryLeader::driverName)
                 .containsExactly("Cy");
     }
+
+    @Test
+    void aCarThatDidNotStartNeverTakesAPodiumPlace() {
+        var cls = new FinalsBoardDto.ClassFinals(1L, "Stock", 1, 1, List.of(done("A",
+                row(1, 1, "Ann"),
+                new ResultRow(2, 2, 2L, "Bob", "2", 0, 0L, null, null, null, null, false).withDns(true))));
+
+        PodiumBoardDto.ClassPodium out = PodiumBoardService.build(List.of(cls), Map.of()).get(0);
+
+        assertThat(out.podium()).extracting(PodiumBoardDto.Place::driverName).containsExactly("Ann");
+    }
 }

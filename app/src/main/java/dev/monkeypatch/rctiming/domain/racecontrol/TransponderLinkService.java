@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.race.Race;
 import dev.monkeypatch.rctiming.domain.race.RaceAuditLabels;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceEntry;
 import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
@@ -15,20 +16,27 @@ import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAuditRepository;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Links an unknown transponder to an entry during a live race (TIMING-08), crediting every passing it has
  * made since the start. The number is also saved on the driver's entry, so it counts for the rest of the event
  * without being linked again.
+ *
+ * <p>It also decides the wrong-heat flags (see {@link #approveWrongHeat} and {@link #disapproveWrongHeat}), raised
+ * when a number of a driver who is in another heat is seen.
  */
 @Service
 @Transactional
@@ -66,7 +74,8 @@ public class TransponderLinkService {
     /**
      * Links the transponder to an entry in a running or stopped race and credits its passings to that entry.
      * Linking it again to the same entry credits nothing more; linking it to a different one is refused, since
-     * its laps are already credited to the first.
+     * its laps are already credited to the first. Linking to an entry that has already passed in this race is
+     * refused too (#858): a transponder is never changed during a race, and both numbers would count.
      *
      * <p>The audit rows are written first and the live timing is changed only once they commit, so a link is
      * never live without its record (#217). The laps credited are counted before the commit; a passing from
@@ -77,8 +86,8 @@ public class TransponderLinkService {
      * the event find it by themselves.
      *
      * @return how many laps the link credited
-     * @throws StateConflictException   if the race is not running or stopped, or the number is linked to another
-     *                                  entry already
+     * @throws StateConflictException   if the race is not running or stopped, the number is linked to another
+     *                                  entry already, or the entry is already being timed
      * @throws IllegalArgumentException if the entry is not in the race
      */
     public int link(long raceId, String transponderNumber, long entryId, long userId) {
@@ -91,13 +100,19 @@ public class TransponderLinkService {
         if (!inRace) {
             throw new IllegalArgumentException("That entry is not in this race");
         }
-        Long linkedTo = lapTimingService.stateFor(raceId).getRuntimeLink(transponderNumber);
+        LiveRaceState state = lapTimingService.stateFor(raceId);
+        Long linkedTo = state.getRuntimeLink(transponderNumber);
         if (linkedTo != null) {
             if (linkedTo == entryId) {
                 return 0;
             }
             throw new StateConflictException("Transponder " + transponderNumber
                     + " is already linked to another entry in this race");
+        }
+        if (state.isBeingTimed(entryId)) {
+            throw new StateConflictException(labels.driver(entryId) + " is already being timed in this race, so"
+                    + " transponder " + transponderNumber + " can't be added to them. Check which car is carrying it."
+                    + " If the number counting for them is the wrong one, correct it after the race.");
         }
 
         // Counted before linking, since linking credits them. The first passing only starts timing a lap
@@ -122,7 +137,101 @@ public class TransponderLinkService {
     }
 
     /**
-     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. It goes in
+     * Lets a driver seen in the wrong heat count in this race: puts them on the race (at the back of the grid, with
+     * their own car number when it is free) and links the number to them, which credits every passing it has made.
+     * They are ranked by their laps like everyone else. Allowed from a flag that was disapproved, so the decision
+     * can be reversed. The audit row, the race entry and the link are one transaction; the live timing changes once
+     * it commits.
+     *
+     * @return how many laps the approval credited, 0 if the flag was approved already
+     * @throws StateConflictException if the race is not running or stopped, or there is no such flag
+     */
+    public int approveWrongHeat(long raceId, String transponderNumber, long userId) {
+        WrongHeatDto flag = openFlag(raceId, transponderNumber);
+        if (flag.status() == WrongHeatDto.Status.APPROVED) {
+            return 0;
+        }
+        List<RaceEntry> inRace = raceEntryRepository.findByRaceIdOrderByGridPosition(raceId);
+        if (inRace.stream().noneMatch(re -> Objects.equals(re.getEntryId(), flag.entryId()))) {
+            boolean hasGrid = inRace.stream().anyMatch(re -> re.getGridPosition() != null);
+            RaceEntry added = new RaceEntry();
+            added.setRaceId(raceId);
+            added.setEntryId(flag.entryId());
+            added.setCarNumber(carNumberFor(flag, inRace));
+            added.setGridPosition(hasGrid ? inRace.stream().map(RaceEntry::getGridPosition)
+                    .filter(Objects::nonNull).mapToInt(Integer::intValue).max().orElse(0) + 1 : null);
+            raceEntryRepository.save(added);
+        }
+        AfterCommit.run(() -> lapTimingService.addLateEntry(raceId, flag.entryId()));
+        int lapsCredited = link(raceId, transponderNumber, flag.entryId(), userId);
+
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("transponderNumber", transponderNumber);
+        after.put("entryId", flag.entryId());
+        after.put("lapsCredited", lapsCredited);
+        audit.entry(Actor.official(userId), "WRONG_HEAT_APPROVED")
+                .entity("race", raceId).race(raceId).event(labels.eventOf(raceId))
+                .summary("Approved " + labels.driver(flag.entryId()) + " in " + labels.race(raceId)
+                        + ", whose own heat is " + flag.heat() + ", crediting " + lapsCredited + " laps")
+                .after(after).record();
+        AfterCommit.run(() -> lapTimingService.decideWrongHeat(raceId, transponderNumber,
+                WrongHeatDto.Status.APPROVED));
+        return lapsCredited;
+    }
+
+    /**
+     * Refuses a driver seen in the wrong heat: the flag stays on the screens as dealt with and the passings stay out
+     * of the results. If the same number keeps passing it is not raised again. Nothing changes if it was disapproved
+     * already.
+     *
+     * @throws StateConflictException if the race is not running or stopped, there is no such flag, or it has been
+     *                                approved, since its laps are counted
+     */
+    public void disapproveWrongHeat(long raceId, String transponderNumber, long userId) {
+        WrongHeatDto flag = openFlag(raceId, transponderNumber);
+        if (flag.status() == WrongHeatDto.Status.DISAPPROVED) {
+            return;
+        }
+        if (flag.status() == WrongHeatDto.Status.APPROVED) {
+            throw new StateConflictException("That driver has been approved, and their laps are counted");
+        }
+        Map<String, Object> after = new LinkedHashMap<>();
+        after.put("transponderNumber", transponderNumber);
+        after.put("entryId", flag.entryId());
+        audit.entry(Actor.official(userId), "WRONG_HEAT_DISAPPROVED")
+                .entity("race", raceId).race(raceId).event(labels.eventOf(raceId))
+                .summary("Disapproved " + labels.driver(flag.entryId()) + " in " + labels.race(raceId)
+                        + ", whose own heat is " + flag.heat() + "; their passings do not count")
+                .after(after).record();
+        AfterCommit.run(() -> lapTimingService.decideWrongHeat(raceId, transponderNumber,
+                WrongHeatDto.Status.DISAPPROVED));
+    }
+
+    /** The flag for the number in a race that is running or stopped. */
+    private WrongHeatDto openFlag(long raceId, String transponderNumber) {
+        Race race = raceRepository.getOrThrow(raceId);
+        if (race.getStatus() != RaceStatus.RUNNING && race.getStatus() != RaceStatus.STOPPED) {
+            throw new StateConflictException("A wrong-heat driver can only be decided while the race is running or stopped");
+        }
+        return lapTimingService.wrongHeatOf(raceId, transponderNumber)
+                .orElseThrow(() -> new StateConflictException("Transponder " + transponderNumber
+                        + " has not been flagged as a driver in the wrong heat"));
+    }
+
+    /** The driver's own car number if no one in this race has it, otherwise the next free one. */
+    private static Integer carNumberFor(WrongHeatDto flag, List<RaceEntry> inRace) {
+        Integer own = flag.carNumber();
+        if (own != null && inRace.stream().noneMatch(re -> own.equals(re.getCarNumber()))) {
+            return own;
+        }
+        return inRace.stream().map(RaceEntry::getCarNumber).filter(Objects::nonNull)
+                .mapToInt(Integer::intValue).max().orElse(0) + 1;
+    }
+
+    /**
+     * Keeps the linked number on the entry, through a transponder swap so it is audited the same way. The entry has
+     * not been timed (see {@link #link}), so a number of its own counts as passed here only when it was not credited
+     * to it, such as one another entry in the race also holds. It goes in
      * the primary slot when the primary has not passed in this race (and there is no secondary, or the secondary
      * has passed), otherwise in the secondary slot when that is empty or has not passed. If both have passed it
      * goes in the first empty third or fourth slot (#482); if none is free nothing is saved, since replacing a

@@ -69,6 +69,8 @@ export type ResultRow = {
   championshipPoints?: number | null;
   /** Still on the track when the race hit its maximum race window, so it did not take the flag. */
   dnf?: boolean;
+  /** An official recorded that the car did not start: listed last with no laps. */
+  dns?: boolean;
 };
 
 export type PositionAtLap = {
@@ -284,6 +286,33 @@ export async function getJumpStarts(raceId: number): Promise<JumpStartDto[]> {
 /** Takes no action on a car's jump start: its alert goes, its lozenge stays. */
 export async function dismissJumpStart(raceId: number, entryId: number): Promise<void> {
   await api.post(`/api/v1/race-control/referee/race/${raceId}/jump-start/${entryId}/dismiss`);
+}
+
+/** A transponder of a driver who is in another heat, seen in this race. Its passings do not count until approved. */
+export type WrongHeatDto = {
+  transponderNumber: string;
+  entryId: number;
+  driverName: string;
+  carNumber: number | null;
+  /** Where the driver should be, such as "Heat 2" or "B final"; null if unknown. */
+  heat: string | null;
+  passings: number;
+  status: 'OPEN' | 'APPROVED' | 'DISAPPROVED';
+};
+
+export async function getWrongHeat(raceId: number): Promise<WrongHeatDto[]> {
+  const { data } = await api.get<WrongHeatDto[]>(`/api/v1/race-control/race/${raceId}/wrong-heat`);
+  return data;
+}
+
+/** Counts the driver in this race: adds them and credits their laps. */
+export async function approveWrongHeat(raceId: number, transponderNumber: string): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/wrong-heat/approve`, { transponderNumber });
+}
+
+/** Keeps the driver's passings out of this race's results. */
+export async function disapproveWrongHeat(raceId: number, transponderNumber: string): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/wrong-heat/disapprove`, { transponderNumber });
 }
 
 export async function moveEntryToHeat(
@@ -805,4 +834,22 @@ export async function falseStartEntry(raceId: number, entryId: number): Promise<
 
 export async function undoFalseStartEntry(raceId: number, entryId: number): Promise<void> {
   await api.post(`/api/v1/race-control/race/${raceId}/eliminations/false-start/undo`, { entryId });
+}
+
+export type DidNotStartDto = {
+  /** Entry ids of the cars marked as not started in the race. */
+  entryIds: number[];
+};
+
+export async function getDidNotStart(raceId: number): Promise<DidNotStartDto> {
+  const { data } = await api.get<DidNotStartDto>(`/api/v1/race-control/race/${raceId}/dns`);
+  return data;
+}
+
+export async function markDidNotStart(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/dns`, { entryId });
+}
+
+export async function undoDidNotStart(raceId: number, entryId: number): Promise<void> {
+  await api.post(`/api/v1/race-control/race/${raceId}/dns/undo`, { entryId });
 }

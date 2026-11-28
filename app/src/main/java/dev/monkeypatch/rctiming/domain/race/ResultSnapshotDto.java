@@ -25,6 +25,9 @@ public record ResultSnapshotDto(
      * <p>{@code dnf} marks a car that was still on the track when the race hit its maximum race window and so did not
      * take the flag (#428). It keeps its laps and its place; the flag is only a label. Results stored before it
      * existed read as false.
+     *
+     * <p>{@code dns} marks a car an official recorded as not having started (see {@code DidNotStartService}). It is
+     * listed last with no laps and no time. Results stored before it existed read as false.
      */
     public record ResultRow(
             int position,
@@ -38,13 +41,22 @@ public record ResultSnapshotDto(
             Long gapToLeaderMs,
             Integer points,
             Integer championshipPoints,
-            boolean dnf
+            boolean dnf,
+            boolean dns
     ) {
+        /** A row with every field, not marked DNS. */
+        public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
+                         int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs, Integer points,
+                         Integer championshipPoints, boolean dnf) {
+            this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
+                    gapToLeaderMs, points, championshipPoints, dnf, false);
+        }
+
         /** A row with no points and not marked DNF, as a race is stored. */
         public ResultRow(int position, long entryId, Long competitorId, String driverName, String carNumber,
                          int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs) {
             this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
-                    gapToLeaderMs, null, null, false);
+                    gapToLeaderMs, null, null, false, false);
         }
 
         /** A row with points, not marked DNF. */
@@ -52,25 +64,31 @@ public record ResultSnapshotDto(
                          int lapsCompleted, long totalTimeMs, Long bestLapMs, Long gapToLeaderMs, Integer points,
                          Integer championshipPoints) {
             this(position, entryId, competitorId, driverName, carNumber, lapsCompleted, totalTimeMs, bestLapMs,
-                    gapToLeaderMs, points, championshipPoints, false);
+                    gapToLeaderMs, points, championshipPoints, false, false);
         }
 
         /** This row with the given round points. */
         public ResultRow withPoints(Integer points) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf, dns);
         }
 
         /** This row with the given championship points. */
         public ResultRow withChampionshipPoints(Integer championshipPoints) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf, dns);
         }
 
         /** This row marked, or not marked, as a car that did not finish. */
         public ResultRow withDnf(boolean dnf) {
             return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
-                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf);
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf, dns);
+        }
+
+        /** This row marked, or not marked, as a car that did not start. */
+        public ResultRow withDns(boolean dns) {
+            return new ResultRow(position, entryId, competitorId, driverName, carNumber, lapsCompleted,
+                    totalTimeMs, bestLapMs, gapToLeaderMs, points, championshipPoints, dnf, dns);
         }
     }
 

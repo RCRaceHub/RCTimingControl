@@ -129,6 +129,6 @@ public class PodiumBoardService {
                     .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber(), false)).toList();
         }
         return f.results().stream()
-                .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber(), r.dnf())).toList();
+                .map(r -> new Placing(r.competitorId(), r.driverName(), r.carNumber(), r.dnf() || r.dns())).toList();
     }
 }

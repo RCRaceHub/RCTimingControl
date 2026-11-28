@@ -73,7 +73,7 @@ For an event with the feed turned on, `livefeed/LiveFeedPublisher` sends each ra
 
 A **competitor** is the person an entry belongs to: a display name, the RaceHub driver ID it came from, a BRCA number and a home club. Competitors have no login. Results, live timing and championship standings group by competitor, so one person's history carries across meetings.
 
-Transponders belong to an **entry**, for one event: a primary and an optional secondary number. They are not unique system-wide, and a number already used in the event is accepted with a warning on import or walk-in, since one competitor may run it in several classes. RaceHub snapshots them at booking; race control can swap them on the day, with an audit trail, and refuses a number another competitor in the event holds. When a lap arrives, `LapTimingService` matches the number against both transponders of the entries in the running race. A number that matches nothing, or more than one entry, goes to the referee's unknown-transponder flow and is never silently credited.
+Transponders belong to an **entry**, for one event: a primary and an optional secondary number. They are not unique system-wide, and a number already used in the event is accepted with a warning on import or walk-in, since one competitor may run it in several classes. RaceHub snapshots them at booking; race control can swap them on the day, with an audit trail, and refuses a number another competitor in the event holds. When a lap arrives, `LapTimingService` matches the number against both transponders of the entries in the running race. A number that matches nothing, or more than one entry, goes to the referee's unknown-transponder flow and is never silently credited. When the number belongs to a driver who is in the event but in another heat, it is flagged as a **driver in the wrong heat** instead: the passings stay out of the results, race control and the referee see who it is and where they belong, and an official approves (the driver joins the race and their laps are credited) or disapproves.
 
 ### JWT authentication
 
@@ -104,6 +104,7 @@ The AMB/MyLaps decoder client runs on a dedicated background thread (Netty 4.1, 
 | `/topic/race/{raceId}/state` | Race lifecycle changes |
 | `/topic/race/{raceId}/marshal` | Marshal lap adjustments |
 | `/topic/race/{raceId}/unknown-transponder` | A transponder that matched no entry, for the referee |
+| `/topic/race/{raceId}/wrong-heat` | Drivers seen in a heat they are not in, and what was decided on each |
 | `/topic/race/{raceId}/jump-start` | Cars that crossed the line before their turn in a stagger start, for the referee |
 | `/topic/race/{raceId}/audio` | Announcements and start cues for the announcer's browser (from `LiveTimingHub`) |
 | `/topic/race/{raceId}/bump-up-alert` | Bump-up prompts when a race finishes |

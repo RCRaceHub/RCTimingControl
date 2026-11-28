@@ -18,6 +18,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { EliminationButtons } from './EliminationButtons';
+import { DidNotStartButton } from './DidNotStartButton';
+import { useDidNotStart } from '@/hooks/race-control/useDidNotStart';
+import { useRoles } from '@/hooks/useRoles';
 import { cn } from '@/lib/utils';
 import { fmtMs, gapLabel } from '@/lib/format';
 import { FinishedFlag } from '@/components/FinishedFlag';
@@ -67,12 +70,16 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
   const lappedEntryIds = useLappedBadge(sorted);
   const lapFlash = useLapFlash(sorted);
   const elim = useEliminations(raceId);
+  const { canRunEvent } = useRoles();
+  const dns = useDidNotStart(raceId, { enabled: canRunEvent });
   const settings = useBoardSettings();
   const media = useRaceMedia(raceId);
   const sectors = useSectors(raceId);
   const sectorRows = useMemo(() => new Map(sectors.rows.map((r) => [r.entryId, r])), [sectors.rows]);
   const barClock = useLapBarClock(sorted, status, settings.lateMarginMs);
   const operatorIcons = useOperatorRowIcons(settings.hiddenRowIcons);
+  // DNS is for a car that never ran: the button shows only while it has no lap
+  const canMarkDns = canRunEvent && (status === 'RUNNING' || status === 'STOPPED');
   const canMark = elim.shikabane && (status === 'RUNNING' || status === 'STOPPED');
 
   return (
@@ -125,6 +132,7 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
               <TableHead className="w-24 text-right">Interval</TableHead>
               <TableHead className="w-24 text-right">Leader</TableHead>
               {elim.shikabane && <TableHead className="w-32 text-right">Shikabane</TableHead>}
+              {canMarkDns && <TableHead className="w-28 text-right">Did not start</TableHead>}
               {rowActions && <TableHead className="w-44"><span className="sr-only">Actions</span></TableHead>}
             </TableRow>
           </TableHeader>
@@ -215,6 +223,13 @@ export function LiveTimingPanel({ raceId, status, highlightEntryIds, jumpStartEn
                 {elim.shikabane && (
                   <TableCell className="text-right">
                     {canMark && <EliminationButtons entryId={row.entryId} elim={elim} />}
+                  </TableCell>
+                )}
+                {canMarkDns && (
+                  <TableCell className="text-right">
+                    {(row.lapsCompleted === 0 || dns.marked.has(row.entryId)) && (
+                      <DidNotStartButton entryId={row.entryId} dns={dns} />
+                    )}
                   </TableCell>
                 )}
                 {rowActions && <TableCell className="text-right">{rowActions(row)}</TableCell>}

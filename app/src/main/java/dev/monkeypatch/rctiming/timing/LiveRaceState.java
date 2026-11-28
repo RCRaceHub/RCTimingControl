@@ -3,6 +3,7 @@ package dev.monkeypatch.rctiming.timing;
 import dev.monkeypatch.rctiming.domain.racecontrol.TransponderLinkService;
 import dev.monkeypatch.rctiming.domain.result.ResultSnapshotService;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleGroupDto;
 import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.query.boards.RaceHighlights;
@@ -36,9 +37,16 @@ import java.util.Set;
  */
 public class LiveRaceState {
 
+    /** The default for {@link #setStalledAfterLaps}. */
+    public static final int DEFAULT_STALLED_AFTER_LAPS = 4;
+    /** The shortest a car is left before it is judged stopped, whatever its lap time. */
+    static final long MIN_STALLED_MS = 20_000L;
+
     final Map<Long, LiveRacePosition> positions = new HashMap<>();
     final List<LapPassingEvent> lapHistory = new ArrayList<>();
     final Set<String> seenUnknownTransponders = new HashSet<>();
+    /** Transponders of drivers who are in another heat, by number, in the order they were first seen. */
+    final Map<String, WrongHeatDto> wrongHeat = new LinkedHashMap<>();
     /** Runtime links: transponderNumber → entryId, populated by retroactiveLinkTransponder. */
     final Map<String, Long> runtimeLinks = new HashMap<>();
     /** Entry display names: entryId → "First Last", populated by LapTimingService on state creation. */
@@ -70,8 +78,19 @@ public class LiveRaceState {
     private boolean rollingStart;
     /** Server time, in epoch milliseconds, when the first car took the flag; null until one has. */
     Long firstFlaggedAtMs = null;
+    /** Server time, in epoch milliseconds, of each entry's last passing that counted a lap, for {@link #isStalled}. */
+    private final Map<Long, Long> lastCountedAtMs = new HashMap<>();
+    /** How many of its own average laps a car may go without a counted lap before it is judged stopped; 0 for never. */
+    /** The server time of the latest passing handled, which {@link #takeFinishRequest} judges the cars against. */
+    private long lastPassingNowMs;
+    /** Server time the race was stopped, or null while it runs: the cars are judged as of then, not by the pause. */
+    private Long pausedAtMs;
+    /** How many of its own average laps a car may go without a counted lap before it is judged stopped; 0 for never. */
+    private int stalledAfterLaps = DEFAULT_STALLED_AFTER_LAPS;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
+    /** Entries that are not racing (marked DNS, or withdrawn), which the end of the race never waits for. */
+    private final Set<Long> notRacing = new HashSet<>();
     /**
      * When each entry's own time on the track starts, in milliseconds after the race clock starts: a stagger start
      * sends the cars off one at a time, so each has its own window. An entry not listed starts at 0.
@@ -132,6 +151,16 @@ public class LiveRaceState {
     /** Returns the runtime-linked entryId for this transponder, or null if not linked. */
     public synchronized Long getRuntimeLink(String transponderNumber) {
         return runtimeLinks.get(transponderNumber);
+    }
+
+    /**
+     * Whether the entry has passed the line in this race, on any number. {@code TransponderLinkService} asks before
+     * linking: a transponder is never changed during a race, so a second number for such a car is another car's or a
+     * spare, and crediting it would count the entry twice.
+     */
+    public synchronized boolean isBeingTimed(long entryId) {
+        LiveRacePosition pos = positions.get(entryId);
+        return pos != null && pos.getLastPassingTimeMs() > 0;
     }
 
     /** Sets when each entry starts, in milliseconds after the race clock starts. Called at state creation time. */
@@ -215,25 +244,61 @@ public class LiveRaceState {
         return result;
     }
 
+    /**
+     * Notes a transponder seen in a race its driver is not in. Only the first sighting is kept, so the officials are
+     * told once; a later decision on the flag is not undone by the number passing again.
+     *
+     * @return true if the number had no flag until now
+     */
+    public synchronized boolean recordWrongHeat(WrongHeatDto flag) {
+        return wrongHeat.putIfAbsent(flag.transponderNumber(), flag) == null;
+    }
+
+    /** The wrong-heat flag for the number, if one was raised in this race. */
+    public synchronized Optional<WrongHeatDto> wrongHeatOf(String transponderNumber) {
+        return Optional.ofNullable(wrongHeat.get(transponderNumber));
+    }
+
+    /**
+     * Records an official's decision on a flag.
+     *
+     * @return true if the number has a flag whose status changed
+     */
+    public synchronized boolean setWrongHeatStatus(String transponderNumber, WrongHeatDto.Status status) {
+        WrongHeatDto flag = wrongHeat.get(transponderNumber);
+        if (flag == null || flag.status() == status) {
+            return false;
+        }
+        wrongHeat.put(transponderNumber, flag.withStatus(status));
+        return true;
+    }
+
+    /** The wrong-heat flags raised so far, in the order they were, with how many passings each number has made. */
+    public synchronized List<WrongHeatDto> wrongHeats() {
+        return wrongHeat.values().stream()
+                .map(f -> f.withPassings(countPassingsForTransponder(f.transponderNumber())))
+                .toList();
+    }
+
     /** Sets the shortest lap that counts for each entry. Called by LapTimingService at state creation time. */
     public synchronized void putMinLaps(Map<Long, Long> minimums) {
         minLapMs.putAll(minimums);
     }
 
     /** Stores a display name for an entry. Called by LapTimingService at state creation time. */
-    public void putEntryName(long entryId, String displayName) {
+    public synchronized void putEntryName(long entryId, String displayName) {
         entryNames.put(entryId, displayName);
     }
 
     /** Stores an entry's car number for this race, shown beside its position. A null number is ignored. */
-    public void putEntryCarNumber(long entryId, String carNumber) {
+    public synchronized void putEntryCarNumber(long entryId, String carNumber) {
         if (carNumber != null) {
             entryCarNumbers.put(entryId, carNumber);
         }
     }
 
     /** Stores an entry's 1-based grid position for this race, which the boards compare with its place. Null is ignored. */
-    public void putEntryStartPosition(long entryId, Integer startPosition) {
+    public synchronized void putEntryStartPosition(long entryId, Integer startPosition) {
         if (startPosition != null) {
             entryStartPositions.put(entryId, startPosition);
         }
@@ -269,6 +334,7 @@ public class LiveRaceState {
     public synchronized boolean applyLapPassing(LapPassingEvent event, Long entryId, long nowMs,
                                                 boolean windowEnded) {
         lapHistory.add(event);
+        lastPassingNowMs = nowMs;
         long passingTimeMs = event.rtcTimeMicros() / 1000L;
 
         if (entryId == null) {
@@ -290,6 +356,7 @@ public class LiveRaceState {
         }
         if (creditLap(pos, passingTimeMs)) {
             lastLapCreditedAtMs = nowMs;
+            lastCountedAtMs.put(entryId, nowMs);
             if (windowEnded && pos.getLapsCompleted() > 0) {
                 flagged.add(entryId);
                 if (firstFlaggedAtMs == null) {
@@ -307,7 +374,7 @@ public class LiveRaceState {
      * Returns true once only, so the caller finishes the race once.
      */
     public synchronized boolean takeFinishRequest() {
-        if (finishRequested || !allFlagged()) {
+        if (finishRequested || !allFlagged(lastPassingNowMs)) {
             return false;
         }
         finishRequested = true;
@@ -340,15 +407,102 @@ public class LiveRaceState {
         return pos == null ? 0 : pos.getLapsCompleted();
     }
 
-    /** Whether every car that has passed the line has taken the flag; the same test as {@link #takeFinishRequest()}. */
+    /**
+     * How many of its own average laps a car may go without a counted lap before it is judged stopped (a car that
+     * broke down or left the track). A stopped car is not waited for when the race ends, and is a DNF in the result.
+     * 0 turns the check off.
+     */
+    public void setStalledAfterLaps(int laps) {
+        this.stalledAfterLaps = Math.max(0, laps);
+    }
+
+    /** The race was stopped: the cars are judged as of now until it resumes, so a pause is not held against them. */
+    public synchronized void pauseStallClocks(long nowMs) {
+        if (pausedAtMs == null) {
+            pausedAtMs = nowMs;
+        }
+    }
+
+    /** The race resumed: every car's last counted lap moves on by the length of the pause. Does nothing if not paused. */
+    public synchronized void restartStallClocks(long nowMs) {
+        if (pausedAtMs != null) {
+            long pauseMs = Math.max(0, nowMs - pausedAtMs);
+            lastCountedAtMs.replaceAll((id, at) -> at + pauseMs);
+            pausedAtMs = null;
+        }
+    }
+
+    /**
+     * Whether the car has stopped: it has crossed the line, has not taken the flag, and no lap has counted for
+     * {@code stalledAfterLaps} times its average lap. A car with no lap yet is judged by the average of the cars that
+     * have one; with none to go by, it is not judged. Never sooner than {@link #MIN_STALLED_MS}. Takes the lock.
+     */
+    public synchronized boolean isStalled(long entryId, long nowMs) {
+        int laps = stalledAfterLaps;
+        if (pausedAtMs != null) {
+            nowMs = Math.min(nowMs, pausedAtMs);
+        }
+        Long lastAt = lastCountedAtMs.get(entryId);
+        if (laps <= 0 || lastAt == null || flagged.contains(entryId)) {
+            return false;
+        }
+        LiveRacePosition pos = positions.get(entryId);
+        Long avgMs = pos == null ? null : pos.getAvgLapMs();
+        if (avgMs == null) {
+            double sum = 0;
+            int n = 0;
+            for (LiveRacePosition other : positions.values()) {
+                if (other.getAvgLapMs() != null) {
+                    sum += other.getAvgLapMs();
+                    n++;
+                }
+            }
+            avgMs = n == 0 ? null : (long) (sum / n);
+        }
+        // A floor, so a tight track or a first short lap cannot make the wait shorter than a marshal needs
+        return avgMs != null && avgMs > 0 && nowMs - lastAt > Math.max(laps * avgMs, MIN_STALLED_MS);
+    }
+
+    /**
+     * Whether the car is a DNF in the result: the maximum race window cut the race off before it took the flag, or
+     * the race has reached its end (a car has taken the flag) and this car had stopped.
+     */
+    public synchronized boolean isDnf(long entryId, long nowMs) {
+        return cutOff || (firstFlaggedAtMs != null && isStalled(entryId, nowMs));
+    }
+
+    /**
+     * Sets whether the entry is out of the race (marked as not started, or withdrawn). The end of the race does not
+     * wait for such a car, even if it crossed the line once. Called as the state is made and when an official marks
+     * or takes back a DNS; never touches the car's laps or its result row.
+     */
+    public synchronized void setNotRacing(long entryId, boolean out) {
+        if (out) {
+            notRacing.add(entryId);
+        } else {
+            notRacing.remove(entryId);
+        }
+    }
+
+    /** {@link #allFlagged(long)} at the server's current time. */
     public synchronized boolean allFlagged() {
+        return allFlagged(System.currentTimeMillis());
+    }
+
+    /**
+     * Whether every car that has passed the line has taken the flag or stopped (see {@link #isStalled}), and at least
+     * one has taken the flag, so the race is over. A car that never crossed is not waited for, nor is one that is
+     * out of the race ({@link #setNotRacing}).
+     */
+    public synchronized boolean allFlagged(long nowMs) {
         boolean any = false;
         for (LiveRacePosition pos : positions.values()) {
-            if (pos.getLastPassingTimeMs() == 0) {
+            if (pos.getLastPassingTimeMs() == 0 || notRacing.contains(pos.getEntryId())) {
                 continue;
             }
-            any = true;
-            if (!flagged.contains(pos.getEntryId())) {
+            if (flagged.contains(pos.getEntryId())) {
+                any = true;
+            } else if (!isStalled(pos.getEntryId(), nowMs)) {
                 return false;
             }
         }
@@ -542,6 +696,8 @@ public class LiveRaceState {
      * <p>It assumes the target entry has no passings of its own: the replayed laps are credited on top of
      * whatever it already has, and lap times are worked out from the replay's own order, so linking a
      * transponder to an entry that is already being timed on another number double-counts.
+     * {@code TransponderLinkService} refuses that (see {@link #isBeingTimed}), but checks before its transaction
+     * commits, so an entry whose first passing lands in between is not caught.
      *
      * @return recalculated position list; empty list if no matching lapHistory entries.
      */
@@ -586,7 +742,11 @@ public class LiveRaceState {
             p.setEntryId(id);
             return p;
         });
-        creditLap(pos, passingTimeMs);
+        if (creditLap(pos, passingTimeMs)) {
+            // Judged for a stop from the latest passing handled, so a linked car that then breaks down is not waited
+            // for until the timeout: it has no counted lap of its own on this clock, and would never be stalled
+            lastCountedAtMs.putIfAbsent(entryId, lastPassingNowMs);
+        }
     }
 
     /**

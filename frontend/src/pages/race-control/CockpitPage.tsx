@@ -38,6 +38,8 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { CockpitSectionsMenu } from '@/components/CockpitSectionsMenu';
 import { useCockpitSections } from '@/hooks/race-control/useCockpitSections';
 import { useAudioVolume } from '@/hooks/race-control/useAudioVolume';
+import { WrongHeatAlert } from './panels/WrongHeatAlert';
+import { useWrongHeat } from '@/hooks/race-control/useWrongHeat';
 import { UnknownTransponderLinkDialog } from './dialogs/UnknownTransponderLinkDialog';
 import { RoundGeneratorWizard } from './RoundGeneratorWizard';
 import { FinalsLineupScreen } from './FinalsLineupScreen';
@@ -327,6 +329,18 @@ function CockpitView() {
 
   const mutations = useRaceStateMutations(selectedRaceId ?? 0, eventId);
 
+  // Drivers seen in a heat they are not in; the passings do not count until an official approves
+  const wrongHeat = useWrongHeat(selectedRaceId);
+  function decideWrongHeat(decision: 'approve' | 'disapprove', transponderNumber: string) {
+    const mutation = decision === 'approve' ? mutations.approveWrongHeat : mutations.disapproveWrongHeat;
+    mutation.mutate(transponderNumber, {
+      onSuccess: () => toast.success(decision === 'approve'
+        ? 'Driver added to this race and their laps counted'
+        : 'Driver kept out of this race'),
+      onError: (e) => toast.error(getApiErrorMessage(e, 'The decision could not be saved. Try again.')),
+    });
+  }
+
   function handleLinkTransponder(transponderNumber: string) {
     setLinkTransponderNumber(transponderNumber);
     setLinkDialogOpen(true);
@@ -485,7 +499,7 @@ function CockpitView() {
       case 'PENDING':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
             </div>
@@ -569,7 +583,7 @@ function CockpitView() {
       case 'RUNNING':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
@@ -589,6 +603,12 @@ function CockpitView() {
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
             {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
+            <WrongHeatAlert
+              flags={wrongHeat}
+              onApprove={(n) => decideWrongHeat('approve', n)}
+              onDisapprove={(n) => decideWrongHeat('disapprove', n)}
+              busy={mutations.approveWrongHeat.isPending || mutations.disapproveWrongHeat.isPending}
+            />
             {unknownTransponders.length > 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm font-medium text-muted-foreground">Unknown Transponders</p>
@@ -618,7 +638,7 @@ function CockpitView() {
       case 'STOPPED':
         return (
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-semibold"><RaceHeading item={selectedRace} /></h2>
               <RaceStateChip status={selectedRace.status} />
               <RaceClockDisplay clock={raceClock} readAt={raceClockReadAt} />
@@ -638,6 +658,12 @@ function CockpitView() {
               <LiveTimingPanel raceId={selectedRace.raceId} status={selectedRace.status} showArrows={selectedRace.finalLetter !== null} />
             )}
             {sections.isShown('liveTiming') && <FeaturedDriverPanel key={selectedRace.raceId} raceId={selectedRace.raceId} />}
+            <WrongHeatAlert
+              flags={wrongHeat}
+              onApprove={(n) => decideWrongHeat('approve', n)}
+              onDisapprove={(n) => decideWrongHeat('disapprove', n)}
+              busy={mutations.approveWrongHeat.isPending || mutations.disapproveWrongHeat.isPending}
+            />
           </div>
         );
 

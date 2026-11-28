@@ -102,6 +102,34 @@ public class RaceEntriesRecord extends UpdatableRecordImpl<RaceEntriesRecord> {
         return (Integer) get(5);
     }
 
+    /**
+     * Setter for <code>race_entries.dns</code>.
+     */
+    public void setDns(Boolean value) {
+        set(6, value);
+    }
+
+    /**
+     * Getter for <code>race_entries.dns</code>.
+     */
+    public Boolean getDns() {
+        return (Boolean) get(6);
+    }
+
+    /**
+     * Setter for <code>race_entries.confirmed_started</code>.
+     */
+    public void setConfirmedStarted(Boolean value) {
+        set(7, value);
+    }
+
+    /**
+     * Getter for <code>race_entries.confirmed_started</code>.
+     */
+    public Boolean getConfirmedStarted() {
+        return (Boolean) get(7);
+    }
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -125,7 +153,7 @@ public class RaceEntriesRecord extends UpdatableRecordImpl<RaceEntriesRecord> {
     /**
      * Create a detached, initialised RaceEntriesRecord
      */
-    public RaceEntriesRecord(Long id, Long raceId, Long entryId, Integer gridPosition, Boolean bumped, Integer carNumber) {
+    public RaceEntriesRecord(Long id, Long raceId, Long entryId, Integer gridPosition, Boolean bumped, Integer carNumber, Boolean dns, Boolean confirmedStarted) {
         super(RaceEntries.RACE_ENTRIES);
 
         setId(id);
@@ -134,6 +162,8 @@ public class RaceEntriesRecord extends UpdatableRecordImpl<RaceEntriesRecord> {
         setGridPosition(gridPosition);
         setBumped(bumped);
         setCarNumber(carNumber);
+        setDns(dns);
+        setConfirmedStarted(confirmedStarted);
         resetTouchedOnNotNull();
     }
 }

@@ -22,9 +22,11 @@ import dev.monkeypatch.rctiming.timing.battle.BattleTracker;
 import dev.monkeypatch.rctiming.timing.dto.JumpStartDto;
 import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import dev.monkeypatch.rctiming.timing.dto.MarshalAdjustmentDto;
+import dev.monkeypatch.rctiming.timing.dto.WrongHeatDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * truth, and the stored result comes from the state itself, not from a broadcast, so this is harmless.
  */
 @Service
+@EnableConfigurationProperties(TimingProperties.class)
 public class LapTimingService {
 
     private static final Logger log = LoggerFactory.getLogger(LapTimingService.class);
@@ -81,6 +84,8 @@ public class LapTimingService {
     private final ApplicationEventPublisher publisher;
     /** Where the club's battle gap is read from; null in tests that do not need it. */
     private final ClubProfileService clubProfileService;
+    /** How long a car may stand still before it is judged stopped; set by Spring, the default in tests. */
+    private int stalledAfterLaps = LiveRaceState.DEFAULT_STALLED_AFTER_LAPS;
     /** Each running race's length and stagger, read once so a passing never queries for them. */
     private final Map<Long, RaceClockService.RacePlan> plans = new ConcurrentHashMap<>();
 
@@ -115,6 +120,20 @@ public class LapTimingService {
         this.publisher = publisher;
     }
 
+    /** Tells a wrong-heat driver from an unknown transponder; null in tests that do not need it. */
+    private WrongHeatFinder wrongHeatFinder;
+
+    @Autowired(required = false)
+    void setWrongHeatFinder(WrongHeatFinder wrongHeatFinder) {
+        this.wrongHeatFinder = wrongHeatFinder;
+    }
+
+    /** Applies {@code rctiming.timing.stalled-after-laps} from the next race state made. */
+    @Autowired(required = false)
+    void setTimingProperties(TimingProperties properties) {
+        this.stalledAfterLaps = properties.stalledAfterLaps();
+    }
+
     /**
      * Returns existing LiveRaceState for this raceId, or creates a new one and pre-loads
      * entry display names so calculatePositions() can include driver names, and each entry's
@@ -124,6 +143,7 @@ public class LapTimingService {
         return states.computeIfAbsent(raceId, id -> {
             LiveRaceState state = new LiveRaceState(battleSettings());
             state.setSharedPlacesOnTies(sharedPlacesOnTies());
+            state.setStalledAfterLaps(stalledAfterLaps);
             loadEntryNames(id, state);
             state.putMinLaps(lapThresholdQuery.minimumLapsForRace(id));
             state.putStartOffsets(startOffsets(id));
@@ -196,6 +216,15 @@ public class LapTimingService {
     }
 
     /**
+     * A car was marked as not started, or the mark was taken back: the end of a race in progress stops waiting for it,
+     * or waits again. Does nothing when the race has no live state yet, which reads the mark as it is made. Called
+     * on a request thread; the state is synchronised.
+     */
+    public void setNotRacing(long raceId, long entryId, boolean out) {
+        peek(raceId).ifPresent(state -> state.setNotRacing(entryId, out));
+    }
+
+    /**
      * Read-only access — returns the state if present, empty if race has had no lap events yet.
      */
     public Optional<LiveRaceState> peek(long raceId) {
@@ -253,13 +282,37 @@ public class LapTimingService {
                 windowEnded(raceId, state, entryId));
 
         if (entryId == null && firstUnknown) {
-            liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
+            Optional<WrongHeatDto> wrongHeat = findWrongHeat(raceId, transponderNumber);
+            if (wrongHeat.isPresent() && state.recordWrongHeat(wrongHeat.get())) {
+                log.warn("Race {}: transponder {} belongs to entry {}, who is not in this race; passings held back",
+                        raceId, transponderNumber, wrongHeat.get().entryId());
+                liveTimingHub.broadcastWrongHeat(raceId, state.wrongHeats());
+            } else {
+                liveTimingHub.broadcastUnknownTransponder(raceId, transponderNumber);
+            }
         }
 
         broadcastTiming(raceId, state);
 
         if (allWindowsEnded(raceId, state) && state.takeFinishRequest()) {
             publisher.publishEvent(new AllCarsFlaggedEvent(raceId));
+        }
+    }
+
+    /**
+     * Asks whether an unmatched number belongs to a driver in another heat. A failed lookup is logged and read as
+     * "no": the number is already marked as seen, so an error here must not stop it reaching the referee as unknown.
+     */
+    private Optional<WrongHeatDto> findWrongHeat(long raceId, String transponderNumber) {
+        if (wrongHeatFinder == null) {
+            return Optional.empty();
+        }
+        try {
+            return wrongHeatFinder.find(raceId, transponderNumber);
+        } catch (RuntimeException e) {
+            log.warn("Race {}: could not tell whether transponder {} is a driver in the wrong heat",
+                    raceId, transponderNumber, e);
+            return Optional.empty();
         }
     }
 
@@ -438,6 +491,9 @@ public class LapTimingService {
             // Tells open referee screens to drop the alerts: they belong to the run that has ended
             liveTimingHub.broadcastJumpStarts(raceId, List.of());
         }
+        if (removed != null && !removed.wrongHeats().isEmpty()) {
+            liveTimingHub.broadcastWrongHeat(raceId, List.of());
+        }
     }
 
     /**
@@ -447,11 +503,16 @@ public class LapTimingService {
      */
     @EventListener
     public void onRaceStatusChanged(RaceStatusChangedEvent event) {
+        if (event.getNewStatus() == RaceStatus.STOPPED) {
+            peek(event.getRaceId()).ifPresent(st -> st.pauseStallClocks(System.currentTimeMillis()));
+        }
         if (event.getNewStatus() == RaceStatus.GRID) {
             plans.remove(event.getRaceId());
         }
         if (event.getNewStatus() == RaceStatus.RUNNING) {
             released.remove(event.getRaceId());
+            // A resume after a stop must not count the pause against the cars
+            peek(event.getRaceId()).ifPresent(st -> st.restartStallClocks(System.currentTimeMillis()));
             // Swaps and bump-ups edit the grid after a board may already have built the state; the start is final
             LiveRaceState state = states.get(event.getRaceId());
             if (state != null) {
@@ -461,6 +522,40 @@ public class LapTimingService {
                 state.replaceStartPositions(grid);
             }
         }
+    }
+
+    /** The drivers seen in this race who are not in it, with what has been decided; empty once the race is released. */
+    public List<WrongHeatDto> wrongHeatsOf(long raceId) {
+        return peek(raceId).map(LiveRaceState::wrongHeats).orElse(List.of());
+    }
+
+    /** The wrong-heat flag for a number in a race in progress, if one was raised. */
+    public Optional<WrongHeatDto> wrongHeatOf(long raceId, String transponderNumber) {
+        return peek(raceId).flatMap(state -> state.wrongHeatOf(transponderNumber));
+    }
+
+    /**
+     * Records an official's decision on a wrong-heat flag and tells the screens. Called from a request thread by
+     * {@code TransponderLinkService} once the decision's transaction has committed.
+     */
+    public void decideWrongHeat(long raceId, String transponderNumber, WrongHeatDto.Status status) {
+        peek(raceId).ifPresent(state -> {
+            if (state.setWrongHeatStatus(transponderNumber, status)) {
+                liveTimingHub.broadcastWrongHeat(raceId, state.wrongHeats());
+            }
+        });
+    }
+
+    /**
+     * Makes a driver added to a race in progress known to its live timing: name, car number and grid place, so they
+     * are ranked and shown like the others once their laps are credited. Called from a request thread after the
+     * entry has been saved on the race.
+     */
+    public void addLateEntry(long raceId, long entryId) {
+        LiveRaceState state = stateFor(raceId);
+        PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
+        raceEntryRepository.findByRaceIdAndEntryId(raceId, entryId)
+                .ifPresent(raceEntry -> loadEntry(state, names, raceEntry));
     }
 
     /**
@@ -499,15 +594,22 @@ public class LapTimingService {
     private void loadEntryNames(long raceId, LiveRaceState state) {
         PublicNames.Snapshot names = PublicNames.snapshotFrom(competitorRepository);
         for (RaceEntry raceEntry : raceEntryRepository.findByRaceIdOrderByGridPosition(raceId)) {
-            state.putEntryCarNumber(raceEntry.getEntryId(),
-                    raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
-            state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
-            entryRepository.findById(raceEntry.getEntryId())
-                    .map(Entry::getCompetitorId)
-                    .flatMap(competitorRepository::findById)
-                    .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
-                            names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
+            loadEntry(state, names, raceEntry);
         }
+    }
+
+    /** Puts one race entry's car number, grid place, name and not-racing mark into the state. */
+    private void loadEntry(LiveRaceState state, PublicNames.Snapshot names, RaceEntry raceEntry) {
+        state.putEntryCarNumber(raceEntry.getEntryId(),
+                raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
+        state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
+        Optional<Entry> entry = entryRepository.findById(raceEntry.getEntryId());
+        state.setNotRacing(raceEntry.getEntryId(), raceEntry.isDns()
+                || entry.map(e -> e.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
+        entry.map(Entry::getCompetitorId)
+                .flatMap(competitorRepository::findById)
+                .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
+                        names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
     }
 
     /**

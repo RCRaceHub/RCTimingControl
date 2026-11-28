@@ -41,6 +41,13 @@ describe('AboutPage', () => {
     expect(screen.getByText('v0.1.0')).toBeInTheDocument();
   });
 
+  it('shows the commit the build came from', async () => {
+    about.mockResolvedValue({ version: '0.1.0', buildTime: '2026-10-04T12:00:00Z', commit: 'a1b2c3d4', addresses: [] });
+    renderPage();
+
+    expect(await screen.findByText('a1b2c3d4')).toBeInTheDocument();
+  });
+
   it('lists what the app contains', async () => {
     about.mockResolvedValue({ version: '0.1.0', buildTime: '2026-10-04T12:00:00Z', addresses: [] });
     renderPage();

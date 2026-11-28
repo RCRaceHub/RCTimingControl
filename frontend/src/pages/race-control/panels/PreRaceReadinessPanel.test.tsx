@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreRaceReadinessPanel } from './PreRaceReadinessPanel';
 
@@ -6,6 +6,18 @@ const marshalAbsent = vi.fn();
 const marshalPenalty = vi.fn();
 vi.mock('@/hooks/race-control/useRaceStateMutations', () => ({
   useRaceStateMutations: () => ({ marshalAbsent: { mutate: marshalAbsent }, marshalPenalty: { mutate: marshalPenalty } }),
+}));
+
+const dnsState = vi.hoisted(() => ({ marked: new Set<number>(), canRun: true, mark: vi.fn(), undo: vi.fn() }));
+vi.mock('@/hooks/race-control/useDidNotStart', () => ({
+  useDidNotStart: () => ({
+    marked: dnsState.marked,
+    mark: { mutate: dnsState.mark, isPending: false },
+    undo: { mutate: dnsState.undo, isPending: false },
+  }),
+}));
+vi.mock('@/hooks/useRoles', () => ({
+  useRoles: () => ({ isAdmin: false, canRunEvent: dnsState.canRun, isOfficial: true }),
 }));
 
 const seenEntries = vi.hoisted(() => ({ ids: [11] as number[] }));
@@ -50,6 +62,13 @@ vi.mock('@/hooks/race-control/usePreRaceReadiness', () => ({
 }));
 
 describe('PreRaceReadinessPanel', () => {
+  afterEach(() => {
+    dnsState.marked = new Set();
+    dnsState.canRun = true;
+    dnsState.mark.mockClear();
+    dnsState.undo.mockClear();
+  });
+
   it('shows which cars the decoder has seen on the warm-up lap', () => {
     render(<PreRaceReadinessPanel raceId={1} />);
 
@@ -90,5 +109,24 @@ describe('PreRaceReadinessPanel', () => {
         expect.anything(),
       ),
     );
+  });
+
+  it('marks a car as did not start from the grid call, and takes the mark back', () => {
+    dnsState.marked = new Set([11]);
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'DNS' })[0]);
+    expect(dnsState.mark).toHaveBeenCalledWith(10, expect.anything());
+    expect(screen.queryByText('seen')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo DNS' }));
+    expect(dnsState.undo).toHaveBeenCalledWith(11, expect.anything());
+  });
+
+  it('hides the did not start buttons from someone who cannot run the event', () => {
+    dnsState.canRun = false;
+    render(<PreRaceReadinessPanel raceId={1} />);
+
+    expect(screen.queryByRole('button', { name: 'DNS' })).toBeNull();
   });
 });
