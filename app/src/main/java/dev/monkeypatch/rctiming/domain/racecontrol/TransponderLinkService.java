@@ -262,7 +262,7 @@ public class TransponderLinkService {
                     transponderNumber, entryId, raceId);
             return;
         }
-        SwapResult result = swapService.swap(eventId, entryId, slot, transponderNumber, userId);
+        SwapResult result = swapService.saveLinkedNumber(eventId, entryId, slot, transponderNumber, userId);
         if (!(result instanceof SwapResult.Success)) {
             log.info("Transponder {} linked to entry {} for race {} only: not saved on the entry ({})",
                     transponderNumber, entryId, raceId, result.getClass().getSimpleName());

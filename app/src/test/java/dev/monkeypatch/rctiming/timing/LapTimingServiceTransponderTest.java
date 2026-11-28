@@ -9,6 +9,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntry;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import dev.monkeypatch.rctiming.domain.race.RaceEntryRepository;
 import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
@@ -215,7 +216,8 @@ class LapTimingServiceTransponderTest {
         lap(1L, "1001", 1_000);
 
         TransponderSwapService swapService =
-                new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, TestJson.mapper());
+                new TransponderSwapService(eventRepository, entryRepository, auditLogRepository,
+                        mock(RaceRepository.class), TestJson.mapper());
         SwapResult result = swapService.swap(99L, 10L, TransponderSlot.PRIMARY, "3003", 7L);
         assertThat(result).isInstanceOf(SwapResult.Success.class);
 

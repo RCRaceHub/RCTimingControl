@@ -26,6 +26,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     'That transponder is already used by another competitor in this event.',
   same_as_other_transponder: "That number is already this entry's other transponder.",
   primary_required: 'The primary transponder can be replaced but not removed.',
+  race_under_way:
+    "This driver's race is under way. A transponder is never changed during a race: change it once the race has finished.",
 };
 
 const SLOT_CHOICES: { value: TransponderSlot; label: string }[] = [

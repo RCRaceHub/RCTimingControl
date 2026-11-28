@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+import static dev.monkeypatch.rctiming.jooq.generated.tables.RaceEntries.RACE_ENTRIES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Races.RACES;
 import static dev.monkeypatch.rctiming.jooq.generated.tables.Rounds.ROUNDS;
 
@@ -59,6 +60,17 @@ public class RaceRepository extends JooqRepository<Race, RacesRecord> {
         Field<Long> column = DSL.field(DSL.name("race_id"), Long.class);
         return RACE_RECORD_TABLES.stream().anyMatch(table ->
                 dsl.fetchExists(DSL.table(DSL.name(table)), column.eq(raceId)));
+    }
+
+    /**
+     * Whether the entry is in a race that has started and not finished (running or stopped), when its transponders
+     * must not change. Runs in the caller's transaction.
+     */
+    public boolean isEntryInRaceUnderWay(long entryId) {
+        return dsl.fetchExists(DSL.selectOne().from(RACE_ENTRIES)
+                .join(RACES).on(RACES.ID.eq(RACE_ENTRIES.RACE_ID))
+                .where(RACE_ENTRIES.ENTRY_ID.eq(entryId))
+                .and(RACES.STATUS.in(RaceStatus.RUNNING.name(), RaceStatus.STOPPED.name())));
     }
 
     /** Whether any race, of any round and status, belongs to the event class. */

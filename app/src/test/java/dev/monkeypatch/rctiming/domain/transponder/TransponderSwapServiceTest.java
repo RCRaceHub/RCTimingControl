@@ -8,6 +8,7 @@ import dev.monkeypatch.rctiming.domain.entry.EntryRepository;
 import dev.monkeypatch.rctiming.domain.entry.EntryStatus;
 import dev.monkeypatch.rctiming.domain.event.Event;
 import dev.monkeypatch.rctiming.domain.event.EventRepository;
+import dev.monkeypatch.rctiming.domain.race.RaceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,6 +31,7 @@ class TransponderSwapServiceTest {
     private EventRepository eventRepository;
     private EntryRepository entryRepository;
     private EntryAuditLogRepository auditLogRepository;
+    private RaceRepository raceRepository;
     private TransponderSwapService service;
     private final List<Entry> eventEntries = new ArrayList<>();
 
@@ -38,7 +40,9 @@ class TransponderSwapServiceTest {
         eventRepository = Mockito.mock(EventRepository.class);
         entryRepository = Mockito.mock(EntryRepository.class);
         auditLogRepository = Mockito.mock(EntryAuditLogRepository.class);
-        service = new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, TestJson.mapper());
+        raceRepository = Mockito.mock(RaceRepository.class);
+        service = new TransponderSwapService(eventRepository, entryRepository, auditLogRepository, raceRepository,
+                TestJson.mapper());
         Mockito.when(eventRepository.findByIdForUpdate(EVENT_ID)).thenReturn(Optional.of(new Event()));
         Mockito.when(entryRepository.save(any(Entry.class))).thenAnswer(inv -> inv.getArgument(0));
         Mockito.when(entryRepository.findByEventId(EVENT_ID)).thenReturn(eventEntries);
@@ -99,6 +103,30 @@ class TransponderSwapServiceTest {
         assertThat(result).isEqualTo(new SwapResult.Success(e, TransponderSlot.PRIMARY, "1234567", "1234567"));
         verify(entryRepository, never()).save(any());
         verify(auditLogRepository, never()).save(any());
+    }
+
+    @Test
+    void swap_whileTheEntrysRaceIsUnderWay_isRefusedAndNothingChanges() {
+        Entry e = entry(5L, 50L, "1234567", null);
+        Mockito.when(raceRepository.isEntryInRaceUnderWay(5L)).thenReturn(true);
+
+        assertThat(service.swap(EVENT_ID, 5L, TransponderSlot.PRIMARY, "7654321", 42L))
+                .isInstanceOf(SwapResult.RaceUnderWay.class);
+
+        assertThat(e.getTransponderNumberSnapshot()).isEqualTo("1234567");
+        verify(entryRepository, never()).save(any());
+        verify(auditLogRepository, never()).save(any());
+    }
+
+    @Test
+    void saveLinkedNumber_whileTheEntrysRaceIsUnderWay_isSaved() {
+        Entry e = entry(5L, 50L, "1234567", null);
+        Mockito.when(raceRepository.isEntryInRaceUnderWay(5L)).thenReturn(true);
+
+        assertThat(service.saveLinkedNumber(EVENT_ID, 5L, TransponderSlot.PRIMARY, "7654321", 42L))
+                .isInstanceOf(SwapResult.Success.class);
+
+        assertThat(e.getTransponderNumberSnapshot()).isEqualTo("7654321");
     }
 
     @Test
