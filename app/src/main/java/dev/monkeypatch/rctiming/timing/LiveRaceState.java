@@ -86,6 +86,8 @@ public class LiveRaceState {
     private int stalledAfterLaps = DEFAULT_STALLED_AFTER_LAPS;
     /** Entries that have taken the flag: the lap that counted after the clock ran out was their last. */
     final Set<Long> flagged = new HashSet<>();
+    /** Entries that are not racing (marked DNS, or withdrawn), which the end of the race never waits for. */
+    private final Set<Long> notRacing = new HashSet<>();
     /**
      * When each entry's own time on the track starts, in milliseconds after the race clock starts: a stagger start
      * sends the cars off one at a time, so each has its own window. An entry not listed starts at 0.
@@ -420,6 +422,19 @@ public class LiveRaceState {
         return cutOff || (firstFlaggedAtMs != null && isStalled(entryId, nowMs));
     }
 
+    /**
+     * Sets whether the entry is out of the race (marked as not started, or withdrawn). The end of the race does not
+     * wait for such a car, even if it crossed the line once. Called as the state is made and when an official marks
+     * or takes back a DNS; never touches the car's laps or its result row.
+     */
+    public synchronized void setNotRacing(long entryId, boolean out) {
+        if (out) {
+            notRacing.add(entryId);
+        } else {
+            notRacing.remove(entryId);
+        }
+    }
+
     /** {@link #allFlagged(long)} at the server's current time. */
     public synchronized boolean allFlagged() {
         return allFlagged(System.currentTimeMillis());
@@ -427,12 +442,13 @@ public class LiveRaceState {
 
     /**
      * Whether every car that has passed the line has taken the flag or stopped (see {@link #isStalled}), and at least
-     * one has taken the flag, so the race is over. A car that never crossed is not waited for.
+     * one has taken the flag, so the race is over. A car that never crossed is not waited for, nor is one that is
+     * out of the race ({@link #setNotRacing}).
      */
     public synchronized boolean allFlagged(long nowMs) {
         boolean any = false;
         for (LiveRacePosition pos : positions.values()) {
-            if (pos.getLastPassingTimeMs() == 0) {
+            if (pos.getLastPassingTimeMs() == 0 || notRacing.contains(pos.getEntryId())) {
                 continue;
             }
             if (flagged.contains(pos.getEntryId())) {
@@ -675,7 +691,11 @@ public class LiveRaceState {
             p.setEntryId(id);
             return p;
         });
-        creditLap(pos, passingTimeMs);
+        if (creditLap(pos, passingTimeMs)) {
+            // Judged for a stop from the latest passing handled, so a linked car that then breaks down is not waited
+            // for until the timeout: it has no counted lap of its own on this clock, and would never be stalled
+            lastCountedAtMs.putIfAbsent(entryId, lastPassingNowMs);
+        }
     }
 
     /**

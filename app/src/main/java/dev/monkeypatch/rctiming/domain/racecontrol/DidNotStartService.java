@@ -19,6 +19,8 @@ import dev.monkeypatch.rctiming.timing.dto.LiveTimingRowDto;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +35,8 @@ import java.util.Map;
  * which is {@code LiveRaceState}'s job, so a car that has completed a lap is refused here. Each action runs in one
  * request transaction with an audit row. The check for laps is made on the request thread while the timing thread
  * may still credit a passing, so the result ignores the laps of a marked car whatever it was credited. A restart
- * keeps the mark, since it is a fact about the grid and not about a run. On a finished race the stored result is worked out again and its results
+ * keeps the mark, since it is a fact about the grid and not about a run. A race in progress is told after the commit,
+ * so its end no longer waits for the car (a car marked by mistake that then races is not waited for either). On a finished race the stored result is worked out again and its results
  * are sent again, through {@link FinishedRaceCorrected}.
  */
 @Service
@@ -82,6 +85,8 @@ public class DidNotStartService {
         raceEntry.setDns(true);
         raceEntry.setConfirmedStarted(false);
         raceEntryRepository.save(raceEntry);
+        // A car that crossed the line once and was then marked must not hold up the end of the race
+        afterCommit(() -> lapTimingService.setNotRacing(raceId, entryId, true));
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))
                 .summary("Marked " + labels.driver(entryId) + " as did not start in " + labels.race(raceId))
@@ -108,11 +113,29 @@ public class DidNotStartService {
         raceEntry.setDns(false);
         raceEntry.setConfirmedStarted(true);
         raceEntryRepository.save(raceEntry);
+        afterCommit(() -> lapTimingService.setNotRacing(raceId, entryId, false));
         audit.entry(Actor.official(userId), "ENTRY_DID_NOT_START_UNDONE").entity("race_entry", raceEntry.getId())
                 .race(raceId).event(labels.eventOf(raceId))
                 .summary("Took back did not start for " + labels.driver(entryId) + " in " + labels.race(raceId))
                 .before(Map.of("entryId", entryId)).record();
         resultChanged(race);
+    }
+
+    /**
+     * Tells the live race about a mark only once it is committed, so a rolled-back mark never leaves a car that is
+     * still racing ignored, and a live state built meanwhile from the old row is corrected.
+     */
+    private static void afterCommit(Runnable action) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    action.run();
+                }
+            });
+        } else {
+            action.run();
+        }
     }
 
     /** Entry ids of the cars marked as not started in the race. 404 if the race does not exist. */
