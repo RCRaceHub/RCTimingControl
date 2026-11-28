@@ -144,7 +144,7 @@ For a race with a length:
 5. If a car never takes the flag in any other way, the **max last lap** is the backstop. Once the clock has run out,
    the race is finished when no lap has counted for that long, counted from the moment the clock ran out if none has
    counted since. A track with no max last lap leaves it to the director.
-5. A car that never crossed the line is not waited for.
+6. A car that never crossed the line is not waited for.
 
 The race director can finish a running or a stopped race at any time. Marshal laps (+1 and -1) and referee penalties
 change the laps a car is credited with, not the timing.
