@@ -137,8 +137,8 @@ class LiveRaceStateStalledTest {
         state.retroactiveLinkTransponder("T9", 2L);
         pass(1, 110, true);
 
-        // 40 s after the linked car's latest lap it is judged stopped, as any other car would be
-        assertThat(state.takeFinishRequest()).isFalse();
+        // 60 s after the link (more than four of its 10 s laps) it is judged stopped, as any other car would be
+        assertThat(state.allFlagged(110_000)).isFalse();
         assertThat(state.allFlagged(160_000)).isTrue();
     }
 }

@@ -527,11 +527,10 @@ public class LapTimingService {
             state.putEntryCarNumber(raceEntry.getEntryId(),
                     raceEntry.getCarNumber() == null ? null : raceEntry.getCarNumber().toString());
             state.putEntryStartPosition(raceEntry.getEntryId(), raceEntry.getGridPosition());
+            Optional<Entry> entry = entryRepository.findById(raceEntry.getEntryId());
             state.setNotRacing(raceEntry.getEntryId(), raceEntry.isDns()
-                    || entryRepository.findById(raceEntry.getEntryId())
-                            .map(entry -> entry.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
-            entryRepository.findById(raceEntry.getEntryId())
-                    .map(Entry::getCompetitorId)
+                    || entry.map(e -> e.getStatus() == EntryStatus.WITHDRAWN).orElse(false));
+            entry.map(Entry::getCompetitorId)
                     .flatMap(competitorRepository::findById)
                     .ifPresent(competitor -> state.putEntryName(raceEntry.getEntryId(),
                             names.of(competitor.getId(), competitor.getDisplayName(), raceEntry.getCarNumber())));
