@@ -5,12 +5,13 @@ export function TransponderHelp() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         The Transponders page changes a driver&apos;s transponder on the day, for example when they
-        borrow or replace one. The swap is logged with who made it.
+        borrow or replace one. Change it before their race is called or after it has finished, never during a race.
+        The swap is logged with who made it.
       </p>
 
       <ul className="mt-3 space-y-1.5 text-sm">
         <li><span className="font-semibold">Find the entry:</span> Type at least two letters of the competitor&apos;s name and pick the entry. A competitor racing two classes shows one entry per class.</li>
-        <li><span className="font-semibold">Swap a transponder:</span> Choose Primary or Secondary and enter the new number. Leave the secondary blank to remove it. Laps count on the new number from the next passing.</li>
+        <li><span className="font-semibold">Swap a transponder:</span> Choose Primary, Secondary, Third or Fourth and enter the new number. Leave any but the primary blank to remove it. Laps count on the new number from the next passing.</li>
         <li><span className="font-semibold">After a re-import:</span> Importing a newer RaceHub file later does not undo a swap made here. The swapped number stays, and the entry shows &quot;Booking has transponder &hellip;. Keeping the number swapped on the day.&quot; so you can see the booking differs. Swap to the booking&apos;s number to clear the note.</li>
       </ul>
 

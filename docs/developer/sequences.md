@@ -71,7 +71,7 @@ sequenceDiagram
 
 A car that crosses the line before its turn in a stagger start is flagged to the referee, who decides on a penalty or takes no action; the passing is still timed. The detection is audited as `JUMP_START_DETECTED`. Taking no action (`RefereeService.dismissJumpStart`) writes a `JUMP_START_DISMISSED` audit row and marks the entry dismissed in `LiveRaceState`; the list is broadcast again, the alert goes and the entry keeps its lozenge. A penalty dismisses it the same way and writes a `JUMP_START_PENALISED` row beside its `PENALTY_APPLIED` one.
 
-An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen.
+An unknown transponder is never silently credited: it goes to the race director, who links it to an entry (`TransponderLinkService`), and the link applies back over the passings already seen. An entry that has already passed in the race is refused, so no entry is timed on two linked numbers.
 
 ## Starting and finishing a race
 

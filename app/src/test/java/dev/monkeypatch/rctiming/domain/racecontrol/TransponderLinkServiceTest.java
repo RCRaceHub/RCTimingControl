@@ -14,6 +14,7 @@ import dev.monkeypatch.rctiming.domain.race.RaceStatus;
 import dev.monkeypatch.rctiming.domain.transponder.SwapResult;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
+import dev.monkeypatch.rctiming.timing.LapPassingEvent;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
 import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
@@ -163,6 +164,31 @@ class TransponderLinkServiceTest {
 
         verifyNoInteractions(linkAuditRepository);
         verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void link_toAnEntryAlreadyBeingTimed_isRefused() {
+        LiveRaceState state = new LiveRaceState();
+        state.applyLapPassing(new LapPassingEvent(7L, "1111111", 1_000_000L), 11L, 1_000L);
+        runningRaceWithEntry11(state);
+
+        assertThatThrownBy(() -> service().link(7L, "1234567", 11L, 3L))
+                .isInstanceOf(StateConflictException.class)
+                .hasMessageContaining("already being timed");
+
+        verifyNoInteractions(linkAuditRepository, swapService);
+        verify(lapTimingService, never()).linkTransponder(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void link_toAnEntryWithOnlyAMarshalLap_isAllowed() {
+        LiveRaceState state = new LiveRaceState();
+        state.applyLapDelta(11L, 1);
+        runningRaceWithEntry11(state);
+
+        service().link(7L, "1234567", 11L, 3L);
+
+        verify(lapTimingService).linkTransponder(7L, "1234567", 11L);
     }
 
     @Test

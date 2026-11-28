@@ -15,6 +15,7 @@ import dev.monkeypatch.rctiming.domain.transponder.TransponderSlot;
 import dev.monkeypatch.rctiming.domain.transponder.TransponderSwapService;
 import dev.monkeypatch.rctiming.persistence.AfterCommit;
 import dev.monkeypatch.rctiming.timing.LapTimingService;
+import dev.monkeypatch.rctiming.timing.LiveRaceState;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAudit;
 import dev.monkeypatch.rctiming.timing.UnknownTransponderLinkAuditRepository;
 import org.slf4j.Logger;
@@ -66,7 +67,8 @@ public class TransponderLinkService {
     /**
      * Links the transponder to an entry in a running or stopped race and credits its passings to that entry.
      * Linking it again to the same entry credits nothing more; linking it to a different one is refused, since
-     * its laps are already credited to the first.
+     * its laps are already credited to the first. Linking to an entry that has already passed in this race is
+     * refused too (#858): a transponder is never changed during a race, and both numbers would count.
      *
      * <p>The audit rows are written first and the live timing is changed only once they commit, so a link is
      * never live without its record (#217). The laps credited are counted before the commit; a passing from
@@ -77,8 +79,8 @@ public class TransponderLinkService {
      * the event find it by themselves.
      *
      * @return how many laps the link credited
-     * @throws StateConflictException   if the race is not running or stopped, or the number is linked to another
-     *                                  entry already
+     * @throws StateConflictException   if the race is not running or stopped, the number is linked to another
+     *                                  entry already, or the entry is already being timed
      * @throws IllegalArgumentException if the entry is not in the race
      */
     public int link(long raceId, String transponderNumber, long entryId, long userId) {
@@ -91,13 +93,18 @@ public class TransponderLinkService {
         if (!inRace) {
             throw new IllegalArgumentException("That entry is not in this race");
         }
-        Long linkedTo = lapTimingService.stateFor(raceId).getRuntimeLink(transponderNumber);
+        LiveRaceState state = lapTimingService.stateFor(raceId);
+        Long linkedTo = state.getRuntimeLink(transponderNumber);
         if (linkedTo != null) {
             if (linkedTo == entryId) {
                 return 0;
             }
             throw new StateConflictException("Transponder " + transponderNumber
                     + " is already linked to another entry in this race");
+        }
+        if (state.isBeingTimed(entryId)) {
+            throw new StateConflictException(labels.driver(entryId) + " is already being timed in this race, so"
+                    + " transponder " + transponderNumber + " can't be theirs. Check which car is carrying it.");
         }
 
         // Counted before linking, since linking credits them. The first passing only starts timing a lap

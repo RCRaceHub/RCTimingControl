@@ -1,3 +1,4 @@
+import { AxiosError, type AxiosResponse } from 'axios';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -174,7 +175,37 @@ describe('UnknownTransponderLinkDialog', () => {
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        'Failed to link transponder. Server error'
+        'Failed to link transponder. Check your connection and try again.'
+      );
+    });
+  });
+
+  it('shows the reason the server gives for refusing a link', async () => {
+    const { toast } = await import('sonner');
+    mockLinkUnknownTransponder.mockRejectedValue(
+      new AxiosError('Request failed', '409', undefined, undefined, {
+        data: { detail: 'John Doe is already being timed in this race' },
+        status: 409,
+      } as AxiosResponse)
+    );
+
+    renderDialog();
+
+    // Wait for entries to load (select enabled)
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).not.toBeDisabled();
+    });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } });
+
+    // Wait for button to be enabled and submit
+    await waitFor(() => {
+      expect(screen.getByText('Link Entry')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByText('Link Entry'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'John Doe is already being timed in this race'
       );
     });
   });

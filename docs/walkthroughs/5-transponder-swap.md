@@ -2,7 +2,7 @@
 
 Part of the [walkthroughs](../walkthroughs.md), which follow one imaginary club through a race day on the demo data.
 
-**You need:** the driver's entry in the event. A car's transponder is replaced, for example after a flat battery, by changing it on the entry, and the change is written to the audit log.
+**You need:** the driver's entry in the event. A car's transponder is replaced, for example after a flat battery, by changing it on the entry, and the change is written to the audit log. Make the change before the driver's race is called or after it has finished: a transponder is never changed during a race.
 
 1. Open **Race control**, choose the event, then **Transponders**. Type the driver's name.
 
